@@ -1,0 +1,16 @@
+# 👥 Contributors
+
+Thanks to everyone who has helped make **ClocksAbound** possible!
+
+---
+
+## 🦝 Lead Developer
+
+| Name               | GitHub                                                   | LinkedIn                                               | Role                             |
+| ------------------ | -------------------------------------------------------- | ------------------------------------------------------ | -------------------------------- |
+| **Nicholas Clark** | [@NickTheDevOpsGuy](https://github.com/NickTheDevOpsGuy) | [LinkedIn](https://www.linkedin.com/in/nickdoesdevops) | Creator • Developer • Maintainer |
+| **James Hood**     | [@jameshood118](https://github.com/jameshood118)         | [LinkedIn](https://www.linkedin.com/in/jameshood118/)  | Creator • Developer • Maintainer |
+
+---
+
+> 💡 Want to contribute? Fork the repo, open a PR, or share feedback in the Discussions tab.

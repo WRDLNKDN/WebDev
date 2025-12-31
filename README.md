@@ -173,11 +173,16 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ```
 .
+├── .github
+│   └── workflows
+│       └── WebDev.yml
 ├── .husky
-│   └── pre-commit
+│   ├── pre-commit
+│   └── pre-push
 ├── assets
 │   ├── banner.png
-│   └── logo.png
+│   ├── logo.png
+│   └── nyan-adventure.png
 ├── backend
 │   ├── api-hello.js
 │   └── README.md
@@ -187,6 +192,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   ├── assets
 │   │   └── gallerybanner.png
 │   └── vite.svg
+├── scripts
+│   └── precheck.sh
 ├── src
 │   ├── assets
 │   │   └── react.svg
@@ -194,10 +201,6 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   ├── index.css
 │   ├── main.tsx
 │   └── theme.ts
-├── .gitattributes
-├── .gitignore
-├── .prettierignore
-├── .prettierrc.json
 ├── commit-and-push.bat
 ├── CONTRIBUTORS.md
 ├── eslint.config.cjs

@@ -1,0 +1,43 @@
+# .github/workflows/WebDev.yml
+name: 🌐 WebDev
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: WebDev-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck:
+    name: 🌐 WebDev
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🧹 ESLint
+        run: npm run lint
+
+      - name: 🧪 TypeScript typecheck
+        run: npm run typecheck
+
+      - name: 🎨 Prettier check
+        run: npm run format:check

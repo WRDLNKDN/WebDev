@@ -1,7 +1,7 @@
 # WeirdLinkedIn
 
 <p align="center">
-  <img src="./assets/banner.png" alt="WeirdLinkedIn banner" />
+  <img src="./assets/nyan-adventure.png" alt="WeirdLinkedIn logo: Nyan Cat with Finn and Jake" width="300" />
 </p>
 
 <p align="center">

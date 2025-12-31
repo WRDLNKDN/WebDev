@@ -1,0 +1,13 @@
+Dependencies and Builds
+
+/node_modules
+/dist
+package-lock.json
+yarn.lock
+npm-debug.log
+
+Configuration Files (already managed by other linters or should be left alone)
+
+.gitattributes
+.prettierrc.json
+.eslintrc.js

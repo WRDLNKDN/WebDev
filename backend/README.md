@@ -3,10 +3,12 @@
 This folder contains the backend API for the WeirdLinkedIn project, intended for deployment on Vercel.
 
 ## Features
+
 - Node.js backend (API-first)
 - Simple hello-world endpoint (`api-hello.js`)
 
 ## Setup & Development
+
 1. Install dependencies (if any):
    ```sh
    npm install
@@ -17,7 +19,9 @@ This folder contains the backend API for the WeirdLinkedIn project, intended for
    ```
 
 ## Deployment
+
 - Deploy the backend to Vercel or your preferred serverless/cloud provider.
 
 ## Additional Info
+
 - See the main project README for more details on the tech stack and project structure.

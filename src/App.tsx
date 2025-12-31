@@ -4,8 +4,8 @@ import {
   faPaperPlane,
   faPlus,
   faUserCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   Box,
   Button,
@@ -18,8 +18,8 @@ import {
   Paper,
   TextField,
   Typography,
-} from "@mui/material";
-import React, { useCallback, useState } from "react";
+} from '@mui/material';
+import React, { useCallback, useState } from 'react';
 
 // --- TYPESCRIPT INTERFACES ---
 
@@ -27,7 +27,7 @@ import React, { useCallback, useState } from "react";
 interface Message {
   id: number;
   content: string;
-  sender: "user" | "model";
+  sender: 'user' | 'model';
 }
 
 /** Defines the structure for a chat session in the history list. */
@@ -39,22 +39,22 @@ interface ChatSession {
 // --- STUBBED DATA ---
 
 const dummyHistory: ChatSession[] = [
-  { id: 1, title: "React 19 vs 18 Changes" },
-  { id: 2, title: "ESLint & TypeScript Setup" },
-  { id: 3, title: "Vite Configuration Guide" },
+  { id: 1, title: 'React 19 vs 18 Changes' },
+  { id: 2, title: 'ESLint & TypeScript Setup' },
+  { id: 3, title: 'Vite Configuration Guide' },
 ];
 
 const initialMessages: Message[] = [
   {
     id: 1,
     content:
-      "Hello! I am a clone interface ready to help you with your next request. How can I assist?",
-    sender: "model",
+      'Hello! I am a clone interface ready to help you with your next request. How can I assist?',
+    sender: 'model',
   },
   {
     id: 2,
-    content: "What has changed between react 18 and the current version?",
-    sender: "user",
+    content: 'What has changed between react 18 and the current version?',
+    sender: 'user',
   },
 ];
 
@@ -65,23 +65,23 @@ interface MessageItemProps {
 const MessageItem: React.FC<MessageItemProps> = ({ message }) => (
   <Box
     sx={{
-      display: "flex",
-      justifyContent: message.sender === "user" ? "flex-end" : "flex-start",
+      display: 'flex',
+      justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
       my: 2,
-      mx: message.sender === "model" ? 0 : 2, // Model messages might span full width
+      mx: message.sender === 'model' ? 0 : 2, // Model messages might span full width
     }}
   >
     <Paper
       elevation={2}
       sx={{
         p: 1.5,
-        maxWidth: "70%",
-        borderRadius: "12px",
-        borderBottomLeftRadius: message.sender === "model" ? 0 : "12px",
-        borderBottomRightRadius: message.sender === "user" ? 0 : "12px",
-        bgcolor: message.sender === "user" ? "#1976D2" : "#303030", // Blue for User, Dark Gray for Model
-        color: "white",
-        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+        maxWidth: '70%',
+        borderRadius: '12px',
+        borderBottomLeftRadius: message.sender === 'model' ? 0 : '12px',
+        borderBottomRightRadius: message.sender === 'user' ? 0 : '12px',
+        bgcolor: message.sender === 'user' ? '#1976D2' : '#303030', // Blue for User, Dark Gray for Model
+        color: 'white',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
       }}
     >
       <Typography variant="body1">{message.content}</Typography>
@@ -92,9 +92,9 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => (
 const App = () => {
   // IMPORTANT: For Vite, static assets in the 'public' folder must be referenced
   // with a path relative to the root, like '/assets/...'
-  const imagePath = "/assets/gallerybanner.png";
+  const imagePath = '/assets/gallerybanner.png';
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState<string>("");
+  const [input, setInput] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false); // Stubbed state for loading indicator
 
   // Stub function for handling the send button click
@@ -108,10 +108,10 @@ const App = () => {
     const newUserMessage: Message = {
       id: Date.now(),
       content: input,
-      sender: "user",
+      sender: 'user',
     };
     setMessages((prev) => [...prev, newUserMessage]);
-    setInput("");
+    setInput('');
 
     // 3. Stub: Simulate API call delay for model response
     setTimeout(() => {
@@ -121,7 +121,7 @@ const App = () => {
           "This is the stubbed AI response for: '" +
           newUserMessage.content.substring(0, 30) +
           "...' The structure works!",
-        sender: "model",
+        sender: 'model',
       };
       setMessages((prev) => [...prev, newModelMessage]);
       setIsSending(false); // End loading
@@ -130,18 +130,18 @@ const App = () => {
 
   // Stub function for starting a new chat
   const handleNewChat = useCallback(() => {
-    console.log("Stub: Starting a new chat session.");
+    console.log('Stub: Starting a new chat session.');
     setMessages([]); // Clear messages for a "new" chat
-    setInput("");
+    setInput('');
   }, []);
 
   return (
     <Box
       sx={{
-        display: "flex",
-        height: "100vh",
-        bgcolor: "#171717",
-        color: "white",
+        display: 'flex',
+        height: '100vh',
+        bgcolor: '#171717',
+        color: 'white',
       }}
     >
       {/* 1. SIDEBAR (Navigation and History) */}
@@ -150,11 +150,11 @@ const App = () => {
         sx={{
           width: 250,
           flexShrink: 0,
-          bgcolor: "#212121",
-          borderRight: "1px solid #333",
+          bgcolor: '#212121',
+          borderRight: '1px solid #333',
           p: 2,
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <Button
@@ -163,48 +163,48 @@ const App = () => {
           fullWidth
           onClick={handleNewChat}
           startIcon={<FontAwesomeIcon icon={faPlus} />}
-          sx={{ mb: 2, py: 1.5, fontWeight: "bold" }}
+          sx={{ mb: 2, py: 1.5, fontWeight: 'bold' }}
         >
           New Chat
         </Button>
 
-        <Divider sx={{ mb: 2, bgcolor: "#444" }} />
+        <Divider sx={{ mb: 2, bgcolor: '#444' }} />
 
         <Typography
           variant="subtitle2"
-          sx={{ color: "#aaa", mb: 1, textTransform: "uppercase" }}
+          sx={{ color: '#aaa', mb: 1, textTransform: 'uppercase' }}
         >
-          <FontAwesomeIcon icon={faHistory} style={{ marginRight: "8px" }} />
+          <FontAwesomeIcon icon={faHistory} style={{ marginRight: '8px' }} />
           History
         </Typography>
 
-        <List sx={{ flexGrow: 1, overflowY: "auto" }}>
+        <List sx={{ flexGrow: 1, overflowY: 'auto' }}>
           {dummyHistory.map((session) => (
             <ListItem key={session.id} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
                 sx={{
-                  borderRadius: "8px",
-                  "&:hover": { bgcolor: "#303030" },
-                  bgcolor: session.id === 1 ? "#303030" : "transparent", // Highlight active chat
+                  borderRadius: '8px',
+                  '&:hover': { bgcolor: '#303030' },
+                  bgcolor: session.id === 1 ? '#303030' : 'transparent', // Highlight active chat
                 }}
               >
                 <ListItemText
                   primary={session.title}
-                  primaryTypographyProps={{ noWrap: true, color: "white" }}
+                  primaryTypographyProps={{ noWrap: true, color: 'white' }}
                 />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
 
-        <Divider sx={{ mt: "auto", mb: 1, bgcolor: "#444" }} />
+        <Divider sx={{ mt: 'auto', mb: 1, bgcolor: '#444' }} />
 
         <Button
           fullWidth
           sx={{
-            justifyContent: "flex-start",
-            color: "white",
-            "&:hover": { bgcolor: "#303030" },
+            justifyContent: 'flex-start',
+            color: 'white',
+            '&:hover': { bgcolor: '#303030' },
           }}
           startIcon={<FontAwesomeIcon icon={faUserCircle} size="lg" />}
         >
@@ -217,38 +217,38 @@ const App = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          position: "relative", // For fixed footer
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          position: 'relative', // For fixed footer
         }}
       >
         <img
           src={imagePath}
           alt="Gallery Banner"
           style={{
-            maxWidth: "100%",
-            height: "auto",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            maxWidth: '100%',
+            height: 'auto',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           }}
         />
         {/* 2a. MESSAGE HISTORY (Scrollable) */}
-        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 4, pt: 8 }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 4, pt: 8 }}>
           {messages.map((msg) => (
             <MessageItem key={msg.id} message={msg} />
           ))}
           {isSending && (
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "flex-start",
+                display: 'flex',
+                justifyContent: 'flex-start',
                 my: 2,
                 pl: 2,
               }}
             >
-              <Typography variant="body2" sx={{ color: "#aaa" }}>
+              <Typography variant="body2" sx={{ color: '#aaa' }}>
                 Model is typing...
               </Typography>
             </Box>
@@ -258,13 +258,13 @@ const App = () => {
         {/* 2b. FIXED INPUT AREA */}
         <Box
           sx={{
-            position: "sticky",
+            position: 'sticky',
             bottom: 0,
-            width: "auto",
+            width: 'auto',
             py: 2,
             px: 4,
-            bgcolor: "#171717",
-            boxShadow: "0 -4px 10px rgba(0,0,0,0.5)", // Shadow at the top
+            bgcolor: '#171717',
+            boxShadow: '0 -4px 10px rgba(0,0,0,0.5)', // Shadow at the top
             zIndex: 10,
           }}
         >
@@ -277,10 +277,10 @@ const App = () => {
                 handleSendMessage();
               }}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                borderRadius: "25px",
-                bgcolor: "#303030",
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '25px',
+                bgcolor: '#303030',
               }}
             >
               <TextField
@@ -293,23 +293,23 @@ const App = () => {
                 sx={{
                   flexGrow: 1,
                   mx: 1,
-                  "& .MuiInputBase-input": { color: "white" },
-                  "& .MuiInput-underline:before": { borderBottom: "none" },
-                  "& .MuiInput-underline:after": { borderBottom: "none" },
-                  "&:hover .MuiInput-underline:before": {
-                    borderBottom: "none !important",
+                  '& .MuiInputBase-input': { color: 'white' },
+                  '& .MuiInput-underline:before': { borderBottom: 'none' },
+                  '& .MuiInput-underline:after': { borderBottom: 'none' },
+                  '&:hover .MuiInput-underline:before': {
+                    borderBottom: 'none !important',
                   },
                 }}
                 disabled={isSending}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
               />
 
-              <Button sx={{ minWidth: 0, p: 1, borderRadius: "50%" }}>
+              <Button sx={{ minWidth: 0, p: 1, borderRadius: '50%' }}>
                 <FontAwesomeIcon icon={faMicrophone} color="#aaa" />
               </Button>
 
@@ -321,9 +321,9 @@ const App = () => {
                   minWidth: 0,
                   p: 1,
                   ml: 1,
-                  borderRadius: "50%",
-                  height: "40px",
-                  width: "40px",
+                  borderRadius: '50%',
+                  height: '40px',
+                  width: '40px',
                 }}
                 disabled={!input.trim() || isSending}
               >

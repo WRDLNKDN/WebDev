@@ -1,0 +1,73 @@
+name: Renovate Lockfile Reproducibility Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-lockfile:
+    name: Validate lockfile integrity
+    if: github.actor == 'renovate[bot]' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.19.0'
+          cache: 'pnpm'
+
+      - name: 📦 Install dependencies (CI mode)
+        run: pnpm install --frozen-lockfile --ignore-scripts --no-frozen-lockfile=false
+
+      - name: 🔍 Detect lockfile drift
+        id: drift
+        run: |
+          if git diff --quiet --exit-code -- pnpm-lock.yaml; then
+            echo "✅ Lockfile is stable after install"
+            echo "lockfile_status=clean" >> $GITHUB_OUTPUT
+          else
+            echo "::error::❌ Lockfile changed after install. Stale lockfile from Renovate?"
+            git --no-pager diff -- pnpm-lock.yaml || true
+            echo "lockfile_status=dirty" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ❌ Auto-close PR if lockfile is dirty
+        if: steps.drift.outputs.lockfile_status == 'dirty'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              state: 'closed'
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: [
+                "🚫 Auto-closed: This PR contains a stale or invalid `pnpm-lock.yaml`.",
+                "",
+                "Renovate generated a lockfile that isn't reproducible via `pnpm install --frozen-lockfile`.",
+                "Please rebase or rerun Renovate to regenerate the lockfile cleanly."
+              ].join('\n')
+            });

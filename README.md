@@ -91,6 +91,7 @@ cd WeirdLinkedIn
 2.  Install dependencies
 
 Install Docker
+
 ```bash
 cd frontend
 npm install

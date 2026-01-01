@@ -24,6 +24,9 @@ blob-report/
 **/*.spec.ts-snapshots/
 **/*.spec.js-snapshots/
 
+# Supabase Types
+src/types/supabase.ts
+
 # --- System & Env ---
 .env
 .env.*

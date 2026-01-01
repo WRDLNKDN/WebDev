@@ -23,7 +23,7 @@ module.exports = [
   // Must be a standalone object with ONLY the ignores key for maximum logic purity
   {
     ignores: [
-      "src/types/supabase.ts", // Ignore machine-generated code
+      'src/types/supabase.ts', // Ignore machine-generated code
       '**/dist/**',
       '**/node_modules/**',
       '**/.eslintcache',

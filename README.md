@@ -23,6 +23,7 @@ It explores what professional networking looks like when we stop pretending it i
 WeirdLinkedIn consists of:
 
 - **Frontend**
+
   - React 19 + Vite UI
   - Designed for GoDaddy website integration
   - WCAG 2.2 AA compliant dark theme
@@ -89,12 +90,20 @@ cd WeirdLinkedIn
 
 2.  Install dependencies
 
+Install Docker
 ```bash
 cd frontend
 npm install
 
 cd ../backend
 npm install
+
+# Initialize the Supabase configuration (if not already present)
+npx supabase init
+
+# Start the local Docker containers
+npx supabase start
+
 ```
 
 3.  Environment configuration

@@ -1,15 +1,11 @@
 # WeirdLinkedIn
 
-<p align="center">
-  <img src="./assets/nyan-adventure.png" alt="WeirdLinkedIn logo: Nyan Cat with Finn and Jake" width="300" />
-</p>
+![WeirdLinkedIn logo: Nyan Cat with Finn and Jake](./assets/nyan-adventure.png)
 
-<p align="center">
-  <img src="https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn">
-  <img src="https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn">
-  <img src="https://img.shields.io/badge/node-18+-blue">
-  <img src="https://img.shields.io/badge/made%20with-TypeScript-blue">
-</p>
+![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn)
+![License](https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn)
+![Node Version](https://img.shields.io/badge/node-18+-blue)
+![Made with TypeScript](https://img.shields.io/badge/made%20with-TypeScript-blue)
 
 **Professional networking, but human.**
 
@@ -88,7 +84,7 @@ git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
 cd WeirdLinkedIn
 ```
 
-2.  Install dependencies
+1. Install dependencies
 
 Install Docker
 
@@ -107,7 +103,7 @@ npx supabase start
 
 ```
 
-3.  Environment configuration
+1. Environment configuration
 
 Each service uses environment variables.
 
@@ -178,10 +174,12 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ## 📁 Project Structure
 
+```js
 <details>
 <summary>📁 Click to expand file structure</summary>
-
 ```
+
+```txt
 .
 ├── .github
 │   └── workflows
@@ -252,11 +250,9 @@ Accessibility is a core design constraint, not a retrofit.
 
 Thanks to everyone who has helped build or improve WeirdLinkedIn.
 
-<a href="https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn">
-  <img src="https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn" alt="Contributors">
-</a>
+[![Contributors](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)
 
-Generated using https://contrib.rocks
+Generated using [contrib.rocks](https://contrib.rocks)
 
 ### Contributing
 

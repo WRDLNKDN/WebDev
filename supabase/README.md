@@ -21,4 +21,5 @@ Copy/paste scripts into the Supabase SQL Editor in order:
 2. `migrations/002_profiles_rls.sql`
 
 Optional (dev only):
+
 - `seeds/001_dev_seed.sql`

@@ -143,6 +143,7 @@ DB URL:        postgresql://postgres:postgres@127.0.0.1:54328/postgres
 ```
 
 These values are used by:
+
 - `src/lib/supabaseClient.ts`
 - `.env`
 - `.env.test` (for RLS/unit tests)
@@ -298,6 +299,7 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── vite.config.ts
 └── vitest.config.ts
 ```
+
 </details>
 
 ---

@@ -11,6 +11,12 @@ export default defineConfig({
   server: {
     // Optional: open the browser automatically on start
     open: true,
+    host: true, // Needed for Docker to expose the port
+    port: 5173,
+    strictPort: true,
+    watch: {
+      usePolling: true, // Necessary if you're on Windows/WSL for file change detection
+    },
   },
   build: {
     // Ensures a clean, optimized production build

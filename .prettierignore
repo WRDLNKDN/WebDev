@@ -1,13 +1,34 @@
-Dependencies and Builds
-
-/node_modules
-/dist
+# --- Dependencies and Builds ---
+node_modules
+dist
+dist-ssr
 package-lock.json
 yarn.lock
-npm-debug.log
+pnpm-lock.yaml
 
-Configuration Files (already managed by other linters or should be left alone)
-
+# --- Configuration Files ---
 .gitattributes
-.prettierrc.json
-.eslintrc.js
+.prettierrc*
+.eslintrc*
+eslint.config.js
+package.json
+
+# --- Playwright (Crucial for Integrity) ---
+# Ignore the reports and results
+test-results/
+playwright-report/
+blob-report/
+/playwright/.cache
+
+# Ignore visual snapshots (Prettier can mangle the binary-like strings)
+**/*.spec.ts-snapshots/
+**/*.spec.js-snapshots/
+
+# Supabase Types
+src/types/supabase.ts
+
+# --- System & Env ---
+.env
+.env.*
+*.log
+.DS_Store

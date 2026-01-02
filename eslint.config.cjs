@@ -7,60 +7,59 @@ const tseslint = require('typescript-eslint');
 const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
 const reactRefreshPlugin = require('eslint-plugin-react-refresh');
-const prettierPlugin = require('eslint-plugin-prettier'); // <-- NEW PLUGIN
-const prettierConfig = require('eslint-config-prettier'); // <-- NEW CONFIG
+const prettierPlugin = require('eslint-plugin-prettier');
+const prettierConfig = require('eslint-config-prettier');
+const playwright = require('eslint-plugin-playwright');
 
-// 1. Define the complete plugins object for the custom configuration blocks
 const allPlugins = {
   react: reactPlugin,
   'react-hooks': reactHooksPlugin,
   'react-refresh': reactRefreshPlugin,
-  prettier: prettierPlugin, // <-- ADD PRETTIER PLUGIN
+  prettier: prettierPlugin,
 };
 
-// --- Final Configuration Array ---
 module.exports = [
-  // 1. GLOBAL IGNORES
+  // 1. GLOBAL IGNORES (Environment Optimization)
+  // Must be a standalone object with ONLY the ignores key for maximum logic purity
   {
-    ignores: ['dist', 'node_modules', '*.cjs', '*.mjs', '.gitattributes'],
+    ignores: [
+      'src/types/supabase.ts', // Ignore machine-generated code
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.eslintcache',
+      '**/*.cjs',
+      '**/*.mjs',
+      '.gitattributes',
+      '**/test-results/**',
+      '**/playwright-report/**',
+      '**/blob-report/**',
+    ],
   },
 
-  // 2. BASE ESLINT RULES
+  // 2. BASE RULES
   js.configs.recommended,
-
-  // 3. BASE TYPESCRIPT RULES
   ...tseslint.configs.recommended,
 
-  // 4. REACT & HOOKS Configuration (Includes the necessary parser setup)
+  // 3. REACT & HOOKS Configuration
   {
     files: ['**/*.{ts,tsx}'],
-
     plugins: allPlugins,
-
     languageOptions: {
       parser: tseslint.parser,
       ecmaVersion: 2020,
       globals: globals.browser,
-
       parserOptions: {
         ecmaFeatures: { jsx: true },
       },
     },
-
     settings: {
       react: { version: 'detect' },
     },
-
     rules: {
-      // --- Rule Spreading ---
       ...reactPlugin.configs.recommended.rules,
       ...reactPlugin.configs['jsx-runtime'].rules,
       ...reactHooksPlugin.configs.recommended.rules,
-
-      // We are adding the 'prettier/prettier' rule here to report formatting errors
       'prettier/prettier': 'error',
-
-      // --- Custom Rules ---
       'react/function-component-definition': [
         'error',
         {
@@ -72,15 +71,24 @@ module.exports = [
         'warn',
         { allowConstantExport: true },
       ],
-
-      // TypeScript and PropType relaxations
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
 
-  // 5. PRETTIER CONFIGURATION (MUST BE LAST!)
-  // This turns off all ESLint rules that conflict with Prettier.
+  // 4. PLAYWRIGHT Configuration (The "Verification" Layer)
+  {
+    files: ['tests/**/*.{spec,test}.{ts,js}'],
+    // @ts-ignore - Bypass the property check if the compiler is blind to the CJS export
+    ...playwright.configs['flat/recommended'],
+    rules: {
+      // @ts-ignore
+      ...playwright.configs['flat/recommended'].rules,
+      'playwright/no-wait-for-timeout': 'warn',
+    },
+  },
+
+  // 5. PRETTIER (The Final Firewall)
   prettierConfig,
 ];

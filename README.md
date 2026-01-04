@@ -1,3 +1,9 @@
+---
+
+## 📚 Resources
+
+- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
+- [Contributing Guide](CONTRIBUTING.md) — How to contribute, code style, and PR process
 # WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)

@@ -262,16 +262,6 @@ Thanks to everyone who has helped build or improve WeirdLinkedIn.
 
 Generated using [contrib.rocks](https://contrib.rocks)
 
-### Contributing
-
-Interested in contributing?
-
-- 📄 [CONTRIBUTORS.md](CONTRIBUTORS.md)
-- 🐛 Open an issue for bugs or feature requests
-- 🔀 Submit a pull request
-
-All contributions are welcome.
-
 ---
 
 ## License

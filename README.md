@@ -1,6 +1,4 @@
----
-
-## 📚 Resources
+# 📚 Resources
 
 - [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
 - [Contributing Guide](CONTRIBUTING.md) — How to contribute, code style, and PR process

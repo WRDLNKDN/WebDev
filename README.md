@@ -1,6 +1,6 @@
 # WeirdLinkedIn
 
-![WeirdLinkedIn logo: Nyan Cat with Finn and Jake](./assets/nyan-adventure.png)
+![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
 
 ![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn)
 ![License](https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn)

@@ -24,7 +24,7 @@
 
 | Name            | GitHub | LinkedIn                                               | Role                        |
 | --------------- | ------ | ------------------------------------------------------ | --------------------------- |
-| **Orana Velarde**|       | [orana-velarde-human-writer](https://www.linkedin.com/in/orana-velarde-human-writer) | Contributor - Logo Designer |
+| **Orana Velarde**| [@piorana-netizen](https://github.com/piorana-netizen) | [orana-velarde-human-writer](https://www.linkedin.com/in/orana-velarde-human-writer) | Contributor - Logo Designer |
 
 
 # 🤝 Other Contributors

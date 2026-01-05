@@ -35,6 +35,14 @@ import {
 } from './adminApi';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 
+type StatusFilter = 'pending' | 'approved' | 'rejected' | 'disabled' | 'all';
+type SortField = 'created_at' | 'updated_at';
+type SortOrder = 'asc' | 'desc';
+
+type Props = { token: string };
+
+type AppError = { message?: string };
+
 function formatStatus(status: string) {
   switch (status) {
     case 'approved':
@@ -48,22 +56,18 @@ function formatStatus(status: string) {
   }
 }
 
-type Props = { token: string };
-
-export function AdminModerationPage({ token }: Props) {
+export const AdminModerationPage = ({ token }: Props) => {
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<
-    'pending' | 'approved' | 'rejected' | 'disabled' | 'all'
-  >('pending');
+  const [status, setStatus] = useState<StatusFilter>('pending');
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
-  const [sort, setSort] = useState<'created_at' | 'updated_at'>('created_at');
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [sort, setSort] = useState<SortField>('created_at');
+  const [order, setOrder] = useState<SortOrder>('asc');
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [details, setDetails] = useState<ProfileRow | null>(null);
@@ -81,7 +85,7 @@ export function AdminModerationPage({ token }: Props) {
     [count, limit],
   );
 
-  async function load() {
+  const load = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -96,30 +100,31 @@ export function AdminModerationPage({ token }: Props) {
       setRows(data);
       setCount(c);
       setSelected(new Set());
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load profiles');
+    } catch (e: unknown) {
+      const err = e as AppError;
+      setError(err?.message || 'Failed to load profiles');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, q, limit, offset, sort, order]);
 
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
-  function toggle(id: string) {
+  const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  };
 
-  function toggleAll() {
+  const toggleAll = () => {
     setSelected((prev) => {
       const next = new Set(prev);
       const allChecked = rows.length > 0 && rows.every((r) => next.has(r.id));
@@ -130,19 +135,20 @@ export function AdminModerationPage({ token }: Props) {
       }
       return next;
     });
-  }
+  };
 
-  async function run(action: () => Promise<any>) {
+  const run = async (action: () => Promise<unknown>) => {
     setLoading(true);
     setError(null);
     try {
       await action();
       await load();
-    } catch (e: any) {
-      setError(e?.message || 'Action failed');
+    } catch (e: unknown) {
+      const err = e as AppError;
+      setError(err?.message || 'Action failed');
       setLoading(false);
     }
-  }
+  };
 
   const bulkDisabled = selectedIds.length === 0 || loading;
 
@@ -166,7 +172,7 @@ export function AdminModerationPage({ token }: Props) {
             value={status}
             onChange={(e) => {
               setOffset(0);
-              setStatus(e.target.value as any);
+              setStatus(e.target.value as StatusFilter);
             }}
           >
             <MenuItem value="pending">Pending</MenuItem>
@@ -193,7 +199,7 @@ export function AdminModerationPage({ token }: Props) {
           <Select
             label="Sort"
             value={sort}
-            onChange={(e) => setSort(e.target.value as any)}
+            onChange={(e) => setSort(e.target.value as SortField)}
           >
             <MenuItem value="created_at">Created</MenuItem>
             <MenuItem value="updated_at">Updated</MenuItem>
@@ -205,7 +211,7 @@ export function AdminModerationPage({ token }: Props) {
           <Select
             label="Order"
             value={order}
-            onChange={(e) => setOrder(e.target.value as any)}
+            onChange={(e) => setOrder(e.target.value as SortOrder)}
           >
             <MenuItem value="asc">Oldest</MenuItem>
             <MenuItem value="desc">Newest</MenuItem>
@@ -281,8 +287,7 @@ export function AdminModerationPage({ token }: Props) {
             setConfirm({
               title: 'Delete selected profiles?',
               body: `This will delete ${selectedIds.length} profile row(s).`,
-              action: () =>
-                run(() => deleteProfiles(token, selectedIds, false)),
+              action: () => run(() => deleteProfiles(token, selectedIds, false)),
               destructive: true,
             })
           }
@@ -322,9 +327,7 @@ export function AdminModerationPage({ token }: Props) {
                   type="checkbox"
                   value=""
                   inputProps={{ 'aria-label': 'select all' }}
-                  checked={
-                    rows.length > 0 && rows.every((r) => selected.has(r.id))
-                  }
+                  checked={rows.length > 0 && rows.every((r) => selected.has(r.id))}
                   onChange={toggleAll}
                 />
               </TableCell>
@@ -335,6 +338,7 @@ export function AdminModerationPage({ token }: Props) {
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {rows.map((r) => {
               const s = formatStatus(r.status);
@@ -349,26 +353,26 @@ export function AdminModerationPage({ token }: Props) {
                       inputProps={{ 'aria-label': `select ${r.handle}` }}
                     />
                   </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {r.handle}
-                  </TableCell>
+
+                  <TableCell sx={{ fontFamily: 'monospace' }}>{r.handle}</TableCell>
+
                   <TableCell>
                     <Chip size="small" label={s.label} color={s.color} />
                   </TableCell>
+
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.created_at
-                      ? new Date(r.created_at).toLocaleString()
-                      : '—'}
+                    {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}
                   </TableCell>
+
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.updated_at
-                      ? new Date(r.updated_at).toLocaleString()
-                      : '—'}
+                    {r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}
                   </TableCell>
+
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     <Button size="small" onClick={() => setDetails(r)}>
                       View
                     </Button>
+
                     {r.status !== 'approved' && (
                       <Button
                         size="small"
@@ -376,14 +380,14 @@ export function AdminModerationPage({ token }: Props) {
                           setConfirm({
                             title: `Approve ${r.handle}?`,
                             body: 'This will make the profile public.',
-                            action: () =>
-                              run(() => approveProfiles(token, [r.id])),
+                            action: () => run(() => approveProfiles(token, [r.id])),
                           })
                         }
                       >
                         Approve
                       </Button>
                     )}
+
                     {r.status !== 'rejected' && (
                       <Button
                         size="small"
@@ -391,8 +395,7 @@ export function AdminModerationPage({ token }: Props) {
                           setConfirm({
                             title: `Reject ${r.handle}?`,
                             body: 'This will keep the profile hidden from public.',
-                            action: () =>
-                              run(() => rejectProfiles(token, [r.id])),
+                            action: () => run(() => rejectProfiles(token, [r.id])),
                           })
                         }
                       >
@@ -407,9 +410,7 @@ export function AdminModerationPage({ token }: Props) {
             {rows.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={6}>
-                  <Typography sx={{ py: 2, opacity: 0.8 }}>
-                    No results.
-                  </Typography>
+                  <Typography sx={{ py: 2, opacity: 0.8 }}>No results.</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -436,9 +437,7 @@ export function AdminModerationPage({ token }: Props) {
           </Button>
           <Button
             size="small"
-            onClick={() =>
-              setOffset((o) => (o + limit < count ? o + limit : o))
-            }
+            onClick={() => setOffset((o) => (o + limit < count ? o + limit : o))}
             disabled={loading || offset + limit >= count}
           >
             Next
@@ -474,4 +473,4 @@ export function AdminModerationPage({ token }: Props) {
       </Dialog>
     </Box>
   );
-}
+};

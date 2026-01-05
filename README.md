@@ -335,7 +335,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 Thanks to everyone who has helped build or improve WeirdLinkedIn.
 
-[Contributors](https://contrib.rocks/image?repo=WRDLNKDN/WebDev&anon=1&max=100&columns=10&v=2)
+[![Contributors](https://contrib.rocks/image?repo=WRDLNKDN/WebDev&anon=1&max=100&columns=10&v=2)
 
 Generated using [contrib.rocks](https://contrib.rocks)
 

@@ -1,94 +1,96 @@
+export type ProfileStatus = 'pending' | 'approved' | 'rejected' | 'disabled';
+
 export type ProfileRow = {
   id: string;
   handle: string;
-  status: string;
-  created_at?: string;
-  updated_at?: string;
+  status: ProfileStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  pronouns: string | null;
+  geek_creds: string[] | null;
+  nerd_creds: unknown | null;
+  socials: unknown | null;
   reviewed_at?: string | null;
   reviewed_by?: string | null;
-  pronouns?: string | null;
-  geek_creds?: string[] | null;
-  nerd_creds?: unknown;
-  socials?: unknown;
 };
 
-type ListResponse = { data: ProfileRow[]; count: number };
+export type FetchProfilesParams = {
+  status: ProfileStatus | 'all';
+  q: string;
+  limit: number;
+  offset: number;
+  sort: 'created_at' | 'updated_at';
+  order: 'asc' | 'desc';
+};
 
-type MutateResponse = { data: ProfileRow[]; count: number };
+type ApiError = { message?: string };
 
-async function request<T>(
-  path: string,
+const ADMIN_ENDPOINT =
+  (import.meta as unknown as { env?: Record<string, string> }).env
+    ?.VITE_ADMIN_API_URL || '/api/admin';
+
+async function requestJson<T>(
   token: string,
+  path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${ADMIN_ENDPOINT}${path}`, {
     ...init,
     headers: {
-      ...(init?.headers || {}),
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
+      ...(init?.headers || {}),
     },
   });
 
-  const text = await res.text();
-  const json = text ? JSON.parse(text) : null;
-
   if (!res.ok) {
-    const msg = json?.error || json?.message || `HTTP ${res.status}`;
+    let msg = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as ApiError;
+      msg = body?.message || msg;
+    } catch {
+      // ignore
+    }
     throw new Error(msg);
   }
 
-  return json as T;
+  return (await res.json()) as T;
 }
 
-export async function listProfiles(
+export async function fetchProfiles(
   token: string,
-  params: {
-    status?: string;
-    q?: string;
-    limit?: number;
-    offset?: number;
-    sort?: 'created_at_desc' | 'created_at_asc';
-  },
-): Promise<ListResponse> {
-  const sp = new URLSearchParams();
-  if (params.status) sp.set('status', params.status);
-  if (params.q) sp.set('q', params.q);
-  if (params.limit != null) sp.set('limit', String(params.limit));
-  if (params.offset != null) sp.set('offset', String(params.offset));
-  if (params.sort) sp.set('sort', params.sort);
+  params: FetchProfilesParams,
+): Promise<{ data: ProfileRow[]; count: number }> {
+  const qs = new URLSearchParams();
+  qs.set('status', params.status);
+  qs.set('q', params.q);
+  qs.set('limit', String(params.limit));
+  qs.set('offset', String(params.offset));
+  qs.set('sort', params.sort);
+  qs.set('order', params.order);
 
-  return request<ListResponse>(
-    `/api/admin/profiles/list?${sp.toString()}`,
+  return requestJson<{ data: ProfileRow[]; count: number }>(
     token,
+    `/profiles?${qs.toString()}`,
   );
 }
 
-export async function approveProfiles(
-  token: string,
-  ids: string[],
-): Promise<MutateResponse> {
-  return request<MutateResponse>('/api/admin/profiles/approve', token, {
+export async function approveProfiles(token: string, ids: string[]) {
+  return requestJson<{ ok: true }>(token, '/profiles/approve', {
     method: 'POST',
     body: JSON.stringify({ ids }),
   });
 }
 
-export async function rejectProfiles(
-  token: string,
-  ids: string[],
-): Promise<MutateResponse> {
-  return request<MutateResponse>('/api/admin/profiles/reject', token, {
+export async function rejectProfiles(token: string, ids: string[]) {
+  return requestJson<{ ok: true }>(token, '/profiles/reject', {
     method: 'POST',
     body: JSON.stringify({ ids }),
   });
 }
 
-export async function disableProfiles(
-  token: string,
-  ids: string[],
-): Promise<MutateResponse> {
-  return request<MutateResponse>('/api/admin/profiles/disable', token, {
+export async function disableProfiles(token: string, ids: string[]) {
+  return requestJson<{ ok: true }>(token, '/profiles/disable', {
     method: 'POST',
     body: JSON.stringify({ ids }),
   });
@@ -97,17 +99,10 @@ export async function disableProfiles(
 export async function deleteProfiles(
   token: string,
   ids: string[],
-  opts?: { deleteAuthUsers?: boolean },
-): Promise<{ deleted: number; auth_deleted: number }> {
-  return request<{ deleted: number; auth_deleted: number }>(
-    '/api/admin/profiles/delete',
-    token,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        ids,
-        delete_auth_users: Boolean(opts?.deleteAuthUsers),
-      }),
-    },
-  );
+  hardDeleteAuthUsers: boolean,
+) {
+  return requestJson<{ ok: true }>(token, '/profiles/delete', {
+    method: 'POST',
+    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
+  });
 }

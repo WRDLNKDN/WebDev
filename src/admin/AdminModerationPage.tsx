@@ -287,7 +287,8 @@ export const AdminModerationPage = ({ token }: Props) => {
             setConfirm({
               title: 'Delete selected profiles?',
               body: `This will delete ${selectedIds.length} profile row(s).`,
-              action: () => run(() => deleteProfiles(token, selectedIds, false)),
+              action: () =>
+                run(() => deleteProfiles(token, selectedIds, false)),
               destructive: true,
             })
           }
@@ -327,7 +328,9 @@ export const AdminModerationPage = ({ token }: Props) => {
                   type="checkbox"
                   value=""
                   inputProps={{ 'aria-label': 'select all' }}
-                  checked={rows.length > 0 && rows.every((r) => selected.has(r.id))}
+                  checked={
+                    rows.length > 0 && rows.every((r) => selected.has(r.id))
+                  }
                   onChange={toggleAll}
                 />
               </TableCell>
@@ -354,18 +357,24 @@ export const AdminModerationPage = ({ token }: Props) => {
                     />
                   </TableCell>
 
-                  <TableCell sx={{ fontFamily: 'monospace' }}>{r.handle}</TableCell>
+                  <TableCell sx={{ fontFamily: 'monospace' }}>
+                    {r.handle}
+                  </TableCell>
 
                   <TableCell>
                     <Chip size="small" label={s.label} color={s.color} />
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}
+                    {r.created_at
+                      ? new Date(r.created_at).toLocaleString()
+                      : '—'}
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}
+                    {r.updated_at
+                      ? new Date(r.updated_at).toLocaleString()
+                      : '—'}
                   </TableCell>
 
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
@@ -380,7 +389,8 @@ export const AdminModerationPage = ({ token }: Props) => {
                           setConfirm({
                             title: `Approve ${r.handle}?`,
                             body: 'This will make the profile public.',
-                            action: () => run(() => approveProfiles(token, [r.id])),
+                            action: () =>
+                              run(() => approveProfiles(token, [r.id])),
                           })
                         }
                       >
@@ -395,7 +405,8 @@ export const AdminModerationPage = ({ token }: Props) => {
                           setConfirm({
                             title: `Reject ${r.handle}?`,
                             body: 'This will keep the profile hidden from public.',
-                            action: () => run(() => rejectProfiles(token, [r.id])),
+                            action: () =>
+                              run(() => rejectProfiles(token, [r.id])),
                           })
                         }
                       >
@@ -410,7 +421,9 @@ export const AdminModerationPage = ({ token }: Props) => {
             {rows.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={6}>
-                  <Typography sx={{ py: 2, opacity: 0.8 }}>No results.</Typography>
+                  <Typography sx={{ py: 2, opacity: 0.8 }}>
+                    No results.
+                  </Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -437,7 +450,9 @@ export const AdminModerationPage = ({ token }: Props) => {
           </Button>
           <Button
             size="small"
-            onClick={() => setOffset((o) => (o + limit < count ? o + limit : o))}
+            onClick={() =>
+              setOffset((o) => (o + limit < count ? o + limit : o))
+            }
             disabled={loading || offset + limit >= count}
           >
             Next

@@ -256,8 +256,9 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   ├── .temp
 │   │   └── cli-latest
 │   ├── migrations
-│   │   ├── 20260102152500_profiles_rls.sql
-│   │   └── 20260102152500_profiles_table.sql
+│   │   ├── 20260102152500_profiles_table.sql
+│   │   ├── 20260102152505_profiles_rls.sql
+│   │   └── 20260105114500_profiles_status_trigger_fix.sql
 │   ├── seeds
 │   │   └── 001_dev_seed.sql
 │   ├── tests

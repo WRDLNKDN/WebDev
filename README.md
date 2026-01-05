@@ -1,6 +1,14 @@
+# 📚 Resources
+
+- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
+
+**Contributor & Contributing Files:**
+
+- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
+- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
 # WeirdLinkedIn
 
-![WeirdLinkedIn logo: Nyan Cat with Finn and Jake](./assets/nyan-adventure.png)
+![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
 
 ![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn)
 ![License](https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn)
@@ -325,6 +333,10 @@ Accessibility is a core design constraint, not a retrofit.
 ## Contributors
 
 Thanks to everyone who has helped build or improve WeirdLinkedIn.
+
+[![Contributors](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)
+
+Generated using [contrib.rocks](https://contrib.rocks)
 
 ---
 

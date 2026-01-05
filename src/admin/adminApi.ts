@@ -58,24 +58,36 @@ export async function listProfiles(
   if (params.offset != null) sp.set('offset', String(params.offset));
   if (params.sort) sp.set('sort', params.sort);
 
-  return request<ListResponse>(`/api/admin/profiles/list?${sp.toString()}`, token);
+  return request<ListResponse>(
+    `/api/admin/profiles/list?${sp.toString()}`,
+    token,
+  );
 }
 
-export async function approveProfiles(token: string, ids: string[]): Promise<MutateResponse> {
+export async function approveProfiles(
+  token: string,
+  ids: string[],
+): Promise<MutateResponse> {
   return request<MutateResponse>('/api/admin/profiles/approve', token, {
     method: 'POST',
     body: JSON.stringify({ ids }),
   });
 }
 
-export async function rejectProfiles(token: string, ids: string[]): Promise<MutateResponse> {
+export async function rejectProfiles(
+  token: string,
+  ids: string[],
+): Promise<MutateResponse> {
   return request<MutateResponse>('/api/admin/profiles/reject', token, {
     method: 'POST',
     body: JSON.stringify({ ids }),
   });
 }
 
-export async function disableProfiles(token: string, ids: string[]): Promise<MutateResponse> {
+export async function disableProfiles(
+  token: string,
+  ids: string[],
+): Promise<MutateResponse> {
   return request<MutateResponse>('/api/admin/profiles/disable', token, {
     method: 'POST',
     body: JSON.stringify({ ids }),
@@ -86,8 +98,7 @@ export async function deleteProfiles(
   token: string,
   ids: string[],
   opts?: { deleteAuthUsers?: boolean },
-): Promise<{ deleted: number; auth_deleted: number }>
-{
+): Promise<{ deleted: number; auth_deleted: number }> {
   return request<{ deleted: number; auth_deleted: number }>(
     '/api/admin/profiles/delete',
     token,

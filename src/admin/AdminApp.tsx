@@ -97,7 +97,8 @@ export function AdminApp() {
               Sign in
             </Typography>
             <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
-              Use an admin account email that is listed in <code>ADMIN_EMAIL_ALLOWLIST</code>.
+              Use an admin account email that is listed in{' '}
+              <code>ADMIN_EMAIL_ALLOWLIST</code>.
             </Typography>
 
             <TextField
@@ -134,8 +135,13 @@ export function AdminApp() {
               {busy ? 'Signing in…' : 'Sign in'}
             </Button>
 
-            <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-              Tip: run this at <code>/admin</code> (example: http://localhost:5173/admin)
+            <Typography
+              variant="caption"
+              display="block"
+              sx={{ mt: 2, opacity: 0.7 }}
+            >
+              Tip: run this at <code>/admin</code> (example:
+              http://localhost:5173/admin)
             </Typography>
           </Box>
         )}

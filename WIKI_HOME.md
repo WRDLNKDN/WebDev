@@ -12,7 +12,7 @@ This wiki exists to explain the _why_, the _shape_, and the _intent_ behind what
 - **[Project README](../blob/main/README.md)**  
   The source of truth for what this project is, how it works, and how to get rolling.
 
-- **[Contribution & Labeling Rules](../blob/main/CONTRIBUTING.md)**  
+- **[Contribution & Labeling Rules](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md)**  
   The rules of the road for issues, labels, milestones, and keeping our workflow sharp.
 
 > **Note:**

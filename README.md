@@ -6,6 +6,7 @@
 
 - [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
 - [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
+
 # WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)

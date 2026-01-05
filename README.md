@@ -6,6 +6,7 @@
 
 - [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
 - [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
+
 # WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
@@ -92,7 +93,7 @@ git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
 cd WeirdLinkedIn
 ```
 
-1. Install dependencies
+2. Install dependencies
 
 Install Docker
 
@@ -108,10 +109,9 @@ npx supabase init
 
 # Start the local Docker containers
 npx supabase start
-
 ```
 
-1. Environment configuration
+3. Environment configuration
 
 Each service uses environment variables.
 
@@ -129,7 +129,43 @@ Environment variables are documented in each subfolder’s README.
 
 ## ▶️ Running Locally
 
-Frontend (UI)
+### Supabase (Database + Auth)
+
+Supabase is required for local development. It runs via Docker and provides:
+
+- Postgres database
+- Auth (JWTs, RLS context)
+- REST and GraphQL APIs
+
+Start Supabase from the project root:
+
+```bash
+npx supabase start
+```
+
+After startup, you should see output similar to:
+
+```text
+Studio:        http://127.0.0.1:54323
+API URL:       http://127.0.0.1:54322
+DB URL:        postgresql://postgres:postgres@127.0.0.1:54328/postgres
+```
+
+These values are used by:
+
+- `src/lib/supabaseClient.ts`
+- `.env`
+- `.env.test` (for RLS/unit tests)
+
+Stop Supabase when finished:
+
+```bash
+npx supabase stop
+```
+
+---
+
+### Frontend (UI)
 
 ```bash
 cd frontend
@@ -143,7 +179,9 @@ VITE vX.X.X  ready in XXX ms
 ➜  Local:   http://localhost:5173/
 ```
 
-Backend (API)
+---
+
+### Backend (API)
 
 ```bash
 cd backend
@@ -182,15 +220,15 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ## 📁 Project Structure
 
-```js
 <details>
 <summary>📁 Click to expand file structure</summary>
-```
 
 ```txt
 .
 ├── .github
 │   └── workflows
+│       ├── renovate-lockfile-gate.yml
+│       ├── renovate-lockfile-pr.yml
 │       └── WebDev.yml
 ├── .husky
 │   ├── pre-commit
@@ -213,24 +251,63 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── src
 │   ├── assets
 │   │   └── react.svg
+│   ├── lib
+│   │   └── supabaseClient.ts
+│   ├── types
+│   │   └── supabase.ts
 │   ├── App.tsx
 │   ├── index.css
 │   ├── main.tsx
 │   └── theme.ts
+├── supabase
+│   ├── .branches
+│   │   └── _current_branch
+│   ├── .temp
+│   │   └── cli-latest
+│   ├── migrations
+│   │   ├── 20260102152500_profiles_table.sql
+│   │   ├── 20260102152505_profiles_rls.sql
+│   │   └── 20260105114500_profiles_status_trigger_fix.sql
+│   ├── seeds
+│   │   └── 001_dev_seed.sql
+│   ├── tests
+│   │   └── rls
+│   │       ├── admin-visibility.test.ts
+│   │       └── profiles.rls.test.ts
+│   ├── .gitignore
+│   ├── config.toml
+│   ├── README.md
+│   └── seed.sql
+├── tests
+│   └── home.spec.ts
+├── .dockerignore
+├── .editorconfig
+├── .env.example
+├── .env.test
+├── .gitattributes
+├── .gitignore
+├── .npmrc
+├── .prettierignore
+├── .prettierrc.yml
 ├── commit-and-push.bat
 ├── CONTRIBUTORS.md
+├── docker-compose.yml
+├── Dockerfile
 ├── eslint.config.cjs
 ├── index.html
 ├── INTEGRATION.md
 ├── LICENSE
+├── nginx.conf
 ├── package-lock.json
 ├── package.json
+├── playwright.config.ts
 ├── PROJECT_BOARD.md
 ├── README.md
 ├── tsconfig.app.json
 ├── tsconfig.json
 ├── tsconfig.node.json
-└── vite.config.ts
+├── vite.config.ts
+└── vitest.config.ts
 ```
 
 </details>
@@ -250,7 +327,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## 📌 Project Board
 
-🔗 [WeirdLinkedIn Project](https://github.com/users/AprilLorDrake/projects/3)
+🔗 https://github.com/users/AprilLorDrake/projects/3
 
 ---
 

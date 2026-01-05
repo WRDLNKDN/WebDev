@@ -9,15 +9,13 @@ import {
 } from '@mui/material';
 import type { ProfileRow } from './adminApi';
 
-export function ProfileDetailDialog({
-  open,
-  profile,
-  onClose,
-}: {
+type Props = {
   open: boolean;
   profile: ProfileRow | null;
   onClose: () => void;
-}) {
+};
+
+export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Profile details</DialogTitle>
@@ -46,4 +44,4 @@ export function ProfileDetailDialog({
       </DialogActions>
     </Dialog>
   );
-}
+};

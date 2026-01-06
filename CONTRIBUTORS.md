@@ -26,8 +26,14 @@
 
 # 🤝 Other Contributors
 
-| Name | GitHub | LinkedIn | Role |
-| ---- | ------ | -------- | ---- |
+| Name                | GitHub | LinkedIn                                                                 | Role                      |
+| ------------------- | ------ | ------------------------------------------------------------------------ | ------------------------- |
+| Melissa Goodwin     |        | [heyitsmelissagoodwin](https://linkedin.com/in/heyitsmelissagoodwin)     | Steering Committee Member |
+| Ryan Whisner        |        | [ryanwhisner](https://linkedin.com/in/ryanwhisner)                       | Steering Committee Member |
+| Robert Haines       |        | [robert-haines-a072334](https://linkedin.com/in/robert-haines-a072334)   | Steering Committee Member |
+| Deb Haas            |        | [debhaasai](https://linkedin.com/in/debhaasai)                           | Steering Committee Member |
+| Nicole Eisdorfer    |        | [neisdorfer](https://linkedin.com/in/neisdorfer)                         | Steering Committee Member |
+| Kamryn Ainsley      |        | [kamryn-ainsley](https://linkedin.com/in/kamryn-ainsley)                 | Steering Committee Member |
 
 ---
 

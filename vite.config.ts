@@ -17,10 +17,20 @@ export default defineConfig({
     watch: {
       usePolling: true, // Necessary if you're on Windows/WSL for file change detection
     },
+
+    // Proxy API calls to the backend so fetch("/api/...") doesn't return index.html
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // TODO: set this to your backend port
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     // Ensures a clean, optimized production build
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 900,
   },
 });

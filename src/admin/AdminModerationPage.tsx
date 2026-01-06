@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -14,7 +15,6 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
-  OutlinedInput,
   Select,
   Stack,
   Table,
@@ -25,7 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { ProfileRow } from './adminApi';
+import type { ProfileRow, ProfileStatus } from './adminApi';
 import {
   approveProfiles,
   deleteProfiles,
@@ -35,15 +35,7 @@ import {
 } from './adminApi';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 
-type StatusFilter = 'pending' | 'approved' | 'rejected' | 'disabled' | 'all';
-type SortField = 'created_at' | 'updated_at';
-type SortOrder = 'asc' | 'desc';
-
-type Props = { token: string };
-
-type AppError = { message?: string };
-
-function formatStatus(status: string) {
+const formatStatus = (status: string) => {
   switch (status) {
     case 'approved':
       return { label: 'Approved', color: 'success' as const };
@@ -54,20 +46,31 @@ function formatStatus(status: string) {
     default:
       return { label: 'Pending', color: 'default' as const };
   }
-}
+};
 
-export const AdminModerationPage = ({ token }: Props) => {
+const toMessage = (e: unknown) => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  return 'Request failed';
+};
+
+type Props = {
+  token: string;
+  initialStatus?: ProfileStatus | 'all';
+};
+
+export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props) => {
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<StatusFilter>('pending');
+  const [status, setStatus] = useState<ProfileStatus | 'all'>(initialStatus);
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
-  const [sort, setSort] = useState<SortField>('created_at');
-  const [order, setOrder] = useState<SortOrder>('asc');
+  const [sort, setSort] = useState<'created_at' | 'updated_at'>('created_at');
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [details, setDetails] = useState<ProfileRow | null>(null);
@@ -85,6 +88,8 @@ export const AdminModerationPage = ({ token }: Props) => {
     [count, limit],
   );
 
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -101,8 +106,7 @@ export const AdminModerationPage = ({ token }: Props) => {
       setCount(c);
       setSelected(new Set());
     } catch (e: unknown) {
-      const err = e as AppError;
-      setError(err?.message || 'Failed to load profiles');
+      setError(toMessage(e) || 'Failed to load profiles');
     } finally {
       setLoading(false);
     }
@@ -112,8 +116,6 @@ export const AdminModerationPage = ({ token }: Props) => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, q, limit, offset, sort, order]);
-
-  const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -144,13 +146,14 @@ export const AdminModerationPage = ({ token }: Props) => {
       await action();
       await load();
     } catch (e: unknown) {
-      const err = e as AppError;
-      setError(err?.message || 'Action failed');
+      setError(toMessage(e) || 'Action failed');
       setLoading(false);
     }
   };
 
   const bulkDisabled = selectedIds.length === 0 || loading;
+  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const someChecked = rows.some((r) => selected.has(r.id));
 
   return (
     <Box>
@@ -158,8 +161,7 @@ export const AdminModerationPage = ({ token }: Props) => {
         Moderation
       </Typography>
       <Typography variant="body2" sx={{ opacity: 0.8 }}>
-        Review profiles, approve or reject registrations, and manage active
-        members.
+        Review profiles, approve or reject registrations, and manage active members.
       </Typography>
 
       <Divider sx={{ my: 2 }} />
@@ -172,7 +174,7 @@ export const AdminModerationPage = ({ token }: Props) => {
             value={status}
             onChange={(e) => {
               setOffset(0);
-              setStatus(e.target.value as StatusFilter);
+              setStatus(e.target.value as ProfileStatus | 'all');
             }}
           >
             <MenuItem value="pending">Pending</MenuItem>
@@ -199,7 +201,9 @@ export const AdminModerationPage = ({ token }: Props) => {
           <Select
             label="Sort"
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortField)}
+            onChange={(e) =>
+              setSort(e.target.value as 'created_at' | 'updated_at')
+            }
           >
             <MenuItem value="created_at">Created</MenuItem>
             <MenuItem value="updated_at">Updated</MenuItem>
@@ -211,7 +215,7 @@ export const AdminModerationPage = ({ token }: Props) => {
           <Select
             label="Order"
             value={order}
-            onChange={(e) => setOrder(e.target.value as SortOrder)}
+            onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}
           >
             <MenuItem value="asc">Oldest</MenuItem>
             <MenuItem value="desc">Newest</MenuItem>
@@ -234,7 +238,7 @@ export const AdminModerationPage = ({ token }: Props) => {
           </Select>
         </FormControl>
 
-        <Button variant="outlined" onClick={load} disabled={loading}>
+        <Button variant="outlined" onClick={() => void load()} disabled={loading}>
           Refresh
         </Button>
       </Stack>
@@ -247,12 +251,13 @@ export const AdminModerationPage = ({ token }: Props) => {
             setConfirm({
               title: 'Approve selected profiles?',
               body: `This will approve ${selectedIds.length} profile(s).`,
-              action: () => run(() => approveProfiles(token, selectedIds)),
+              action: async () => run(() => approveProfiles(token, selectedIds)),
             })
           }
         >
           Bulk approve
         </Button>
+
         <Button
           variant="outlined"
           disabled={bulkDisabled}
@@ -260,12 +265,13 @@ export const AdminModerationPage = ({ token }: Props) => {
             setConfirm({
               title: 'Reject selected profiles?',
               body: `This will reject ${selectedIds.length} profile(s).`,
-              action: () => run(() => rejectProfiles(token, selectedIds)),
+              action: async () => run(() => rejectProfiles(token, selectedIds)),
             })
           }
         >
           Bulk reject
         </Button>
+
         <Button
           variant="outlined"
           disabled={bulkDisabled}
@@ -273,12 +279,13 @@ export const AdminModerationPage = ({ token }: Props) => {
             setConfirm({
               title: 'Deactivate selected profiles?',
               body: `This will deactivate ${selectedIds.length} profile(s).`,
-              action: () => run(() => disableProfiles(token, selectedIds)),
+              action: async () => run(() => disableProfiles(token, selectedIds)),
             })
           }
         >
           Deactivate
         </Button>
+
         <Button
           color="error"
           variant="outlined"
@@ -287,8 +294,7 @@ export const AdminModerationPage = ({ token }: Props) => {
             setConfirm({
               title: 'Delete selected profiles?',
               body: `This will delete ${selectedIds.length} profile row(s).`,
-              action: () =>
-                run(() => deleteProfiles(token, selectedIds, false)),
+              action: async () => run(() => deleteProfiles(token, selectedIds, false)),
               destructive: true,
             })
           }
@@ -324,14 +330,11 @@ export const AdminModerationPage = ({ token }: Props) => {
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
-                <OutlinedInput
-                  type="checkbox"
-                  value=""
-                  inputProps={{ 'aria-label': 'select all' }}
-                  checked={
-                    rows.length > 0 && rows.every((r) => selected.has(r.id))
-                  }
+                <Checkbox
+                  checked={allChecked}
+                  indeterminate={!allChecked && someChecked}
                   onChange={toggleAll}
+                  inputProps={{ 'aria-label': 'select all' }}
                 />
               </TableCell>
               <TableCell>Handle</TableCell>
@@ -348,9 +351,7 @@ export const AdminModerationPage = ({ token }: Props) => {
               return (
                 <TableRow key={r.id} hover>
                   <TableCell padding="checkbox">
-                    <OutlinedInput
-                      type="checkbox"
-                      value=""
+                    <Checkbox
                       checked={selected.has(r.id)}
                       onChange={() => toggle(r.id)}
                       inputProps={{ 'aria-label': `select ${r.handle}` }}
@@ -366,15 +367,11 @@ export const AdminModerationPage = ({ token }: Props) => {
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.created_at
-                      ? new Date(r.created_at).toLocaleString()
-                      : '—'}
+                    {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.updated_at
-                      ? new Date(r.updated_at).toLocaleString()
-                      : '—'}
+                    {r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}
                   </TableCell>
 
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
@@ -389,7 +386,7 @@ export const AdminModerationPage = ({ token }: Props) => {
                           setConfirm({
                             title: `Approve ${r.handle}?`,
                             body: 'This will make the profile public.',
-                            action: () =>
+                            action: async () =>
                               run(() => approveProfiles(token, [r.id])),
                           })
                         }
@@ -405,7 +402,7 @@ export const AdminModerationPage = ({ token }: Props) => {
                           setConfirm({
                             title: `Reject ${r.handle}?`,
                             body: 'This will keep the profile hidden from public.',
-                            action: () =>
+                            action: async () =>
                               run(() => rejectProfiles(token, [r.id])),
                           })
                         }
@@ -440,6 +437,7 @@ export const AdminModerationPage = ({ token }: Props) => {
         <Typography variant="caption" sx={{ opacity: 0.8 }}>
           Page {page} of {pageCount} • {count} total
         </Typography>
+
         <Stack direction="row" spacing={1}>
           <Button
             size="small"
@@ -448,6 +446,7 @@ export const AdminModerationPage = ({ token }: Props) => {
           >
             Previous
           </Button>
+
           <Button
             size="small"
             onClick={() =>

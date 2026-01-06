@@ -8,8 +8,13 @@ import {
   Typography,
 } from '@mui/material';
 import { AdminModerationPage } from './AdminModerationPage';
+import type { ProfileStatus } from './adminApi';
 
-export const AdminApp = () => {
+type Props = {
+  initialStatus?: ProfileStatus | 'all';
+};
+
+export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
   const [token, setToken] = useState('');
   const [activeToken, setActiveToken] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +29,7 @@ export const AdminApp = () => {
     setError(null);
     const t = token.trim();
     if (!t) {
-      setError('Enter an admin token (service role JWT) to continue.');
+      setError('Enter an admin token (service role key) to continue.');
       return;
     }
     setActiveToken(t);
@@ -43,7 +48,7 @@ export const AdminApp = () => {
       </Typography>
 
       <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
-        Paste a service role token to access moderation tools locally.
+        Paste a Supabase service role key to access moderation tools locally.
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
@@ -82,7 +87,11 @@ export const AdminApp = () => {
           <Alert severity="info" sx={{ mb: 2 }}>
             Using token: <strong>{masked}</strong>
           </Alert>
-          <AdminModerationPage token={activeToken} />
+
+          <AdminModerationPage
+            token={activeToken}
+            initialStatus={initialStatus}
+          />
         </>
       ) : (
         <Alert severity="warning">

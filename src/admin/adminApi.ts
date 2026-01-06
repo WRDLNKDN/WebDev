@@ -1,3 +1,7 @@
+// src/admin/admin/Api.ts
+
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
 export type ProfileStatus = 'pending' | 'approved' | 'rejected' | 'disabled';
 
 export type ProfileRow = {
@@ -23,86 +27,124 @@ export type FetchProfilesParams = {
   order: 'asc' | 'desc';
 };
 
-type ApiError = { message?: string };
+type DbRow = {
+  id: string;
+  handle: string;
+  status: ProfileStatus;
+  created_at: string | null;
+  updated_at: string | null;
+  pronouns: string | null;
+  geek_creds: string[] | null;
+  nerd_creds: unknown | null;
+  socials: unknown | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+};
 
-const ADMIN_ENDPOINT =
-  (import.meta as unknown as { env?: Record<string, string> }).env
-    ?.VITE_ADMIN_API_URL || '/api/admin';
+const requireEnv = (name: string, value: string | undefined): string => {
+  if (!value) throw new Error(`Missing env var: ${name}`);
+  return value;
+};
 
-async function requestJson<T>(
-  token: string,
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const res = await fetch(`${ADMIN_ENDPOINT}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers || {}),
-    },
+const SUPABASE_URL = requireEnv(
+  'VITE_SUPABASE_URL',
+  import.meta.env.VITE_SUPABASE_URL as string | undefined,
+);
+
+const SUPABASE_SERVICE_ROLE_KEY = requireEnv(
+  'VITE_SUPABASE_SERVICE_ROLE_KEY',
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string | undefined,
+);
+
+const adminClient = (): SupabaseClient =>
+  createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as ApiError;
-      msg = body?.message || msg;
-    } catch {
-      // ignore
-    }
-    throw new Error(msg);
+const mapRow = (r: DbRow): ProfileRow => ({
+  id: r.id,
+  handle: r.handle,
+  status: r.status,
+  created_at: r.created_at,
+  updated_at: r.updated_at,
+  pronouns: r.pronouns,
+  geek_creds: r.geek_creds,
+  nerd_creds: r.nerd_creds,
+  socials: r.socials,
+  reviewed_at: r.reviewed_at,
+  reviewed_by: r.reviewed_by,
+});
+
+export const fetchProfiles = async (
+  _token: string,
+  params: FetchProfilesParams,
+): Promise<{ data: ProfileRow[]; count: number }> => {
+  const supa = adminClient();
+
+  let q = supa.from('profiles').select('*', { count: 'exact' });
+
+  if (params.status !== 'all') q = q.eq('status', params.status);
+
+  const trimmed = params.q.trim();
+  if (trimmed) {
+    // search by handle OR id (id is uuid text compare)
+    q = q.or(`handle.ilike.%${trimmed}%,id.eq.${trimmed}`);
   }
 
-  return (await res.json()) as T;
-}
+  q = q.order(params.sort, { ascending: params.order === 'asc' });
+  q = q.range(params.offset, params.offset + params.limit - 1);
 
-export async function fetchProfiles(
-  token: string,
-  params: FetchProfilesParams,
-): Promise<{ data: ProfileRow[]; count: number }> {
-  const qs = new URLSearchParams();
-  qs.set('status', params.status);
-  qs.set('q', params.q);
-  qs.set('limit', String(params.limit));
-  qs.set('offset', String(params.offset));
-  qs.set('sort', params.sort);
-  qs.set('order', params.order);
+  const { data, error, count } = await q;
+  if (error) throw error;
 
-  return requestJson<{ data: ProfileRow[]; count: number }>(
-    token,
-    `/profiles?${qs.toString()}`,
-  );
-}
+  return {
+    data: (data as DbRow[]).map(mapRow),
+    count: count ?? 0,
+  };
+};
 
-export async function approveProfiles(token: string, ids: string[]) {
-  return requestJson<{ ok: true }>(token, '/profiles/approve', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
-}
+export const approveProfiles = async (_token: string, ids: string[]) => {
+  const supa = adminClient();
+  const { error } = await supa
+    .from('profiles')
+    .update({ status: 'approved' })
+    .in('id', ids);
 
-export async function rejectProfiles(token: string, ids: string[]) {
-  return requestJson<{ ok: true }>(token, '/profiles/reject', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
-}
+  if (error) throw error;
+  return { ok: true as const };
+};
 
-export async function disableProfiles(token: string, ids: string[]) {
-  return requestJson<{ ok: true }>(token, '/profiles/disable', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
-}
+export const rejectProfiles = async (_token: string, ids: string[]) => {
+  const supa = adminClient();
+  const { error } = await supa
+    .from('profiles')
+    .update({ status: 'rejected' })
+    .in('id', ids);
 
-export async function deleteProfiles(
-  token: string,
+  if (error) throw error;
+  return { ok: true as const };
+};
+
+export const disableProfiles = async (_token: string, ids: string[]) => {
+  const supa = adminClient();
+  const { error } = await supa
+    .from('profiles')
+    .update({ status: 'disabled' })
+    .in('id', ids);
+
+  if (error) throw error;
+  return { ok: true as const };
+};
+
+export const deleteProfiles = async (
+  _token: string,
   ids: string[],
-  hardDeleteAuthUsers: boolean,
-) {
-  return requestJson<{ ok: true }>(token, '/profiles/delete', {
-    method: 'POST',
-    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
-  });
-}
+  _hardDeleteAuthUsers: boolean,
+) => {
+  // Note: only deletes profile rows. Deleting auth.users requires admin auth API.
+  const supa = adminClient();
+  const { error } = await supa.from('profiles').delete().in('id', ids);
+
+  if (error) throw error;
+  return { ok: true as const };
+};

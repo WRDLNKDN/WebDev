@@ -1,9 +1,10 @@
+// src/admin/admin/AdminModerationPage.tsx
+
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
-  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -24,8 +26,10 @@ import {
   TableRow,
   TextField,
   Typography,
+  Checkbox,
 } from '@mui/material';
-import type { ProfileRow, ProfileStatus } from './adminApi';
+
+import type { ProfileRow, ProfileStatus } from '../types/types';
 import {
   approveProfiles,
   deleteProfiles,
@@ -59,7 +63,18 @@ type Props = {
   initialStatus?: ProfileStatus | 'all';
 };
 
-export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props) => {
+type ConfirmState = null | {
+  title: string;
+  body: string;
+  destructive?: boolean;
+  showHardDelete?: boolean;
+  action: (opts: { hardDeleteAuthUsers: boolean }) => Promise<void>;
+};
+
+export const AdminModerationPage = ({
+  token,
+  initialStatus = 'pending',
+}: Props) => {
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -75,12 +90,8 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [details, setDetails] = useState<ProfileRow | null>(null);
 
-  const [confirm, setConfirm] = useState<null | {
-    title: string;
-    body: string;
-    action: () => Promise<void>;
-    destructive?: boolean;
-  }>(null);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [hardDeleteAuthUsers, setHardDeleteAuthUsers] = useState(false);
 
   const page = useMemo(() => Math.floor(offset / limit) + 1, [offset, limit]);
   const pageCount = useMemo(
@@ -106,7 +117,7 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
       setCount(c);
       setSelected(new Set());
     } catch (e: unknown) {
-      setError(toMessage(e) || 'Failed to load profiles');
+      setError(toMessage(e));
     } finally {
       setLoading(false);
     }
@@ -146,7 +157,7 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
       await action();
       await load();
     } catch (e: unknown) {
-      setError(toMessage(e) || 'Action failed');
+      setError(toMessage(e));
       setLoading(false);
     }
   };
@@ -161,7 +172,8 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
         Moderation
       </Typography>
       <Typography variant="body2" sx={{ opacity: 0.8 }}>
-        Review profiles, approve or reject registrations, and manage active members.
+        Review profiles, approve or reject registrations, and manage active
+        members.
       </Typography>
 
       <Divider sx={{ my: 2 }} />
@@ -238,7 +250,11 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
           </Select>
         </FormControl>
 
-        <Button variant="outlined" onClick={() => void load()} disabled={loading}>
+        <Button
+          variant="outlined"
+          onClick={() => void load()}
+          disabled={loading}
+        >
           Refresh
         </Button>
       </Stack>
@@ -251,7 +267,8 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
             setConfirm({
               title: 'Approve selected profiles?',
               body: `This will approve ${selectedIds.length} profile(s).`,
-              action: async () => run(() => approveProfiles(token, selectedIds)),
+              action: async () =>
+                run(() => approveProfiles(token, selectedIds)),
             })
           }
         >
@@ -279,7 +296,8 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
             setConfirm({
               title: 'Deactivate selected profiles?',
               body: `This will deactivate ${selectedIds.length} profile(s).`,
-              action: async () => run(() => disableProfiles(token, selectedIds)),
+              action: async () =>
+                run(() => disableProfiles(token, selectedIds)),
             })
           }
         >
@@ -290,14 +308,19 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
           color="error"
           variant="outlined"
           disabled={bulkDisabled}
-          onClick={() =>
+          onClick={() => {
+            setHardDeleteAuthUsers(false);
             setConfirm({
               title: 'Delete selected profiles?',
               body: `This will delete ${selectedIds.length} profile row(s).`,
-              action: async () => run(() => deleteProfiles(token, selectedIds, false)),
               destructive: true,
-            })
-          }
+              showHardDelete: true,
+              action: async (opts) =>
+                run(() =>
+                  deleteProfiles(token, selectedIds, opts.hardDeleteAuthUsers),
+                ),
+            });
+          }}
         >
           Delete
         </Button>
@@ -367,11 +390,15 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}
+                    {r.created_at
+                      ? new Date(r.created_at).toLocaleString()
+                      : '—'}
                   </TableCell>
 
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}
+                    {r.updated_at
+                      ? new Date(r.updated_at).toLocaleString()
+                      : '—'}
                   </TableCell>
 
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
@@ -465,20 +492,49 @@ export const AdminModerationPage = ({ token, initialStatus = 'pending' }: Props)
         onClose={() => setDetails(null)}
       />
 
-      <Dialog open={!!confirm} onClose={() => setConfirm(null)}>
+      <Dialog
+        open={!!confirm}
+        onClose={() => {
+          setConfirm(null);
+          setHardDeleteAuthUsers(false);
+        }}
+      >
         <DialogTitle>{confirm?.title}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{confirm?.body}</DialogContentText>
+          <DialogContentText sx={{ mb: confirm?.showHardDelete ? 1 : 0 }}>
+            {confirm?.body}
+          </DialogContentText>
+
+          {confirm?.showHardDelete && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={hardDeleteAuthUsers}
+                  onChange={(e) => setHardDeleteAuthUsers(e.target.checked)}
+                />
+              }
+              label="Also delete auth users (dangerous)"
+            />
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirm(null)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setConfirm(null);
+              setHardDeleteAuthUsers(false);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             color={confirm?.destructive ? 'error' : 'primary'}
             variant="contained"
             onClick={async () => {
               const action = confirm?.action;
+              const hard = hardDeleteAuthUsers;
               setConfirm(null);
-              if (action) await action();
+              setHardDeleteAuthUsers(false);
+              if (action) await action({ hardDeleteAuthUsers: hard });
             }}
           >
             Confirm

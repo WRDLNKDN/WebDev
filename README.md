@@ -272,7 +272,7 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │   ├── PendingProfiles.tsx
 │   │   └── ProfileReview.tsx
 │   ├── types
-│   │   └── supabase.ts
+│   │   └── types.ts
 │   ├── App.tsx
 │   ├── index.css
 │   ├── main.tsx

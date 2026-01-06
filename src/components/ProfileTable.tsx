@@ -1,6 +1,16 @@
 // src/components/ProfileTable.tsx
 
-import { Checkbox, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, Typography } from '@mui/material';
+import {
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Button,
+  Box,
+  Typography,
+} from '@mui/material';
 import type { ProfileRow } from '../admin/adminApi';
 import { StatusBadge } from './StatusBadge';
 
@@ -97,7 +107,9 @@ export const ProfileTable = ({
           {rows.length === 0 && !loading && (
             <TableRow>
               <TableCell colSpan={6}>
-                <Typography sx={{ py: 2, opacity: 0.8 }}>No results.</Typography>
+                <Typography sx={{ py: 2, opacity: 0.8 }}>
+                  No results.
+                </Typography>
               </TableCell>
             </TableRow>
           )}

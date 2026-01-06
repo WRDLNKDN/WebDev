@@ -1,150 +1,106 @@
-// src/admin/admin/Api.ts
+// src/admin/adminApi.ts
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+export type {
+  ProfileStatus,
+  ProfileRow,
+  FetchProfilesParams,
+} from '../types/types';
 
-export type ProfileStatus = 'pending' | 'approved' | 'rejected' | 'disabled';
+import type { FetchProfilesParams, ProfileRow } from '../types/types';
 
-export type ProfileRow = {
-  id: string;
-  handle: string;
-  status: ProfileStatus;
-  created_at: string | null;
-  updated_at: string | null;
-  pronouns: string | null;
-  geek_creds: string[] | null;
-  nerd_creds: unknown | null;
-  socials: unknown | null;
-  reviewed_at?: string | null;
-  reviewed_by?: string | null;
-};
+type ApiError = { message?: string };
 
-export type FetchProfilesParams = {
-  status: ProfileStatus | 'all';
-  q: string;
-  limit: number;
-  offset: number;
-  sort: 'created_at' | 'updated_at';
-  order: 'asc' | 'desc';
-};
+const ADMIN_ENDPOINT =
+  (import.meta as unknown as { env?: Record<string, string> }).env
+    ?.VITE_ADMIN_API_URL || '/api/admin';
 
-type DbRow = {
-  id: string;
-  handle: string;
-  status: ProfileStatus;
-  created_at: string | null;
-  updated_at: string | null;
-  pronouns: string | null;
-  geek_creds: string[] | null;
-  nerd_creds: unknown | null;
-  socials: unknown | null;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
-};
-
-const requireEnv = (name: string, value: string | undefined): string => {
-  if (!value) throw new Error(`Missing env var: ${name}`);
-  return value;
-};
-
-const SUPABASE_URL = requireEnv(
-  'VITE_SUPABASE_URL',
-  import.meta.env.VITE_SUPABASE_URL as string | undefined,
-);
-
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv(
-  'VITE_SUPABASE_SERVICE_ROLE_KEY',
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string | undefined,
-);
-
-const adminClient = (): SupabaseClient =>
-  createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+const requestJson = async <T>(
+  token: string,
+  path: string,
+  init?: RequestInit,
+): Promise<T> => {
+  const res = await fetch(`${ADMIN_ENDPOINT}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers || {}),
+    },
   });
 
-const mapRow = (r: DbRow): ProfileRow => ({
-  id: r.id,
-  handle: r.handle,
-  status: r.status,
-  created_at: r.created_at,
-  updated_at: r.updated_at,
-  pronouns: r.pronouns,
-  geek_creds: r.geek_creds,
-  nerd_creds: r.nerd_creds,
-  socials: r.socials,
-  reviewed_at: r.reviewed_at,
-  reviewed_by: r.reviewed_by,
-});
+  const contentType = res.headers.get('content-type') || '';
 
-export const fetchProfiles = async (
-  _token: string,
-  params: FetchProfilesParams,
-): Promise<{ data: ProfileRow[]; count: number }> => {
-  const supa = adminClient();
-
-  let q = supa.from('profiles').select('*', { count: 'exact' });
-
-  if (params.status !== 'all') q = q.eq('status', params.status);
-
-  const trimmed = params.q.trim();
-  if (trimmed) {
-    // search by handle OR id (id is uuid text compare)
-    q = q.or(`handle.ilike.%${trimmed}%,id.eq.${trimmed}`);
+  // Helpful debugging when Vite returns index.html or a proxy route is missing
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    const preview = text.slice(0, 300).replace(/\s+/g, ' ').trim();
+    throw new Error(
+      `Expected JSON but got "${contentType || 'unknown'}" from ${ADMIN_ENDPOINT}${path}. ` +
+        `This usually means the route is missing or the dev server returned index.html. ` +
+        `Response preview: ${preview}`,
+    );
   }
 
-  q = q.order(params.sort, { ascending: params.order === 'asc' });
-  q = q.range(params.offset, params.offset + params.limit - 1);
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as ApiError;
+      msg = body?.message || msg;
+    } catch {
+      // ignore
+    }
+    throw new Error(msg);
+  }
 
-  const { data, error, count } = await q;
-  if (error) throw error;
-
-  return {
-    data: (data as DbRow[]).map(mapRow),
-    count: count ?? 0,
-  };
+  return (await res.json()) as T;
 };
 
-export const approveProfiles = async (_token: string, ids: string[]) => {
-  const supa = adminClient();
-  const { error } = await supa
-    .from('profiles')
-    .update({ status: 'approved' })
-    .in('id', ids);
+export const fetchProfiles = async (
+  token: string,
+  params: FetchProfilesParams,
+): Promise<{ data: ProfileRow[]; count: number }> => {
+  const qs = new URLSearchParams();
+  qs.set('status', params.status);
+  qs.set('q', params.q);
+  qs.set('limit', String(params.limit));
+  qs.set('offset', String(params.offset));
+  qs.set('sort', params.sort);
+  qs.set('order', params.order);
 
-  if (error) throw error;
-  return { ok: true as const };
+  return requestJson<{ data: ProfileRow[]; count: number }>(
+    token,
+    `/profiles?${qs.toString()}`,
+  );
 };
 
-export const rejectProfiles = async (_token: string, ids: string[]) => {
-  const supa = adminClient();
-  const { error } = await supa
-    .from('profiles')
-    .update({ status: 'rejected' })
-    .in('id', ids);
-
-  if (error) throw error;
-  return { ok: true as const };
+export const approveProfiles = async (token: string, ids: string[]) => {
+  return requestJson<{ ok: true }>(token, '/profiles/approve', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
 };
 
-export const disableProfiles = async (_token: string, ids: string[]) => {
-  const supa = adminClient();
-  const { error } = await supa
-    .from('profiles')
-    .update({ status: 'disabled' })
-    .in('id', ids);
+export const rejectProfiles = async (token: string, ids: string[]) => {
+  return requestJson<{ ok: true }>(token, '/profiles/reject', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
+};
 
-  if (error) throw error;
-  return { ok: true as const };
+export const disableProfiles = async (token: string, ids: string[]) => {
+  return requestJson<{ ok: true }>(token, '/profiles/disable', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
 };
 
 export const deleteProfiles = async (
-  _token: string,
+  token: string,
   ids: string[],
-  _hardDeleteAuthUsers: boolean,
+  hardDeleteAuthUsers: boolean,
 ) => {
-  // Note: only deletes profile rows. Deleting auth.users requires admin auth API.
-  const supa = adminClient();
-  const { error } = await supa.from('profiles').delete().in('id', ids);
-
-  if (error) throw error;
-  return { ok: true as const };
+  return requestJson<{ ok: true }>(token, '/profiles/delete', {
+    method: 'POST',
+    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
+  });
 };

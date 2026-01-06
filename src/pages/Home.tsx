@@ -1,4 +1,11 @@
-import { Box, Button, Container, Paper, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Container,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
 export const Home = () => {
@@ -55,8 +62,8 @@ export const Home = () => {
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Tip: Admin requires a service role key. Do not use it in a public
-                deployment.
+                Tip: Admin requires a service role key. Do not use it in a
+                public deployment.
               </Typography>
             </Box>
           </Stack>

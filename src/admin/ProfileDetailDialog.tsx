@@ -1,6 +1,14 @@
 // src/admin/admin/ProfileDetailDialog.tsx
 
-import { Box, Dialog, DialogActions, DialogContent, DialogTitle, Button, Typography } from '@mui/material';
+import {
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  Typography,
+} from '@mui/material';
 import type { ProfileRow } from './adminApi';
 
 type Props = {

@@ -18,13 +18,11 @@ export const useAdminProfiles = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] =
-    useState<ProfileStatus | 'all'>(initialStatus);
+  const [status, setStatus] = useState<ProfileStatus | 'all'>(initialStatus);
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
-  const [sort, setSort] =
-    useState<'created_at' | 'updated_at'>('created_at');
+  const [sort, setSort] = useState<'created_at' | 'updated_at'>('created_at');
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -32,6 +30,7 @@ export const useAdminProfiles = ({
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const res = await fetchProfiles(token, {
         status,
@@ -41,10 +40,11 @@ export const useAdminProfiles = ({
         sort,
         order,
       });
+
       setRows(res.data);
       setCount(res.count);
       setSelected(new Set());
-    } catch (e) {
+    } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load profiles');
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ export const useAdminProfiles = ({
   }, [token, status, q, limit, offset, sort, order]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
@@ -60,7 +60,8 @@ export const useAdminProfiles = ({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -68,10 +69,13 @@ export const useAdminProfiles = ({
   const toggleAll = () => {
     setSelected((prev) => {
       const next = new Set(prev);
-      const allChecked = rows.every((r) => next.has(r.id));
-      rows.forEach((r) =>
-        allChecked ? next.delete(r.id) : next.add(r.id),
-      );
+      const allChecked = rows.length > 0 && rows.every((r) => next.has(r.id));
+
+      for (const r of rows) {
+        if (allChecked) next.delete(r.id);
+        else next.add(r.id);
+      }
+
       return next;
     });
   };

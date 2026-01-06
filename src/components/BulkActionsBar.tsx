@@ -28,7 +28,12 @@ export const BulkActionsBar = ({
       <Button variant="outlined" disabled={disabled} onClick={onDisable}>
         Deactivate
       </Button>
-      <Button color="error" variant="outlined" disabled={disabled} onClick={onDelete}>
+      <Button
+        color="error"
+        variant="outlined"
+        disabled={disabled}
+        onClick={onDelete}
+      >
         Delete
       </Button>
     </Stack>

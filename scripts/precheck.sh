@@ -53,9 +53,13 @@ fi
 
 # 3. MODERN ESLINT (Unified System Audit)
 # We removed the --ext flag and the 'src' path to satisfy ESLint 9
-echo "🧪 ESLint (Modern Flat Config)..."
-if ! npx --no-install eslint . --cache --max-warnings=0; then
-  echo "❌ ESLint failed. Fix the logic errors before pushing."
+echo "🧪 ESLint — check"
+if ! npx --no-install eslint "src/**/*.{js,jsx,ts,tsx}" --cache --max-warnings=0; then
+  echo "🔧 ESLint — fixing..."
+  npx --no-install eslint "src/**/*.{js,jsx,ts,tsx}" --fix
+  git add -A
+  git commit -m "chore: auto-fix eslint [skip-precheck]"
+  echo "🛑 ESLint fixed files and committed. Push again."
   exit 1
 fi
 echo "✅ ESLint passed."

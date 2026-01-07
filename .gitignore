@@ -13,6 +13,9 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+# --- Tooling Caches ---
+.eslintcache
+
 # --- Dependencies & Build Outputs ---
 node_modules
 dist

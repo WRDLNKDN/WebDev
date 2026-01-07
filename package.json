@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"VITE,SUPA\" -c \"blue,green\" \"npm run vite\" \"npm run supabase:start\"",
+    "dev": "concurrently -n \"VITE,SUPA,API\" -c \"blue,green,magenta\" \"npm run vite\" \"npm run supabase:start\" \"npm run api\"",
     "vite": "vite",
+    "api": "tsx watch backend/server.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --pretty false",
@@ -45,13 +46,18 @@
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@supabase/supabase-js": "2.89.0",
+    "cors": "2.8.5",
+    "express": "5.2.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-router-dom": "7.11.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",
     "@eslint/js": "9.17.0",
     "@playwright/test": "1.57.0",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
     "@types/node": "22.10.5",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
@@ -75,6 +81,7 @@
     "typescript": "5.7.2",
     "typescript-eslint": "8.18.2",
     "vite": "6.4.1",
-    "vitest": "4.0.16"
+    "vitest": "4.0.16",
+    "tsx": "4.20.5"
   }
 }

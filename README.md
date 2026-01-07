@@ -236,10 +236,11 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── assets
 │   ├── banner.png
 │   ├── logo.png
-│   └── nyan-adventure.png
+│   ├── nyan-adventure.png
+│   └── square logo.png
 ├── backend
-│   ├── api-hello.js
-│   └── README.md
+│   ├── README.md
+│   └── server.ts
 ├── frontend
 │   └── README.md
 ├── public
@@ -249,12 +250,29 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── scripts
 │   └── precheck.sh
 ├── src
+│   ├── admin
+│   │   ├── adminApi.ts
+│   │   ├── AdminApp.tsx
+│   │   ├── AdminModerationPage.tsx
+│   │   └── ProfileDetailDialog.tsx
 │   ├── assets
 │   │   └── react.svg
+│   ├── components
+│   │   ├── BulkActionsBar.tsx
+│   │   ├── ProfileTable.tsx
+│   │   └── StatusBadge.tsx
+│   ├── hooks
+│   │   └── useAdminProfiles.ts
 │   ├── lib
 │   │   └── supabaseClient.ts
+│   ├── pages
+│   │   ├── ApprovedProfiles.tsx
+│   │   ├── Directory.tsx
+│   │   ├── Home.tsx
+│   │   ├── PendingProfiles.tsx
+│   │   └── ProfileReview.tsx
 │   ├── types
-│   │   └── supabase.ts
+│   │   └── types.ts
 │   ├── App.tsx
 │   ├── index.css
 │   ├── main.tsx
@@ -283,13 +301,14 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── .dockerignore
 ├── .editorconfig
 ├── .env.example
-├── .env.test
+├── .eslintcache
 ├── .gitattributes
 ├── .gitignore
 ├── .npmrc
 ├── .prettierignore
 ├── .prettierrc.yml
 ├── commit-and-push.bat
+├── CONTRIBUTING.md
 ├── CONTRIBUTORS.md
 ├── docker-compose.yml
 ├── Dockerfile
@@ -307,7 +326,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── tsconfig.json
 ├── tsconfig.node.json
 ├── vite.config.ts
-└── vitest.config.ts
+├── vitest.config.ts
+└── WIKI_HOME.md
 ```
 
 </details>
@@ -335,7 +355,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 Thanks to everyone who has helped build or improve WeirdLinkedIn.
 
-[![Contributors](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)
+![Contributors](https://contrib.rocks/image?repo=WRDLNKDN/WebDev&anon=1&max=100&columns=10&v=2)
 
 Generated using [contrib.rocks](https://contrib.rocks)
 

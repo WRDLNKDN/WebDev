@@ -40,14 +40,20 @@ fi
 
 # 2. PRETTIER (Format Check)
 echo "🎨 Prettier — check"
-# We check first to avoid unnecessary git commits
 if ! npx --no-install prettier --check .; then
   echo "💾 Prettier — writing fixes..."
   npx --no-install prettier --write .
   git add -A
-  # We use --no-verify to prevent a recursive loop during the auto-commit
   git commit -m "style: auto-format with Prettier [skip-precheck]" --no-verify
-  echo "🛑 Prettier fixed files and committed. Push again to verify the new state."
+  
+  echo ""
+  echo "----------------------------------------------------------------"
+  echo "🛑 SYSTEM AUDIT: Prettier found and fixed style issues."
+  echo "Your local history has diverged from the remote."
+  echo "ACTION REQUIRED: Run the following command to align your branch:"
+  echo "   git pull --rebase origin $(git rev-parse --abbrev-ref HEAD) && git push"
+  echo "----------------------------------------------------------------"
+  echo ""
   exit 1
 fi
 
@@ -59,7 +65,12 @@ if ! npx --no-install eslint "src/**/*.{js,jsx,ts,tsx}" --cache --max-warnings=0
   npx --no-install eslint "src/**/*.{js,jsx,ts,tsx}" --fix
   git add -A
   git commit -m "chore: auto-fix eslint [skip-precheck]"
+  echo ""
+  echo "----------------------------------------------------------------"
   echo "🛑 ESLint fixed files and committed. Push again."
+  echo "TIP: You can try running 'npm run lint:fix' for simple fixes."
+  echo "----------------------------------------------------------------"
+  echo ""
   exit 1
 fi
 echo "✅ ESLint passed."
@@ -68,5 +79,16 @@ echo "✅ ESLint passed."
 echo "🛠️ TypeScript — type check"
 npx --no-install tsc --noEmit --pretty false
 echo "✅ TypeScript passed."
+
+echo "🚀 All checks passed. Ready to push!"
+
+# 5. ACCESSIBILITY SMOKE TEST (The New Firewall)
+# Only run this if Supabase is already running to avoid Activation Energy lag
+if docker ps | grep -q "supabase_db"; then
+  echo "♿ Running Accessibility Smoke Test (WCAG 2.2)..."
+  npx playwright test tests/accessibility.spec.ts
+else
+  echo "⚠️  Supabase not running; skipping A11y Smoke Test."
+fi
 
 echo "🚀 All checks passed. Ready to push!"

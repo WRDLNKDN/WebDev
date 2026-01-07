@@ -10,12 +10,14 @@ const reactRefreshPlugin = require('eslint-plugin-react-refresh');
 const prettierPlugin = require('eslint-plugin-prettier');
 const prettierConfig = require('eslint-config-prettier');
 const playwright = require('eslint-plugin-playwright');
+const jsxA11y = require('eslint-plugin-jsx-a11y');
 
 const allPlugins = {
   react: reactPlugin,
   'react-hooks': reactHooksPlugin,
   'react-refresh': reactRefreshPlugin,
   prettier: prettierPlugin,
+  'jsx-a11y': jsxA11y,
 };
 
 module.exports = [
@@ -74,6 +76,8 @@ module.exports = [
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      ...jsxA11y.configs.recommended.rules,
+      'jsx-a11y/anchor-is-valid': 'warn', // Custom tweak for Next/Vite routing
     },
   },
 

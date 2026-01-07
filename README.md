@@ -10,7 +10,7 @@
 - [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md)
   — Credits and thanks to project contributors
 
-# WeirdLinkedIn
+## WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
 
@@ -98,7 +98,7 @@ git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
 cd WeirdLinkedIn
 ```
 
-2. Install dependencies
+1. Install dependencies
 
 Install Docker
 
@@ -116,7 +116,7 @@ npx supabase init
 npx supabase start
 ```
 
-3. Environment configuration
+1. Environment configuration
 
 Each service uses environment variables.
 
@@ -225,8 +225,10 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ## 📁 Project Structure
 
+```tsx
 <details>
 <summary>📁 Click to expand file structure</summary>
+```
 
 ```txt
 .
@@ -352,7 +354,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## 📌 Project Board
 
-🔗 https://github.com/users/AprilLorDrake/projects/3
+🔗 <https://github.com/users/AprilLorDrake/projects/3>
 
 ---
 

@@ -1,11 +1,14 @@
 # 📚 Resources
 
-- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
+- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation,
+  guides, and policies
 
 **Contributor & Contributing Files:**
 
-- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
-- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
+- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md)
+  — How to contribute, code style, PR process, and workflow rules
+- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md)
+  — Credits and thanks to project contributors
 
 # WeirdLinkedIn
 
@@ -18,8 +21,10 @@
 
 **Professional networking, but human.**
 
-WeirdLinkedIn is a modern, accessibility-first professional directory and platform.  
-It explores what professional networking looks like when we stop pretending it isn't weird.
+WeirdLinkedIn is a modern, accessibility-first professional directory and
+platform.  
+It explores what professional networking looks like when we stop pretending it
+isn't weird.
 
 ---
 
@@ -66,8 +71,8 @@ Checks run locally before code reaches CI.
 
 ## 🚀 Getting Started
 
-This project is split into a frontend (React + Vite) and a backend API.
-Each can be run independently for development.
+This project is split into a frontend (React + Vite) and a backend API. Each can
+be run independently for development.
 
 ---
 

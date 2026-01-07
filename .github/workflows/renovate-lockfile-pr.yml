@@ -12,7 +12,9 @@ permissions:
 jobs:
   check-lockfile:
     name: Validate lockfile integrity
-    if: github.actor == 'renovate[bot]' && github.event.pull_request.draft == false
+    if:
+      github.actor == 'renovate[bot]' && github.event.pull_request.draft ==
+      false
     runs-on: ubuntu-latest
 
     steps:
@@ -33,7 +35,9 @@ jobs:
           cache: 'pnpm'
 
       - name: 📦 Install dependencies (CI mode)
-        run: pnpm install --frozen-lockfile --ignore-scripts --no-frozen-lockfile=false
+        run:
+          pnpm install --frozen-lockfile --ignore-scripts
+          --no-frozen-lockfile=false
 
       - name: 🔍 Detect lockfile drift
         id: drift

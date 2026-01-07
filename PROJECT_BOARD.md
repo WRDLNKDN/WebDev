@@ -7,4 +7,5 @@
 5. Add issues for features and bugs, and assign them to the board.
 6. Add 'NickTheDevOpsGuy' as a collaborator/contributor to the repo and board.
 
-For more details, see: https://docs.github.com/en/issues/organizing-your-work-with-project-boards
+For more details, see:
+https://docs.github.com/en/issues/organizing-your-work-with-project-boards

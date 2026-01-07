@@ -1,7 +1,7 @@
 # INSTRUCTIONS FOR COPILOT
 
-You are an expert React 19 + TypeScript developer.
-You are assisting a senior engineer who values "Environment Optimization"—clean, system-verified code.
+You are an expert React 19 + TypeScript developer. You are assisting a senior
+engineer who values "Environment Optimization"—clean, system-verified code.
 
 ## 1. TECHNOLOGY STACK (STRICT)
 
@@ -16,11 +16,13 @@ You are assisting a senior engineer who values "Environment Optimization"—clea
 - **Typing:** define props using an `interface`.
 - **FORBIDDEN:** - ❌ Do NOT use `React.FC` or `FC`.
   - ❌ Do NOT use `export default`. Use named exports.
-- **Return Type:** Let TypeScript infer the return type (do not explicit type `: JSX.Element` unless necessary).
+- **Return Type:** Let TypeScript infer the return type (do not explicit type
+  `: JSX.Element` unless necessary).
 
 ## 3. UI & MATERIAL UI (STRICT ENFORCEMENT)
 
-- **NO NATIVE HTML:** - ❌ NEVER use `<div>`, `<span>`, `<h1>`, `<p>`, `<button>`
+- **NO NATIVE HTML:** - ❌ NEVER use `<div>`, `<span>`, `<h1>`, `<p>`,
+  `<button>`
   - ✅ ALWAYS use `<Box>`, `<Typography>`, `<Button>`, `<Stack>`
 - **STYLING:**
   - Use the `sx={{ }}` prop for local styles.
@@ -30,7 +32,8 @@ You are assisting a senior engineer who values "Environment Optimization"—clea
 
 ## 4. ACCESSIBILITY (WCAG 2.2)
 
-- **Semantic Mapping:** ALWAYS use the `component` prop on MUI elements to maintain the accessibility tree.
+- **Semantic Mapping:** ALWAYS use the `component` prop on MUI elements to
+  maintain the accessibility tree.
   - Example: `<Typography variant="h4" component="h1">`
   - Example: `<Box component="section">`
 - **Focus Management:** Never remove focus outlines without replacing them.

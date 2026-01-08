@@ -1,13 +1,16 @@
 # 📚 Resources
 
-- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
+- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation,
+  guides, and policies
 
 **Contributor & Contributing Files:**
 
-- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
-- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
+- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md)
+  — How to contribute, code style, PR process, and workflow rules
+- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md)
+  — Credits and thanks to project contributors
 
-# WeirdLinkedIn
+## WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
 
@@ -18,8 +21,10 @@
 
 **Professional networking, but human.**
 
-WeirdLinkedIn is a modern, accessibility-first professional directory and platform.  
-It explores what professional networking looks like when we stop pretending it isn't weird.
+WeirdLinkedIn is a modern, accessibility-first professional directory and
+platform.  
+It explores what professional networking looks like when we stop pretending it
+isn't weird.
 
 ---
 
@@ -66,8 +71,8 @@ Checks run locally before code reaches CI.
 
 ## 🚀 Getting Started
 
-This project is split into a frontend (React + Vite) and a backend API.
-Each can be run independently for development.
+This project is split into a frontend (React + Vite) and a backend API. Each can
+be run independently for development.
 
 ---
 
@@ -93,7 +98,7 @@ git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
 cd WeirdLinkedIn
 ```
 
-2. Install dependencies
+1. Install dependencies
 
 Install Docker
 
@@ -111,7 +116,7 @@ npx supabase init
 npx supabase start
 ```
 
-3. Environment configuration
+1. Environment configuration
 
 Each service uses environment variables.
 
@@ -220,8 +225,10 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ## 📁 Project Structure
 
+```tsx
 <details>
 <summary>📁 Click to expand file structure</summary>
+```
 
 ```txt
 .
@@ -236,10 +243,11 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── assets
 │   ├── banner.png
 │   ├── logo.png
-│   └── nyan-adventure.png
+│   ├── nyan-adventure.png
+│   └── square logo.png
 ├── backend
-│   ├── api-hello.js
-│   └── README.md
+│   ├── README.md
+│   └── server.ts
 ├── frontend
 │   └── README.md
 ├── public
@@ -249,12 +257,29 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── scripts
 │   └── precheck.sh
 ├── src
+│   ├── admin
+│   │   ├── adminApi.ts
+│   │   ├── AdminApp.tsx
+│   │   ├── AdminModerationPage.tsx
+│   │   └── ProfileDetailDialog.tsx
 │   ├── assets
 │   │   └── react.svg
+│   ├── components
+│   │   ├── BulkActionsBar.tsx
+│   │   ├── ProfileTable.tsx
+│   │   └── StatusBadge.tsx
+│   ├── hooks
+│   │   └── useAdminProfiles.ts
 │   ├── lib
 │   │   └── supabaseClient.ts
+│   ├── pages
+│   │   ├── ApprovedProfiles.tsx
+│   │   ├── Directory.tsx
+│   │   ├── Home.tsx
+│   │   ├── PendingProfiles.tsx
+│   │   └── ProfileReview.tsx
 │   ├── types
-│   │   └── supabase.ts
+│   │   └── types.ts
 │   ├── App.tsx
 │   ├── index.css
 │   ├── main.tsx
@@ -283,13 +308,14 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── .dockerignore
 ├── .editorconfig
 ├── .env.example
-├── .env.test
+├── .eslintcache
 ├── .gitattributes
 ├── .gitignore
 ├── .npmrc
 ├── .prettierignore
 ├── .prettierrc.yml
 ├── commit-and-push.bat
+├── CONTRIBUTING.md
 ├── CONTRIBUTORS.md
 ├── docker-compose.yml
 ├── Dockerfile
@@ -307,7 +333,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── tsconfig.json
 ├── tsconfig.node.json
 ├── vite.config.ts
-└── vitest.config.ts
+├── vitest.config.ts
+└── WIKI_HOME.md
 ```
 
 </details>
@@ -327,7 +354,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## 📌 Project Board
 
-🔗 https://github.com/users/AprilLorDrake/projects/3
+🔗 <https://github.com/users/AprilLorDrake/projects/3>
 
 ---
 
@@ -335,7 +362,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 Thanks to everyone who has helped build or improve WeirdLinkedIn.
 
-[![Contributors](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)
+![Contributors](https://contrib.rocks/image?repo=WRDLNKDN/WebDev&anon=1&max=100&columns=10&v=2)
 
 Generated using [contrib.rocks](https://contrib.rocks)
 

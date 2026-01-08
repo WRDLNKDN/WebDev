@@ -1,16 +1,26 @@
-# Prettier configuration
-# This file controls formatting only. Linting rules live in ESLint.
+# Prettier configuration - Optimized for the Human OS
+# Focus: High-integrity formatting without "System Noise"
 
 printWidth: 80
 tabWidth: 2
 useTabs: false
 
+# Logic Purity: Standardize on semicolons and single quotes
 semi: true
 singleQuote: true
 trailingComma: all
 quoteProps: as-needed
 
+# UI/UX: Standard JSX patterns
 jsxSingleQuote: false
+bracketSpacing: true # Added: Makes imports like { profiles } much easier to scan
 arrowParens: always
 
+# The Firewall: Prevents the Windows/PowerShell CRLF "Logic Fault"
 endOfLine: lf
+
+# Text-First Protocol: Ensures Markdown is formatted but readable
+proseWrap: always # Added: Wraps markdown text to the printWidth
+
+# React 19 / Modern Support
+plugins: [] # Placeholders for tailwind/prettier-plugins if added later

@@ -48,11 +48,11 @@ You must complete onboarding and accept the Contributor Agreement **before proce
 
 Start here:
 - **Contributor Onboarding**  
-	https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
+  https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
 
 Authoritative agreement text lives here:
 - **WRDLNKDN Agreements Wiki (Source of Truth)**  
-	https://github.com/WRDLNKDN/Agreements/wiki/Contributor-Agreement
+  https://github.com/WRDLNKDN/Agreements/wiki/Contributor-Agreement
 
 This repository does not duplicate agreement text.
 

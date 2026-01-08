@@ -1,4 +1,4 @@
-# --- Logs & System Scraps ---
+# --- Logs & System Scraps (Human OS Noise) ---
 logs
 *.log
 npm-debug.log*
@@ -13,42 +13,42 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# --- Dependencies & Build Outputs ---
-node_modules
-dist
-dist-ssr
-/coverage
-/.next/
-/.out/
-/build
+# --- Tooling Caches ---
+.eslintcache
+
+# --- Dependencies & Build Outputs (Physical Layer) ---
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.next/
+.out/
+build/
 
 # --- Environment Secrets (Integrity Layer) ---
-# We ignore all .env files except the template
+# We block all .env variants to prevent leaking credentials
 .env
-.env.local
-.env.production
-.env.development
-.env.test
+.env.*
 !.env.example
 
 # --- Playwright (Automated Verification) ---
-# Ignore test results and binaries
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache
-# If you use the VS Code extension for Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 .auth/
 
-# --- Editor & IDEs ---
+# --- Editor & IDEs (Developer Personalization) ---
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 *.sublime-project
 *.sublime-workspace
 
-# --- Docker & Supabase ---
-# Ignore local DB state but keep the config
-supabase/.temp
-supabase/.branches
-supabase/.storage
+# --- Docker & Supabase (Local Infrastructure) ---
+# Ignore the volatile local state but keep the migrations/config
+supabase/.temp/
+supabase/.branches/
+supabase/.storage/
+# Docker Desktop junk
+.docker/

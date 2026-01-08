@@ -223,7 +223,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 <details>
 <summary>📁 Click to expand file structure</summary>
 
-```txt
+```
+
 .
 ├── .github
 │   └── workflows
@@ -270,7 +271,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │   ├── Directory.tsx
 │   │   ├── Home.tsx
 │   │   ├── PendingProfiles.tsx
-│   │   └── ProfileReview.tsx
+│   │   ├── ProfileReview.tsx
+│   │   └── Register.tsx
 │   ├── types
 │   │   └── types.ts
 │   ├── App.tsx
@@ -301,6 +303,7 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── .dockerignore
 ├── .editorconfig
 ├── .env.example
+├── .env.local
 ├── .eslintcache
 ├── .gitattributes
 ├── .gitignore
@@ -328,6 +331,7 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── vite.config.ts
 ├── vitest.config.ts
 └── WIKI_HOME.md
+
 ```
 
 </details>

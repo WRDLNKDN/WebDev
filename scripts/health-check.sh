@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-echo "🩺 Starting System Health Check..."
+echo "🩺 [SYSTEM AUDIT]: Initializing Health Check..."
+echo "----------------------------------------------------------------"
 
 # Function to wait for a URL to be reachable
 wait_for_url() {
@@ -9,27 +11,40 @@ wait_for_url() {
   local timeout=30
   local count=0
 
-  echo "⏳ Waiting for $name at $url..."
-  until $(curl -output /dev/null --silent --head --fail "$url"); do
+  echo "⏳ [WAITING]: $name at $url..."
+  
+  # Logic Fix: Removed the $() subshell. 
+  # We also fixed the '-output' typo to '--output'.
+  until curl --output /dev/null --silent --head --fail "$url"; do
     if [ $count -eq $timeout ]; then
-      echo "❌ $name failed to start within $timeout seconds."
+      echo -e "\n🛑 [SYSTEM FAULT]: $name failed to respond. Activation Energy too high!"
       exit 1
     fi
     printf '.'
     sleep 1
     ((count++))
   done
-  echo -e "\n✅ $name is LIVE."
+  echo -e "\n✅ [SUCCESS]: $name is active and inhabited."
 }
 
-# System Audit: Check all three nodes of the Human OS
+# 1. Physical Layer Check: Supabase
 wait_for_url "http://localhost:54323" "Supabase Studio"
+
+# 2. Logic Layer Check: Vite
 wait_for_url "http://localhost:5173" "Vite Frontend"
 
-echo "🚀 All systems nominal. Launching cockpit..."
-# Now we trigger the actual open command
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+echo "----------------------------------------------------------------"
+echo "🚀 [HEALTH CHECK COMPLETE]: Launching the cockpit..."
+
+# 3. Cross-Platform Launch (The WSL 2 Special)
+if grep -qi microsoft /proc/version; then
+  # We are in WSL: Use Windows Explorer to bridge the OS gap
+  explorer.exe "http://localhost:5173"
+  explorer.exe "http://localhost:54323"
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+  # We are in Git Bash/Windows native
   start http://localhost:5173 && start http://localhost:54323
 else
+  # We are in macOS or standard Linux
   open http://localhost:5173 && open http://localhost:54323
 fi

@@ -1,3 +1,10 @@
+// src/pages/Home.tsx
+//
+// Splash / landing page for the public site.
+// Primary actions:
+// - Register (creates a pending profile request)
+// - Browse directory (approved members only; RLS enforced)
+
 import {
   Box,
   Button,
@@ -32,8 +39,8 @@ export const Home = () => {
             </Typography>
 
             <Typography variant="body2" sx={{ opacity: 0.75 }}>
-              Use the public site to browse approved profiles. Admins can review
-              pending registrations and moderate members.
+              Submit a profile request to join. Once approved, you will appear in
+              the public directory.
             </Typography>
 
             <Stack
@@ -43,27 +50,35 @@ export const Home = () => {
             >
               <Button
                 component={RouterLink}
-                to="/directory"
+                to="/register"
                 variant="contained"
                 size="large"
               >
-                View directory
+                Request membership
               </Button>
 
               <Button
                 component={RouterLink}
-                to="/admin"
+                to="/directory"
                 variant="outlined"
                 size="large"
               >
-                Admin moderation
+                Browse directory
               </Button>
             </Stack>
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Tip: Admin requires a service role key. Do not use it in a
-                public deployment.
+                Admin? Go to{' '}
+                <Typography
+                  component={RouterLink}
+                  to="/admin"
+                  variant="caption"
+                  sx={{ textDecoration: 'underline' }}
+                >
+                  /admin
+                </Typography>{' '}
+                and use an admin token.
               </Typography>
             </Box>
           </Stack>

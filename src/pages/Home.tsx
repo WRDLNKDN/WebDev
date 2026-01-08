@@ -39,8 +39,8 @@ export const Home = () => {
             </Typography>
 
             <Typography variant="body2" sx={{ opacity: 0.75 }}>
-              Submit a profile request to join. Once approved, you will appear in
-              the public directory.
+              Submit a profile request to join. Once approved, you will appear
+              in the public directory.
             </Typography>
 
             <Stack

@@ -12,6 +12,8 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# --- Tooling Caches ---
 .eslintcache
 
 # --- Dependencies & Build Outputs (Physical Layer) ---

@@ -1,1 +1,2 @@
-bash scripts/precheck.sh
+#!/bin/sh
+npm run precheck

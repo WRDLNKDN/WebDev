@@ -1,13 +1,8 @@
-// src/pages/Directory.tsx
-//
-// Public directory page.
-// RLS guarantees only approved profiles are visible to anon users.
-// Search is client-driven (handle ilike).
-
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
+  CircularProgress,
   Container,
   Paper,
   Stack,
@@ -20,106 +15,119 @@ type DirectoryRow = {
   id: string;
   handle: string;
   pronouns: string | null;
-  created_at: string;
+  geek_creds: string[] | null;
+  socials: unknown | null;
 };
+
+const toMessage = (e: unknown) => (e instanceof Error ? e.message : 'Error');
 
 export const Directory = () => {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<DirectoryRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) => r.handle.toLowerCase().includes(needle));
-  }, [q, rows]);
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // NOTE: We do NOT filter by status here.
-      // Public RLS already restricts select to status='approved'.
-      const { data, error: err } = await supabase
-        .from('profiles')
-        .select('id, handle, pronouns, created_at')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (err) throw err;
-      setRows((data ?? []) as DirectoryRow[]);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load directory');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filteredLabel = useMemo(() => (q.trim() ? `for "${q.trim()}"` : ''), [
+    q,
+  ]);
 
   useEffect(() => {
-    void load();
-  }, []);
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // RLS policy should already enforce: only approved rows for anon users.
+        // We also add an explicit status filter here so intent is clear.
+        let query = supabase
+          .from('profiles')
+          .select('id, handle, pronouns, geek_creds, socials')
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        const trimmed = q.trim();
+        if (trimmed) {
+          query = query.ilike('handle', `%${trimmed}%`);
+        }
+
+        const { data, error: supaErr } = await query;
+        if (supaErr) throw supaErr;
+
+        setRows((data || []) as DirectoryRow[]);
+      } catch (e: unknown) {
+        setError(toMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void run();
+  }, [q]);
 
   return (
     <Box sx={{ py: 6 }}>
       <Container maxWidth="md">
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={{ mb: 2 }}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            Member directory
+            Directory
           </Typography>
 
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-            Only approved profiles appear here.
+          <Typography variant="body2" sx={{ opacity: 0.75 }}>
+            Showing approved profiles only {filteredLabel}.
           </Typography>
-
-          {error && <Alert severity="error">{error}</Alert>}
 
           <TextField
-            label="Search"
-            placeholder="Search by handle…"
+            label="Search by handle"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            disabled={loading}
+            placeholder="ex: raccoonOps"
           />
-
-          <Paper sx={{ p: 2, borderRadius: 3 }}>
-            {loading ? (
-              <Typography sx={{ opacity: 0.8 }}>Loading…</Typography>
-            ) : filtered.length === 0 ? (
-              <Typography sx={{ opacity: 0.8 }}>No results.</Typography>
-            ) : (
-              <Stack spacing={1}>
-                {filtered.map((r) => (
-                  <Box
-                    key={r.id}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 2,
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      pb: 1,
-                    }}
-                  >
-                    <Box>
-                      <Typography sx={{ fontFamily: 'monospace' }}>
-                        {r.handle}
-                      </Typography>
-                      {r.pronouns && (
-                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                          {r.pronouns}
-                        </Typography>
-                      )}
-                    </Box>
-                    <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            )}
-          </Paper>
         </Stack>
+
+        {error && <Alert severity="error">{error}</Alert>}
+
+        <Paper
+          variant="outlined"
+          sx={{ p: 2, borderRadius: 3, position: 'relative' }}
+        >
+          {loading && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 3,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!loading && rows.length === 0 && (
+            <Typography sx={{ opacity: 0.8 }}>No approved profiles yet.</Typography>
+          )}
+
+          {!loading &&
+            rows.map((r) => (
+              <Box
+                key={r.id}
+                sx={{
+                  py: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '&:last-child': { borderBottom: 'none' },
+                }}
+              >
+                <Typography sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                  {r.handle}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  {r.pronouns || '—'}
+                </Typography>
+              </Box>
+            ))}
+        </Paper>
       </Container>
     </Box>
   );

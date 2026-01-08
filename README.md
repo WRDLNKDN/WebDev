@@ -224,7 +224,6 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 <summary>📁 Click to expand file structure</summary>
 
 ```
-
 .
 ├── .github
 │   └── workflows
@@ -232,6 +231,24 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │       ├── renovate-lockfile-pr.yml
 │       └── WebDev.yml
 ├── .husky
+│   ├── _
+│   │   ├── .gitignore
+│   │   ├── applypatch-msg
+│   │   ├── commit-msg
+│   │   ├── h
+│   │   ├── husky.sh
+│   │   ├── post-applypatch
+│   │   ├── post-checkout
+│   │   ├── post-commit
+│   │   ├── post-merge
+│   │   ├── post-rewrite
+│   │   ├── pre-applypatch
+│   │   ├── pre-auto-gc
+│   │   ├── pre-commit
+│   │   ├── pre-merge-commit
+│   │   ├── pre-push
+│   │   ├── pre-rebase
+│   │   └── prepare-commit-msg
 │   ├── pre-commit
 │   └── pre-push
 ├── assets
@@ -270,11 +287,12 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │   ├── ApprovedProfiles.tsx
 │   │   ├── Directory.tsx
 │   │   ├── Home.tsx
+│   │   ├── MyRegistration.tsx
 │   │   ├── PendingProfiles.tsx
 │   │   ├── ProfileReview.tsx
 │   │   └── Register.tsx
 │   ├── types
-│   │   └── types.ts
+│   │   └── supabase.ts
 │   ├── App.tsx
 │   ├── index.css
 │   ├── main.tsx
@@ -304,7 +322,6 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── .editorconfig
 ├── .env.example
 ├── .env.local
-├── .eslintcache
 ├── .gitattributes
 ├── .gitignore
 ├── .npmrc

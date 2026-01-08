@@ -1,4 +1,4 @@
-﻿//src/admin/types/supabase.ts
+//src/admin/types/supabase.ts
 
 export type ProfileStatus = 'pending' | 'approved' | 'rejected' | 'disabled';
 

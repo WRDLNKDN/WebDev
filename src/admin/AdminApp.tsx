@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 
 import { AdminModerationPage } from './AdminModerationPage';
-import type { ProfileStatus } from '../types/types';
+import type { ProfileStatus } from '../types/supabase';
 
 type Props = {
   token?: string;

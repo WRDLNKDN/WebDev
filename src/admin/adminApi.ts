@@ -4,9 +4,9 @@ export type {
   ProfileStatus,
   ProfileRow,
   FetchProfilesParams,
-} from '../types/types';
+} from '../types/supabase';
 
-import type { FetchProfilesParams, ProfileRow } from '../types/types';
+import type { FetchProfilesParams, ProfileRow } from '../types/supabase';
 
 type ApiError = { message?: string };
 

@@ -34,5 +34,6 @@ export default defineConfig({
     // Ensures a clean, optimized production build
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 900,
   },
 });

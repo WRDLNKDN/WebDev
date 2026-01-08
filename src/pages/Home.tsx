@@ -1,10 +1,3 @@
-// src/pages/Home.tsx
-//
-// Splash / landing page for the public site.
-// Primary actions:
-// - Register (creates a pending profile request)
-// - Browse directory (approved members only; RLS enforced)
-
 import {
   Box,
   Button,
@@ -15,6 +8,12 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
+/**
+ * Public landing page.
+ * - Sends visitors to Directory
+ * - Sends new users to Register
+ * - Keeps admin link visible but not forced
+ */
 export const Home = () => {
   return (
     <Box sx={{ py: 6 }}>
@@ -39,8 +38,8 @@ export const Home = () => {
             </Typography>
 
             <Typography variant="body2" sx={{ opacity: 0.75 }}>
-              Submit a profile request to join. Once approved, you will appear
-              in the public directory.
+              Browse approved profiles in the directory. Want in? Submit a
+              registration request and wait for approval.
             </Typography>
 
             <Stack
@@ -50,35 +49,36 @@ export const Home = () => {
             >
               <Button
                 component={RouterLink}
-                to="/register"
+                to="/directory"
                 variant="contained"
                 size="large"
               >
-                Request membership
+                View directory
               </Button>
 
               <Button
                 component={RouterLink}
-                to="/directory"
+                to="/register"
                 variant="outlined"
                 size="large"
               >
-                Browse directory
+                Request to join
+              </Button>
+
+              <Button
+                component={RouterLink}
+                to="/admin"
+                variant="text"
+                size="large"
+              >
+                Admin
               </Button>
             </Stack>
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Admin? Go to{' '}
-                <Typography
-                  component={RouterLink}
-                  to="/admin"
-                  variant="caption"
-                  sx={{ textDecoration: 'underline' }}
-                >
-                  /admin
-                </Typography>{' '}
-                and use an admin token.
+                Directory shows approved profiles only. Registrations are
+                approval-gated.
               </Typography>
             </Box>
           </Stack>

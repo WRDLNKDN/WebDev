@@ -29,7 +29,7 @@ import {
   Checkbox,
 } from '@mui/material';
 
-import type { ProfileRow, ProfileStatus } from '../types/types';
+import type { ProfileRow, ProfileStatus } from '../types/supabase';
 import {
   approveProfiles,
   deleteProfiles,

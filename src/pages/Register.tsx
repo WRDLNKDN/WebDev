@@ -1,14 +1,4 @@
-// src/pages/Register.tsx
-//
-// Registration request flow:
-// 1) User signs in (Supabase Auth)
-// 2) User submits profile fields
-// 3) We upsert into public.profiles with status='pending'
-//
-// RLS allows the signed-in user to insert/update only their own profile row.
-// Status changes are blocked by your trigger unless service_role.
-
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -21,203 +11,223 @@ import {
 } from '@mui/material';
 import { supabase } from '../lib/supabaseClient';
 
+/**
+ * Registration request page:
+ * - If not signed in: user enters email, gets a magic link
+ * - If signed in: user submits profile info -> upsert into profiles (status stays pending)
+ *
+ * This satisfies:
+ * - Users can submit a registration request
+ * - Request is approval-gated (status pending by default + admin approves)
+ */
 export const Register = () => {
-  const [loading, setLoading] = useState(false);
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
-
-  // auth form
+  // auth state
+  const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   // profile form
   const [handle, setHandle] = useState('');
   const [pronouns, setPronouns] = useState('');
+  const [geekCreds, setGeekCreds] = useState('');
 
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  const refreshSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    setSessionEmail(data.session?.user?.email ?? null);
-  };
+  const isAuthed = useMemo(() => !!userId, [userId]);
 
   useEffect(() => {
-    void refreshSession();
+    let mounted = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      void refreshSession();
+    const init = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!mounted) return;
+      setUserId(data.user?.id ?? null);
+    };
+
+    void init();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  const signIn = async () => {
-    setError(null);
-    setMessage(null);
+  const sendMagicLink = async () => {
     setLoading(true);
+    setErr(null);
+    setMsg(null);
+
     try {
-      const { error: authErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const trimmed = email.trim();
+      if (!trimmed) throw new Error('Enter an email.');
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          // In dev, Supabase local will still handle this. In prod, set to your domain.
+          emailRedirectTo: window.location.origin + '/register',
+        },
       });
-      if (authErr) throw authErr;
-      setMessage('Signed in. Now submit your profile request.');
+
+      if (error) throw error;
+
+      setMsg('Magic link sent. Check your email.');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Sign-in failed');
+      setErr(e instanceof Error ? e.message : 'Failed to send link');
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async () => {
-    setError(null);
-    setMessage(null);
+  const submitRegistration = async () => {
     setLoading(true);
-    try {
-      const { error: authErr } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
-      if (authErr) throw authErr;
-      setMessage('Account created. You can sign in now.');
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Sign-up failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setErr(null);
+    setMsg(null);
 
-  const submitProfile = async () => {
-    setError(null);
-    setMessage(null);
-    setLoading(true);
     try {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (!user) {
-        setError('You must be signed in to submit a registration request.');
-        return;
-      }
+      if (!userId) throw new Error('You must be signed in to register.');
 
       const cleanHandle = handle.trim();
-      if (cleanHandle.length < 3) {
-        setError('Handle must be at least 3 characters.');
-        return;
-      }
+      if (cleanHandle.length < 3) throw new Error('Handle must be 3+ chars.');
 
-      // Upsert is handy for “edit my request” behavior.
-      // Your RLS + grants allow the user to write their own row only.
-      const { error: upsertErr } = await supabase.from('profiles').upsert(
-        {
-          id: user.id,
-          handle: cleanHandle,
-          pronouns: pronouns.trim() || null,
-          // status defaults to pending (and users can't change it anyway)
-        },
-        { onConflict: 'id' },
-      );
+      const creds = geekCreds
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-      if (upsertErr) throw upsertErr;
+      /**
+       * Upsert profile for this user.
+       * - id ties to auth.users (your table references auth.users)
+       * - status should remain pending by default (admin changes later)
+       */
+      const { error } = await supabase.from('profiles').upsert({
+        id: userId,
+        handle: cleanHandle,
+        pronouns: pronouns.trim() || null,
+        geek_creds: creds.length ? creds : null,
+        // nerd_creds + socials can be added later without breaking this flow
+      });
 
-      setMessage(
-        'Registration request submitted. You will appear in the directory after approval.',
-      );
+      if (error) throw error;
+
+      setMsg('Registration submitted. You are now pending approval.');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
   const signOut = async () => {
-    setError(null);
-    setMessage(null);
-    await supabase.auth.signOut();
+    setLoading(true);
+    setErr(null);
+    setMsg(null);
+    try {
+      await supabase.auth.signOut();
+      setMsg('Signed out.');
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Sign out failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box sx={{ py: 6 }}>
       <Container maxWidth="sm">
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
+        <Paper
+          variant="outlined"
+          sx={{ p: 3, borderRadius: 3, bgcolor: 'background.paper' }}
+        >
           <Stack spacing={2}>
             <Typography variant="h4" sx={{ fontWeight: 800 }}>
-              Request membership
+              Request to join
             </Typography>
 
-            {message && <Alert severity="success">{message}</Alert>}
-            {error && <Alert severity="error">{error}</Alert>}
+            <Typography variant="body2" sx={{ opacity: 0.75 }}>
+              Submit your profile. You will appear in the directory only after
+              approval.
+            </Typography>
 
-            {!sessionEmail ? (
+            {err && <Alert severity="error">{err}</Alert>}
+            {msg && <Alert severity="success">{msg}</Alert>}
+
+            {!isAuthed ? (
               <>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Sign in (or create an account) to submit your registration.
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Step 1: Sign in (magic link)
                 </Typography>
 
                 <TextField
                   label="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@domain.com"
                   autoComplete="email"
                 />
-                <TextField
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
 
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="contained"
-                    onClick={() => void signIn()}
-                    disabled={loading}
-                  >
-                    Sign in
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => void signUp()}
-                    disabled={loading}
-                  >
-                    Create account
-                  </Button>
-                </Stack>
+                <Button
+                  variant="contained"
+                  onClick={() => void sendMagicLink()}
+                  disabled={loading}
+                >
+                  Send magic link
+                </Button>
+
+                <Alert severity="info">
+                  After you click the magic link, come back here to finish your
+                  registration.
+                </Alert>
               </>
             ) : (
               <>
-                <Alert severity="info">
-                  Signed in as <strong>{sessionEmail}</strong>
-                </Alert>
-
-                <TextField
-                  label="Handle"
-                  helperText="Public username (min 3 chars)."
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                />
-                <TextField
-                  label="Pronouns (optional)"
-                  value={pronouns}
-                  onChange={(e) => setPronouns(e.target.value)}
-                />
-
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="contained"
-                    onClick={() => void submitProfile()}
-                    disabled={loading}
-                  >
-                    Submit request
-                  </Button>
-                  <Button variant="outlined" onClick={() => void signOut()}>
+                <Stack direction="row" justifyContent="space-between" spacing={1}>
+                  <Alert severity="info" sx={{ flexGrow: 1 }}>
+                    Signed in. Complete your registration below.
+                  </Alert>
+                  <Button variant="outlined" onClick={() => void signOut()} disabled={loading}>
                     Sign out
                   </Button>
                 </Stack>
 
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Your profile will be pending until an admin approves it.
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Step 2: Profile info
                 </Typography>
+
+                <TextField
+                  label="Handle"
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  placeholder="raccoonOps"
+                  helperText="Required. Must be unique."
+                />
+
+                <TextField
+                  label="Pronouns"
+                  value={pronouns}
+                  onChange={(e) => setPronouns(e.target.value)}
+                  placeholder="they/them"
+                />
+
+                <TextField
+                  label="Geek creds (comma separated)"
+                  value={geekCreds}
+                  onChange={(e) => setGeekCreds(e.target.value)}
+                  placeholder="DevOps, Kubernetes, Chaos Engineering"
+                />
+
+                <Button
+                  variant="contained"
+                  onClick={() => void submitRegistration()}
+                  disabled={loading}
+                >
+                  Submit registration
+                </Button>
               </>
             )}
           </Stack>

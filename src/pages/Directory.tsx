@@ -27,9 +27,10 @@ export const Directory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredLabel = useMemo(() => (q.trim() ? `for "${q.trim()}"` : ''), [
-    q,
-  ]);
+  const filteredLabel = useMemo(
+    () => (q.trim() ? `for "${q.trim()}"` : ''),
+    [q],
+  );
 
   useEffect(() => {
     const run = async () => {
@@ -105,7 +106,9 @@ export const Directory = () => {
           )}
 
           {!loading && rows.length === 0 && (
-            <Typography sx={{ opacity: 0.8 }}>No approved profiles yet.</Typography>
+            <Typography sx={{ opacity: 0.8 }}>
+              No approved profiles yet.
+            </Typography>
           )}
 
           {!loading &&

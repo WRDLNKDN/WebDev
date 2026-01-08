@@ -186,11 +186,19 @@ export const Register = () => {
               </>
             ) : (
               <>
-                <Stack direction="row" justifyContent="space-between" spacing={1}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  spacing={1}
+                >
                   <Alert severity="info" sx={{ flexGrow: 1 }}>
                     Signed in. Complete your registration below.
                   </Alert>
-                  <Button variant="outlined" onClick={() => void signOut()} disabled={loading}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => void signOut()}
+                    disabled={loading}
+                  >
                     Sign out
                   </Button>
                 </Stack>

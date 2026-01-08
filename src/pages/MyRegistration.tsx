@@ -179,9 +179,12 @@ export const MyRegistration = () => {
         if (insErr) throw insErr;
 
         setRow((data as ProfileRow) ?? null);
-        setNotice('Registration submitted! Your profile is now pending review.');
+        setNotice(
+          'Registration submitted! Your profile is now pending review.',
+        );
       } else {
-        const updatePayload: BaseProfileUpdate = safeFields as unknown as BaseProfileUpdate;
+        const updatePayload: BaseProfileUpdate =
+          safeFields as unknown as BaseProfileUpdate;
 
         const { data, error: updErr } = await supabase
           .from('profiles')
@@ -293,8 +296,8 @@ export const MyRegistration = () => {
                 {/* Timestamps are optional depending on generated schema */}
                 {row && (
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    Created: {formatDate((row as any).created_at)} • Last updated:{' '}
-                    {formatDate((row as any).updated_at)}
+                    Created: {formatDate((row as any).created_at)} • Last
+                    updated: {formatDate((row as any).updated_at)}
                   </Typography>
                 )}
               </Stack>

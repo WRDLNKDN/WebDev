@@ -53,5 +53,4 @@
 
 ---
 
-> 💡 Want to contribute? Fork the repo, open a PR, or share feedback in the
-> Discussions tab.
+> 💡 Want to contribute? See [Contributor Onboarding](https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding) for instructions on how to get involved or open a PR.

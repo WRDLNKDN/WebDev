@@ -1,11 +1,11 @@
-
 # Contributing to WeirdLinkedIn WebDev
 
 Thank you for your interest in contributing! We welcome all kinds of
 contributions, including code, documentation, design, and ideas.
 
-This file explains *how* to contribute.  
-Project rules, governance, and agreements are documented elsewhere and linked below.
+This file explains _how_ to contribute.  
+Project rules, governance, and agreements are documented elsewhere and linked
+below.
 
 ---
 
@@ -15,7 +15,7 @@ Project rules, governance, and agreements are documented elsewhere and linked be
 - **Open a pull request** with a clear description of your changes
 - **Use Issues** for bugs, feature requests, or questions
 - **Join Discord** for discussion and coordination  
-	https://discord.gg/RkenxynH
+  https://discord.gg/RkenxynH
 
 ---
 
@@ -40,17 +40,21 @@ Project rules, governance, and agreements are documented elsewhere and linked be
 Most casual contributions do **not** require onboarding or agreement acceptance.
 
 If you plan to:
-- Contribute on an ongoing basis  
-- Take ownership of work  
-- Incur reimbursable expenses  
 
-You must complete onboarding and accept the Contributor Agreement **before proceeding**.
+- Contribute on an ongoing basis
+- Take ownership of work
+- Incur reimbursable expenses
+
+You must complete onboarding and accept the Contributor Agreement **before
+proceeding**.
 
 Start here:
+
 - **Contributor Onboarding**  
   https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
 
 Authoritative agreement text lives here:
+
 - **WRDLNKDN Agreements Wiki (Source of Truth)**  
   https://github.com/WRDLNKDN/Agreements/wiki/Contributor-Agreement
 

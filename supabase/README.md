@@ -4,7 +4,8 @@ This folder contains Supabase schema, security (RLS), and dev seed SQL.
 
 ## Structure
 
-- `migrations/` contains ordered SQL scripts to create/update schema and policies.
+- `migrations/` contains ordered SQL scripts to create/update schema and
+  policies.
 - `seeds/` contains optional development-only data scripts.
 
 ## Conventions

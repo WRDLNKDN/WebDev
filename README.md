@@ -1,13 +1,16 @@
 # 📚 Resources
 
-- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
+- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation,
+  guides, and policies
 
 **Contributor & Contributing Files:**
 
-- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md) — How to contribute, code style, PR process, and workflow rules
-- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md) — Credits and thanks to project contributors
+- [CONTRIBUTING.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md)
+  — How to contribute, code style, PR process, and workflow rules
+- [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md)
+  — Credits and thanks to project contributors
 
-# WeirdLinkedIn
+## WeirdLinkedIn
 
 ![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
 
@@ -18,8 +21,10 @@
 
 **Professional networking, but human.**
 
-WeirdLinkedIn is a modern, accessibility-first professional directory and platform.  
-It explores what professional networking looks like when we stop pretending it isn't weird.
+WeirdLinkedIn is a modern, accessibility-first professional directory and
+platform.  
+It explores what professional networking looks like when we stop pretending it
+isn't weird.
 
 ---
 
@@ -66,8 +71,8 @@ Checks run locally before code reaches CI.
 
 ## 🚀 Getting Started
 
-This project is split into a frontend (React + Vite) and a backend API.
-Each can be run independently for development.
+This project is split into a frontend (React + Vite) and a backend API. Each can
+be run independently for development.
 
 ---
 
@@ -93,7 +98,7 @@ git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
 cd WeirdLinkedIn
 ```
 
-2. Install dependencies
+1. Install dependencies
 
 Install Docker
 
@@ -111,7 +116,7 @@ npx supabase init
 npx supabase start
 ```
 
-3. Environment configuration
+1. Environment configuration
 
 Each service uses environment variables.
 
@@ -220,8 +225,10 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 
 ## 📁 Project Structure
 
+```tsx
 <details>
 <summary>📁 Click to expand file structure</summary>
+```
 
 ```txt
 .
@@ -347,7 +354,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## 📌 Project Board
 
-🔗 https://github.com/users/AprilLorDrake/projects/3
+🔗 <https://github.com/users/AprilLorDrake/projects/3>
 
 ---
 

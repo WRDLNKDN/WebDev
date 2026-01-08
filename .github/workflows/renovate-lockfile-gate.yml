@@ -13,9 +13,9 @@ jobs:
   gate:
     name: Validate Renovate Lockfile Maintenance PR
     if: >
-      github.actor == 'renovate[bot]' &&
-      github.event.pull_request.draft == false &&
-      contains(join(github.event.pull_request.labels.*.name, ' '), 'lockfile-maintenance')
+      github.actor == 'renovate[bot]' && github.event.pull_request.draft ==
+      false && contains(join(github.event.pull_request.labels.*.name, ' '),
+      'lockfile-maintenance')
     runs-on: ubuntu-latest
     steps:
       - name: Check PR files

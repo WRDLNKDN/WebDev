@@ -1,30 +1,23 @@
-# --- Dependencies and Builds ---
-node_modules
-dist
-dist-ssr
+# --- Dependencies & Builds (Physical Layer) ---
+node_modules/
+dist/
+dist-ssr/
+# Lockfiles are machine-generated; manual formatting is System Noise
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# --- Configuration Files ---
-.gitattributes
-.prettierrc*
-.eslintrc*
-eslint.config.js
-package.json
-
-# --- Playwright (Crucial for Integrity) ---
-# Ignore the reports and results
+# --- Playwright (Automated Verification) ---
 test-results/
 playwright-report/
 blob-report/
-/playwright/.cache
-
-# Ignore visual snapshots (Prettier can mangle the binary-like strings)
+playwright/.cache/
+# Visual snapshots are binary-like; Prettier will mangle them
 **/*.spec.ts-snapshots/
 **/*.spec.js-snapshots/
 
-# Supabase Types
+# --- Machine Generated (High-Integrity Caution) ---
+# We ignore these to prevent Git Diff noise when re-generating
 src/types/supabase.ts
 
 # --- System & Env ---
@@ -32,3 +25,8 @@ src/types/supabase.ts
 .env.*
 *.log
 .DS_Store
+.eslintcache
+
+# --- Documentation ---
+# We let Prettier handle READMEs, but ignore local changelogs if auto-gen
+# CHANGELOG.md

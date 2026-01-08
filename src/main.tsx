@@ -4,7 +4,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
-function DebugLocation() {
+const DebugLocation = () => {
   const loc = useLocation();
 
   React.useEffect(() => {
@@ -13,7 +13,7 @@ function DebugLocation() {
   }, [loc.pathname, loc.search, loc.hash]);
 
   return null;
-}
+};
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -49,7 +49,7 @@
 | **Renee Rudczynski**                 | Unknown or Not Available                                 | [reneerudczynski](https://linkedin.com/in/reneerudczynski)                           | renee.rudczynski@gmail.com            | Unknown or Not Available                                 | Steering Committee Member |
 | **Deb Haas**                         | Unknown or Not Available                                 | [debhaasai](https://linkedin.com/in/debhaasai)                                       | debhaas@gmail.com                     | Unknown or Not Available                                 | Steering Committee Member |
 | **Katherine Graham**                 | Unknown or Not Available                                 | [katherine-graham](https://linkedin.com/in/katherine-graham-8610ab23)                | humaneeringperformance@gmail.com      | Unknown or Not Available                                 | Steering Committee Member |
-| **Lou J Berger**                     | Unknown or Not Available                                 | [loujberger](https://linkedin.com/in/loujberger)                                         | loujberger@gmail.com                  | loujberger                                               | Steering Committee Member |
+| **Lou J Berger**                     | Unknown or Not Available                                 | [loujberger](https://linkedin.com/in/loujberger)                                     | loujberger@gmail.com                  | loujberger                                               | Steering Committee Member |
 
 ---
 

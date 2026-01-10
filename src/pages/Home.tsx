@@ -24,7 +24,7 @@ export const Home = () => {
         >
           <Stack spacing={2}>
             <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-              WeirdLinkedIn
+              WRDLNKDN
             </Typography>
 
             <Typography variant="body1" sx={{ opacity: 0.85 }}>

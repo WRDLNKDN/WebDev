@@ -10,19 +10,18 @@
 - [CONTRIBUTORS.md](https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTORS.md)
   — Credits and thanks to project contributors
 
-## WeirdLinkedIn
+## WRDLNKDN
 
-![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
+![WRDLNKDN logo: Square](./assets/square%20logo.png)
 
-![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn)
-![License](https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn)
+![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WRDLNKDN)
+![License](https://img.shields.io/github/license/AprilLorDrake/WRDLNKDN)
 ![Node Version](https://img.shields.io/badge/node-18+-blue)
 ![Made with TypeScript](https://img.shields.io/badge/made%20with-TypeScript-blue)
 
 **Professional networking, but human.**
 
-WeirdLinkedIn is a modern, accessibility-first professional directory and
-platform.  
+WRDLNKDN is a modern, accessibility-first professional directory and platform.  
 It explores what professional networking looks like when we stop pretending it
 isn't weird.
 
@@ -30,7 +29,7 @@ isn't weird.
 
 ## 🌐 Platform Overview
 
-WeirdLinkedIn consists of:
+WRDLNKDN consists of:
 
 - **Frontend**
 
@@ -94,8 +93,8 @@ Optional but recommended:
 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
-cd WeirdLinkedIn
+git clone https://github.com/<your-org-or-user>/WRDLNKDN.git
+cd WRDLNKDN
 ```
 
 1. Install dependencies
@@ -360,7 +359,7 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## Contributors
 
-Thanks to everyone who has helped build or improve WeirdLinkedIn.
+Thanks to everyone who has helped build or improve WRDLNKDN.
 
 ![Contributors](https://contrib.rocks/image?repo=WRDLNKDN/WebDev&anon=1&max=100&columns=10&v=2)
 

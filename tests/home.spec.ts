@@ -12,7 +12,7 @@ test.describe('Home Page - High-Integrity Audit', () => {
   }) => {
     // 1. Verify Brand Identity (Human OS Entry Point)
     await expect(
-      page.getByRole('heading', { name: /WeirdLinkedIn/i }),
+      page.getByRole('heading', { name: /WRDLNKDN/i }),
     ).toBeVisible();
     await expect(
       page.getByText(/Professional networking, but human/i),

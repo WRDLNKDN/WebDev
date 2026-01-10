@@ -21,8 +21,7 @@
 
 **Professional networking, but human.**
 
-WRDLNKDN is a modern, accessibility-first professional directory and
-platform.  
+WRDLNKDN is a modern, accessibility-first professional directory and platform.  
 It explores what professional networking looks like when we stop pretending it
 isn't weird.
 

@@ -1,5 +1,5 @@
 services:
-  weirdlinkedin-ui:
+  WRDLNKDN-ui:
     build:
       context: .
       dockerfile: Dockerfile

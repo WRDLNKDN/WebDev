@@ -1,6 +1,6 @@
-# 👋 Welcome to the WeirdLinkedIn WebDev Wiki
+# 👋 Welcome to the WRDLNKDN WebDev Wiki
 
-This is the high-level context and orientation space for the **WeirdLinkedIn**
+This is the high-level context and orientation space for the **WRDLNKDN**
 project, living in the  
 **WRDLNKDN/WebDev** GitHub repository.
 
@@ -30,13 +30,13 @@ we’re building.
 
 ## 🧭 What This Wiki Is (and Isn’t)
 
-### This wiki **is**:
+### This wiki **is**
 
 - The place for high-level project context, vision, and rationale
 - Where architectural overviews, design intent, and long-form thinking live
 - Where we document _why_ decisions were made, not just _what_ was done
 
-### This wiki **isn’t**:
+### This wiki **isn’t**
 
 - A dumping ground for process rules or task-level instructions
 - A duplicate of the README or CONTRIBUTING files
@@ -87,7 +87,7 @@ Details:
 ## 🗣️ Need Something?
 
 - Open an **[Issue](../../issues)** or **[Pull Request](../../pulls)**
-- Or email: **wrdlnkdn@gmail.com**
+- Or email: <wrdlnkdn@gmail.com>
 
 ---
 

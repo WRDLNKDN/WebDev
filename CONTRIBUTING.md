@@ -1,4 +1,4 @@
-# Contributing to WeirdLinkedIn WebDev
+# Contributing to WRDLNKDN WebDev
 
 Thank you for your interest in contributing! We welcome all kinds of
 contributions, including code, documentation, design, and ideas.
@@ -69,4 +69,4 @@ this project possible.
 
 ---
 
-Thank you for helping make WeirdLinkedIn awesome!
+Thank you for helping make WRDLNKDN awesome!

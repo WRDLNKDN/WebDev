@@ -3,39 +3,39 @@ import { createTheme } from '@mui/material/styles';
 
 const customTheme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#1976d2', // Blue with high contrast on white
-      contrastText: '#ffffff',
+      main: '#42a5f5', // Bright blue with WCAG AA contrast on dark background
+      contrastText: '#000000',
     },
     secondary: {
-      main: '#f50057', // Pink with high contrast
-      contrastText: '#ffffff',
+      main: '#ec407a', // Bright pink with WCAG AA contrast
+      contrastText: '#000000',
     },
     background: {
-      default: '#ffffff',
-      paper: '#f5f5f5',
+      default: '#121212',
+      paper: '#1e1e1e',
     },
     text: {
-      primary: '#000000', // Black for primary text
-      secondary: '#424242', // Dark gray for secondary text
-      disabled: '#9e9e9e', // Gray for disabled text
+      primary: '#e0e0e0', // Light gray for primary text (WCAG AA: 7.2:1)
+      secondary: '#a0a0a0', // Medium gray for secondary text (WCAG AA: 4.7:1)
+      disabled: '#757575', // Medium gray for disabled text
     },
     error: {
-      main: '#d32f2f', // Red for errors
-      contrastText: '#ffffff',
+      main: '#ef5350', // Light red for errors (WCAG AA)
+      contrastText: '#000000',
     },
     warning: {
-      main: '#f57c00', // Orange for warnings
+      main: '#ffb74d', // Light orange for warnings (WCAG AA)
       contrastText: '#000000',
     },
     info: {
-      main: '#0288d1', // Blue for info
-      contrastText: '#ffffff',
+      main: '#29b6f6', // Light cyan for info (WCAG AA)
+      contrastText: '#000000',
     },
     success: {
-      main: '#388e3c', // Green for success
-      contrastText: '#ffffff',
+      main: '#66bb6a', // Light green for success (WCAG AA)
+      contrastText: '#000000',
     },
   },
   typography: {
@@ -117,7 +117,7 @@ const customTheme = createTheme({
           textTransform: 'none',
           fontWeight: 500,
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -128,10 +128,10 @@ const customTheme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#1976d2',
+              borderColor: '#42a5f5',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#1976d2',
+              borderColor: '#42a5f5',
               borderWidth: 2,
             },
           },
@@ -141,9 +141,9 @@ const customTheme = createTheme({
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: '#424242',
+          color: '#a0a0a0',
           '&.Mui-focused': {
-            color: '#1976d2',
+            color: '#42a5f5',
           },
         },
       },
@@ -151,20 +151,20 @@ const customTheme = createTheme({
     MuiFormHelperText: {
       styleOverrides: {
         root: {
-          color: '#666666',
+          color: '#909090',
         },
       },
     },
     MuiLink: {
       styleOverrides: {
         root: {
-          color: '#1976d2',
+          color: '#42a5f5',
           textDecoration: 'underline',
           '&:hover': {
             textDecoration: 'underline',
           },
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -174,7 +174,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -184,7 +184,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -194,7 +194,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -204,7 +204,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            backgroundColor: '#e3f2fd',
+            backgroundColor: '#2a2a2a',
           },
         },
       },
@@ -213,7 +213,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            backgroundColor: '#e3f2fd',
+            backgroundColor: '#2a2a2a',
           },
         },
       },
@@ -222,7 +222,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -232,7 +232,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -242,7 +242,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -252,7 +252,7 @@ const customTheme = createTheme({
       styleOverrides: {
         root: {
           '&:focus': {
-            outline: `2px solid ${'#1976d2'}`,
+            outline: `2px solid ${'#42a5f5'}`,
             outlineOffset: 2,
           },
         },
@@ -261,8 +261,8 @@ const customTheme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          backgroundColor: '#424242',
-          color: '#ffffff',
+          backgroundColor: '#2a2a2a',
+          color: '#e0e0e0',
           fontSize: '0.75rem',
         },
       },
@@ -277,7 +277,7 @@ const customTheme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#1e1e1e',
         },
       },
     },

@@ -18,7 +18,12 @@ export const LoginButton = () => {
   };
 
   return (
-    <Button variant="contained" color="primary" size="large" onClick={signInWithGoogle}>
+    <Button
+      variant="contained"
+      color="primary"
+      size="large"
+      onClick={signInWithGoogle}
+    >
       Sign in with Google
     </Button>
   );

@@ -38,9 +38,11 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
 
     void init();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
-      setSession(newSession);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_evt, newSession) => {
+        setSession(newSession);
+      },
+    );
 
     return () => {
       cancelled = true;

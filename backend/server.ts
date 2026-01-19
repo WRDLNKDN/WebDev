@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config'
+import 'dotenv/config';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -194,7 +194,10 @@ app.post('/api/admin/profiles/delete', requireAdmin, async (req, res) => {
   if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
 
   // Delete profiles first
-  const { error: profErr } = await adminSupabase.from('profiles').delete().in('id', ids);
+  const { error: profErr } = await adminSupabase
+    .from('profiles')
+    .delete()
+    .in('id', ids);
   if (profErr) return res.status(500).json({ error: profErr.message });
 
   // Optionally delete auth users (dangerous)

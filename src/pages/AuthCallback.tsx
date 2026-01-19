@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, CircularProgress, Container, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Typography,
+} from '@mui/material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -32,7 +38,9 @@ export const AuthCallback = () => {
         if (sessionError) throw sessionError;
 
         if (!data.session) {
-          throw new Error('No session created. Check provider config and redirect URIs.');
+          throw new Error(
+            'No session created. Check provider config and redirect URIs.',
+          );
         }
 
         if (!cancelled) navigate(next, { replace: true });

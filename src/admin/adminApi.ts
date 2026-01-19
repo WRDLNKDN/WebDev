@@ -1,5 +1,9 @@
 // src/admin/adminApi.ts
-import type { FetchProfilesParams, ProfileRow, ProfileStatus } from '../types/types';
+import type {
+  FetchProfilesParams,
+  ProfileRow,
+  ProfileStatus,
+} from '../types/types';
 
 const API_BASE = '/api/admin';
 
@@ -41,7 +45,9 @@ async function requestJSON<T>(
   return (await res.json()) as T;
 }
 
-const toQuery = (params: Record<string, string | number | boolean | undefined>) => {
+const toQuery = (
+  params: Record<string, string | number | boolean | undefined>,
+) => {
   const usp = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v === undefined) return;
@@ -98,10 +104,14 @@ export const deleteProfiles = async (
   ids: string[],
   hardDeleteAuthUsers: boolean,
 ) => {
-  await requestJSON<{ ok: true; failedAuthDeletes?: string[] }>(token, `/profiles/delete`, {
-    method: 'POST',
-    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
-  });
+  await requestJSON<{ ok: true; failedAuthDeletes?: string[] }>(
+    token,
+    `/profiles/delete`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ ids, hardDeleteAuthUsers }),
+    },
+  );
 };
 
 // Re-export types so other components importing from adminApi don’t explode

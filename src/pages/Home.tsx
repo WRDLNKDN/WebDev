@@ -36,9 +36,11 @@ export const Home = () => {
 
     void init();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
-      setSession(newSession);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_evt, newSession) => {
+        setSession(newSession);
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -101,14 +103,24 @@ export const Home = () => {
             </Typography>
 
             <Typography variant="body2" sx={{ opacity: 0.75 }}>
-              Browse approved profiles in the directory. Members can submit a registration request.
-              Admins approve or reject registrations before they appear publicly.
+              Browse approved profiles in the directory. Members can submit a
+              registration request. Admins approve or reject registrations
+              before they appear publicly.
             </Typography>
 
             {error && <Alert severity="error">{error}</Alert>}
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pt: 1 }}>
-              <Button component={RouterLink} to="/directory" variant="contained" size="large">
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              sx={{ pt: 1 }}
+            >
+              <Button
+                component={RouterLink}
+                to="/directory"
+                variant="contained"
+                size="large"
+              >
                 View directory
               </Button>
 
@@ -123,10 +135,20 @@ export const Home = () => {
                 </Button>
               ) : (
                 <>
-                  <Button component={RouterLink} to="/admin" variant="outlined" size="large">
+                  <Button
+                    component={RouterLink}
+                    to="/admin"
+                    variant="outlined"
+                    size="large"
+                  >
                     Admin moderation
                   </Button>
-                  <Button variant="text" size="large" onClick={() => void signOut()} disabled={busy}>
+                  <Button
+                    variant="text"
+                    size="large"
+                    onClick={() => void signOut()}
+                    disabled={busy}
+                  >
                     Sign out
                   </Button>
                 </>
@@ -135,7 +157,8 @@ export const Home = () => {
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Local dev note: Admin access is enforced by allowlist server-side.
+                Local dev note: Admin access is enforced by allowlist
+                server-side.
               </Typography>
             </Box>
           </Stack>

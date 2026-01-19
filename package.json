@@ -31,7 +31,7 @@
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
     "supabase:reset": "npx supabase db reset",
-    "supabase:gen-types": "mkdir -p src/types && npx supabase gen types typescript --local | Out-File -Encoding utf8 src/types/supabase.ts",
+    "supabase:gen-types": "npx supabase gen types typescript --local | node scripts/gen-supabase-types.mjs",
     "--- BUILD & DEPLOY (Legacy Code Prevention) ---": "",
     "build": "tsc -b && vite build",
     "preview": "vite preview",

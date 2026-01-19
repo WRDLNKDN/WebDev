@@ -1,108 +1,119 @@
-// src/admin/admin/adminApp.tsx
-import { useMemo, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-} from '@mui/material';
+// src/admin/AdminApp.tsx
+import { useEffect, useState } from 'react';
+import { Alert, Box, Button, Container, Typography } from '@mui/material';
+import type { Session } from '@supabase/supabase-js';
 
+import { supabase } from '../lib/supabaseClient';
 import { AdminModerationPage } from './AdminModerationPage';
+import { AdminGate } from './AdminGate';
 import type { ProfileStatus } from '../types/types';
 
 type Props = {
-  token?: string;
   initialStatus?: ProfileStatus | 'all';
 };
 
-export const AdminApp = ({
-  token: tokenProp = '',
-  initialStatus = 'pending',
-}: Props) => {
-  const [token, setToken] = useState(tokenProp);
-  const [activeToken, setActiveToken] = useState(tokenProp);
+const toMessage = (e: unknown) => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  return 'Request failed';
+};
+
+/**
+ * Named export (required for React.lazy().then(m => ({ default: m.AdminApp })))
+ */
+export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
+  const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const masked = useMemo(() => {
-    if (!activeToken) return '';
-    if (activeToken.length <= 10) return '••••••••••';
-    return `${activeToken.slice(0, 6)}••••••${activeToken.slice(-4)}`;
-  }, [activeToken]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const onUseToken = () => {
+    const init = async () => {
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      if (sessionError) setError(toMessage(sessionError));
+      setSession(data.session ?? null);
+    };
+
+    void init();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+      setSession(newSession);
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const signInGoogle = async () => {
     setError(null);
-    const t = token.trim();
-    if (!t) {
-      setError('Enter an admin token to continue.');
-      return;
-    }
-    setActiveToken(t);
+    const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+
+    if (signInError) setError(toMessage(signInError));
   };
 
-  const onClearToken = () => {
-    setToken('');
-    setActiveToken('');
+  const signOut = async () => {
     setError(null);
+    const { error: outError } = await supabase.auth.signOut();
+    if (outError) setError(toMessage(outError));
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Admin
-      </Typography>
+    <AdminGate>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin
+        </Typography>
 
-      <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
-        Paste an admin token to access moderation tools.
-      </Typography>
-
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
-        <TextField
-          label="Admin token"
-          placeholder="ADMIN_TOKEN"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          fullWidth
-          inputProps={{ 'aria-label': 'admin token' }}
-        />
-        <Button
-          variant="contained"
-          onClick={onUseToken}
-          disabled={!token.trim()}
-        >
-          Use
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={onClearToken}
-          disabled={!token && !activeToken}
-        >
-          Clear
-        </Button>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {activeToken ? (
-        <>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Using token: <strong>{masked}</strong>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
           </Alert>
-          <AdminModerationPage
-            token={activeToken}
-            initialStatus={initialStatus}
-          />
-        </>
-      ) : (
-        <Alert severity="warning">
-          No token set. Paste your admin token to load the moderation dashboard.
-        </Alert>
-      )}
-    </Container>
+        )}
+
+        {!session ? (
+          <Alert
+            severity="warning"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => void signInGoogle()}
+              >
+                Sign in with Google
+              </Button>
+            }
+          >
+            You are not signed in.
+          </Alert>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <Button variant="outlined" onClick={() => void signOut()}>
+                Sign out
+              </Button>
+            </Box>
+
+            <AdminModerationPage
+              token={session.access_token}
+              initialStatus={initialStatus}
+            />
+          </>
+        )}
+      </Container>
+    </AdminGate>
   );
 };
+
+/**
+ * Default export kept for convenience.
+ * (Does not break the named export.)
+ */
+export default AdminApp;

@@ -1,15 +1,14 @@
-// src/components/StatusBadge.tsx
-
 import { Chip } from '@mui/material';
 import type { ProfileStatus } from '../admin/adminApi';
 
-type Props = { status: ProfileStatus };
+type Props = { status: ProfileStatus | 'all' };
 
 export const StatusBadge = ({ status }: Props) => {
   const map: Record<
-    ProfileStatus,
+    ProfileStatus | 'all',
     { label: string; color: 'default' | 'success' | 'error' | 'warning' }
   > = {
+    all: { label: 'All', color: 'default' },
     pending: { label: 'Pending', color: 'default' },
     approved: { label: 'Approved', color: 'success' },
     rejected: { label: 'Rejected', color: 'error' },

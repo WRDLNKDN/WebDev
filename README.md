@@ -232,11 +232,30 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ```txt
 .
 ├── .github
-│   └── workflows
-│       ├── renovate-lockfile-gate.yml
-│       ├── renovate-lockfile-pr.yml
-│       └── WebDev.yml
+│   ├── workflows
+│   │   ├── renovate-lockfile-gate.yml
+│   │   ├── renovate-lockfile-pr.yml
+│   │   └── WebDev.yml
+│   └── copilot-instructions.md
 ├── .husky
+│   ├── _
+│   │   ├── .gitignore
+│   │   ├── applypatch-msg
+│   │   ├── commit-msg
+│   │   ├── h
+│   │   ├── husky.sh
+│   │   ├── post-applypatch
+│   │   ├── post-checkout
+│   │   ├── post-commit
+│   │   ├── post-merge
+│   │   ├── post-rewrite
+│   │   ├── pre-applypatch
+│   │   ├── pre-auto-gc
+│   │   ├── pre-commit
+│   │   ├── pre-merge-commit
+│   │   ├── pre-push
+│   │   ├── pre-rebase
+│   │   └── prepare-commit-msg
 │   ├── pre-commit
 │   └── pre-push
 ├── assets
@@ -249,20 +268,30 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   └── server.ts
 ├── frontend
 │   └── README.md
+├── playwright-report
+│   ├── data
+│   │   └── cfec0ae12806641383aa133a4e018d6cba11aab3.md
+│   └── index.html
 ├── public
 │   ├── assets
 │   │   └── gallerybanner.png
 │   └── vite.svg
 ├── scripts
+│   ├── gen-supabase-types.mjs
+│   ├── health-check.sh
 │   └── precheck.sh
 ├── src
 │   ├── admin
 │   │   ├── adminApi.ts
 │   │   ├── AdminApp.tsx
+│   │   ├── AdminGate.tsx
 │   │   ├── AdminModerationPage.tsx
+│   │   ├── AuthCallback.tsx
 │   │   └── ProfileDetailDialog.tsx
 │   ├── assets
 │   │   └── react.svg
+│   ├── auth
+│   │   └── LoginButton.tsx
 │   ├── components
 │   │   ├── BulkActionsBar.tsx
 │   │   ├── ProfileTable.tsx
@@ -273,11 +302,14 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │   └── supabaseClient.ts
 │   ├── pages
 │   │   ├── ApprovedProfiles.tsx
+│   │   ├── AuthCallback.tsx
 │   │   ├── Directory.tsx
 │   │   ├── Home.tsx
+│   │   ├── Login.tsx
 │   │   ├── PendingProfiles.tsx
 │   │   └── ProfileReview.tsx
 │   ├── types
+│   │   ├── supabase.ts
 │   │   └── types.ts
 │   ├── App.tsx
 │   ├── index.css
@@ -291,7 +323,9 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   ├── migrations
 │   │   ├── 20260102152500_profiles_table.sql
 │   │   ├── 20260102152505_profiles_rls.sql
-│   │   └── 20260105114500_profiles_status_trigger_fix.sql
+│   │   ├── 20260105114500_profiles_status_trigger_fix.sql
+│   │   ├── 20260116000100_profiles_is_admin.sql
+│   │   └── 20260116010000_admin_allowlist.sql
 │   ├── seeds
 │   │   └── 001_dev_seed.sql
 │   ├── tests
@@ -300,9 +334,15 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │       └── profiles.rls.test.ts
 │   ├── .gitignore
 │   ├── config.toml
-│   ├── README.md
-│   └── seed.sql
+│   └── README.md
+├── test-results
+│   ├── home-Home-Page---High-Inte-30573--warning-System-Audit-Info--chromium
+│   │   └── error-context.md
+│   ├── home-Home-Page---High-Inte-e5b48--primary-navigation-targets-chromium
+│   │   └── error-context.md
+│   └── .last-run.json
 ├── tests
+│   ├── accessibility.spec.ts
 │   └── home.spec.ts
 ├── .dockerignore
 ├── .editorconfig
@@ -334,6 +374,7 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 ├── vite.config.ts
 ├── vitest.config.ts
 └── WIKI_HOME.md
+
 ```
 
 </details>

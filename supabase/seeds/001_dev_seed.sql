@@ -53,8 +53,11 @@ from public.profiles
 where status = 'approved';
 
 -- ============================================================
--- Notes
+-- Admin allowlist (dev)
 -- ============================================================
--- - Users cannot change their own status (blocked by trigger)
--- - Public access never sees pending/rejected/disabled profiles
--- - Admin access sees everything
+
+insert into public.admin_allowlist (email)
+values
+  ('limeman@gmail.com'),
+  ('wrdlnkdn@gmail.com')
+on conflict (email) do nothing;

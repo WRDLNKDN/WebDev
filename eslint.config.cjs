@@ -22,7 +22,6 @@ const allPlugins = {
 
 module.exports = [
   // 1. GLOBAL IGNORES (Environment Optimization)
-  // Must be a standalone object with ONLY the ignores key for maximum logic purity
   {
     ignores: [
       'src/types/supabase.ts', // Ignore machine-generated code
@@ -61,7 +60,12 @@ module.exports = [
       ...reactPlugin.configs.recommended.rules,
       ...reactPlugin.configs['jsx-runtime'].rules,
       ...reactHooksPlugin.configs.recommended.rules,
+      ...jsxA11y.configs.recommended.rules,
+
+      // Formatting Firewall
       'prettier/prettier': 'error',
+
+      // Component Architecture
       'react/function-component-definition': [
         'error',
         {
@@ -73,23 +77,49 @@ module.exports = [
         'warn',
         { allowConstantExport: true },
       ],
+
+      // Logic Purity overrides
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      ...jsxA11y.configs.recommended.rules,
-      'jsx-a11y/anchor-is-valid': 'warn', // Custom tweak for Next/Vite routing
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+
+      // --- MUI & SEMANTIC INTEGRITY (The Prophet's Audit) ---
+      // We block generic 'button' and 'a' tags to enforce MUI Button/Link for A11y
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXOpeningElement[name.name='button']",
+          message:
+            'Use MUI <Button /> instead to ensure WCAG 2.2 / Section 508 compliance.',
+        },
+        {
+          selector: "JSXOpeningElement[name.name='a']",
+          message:
+            'Use MUI <Link /> or Next/Vite routing components to maintain system integrity.',
+        },
+      ],
+
+      // Accessibility Hardening (WCAG 2.2 AA)
+      'jsx-a11y/anchor-is-valid': 'error',
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/aria-props': 'error',
+      'jsx-a11y/role-has-required-aria-props': 'error',
     },
   },
 
   // 4. PLAYWRIGHT Configuration (The "Verification" Layer)
   {
     files: ['tests/**/*.{spec,test}.{ts,js}'],
-    // @ts-ignore - Bypass the property check if the compiler is blind to the CJS export
+    // @ts-ignore
     ...playwright.configs['flat/recommended'],
     rules: {
       // @ts-ignore
       ...playwright.configs['flat/recommended'].rules,
-      'playwright/no-wait-for-timeout': 'warn',
+      'playwright/no-wait-for-timeout': 'error', // Upgraded to error for high-integrity
     },
   },
 

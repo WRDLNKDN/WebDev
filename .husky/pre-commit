@@ -1,3 +1,4 @@
+#!/bin/bash
 # --- The "Anti-Bloat" Verification ---
 # System Audit: Detect node_modules in the stage
 STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)

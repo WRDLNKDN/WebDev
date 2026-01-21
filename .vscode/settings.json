@@ -1,0 +1,47 @@
+{
+  // --- SECTION 1: CODE FORMATTING (PRETTIER ENFORCEMENT) ---
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  // --- SECTION 2: ESLINT & AUTO-FIX PROTOCOLS ---
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+
+  // --- SECTION 3: TYPESCRIPT / REACT 19 DX ---
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // --- SECTION 4: AI CONTEXT & ACCESSIBILITY ---
+  "github.copilot.editor.enableAutoCompletions": true,
+  "axe.showA11yIssuesInEditor": true,
+
+  // --- SECTION 5: SYSTEM INTEGRITY (CLEANLINESS) ---
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "editor.lightbulb.enabled": "on",
+
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/.eslintcache": true
+  }
+}

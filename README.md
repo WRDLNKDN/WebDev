@@ -1,6 +1,6 @@
 # 📚 WRDLNKDN Central Documentation
 
-> **Primary Source of Truth:**
+> **Primary Source of Truth:** >
 > [WRDLNKDN Home Wiki](https://github.com/WRDLNKDN/WebDev/wiki) > _Please
 > consult the Wiki for high-level guides, policies, and roadmap details before
 > contributing._

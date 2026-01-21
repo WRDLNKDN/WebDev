@@ -1,6 +1,6 @@
 # 🤝 Contributing to WRDLNKDN
 
-> **Start Here:**
+> **Start Here:** >
 > [Contributor Onboarding Wiki](https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding)
 >
 > _Please review the onboarding guide for detailed workflows, rights, and

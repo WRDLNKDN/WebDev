@@ -1,6 +1,6 @@
 # 👥 Project Contributors
 
-> **Start Here:**
+> **Start Here:** >
 > [Contributor Onboarding Wiki](https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding)
 >
 > _Review the onboarding guide to learn how to join this list._

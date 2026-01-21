@@ -32,9 +32,13 @@ const anon = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false },
 });
 
-const service = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+const service = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: { persistSession: false },
+  },
+);
 
 describe('profiles RLS', () => {
   test('anon only sees approved profiles (if any)', async () => {

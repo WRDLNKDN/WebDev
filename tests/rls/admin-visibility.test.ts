@@ -15,8 +15,16 @@ type Database = {
     Tables: {
       admin_allowlist: {
         Row: { email: string; created_at: string; created_by: string | null };
-        Insert: { email: string; created_at?: string; created_by?: string | null };
-        Update: { email?: string; created_at?: string; created_by?: string | null };
+        Insert: {
+          email: string;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          email?: string;
+          created_at?: string;
+          created_by?: string | null;
+        };
         Relationships: [];
       };
     };
@@ -27,9 +35,13 @@ type Database = {
   };
 };
 
-const service = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+const service = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: { persistSession: false },
+  },
+);
 
 describe('admin_allowlist visibility', () => {
   test('service role can read allowlist', async () => {

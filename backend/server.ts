@@ -98,58 +98,61 @@ const requireAdmin = async (
 
     return res.status(401).json({ error: 'Unauthorized' });
   } catch (e: unknown) {
-    return res
-      .status(500)
-      .json({ error: errorMessage(e, 'Server error') });
+    return res.status(500).json({ error: errorMessage(e, 'Server error') });
   }
 };
 
 // GET /api/admin/profiles?status=pending&q=&limit=25&offset=0&sort=created_at&order=asc
-app.get('/api/admin/profiles', requireAdmin, async (req: Request, res: Response) => {
-  const status = normalizeStatus(String(req.query.status || 'pending'));
+app.get(
+  '/api/admin/profiles',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const status = normalizeStatus(String(req.query.status || 'pending'));
 
-  const qRaw = String(req.query.q || '').trim();
-  // PostgREST .or() uses a comma-delimited syntax; keep user input from breaking it.
-  const q = qRaw.replaceAll(',', ' ').trim();
+    const qRaw = String(req.query.q || '').trim();
+    // PostgREST .or() uses a comma-delimited syntax; keep user input from breaking it.
+    const q = qRaw.replaceAll(',', ' ').trim();
 
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
 
-  const limit = Math.min(100, Math.max(1, Number(req.query.limit || 25)));
-  const offset = Math.max(0, Number(req.query.offset || 0));
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 25)));
+    const offset = Math.max(0, Number(req.query.offset || 0));
 
-  const sortRaw = String(req.query.sort || 'created_at');
-  const sort: SortField = sortRaw === 'updated_at' ? 'updated_at' : 'created_at';
+    const sortRaw = String(req.query.sort || 'created_at');
+    const sort: SortField =
+      sortRaw === 'updated_at' ? 'updated_at' : 'created_at';
 
-  const orderRaw = String(req.query.order || 'asc').toLowerCase();
-  const ascending = orderRaw !== 'desc';
+    const orderRaw = String(req.query.order || 'asc').toLowerCase();
+    const ascending = orderRaw !== 'desc';
 
-  let query = adminSupabase.from('profiles').select('*', { count: 'exact' });
+    let query = adminSupabase.from('profiles').select('*', { count: 'exact' });
 
-  if (status !== 'all') query = query.eq('status', status);
+    if (status !== 'all') query = query.eq('status', status);
 
-  if (q) {
-    // UUID columns in Postgres do not support ILIKE. If q looks like a UUID, match id exactly.
-    if (isUuid) {
-      query = query.or(`handle.ilike.%${q}%,id.eq.${q}`);
-    } else {
-      query = query.or(`handle.ilike.%${q}%`);
+    if (q) {
+      // UUID columns in Postgres do not support ILIKE. If q looks like a UUID, match id exactly.
+      if (isUuid) {
+        query = query.or(`handle.ilike.%${q}%,id.eq.${q}`);
+      } else {
+        query = query.or(`handle.ilike.%${q}%`);
+      }
     }
-  }
 
-  query = query.order(sort, { ascending });
-  query = query.range(offset, offset + (limit - 1));
+    query = query.order(sort, { ascending });
+    query = query.range(offset, offset + (limit - 1));
 
-  const { data, error, count } = await query;
+    const { data, error, count } = await query;
 
-  if (error) return res.status(500).json({ error: error.message });
+    if (error) return res.status(500).json({ error: error.message });
 
-  // IMPORTANT: UI expects { data, count } (not rows)
-  return res.json({
-    data: data ?? [],
-    count: count ?? 0,
-  });
-});
+    // IMPORTANT: UI expects { data, count } (not rows)
+    return res.json({
+      data: data ?? [],
+      count: count ?? 0,
+    });
+  },
+);
 
 type BulkIds = { ids: string[] };
 
@@ -163,82 +166,102 @@ const requireIds = (body: unknown): string[] => {
 };
 
 // Bulk approve
-app.post('/api/admin/profiles/approve', requireAdmin, async (req: Request, res: Response) => {
-  const ids = requireIds(req.body as BulkIds);
-  if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
+app.post(
+  '/api/admin/profiles/approve',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-  const { error } = await adminSupabase
-    .from('profiles')
-    .update({
-      status: 'approved',
-      reviewed_at: new Date().toISOString(),
-    })
-    .in('id', ids);
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json({ ok: true });
-});
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  },
+);
 
 // Bulk reject
-app.post('/api/admin/profiles/reject', requireAdmin, async (req: Request, res: Response) => {
-  const ids = requireIds(req.body as BulkIds);
-  if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
+app.post(
+  '/api/admin/profiles/reject',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-  const { error } = await adminSupabase
-    .from('profiles')
-    .update({
-      status: 'rejected',
-      reviewed_at: new Date().toISOString(),
-    })
-    .in('id', ids);
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json({ ok: true });
-});
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  },
+);
 
 // Bulk disable
-app.post('/api/admin/profiles/disable', requireAdmin, async (req: Request, res: Response) => {
-  const ids = requireIds(req.body as BulkIds);
-  if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
+app.post(
+  '/api/admin/profiles/disable',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-  const { error } = await adminSupabase
-    .from('profiles')
-    .update({
-      status: 'disabled',
-      reviewed_at: new Date().toISOString(),
-    })
-    .in('id', ids);
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'disabled',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json({ ok: true });
-});
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  },
+);
 
 // Bulk delete (optionally also delete auth.users)
-app.post('/api/admin/profiles/delete', requireAdmin, async (req: Request, res: Response) => {
-  const body = req.body as BulkDelete;
-  const ids = requireIds(body);
-  if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
+app.post(
+  '/api/admin/profiles/delete',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const body = req.body as BulkDelete;
+    const ids = requireIds(body);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-  // Delete profiles first
-  const { error: profErr } = await adminSupabase
-    .from('profiles')
-    .delete()
-    .in('id', ids);
-  if (profErr) return res.status(500).json({ error: profErr.message });
+    // Delete profiles first
+    const { error: profErr } = await adminSupabase
+      .from('profiles')
+      .delete()
+      .in('id', ids);
+    if (profErr) return res.status(500).json({ error: profErr.message });
 
-  // Optionally delete auth users (dangerous)
-  if (body.hardDeleteAuthUsers) {
-    for (const id of ids) {
-      try {
-        await adminSupabase.auth.admin.deleteUser(id);
-      } catch {
-        // Ignore individual failures to avoid partial delete blocking the rest
+    // Optionally delete auth users (dangerous)
+    if (body.hardDeleteAuthUsers) {
+      for (const id of ids) {
+        try {
+          await adminSupabase.auth.admin.deleteUser(id);
+        } catch {
+          // Ignore individual failures to avoid partial delete blocking the rest
+        }
       }
     }
-  }
 
-  return res.json({ ok: true });
-});
+    return res.json({ ok: true });
+  },
+);
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true });

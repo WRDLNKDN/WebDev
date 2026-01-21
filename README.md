@@ -238,24 +238,6 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   │   └── WebDev.yml
 │   └── copilot-instructions.md
 ├── .husky
-│   ├── _
-│   │   ├── .gitignore
-│   │   ├── applypatch-msg
-│   │   ├── commit-msg
-│   │   ├── h
-│   │   ├── husky.sh
-│   │   ├── post-applypatch
-│   │   ├── post-checkout
-│   │   ├── post-commit
-│   │   ├── post-merge
-│   │   ├── post-rewrite
-│   │   ├── pre-applypatch
-│   │   ├── pre-auto-gc
-│   │   ├── pre-commit
-│   │   ├── pre-merge-commit
-│   │   ├── pre-push
-│   │   ├── pre-rebase
-│   │   └── prepare-commit-msg
 │   ├── pre-commit
 │   └── pre-push
 ├── assets
@@ -321,11 +303,8 @@ Pre-commit hooks will also enforce these checks automatically via Husky.
 │   ├── .temp
 │   │   └── cli-latest
 │   ├── migrations
-│   │   ├── 20260102152500_profiles_table.sql
-│   │   ├── 20260102152505_profiles_rls.sql
-│   │   ├── 20260105114500_profiles_status_trigger_fix.sql
-│   │   ├── 20260116000100_profiles_is_admin.sql
-│   │   └── 20260116010000_admin_allowlist.sql
+│   │   ├── 20260121180000_profiles_baseline.sql
+│   │   └── 20260121180005_profiles_rls.sql
 │   ├── seeds
 │   │   └── 001_dev_seed.sql
 │   ├── tests

@@ -11,7 +11,6 @@ export const LoginButton = () => {
     });
 
     if (error) {
-      console.error('Google OAuth error:', error.message);
       alert('Login failed. Check console for details.');
     }
   };

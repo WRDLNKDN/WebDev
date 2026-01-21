@@ -33,17 +33,8 @@
   },
 
   /* What this config applies to */
-  "include": [
-    "src"
-  ],
+  "include": ["src"],
 
   /* Explicitly exclude non-frontend code */
-  "exclude": [
-    "node_modules",
-    "dist",
-    "backend",
-    "supabase",
-    "tests",
-    "e2e"
-  ]
+  "exclude": ["node_modules", "dist", "backend", "supabase", "tests", "e2e"]
 }

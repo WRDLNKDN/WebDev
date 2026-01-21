@@ -73,9 +73,7 @@ export const AdminGate = ({ children }: { children: ReactNode }) => {
   if (!allowed) {
     return (
       <Alert severity="error" sx={{ mt: 4 }}>
-        <Typography variant="subtitle2">
-          Admin access denied
-        </Typography>
+        <Typography variant="subtitle2">Admin access denied</Typography>
         {email && (
           <Typography variant="body2">
             Signed in as <strong>{email}</strong>

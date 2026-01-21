@@ -1,97 +1,102 @@
 // src/admin/adminApi.ts
-
-export type {
-  ProfileStatus,
-  ProfileRow,
+import type {
   FetchProfilesParams,
+  ProfileRow,
+  ProfileStatus,
 } from '../types/types';
 
-import type { FetchProfilesParams, ProfileRow } from '../types/types';
+const API_BASE = '/api/admin';
 
-type ApiError = { message?: string };
+const toMessage = async (res: Response) => {
+  const text = await res.text().catch(() => '');
+  if (!text) return `${res.status} ${res.statusText}`;
+  return `${res.status} ${res.statusText}: ${text.slice(0, 300)}`;
+};
 
-const ADMIN_ENDPOINT =
-  (import.meta as unknown as { env?: Record<string, string> }).env
-    ?.VITE_ADMIN_API_URL || '/api/admin';
-
-const requestJson = async <T>(
+async function requestJSON<T>(
   token: string,
   path: string,
   init?: RequestInit,
-): Promise<T> => {
-  const res = await fetch(`${ADMIN_ENDPOINT}${path}`, {
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
       ...(init?.headers || {}),
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
     },
   });
 
-  const contentType = res.headers.get('content-type') || '';
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok) {
+    throw new Error(await toMessage(res));
+  }
 
-  // Helpful debugging when Vite returns index.html or a proxy route is missing
-  if (!contentType.includes('application/json')) {
-    const text = await res.text();
-    const preview = text.slice(0, 300).replace(/\s+/g, ' ').trim();
+  if (!ct.includes('application/json')) {
+    const preview = await res.text().catch(() => '');
     throw new Error(
-      `Expected JSON but got "${contentType || 'unknown'}" from ${ADMIN_ENDPOINT}${path}. ` +
-        `This usually means the route is missing or the dev server returned index.html. ` +
-        `Response preview: ${preview}`,
+      `Expected JSON from ${API_BASE}${path}, got "${ct || 'unknown'}". Preview: ${preview.slice(
+        0,
+        200,
+      )}`,
     );
   }
 
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as ApiError;
-      msg = body?.message || msg;
-    } catch {
-      // ignore
-    }
-    throw new Error(msg);
-  }
-
   return (await res.json()) as T;
+}
+
+const toQuery = (
+  params: Record<string, string | number | boolean | undefined>,
+) => {
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined) return;
+    usp.set(k, String(v));
+  });
+  const qs = usp.toString();
+  return qs ? `?${qs}` : '';
 };
+
+export type FetchProfilesResult = { data: ProfileRow[]; count: number };
 
 export const fetchProfiles = async (
   token: string,
   params: FetchProfilesParams,
-): Promise<{ data: ProfileRow[]; count: number }> => {
-  const qs = new URLSearchParams();
-  qs.set('status', params.status);
-  qs.set('q', params.q);
-  qs.set('limit', String(params.limit));
-  qs.set('offset', String(params.offset));
-  qs.set('sort', params.sort);
-  qs.set('order', params.order);
+): Promise<FetchProfilesResult> => {
+  const qs = toQuery({
+    status: params.status,
+    q: params.q ?? '',
+    limit: params.limit,
+    offset: params.offset,
+    sort: params.sort,
+    order: params.order,
+  });
 
-  return requestJson<{ data: ProfileRow[]; count: number }>(
-    token,
-    `/profiles?${qs.toString()}`,
-  );
+  return requestJSON<FetchProfilesResult>(token, `/profiles${qs}`, {
+    method: 'GET',
+  });
+};
+
+type BulkBody = { ids: string[] };
+
+const postBulk = async (token: string, path: string, ids: string[]) => {
+  const body: BulkBody = { ids };
+  await requestJSON<{ ok: true }>(token, path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 };
 
 export const approveProfiles = async (token: string, ids: string[]) => {
-  return requestJson<{ ok: true }>(token, '/profiles/approve', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
+  await postBulk(token, `/profiles/approve`, ids);
 };
 
 export const rejectProfiles = async (token: string, ids: string[]) => {
-  return requestJson<{ ok: true }>(token, '/profiles/reject', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
+  await postBulk(token, `/profiles/reject`, ids);
 };
 
 export const disableProfiles = async (token: string, ids: string[]) => {
-  return requestJson<{ ok: true }>(token, '/profiles/disable', {
-    method: 'POST',
-    body: JSON.stringify({ ids }),
-  });
+  await postBulk(token, `/profiles/disable`, ids);
 };
 
 export const deleteProfiles = async (
@@ -99,8 +104,15 @@ export const deleteProfiles = async (
   ids: string[],
   hardDeleteAuthUsers: boolean,
 ) => {
-  return requestJson<{ ok: true }>(token, '/profiles/delete', {
-    method: 'POST',
-    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
-  });
+  await requestJSON<{ ok: true; failedAuthDeletes?: string[] }>(
+    token,
+    `/profiles/delete`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ ids, hardDeleteAuthUsers }),
+    },
+  );
 };
+
+// Re-export types so other components importing from adminApi don’t explode
+export type { ProfileRow, ProfileStatus };

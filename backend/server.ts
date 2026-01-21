@@ -1,4 +1,5 @@
 import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
@@ -10,8 +11,9 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 
 if (!SUPABASE_URL) throw new Error('Missing SUPABASE_URL in backend env');
-if (!SUPABASE_SERVICE_ROLE_KEY)
+if (!SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY in backend env');
+}
 
 const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -28,17 +30,38 @@ app.use(
 
 app.use(express.json());
 
-const pickBearer = (req: express.Request) => {
+type AdminRequest = Request & { adminEmail?: string };
+
+type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
+
+type SortField = 'created_at' | 'updated_at';
+
+const normalizeStatus = (s: string): Status | 'all' => {
+  const v = s.toLowerCase();
+  if (v === 'all') return 'all';
+  if (v === 'approved') return 'approved';
+  if (v === 'rejected') return 'rejected';
+  if (v === 'disabled') return 'disabled';
+  return 'pending';
+};
+
+const pickBearer = (req: Request) => {
   const h = req.headers.authorization;
   if (!h) return null;
   const m = h.match(/^Bearer\s+(.+)$/i);
   return m?.[1] ?? null;
 };
 
+const errorMessage = (e: unknown, fallback: string) => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string' && e.trim()) return e;
+  return fallback;
+};
+
 const requireAdmin = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
+  req: AdminRequest,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     // 1) Preferred: Supabase access token in Authorization: Bearer <jwt>
@@ -65,7 +88,7 @@ const requireAdmin = async (
         return res.status(403).json({ error: `Forbidden: ${email}` });
       }
 
-      (req as any).adminEmail = email;
+      req.adminEmail = email;
       return next();
     }
 
@@ -74,31 +97,29 @@ const requireAdmin = async (
     if (token && ADMIN_TOKEN && token === ADMIN_TOKEN) return next();
 
     return res.status(401).json({ error: 'Unauthorized' });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message ?? 'Server error' });
+  } catch (e: unknown) {
+    return res
+      .status(500)
+      .json({ error: errorMessage(e, 'Server error') });
   }
 };
 
-type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
-
-const normalizeStatus = (s: string): Status | 'all' => {
-  const v = s.toLowerCase();
-  if (v === 'all') return 'all';
-  if (v === 'approved') return 'approved';
-  if (v === 'rejected') return 'rejected';
-  if (v === 'disabled') return 'disabled';
-  return 'pending';
-};
-
 // GET /api/admin/profiles?status=pending&q=&limit=25&offset=0&sort=created_at&order=asc
-app.get('/api/admin/profiles', requireAdmin, async (req, res) => {
+app.get('/api/admin/profiles', requireAdmin, async (req: Request, res: Response) => {
   const status = normalizeStatus(String(req.query.status || 'pending'));
-  const q = String(req.query.q || '').trim();
+
+  const qRaw = String(req.query.q || '').trim();
+  // PostgREST .or() uses a comma-delimited syntax; keep user input from breaking it.
+  const q = qRaw.replaceAll(',', ' ').trim();
+
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+
   const limit = Math.min(100, Math.max(1, Number(req.query.limit || 25)));
   const offset = Math.max(0, Number(req.query.offset || 0));
 
   const sortRaw = String(req.query.sort || 'created_at');
-  const sort = sortRaw === 'updated_at' ? 'updated_at' : 'created_at';
+  const sort: SortField = sortRaw === 'updated_at' ? 'updated_at' : 'created_at';
 
   const orderRaw = String(req.query.order || 'asc').toLowerCase();
   const ascending = orderRaw !== 'desc';
@@ -108,12 +129,15 @@ app.get('/api/admin/profiles', requireAdmin, async (req, res) => {
   if (status !== 'all') query = query.eq('status', status);
 
   if (q) {
-    // Basic search: handle contains q OR id contains q
-    // (If you want more fields, expand this.)
-    query = query.or(`handle.ilike.%${q}%,id.ilike.%${q}%`);
+    // UUID columns in Postgres do not support ILIKE. If q looks like a UUID, match id exactly.
+    if (isUuid) {
+      query = query.or(`handle.ilike.%${q}%,id.eq.${q}`);
+    } else {
+      query = query.or(`handle.ilike.%${q}%`);
+    }
   }
 
-  query = query.order(sort as any, { ascending });
+  query = query.order(sort, { ascending });
   query = query.range(offset, offset + (limit - 1));
 
   const { data, error, count } = await query;
@@ -128,16 +152,18 @@ app.get('/api/admin/profiles', requireAdmin, async (req, res) => {
 });
 
 type BulkIds = { ids: string[] };
+
 type BulkDelete = { ids: string[]; hardDeleteAuthUsers?: boolean };
 
-const requireIds = (body: any): string[] => {
-  const ids = body?.ids;
+const requireIds = (body: unknown): string[] => {
+  if (!body || typeof body !== 'object') return [];
+  const ids = (body as { ids?: unknown }).ids;
   if (!Array.isArray(ids) || ids.length === 0) return [];
   return ids.map(String).filter(Boolean);
 };
 
 // Bulk approve
-app.post('/api/admin/profiles/approve', requireAdmin, async (req, res) => {
+app.post('/api/admin/profiles/approve', requireAdmin, async (req: Request, res: Response) => {
   const ids = requireIds(req.body as BulkIds);
   if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
 
@@ -154,7 +180,7 @@ app.post('/api/admin/profiles/approve', requireAdmin, async (req, res) => {
 });
 
 // Bulk reject
-app.post('/api/admin/profiles/reject', requireAdmin, async (req, res) => {
+app.post('/api/admin/profiles/reject', requireAdmin, async (req: Request, res: Response) => {
   const ids = requireIds(req.body as BulkIds);
   if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
 
@@ -171,7 +197,7 @@ app.post('/api/admin/profiles/reject', requireAdmin, async (req, res) => {
 });
 
 // Bulk disable
-app.post('/api/admin/profiles/disable', requireAdmin, async (req, res) => {
+app.post('/api/admin/profiles/disable', requireAdmin, async (req: Request, res: Response) => {
   const ids = requireIds(req.body as BulkIds);
   if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
 
@@ -188,7 +214,7 @@ app.post('/api/admin/profiles/disable', requireAdmin, async (req, res) => {
 });
 
 // Bulk delete (optionally also delete auth.users)
-app.post('/api/admin/profiles/delete', requireAdmin, async (req, res) => {
+app.post('/api/admin/profiles/delete', requireAdmin, async (req: Request, res: Response) => {
   const body = req.body as BulkDelete;
   const ids = requireIds(body);
   if (ids.length === 0) return res.status(400).json({ error: 'Missing ids[]' });
@@ -201,16 +227,12 @@ app.post('/api/admin/profiles/delete', requireAdmin, async (req, res) => {
   if (profErr) return res.status(500).json({ error: profErr.message });
 
   // Optionally delete auth users (dangerous)
-  if (body?.hardDeleteAuthUsers) {
-    // Admin API exists only on hosted; local may differ.
-    // This is intentionally left as a no-op with a warning response for now.
-    // You can implement this with adminSupabase.auth.admin.deleteUser(id) when using the service role.
+  if (body.hardDeleteAuthUsers) {
     for (const id of ids) {
       try {
-        // admin API is available in supabase-js with service role
         await adminSupabase.auth.admin.deleteUser(id);
       } catch {
-        // ignore individual failures
+        // Ignore individual failures to avoid partial delete blocking the rest
       }
     }
   }
@@ -218,7 +240,7 @@ app.post('/api/admin/profiles/delete', requireAdmin, async (req, res) => {
   return res.json({ ok: true });
 });
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 

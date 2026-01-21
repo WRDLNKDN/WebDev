@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
 import { supabase } from '../lib/supabaseClient';
 
-export const AdminGate = ({ children }: { children: React.ReactNode }) => {
+export const AdminGate = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [reason, setReason] = useState('');
@@ -24,8 +25,7 @@ export const AdminGate = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        // Until you regenerate types, rpc can type to never. This keeps TS quiet.
-        const { data, error } = await supabase.rpc('is_admin' as any);
+        const { data, error } = await supabase.rpc('is_admin');
 
         if (!mounted) return;
 
@@ -39,10 +39,11 @@ export const AdminGate = ({ children }: { children: React.ReactNode }) => {
         setAllowed(Boolean(data));
         if (!data) setReason('Not allowlisted for admin.');
         setLoading(false);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!mounted) return;
+        const msg = e instanceof Error ? e.message : 'Admin check failed.';
         setAllowed(false);
-        setReason(e?.message ?? 'Admin check failed.');
+        setReason(msg);
         setLoading(false);
       }
     };

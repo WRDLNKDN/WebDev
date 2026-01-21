@@ -1,7 +1,9 @@
 # 📚 WRDLNKDN Central Documentation
->
-> **Primary Source of Truth:** [WRDLNKDN Home Wiki](https://github.com/WRDLNKDN/WebDev/wiki)
-> *Please consult the Wiki for high-level guides, policies, and roadmap details before contributing.*
+
+> **Primary Source of Truth:**
+> [WRDLNKDN Home Wiki](https://github.com/WRDLNKDN/WebDev/wiki) > _Please
+> consult the Wiki for high-level guides, policies, and roadmap details before
+> contributing._
 
 ---
 
@@ -16,7 +18,9 @@
 
 **Professional networking, but human.**
 
-WRDLNKDN is a modern, accessibility-first professional directory and platform. It explores what professional networking looks like when we stop pretending it isn't weird.
+WRDLNKDN is a modern, accessibility-first professional directory and platform.
+It explores what professional networking looks like when we stop pretending it
+isn't weird.
 
 ---
 
@@ -28,14 +32,14 @@ WRDLNKDN is a modern, accessibility-first professional directory and platform. I
 
 ### 🛠️ Technology Stack
 
-| Category | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Framework** | React 19 | Modern APIs, future-proof DX |
-| **Build Tool** | Vite | Fast dev server and builds |
-| **Language** | TypeScript | Type safety and maintainability |
-| **UI** | Material UI | Accessible component system |
-| **Design** | WCAG 2.2 | Accessibility-first defaults |
-| **Database** | Supabase | Auth, PostgreSQL, and Realtime |
+| Category       | Technology  | Purpose                         |
+| :------------- | :---------- | :------------------------------ |
+| **Framework**  | React 19    | Modern APIs, future-proof DX    |
+| **Build Tool** | Vite        | Fast dev server and builds      |
+| **Language**   | TypeScript  | Type safety and maintainability |
+| **UI**         | Material UI | Accessible component system     |
+| **Design**     | WCAG 2.2    | Accessibility-first defaults    |
+| **Database**   | Supabase    | Auth, PostgreSQL, and Realtime  |
 
 ---
 
@@ -54,14 +58,15 @@ WRDLNKDN is a modern, accessibility-first professional directory and platform. I
    ```bash
    git clone [https://github.com/WRDLNKDN/WebDev.git](https://github.com/WRDLNKDN/WebDev.git)
    cd WebDev
+   ```
 
-```bash
+````bash
 
 # Install Dependencies
 
 ```bash
 npm install
-```
+````
 
 ## Initialize Local Environment
 
@@ -90,7 +95,8 @@ The project inhabits a local Docker stack for data.
 npm run dev
 ```
 
-The frontend will inhabit [http://localhost:5173](http://localhost:5173) (or 8080 if running via the production Dockerfile).
+The frontend will inhabit [http://localhost:5173](http://localhost:5173) (or
+8080 if running via the production Dockerfile).
 
 ### 3. Code Quality Checks
 
@@ -100,12 +106,15 @@ We enforce Logic Purity through local hooks:
 - **Format:** `npm run format`
 - **Type-check:** `npm run typecheck`
 
-> Note: Husky pre-commit hooks will automatically perform a System Audit on your staged changes.
+> Note: Husky pre-commit hooks will automatically perform a System Audit on your
+> staged changes.
 
 ## 📁 Resource Map
 
-- **Contributing Guide:** [CONTRIBUTING.md](CONTRIBUTING.md) — Workflow, Code Style, and PR rules.
-- **Contributor Credits:** [CONTRIBUTORS.md](CONTRIBUTORS.md) — The humans behind the OS.
+- **Contributing Guide:** [CONTRIBUTING.md](CONTRIBUTING.md) — Workflow, Code
+  Style, and PR rules.
+- **Contributor Credits:** [CONTRIBUTORS.md](CONTRIBUTORS.md) — The humans
+  behind the OS.
 - **Project Board:** GitHub Projects
 
 ## ♿ Accessibility
@@ -118,8 +127,8 @@ Accessibility is a core design constraint, not a retrofit.
 
 ## Contributors
 
-Thanks to everyone who has helped build or improve WRDLNKDN.
-Generated using contrib.rocks.
+Thanks to everyone who has helped build or improve WRDLNKDN. Generated using
+contrib.rocks.
 
 ## License
 

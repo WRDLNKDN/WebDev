@@ -11,7 +11,6 @@ export const LoginButton = () => {
     });
 
     if (error) {
-      // eslint-disable-next-line no-console
       console.error('Google OAuth error:', error.message);
       alert('Login failed. Check console for details.');
     }

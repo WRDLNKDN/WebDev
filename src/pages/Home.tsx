@@ -9,8 +9,9 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+
+import { supabase } from '../lib/supabaseClient';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -53,7 +54,9 @@ export const Home = () => {
     setError(null);
 
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+      // Home login should NOT force admin redirect.
+      // Let users land back on Home by default.
+      const redirectTo = `${window.location.origin}/auth/callback?next=/`;
 
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -95,7 +98,7 @@ export const Home = () => {
         >
           <Stack spacing={2}>
             <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-              WeirdLinkedIn
+              WRDLNKDN
             </Typography>
 
             <Typography variant="body1" sx={{ opacity: 0.85 }}>
@@ -124,9 +127,18 @@ export const Home = () => {
                 View directory
               </Button>
 
+              <Button
+                component={RouterLink}
+                to="/signup"
+                variant="outlined"
+                size="large"
+              >
+                Create account
+              </Button>
+
               {!session ? (
                 <Button
-                  variant="outlined"
+                  variant="text"
                   size="large"
                   onClick={() => void signInGoogle()}
                   disabled={busy}
@@ -138,11 +150,12 @@ export const Home = () => {
                   <Button
                     component={RouterLink}
                     to="/admin"
-                    variant="outlined"
+                    variant="text"
                     size="large"
                   >
                     Admin moderation
                   </Button>
+
                   <Button
                     variant="text"
                     size="large"

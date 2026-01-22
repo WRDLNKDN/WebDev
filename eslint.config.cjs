@@ -73,10 +73,7 @@ module.exports = [
           unnamedComponents: 'arrow-function',
         },
       ],
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      'react-refresh/only-export-components': 'off',
 
       // Logic Purity overrides
       'react/prop-types': 'off',

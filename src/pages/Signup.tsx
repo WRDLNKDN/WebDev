@@ -10,7 +10,7 @@ import { ProfileStep } from '../components/signup/ProfileStep';
 import { CompleteStep } from '../components/signup/CompleteStep';
 
 const SignupInner = () => {
-  known: {
+  {
   }
   const { state } = useSignup();
 

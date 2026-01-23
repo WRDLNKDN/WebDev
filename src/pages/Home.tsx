@@ -201,7 +201,8 @@ export const Home = () => {
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Local dev note: Admin access is enforced by allowlist server-side.
+                Local dev note: Admin access is enforced by allowlist
+                server-side.
               </Typography>
             </Box>
           </Stack>

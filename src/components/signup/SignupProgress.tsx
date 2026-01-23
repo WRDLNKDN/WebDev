@@ -13,8 +13,10 @@ interface SignupProgressProps {
   completedSteps: SignupStep[];
 }
 
+// Only the steps that actually appear in the progress UI
 const STEP_ORDER: SignupStep[] = ['welcome', 'identity', 'values', 'profile'];
 
+// Labels for every possible step in the union (including "complete")
 const STEP_LABELS: Record<SignupStep, string> = {
   welcome: 'Welcome',
   identity: 'Identity',
@@ -71,5 +73,3 @@ export const SignupProgress = ({
     </Box>
   );
 };
-
-export default SignupProgress;

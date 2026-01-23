@@ -13,7 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 
-import { useSignup } from '../../contexts/useSignup';
+import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityData } from '../../types/signup';
 

@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
-import { SignupProvider } from '../contexts/SignupProvider';
-import { useSignup } from '../contexts/useSignup';
+import { SignupProvider } from '../context/SignupProvider';
+import { useSignup } from '../context/useSignup';
 
 import { SignupProgress } from '../components/signup/SignupProgress';
 import { WelcomeStep } from '../components/signup/WelcomeStep';
@@ -10,8 +10,6 @@ import { ProfileStep } from '../components/signup/ProfileStep';
 import { CompleteStep } from '../components/signup/CompleteStep';
 
 const SignupInner = () => {
-  {
-  }
   const { state } = useSignup();
 
   const renderStep = () => {
@@ -53,6 +51,7 @@ const SignupInner = () => {
           />
         </Box>
       )}
+
       {renderStep()}
     </Box>
   );
@@ -65,5 +64,3 @@ export const Signup = () => {
     </SignupProvider>
   );
 };
-
-export default Signup;

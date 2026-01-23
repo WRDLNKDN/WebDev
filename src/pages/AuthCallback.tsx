@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -6,7 +6,7 @@ import {
   Container,
   Typography,
 } from '@mui/material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const toMessage = (e: unknown) => {
@@ -17,23 +17,45 @@ const toMessage = (e: unknown) => {
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
 
-  const next = params.get('next') || '/';
+  // Read the callback URL once (avoid react-router params timing/rerender quirks)
+  const { next, href, hasCode, oauthError } = useMemo(() => {
+    const url = new URL(window.location.href);
+    const nextParam = url.searchParams.get('next') || '/';
+
+    const code = url.searchParams.get('code');
+    const err =
+      url.searchParams.get('error_description') ||
+      url.searchParams.get('error') ||
+      null;
+
+    return {
+      next: nextParam,
+      href: url.toString(),
+      hasCode: Boolean(code),
+      oauthError: err,
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const finish = async () => {
       try {
-        // Supabase OAuth (PKCE) exchange
-        if (window.location.href.includes('code=')) {
+        // If provider bounced back with an error, show it.
+        if (oauthError) {
+          throw new Error(oauthError);
+        }
+
+        // PKCE exchange (only when we actually have a ?code=)
+        if (hasCode) {
           const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(window.location.href);
+            await supabase.auth.exchangeCodeForSession(href);
           if (exchangeError) throw exchangeError;
         }
 
+        // Confirm we now have a session
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
@@ -43,7 +65,10 @@ export const AuthCallback = () => {
           );
         }
 
-        if (!cancelled) navigate(next, { replace: true });
+        if (!cancelled) {
+          // Replace so we don’t keep /auth/callback (and any query params) in history
+          navigate(next, { replace: true });
+        }
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
       }
@@ -54,7 +79,7 @@ export const AuthCallback = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next]);
+  }, [navigate, next, href, hasCode, oauthError]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>

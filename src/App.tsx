@@ -2,17 +2,16 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 
-/**
- * All pages are lazy-loaded to keep the main bundle small.
- * This fixes the >500kb chunk warning correctly.
- */
-
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
 const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
+);
+
+const Signup = lazy(() =>
+  import('./pages/Signup').then((m) => ({ default: m.Signup })),
 );
 
 const AuthCallback = lazy(() =>
@@ -54,6 +53,7 @@ const App = () => {
         {/* Public */}
         <Route path="/" element={<Home />} />
         <Route path="/directory" element={<Directory />} />
+        <Route path="/signup" element={<Signup />} />
 
         {/* Auth */}
         <Route path="/auth/callback" element={<AuthCallback />} />

@@ -1,6 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { SignupContext } from './SignupContext';
-
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { SignupContext, type SignupContextValue } from './SignupContext';
 import type {
   SignupState,
   SignupStep,
@@ -8,10 +7,6 @@ import type {
   ValuesData,
   ProfileData,
 } from '../types/signup';
-
-// ======================================================
-// Constants (not exported)
-// ======================================================
 
 const STORAGE_KEY = 'wrdlnkdn_signup_state';
 
@@ -22,10 +17,6 @@ const initialState: SignupState = {
   values: null,
   profile: null,
 };
-
-// ======================================================
-// Helpers (not exported)
-// ======================================================
 
 const loadSignupState = (): SignupState => {
   try {
@@ -45,10 +36,6 @@ const saveSignupState = (state: SignupState): void => {
   }
 };
 
-// ======================================================
-// Provider (export only component)
-// ======================================================
-
 export const SignupProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<SignupState>(loadSignupState);
 
@@ -56,47 +43,45 @@ export const SignupProvider = ({ children }: { children: ReactNode }) => {
     saveSignupState(state);
   }, [state]);
 
-  const setIdentity = (data: IdentityData) => {
-    setState((prev) => ({ ...prev, identity: data }));
-  };
+  const value: SignupContextValue = useMemo(
+    () => ({
+      state,
 
-  const setValues = (data: ValuesData) => {
-    setState((prev) => ({ ...prev, values: data }));
-  };
+      setIdentity: (data: IdentityData) => {
+        setState((prev: SignupState) => ({ ...prev, identity: data }));
+      },
 
-  const setProfile = (data: ProfileData) => {
-    setState((prev) => ({ ...prev, profile: data }));
-  };
+      setValues: (data: ValuesData) => {
+        setState((prev: SignupState) => ({ ...prev, values: data }));
+      },
 
-  const goToStep = (step: SignupStep) => {
-    setState((prev) => ({ ...prev, currentStep: step }));
-  };
+      setProfile: (data: ProfileData) => {
+        setState((prev: SignupState) => ({ ...prev, profile: data }));
+      },
 
-  const completeStep = (step: SignupStep) => {
-    setState((prev) => ({
-      ...prev,
-      completedSteps: [...prev.completedSteps.filter((s) => s !== step), step],
-    }));
-  };
+      goToStep: (step: SignupStep) => {
+        setState((prev: SignupState) => ({ ...prev, currentStep: step }));
+      },
 
-  const resetSignup = () => {
-    setState(initialState);
-    localStorage.removeItem(STORAGE_KEY);
-  };
+      completeStep: (step: SignupStep) => {
+        setState((prev: SignupState) => ({
+          ...prev,
+          completedSteps: [
+            ...prev.completedSteps.filter((s: SignupStep) => s !== step),
+            step,
+          ],
+        }));
+      },
 
-  const value = {
-    state,
-    setIdentity,
-    setValues,
-    setProfile,
-    goToStep,
-    completeStep,
-    resetSignup,
-  };
+      resetSignup: () => {
+        setState(initialState);
+        localStorage.removeItem(STORAGE_KEY);
+      },
+    }),
+    [state],
+  );
 
   return (
     <SignupContext.Provider value={value}>{children}</SignupContext.Provider>
   );
 };
-
-export default SignupProvider;

@@ -21,6 +21,8 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,10 +31,10 @@ export const Home = () => {
 
     const init = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!cancelled) {
-        if (sessionError) setError(toMessage(sessionError));
-        setSession(data.session ?? null);
-      }
+      if (cancelled) return;
+
+      if (sessionError) setError(toMessage(sessionError));
+      setSession(data.session ?? null);
     };
 
     void init();
@@ -49,15 +51,41 @@ export const Home = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAdmin = async () => {
+      if (!session) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (cancelled) return;
+        if (error) {
+          setIsAdmin(false);
+          return;
+        }
+        setIsAdmin(Boolean(data));
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+
+    void checkAdmin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   const signInGoogle = async () => {
     setBusy(true);
     setError(null);
 
     try {
-      // Home login should NOT force admin redirect.
-      // Let users land back on Home by default.
-      const redirectTo = `${window.location.origin}/auth/callback?next=/`;
-
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -73,6 +101,7 @@ export const Home = () => {
   const signOut = async () => {
     setBusy(true);
     setError(null);
+
     try {
       const { error: outError } = await supabase.auth.signOut();
       if (outError) throw outError;
@@ -138,7 +167,7 @@ export const Home = () => {
 
               {!session ? (
                 <Button
-                  variant="text"
+                  variant="outlined"
                   size="large"
                   onClick={() => void signInGoogle()}
                   disabled={busy}
@@ -147,14 +176,16 @@ export const Home = () => {
                 </Button>
               ) : (
                 <>
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    variant="text"
-                    size="large"
-                  >
-                    Admin moderation
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      component={RouterLink}
+                      to="/admin"
+                      variant="outlined"
+                      size="large"
+                    >
+                      Admin moderation
+                    </Button>
+                  )}
 
                   <Button
                     variant="text"
@@ -170,8 +201,7 @@ export const Home = () => {
 
             <Box sx={{ pt: 2 }}>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Local dev note: Admin access is enforced by allowlist
-                server-side.
+                Local dev note: Admin access is enforced by allowlist server-side.
               </Typography>
             </Box>
           </Stack>

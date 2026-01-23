@@ -51,10 +51,11 @@ WRDLNKDN is governed by a set of **platform-level non-functional requirements**
 that define operational, scalability, security, and portability constraints,
 independent of implementation details or vendors.
 
-These constraints apply across **registration, approval, admin moderation,
-and directory workflows**, and serve as a baseline for all platform decisions.
+These constraints apply across **registration, approval, admin moderation, and
+directory workflows**, and serve as a baseline for all platform decisions.
 
-- **Source of Truth:** [`docs/architecture/platform-nfrs.md`](./docs/architecture/platform-nfrs.md)
+- **Source of Truth:**
+  [`docs/architecture/platform-nfrs.md`](./docs/architecture/platform-nfrs.md)
 - Referenced by architecture, platform, and implementation tickets
 - Designed to support future replatforming and external integrations
 

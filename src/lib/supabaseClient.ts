@@ -1,17 +1,21 @@
-// src/lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as
+  | string
+  | undefined;
 
-if (!url) throw new Error('Missing VITE_SUPABASE_URL');
-if (!anon) throw new Error('Missing VITE_SUPABASE_ANON_KEY');
+if (!supabaseUrl) throw new Error('Missing VITE_SUPABASE_URL');
+if (!supabaseAnonKey) throw new Error('Missing VITE_SUPABASE_ANON_KEY');
 
-export const supabase = createClient<Database>(url, anon, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    flowType: 'pkce',
+    // PKCE OAuth needs storage across redirects.
+    // Do NOT disable this in a SPA.
     persistSession: true,
+
+    // Keeps login stable in SPAs
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },

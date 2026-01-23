@@ -125,6 +125,12 @@ export const Home = () => {
             bgcolor: 'background.paper',
           }}
         >
+          {!session && (
+            <Alert severity="info" sx={{ mb: 1 }}>
+              You’re browsing as a guest. Create an account to submit a profile
+              or sign in if you’ve already applied.
+            </Alert>
+          )}
           <Stack spacing={2}>
             <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
               WRDLNKDN
@@ -147,35 +153,37 @@ export const Home = () => {
               spacing={1.5}
               sx={{ pt: 1 }}
             >
-              <Button
-                component={RouterLink}
-                to="/directory"
-                variant="contained"
-                size="large"
-              >
-                View directory
-              </Button>
-
-              <Button
-                component={RouterLink}
-                to="/signup"
-                variant="outlined"
-                size="large"
-              >
-                Create account
-              </Button>
-
               {!session ? (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => void signInGoogle()}
-                  disabled={busy}
-                >
-                  Sign in with Google
-                </Button>
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/signup"
+                    variant="contained"
+                    size="large"
+                  >
+                    Create account
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => void signInGoogle()}
+                    disabled={busy}
+                  >
+                    Sign in with Google
+                  </Button>
+                </>
               ) : (
                 <>
+                  <Button
+                    component={RouterLink}
+                    to="/directory"
+                    variant="contained"
+                    size="large"
+                  >
+                    View directory
+                  </Button>
+
                   {isAdmin && (
                     <Button
                       component={RouterLink}
@@ -188,7 +196,7 @@ export const Home = () => {
                   )}
 
                   <Button
-                    variant="text"
+                    variant="outlined"
                     size="large"
                     onClick={() => void signOut()}
                     disabled={busy}

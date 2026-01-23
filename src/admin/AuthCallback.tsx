@@ -1,4 +1,3 @@
-// src/pages/AuthCallback.tsx
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -16,7 +15,7 @@ const toMessage = (e: unknown) => {
   return 'Auth failed';
 };
 
-const AuthCallback = () => {
+export const AuthCallback = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +27,10 @@ const AuthCallback = () => {
 
     const finish = async () => {
       try {
-        const url = window.location.href;
-        const hasCode = url.includes('code=');
-
-        if (hasCode) {
+        // If we returned from an OAuth provider with a code, exchange it for a session.
+        if (window.location.href.includes('code=')) {
           const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(url);
+            await supabase.auth.exchangeCodeForSession(window.location.href);
           if (exchangeError) throw exchangeError;
         }
 

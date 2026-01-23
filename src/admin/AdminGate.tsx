@@ -25,7 +25,7 @@ export const AdminGate = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        const { data, error } = await supabase.rpc('is_admin');
+        const { data, error } = await supabase.rpc('is_admin', {});
 
         if (!mounted) return;
 

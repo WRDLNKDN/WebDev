@@ -5,10 +5,7 @@ export default defineConfig({
     environment: 'jsdom', // or 'node' if these are node-only
     globals: true,
 
-    include: [
-      'tests/**/*.{test,spec}.ts',
-      'tests/**/*.{test,spec}.tsx',
-    ],
+    include: ['tests/**/*.{test,spec}.ts', 'tests/**/*.{test,spec}.tsx'],
 
     exclude: [
       'tests/rls/**',

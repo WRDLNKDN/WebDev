@@ -1,10 +1,10 @@
+// vite.config.ts
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    open: true,
     host: true,
     port: 5173,
     strictPort: true,
@@ -20,17 +20,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-  },
-
-  test: {
-    // Prevent Vitest from ever collecting Playwright specs
-    exclude: [
-      'e2e/**',
-      'tests/**', // if you still have a /tests folder with Playwright files
-      '**/*.spec.ts',
-      '**/*.spec.tsx',
-      '**/*.e2e.ts',
-      '**/*.e2e.tsx',
-    ],
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('@mui')) return 'mui';
+          if (id.includes('@emotion')) return 'emotion';
+          if (id.includes('@supabase')) return 'supabase';
+          if (id.includes('react-router')) return 'router';
+          if (id.includes('react')) return 'react';
+          return 'vendor';
+        },
+      },
+    },
   },
 });

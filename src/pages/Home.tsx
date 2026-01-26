@@ -63,10 +63,12 @@ export const Home = () => {
       try {
         const { data, error } = await supabase.rpc('is_admin');
         if (cancelled) return;
+
         if (error) {
           setIsAdmin(false);
           return;
         }
+
         setIsAdmin(Boolean(data));
       } catch {
         if (!cancelled) setIsAdmin(false);
@@ -113,7 +115,7 @@ export const Home = () => {
   };
 
   return (
-    <Box sx={{ py: 6 }}>
+    <Box component="main" sx={{ py: 6 }}>
       <Container maxWidth="md">
         <Paper
           elevation={0}
@@ -126,13 +128,18 @@ export const Home = () => {
           }}
         >
           {!session && (
-            <Alert severity="info" sx={{ mb: 1 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
               You’re browsing as a guest. Create an account to submit a profile
               or sign in if you’ve already applied.
             </Alert>
           )}
+
           <Stack spacing={2}>
-            <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+            <Typography
+              component="h1"
+              variant="h3"
+              sx={{ fontWeight: 800, lineHeight: 1.1 }}
+            >
               WRDLNKDN
             </Typography>
 

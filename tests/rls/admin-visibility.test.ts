@@ -1,6 +1,13 @@
 // supabase/tests/rls/admin-visibility.test.ts
+import dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
+// Load env for Node/Vitest (Vite does NOT automatically load .env here).
+// Priority: .env.local > .env.test > .env
+dotenv.config({ path: '.env.local', override: true });
+dotenv.config({ path: '.env.test', override: true });
+dotenv.config({ path: '.env', override: true });
 
 function requireEnv(name: string, value: string | undefined) {
   if (!value) throw new Error(`Missing required env var: ${name}`);

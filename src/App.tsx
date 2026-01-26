@@ -2,18 +2,19 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 
+/**
+ * All pages are lazy-loaded to keep the main bundle small.
+ */
+
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
-
 const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
-
 const Signup = lazy(() =>
   import('./pages/Signup').then((m) => ({ default: m.Signup })),
 );
-
 const AuthCallback = lazy(() =>
   import('./pages/AuthCallback').then((m) => ({ default: m.AuthCallback })),
 );
@@ -35,14 +36,16 @@ const ApprovedProfiles = lazy(() =>
 );
 
 const ProfileReview = lazy(() =>
-  import('./pages/ProfileReview').then((m) => ({
-    default: m.ProfileReview,
-  })),
+  import('./pages/ProfileReview').then((m) => ({ default: m.ProfileReview })),
 );
 
 const Loading = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-    <CircularProgress />
+  <Box
+    component="main"
+    role="main"
+    sx={{ display: 'flex', justifyContent: 'center', py: 10 }}
+  >
+    <CircularProgress aria-label="Loading application" />
   </Box>
 );
 
@@ -52,8 +55,12 @@ const App = () => {
       <Routes>
         {/* Public */}
         <Route path="/" element={<Home />} />
-        <Route path="/directory" element={<Directory />} />
+
+        {/* Signup */}
         <Route path="/signup" element={<Signup />} />
+
+        {/* Directory (you said: only after login) */}
+        <Route path="/directory" element={<Directory />} />
 
         {/* Auth */}
         <Route path="/auth/callback" element={<AuthCallback />} />

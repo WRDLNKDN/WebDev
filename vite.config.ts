@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
@@ -20,5 +20,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+  },
+
+  test: {
+    // Prevent Vitest from ever collecting Playwright specs
+    exclude: [
+      'e2e/**',
+      'tests/**', // if you still have a /tests folder with Playwright files
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+      '**/*.e2e.ts',
+      '**/*.e2e.tsx',
+    ],
   },
 });

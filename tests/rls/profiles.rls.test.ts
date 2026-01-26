@@ -1,17 +1,31 @@
 // supabase/tests/rls/profiles.rls.test.ts
+import dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
+// Load env for Node/Vitest (Vite does NOT automatically load .env here).
+// Priority: .env.local > .env.test > .env
+dotenv.config({ path: '.env.local', override: true });
+dotenv.config({ path: '.env.test', override: true });
+dotenv.config({ path: '.env', override: true });
 
 function requireEnv(name: string, value: string | undefined) {
   if (!value) throw new Error(`Missing required env var: ${name}`);
   return value;
 }
 
-const SUPABASE_URL = requireEnv('SUPABASE_URL', process.env.SUPABASE_URL);
+// Accept either Node-style envs OR Vite env names (useful in local dev)
+const SUPABASE_URL = requireEnv(
+  'SUPABASE_URL',
+  process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL,
+);
+
 const SUPABASE_ANON_KEY = requireEnv(
   'SUPABASE_ANON_KEY',
-  process.env.SUPABASE_ANON_KEY,
+  process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY,
 );
+
+// Service role should NEVER be exposed to Vite, so we do not fallback to any VITE_ key.
 const SUPABASE_SERVICE_ROLE_KEY = requireEnv(
   'SUPABASE_SERVICE_ROLE_KEY',
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -102,7 +116,6 @@ describe('RLS: public.profiles', () => {
     authedClient = await signInAsUser(testEmail, testPassword);
 
     // Insert profile row as the user (exercise insert RLS)
-    // Status should default to 'pending' in DB (or set by trigger/default).
     const { error: insertErr } = await authedClient.from('profiles').insert({
       id: testUserId,
       handle,
@@ -172,7 +185,6 @@ describe('RLS: public.profiles', () => {
       .update({ status: 'approved' })
       .eq('id', testUserId);
 
-    // We expect this to fail if you block status changes via trigger or RLS
     expect(error).not.toBeNull();
   });
 

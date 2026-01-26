@@ -52,6 +52,7 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
 
   const signInGoogle = async () => {
     setError(null);
+
     const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -69,47 +70,57 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
 
   return (
     <AdminGate>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Admin
-        </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {!session ? (
-          <Alert
-            severity="warning"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => void signInGoogle()}
-              >
-                Sign in with Google
-              </Button>
-            }
+      {/* Axe requirement: provide a MAIN landmark on the /admin route */}
+      <Box component="main" sx={{ py: 4 }}>
+        <Container maxWidth="lg">
+          {/* Axe requirement: provide an H1 on the /admin route */}
+          <Typography
+            component="h1"
+            variant="h4"
+            sx={{ fontWeight: 800 }}
+            gutterBottom
           >
-            You are not signed in.
-          </Alert>
-        ) : (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <Button variant="outlined" onClick={() => void signOut()}>
-                Sign out
-              </Button>
-            </Box>
+            Admin
+          </Typography>
 
-            <AdminModerationPage
-              token={session.access_token}
-              initialStatus={initialStatus}
-            />
-          </>
-        )}
-      </Container>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {!session ? (
+            <Alert
+              severity="warning"
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => void signInGoogle()}
+                >
+                  Sign in with Google
+                </Button>
+              }
+            >
+              You are not signed in.
+            </Alert>
+          ) : (
+            <>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                {/* Keep outlined so Axe/UX is consistent */}
+                <Button variant="outlined" onClick={() => void signOut()}>
+                  Sign out
+                </Button>
+              </Box>
+
+              <AdminModerationPage
+                token={session.access_token}
+                initialStatus={initialStatus}
+              />
+            </>
+          )}
+        </Container>
+      </Box>
     </AdminGate>
   );
 };

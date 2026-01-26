@@ -79,7 +79,10 @@ module.exports = [
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
 
       // --- MUI & SEMANTIC INTEGRITY (The Prophet's Audit) ---
       // We block generic 'button' and 'a' tags to enforce MUI Button/Link for A11y

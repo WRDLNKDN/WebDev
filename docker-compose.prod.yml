@@ -1,0 +1,16 @@
+name: webdev
+
+services:
+  wrdlnkdn-ui:
+    image: webdev-wrdlnkdn-ui
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - '5173:5173'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}

@@ -1,40 +1,49 @@
-// vite.config.ts
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
+import dotenv from 'dotenv';
+import path from 'node:path';
+
+// --------------------------------------------------
+// Load env vars for tests
+// --------------------------------------------------
+
+// 1) Supabase local env (created by `supabase start`)
+dotenv.config({
+  path: path.resolve(process.cwd(), 'supabase/.env'),
+});
+
+// 2) Optional test overrides
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env.test'),
+});
+
+// 3) Fallback to normal .env
+dotenv.config();
 
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: true,
-    port: 5173,
-    strictPort: true,
-    watch: { usePolling: true },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        // Split big deps into separate chunks.
-        // This reduces the chance the main chunk crosses 500kb.
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return;
+  test: {
+    environment: 'node',
+    globals: true,
 
-          if (id.includes('@mui')) return 'mui';
-          if (id.includes('@emotion')) return 'emotion';
-          if (id.includes('@supabase')) return 'supabase';
-          if (id.includes('react-router')) return 'router';
-          if (id.includes('react')) return 'react';
-          return 'vendor';
-        },
-      },
-    },
+    // ✅ Ensure env is loaded before any test files execute
+    setupFiles: ['vitest.setup.ts'],
+
+    include: [
+      'src/**/*.{test,spec}.ts',
+      'src/**/*.{test,spec}.tsx',
+      'supabase/tests/rls/**/*.{test,spec}.ts',
+    ],
+
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/.next/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      'tests/**/*.{test,spec}.ts',
+      'tests/**/*.{test,spec}.tsx',
+      'e2e/**/*.{test,spec}.ts',
+      'e2e/**/*.{test,spec}.tsx',
+    ],
   },
 });

@@ -6,14 +6,10 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-
-    // Only collect unit tests and RLS tests (and NOTHING in e2e/)
     include: [
-      'src/**/*.{test,spec}.{ts,tsx}',
-      'supabase/tests/rls/**/*.{test,spec}.ts',
+      'tests/**/*.{test,tests,spec,specs}.{ts,tsx}',
+      'supabase/tests/rls/**/*.{test,tests,spec,specs}.ts',
     ],
-
-    // Only exclude the known non-test folders + Playwright outputs
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -22,7 +18,6 @@ export default defineConfig({
       '**/playwright-report/**',
       '**/test-results/**',
       'e2e/**',
-      'tests/**',
     ],
   },
 });

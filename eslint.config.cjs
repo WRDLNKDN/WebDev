@@ -79,10 +79,7 @@ module.exports = [
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_' },
-      ],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 
       // --- MUI & SEMANTIC INTEGRITY (The Prophet's Audit) ---
       // We block generic 'button' and 'a' tags to enforce MUI Button/Link for A11y
@@ -108,9 +105,38 @@ module.exports = [
     },
   },
 
-  // 4. PLAYWRIGHT Configuration (The "Verification" Layer)
+  // 4. VITEST TESTS (Unit + RLS tests)
+  // Apply Vitest globals and explicitly DISABLE Playwright rules in this folder.
   {
-    files: ['tests/**/*.{spec,test}.{ts,js}'],
+    files: ['tests/**/*.{test,spec}.{ts,tsx,js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+
+        // Vitest globals (so eslint doesn't complain)
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+    rules: {
+      // Make sure Playwright rules never fire on Vitest files
+      'playwright/no-conditional-in-test': 'off',
+      'playwright/no-conditional-expect': 'off',
+      'playwright/no-wait-for-timeout': 'off',
+    },
+  },
+
+  // 5. PLAYWRIGHT Configuration (E2E only)
+  {
+    files: ['e2e/**/*.{spec,test}.{ts,tsx,js,jsx}'],
     // @ts-ignore
     ...playwright.configs['flat/recommended'],
     rules: {
@@ -120,6 +146,6 @@ module.exports = [
     },
   },
 
-  // 5. PRETTIER (The Final Firewall)
+  // 6. PRETTIER (The Final Firewall)
   prettierConfig,
 ];

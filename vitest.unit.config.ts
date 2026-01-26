@@ -1,23 +1,24 @@
-// vitest.unit.config.ts
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: 'jsdom', // or 'node' if these are node-only
     globals: true,
 
-    // Only run real unit tests (none of your RLS suites)
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'tests/**/*.{test,spec}.ts',
+      'tests/**/*.{test,spec}.tsx',
+    ],
 
     exclude: [
+      'tests/rls/**',
+      'e2e/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',
       '**/.next/**',
       '**/playwright-report/**',
       '**/test-results/**',
-      'e2e/**',
-      'tests/**', // <- excludes your current RLS tests entirely
     ],
   },
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toMessage } from '../errors';
+import { toMessage } from '../src/lib/errors';
 
 describe('toMessage', () => {
   it('handles Error', () => {

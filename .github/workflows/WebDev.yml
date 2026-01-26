@@ -35,7 +35,7 @@ jobs:
         run: npm run format:check
 
       - name: 🧫 Vitest (unit only)
-        run: npm run test:run
+        run: npm run test:unit
 
   e2e:
     name: 🎭 Playwright (E2E)

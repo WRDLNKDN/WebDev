@@ -1,3 +1,4 @@
+# .github/workflows/WebDev.yml
 name: 🌐 WebDev
 
 on:
@@ -36,8 +37,32 @@ jobs:
       - name: 🎨 Prettier check
         run: npm run format:check
 
-      - name: 🧫 Vitest (unit tests)
+      # --- RLS tests need a real Supabase + env vars in CI ---
+      - name: 🧰 Ensure jq is available (for env export)
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
+      - name: 🧱 Start Supabase (local)
+        run: |
+          npx supabase start
+
+      - name: 🔐 Export Supabase env for Vitest (RLS suites)
+        run: |
+          npx supabase status --output json > supabase-status.json
+          echo "SUPABASE_URL=$(jq -r '.api_url' supabase-status.json)" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$(jq -r '.anon_key' supabase-status.json)" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(jq -r '.service_role_key' supabase-status.json)" >> $GITHUB_ENV
+
+      - name: 🧫 Vitest (unit + RLS tests)
         run: npm run test:run
+
+      - name: 🧹 Stop Supabase (always)
+        if: always()
+        run: |
+          npx supabase stop --no-backup
 
   e2e:
     name: 🎭 Playwright (E2E)
@@ -65,7 +90,6 @@ jobs:
       - name: 🎭 Run Playwright tests
         run: npm run test:e2e
 
-      # If tests fail, keep the report as an artifact
       - name: 📎 Upload Playwright report (on failure)
         if: failure()
         uses: actions/upload-artifact@v4

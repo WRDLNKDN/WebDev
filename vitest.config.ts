@@ -5,8 +5,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+
+    // Unit + non-RLS tests only
     include: ['tests/**/*.{test,spec}.ts'],
+
+    // Key fix: do NOT collect RLS tests in normal runs
     exclude: [
+      'tests/rls/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',

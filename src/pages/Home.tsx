@@ -102,17 +102,16 @@ export const Home = () => {
   };
 
   const signOut = async () => {
-    setBusy(true);
     setError(null);
+    setBusy(true);
 
     try {
-      const { error: outError } = await supabase.auth.signOut();
-      if (outError) throw outError;
+      await supabase.auth.signOut({ scope: 'global' });
 
-      // Clear UI state immediately so the page reflects sign-out even if navigation is slow.
+      // Update UI state immediately
       setSession(null);
-      setIsAdmin(false);
 
+      // Navigate and force a reload to wipe any stale in-memory state
       window.location.assign('/');
     } catch (e: unknown) {
       setError(toMessage(e));

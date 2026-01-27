@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -7,48 +6,13 @@ import {
   Container,
   Typography,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-
-// Keep this in sync with SignupProvider.tsx
-const SIGNUP_STORAGE_KEY = 'wrdlnkdn-signup';
-
-type PersistedSignupState = {
-  currentStep?: string;
-  completedSteps?: string[];
-  identity?: {
-    provider: 'google' | 'microsoft';
-    userId: string;
-    email: string;
-    termsAccepted: boolean;
-    guidelinesAccepted: boolean;
-    timestamp: string;
-  } | null;
-  values?: unknown;
-  profile?: unknown;
-};
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
   return 'Auth failed';
-};
-
-const safeReadSignupState = (): PersistedSignupState | null => {
-  try {
-    const raw = localStorage.getItem(SIGNUP_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PersistedSignupState;
-  } catch {
-    return null;
-  }
-};
-
-const safeWriteSignupState = (nextState: PersistedSignupState) => {
-  try {
-    localStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify(nextState));
-  } catch {
-    // ignore storage write failures
-  }
 };
 
 export const AuthCallback = () => {
@@ -57,10 +21,9 @@ export const AuthCallback = () => {
 
   const { next, href, hasCode, oauthError } = useMemo(() => {
     const url = new URL(window.location.href);
-
     const nextParam = url.searchParams.get('next') || '/';
-    const code = url.searchParams.get('code');
 
+    const code = url.searchParams.get('code');
     const err =
       url.searchParams.get('error_description') ||
       url.searchParams.get('error') ||
@@ -81,55 +44,23 @@ export const AuthCallback = () => {
       try {
         if (oauthError) throw new Error(oauthError);
 
-        // 1) Exchange PKCE code for session (only if we have ?code=)
         if (hasCode) {
           const { error: exchangeError } =
             await supabase.auth.exchangeCodeForSession(href);
           if (exchangeError) throw exchangeError;
         }
 
-        // 2) Confirm session exists
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
+        const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        const session = sessionData.session;
-        if (!session) {
+        if (!data.session) {
           throw new Error(
-            'No session created. Check provider config + redirect URLs.',
+            'No session created. Check provider config and redirect URIs.',
           );
         }
 
-        // 3) Fetch user (email can be missing from session.user depending on provider)
-        const { data: userData, error: userError } =
-          await supabase.auth.getUser();
-        if (userError) throw userError;
-
-        const user = userData.user;
-        const email =
-          user.email ||
-          user.user_metadata?.email ||
-          user.identities?.[0]?.identity_data?.email ||
-          '';
-
-        // 4) If we have a persisted signup draft (created during IdentityStep),
-        // update it with real userId/email so the signup flow can continue.
-        const draft = safeReadSignupState();
-        if (draft?.identity) {
-          safeWriteSignupState({
-            ...draft,
-            identity: {
-              ...draft.identity,
-              userId: user.id,
-              email,
-              timestamp: new Date().toISOString(),
-            },
-          });
-        }
-
-        if (!cancelled) {
-          navigate(next, { replace: true });
-        }
+        // ✅ Do NOT do profile checks here. Just continue.
+        if (!cancelled) navigate(next, { replace: true });
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
       }

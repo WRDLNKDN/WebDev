@@ -1,21 +1,22 @@
+// src/App.tsx
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+
+import { supabase } from './lib/supabaseClient';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
  */
 
+// Public
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
-const Signup = lazy(() =>
-  import('./pages/Signup').then((m) => ({ default: m.Signup })),
-);
-
-const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
+// Auth
+const SignIn = lazy(() =>
+  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
 );
 
 const AuthCallback = lazy(() =>
@@ -24,16 +25,24 @@ const AuthCallback = lazy(() =>
   })),
 );
 
-const AdminApp = lazy(() =>
-  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
+// Signup
+const Signup = lazy(() =>
+  import('./pages/Signup').then((m) => ({ default: m.Signup })),
 );
 
-const SignIn = lazy(() =>
-  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
-);
-
+// Legal
 const Guidelines = lazy(() =>
   import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
+);
+
+// App pages
+const Directory = lazy(() =>
+  import('./pages/Directory').then((m) => ({ default: m.Directory })),
+);
+
+// Admin
+const AdminApp = lazy(() =>
+  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
 const Loading = () => (
@@ -45,26 +54,50 @@ const Loading = () => (
   </Box>
 );
 
+/**
+ * Small boot-time auth sync.
+ * This helps ensure the in-memory client state matches persisted storage quickly,
+ * especially after redirects or hard reloads.
+ */
+const AuthBoot = () => {
+  useEffect(() => {
+    void supabase.auth.getSession();
+  }, []);
+
+  return null;
+};
+
 const App = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        <Route path="/" element={<Home />} />
+    <>
+      <AuthBoot />
 
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<Signup />} />
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Home />} />
 
-        <Route path="/guidelines" element={<Guidelines />} />
+          {/* Auth */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        <Route path="/directory" element={<Directory />} />
+          {/* Signup */}
+          <Route path="/signup" element={<Signup />} />
 
-        <Route path="/auth/callback" element={<AuthCallback />} />
+          {/* Legal */}
+          <Route path="/guidelines" element={<Guidelines />} />
 
-        <Route path="/admin" element={<AdminApp />} />
+          {/* Directory */}
+          <Route path="/directory" element={<Directory />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+          {/* Admin */}
+          <Route path="/admin" element={<AdminApp />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 };
 

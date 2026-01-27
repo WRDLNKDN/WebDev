@@ -78,28 +78,18 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
   };
 
   const signOut = async () => {
-    setBusy(true);
     setError(null);
+    setBusy(true);
 
     try {
-      console.log('🔴 Signing out...');
-
-      // Sign out from Supabase
       await supabase.auth.signOut({ scope: 'global' });
 
-      // Remove our specific storage key
-      localStorage.removeItem('wrdlnkdn-auth');
+      // Update UI state immediately
+      setSession(null);
 
-      // Clear all other storage
-      localStorage.clear();
-      sessionStorage.clear();
-
-      console.log('✅ Signed out, reloading...');
-
-      // Force reload
-      window.location.href = '/';
+      // Navigate and force a reload to wipe any stale in-memory state
+      window.location.assign('/');
     } catch (e: unknown) {
-      console.error('❌ Sign out error:', e);
       setError(toMessage(e));
       setBusy(false);
     }

@@ -136,7 +136,11 @@ export const Home = () => {
                 disabled={busy}
               >
                 {busy ? (
-                  <CircularProgress size={24} color="inherit" />
+                  <CircularProgress
+                    size={24}
+                    color="inherit"
+                    aria-label="Loading..."
+                  />
                 ) : (
                   'Sign In'
                 )}

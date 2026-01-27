@@ -1,6 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { Suspense, lazy } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
@@ -43,7 +43,7 @@ const ProfileReview = lazy(() =>
 
 const Loading = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-    <CircularProgress />
+    <CircularProgress aria-label="Loading..." />
   </Box>
 );
 

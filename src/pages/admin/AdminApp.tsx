@@ -9,10 +9,10 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { AdminModerationPage } from './AdminModerationPage';
 import { AdminGate } from './AdminGate';
-import type { ProfileStatus } from '../types/types';
+import type { ProfileStatus } from '../../types/types';
 
 type Props = {
   initialStatus?: ProfileStatus | 'all';
@@ -81,36 +81,23 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
     setBusy(true);
     setError(null);
 
-    // First, get the storage key that Supabase is using
-    const storageKey = `sb-${import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`;
-
-    console.log('🔴 Signing out...');
-    console.log('Storage before:', localStorage.getItem(storageKey));
-
     try {
+      console.log('🔴 Signing out...');
+
       // Sign out from Supabase
-      const { error: outError } = await supabase.auth.signOut();
-      if (outError) throw outError;
+      await supabase.auth.signOut({ scope: 'global' });
 
-      // Manually remove the exact Supabase auth token
-      localStorage.removeItem(storageKey);
+      // Remove our specific storage key
+      localStorage.removeItem('wrdlnkdn-auth');
 
-      // Remove all sb- prefixed items
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('sb-')) {
-          console.log('Removing:', key);
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Clear everything else
+      // Clear all other storage
       localStorage.clear();
       sessionStorage.clear();
 
-      console.log('Storage after clear:', localStorage.getItem(storageKey));
+      console.log('✅ Signed out, reloading...');
 
-      // Don't use setTimeout - just redirect immediately
-      window.location.replace('/');
+      // Force reload
+      window.location.href = '/';
     } catch (e: unknown) {
       console.error('❌ Sign out error:', e);
       setError(toMessage(e));

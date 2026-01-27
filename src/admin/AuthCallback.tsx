@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -6,8 +6,9 @@ import {
   Container,
   Typography,
 } from '@mui/material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { useSignup } from '../context/useSignup';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -17,33 +18,81 @@ const toMessage = (e: unknown) => {
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const { setIdentity, goToStep } = useSignup();
   const [error, setError] = useState<string | null>(null);
 
-  const next = params.get('next') || '/';
+  const { next, href, hasCode, oauthError } = useMemo(() => {
+    const url = new URL(window.location.href);
+    const nextParam = url.searchParams.get('next') || '/';
+
+    const code = url.searchParams.get('code');
+    const err =
+      url.searchParams.get('error_description') ||
+      url.searchParams.get('error') ||
+      null;
+
+    return {
+      next: nextParam,
+      href: url.toString(),
+      hasCode: Boolean(code),
+      oauthError: err,
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const finish = async () => {
       try {
-        // If we returned from an OAuth provider with a code, exchange it for a session.
-        if (window.location.href.includes('code=')) {
+        if (oauthError) {
+          throw new Error(oauthError);
+        }
+
+        if (hasCode) {
           const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(window.location.href);
+            await supabase.auth.exchangeCodeForSession(href);
           if (exchangeError) throw exchangeError;
         }
 
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        if (!data.session) {
+        if (!sessionData.session) {
           throw new Error(
             'No session created. Check provider config and redirect URIs.',
           );
         }
 
-        if (!cancelled) navigate(next, { replace: true });
+        const user = sessionData.session.user;
+
+        // Check if user has a profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (!cancelled) {
+          // If no profile exists (PGRST116 = no rows returned), continue signup
+          if (profileError && profileError.code === 'PGRST116') {
+            setIdentity({
+              provider: 'google',
+              userId: user.id,
+              email: user.email || '',
+              termsAccepted: true,
+              guidelinesAccepted: true,
+              timestamp: new Date().toISOString(),
+            });
+            goToStep('values');
+            navigate('/signup', { replace: true });
+          } else if (profileError) {
+            throw profileError;
+          } else {
+            // Profile exists, go to intended destination
+            navigate(next, { replace: true });
+          }
+        }
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
       }
@@ -54,7 +103,7 @@ export const AuthCallback = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next]);
+  }, [navigate, next, href, hasCode, oauthError, setIdentity, goToStep]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>

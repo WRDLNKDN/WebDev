@@ -15,10 +15,9 @@ import {
 
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
-import type { IdentityData } from '../../types/signup';
 
 export const IdentityStep = () => {
-  const { setIdentity, goToStep } = useSignup();
+  const { goToStep } = useSignup();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [guidelinesAccepted, setGuidelinesAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +25,11 @@ export const IdentityStep = () => {
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
+  // REMOVED THE AUTO-SKIP USEEFFECT - Always show the OAuth button
+
   const handleGoogleSignIn = async () => {
+    console.log('🚀 Starting Google OAuth flow...');
+
     if (!canProceed) {
       setError('Please accept the Terms and Community Guidelines to continue');
       return;
@@ -36,29 +39,31 @@ export const IdentityStep = () => {
     setError(null);
 
     try {
+      console.log('📞 Calling supabase.auth.signInWithOAuth...');
+
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
         },
       });
 
-      if (authError) throw authError;
+      console.log('📦 OAuth response:', { data, authError });
+
+      if (authError) {
+        console.error('❌ OAuth error:', authError);
+        throw authError;
+      }
 
       if (data.url) {
-        const identityData: IdentityData = {
-          provider: 'google',
-          userId: '',
-          email: '',
-          termsAccepted: true,
-          guidelinesAccepted: true,
-          timestamp: new Date().toISOString(),
-        };
-
-        setIdentity(identityData);
+        console.log('✅ Got OAuth URL, redirecting to:', data.url);
         window.location.href = data.url;
+      } else {
+        console.warn('⚠️ No URL in OAuth response');
+        setError('OAuth redirect URL missing');
       }
     } catch (err) {
+      console.error('💥 Exception in handleGoogleSignIn:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
       setLoading(false);
     }

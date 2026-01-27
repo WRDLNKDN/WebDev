@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { SignupContext, type SignupContextValue } from './SignupContext';
+import React, { useState, useEffect } from 'react';
+import { SignupContext } from './SignupContext';
+import type { SignupContextValue } from './SignupContext';
 import type {
   SignupState,
   SignupStep,
@@ -7,6 +8,7 @@ import type {
   ValuesData,
   ProfileData,
 } from '../types/signup';
+import { supabase } from '../lib/supabaseClient';
 
 const STORAGE_KEY = 'wrdlnkdn_signup_state';
 
@@ -18,68 +20,103 @@ const initialState: SignupState = {
   profile: null,
 };
 
-const loadSignupState = (): SignupState => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as SignupState;
-  } catch (err) {
-    console.error('Failed to load signup state:', err);
-  }
-  return initialState;
-};
+export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
+  const [state, setState] = useState<SignupState>(initialState);
+  const [isLoading, setIsLoading] = useState(true);
 
-const saveSignupState = (state: SignupState): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
-    console.error('Failed to save signup state:', err);
-  }
-};
-
-export const SignupProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<SignupState>(loadSignupState);
-
+  // Initialize state on mount
   useEffect(() => {
-    saveSignupState(state);
-  }, [state]);
+    const initializeState = async () => {
+      try {
+        // Check if user is already authenticated
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-  const value: SignupContextValue = useMemo(
-    () => ({
-      state,
+        if (session) {
+          // Check if user has a profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .single();
 
-      setIdentity: (data: IdentityData) => {
-        setState((prev: SignupState) => ({ ...prev, identity: data }));
-      },
+          if (profile) {
+            // User has profile, clear any signup state
+            localStorage.removeItem(STORAGE_KEY);
+            setState(initialState);
+            setIsLoading(false);
+            return;
+          }
+        }
 
-      setValues: (data: ValuesData) => {
-        setState((prev: SignupState) => ({ ...prev, values: data }));
-      },
-
-      setProfile: (data: ProfileData) => {
-        setState((prev: SignupState) => ({ ...prev, profile: data }));
-      },
-
-      goToStep: (step: SignupStep) => {
-        setState((prev: SignupState) => ({ ...prev, currentStep: step }));
-      },
-
-      completeStep: (step: SignupStep) => {
-        setState((prev: SignupState) => ({
-          ...prev,
-          completedSteps: [
-            ...prev.completedSteps.filter((s: SignupStep) => s !== step),
-            step,
-          ],
-        }));
-      },
-
-      resetSignup: () => {
+        // Load saved state from localStorage
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsedState = JSON.parse(saved);
+          setState(parsedState);
+        }
+      } catch (error) {
+        console.error('Error initializing signup state:', error);
         setState(initialState);
-        localStorage.removeItem(STORAGE_KEY);
-      },
-    }),
-    [state],
-  );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeState();
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  }, [state, isLoading]);
+
+  const setIdentity = (data: IdentityData) => {
+    setState((prev) => ({ ...prev, identity: data }));
+  };
+
+  const setValues = (data: ValuesData) => {
+    setState((prev) => ({ ...prev, values: data }));
+  };
+
+  const setProfile = (data: ProfileData) => {
+    setState((prev) => ({ ...prev, profile: data }));
+  };
+
+  const goToStep = (step: SignupStep) => {
+    setState((prev) => ({ ...prev, currentStep: step }));
+  };
+
+  const completeStep = (step: SignupStep) => {
+    setState((prev) => ({
+      ...prev,
+      completedSteps: prev.completedSteps.includes(step)
+        ? prev.completedSteps
+        : [...prev.completedSteps, step],
+    }));
+  };
+
+  const resetSignup = () => {
+    setState(initialState);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const value: SignupContextValue = {
+    state,
+    setIdentity,
+    setValues,
+    setProfile,
+    goToStep,
+    completeStep,
+    resetSignup,
+  };
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <SignupContext.Provider value={value}>{children}</SignupContext.Provider>

@@ -1,42 +1,60 @@
+import React, { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { SignupProvider } from './context/SignupProvider';
 
-/**
- * All pages are lazy-loaded to keep the main bundle small.
- */
+const lazyExport = <T extends React.ComponentType<any>>(
+  importer: () => Promise<unknown>,
+  exportName: string,
+) =>
+  lazy(async () => {
+    const mod = (await importer()) as Record<string, unknown> & {
+      default?: unknown;
+    };
 
-const Home = lazy(() =>
-  import('./pages/Home').then((m) => ({ default: m.Home })),
-);
-const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
-);
-const Signup = lazy(() =>
-  import('./pages/Signup').then((m) => ({ default: m.Signup })),
-);
-const AuthCallback = lazy(() =>
-  import('./pages/AuthCallback').then((m) => ({ default: m.AuthCallback })),
+    const picked = mod[exportName] ?? mod.default;
+
+    if (!picked) {
+      throw new Error(
+        `Lazy import failed: export "${exportName}" (or default) not found.`,
+      );
+    }
+
+    return { default: picked as T };
+  });
+
+// Public
+const Home = lazyExport(() => import('./pages/Home'), 'Home');
+const SignIn = lazyExport(() => import('./pages/auth/SignIn'), 'SignIn');
+
+// Main user pages
+const Directory = lazyExport(() => import('./pages/Directory'), 'Directory');
+const Signup = lazyExport(() => import('./pages/Signup'), 'Signup');
+const AuthCallback = lazyExport(
+  () => import('./pages/auth/AuthCallback'),
+  'AuthCallback',
 );
 
-const AdminApp = lazy(() =>
-  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
+// Terms and Guidelines
+const Terms = lazyExport(() => import('./pages/legal/Terms'), 'Terms');
+const Guidelines = lazyExport(
+  () => import('./pages/legal/Guidelines'),
+  'Guidelines',
 );
 
-const PendingProfiles = lazy(() =>
-  import('./pages/PendingProfiles').then((m) => ({
-    default: m.PendingProfiles,
-  })),
+// Admin
+const AdminApp = lazyExport(() => import('./admin/AdminApp'), 'AdminApp');
+const PendingProfiles = lazyExport(
+  () => import('./pages/admin/PendingProfiles'),
+  'PendingProfiles',
 );
-
-const ApprovedProfiles = lazy(() =>
-  import('./pages/ApprovedProfiles').then((m) => ({
-    default: m.ApprovedProfiles,
-  })),
+const ApprovedProfiles = lazyExport(
+  () => import('./pages/admin/ApprovedProfiles'),
+  'ApprovedProfiles',
 );
-
-const ProfileReview = lazy(() =>
-  import('./pages/ProfileReview').then((m) => ({ default: m.ProfileReview })),
+const ProfileReview = lazyExport(
+  () => import('./pages/admin/ProfileReview'),
+  'ProfileReview',
 );
 
 const Loading = () => (
@@ -51,30 +69,35 @@ const Loading = () => (
 
 const App = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<Home />} />
+    <SignupProvider>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Home />} />
+          <Route path="/signin" element={<SignIn />} />
 
-        {/* Signup */}
-        <Route path="/signup" element={<Signup />} />
+          {/* Signup flow */}
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Directory (you said: only after login) */}
-        <Route path="/directory" element={<Directory />} />
+          {/* Directory */}
+          <Route path="/directory" element={<Directory />} />
 
-        {/* Auth */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
+          {/* Admin */}
+          <Route path="/admin" element={<AdminApp />} />
+          <Route path="/admin/pending" element={<PendingProfiles />} />
+          <Route path="/admin/approved" element={<ApprovedProfiles />} />
+          <Route path="/admin/review/:id" element={<ProfileReview />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminApp />} />
-        <Route path="/admin/pending" element={<PendingProfiles />} />
-        <Route path="/admin/approved" element={<ApprovedProfiles />} />
-        <Route path="/admin/review/:id" element={<ProfileReview />} />
+          {/* TOS and guildlines */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/guidelines" element={<Guidelines />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </SignupProvider>
   );
 };
 

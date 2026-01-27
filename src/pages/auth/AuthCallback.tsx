@@ -7,7 +7,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
+import { useSignup } from '../../context/useSignup';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -17,9 +18,9 @@ const toMessage = (e: unknown) => {
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
+  const { setIdentity, goToStep, resetSignup } = useSignup();
   const [error, setError] = useState<string | null>(null);
 
-  // Read the callback URL once (avoid react-router params timing/rerender quirks)
   const { next, href, hasCode, oauthError } = useMemo(() => {
     const url = new URL(window.location.href);
     const nextParam = url.searchParams.get('next') || '/';
@@ -43,31 +44,56 @@ export const AuthCallback = () => {
 
     const finish = async () => {
       try {
-        // If provider bounced back with an error, show it.
         if (oauthError) {
           throw new Error(oauthError);
         }
 
-        // PKCE exchange (only when we actually have a ?code=)
         if (hasCode) {
           const { error: exchangeError } =
             await supabase.auth.exchangeCodeForSession(href);
           if (exchangeError) throw exchangeError;
         }
 
-        // Confirm we now have a session
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        if (!data.session) {
+        if (!sessionData.session) {
           throw new Error(
             'No session created. Check provider config and redirect URIs.',
           );
         }
 
+        const user = sessionData.session.user;
+
+        // Check if user has a profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
         if (!cancelled) {
-          // Replace so we don’t keep /auth/callback (and any query params) in history
-          navigate(next, { replace: true });
+          // If no profile exists (PGRST116 = no rows returned), continue signup
+          if (profileError && profileError.code === 'PGRST116') {
+            // User authenticated but no profile - continue signup
+            setIdentity({
+              provider: 'google',
+              userId: user.id,
+              email: user.email || '',
+              termsAccepted: true,
+              guidelinesAccepted: true,
+              timestamp: new Date().toISOString(),
+            });
+            goToStep('values');
+            navigate('/signup', { replace: true });
+          } else if (profileError) {
+            throw profileError;
+          } else if (profile) {
+            // Profile exists - clear signup state and go to destination
+            resetSignup();
+            navigate(next, { replace: true });
+          }
         }
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
@@ -79,7 +105,16 @@ export const AuthCallback = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next, href, hasCode, oauthError]);
+  }, [
+    navigate,
+    next,
+    href,
+    hasCode,
+    oauthError,
+    setIdentity,
+    goToStep,
+    resetSignup,
+  ]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>

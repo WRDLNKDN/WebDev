@@ -92,7 +92,7 @@ echo "✅ [SUCCESS]: Types are verified."
 # 5. ACCESSIBILITY SMOKE TEST (The Core Requirement)
 if docker ps | grep -q "supabase_db"; then
   echo "♿ [STEP 5]: Running WCAG 2.2 Accessibility Audit..."
-  if ! npx playwright test tests/accessibility.spec.ts; then
+  if ! npx playwright test e2e/accessibility.spec.ts; then
     echo "🛑 [A11Y FAULT]: Accessibility is a core requirement, not a feature. Fix the violations above!"
     exit 1
   fi

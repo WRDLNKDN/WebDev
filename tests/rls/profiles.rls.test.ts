@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { describe, expect, test } from 'vitest';
 
 const requireEnv = (name: string): string => {
   const v = process.env[name];
@@ -49,10 +49,7 @@ describe('profiles RLS', () => {
 
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
-
-    for (const row of data ?? []) {
-      expect(row.status).toBe('approved');
-    }
+    expect(data?.every((row) => row.status === 'approved')).toBe(true);
   });
 
   test('service role can see profiles', async () => {

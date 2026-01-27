@@ -1,5 +1,5 @@
+import describe, { expect, test } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
-import { describe, expect, test } from 'vitest';
 
 const requireEnv = (name: string): string => {
   const v = process.env[name];

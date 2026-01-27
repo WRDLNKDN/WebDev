@@ -18,8 +18,7 @@ export const Guidelines = () => {
           </Typography>
 
           <Typography variant="body1" paragraph>
-            WRDLNKDN is "a weird place to do business" - professional networking
-            with personality.
+            {`WRDLNKDN is "a weird place to do business" - professional networking with personality.`}
           </Typography>
 
           <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>
@@ -43,7 +42,7 @@ export const Guidelines = () => {
             No Spam
           </Typography>
           <Typography variant="body2" paragraph>
-            Don't spam, mass-message, or engage in unsolicited promotion.
+            {"Don't spam, mass-message, or engage in unsolicited promotion. "}
             Quality connections over quantity.
           </Typography>
 
@@ -51,7 +50,8 @@ export const Guidelines = () => {
             Keep It Legal
           </Typography>
           <Typography variant="body2" paragraph>
-            No illegal content, scams, or fraudulent activity. Don't impersonate
+            No illegal content, scams, or fraudulent activity.{' '}
+            {"Don't impersonate "}
             others or misrepresent yourself.
           </Typography>
 
@@ -59,8 +59,8 @@ export const Guidelines = () => {
             Privacy Matters
           </Typography>
           <Typography variant="body2" paragraph>
-            Respect others' privacy. Don't share private information without
-            consent.
+            Respect others&apos; privacy. Don&apos;t share private information
+            without consent.
           </Typography>
 
           <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>

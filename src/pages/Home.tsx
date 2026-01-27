@@ -3,11 +3,11 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   Paper,
   Stack,
   Typography,
-  CircularProgress,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
@@ -42,9 +42,7 @@ export const Home = () => {
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
-        if (!cancelled) {
-          setSession(newSession ?? null);
-        }
+        if (!cancelled) setSession(newSession ?? null);
       },
     );
 
@@ -108,24 +106,15 @@ export const Home = () => {
     setError(null);
 
     try {
-      console.log('🔴 Signing out...');
+      const { error: outError } = await supabase.auth.signOut();
+      if (outError) throw outError;
 
-      // Sign out from Supabase
-      await supabase.auth.signOut({ scope: 'global' });
+      // Clear UI state immediately so the page reflects sign-out even if navigation is slow.
+      setSession(null);
+      setIsAdmin(false);
 
-      // Remove our specific storage key
-      localStorage.removeItem('wrdlnkdn-auth');
-
-      // Clear all other storage
-      localStorage.clear();
-      sessionStorage.clear();
-
-      console.log('✅ Signed out, reloading...');
-
-      // Force reload
-      window.location.href = '/';
+      window.location.assign('/');
     } catch (e: unknown) {
-      console.error('❌ Sign out error:', e);
       setError(toMessage(e));
       setBusy(false);
     }
@@ -146,8 +135,7 @@ export const Home = () => {
         >
           {!session && (
             <Alert severity="info" sx={{ mb: 2 }}>
-              You're browsing as a guest. Create an account to submit a profile
-              or sign in if you've already applied.
+              {`You're browsing as a guest. Create an account to submit a profile or sign in if you've already applied.`}
             </Alert>
           )}
 
@@ -226,7 +214,7 @@ export const Home = () => {
                     disabled={busy}
                     startIcon={busy ? <CircularProgress size={16} /> : null}
                   >
-                    {busy ? 'Signing out...' : 'Sign out'}
+                    {busy ? 'Signing out…' : 'Sign out'}
                   </Button>
                 </>
               )}

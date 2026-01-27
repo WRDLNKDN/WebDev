@@ -13,7 +13,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 
-export function SignIn() {
+export const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +23,7 @@ export function SignIn() {
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
-        provider: provider,
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -31,9 +31,7 @@ export function SignIn() {
 
       if (authError) throw authError;
 
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
       setLoading(false);
@@ -96,7 +94,7 @@ export function SignIn() {
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Don't have an account?{' '}
+                {"Don't have an account? "}
                 <Typography
                   component={RouterLink}
                   to="/signup"
@@ -111,6 +109,6 @@ export function SignIn() {
       </Container>
     </Box>
   );
-}
+};
 
 export default SignIn;

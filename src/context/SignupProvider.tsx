@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { SignupContext } from './SignupContext';
-import type { SignupContextValue } from './SignupContext';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   SignupState,
   SignupStep,
@@ -8,9 +6,15 @@ import type {
   ValuesData,
   ProfileData,
 } from '../types/signup';
-import { supabase } from '../lib/supabaseClient';
+import { SignupContext, type SignupContextValue } from './SignupContext';
 
-const STORAGE_KEY = 'wrdlnkdn_signup_state';
+const STEPS: SignupStep[] = [
+  'welcome',
+  'identity',
+  'values',
+  'profile',
+  'complete',
+];
 
 const initialState: SignupState = {
   currentStep: 'welcome',
@@ -22,101 +26,125 @@ const initialState: SignupState = {
 
 export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, setState] = useState<SignupState>(initialState);
-  const [isLoading, setIsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Initialize state on mount
-  useEffect(() => {
-    const initializeState = async () => {
-      try {
-        // Check if user is already authenticated
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session) {
-          // Check if user has a profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profile) {
-            // User has profile, clear any signup state
-            localStorage.removeItem(STORAGE_KEY);
-            setState(initialState);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // Load saved state from localStorage
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsedState = JSON.parse(saved);
-          setState(parsedState);
-        }
-      } catch (error) {
-        console.error('Error initializing signup state:', error);
-        setState(initialState);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeState();
+  const setStep = useCallback((step: SignupStep) => {
+    setState((s) => ({ ...s, currentStep: step }));
   }, []);
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  }, [state, isLoading]);
+  const markComplete = useCallback((step: SignupStep) => {
+    setState((s) => {
+      if (s.completedSteps.includes(step)) return s;
+      return { ...s, completedSteps: [...s.completedSteps, step] };
+    });
+  }, []);
 
-  const setIdentity = (data: IdentityData) => {
-    setState((prev) => ({ ...prev, identity: data }));
-  };
+  const setIdentity = useCallback(
+    (identity: IdentityData) => {
+      setState((s) => ({ ...s, identity }));
+      markComplete('identity');
+    },
+    [markComplete],
+  );
 
-  const setValues = (data: ValuesData) => {
-    setState((prev) => ({ ...prev, values: data }));
-  };
+  const setValues = useCallback(
+    (values: ValuesData) => {
+      setState((s) => ({ ...s, values }));
+      markComplete('values');
+    },
+    [markComplete],
+  );
 
-  const setProfile = (data: ProfileData) => {
-    setState((prev) => ({ ...prev, profile: data }));
-  };
+  const setProfile = useCallback(
+    (profile: ProfileData) => {
+      setState((s) => ({ ...s, profile }));
+      markComplete('profile');
+    },
+    [markComplete],
+  );
 
-  const goToStep = (step: SignupStep) => {
-    setState((prev) => ({ ...prev, currentStep: step }));
-  };
+  const next = useCallback(() => {
+    setState((s) => {
+      const idx = STEPS.indexOf(s.currentStep);
+      const nextStep = STEPS[Math.min(idx + 1, STEPS.length - 1)];
+      return { ...s, currentStep: nextStep };
+    });
+  }, []);
 
-  const completeStep = (step: SignupStep) => {
-    setState((prev) => ({
-      ...prev,
-      completedSteps: prev.completedSteps.includes(step)
-        ? prev.completedSteps
-        : [...prev.completedSteps, step],
-    }));
-  };
+  const back = useCallback(() => {
+    setState((s) => {
+      const idx = STEPS.indexOf(s.currentStep);
+      const prevStep = STEPS[Math.max(idx - 1, 0)];
+      return { ...s, currentStep: prevStep };
+    });
+  }, []);
 
-  const resetSignup = () => {
+  const resetSignup = useCallback(() => {
     setState(initialState);
-    localStorage.removeItem(STORAGE_KEY);
-  };
+    setSubmitting(false);
+    setSubmitError(null);
+  }, []);
 
-  const value: SignupContextValue = {
-    state,
-    setIdentity,
-    setValues,
-    setProfile,
-    goToStep,
-    completeStep,
-    resetSignup,
-  };
+  const submitRegistration = useCallback(async () => {
+    setSubmitting(true);
+    setSubmitError(null);
 
-  if (isLoading) {
-    return null; // Or a loading spinner
-  }
+    try {
+      // Keep this lightweight for now. Wire Supabase insert here later.
+      if (!state.identity) throw new Error('Missing identity step data.');
+      if (!state.values) throw new Error('Missing values step data.');
+
+      setState((s) => ({ ...s, currentStep: 'complete' }));
+      markComplete('complete');
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : 'Registration failed');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [markComplete, state.identity, state.values]);
+
+  const value: SignupContextValue = useMemo(
+    () => ({
+      state,
+      data: state,
+
+      // canonical names
+      setStep,
+      markComplete,
+
+      // aliases expected by your components
+      goToStep: setStep,
+      completeStep: markComplete,
+
+      setIdentity,
+      setValues,
+      setProfile,
+
+      submitting,
+      submitError,
+      submitRegistration,
+
+      resetSignup,
+
+      next,
+      back,
+    }),
+    [
+      state,
+      setStep,
+      markComplete,
+      setIdentity,
+      setValues,
+      setProfile,
+      submitting,
+      submitError,
+      submitRegistration,
+      resetSignup,
+      next,
+      back,
+    ],
+  );
 
   return (
     <SignupContext.Provider value={value}>{children}</SignupContext.Provider>

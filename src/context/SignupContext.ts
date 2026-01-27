@@ -7,16 +7,37 @@ import type {
   ProfileData,
 } from '../types/signup';
 
-export interface SignupContextValue {
+export type SignupContextValue = {
+  // Primary state
   state: SignupState;
-  setIdentity: (data: IdentityData) => void;
-  setValues: (data: ValuesData) => void;
-  setProfile: (data: ProfileData) => void;
-  goToStep: (step: SignupStep) => void;
-  completeStep: (step: SignupStep) => void;
-  resetSignup: () => void;
-}
 
-export const SignupContext = createContext<SignupContextValue | undefined>(
-  undefined,
-);
+  // Backwards compatible alias used by some components
+  data: SignupState;
+
+  // Navigation
+  setStep: (step: SignupStep) => void;
+  goToStep: (step: SignupStep) => void;
+
+  // Completion helpers
+  markComplete: (step: SignupStep) => void;
+  completeStep: (step: SignupStep) => void;
+
+  // Setters
+  setIdentity: (identity: IdentityData) => void;
+  setValues: (values: ValuesData) => void;
+  setProfile: (profile: ProfileData) => void;
+
+  // Submission
+  submitting: boolean;
+  submitError: string | null;
+  submitRegistration: () => Promise<void>;
+
+  // Reset
+  resetSignup: () => void;
+
+  // Convenience
+  next: () => void;
+  back: () => void;
+};
+
+export const SignupContext = createContext<SignupContextValue | null>(null);

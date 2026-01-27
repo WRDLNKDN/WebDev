@@ -1,66 +1,44 @@
-import React, { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { Box, CircularProgress } from '@mui/material';
-import { SignupProvider } from './context/SignupProvider';
 
-const lazyExport = <T extends React.ComponentType<any>>(
-  importer: () => Promise<unknown>,
-  exportName: string,
-) =>
-  lazy(async () => {
-    const mod = (await importer()) as Record<string, unknown> & {
-      default?: unknown;
-    };
+/**
+ * All pages are lazy-loaded to keep the main bundle small.
+ */
 
-    const picked = mod[exportName] ?? mod.default;
-
-    if (!picked) {
-      throw new Error(
-        `Lazy import failed: export "${exportName}" (or default) not found.`,
-      );
-    }
-
-    return { default: picked as T };
-  });
-
-// Public
-const Home = lazyExport(() => import('./pages/Home'), 'Home');
-const SignIn = lazyExport(() => import('./pages/auth/SignIn'), 'SignIn');
-
-// Main user pages
-const Directory = lazyExport(() => import('./pages/Directory'), 'Directory');
-const Signup = lazyExport(() => import('./pages/Signup'), 'Signup');
-const AuthCallback = lazyExport(
-  () => import('./pages/auth/AuthCallback'),
-  'AuthCallback',
+const Home = lazy(() =>
+  import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
-// Terms and Guidelines
-const Terms = lazyExport(() => import('./pages/legal/Terms'), 'Terms');
-const Guidelines = lazyExport(
-  () => import('./pages/legal/Guidelines'),
-  'Guidelines',
+const Signup = lazy(() =>
+  import('./pages/Signup').then((m) => ({ default: m.Signup })),
 );
 
-// Admin
-const AdminApp = lazyExport(() => import('./admin/AdminApp'), 'AdminApp');
-const PendingProfiles = lazyExport(
-  () => import('./pages/admin/PendingProfiles'),
-  'PendingProfiles',
+const Directory = lazy(() =>
+  import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
-const ApprovedProfiles = lazyExport(
-  () => import('./pages/admin/ApprovedProfiles'),
-  'ApprovedProfiles',
+
+const AuthCallback = lazy(() =>
+  import('./pages/auth/AuthCallback').then((m) => ({
+    default: m.AuthCallback,
+  })),
 );
-const ProfileReview = lazyExport(
-  () => import('./pages/admin/ProfileReview'),
-  'ProfileReview',
+
+const AdminApp = lazy(() =>
+  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
+);
+
+const SignIn = lazy(() =>
+  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
+);
+
+const Guidelines = lazy(() =>
+  import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
 );
 
 const Loading = () => (
   <Box
     component="main"
-    role="main"
     sx={{ display: 'flex', justifyContent: 'center', py: 10 }}
   >
     <CircularProgress aria-label="Loading application" />
@@ -69,35 +47,24 @@ const Loading = () => (
 
 const App = () => {
   return (
-    <SignupProvider>
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
-          <Route path="/signin" element={<SignIn />} />
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route path="/" element={<Home />} />
 
-          {/* Signup flow */}
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<Signup />} />
 
-          {/* Directory */}
-          <Route path="/directory" element={<Directory />} />
+        <Route path="/guidelines" element={<Guidelines />} />
 
-          {/* Admin */}
-          <Route path="/admin" element={<AdminApp />} />
-          <Route path="/admin/pending" element={<PendingProfiles />} />
-          <Route path="/admin/approved" element={<ApprovedProfiles />} />
-          <Route path="/admin/review/:id" element={<ProfileReview />} />
+        <Route path="/directory" element={<Directory />} />
 
-          {/* TOS and guildlines */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/guidelines" element={<Guidelines />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </SignupProvider>
+        <Route path="/admin" element={<AdminApp />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

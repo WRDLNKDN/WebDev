@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -6,6 +5,7 @@ import {
   Container,
   Typography,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -75,7 +75,7 @@ export const AuthCallback = () => {
         </Alert>
       ) : (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <CircularProgress size={22} />
+          <CircularProgress size={22} aria-label="Loading..." />
           <Typography variant="body2">Please wait…</Typography>
         </Box>
       )}

@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --cache --fix",
     "lint:md": "markdownlint '**/*.md' --ignore node_modules",
     "lint:md:fix": "markdownlint '**/*.md' --fix --ignore node_modules",
-    "typecheck": "tsc --noEmit --pretty false",
+    "typecheck": "tsc --noEmit --pretty false -p tsconfig.json && tsc --noEmit --pretty false -p tsconfig.playwright.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "--- TESTING (Behavioral Integrity) ---": "",

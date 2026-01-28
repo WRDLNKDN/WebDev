@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export const AdminGate = ({ children }: { children: ReactNode }) => {
@@ -58,7 +58,7 @@ export const AdminGate = ({ children }: { children: ReactNode }) => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
-        <CircularProgress />
+        <CircularProgress aria-label="Loading..." />
       </Box>
     );
   }

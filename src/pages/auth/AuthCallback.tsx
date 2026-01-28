@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useSignup } from '../../context/useSignup';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -17,6 +18,7 @@ const toMessage = (e: unknown) => {
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
+  const { setIdentity, goToStep } = useSignup();
   const [error, setError] = useState<string | null>(null);
 
   const { next, href, hasCode, oauthError } = useMemo(() => {
@@ -42,7 +44,9 @@ export const AuthCallback = () => {
 
     const finish = async () => {
       try {
-        if (oauthError) throw new Error(oauthError);
+        if (oauthError) {
+          throw new Error(oauthError);
+        }
 
         if (hasCode) {
           const { error: exchangeError } =
@@ -50,17 +54,47 @@ export const AuthCallback = () => {
           if (exchangeError) throw exchangeError;
         }
 
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        if (!data.session) {
+        if (!sessionData.session) {
           throw new Error(
             'No session created. Check provider config and redirect URIs.',
           );
         }
 
-        // ✅ Do NOT do profile checks here. Just continue.
-        if (!cancelled) navigate(next, { replace: true });
+        const user = sessionData.session.user;
+
+        // Check if user has a profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (!cancelled) {
+          // If no profile exists, set identity and continue signup
+          if (profileError && profileError.code === 'PGRST116') {
+            console.log('📝 New user, setting up signup flow');
+            setIdentity({
+              provider: 'google',
+              userId: user.id,
+              email: user.email || '',
+              termsAccepted: true,
+              guidelinesAccepted: true,
+              timestamp: new Date().toISOString(),
+            });
+            goToStep('values');
+            navigate('/signup', { replace: true });
+          } else if (profileError) {
+            throw profileError;
+          } else if (profile) {
+            // Profile exists, redirect to intended destination
+            console.log('✅ Existing user, redirecting');
+            navigate(next, { replace: true });
+          }
+        }
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
       }
@@ -71,7 +105,7 @@ export const AuthCallback = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next, href, hasCode, oauthError]);
+  }, [navigate, next, href, hasCode, oauthError, setIdentity, goToStep]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
@@ -92,7 +126,7 @@ export const AuthCallback = () => {
         </Alert>
       ) : (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <CircularProgress size={22} aria-label="Signing in" />
+          <CircularProgress size={22} />
           <Typography variant="body2">Please wait…</Typography>
         </Box>
       )}

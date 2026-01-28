@@ -107,11 +107,9 @@ export const Home = () => {
 
     try {
       await supabase.auth.signOut({ scope: 'global' });
-
-      // Update UI state immediately
+      localStorage.removeItem('wrdlnkdn-auth');
       setSession(null);
-
-      // Navigate and force a reload to wipe any stale in-memory state
+      await new Promise((resolve) => setTimeout(resolve, 100));
       window.location.assign('/');
     } catch (e: unknown) {
       setError(toMessage(e));

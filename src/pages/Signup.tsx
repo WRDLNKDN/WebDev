@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { SignupProvider } from '../context/SignupProvider';
 import { useSignup } from '../context/useSignup';
+import { supabase } from '../lib/supabaseClient';
 
 import { SignupProgress } from '../components/signup/SignupProgress';
 import { WelcomeStep } from '../components/signup/WelcomeStep';
@@ -10,7 +13,31 @@ import { ProfileStep } from '../components/signup/ProfileStep';
 import { CompleteStep } from '../components/signup/CompleteStep';
 
 const SignupInner = () => {
-  const { state } = useSignup();
+  const navigate = useNavigate();
+  const { state, resetSignup } = useSignup();
+
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile) {
+          resetSignup();
+          navigate('/', { replace: true });
+        }
+      }
+    };
+
+    checkExistingProfile();
+  }, [navigate, resetSignup]);
 
   const renderStep = () => {
     switch (state.currentStep) {

@@ -1,103 +1,99 @@
 // src/App.tsx
+import React, { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
-
-import { supabase } from './lib/supabaseClient';
+import { SignupProvider } from './context/SignupProvider';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
+ *
+ * IMPORTANT:
+ * We load by export name first, then fall back to default export.
+ * This avoids TS errors when a module switches between named vs default exports.
  */
+const lazyExport = <T extends React.ComponentType<unknown>>(
+  importer: () => Promise<unknown>,
+  exportName: string,
+) =>
+  lazy(async () => {
+    const mod = (await importer()) as Record<string, unknown> & {
+      default?: unknown;
+    };
+    const picked = mod[exportName] ?? mod.default;
+
+    if (!picked) {
+      throw new Error(
+        `Lazy import failed: export "${exportName}" (or default) not found.`,
+      );
+    }
+
+    return { default: picked as T };
+  });
 
 // Public
-const Home = lazy(() =>
-  import('./pages/Home').then((m) => ({ default: m.Home })),
-);
+const Home = lazyExport(() => import('./pages/Home'), 'Home');
 
-// Auth
-const SignIn = lazy(() =>
-  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
-);
-
-const AuthCallback = lazy(() =>
-  import('./pages/auth/AuthCallback').then((m) => ({
-    default: m.AuthCallback,
-  })),
-);
-
-// Signup
-const Signup = lazy(() =>
-  import('./pages/Signup').then((m) => ({ default: m.Signup })),
-);
-
-// Legal
-const Guidelines = lazy(() =>
-  import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
-);
-
-// App pages
-const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
+// Main user pages
+const Directory = lazyExport(() => import('./pages/Directory'), 'Directory');
+const Signup = lazyExport(() => import('./pages/Signup'), 'Signup');
+const AuthCallback = lazyExport(
+  () => import('./pages/auth/AuthCallback'),
+  'AuthCallback',
 );
 
 // Admin
-const AdminApp = lazy(() =>
-  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
+const AdminApp = lazyExport(() => import('./admin/AdminApp'), 'AdminApp');
+const PendingProfiles = lazyExport(
+  () => import('./pages/admin/PendingProfiles'),
+  'PendingProfiles',
+);
+const ApprovedProfiles = lazyExport(
+  () => import('./pages/admin/ApprovedProfiles'),
+  'ApprovedProfiles',
+);
+const ProfileReview = lazyExport(
+  () => import('./pages/admin/ProfileReview'),
+  'ProfileReview',
 );
 
 const Loading = () => (
   <Box
     component="main"
+    role="main"
     sx={{ display: 'flex', justifyContent: 'center', py: 10 }}
   >
     <CircularProgress aria-label="Loading application" />
   </Box>
 );
 
-/**
- * Small boot-time auth sync.
- * This helps ensure the in-memory client state matches persisted storage quickly,
- * especially after redirects or hard reloads.
- */
-const AuthBoot = () => {
-  useEffect(() => {
-    void supabase.auth.getSession();
-  }, []);
-
-  return null;
-};
-
 const App = () => {
   return (
-    <>
-      <AuthBoot />
-
+    <SignupProvider>
       <Suspense fallback={<Loading />}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />
 
-          {/* Auth */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-
           {/* Signup */}
           <Route path="/signup" element={<Signup />} />
-
-          {/* Legal */}
-          <Route path="/guidelines" element={<Guidelines />} />
 
           {/* Directory */}
           <Route path="/directory" element={<Directory />} />
 
+          {/* Auth */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
+
           {/* Admin */}
           <Route path="/admin" element={<AdminApp />} />
+          <Route path="/admin/pending" element={<PendingProfiles />} />
+          <Route path="/admin/approved" element={<ApprovedProfiles />} />
+          <Route path="/admin/review/:id" element={<ProfileReview />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </SignupProvider>
   );
 };
 

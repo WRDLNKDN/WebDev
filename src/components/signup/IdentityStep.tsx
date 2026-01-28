@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -17,19 +17,69 @@ import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 
 export const IdentityStep = () => {
-  const { goToStep } = useSignup();
+  const { goToStep, markComplete, setIdentity } = useSignup();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [guidelinesAccepted, setGuidelinesAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  const hasCheckedAuth = useRef(false);
+  const hasAdvanced = useRef(false);
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
-  // REMOVED THE AUTO-SKIP USEEFFECT - Always show the OAuth button
+  useEffect(() => {
+    if (hasCheckedAuth.current) {
+      setCheckingAuth(false);
+      return;
+    }
+
+    hasCheckedAuth.current = true;
+
+    const checkAuthentication = async () => {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setCheckingAuth(false);
+          return;
+        }
+
+        if (session?.user && !hasAdvanced.current) {
+          console.log('Session found, advancing to values step');
+
+          hasAdvanced.current = true;
+
+          setIdentity({
+            provider: 'google',
+            userId: session.user.id,
+            email: session.user.email || '',
+            termsAccepted: true,
+            guidelinesAccepted: true,
+            timestamp: new Date().toISOString(),
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          markComplete('identity');
+          goToStep('values');
+        }
+      } catch (err) {
+        console.error('Error checking authentication:', err);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuthentication();
+  }, []);
 
   const handleGoogleSignIn = async () => {
-    console.log('🚀 Starting Google OAuth flow...');
-
     if (!canProceed) {
       setError('Please accept the Terms and Community Guidelines to continue');
       return;
@@ -39,8 +89,6 @@ export const IdentityStep = () => {
     setError(null);
 
     try {
-      console.log('📞 Calling supabase.auth.signInWithOAuth...');
-
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -48,22 +96,14 @@ export const IdentityStep = () => {
         },
       });
 
-      console.log('📦 OAuth response:', { data, authError });
-
-      if (authError) {
-        console.error('❌ OAuth error:', authError);
-        throw authError;
-      }
+      if (authError) throw authError;
 
       if (data.url) {
-        console.log('✅ Got OAuth URL, redirecting to:', data.url);
         window.location.href = data.url;
       } else {
-        console.warn('⚠️ No URL in OAuth response');
         setError('OAuth redirect URL missing');
       }
     } catch (err) {
-      console.error('💥 Exception in handleGoogleSignIn:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
       setLoading(false);
     }
@@ -72,6 +112,35 @@ export const IdentityStep = () => {
   const handleBack = () => {
     goToStep('welcome');
   };
+
+  if (checkingAuth) {
+    return (
+      <Container maxWidth="sm">
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 4 },
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              justifyContent: 'center',
+              py: 4,
+            }}
+          >
+            <CircularProgress size={24} />
+            <Typography>Checking authentication...</Typography>
+          </Box>
+        </Paper>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm">

@@ -1,19 +1,28 @@
+// src/lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../types/supabase';
+import { authDebug } from './authDebug';
 
-// These should come from Vite env
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
 
-if (!url || !anon) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in env');
-}
-
-export const supabase = createClient<Database>(url, anon, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'wrdlnkdn-auth',
   },
+});
+
+// 🔴 THIS IS CRITICAL LOGGING 🔴
+supabase.auth.onAuthStateChange((event, session) => {
+  authDebug('onAuthStateChange', {
+    event,
+    session: session
+      ? {
+          userId: session.user.id,
+          email: session.user.email,
+          expires_at: session.expires_at,
+        }
+      : null,
+  });
 });

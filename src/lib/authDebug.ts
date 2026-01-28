@@ -1,7 +1,6 @@
-// src/lib/authDebug.ts
 type AuthLogLevel = 'log' | 'warn' | 'error';
 
-const isEnabled = () => {
+const isEnabled = (): boolean => {
   try {
     return localStorage.getItem('AUTH_DEBUG') === '1';
   } catch {
@@ -20,8 +19,10 @@ export const authDebug = (
   const prefix = `[AUTH ${ts}]`;
 
   if (data !== undefined) {
+    // eslint-disable-next-line no-console
     console[level](`${prefix} ${message}`, data);
   } else {
+    // eslint-disable-next-line no-console
     console[level](`${prefix} ${message}`);
   }
 };

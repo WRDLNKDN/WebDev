@@ -1,28 +1,36 @@
 // src/lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/supabase';
 import { authDebug } from './authDebug';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
+// IMPORTANT: Vite env vars must be prefixed with VITE_
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as
+  | string
+  | undefined;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (!supabaseUrl || !supabaseAnonKey) {
+  // This is intentionally loud because missing env will cause confusing auth loops.
+  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+
+    // Make session storage predictable so logout/debug is consistent
+    storageKey: 'wrdlnkdn-auth',
   },
 });
 
-// 🔴 THIS IS CRITICAL LOGGING 🔴
+// Lightweight auth tracing
 supabase.auth.onAuthStateChange((event, session) => {
-  authDebug('onAuthStateChange', {
-    event,
-    session: session
-      ? {
-          userId: session.user.id,
-          email: session.user.email,
-          expires_at: session.expires_at,
-        }
-      : null,
+  authDebug('log', `onAuthStateChange: ${event}`, {
+    hasSession: Boolean(session),
+    userId: session?.user?.id ?? null,
+    email: session?.user?.email ?? null,
+    expiresAt: session?.expires_at ?? null,
   });
 });

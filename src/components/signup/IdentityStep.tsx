@@ -18,6 +18,7 @@ import { supabase } from '../../lib/supabaseClient';
 
 export const IdentityStep = () => {
   const { goToStep, markComplete, setIdentity } = useSignup();
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [guidelinesAccepted, setGuidelinesAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,6 @@ export const IdentityStep = () => {
 
         if (session?.user && !hasAdvanced.current) {
           console.log('Session found, advancing to values step');
-
           hasAdvanced.current = true;
 
           setIdentity({
@@ -64,7 +64,8 @@ export const IdentityStep = () => {
             timestamp: new Date().toISOString(),
           });
 
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          // tiny tick so context/state updates settle before navigation
+          await new Promise((resolve) => setTimeout(resolve, 0));
 
           markComplete('identity');
           goToStep('values');
@@ -76,8 +77,8 @@ export const IdentityStep = () => {
       }
     };
 
-    checkAuthentication();
-  }, []);
+    void checkAuthentication();
+  }, [goToStep, markComplete, setIdentity]);
 
   const handleGoogleSignIn = async () => {
     if (!canProceed) {
@@ -102,6 +103,7 @@ export const IdentityStep = () => {
         window.location.href = data.url;
       } else {
         setError('OAuth redirect URL missing');
+        setLoading(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');

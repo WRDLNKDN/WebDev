@@ -19,10 +19,8 @@ export const authDebug = (
   const prefix = `[AUTH ${ts}]`;
 
   if (data !== undefined) {
-    // eslint-disable-next-line no-console
     console[level](`${prefix} ${message}`, data);
   } else {
-    // eslint-disable-next-line no-console
     console[level](`${prefix} ${message}`);
   }
 };

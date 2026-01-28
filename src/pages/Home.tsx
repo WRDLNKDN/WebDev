@@ -183,21 +183,40 @@ export const Home = () => {
             >
               <Stack spacing={4} alignItems="center">
                 <Box>
-                  {/* H1: The Main Title */}
+                  {/* 1. The Brand (H1) */}
                   <Typography
                     variant="h2"
-                    component="h1" // PATCH 4: Semantic H1
-                    sx={{ fontWeight: 900, mb: 1, color: HERO_TEXT_COLOR }}
+                    component="h1"
+                    sx={{
+                      fontWeight: 900,
+                      mb: 0.5, // Tighten gap to the pronunciation
+                      color: HERO_TEXT_COLOR,
+                      letterSpacing: 2,
+                    }}
                   >
-                    WeirdLinkedIn
+                    WRDLNKDN
                   </Typography>
 
-                  {/* H2: The Subtitle (Visually H5) */}
+                  {/* 2. April's Request: The Phonetic Guide */}
                   <Typography
                     variant="h5"
-                    component="h2" // PATCH 4: Semantic H2 (follows H1)
+                    component="p" // Semantic paragraph (not a heading)
                     sx={{
-                      opacity: 0.8,
+                      mb: 3, // Push the tagline down
+                      fontWeight: 400,
+                      opacity: 0.6, // Visually subtle
+                      color: HERO_TEXT_COLOR,
+                    }}
+                  >
+                    (Weird Link-uh-din)
+                  </Typography>
+
+                  {/* 3. The Tagline (H2) */}
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    sx={{
+                      opacity: 0.9,
                       fontWeight: 300,
                       color: HERO_TEXT_COLOR,
                     }}

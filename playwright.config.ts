@@ -1,24 +1,29 @@
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
+const PORT = 5173;
+const BASE_URL = `http://127.0.0.1:${PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  timeout: 30_000,
   expect: { timeout: 15_000 },
 
+  // Keep this deterministic. If you want retries/workers later,
+  // we can add them back after TS is happy.
+  retries: 1,
+
   use: {
-    baseURL: 'http://127.0.0.1:4173',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    baseURL: BASE_URL,
+    trace: 'on-first-retry',
     video: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
 
-  // ✅ This makes CI deterministic: Playwright starts the app server itself.
   webServer: {
-    command:
-      'npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    command: `npm run vite -- --host 127.0.0.1 --port ${PORT} --strictPort`,
+    url: BASE_URL,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 

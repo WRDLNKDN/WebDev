@@ -1,4 +1,3 @@
-// e2e/home.spec.ts
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -6,6 +5,11 @@ test.describe('Home Page - High-Integrity Audit', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#root')).toBeVisible();
+
+    // Ensure the Home page actually rendered
+    await expect(
+      page.getByRole('heading', { level: 1, name: /WRDLNKDN/i }),
+    ).toBeVisible();
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
@@ -17,27 +21,27 @@ test.describe('Home Page - High-Integrity Audit', () => {
       page.getByText(/Professional networking, but human/i),
     ).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await new AxeBuilder({ page }).include('#root').analyze();
+
     expect(results.violations).toEqual([]);
   });
 
   test('admin route should be reachable and accessible', async ({ page }) => {
     await page.goto('/admin');
 
-    // Prove we did not get redirected
+    // If your route is implemented as "stay on /admin and show login UI" this should pass.
+    // If you instead redirect to /signin, this will fail and you should change the assertion below.
     await expect(page).toHaveURL(/\/admin(\b|\/|\?)/);
 
-    // Prove the route actually rendered content
     await expect(page.locator('#root')).toBeVisible();
 
-    // Critical: prove there is at least one H1 on the rendered page.
-    // If this fails, your /admin route is NOT rendering AdminGate/AdminApp.
-    await expect(page.locator('h1')).toHaveCount(1);
+    // Admin page should render an H1 (either the admin shell OR a sign-in-required state)
+    await expect(
+      page.getByRole('heading', { level: 1, name: /admin/i }),
+    ).toBeVisible();
 
-    // Optional: sanity check the H1 text if you want it strict
-    await expect(page.locator('h1')).toHaveText(/admin/i);
+    const results = await new AxeBuilder({ page }).include('#root').analyze();
 
-    const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
   });
 });

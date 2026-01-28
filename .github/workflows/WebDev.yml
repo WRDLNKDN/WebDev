@@ -1,3 +1,4 @@
+# .github/workflows/WebDev.yml
 name: 🌐 WebDev
 
 on:
@@ -12,53 +13,45 @@ jobs:
   quality-and-unit:
     name: ✅ Quality + Unit Tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🧹 ESLint
-        run: npm run lint
-
-      - name: 🧪 TypeScript typecheck
-        run: npm run typecheck
-
-      - name: 🎨 Prettier check
-        run: npm run format:check
-
-      - name: 🧫 Vitest (unit only)
-        run: npm run test:unit
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm run test:unit
 
   e2e:
     name: 🎭 Playwright (E2E)
     runs-on: ubuntu-latest
     needs: quality-and-unit
-
     steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: 📦 Install dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: 🎭 Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
+      # optional but nice: makes failures easier to debug
+      - name: 🏗️ Build
+        run: npm run build
+
       - name: 🎭 Run Playwright tests
-        run: npm run test:e2e
+        run: npx playwright test
 
       - name: 📎 Upload Playwright report (on failure)
         if: failure()

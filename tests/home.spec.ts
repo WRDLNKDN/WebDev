@@ -15,7 +15,7 @@ test.describe('Home Page - High-Integrity Audit', () => {
 
     // 2. Verify the Main Hook (The true H1)
     await expect(
-      page.getByRole('heading', { name: 'WeirdLinkedIn', level: 1 }),
+      page.getByRole('heading', { name: 'WRDLNKDN', level: 1 }),
     ).toBeVisible();
 
     // 3. Verify the Subtitle (The semantic H2)

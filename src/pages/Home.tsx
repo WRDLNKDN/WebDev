@@ -3,14 +3,16 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+
+import { supabase } from '../lib/supabaseClient';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -20,6 +22,8 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,17 +32,17 @@ export const Home = () => {
 
     const init = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!cancelled) {
-        if (sessionError) setError(toMessage(sessionError));
-        setSession(data.session ?? null);
-      }
+      if (cancelled) return;
+
+      if (sessionError) setError(toMessage(sessionError));
+      setSession(data.session ?? null);
     };
 
     void init();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
-        setSession(newSession);
+        if (!cancelled) setSession(newSession ?? null);
       },
     );
 
@@ -48,13 +52,43 @@ export const Home = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAdmin = async () => {
+      if (!session) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (cancelled) return;
+
+        if (error) {
+          setIsAdmin(false);
+          return;
+        }
+
+        setIsAdmin(Boolean(data));
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+
+    void checkAdmin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   const signInGoogle = async () => {
     setBusy(true);
     setError(null);
 
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
-
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -68,20 +102,23 @@ export const Home = () => {
   };
 
   const signOut = async () => {
-    setBusy(true);
     setError(null);
+    setBusy(true);
+
     try {
-      const { error: outError } = await supabase.auth.signOut();
-      if (outError) throw outError;
+      await supabase.auth.signOut({ scope: 'global' });
+      localStorage.removeItem('wrdlnkdn-auth');
+      setSession(null);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      window.location.assign('/');
     } catch (e: unknown) {
       setError(toMessage(e));
-    } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Box sx={{ py: 6 }}>
+    <Box component="main" sx={{ py: 6 }}>
       <Container maxWidth="md">
         <Paper
           elevation={0}
@@ -93,9 +130,19 @@ export const Home = () => {
             bgcolor: 'background.paper',
           }}
         >
+          {!session && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {`You're browsing as a guest. Create an account to submit a profile or sign in if you've already applied.`}
+            </Alert>
+          )}
+
           <Stack spacing={2}>
-            <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-              WeirdLinkedIn
+            <Typography
+              component="h1"
+              variant="h3"
+              sx={{ fontWeight: 800, lineHeight: 1.1 }}
+            >
+              WRDLNKDN
             </Typography>
 
             <Typography variant="body1" sx={{ opacity: 0.85 }}>
@@ -115,41 +162,56 @@ export const Home = () => {
               spacing={1.5}
               sx={{ pt: 1 }}
             >
-              <Button
-                component={RouterLink}
-                to="/directory"
-                variant="contained"
-                size="large"
-              >
-                View directory
-              </Button>
-
               {!session ? (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => void signInGoogle()}
-                  disabled={busy}
-                >
-                  Sign in with Google
-                </Button>
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/signup"
+                    variant="contained"
+                    size="large"
+                  >
+                    Create account
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => void signInGoogle()}
+                    disabled={busy}
+                  >
+                    Sign in with Google
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button
                     component={RouterLink}
-                    to="/admin"
-                    variant="outlined"
+                    to="/directory"
+                    variant="contained"
                     size="large"
                   >
-                    Admin moderation
+                    View directory
                   </Button>
+
+                  {isAdmin && (
+                    <Button
+                      component={RouterLink}
+                      to="/admin"
+                      variant="outlined"
+                      size="large"
+                    >
+                      Admin moderation
+                    </Button>
+                  )}
+
                   <Button
-                    variant="text"
+                    variant="outlined"
                     size="large"
                     onClick={() => void signOut()}
                     disabled={busy}
+                    startIcon={busy ? <CircularProgress size={16} /> : null}
                   >
-                    Sign out
+                    {busy ? 'Signing out…' : 'Sign out'}
                   </Button>
                 </>
               )}
@@ -167,3 +229,5 @@ export const Home = () => {
     </Box>
   );
 };
+
+export default Home;

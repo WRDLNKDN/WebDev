@@ -11,8 +11,8 @@ import {
   Box,
   Typography,
 } from '@mui/material';
-import type { ProfileRow } from '../admin/adminApi';
-import { StatusBadge } from './StatusBadge';
+import type { ProfileRow } from '../../admin/adminApi';
+import { StatusBadge } from '../common/StatusBadge';
 
 type Props = {
   rows: ProfileRow[];

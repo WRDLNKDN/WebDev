@@ -1,5 +1,5 @@
 import { Chip } from '@mui/material';
-import type { ProfileStatus } from '../admin/adminApi';
+import type { ProfileStatus } from '../../admin/adminApi';
 
 type Props = { status: ProfileStatus | 'all' };
 

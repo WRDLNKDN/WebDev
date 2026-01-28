@@ -1,3 +1,4 @@
+// tests/rls/env.ts
 import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
@@ -6,8 +7,13 @@ const loadIfExists = (p: string) => {
   if (fs.existsSync(p)) dotenv.config({ path: p });
 };
 
-// Load repo root envs (your case)
+// Local Supabase env (created by `supabase start`)
+loadIfExists(path.resolve(process.cwd(), 'supabase/.env'));
+
+// Test overrides
 loadIfExists(path.resolve(process.cwd(), '.env.test'));
+
+// Default env
 loadIfExists(path.resolve(process.cwd(), '.env'));
 
 const requireEnv = (name: string): string => {

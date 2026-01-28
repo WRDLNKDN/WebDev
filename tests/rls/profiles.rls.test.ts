@@ -1,15 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-
-const requireEnv = (name: string): string => {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
-  return v;
-};
-
-const SUPABASE_URL = requireEnv('SUPABASE_URL');
-const SUPABASE_ANON_KEY = requireEnv('SUPABASE_ANON_KEY');
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+import {
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY,
+} from './env';
 
 type Database = {
   public: {
@@ -60,7 +55,6 @@ describe('profiles RLS', () => {
       .from('profiles')
       .select('handle,status')
       .limit(50);
-
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
   });

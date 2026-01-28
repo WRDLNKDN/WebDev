@@ -1,75 +1,111 @@
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Typography,
+} from '@mui/material';
 import { supabase } from '../lib/supabaseClient';
 
-export const AdminGate = ({ children }: { children: ReactNode }) => {
-  const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
-  const [reason, setReason] = useState('');
+type GateState = 'checking' | 'allowed' | 'denied' | 'error';
+
+const toMessage = (e: unknown) => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  return 'Request failed';
+};
+
+export const AdminGate = ({ children }: { children: React.ReactNode }) => {
+  const [state, setState] = useState<GateState>('checking');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
 
-    const run = async () => {
-      setLoading(true);
-      setReason('');
-
+    const check = async () => {
       try {
-        const { data: sess } = await supabase.auth.getSession();
-        if (!sess.session) {
-          if (!mounted) return;
-          setAllowed(false);
-          setReason('You must sign in to access admin tools.');
-          setLoading(false);
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        // Must be signed in to even attempt admin checks
+        if (!sessionData.session) {
+          if (!cancelled) setState('denied');
           return;
         }
 
-        const { data, error } = await supabase.rpc('is_admin');
+        const { data, error: rpcError } = await supabase.rpc('is_admin');
+        if (rpcError) throw rpcError;
 
-        if (!mounted) return;
-
-        if (error) {
-          setAllowed(false);
-          setReason(`Admin check failed: ${error.message}`);
-          setLoading(false);
-          return;
-        }
-
-        setAllowed(Boolean(data));
-        if (!data) setReason('Not allowlisted for admin.');
-        setLoading(false);
+        if (!cancelled) setState(data ? 'allowed' : 'denied');
       } catch (e: unknown) {
-        if (!mounted) return;
-        const msg = e instanceof Error ? e.message : 'Admin check failed.';
-        setAllowed(false);
-        setReason(msg);
-        setLoading(false);
+        if (!cancelled) {
+          setError(toMessage(e));
+          setState('error');
+        }
       }
     };
 
-    void run();
+    void check();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
   }, []);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (state === 'allowed') return <>{children}</>;
 
-  if (!allowed) {
-    return (
-      <Alert severity="error" sx={{ mt: 4 }}>
-        Admin access denied. {reason}
-      </Alert>
-    );
-  }
+  return (
+    <Box component="main" sx={{ py: 6 }}>
+      <Container maxWidth="sm">
+        <Typography
+          component="h1"
+          variant="h4"
+          sx={{ fontWeight: 800 }}
+          gutterBottom
+        >
+          Admin
+        </Typography>
 
-  return <>{children}</>;
+        <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
+          Admin access is restricted to allowlisted accounts.
+        </Typography>
+
+        {state === 'checking' && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={22} aria-label="Checking admin access" />
+            <Typography variant="body2">Checking access…</Typography>
+          </Box>
+        )}
+
+        {state === 'denied' && (
+          <>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              You do not have admin access.
+            </Alert>
+
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', opacity: 0.7 }}
+            >
+              Admin requires a service role key and allowlist enforcement
+              server-side.
+            </Typography>
+          </>
+        )}
+
+        {state === 'error' && (
+          <Alert severity="error">
+            <strong>Admin check failed.</strong>
+            <Box
+              sx={{ mt: 1, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}
+            >
+              {error ?? 'Unknown error'}
+            </Box>
+          </Alert>
+        )}
+      </Container>
+    </Box>
+  );
 };

@@ -7,8 +7,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import { useSignup } from '../context/useSignup';
+import { supabase } from '../../lib/supabaseClient';
+import { useSignup } from '../../context/useSignup';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -67,15 +67,16 @@ export const AuthCallback = () => {
         const user = sessionData.session.user;
 
         // Check if user has a profile
-        const { error: profileError } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id')
           .eq('id', user.id)
           .single();
 
         if (!cancelled) {
-          // If no profile exists (PGRST116 = no rows returned), continue signup
+          // If no profile exists, set identity and continue signup
           if (profileError && profileError.code === 'PGRST116') {
+            console.log('📝 New user, setting up signup flow');
             setIdentity({
               provider: 'google',
               userId: user.id,
@@ -88,8 +89,9 @@ export const AuthCallback = () => {
             navigate('/signup', { replace: true });
           } else if (profileError) {
             throw profileError;
-          } else {
-            // Profile exists, go to intended destination
+          } else if (profile) {
+            // Profile exists, redirect to intended destination
+            console.log('✅ Existing user, redirecting');
             navigate(next, { replace: true });
           }
         }

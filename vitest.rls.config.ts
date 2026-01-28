@@ -1,12 +1,15 @@
+// vitest.rls.config.ts
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.{test,spec}.ts'],
+
+    // Only run RLS tests
+    include: ['tests/rls/**/*.{test,spec}.ts'],
+
     exclude: [
-      'tests/rls/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',

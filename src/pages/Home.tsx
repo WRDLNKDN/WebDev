@@ -5,7 +5,6 @@ import {
   Button,
   CircularProgress,
   Container,
-  Grid, // PATCH 1: Upgrade to Grid2 to support 'size' prop
   Paper,
   Stack,
   Toolbar,
@@ -15,7 +14,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { getContrastColor } from '../utils/contrast'; // PATCH 2: Fixed typo 'constrast' -> 'contrast'
+import { getContrastColor } from '../utils/contrast';
 
 // 1. High-Fidelity Assets & Constants
 const SYNERGY_BG = 'url("/assets/background.svg")';
@@ -64,7 +63,7 @@ export const Home = () => {
     setBusy(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard`;
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -104,7 +103,7 @@ export const Home = () => {
     >
       {/* HEADER LANDMARK */}
       <AppBar
-        component="header" // PATCH 3: Semantic Header
+        component="header"
         position="static"
         color="transparent"
         elevation={0}
@@ -112,8 +111,8 @@ export const Home = () => {
       >
         <Toolbar>
           <Typography
-            variant="h6" // Visually small
-            component="div" // Not a heading, just brand text
+            variant="h6"
+            component="div"
             sx={{
               flexGrow: 1,
               fontWeight: 'bold',
@@ -136,7 +135,7 @@ export const Home = () => {
                   <CircularProgress
                     size={24}
                     color="inherit"
-                    aria-label="Signing in..." // Accessibility Name
+                    aria-label="Signing in..."
                   />
                 ) : (
                   'Sign In'
@@ -163,9 +162,10 @@ export const Home = () => {
           </Stack>
         </Toolbar>
       </AppBar>
-      {/* MAIN LANDMARK: Wraps all primary content */}
+
+      {/* MAIN LANDMARK */}
       <Box
-        component="main" // PATCH 3: Semantic Main (Fixes "Missing Landmark" and "Orphaned Content")
+        component="main"
         sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
       >
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', py: 8 }}>
@@ -183,13 +183,13 @@ export const Home = () => {
             >
               <Stack spacing={4} alignItems="center">
                 <Box>
-                  {/* 1. The Brand (H1) */}
+                  {/* 1. BRAND UPDATE: WRDLNKDN */}
                   <Typography
                     variant="h2"
                     component="h1"
                     sx={{
                       fontWeight: 900,
-                      mb: 0.5, // Tighten gap to the pronunciation
+                      mb: 0.5,
                       color: HERO_TEXT_COLOR,
                       letterSpacing: 2,
                     }}
@@ -197,21 +197,21 @@ export const Home = () => {
                     WRDLNKDN
                   </Typography>
 
-                  {/* 2. April's Request: The Phonetic Guide */}
+                  {/* 2. Phonetic Guide */}
                   <Typography
                     variant="h5"
-                    component="p" // Semantic paragraph (not a heading)
+                    component="p"
                     sx={{
-                      mb: 3, // Push the tagline down
+                      mb: 3,
                       fontWeight: 400,
-                      opacity: 0.6, // Visually subtle
+                      opacity: 0.6,
                       color: HERO_TEXT_COLOR,
                     }}
                   >
                     (Weird Link-uh-din)
                   </Typography>
 
-                  {/* 3. The Tagline (H2) */}
+                  {/* 3. DYNAMIC WELCOME */}
                   <Typography
                     variant="h5"
                     component="h2"
@@ -221,14 +221,29 @@ export const Home = () => {
                       color: HERO_TEXT_COLOR,
                     }}
                   >
-                    Professional networking, but{' '}
-                    <Box
-                      component="span"
-                      sx={{ color: 'primary.main', fontWeight: 'bold' }}
-                    >
-                      human
-                    </Box>
-                    .
+                    {!session ? (
+                      <>
+                        Professional networking, but{' '}
+                        <Box
+                          component="span"
+                          sx={{ color: 'primary.main', fontWeight: 'bold' }}
+                        >
+                          human
+                        </Box>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Welcome back,{' '}
+                        <Box
+                          component="span"
+                          sx={{ color: 'primary.main', fontWeight: 'bold' }}
+                        >
+                          Verified Generalist
+                        </Box>
+                        .
+                      </>
+                    )}
                   </Typography>
                 </Box>
 
@@ -240,7 +255,7 @@ export const Home = () => {
 
                 <Button
                   component={RouterLink}
-                  to="/directory"
+                  to={session ? '/dashboard' : '/directory'}
                   variant="contained"
                   size="large"
                   sx={{
@@ -251,94 +266,91 @@ export const Home = () => {
                     textTransform: 'none',
                   }}
                 >
-                  Enter Directory
+                  {session ? 'Enter Your Dashboard' : 'Explore The Guild'}
                 </Button>
 
                 <Typography
                   variant="caption"
                   sx={{ opacity: 0.5, color: HERO_TEXT_COLOR }}
                 >
-                  Join the Guild of the Verified Generalists.
+                  {session
+                    ? 'Your portfolio is your professional body of work.'
+                    : 'Join the Guild of the Verified Generalists.'}
                 </Typography>
               </Stack>
             </Paper>
           </Container>
         </Box>
 
+        {/* MISSION GRID: High-Performance CSS Grid Layout */}
         <Box sx={{ bgcolor: 'rgba(0,0,0,0.9)', py: 8 }}>
           <Container maxWidth="lg">
-            <Grid container spacing={4}>
-              {/* Column 1 */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                  {/* H3: Section Headers */}
-                  <Typography
-                    variant="h6"
-                    component="h3"
-                    gutterBottom
-                    color="primary.light"
-                  >
-                    Verified Profiles
-                  </Typography>
-                  <Typography
-                    variant="body2" // PATCH 5: Restored Correct Text
-                    sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
-                  >
-                    No bots. No spam. Just real humans vetted by actual
-                    moderators. We prioritize authenticity over engagement
-                    metrics.
-                  </Typography>
-                </Paper>
-              </Grid>
-
-              {/* Column 2 */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                  <Typography
-                    variant="h6"
-                    component="h3"
-                    gutterBottom
-                    color="primary.light"
-                  >
-                    Human OS
+            {/* SYSTEM UPGRADE: Replaced Grid component with CSS Grid Stack.
+              - Mobile: 1fr (Full width)
+              - Desktop: repeat(3, 1fr) (Equal columns)
+              - Gap: 4 (32px)
+            */}
+            <Stack
+              component="section"
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+                gap: 4,
+              }}
+            >
+              {/* Column 1: Our Vision */}
+              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
+                <Stack spacing={2}>
+                  <Typography variant="h6" component="h3" color="primary.light">
+                    Our Vision
                   </Typography>
                   <Typography
                     variant="body2"
                     sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
                   >
-                    Built on the philosophy that professional life
-                    shouldn&apos;t require turning off your personality.
-                    &quot;Weird&quot; is just another word for &quot;High
-                    Definition.&quot;
+                    We envision a world where professional and technical
+                    communities are open, inclusive, and built around people
+                    rather than hierarchy or gatekeeping.
                   </Typography>
-                </Paper>
-              </Grid>
+                </Stack>
+              </Paper>
 
-              {/* Column 3 */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                  <Typography
-                    variant="h6"
-                    component="h3"
-                    gutterBottom
-                    color="primary.light"
-                  >
-                    Community Led
+              {/* Column 2: Our Team */}
+              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
+                <Stack spacing={2}>
+                  <Typography variant="h6" component="h3" color="primary.light">
+                    Our Team
                   </Typography>
                   <Typography
                     variant="body2"
                     sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
                   >
-                    Admins approve requests, but the community sets the tone. A
-                    directory for those who ship, build, and verify.
+                    We are a fully volunteer, open-source software community
+                    working together through collaboration and shared effort.
                   </Typography>
-                </Paper>
-              </Grid>
-            </Grid>
+                </Stack>
+              </Paper>
+
+              {/* Column 3: Our Pride */}
+              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
+                <Stack spacing={2}>
+                  <Typography variant="h6" component="h3" color="primary.light">
+                    Our Pride
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
+                  >
+                    WRDLNKDN is shaped by people who choose authenticity over
+                    conformity and collaboration over competition.
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Stack>
           </Container>
         </Box>
-      </Box>{' '}
-      {/* END MAIN */}
+      </Box>
+
       {/* FOOTER LANDMARK */}
       <Box
         component="footer"

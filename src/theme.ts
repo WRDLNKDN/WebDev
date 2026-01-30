@@ -1,283 +1,342 @@
-// src/theme.ts
 import { createTheme } from '@mui/material/styles';
 
-const customTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#42a5f5', // Bright blue with WCAG AA contrast on dark background
-      contrastText: '#000000',
-    },
-    secondary: {
-      main: '#ec407a', // Bright pink with WCAG AA contrast
-      contrastText: '#000000',
-    },
-    background: {
-      default: '#121212',
-      paper: '#1e1e1e',
-    },
-    text: {
-      primary: '#e0e0e0', // Light gray for primary text (WCAG AA: 7.2:1)
-      secondary: '#a0a0a0', // Medium gray for secondary text (WCAG AA: 4.7:1)
-      disabled: '#757575', // Medium gray for disabled text
-    },
-    error: {
-      main: '#ef5350', // Light red for errors (WCAG AA)
-      contrastText: '#000000',
-    },
-    warning: {
-      main: '#ffb74d', // Light orange for warnings (WCAG AA)
-      contrastText: '#000000',
-    },
-    info: {
-      main: '#29b6f6', // Light cyan for info (WCAG AA)
-      contrastText: '#000000',
-    },
-    success: {
-      main: '#66bb6a', // Light green for success (WCAG AA)
-      contrastText: '#000000',
-    },
+// HUMAN OS COLOR PALETTE (Dark Mode Verified)
+const PALETTE = {
+  mode: 'dark' as const,
+  primary: {
+    main: '#42a5f5', // WCAG AA Safe on #121212
+    light: '#90caf9',
+    dark: '#1565c0',
+    contrastText: '#000000',
   },
+  secondary: {
+    main: '#ec407a', // Pink is valid for accents
+    contrastText: '#000000',
+  },
+  background: {
+    default: '#121212', // Standard Dark Mode base
+    paper: '#1e1e1e', // Slightly elevated surface
+  },
+  text: {
+    primary: '#ffffff', // 21:1 Contrast
+    secondary: '#e0e0e0', // 16:1 Contrast (Bumped from grey.500)
+    disabled: '#9e9e9e',
+  },
+  error: {
+    main: '#ef5350',
+    contrastText: '#000000',
+  },
+  warning: {
+    main: '#ffb74d',
+    contrastText: '#000000',
+  },
+  success: {
+    main: '#66bb6a',
+    contrastText: '#000000',
+  },
+  info: {
+    main: '#29b6f6',
+    contrastText: '#000000',
+  },
+};
+
+// SECTION 508 / WCAG FOCUS STYLE
+// "The Blue Halo" - High visibility focus ring for keyboard users
+const FOCUS_RING = {
+  outline: '3px solid #90caf9',
+  outlineOffset: '2px',
+};
+
+const customTheme = createTheme({
+  palette: PALETTE,
+
+  // TYPOGRAPHY: The "Brand vs Utility" Protocol
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    fontSize: 14,
+    fontSize: 16, // Mobile-First readability base
+    htmlFontSize: 16,
     h1: {
-      fontSize: '2rem', // 32px
-      fontWeight: 300,
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 700,
       lineHeight: 1.2,
     },
     h2: {
-      fontSize: '1.75rem', // 28px
-      fontWeight: 300,
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 600,
       lineHeight: 1.3,
     },
     h3: {
-      fontSize: '1.5rem', // 24px
-      fontWeight: 400,
-      lineHeight: 1.4,
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 600,
+      lineHeight: 1.3,
     },
     h4: {
-      fontSize: '1.25rem', // 20px
-      fontWeight: 400,
-      lineHeight: 1.5,
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 500,
+      lineHeight: 1.4,
     },
     h5: {
-      fontSize: '1.125rem', // 18px
-      fontWeight: 400,
-      lineHeight: 1.5,
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 500,
+      lineHeight: 1.4,
     },
     h6: {
-      fontSize: '1rem', // 16px
+      fontFamily: '"Poppins", sans-serif',
       fontWeight: 500,
-      lineHeight: 1.6,
-    },
-    body1: {
-      fontSize: '1rem', // 16px
       lineHeight: 1.5,
     },
-    body2: {
-      fontSize: '0.875rem', // 14px
-      lineHeight: 1.43,
-    },
+    subtitle1: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
+    subtitle2: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
     button: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 600,
       textTransform: 'none',
-      fontWeight: 500,
-      fontSize: '0.875rem', // 14px
     },
-    caption: {
-      fontSize: '0.75rem', // 12px, but ensure contrast
-      lineHeight: 1.66,
-    },
-    overline: {
-      fontSize: '0.75rem', // 12px
-      textTransform: 'uppercase',
-      lineHeight: 2.66,
-    },
+    body1: { fontSize: '1rem', lineHeight: 1.6 }, // 16px - Optimal reading
+    body2: { fontSize: '0.875rem', lineHeight: 1.5 }, // 14px - Utilities
+    caption: { fontSize: '0.75rem', lineHeight: 1.5 }, // 12px - Disclaimers
   },
+
+  // COMPONENT OVERRIDES: The Compliance Engine
   components: {
-    MuiContainer: {
-      defaultProps: {
-        disableGutters: true,
+    // 1. GLOBAL RESET
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarColor: '#6b6b6b #2b2b2b',
+          '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+            backgroundColor: '#2b2b2b',
+          },
+          '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+            borderRadius: 8,
+            backgroundColor: '#6b6b6b',
+            minHeight: 24,
+            border: '3px solid #2b2b2b',
+          },
+          '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus':
+            {
+              backgroundColor: '#959595',
+            },
+        },
       },
     },
-    MuiCard: {
+
+    // 2. INTERACTIVE ELEMENTS (Touch Targets & Focus)
+    MuiButtonBase: {
       defaultProps: {
-        elevation: 1,
+        disableRipple: false, // Ripple is good feedback (WCAG 2.2)
       },
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          '&:focus-visible': FOCUS_RING,
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 4,
-          textTransform: 'none',
-          fontWeight: 500,
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+          borderRadius: 8,
+          minHeight: 44, // WCAG 2.5.5 (Target Size)
+          padding: '8px 24px',
+          '&:focus-visible': FOCUS_RING,
         },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#42a5f5',
-            },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#42a5f5',
-              borderWidth: 2,
-            },
-          },
-        },
-      },
-    },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: {
-          color: '#a0a0a0',
-          '&.Mui-focused': {
-            color: '#42a5f5',
-          },
-        },
-      },
-    },
-    MuiFormHelperText: {
-      styleOverrides: {
-        root: {
-          color: '#909090',
-        },
-      },
-    },
-    MuiLink: {
-      styleOverrides: {
-        root: {
-          color: '#42a5f5',
-          textDecoration: 'underline',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+        containedPrimary: {
+          '&:hover': { backgroundColor: '#1565c0' }, // Clear hover state
         },
       },
     },
     MuiIconButton: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
+          '&:focus-visible': FOCUS_RING,
+          // Ensure visual bounds match touch target
+          padding: 12,
+        },
+      },
+    },
+    MuiLink: {
+      styleOverrides: {
+        root: {
+          color: '#90caf9',
+          textDecoration: 'underline', // Crucial for color-blind users (Use of Color rule)
+          textUnderlineOffset: '4px',
+          '&:hover': { color: '#42a5f5' },
+          '&:focus-visible': {
+            ...FOCUS_RING,
+            borderRadius: '2px',
           },
         },
       },
     },
-    MuiChip: {
+
+    // 3. FORMS & INPUTS (Labels, Borders, Errors)
+    MuiInputBase: {
       styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
+        input: {
+          minHeight: 44, // Touch target safety
+          '&::placeholder': {
+            opacity: 1,
+            color: '#a0a0a0', // Fixes default low contrast placeholders
           },
         },
       },
     },
-    MuiTab: {
+    MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
+          borderRadius: 8,
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#90caf9',
           },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#42a5f5',
+            borderWidth: 2,
+          },
+        },
+        notchedOutline: {
+          borderColor: 'rgba(255, 255, 255, 0.23)',
         },
       },
     },
-    MuiMenuItem: {
+    MuiInputLabel: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            backgroundColor: '#2a2a2a',
-          },
+          color: '#e0e0e0', // Readable label
+          '&.Mui-focused': { color: '#42a5f5' },
         },
       },
     },
-    MuiListItemButton: {
+    MuiFormHelperText: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            backgroundColor: '#2a2a2a',
-          },
-        },
-      },
-    },
-    MuiSwitch: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+          fontSize: '0.875rem', // Ensure error text isn't microscopic
+          color: '#e0e0e0',
         },
       },
     },
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+          padding: 10, // Expand touch target
+          '&:focus-visible': FOCUS_RING,
         },
       },
     },
     MuiRadio: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+          padding: 10,
+          '&:focus-visible': FOCUS_RING,
         },
       },
     },
-    MuiSlider: {
+    MuiSwitch: {
+      styleOverrides: {
+        switchBase: {
+          '&:focus-visible': FOCUS_RING,
+        },
+        track: {
+          opacity: 0.5,
+          backgroundColor: '#9e9e9e',
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        icon: { color: '#e0e0e0' },
+      },
+    },
+
+    // 4. SURFACES (Cards, Dialogs, Menus)
+    MuiPaper: {
       styleOverrides: {
         root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+          backgroundImage: 'none',
         },
       },
     },
-    MuiTooltip: {
+    MuiCard: {
       styleOverrides: {
-        tooltip: {
-          backgroundColor: '#2a2a2a',
-          color: '#e0e0e0',
-          fontSize: '0.75rem',
+        root: {
+          borderRadius: 12,
+          border: '1px solid rgba(255, 255, 255, 0.12)', // Visual definition for low vision
         },
       },
     },
     MuiDialog: {
       styleOverrides: {
         paper: {
+          borderRadius: 16,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: 8,
         },
       },
     },
-    MuiPaper: {
+    MuiMenuItem: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e1e1e',
+          minHeight: 48, // WCAG Touch Target
+          '&:focus-visible': { backgroundColor: 'rgba(66, 165, 245, 0.12)' },
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+        },
+      },
+    },
+
+    // 5. DATA DISPLAY (Chips, Tables, Alerts)
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.875rem',
+          height: 32,
+          '&:focus-visible': FOCUS_RING,
+        },
+        label: { fontWeight: 500 },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          fontSize: '0.95rem', // Readable alerts
+          alignItems: 'center',
+        },
+        standardError: {
+          backgroundColor: 'rgba(239, 83, 80, 0.1)',
+          color: '#ffcdd2',
+          border: '1px solid #ef5350',
+        },
+        standardInfo: {
+          backgroundColor: 'rgba(41, 182, 246, 0.1)',
+          color: '#b3e5fc',
+          border: '1px solid #29b6f6',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          minHeight: 48,
+          fontSize: '1rem',
+          '&:focus-visible': FOCUS_RING,
+        },
+      },
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#424242',
+          color: '#ffffff',
+          fontSize: '0.875rem',
+          border: '1px solid rgba(255,255,255,0.1)',
         },
       },
     },

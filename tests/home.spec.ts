@@ -2,24 +2,26 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test.beforeEach(async ({ page }) => {
+    // 1. Inhabit the Environment
     await page.goto('/');
   });
 
   test('should render the brand and primary navigation targets', async ({
     page,
   }) => {
-    // 1. Verify the Brand
-    // It is now a visual label inside the Header (banner), not a semantic H1.
-    const brand = page.getByRole('banner').getByText('WRDLNKDN');
-    await expect(brand).toBeVisible();
+    // 1. Verify the Brand Label (Visual Identity)
+    // Located in the AppBar header landmark
+    const brandLabel = page.getByRole('banner').getByText('WRDLNKDN');
+    await expect(brandLabel).toBeVisible();
 
-    // 2. Verify the Main Hook (The true H1)
+    // 2. Verify the Main Hook (The Semantic H1)
+    // This is our primary 'Center of Gravity' for SEO and Screen Readers
     await expect(
       page.getByRole('heading', { name: 'WRDLNKDN', level: 1 }),
     ).toBeVisible();
 
-    // 3. Verify the Subtitle (The semantic H2)
-    // Note: It visually looks like an h5, but semantically acts as h2
+    // 3. Verify the Tagline (The Semantic H2)
+    // Visually h5 for style, but semantically h2 for hierarchy integrity
     await expect(
       page.getByRole('heading', {
         name: /Professional networking, but/i,
@@ -31,28 +33,36 @@ test.describe('Home Page - High-Integrity Audit', () => {
   test('should display the community invitation (System Audit Info)', async ({
     page,
   }) => {
-    // 1. Verify the Caption
-    // We replaced the "Admin Warning" with the "Guild Invitation"
-    const tip = page
+    // 1. Verify the Guild Invitation
+    // The specific text string we added to the unauthenticated state
+    const invitation = page
       .getByText(/Join the Guild of the Verified Generalists/i)
       .first();
-    await expect(tip).toBeVisible();
+    await expect(invitation).toBeVisible();
 
-    // 2. Verify Semantic Styling
-    // It should still use the Caption typography class
-    await expect(tip).toHaveClass(/MuiTypography-caption/);
+    // 2. Verify Semantic Compliance
+    // Ensures the caption typography is applied for proper visual hierarchy
+    await expect(invitation).toHaveClass(/MuiTypography-caption/);
   });
 
-  test('should render the Verified Generalist grid columns', async ({
+  test('should render the Mission Grid columns (Source: weirdlinked.in)', async ({
     page,
   }) => {
-    // 1. Verify the Grid Headers (Semantic H3s)
+    // PATCH: Updated headers to match the latest 'Who We Are' content injection
+
+    // Column 1: Our Vision
     await expect(
-      page.getByRole('heading', { name: 'Verified Profiles', level: 3 }),
+      page.getByRole('heading', { name: 'Our Vision', level: 3 }),
     ).toBeVisible();
 
+    // Column 2: Our Team
     await expect(
-      page.getByRole('heading', { name: 'Human OS', level: 3 }),
+      page.getByRole('heading', { name: 'Our Team', level: 3 }),
+    ).toBeVisible();
+
+    // Column 3: Our Pride
+    await expect(
+      page.getByRole('heading', { name: 'Our Pride', level: 3 }),
     ).toBeVisible();
   });
 });

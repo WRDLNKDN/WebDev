@@ -1,9 +1,7 @@
-import path from 'node:path';
-import fs from 'node:fs';
+// vitest.setup.ts
 import dotenv from 'dotenv';
+import path from 'node:path';
 
-const envPath = path.resolve(process.cwd(), '.env');
-
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-}
+dotenv.config({ path: path.resolve(process.cwd(), 'supabase/.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+dotenv.config(); // fallback to .env

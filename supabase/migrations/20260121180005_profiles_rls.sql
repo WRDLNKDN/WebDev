@@ -1,48 +1,94 @@
 -- supabase/migrations/20260121180005_profiles_rls.sql
--- RLS + policies for profiles
+-- RLS policies for profiles table
 
 alter table public.profiles enable row level security;
 
--- Drop policies if they exist (safe for re-runs in dev)
+-- Drop policies if they exist
 drop policy if exists profiles_public_read_approved on public.profiles;
 drop policy if exists profiles_user_read_own on public.profiles;
-drop policy if exists profiles_user_insert_own on public.profiles;
-drop policy if exists profiles_user_update_own on public.profiles;
+drop policy if exists profiles_admin_read_all on public.profiles;
 
--- Public can ONLY read approved profiles
+drop policy if exists profiles_user_insert_own on public.profiles;
+
+drop policy if exists profiles_user_update_own on public.profiles;
+drop policy if exists profiles_admin_update_all on public.profiles;
+
+-- -----------------------------
+-- SELECT
+-- -----------------------------
+
+-- Anyone can read approved profiles
 create policy profiles_public_read_approved
 on public.profiles
 for select
 using (status = 'approved');
 
--- Signed-in users can read their OWN profile even if pending/rejected
+-- Signed-in user can read their own row
 create policy profiles_user_read_own
 on public.profiles
 for select
 using (auth.uid() = id);
 
--- Users can insert ONLY their own profile
+-- Admin can read everything
+create policy profiles_admin_read_all
+on public.profiles
+for select
+using (public.is_admin());
+
+-- -----------------------------
+-- INSERT
+-- -----------------------------
 create policy profiles_user_insert_own
 on public.profiles
 for insert
 with check (auth.uid() = id);
 
--- Users can update ONLY their own profile
--- (status changes are blocked by trigger and also blocked at privilege level below)
+-- -----------------------------
+-- UPDATE
+-- -----------------------------
+
+-- User can update their own row (safe columns enforced by GRANT)
 create policy profiles_user_update_own
 on public.profiles
 for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
--- Privileges: prevent authenticated from updating status/review fields at the SQL layer too
+-- Admin can update any row (including status; trigger still enforces)
+create policy profiles_admin_update_all
+on public.profiles
+for update
+using (public.is_admin())
+with check (public.is_admin());
+
+-- -----------------------------
+-- Privileges (SQL layer)
+-- -----------------------------
 revoke all on table public.profiles from anon, authenticated;
 
--- Everyone can SELECT (RLS filters rows)
 grant select on table public.profiles to anon, authenticated;
-
--- Only authenticated can INSERT
 grant insert on table public.profiles to authenticated;
 
--- Only allow authenticated to UPDATE safe columns
-grant update (handle, geek_creds, nerd_creds, pronouns, socials) on table public.profiles to authenticated;
+-- Safe editable fields (regular users)
+grant update (
+  email,
+  handle,
+  display_name,
+  avatar,
+  tagline,
+  geek_creds,
+  nerd_creds,
+  pronouns,
+  socials,
+  join_reason,
+  participation_style,
+  additional_context
+) on table public.profiles to authenticated;
+
+-- Admin-only fields (still granted to authenticated, but RLS + trigger gate it)
+grant update (
+  status,
+  reviewed_at,
+  reviewed_by,
+  is_admin
+) on table public.profiles to authenticated;

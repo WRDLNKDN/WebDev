@@ -1,8 +1,8 @@
 // src/hooks/useAdminProfiles.ts
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ProfileRow, ProfileStatus } from '../admin/adminApi';
-import { fetchProfiles } from '../admin/adminApi';
+import type { ProfileRow, ProfileStatus } from '../pages/admin/adminApi';
+import { fetchProfiles } from '../pages/admin/adminApi';
 
 type UseAdminProfilesArgs = {
   token: string;

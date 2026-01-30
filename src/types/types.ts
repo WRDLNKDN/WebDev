@@ -4,16 +4,24 @@ export type ProfileStatus = 'pending' | 'approved' | 'rejected' | 'disabled';
 
 export type ProfileRow = {
   id: string;
-  handle: string;
-  status: ProfileStatus;
   created_at: string | null;
   updated_at: string | null;
-  pronouns: string | null;
+  email: string;
+  handle: string;
+  display_name: string | null;
+  avatar: string | null;
+  tagline: string | null;
+  status: ProfileStatus;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   geek_creds: string[] | null;
   nerd_creds: unknown | null;
+  pronouns: string | null;
+  join_reason: string[] | null;
+  participation_style: string[] | null;
+  additional_context: string | null;
   socials: unknown | null;
-  reviewed_at?: string | null;
-  reviewed_by?: string | null;
+  is_admin: boolean;
 };
 
 export type FetchProfilesParams = {

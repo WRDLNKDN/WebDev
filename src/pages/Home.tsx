@@ -1,16 +1,18 @@
+// src/pages/Home.tsx
 import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
-  Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+
+import { supabase } from '../lib/supabaseClient';
 
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
@@ -18,8 +20,45 @@ const toMessage = (e: unknown) => {
   return 'Request failed';
 };
 
+const BG_SX = {
+  minHeight: '100vh',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  px: 2,
+  py: 6,
+  backgroundColor: '#05070f',
+  backgroundImage: 'url(/landing-bg.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  overflow: 'hidden',
+  '::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    background:
+      'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.85))',
+  },
+};
+
+const CARD_SX = {
+  position: 'relative',
+  width: '100%',
+  maxWidth: 920,
+  mx: 'auto',
+  borderRadius: 3,
+  border: '1px solid rgba(255,255,255,0.12)',
+  bgcolor: 'rgba(16, 18, 24, 0.70)',
+  backdropFilter: 'blur(12px)',
+  boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
+  p: { xs: 3, sm: 4 },
+  color: '#fff',
+};
+
 export const Home = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,17 +67,17 @@ export const Home = () => {
 
     const init = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!cancelled) {
-        if (sessionError) setError(toMessage(sessionError));
-        setSession(data.session ?? null);
-      }
+      if (cancelled) return;
+
+      if (sessionError) setError(toMessage(sessionError));
+      setSession(data.session ?? null);
     };
 
     void init();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
-        setSession(newSession);
+        if (!cancelled) setSession(newSession ?? null);
       },
     );
 
@@ -48,12 +87,48 @@ export const Home = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAdmin = async () => {
+      if (!session) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (cancelled) return;
+
+        if (error) {
+          setIsAdmin(false);
+          return;
+        }
+
+        setIsAdmin(Boolean(data));
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+
+    void checkAdmin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   const signInGoogle = async () => {
+    console.log('🟢 HOME SIGN IN: Starting');
     setBusy(true);
     setError(null);
 
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(
+        '/directory',
+      )}`;
+      console.log('🟢 HOME SIGN IN: redirectTo =', redirectTo);
 
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -68,102 +143,152 @@ export const Home = () => {
   };
 
   const signOut = async () => {
-    setBusy(true);
     setError(null);
+    setBusy(true);
+
     try {
-      const { error: outError } = await supabase.auth.signOut();
-      if (outError) throw outError;
+      // Use LOCAL logout for dev reliability.
+      // Global signout can be slow/hang depending on provider/session state.
+      const { error: outErr } = await supabase.auth.signOut();
+      if (outErr) throw outErr;
+
+      // Also clear our explicit storage key so UI can't "stick"
+      try {
+        localStorage.removeItem('sb-wrdlnkdn-auth');
+      } catch {
+        // ignore
+      }
+
+      setSession(null);
+
+      // Force UI reset
+      window.location.assign('/');
     } catch (e: unknown) {
       setError(toMessage(e));
-    } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Stack spacing={2}>
-            <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-              WeirdLinkedIn
-            </Typography>
+    <Box sx={BG_SX}>
+      <Container maxWidth="md" sx={CARD_SX}>
+        {!session && (
+          <Alert
+            severity="info"
+            sx={{
+              mb: 2,
+              bgcolor: 'rgba(33, 150, 243, 0.1)',
+              border: '1px solid rgba(33, 150, 243, 0.3)',
+              color: 'rgba(255,255,255,0.9)',
+            }}
+          >
+            {`You're browsing as a guest. Create an account to submit a profile or sign in if you've already applied.`}
+          </Alert>
+        )}
 
-            <Typography variant="body1" sx={{ opacity: 0.85 }}>
-              Professional networking, but human.
-            </Typography>
+        <Stack spacing={2}>
+          <Typography
+            component="h1"
+            variant="h3"
+            sx={{ fontWeight: 900, lineHeight: 1.1, color: '#fff' }}
+          >
+            Welcome to WRDLNKDN
+          </Typography>
 
-            <Typography variant="body2" sx={{ opacity: 0.75 }}>
-              Browse approved profiles in the directory. Members can submit a
-              registration request. Admins approve or reject registrations
-              before they appear publicly.
-            </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+            Professional networking, but human.
+          </Typography>
 
-            {error && <Alert severity="error">{error}</Alert>}
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+            This is a curated directory. You submit a request, admins review it,
+            and once approved you appear in the member list.
+          </Typography>
 
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              sx={{ pt: 1 }}
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                bgcolor: 'rgba(211, 47, 47, 0.15)',
+                border: '1px solid rgba(211, 47, 47, 0.3)',
+                color: 'rgba(255,255,255,0.9)',
+              }}
             >
-              <Button
-                component={RouterLink}
-                to="/directory"
-                variant="contained"
-                size="large"
-              >
-                View directory
-              </Button>
+              {error}
+            </Alert>
+          )}
 
-              {!session ? (
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{ pt: 1 }}
+          >
+            {!session ? (
+              <>
+                <Button
+                  component={RouterLink}
+                  to="/signup"
+                  variant="contained"
+                  size="large"
+                  disabled={busy}
+                >
+                  Create account
+                </Button>
+
                 <Button
                   variant="outlined"
                   size="large"
                   onClick={() => void signInGoogle()}
                   disabled={busy}
                 >
-                  Sign in with Google
+                  {busy ? 'Working…' : 'Sign in with Google'}
                 </Button>
-              ) : (
-                <>
+              </>
+            ) : (
+              <>
+                <Button
+                  component={RouterLink}
+                  to="/directory"
+                  variant="contained"
+                  size="large"
+                  disabled={busy}
+                >
+                  View directory
+                </Button>
+
+                {isAdmin && (
                   <Button
                     component={RouterLink}
                     to="/admin"
                     variant="outlined"
                     size="large"
+                    disabled={busy}
                   >
                     Admin moderation
                   </Button>
-                  <Button
-                    variant="text"
-                    size="large"
-                    onClick={() => void signOut()}
-                    disabled={busy}
-                  >
-                    Sign out
-                  </Button>
-                </>
-              )}
-            </Stack>
+                )}
 
-            <Box sx={{ pt: 2 }}>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Local dev note: Admin access is enforced by allowlist
-                server-side.
-              </Typography>
-            </Box>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => void signOut()}
+                  disabled={busy}
+                  startIcon={busy ? <CircularProgress size={16} /> : null}
+                >
+                  {busy ? 'Signing out…' : 'Sign out'}
+                </Button>
+              </>
+            )}
           </Stack>
-        </Paper>
+
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              Local dev note: Admin access is enforced by allowlist server-side.
+            </Typography>
+          </Box>
+        </Stack>
       </Container>
     </Box>
   );
 };
+
+export default Home;

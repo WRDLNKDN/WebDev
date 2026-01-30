@@ -1,287 +1,113 @@
 // src/theme.ts
 import { createTheme } from '@mui/material/styles';
 
-const customTheme = createTheme({
+export const theme = createTheme({
   palette: {
     mode: 'dark',
-    primary: {
-      main: '#42a5f5', // Bright blue with WCAG AA contrast on dark background
-      contrastText: '#000000',
-    },
-    secondary: {
-      main: '#ec407a', // Bright pink with WCAG AA contrast
-      contrastText: '#000000',
-    },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: '#05070f',
+      paper: 'rgba(16, 18, 24, 0.72)',
     },
     text: {
-      primary: '#e0e0e0', // Light gray for primary text (WCAG AA: 7.2:1)
-      secondary: '#a0a0a0', // Medium gray for secondary text (WCAG AA: 4.7:1)
-      disabled: '#757575', // Medium gray for disabled text
+      primary: '#ffffff',
+      secondary: 'rgba(255,255,255,0.75)',
     },
-    error: {
-      main: '#ef5350', // Light red for errors (WCAG AA)
-      contrastText: '#000000',
-    },
-    warning: {
-      main: '#ffb74d', // Light orange for warnings (WCAG AA)
-      contrastText: '#000000',
-    },
-    info: {
-      main: '#29b6f6', // Light cyan for info (WCAG AA)
-      contrastText: '#000000',
+    primary: {
+      main: '#60a5fa',
     },
     success: {
-      main: '#66bb6a', // Light green for success (WCAG AA)
-      contrastText: '#000000',
+      main: '#22c55e',
+    },
+    warning: {
+      main: '#f59e0b',
+    },
+    error: {
+      main: '#ef4444',
     },
   },
+
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    fontSize: 14,
-    h1: {
-      fontSize: '2rem', // 32px
-      fontWeight: 300,
-      lineHeight: 1.2,
-    },
-    h2: {
-      fontSize: '1.75rem', // 28px
-      fontWeight: 300,
-      lineHeight: 1.3,
-    },
-    h3: {
-      fontSize: '1.5rem', // 24px
-      fontWeight: 400,
-      lineHeight: 1.4,
-    },
-    h4: {
-      fontSize: '1.25rem', // 20px
-      fontWeight: 400,
-      lineHeight: 1.5,
-    },
-    h5: {
-      fontSize: '1.125rem', // 18px
-      fontWeight: 400,
-      lineHeight: 1.5,
-    },
-    h6: {
-      fontSize: '1rem', // 16px
-      fontWeight: 500,
-      lineHeight: 1.6,
-    },
-    body1: {
-      fontSize: '1rem', // 16px
-      lineHeight: 1.5,
-    },
-    body2: {
-      fontSize: '0.875rem', // 14px
-      lineHeight: 1.43,
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 500,
-      fontSize: '0.875rem', // 14px
-    },
-    caption: {
-      fontSize: '0.75rem', // 12px, but ensure contrast
-      lineHeight: 1.66,
-    },
-    overline: {
-      fontSize: '0.75rem', // 12px
-      textTransform: 'uppercase',
-      lineHeight: 2.66,
-    },
+    fontFamily: [
+      'ui-sans-serif',
+      'system-ui',
+      '-apple-system',
+      'Segoe UI',
+      'Roboto',
+      'Helvetica',
+      'Arial',
+      'sans-serif',
+    ].join(','),
   },
+
+  shape: {
+    borderRadius: 16,
+  },
+
   components: {
-    MuiContainer: {
-      defaultProps: {
-        disableGutters: true,
-      },
-    },
-    MuiCard: {
-      defaultProps: {
-        elevation: 1,
-      },
+    MuiCssBaseline: {
       styleOverrides: {
-        root: {
-          borderRadius: 8,
+        body: {
+          backgroundColor: '#05070f',
         },
       },
     },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 4,
-          textTransform: 'none',
-          fontWeight: 500,
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#42a5f5',
-            },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#42a5f5',
-              borderWidth: 2,
-            },
-          },
-        },
-      },
-    },
+
+    // Required * color
     MuiInputLabel: {
       styleOverrides: {
-        root: {
-          color: '#a0a0a0',
-          '&.Mui-focused': {
-            color: '#42a5f5',
+        asterisk: {
+          color: '#ef4444',
+        },
+      },
+    },
+
+    // Signup stepper readability on dark background
+    MuiStepLabel: {
+      styleOverrides: {
+        label: {
+          color: 'rgba(255,255,255,0.70)',
+          '&.Mui-active': {
+            color: '#ffffff',
+            fontWeight: 700,
+          },
+          '&.Mui-completed': {
+            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 600,
           },
         },
       },
     },
-    MuiFormHelperText: {
+    MuiStepIcon: {
       styleOverrides: {
         root: {
-          color: '#909090',
-        },
-      },
-    },
-    MuiLink: {
-      styleOverrides: {
-        root: {
-          color: '#42a5f5',
-          textDecoration: 'underline',
-          '&:hover': {
-            textDecoration: 'underline',
+          color: 'rgba(255,255,255,0.35)',
+          '&.Mui-active': {
+            color: '#60a5fa',
           },
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
+          '&.Mui-completed': {
+            color: '#22c55e',
           },
         },
-      },
-    },
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+        text: {
+          fill: '#05070f',
+          fontWeight: 800,
         },
       },
     },
-    MuiChip: {
+    MuiStepConnector: {
       styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
+        line: {
+          borderColor: 'rgba(255,255,255,0.18)',
         },
       },
     },
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiMenuItem: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            backgroundColor: '#2a2a2a',
-          },
-        },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            backgroundColor: '#2a2a2a',
-          },
-        },
-      },
-    },
-    MuiSwitch: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiCheckbox: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiRadio: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiSlider: {
-      styleOverrides: {
-        root: {
-          '&:focus': {
-            outline: `2px solid ${'#42a5f5'}`,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#2a2a2a',
-          color: '#e0e0e0',
-          fontSize: '0.75rem',
-        },
-      },
-    },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          borderRadius: 8,
-        },
-      },
-    },
+
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e1e1e',
+          backgroundImage: 'none',
         },
       },
     },
   },
 });
-
-export default customTheme;

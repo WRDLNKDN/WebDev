@@ -78,7 +78,10 @@ module.exports = [
       // Logic Purity overrides
       'react/prop-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+
+      // 🔒 Tightened: any is now an error
+      '@typescript-eslint/no-explicit-any': 'error',
+
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },

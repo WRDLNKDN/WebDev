@@ -54,45 +54,66 @@ export type Database = {
       }
       profiles: {
         Row: {
+          additional_context: string | null
+          avatar: string | null
           created_at: string
+          display_name: string | null
+          email: string
           geek_creds: string[] | null
           handle: string
           id: string
           is_admin: boolean
+          join_reason: string[] | null
           nerd_creds: Json | null
+          participation_style: string[] | null
           pronouns: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           socials: Json
           status: string
+          tagline: string | null
           updated_at: string
         }
         Insert: {
+          additional_context?: string | null
+          avatar?: string | null
           created_at?: string
+          display_name?: string | null
+          email: string
           geek_creds?: string[] | null
           handle: string
           id: string
           is_admin?: boolean
+          join_reason?: string[] | null
           nerd_creds?: Json | null
+          participation_style?: string[] | null
           pronouns?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           socials?: Json
           status?: string
+          tagline?: string | null
           updated_at?: string
         }
         Update: {
+          additional_context?: string | null
+          avatar?: string | null
           created_at?: string
+          display_name?: string | null
+          email?: string
           geek_creds?: string[] | null
           handle?: string
           id?: string
           is_admin?: boolean
+          join_reason?: string[] | null
           nerd_creds?: Json | null
+          participation_style?: string[] | null
           pronouns?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           socials?: Json
           status?: string
+          tagline?: string | null
           updated_at?: string
         }
         Relationships: []

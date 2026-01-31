@@ -32,7 +32,7 @@ schema_paths = []
 [db.seed]
 enabled = true
 # NOTE: this is relative to the supabase/ folder
-sql_paths = ["./seeds/001_dev_seed.sql"]
+sql_paths = ["./seed/seed.sql"]
 
 [db.network_restrictions]
 enabled = false

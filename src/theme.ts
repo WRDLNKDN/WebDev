@@ -204,6 +204,10 @@ const customTheme = createTheme({
           color: '#e0e0e0', // Readable label
           '&.Mui-focused': { color: '#42a5f5' },
         },
+        // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
+        asterisk: {
+          color: PALETTE.error.main,
+        },
       },
     },
     MuiFormHelperText: {
@@ -337,6 +341,48 @@ const customTheme = createTheme({
           color: '#ffffff',
           fontSize: '0.875rem',
           border: '1px solid rgba(255,255,255,0.1)',
+        },
+      },
+    },
+
+    // 6. MERGE: Nick's Stepper Logic (Updated to use OUR Palette)
+    // Signup stepper readability on dark background
+    MuiStepLabel: {
+      styleOverrides: {
+        label: {
+          color: 'rgba(255,255,255,0.70)',
+          '&.Mui-active': {
+            color: '#ffffff',
+            fontWeight: 700,
+          },
+          '&.Mui-completed': {
+            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 600,
+          },
+        },
+      },
+    },
+    MuiStepIcon: {
+      styleOverrides: {
+        root: {
+          color: 'rgba(255,255,255,0.35)',
+          '&.Mui-active': {
+            color: PALETTE.primary.main, // Mapped to our Blue
+          },
+          '&.Mui-completed': {
+            color: PALETTE.success.main, // Mapped to our Green
+          },
+        },
+        text: {
+          fill: '#121212', // Matches our Background Dark
+          fontWeight: 800,
+        },
+      },
+    },
+    MuiStepConnector: {
+      styleOverrides: {
+        line: {
+          borderColor: 'rgba(255,255,255,0.18)',
         },
       },
     },

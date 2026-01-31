@@ -12,6 +12,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.zip
 
 # --- Tooling Caches ---
 .eslintcache

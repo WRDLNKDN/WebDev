@@ -16,14 +16,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getContrastColor } from '../utils/contrast';
 
-// 1. High-Fidelity Assets & Constants
+// 1. High-Fidelity Assets & Constants (OUR UI)
 const SYNERGY_BG = 'url("/assets/background.svg")';
-
-// 2. Define the Card Colors
 const HERO_CARD_BG = 'rgba(30, 30, 30, 0.85)';
 const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
 
-// 3. Calculate Contrast Dynamically
+// 2. Calculate Contrast Dynamically
 const HERO_TEXT_COLOR = getContrastColor(HERO_CARD_BG);
 const GRID_TEXT_COLOR = getContrastColor('#1a1a1a');
 
@@ -34,23 +32,25 @@ const toMessage = (e: unknown) => {
 };
 
 export const Home = () => {
+  // --- NICK'S LOGIC START ---
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false); // Nick's Admin State
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // 1. Session Init & Subscription
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!cancelled) {
-        if (sessionError) setError(toMessage(sessionError));
-        setSession(data.session ?? null);
-      }
+      if (cancelled) return;
+      if (sessionError) setError(toMessage(sessionError));
+      setSession(data.session ?? null);
     };
     void init();
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
-        setSession(newSession);
+        if (!cancelled) setSession(newSession ?? null);
       },
     );
     return () => {
@@ -59,11 +59,41 @@ export const Home = () => {
     };
   }, []);
 
+  // 2. Admin Check (RPC Call)
+  useEffect(() => {
+    let cancelled = false;
+    const checkAdmin = async () => {
+      if (!session) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (cancelled) return;
+        if (error) {
+          setIsAdmin(false);
+          return;
+        }
+        setIsAdmin(Boolean(data));
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+    void checkAdmin();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  // 3. Robust Sign In (Updated to point to /dashboard)
   const signInGoogle = async () => {
     setBusy(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const origin = window.location.origin;
+      // MERGE: Pointing to /dashboard for Profile-First Epic
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -75,26 +105,38 @@ export const Home = () => {
     }
   };
 
+  // 4. Robust Sign Out (Local Storage Cleanup)
   const signOut = async () => {
-    setBusy(true);
     setError(null);
+    setBusy(true);
     try {
-      const { error: outError } = await supabase.auth.signOut();
-      if (outError) throw outError;
+      const { error: outErr } = await supabase.auth.signOut();
+      if (outErr) throw outErr;
+
+      // Nick's cleanup logic to prevent "sticky" UI state
+      try {
+        localStorage.removeItem('sb-wrdlnkdn-auth');
+      } catch {
+        // ignore
+      }
+      setSession(null);
+      // Force UI reset
+      window.location.assign('/');
     } catch (e: unknown) {
       setError(toMessage(e));
-    } finally {
       setBusy(false);
     }
   };
+  // --- NICK'S LOGIC END ---
 
+  // --- OUR UI START ---
   return (
     <Box
       sx={{
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundImage: SYNERGY_BG,
+        backgroundImage: SYNERGY_BG, // Our Brand BG
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
@@ -132,24 +174,23 @@ export const Home = () => {
                 disabled={busy}
               >
                 {busy ? (
-                  <CircularProgress
-                    size={24}
-                    color="inherit"
-                    aria-label="Signing in..."
-                  />
+                  <CircularProgress size={24} color="inherit" />
                 ) : (
                   'Sign In'
                 )}
               </Button>
             ) : (
               <>
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  sx={{ color: 'white' }}
-                >
-                  Admin Console
-                </Button>
+                {/* MERGE: Only show Admin Console if RPC check passed */}
+                {isAdmin && (
+                  <Button
+                    component={RouterLink}
+                    to="/admin"
+                    sx={{ color: 'white' }}
+                  >
+                    Admin Console
+                  </Button>
+                )}
                 <Button
                   sx={{ color: 'white' }}
                   onClick={() => void signOut()}
@@ -183,7 +224,7 @@ export const Home = () => {
             >
               <Stack spacing={4} alignItems="center">
                 <Box>
-                  {/* 1. BRAND UPDATE: WRDLNKDN */}
+                  {/* BRANDING */}
                   <Typography
                     variant="h2"
                     component="h1"
@@ -197,7 +238,6 @@ export const Home = () => {
                     WRDLNKDN
                   </Typography>
 
-                  {/* 2. Phonetic Guide */}
                   <Typography
                     variant="h5"
                     component="p"
@@ -211,7 +251,7 @@ export const Home = () => {
                     (Weird Link-uh-din)
                   </Typography>
 
-                  {/* 3. DYNAMIC WELCOME */}
+                  {/* PROFILE-FIRST WELCOME */}
                   <Typography
                     variant="h5"
                     component="h2"
@@ -255,6 +295,7 @@ export const Home = () => {
 
                 <Button
                   component={RouterLink}
+                  // Logic: Dashboard if logged in, Directory if guest
                   to={session ? '/dashboard' : '/directory'}
                   variant="contained"
                   size="large"
@@ -282,14 +323,9 @@ export const Home = () => {
           </Container>
         </Box>
 
-        {/* MISSION GRID: High-Performance CSS Grid Layout */}
+        {/* MISSION GRID */}
         <Box sx={{ bgcolor: 'rgba(0,0,0,0.9)', py: 8 }}>
           <Container maxWidth="lg">
-            {/* SYSTEM UPGRADE: Replaced Grid component with CSS Grid Stack.
-              - Mobile: 1fr (Full width)
-              - Desktop: repeat(3, 1fr) (Equal columns)
-              - Gap: 4 (32px)
-            */}
             <Stack
               component="section"
               sx={{
@@ -298,7 +334,6 @@ export const Home = () => {
                 gap: 4,
               }}
             >
-              {/* Column 1: Our Vision */}
               <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
                 <Stack spacing={2}>
                   <Typography variant="h6" component="h3" color="primary.light">
@@ -315,7 +350,6 @@ export const Home = () => {
                 </Stack>
               </Paper>
 
-              {/* Column 2: Our Team */}
               <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
                 <Stack spacing={2}>
                   <Typography variant="h6" component="h3" color="primary.light">
@@ -331,7 +365,6 @@ export const Home = () => {
                 </Stack>
               </Paper>
 
-              {/* Column 3: Our Pride */}
               <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
                 <Stack spacing={2}>
                   <Typography variant="h6" component="h3" color="primary.light">
@@ -351,7 +384,7 @@ export const Home = () => {
         </Box>
       </Box>
 
-      {/* FOOTER LANDMARK */}
+      {/* FOOTER */}
       <Box
         component="footer"
         sx={{
@@ -374,4 +407,5 @@ export const Home = () => {
       </Box>
     </Box>
   );
-};
+}; // --- OUR UI END ---
+export default Home;

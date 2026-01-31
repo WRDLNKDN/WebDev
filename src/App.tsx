@@ -1,73 +1,111 @@
+// src/App.tsx
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+
+import { supabase } from './lib/supabaseClient';
+import { SignupProvider } from './context/SignupProvider';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
- * This fixes the >500kb chunk warning correctly.
  */
 
+// Public
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
+// Auth
+const SignIn = lazy(() =>
+  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
+);
+
+const AuthCallback = lazy(() =>
+  import('./pages/auth/AuthCallback').then((m) => ({
+    default: m.AuthCallback,
+  })),
+);
+
+// Signup
+const Signup = lazy(() =>
+  import('./pages/Signup').then((m) => ({ default: m.Signup })),
+);
+
+// Legal
+const Guidelines = lazy(() =>
+  import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
+);
+
+const Terms = lazy(() =>
+  import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
+);
+
+// App pages
 const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
 
-const AuthCallback = lazy(() =>
-  import('./pages/AuthCallback').then((m) => ({ default: m.AuthCallback })),
-);
-
+// Admin - UPDATED PATH
 const AdminApp = lazy(() =>
-  import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })),
-);
-
-const PendingProfiles = lazy(() =>
-  import('./pages/PendingProfiles').then((m) => ({
-    default: m.PendingProfiles,
-  })),
-);
-
-const ApprovedProfiles = lazy(() =>
-  import('./pages/ApprovedProfiles').then((m) => ({
-    default: m.ApprovedProfiles,
-  })),
-);
-
-const ProfileReview = lazy(() =>
-  import('./pages/ProfileReview').then((m) => ({
-    default: m.ProfileReview,
-  })),
+  import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
 const Loading = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-    <CircularProgress />
+  <Box
+    component="main"
+    sx={{ display: 'flex', justifyContent: 'center', py: 10 }}
+  >
+    <CircularProgress aria-label="Loading application" />
   </Box>
 );
 
+/**
+ * Small boot-time auth sync.
+ * This helps ensure the in-memory client state matches persisted storage quickly,
+ * especially after redirects or hard reloads.
+ */
+const AuthBoot = () => {
+  useEffect(() => {
+    void supabase.auth.getSession();
+  }, []);
+
+  return null;
+};
+
 const App = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<Home />} />
-        <Route path="/directory" element={<Directory />} />
+    <>
+      <AuthBoot />
 
-        {/* Auth */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
+      <SignupProvider>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Home />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminApp />} />
-        <Route path="/admin/pending" element={<PendingProfiles />} />
-        <Route path="/admin/approved" element={<ApprovedProfiles />} />
-        <Route path="/admin/review/:id" element={<ProfileReview />} />
+            {/* Auth */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+            {/* Signup */}
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Legal */}
+            <Route path="/guidelines" element={<Guidelines />} />
+            <Route path="/terms" element={<Terms />} />
+
+            {/* Directory */}
+            <Route path="/directory" element={<Directory />} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminApp />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </SignupProvider>
+    </>
   );
 };
 

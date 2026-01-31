@@ -45,25 +45,26 @@ const Terms = lazy(() =>
   import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
 );
 
-// 4. Admin Ecosystem (Merging Our Granular Routes with Nick's Base)
+// 4. Admin Ecosystem (CORRECTED PATHS)
 const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
+// PATCH: Pointing to /pages/admin/ instead of /pages/ to fix Vite build error
 const PendingProfiles = lazy(() =>
-  import('./pages/PendingProfiles').then((m) => ({
+  import('./pages/admin/PendingProfiles').then((m) => ({
     default: m.PendingProfiles,
   })),
 );
 
 const ApprovedProfiles = lazy(() =>
-  import('./pages/ApprovedProfiles').then((m) => ({
+  import('./pages/admin/ApprovedProfiles').then((m) => ({
     default: m.ApprovedProfiles,
   })),
 );
 
 const ProfileReview = lazy(() =>
-  import('./pages/ProfileReview').then((m) => ({
+  import('./pages/admin/ProfileReview').then((m) => ({
     default: m.ProfileReview,
   })),
 );
@@ -102,10 +103,10 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/directory" element={<Directory />} />
 
-            {/* TEMPORARY: Redirect Dashboard to Directory until we build the component
-                This prevents 404s from the Home.tsx redirect we just built. */}
+            {/* TEMPORARY: Redirect Dashboard to Directory until we build the component.
+                PATCH: Fixed logic to redirect /dashboard -> /directory (was /directory -> /directory) */}
             <Route
-              path="/directory"
+              path="/dashboard"
               element={<Navigate to="/directory" replace />}
             />
 

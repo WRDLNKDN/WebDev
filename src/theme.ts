@@ -47,7 +47,7 @@ const FOCUS_RING = {
   outlineOffset: '2px',
 };
 
-const customTheme = createTheme({
+const theme = createTheme({
   palette: PALETTE,
 
   // TYPOGRAPHY: The "Brand vs Utility" Protocol
@@ -389,4 +389,4 @@ const customTheme = createTheme({
   },
 });
 
-export default customTheme;
+export default theme;

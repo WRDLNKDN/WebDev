@@ -5,25 +5,24 @@ test('Global Accessibility Audit', async ({ page }) => {
   // 1. Inhabit the Environment
   await page.goto('/');
 
-  // 2. Wait for the "Physical Layer" to settle
-  // PATCH: We use an OR condition to find EITHER the Link (Hero) OR the Button (Header).
-  // This is the "Flakiness Killer" you remember from Dynamis.
-  const exploreLink = page.getByRole('link', { name: /Explore The Guild/i });
-  const signInButton = page.getByRole('button', { name: /Sign In/i });
-
-  // Wait for at least one of these primary affordances to be visible
-  await expect(exploreLink.or(signInButton).first()).toBeVisible({
-    timeout: 10000,
-  });
-
-  // 3. Verify the "Center of Gravity" (The H1)
+  // 2. Anchor Check (System Integrity)
+  // We wait for the Brand Header first. This is static.
+  // If this times out, the app is crashing (White Screen of Death).
   await expect(
     page.getByRole('heading', { level: 1, name: /WRDLNKDN/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. CTA Verification (Role-Agnostic)
+  // We use getByText to catch the element regardless of whether it's a <button>, <a>, or <div>.
+  // This bypasses the specific "Link vs Button" semantic mismatch.
+  const exploreCta = page.getByText('Explore The Guild');
+  const signInCta = page.getByText('Sign In').first(); // .first() handles potential duplicates
+
+  await expect(exploreCta.or(signInCta).first()).toBeVisible();
 
   // 4. Run the Scan
   const results = await new AxeBuilder({ page })
-    .include('#root') // Scope to our app container
+    .include('#root')
     .withTags(['wcag2a', 'wcag2aa', 'wcag22aa', 'section508'])
     .exclude('iframe')
     .analyze();

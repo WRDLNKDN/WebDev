@@ -24,6 +24,10 @@ const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
 
+const Home = lazy(() =>
+  import('./pages/Home').then((m) => ({ default: m.Home })),
+);
+
 // 2. Auth Pages
 const SignIn = lazy(() =>
   import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
@@ -102,6 +106,7 @@ const App = () => {
             <Route path="/" element={<LandingPage />} />
             {/* Dynamic Vanity URL */}
             <Route path="/u/:handle" element={<LandingPage />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/directory" element={<Directory />} />
 
             {/* --- Authenticated User Zone --- */}

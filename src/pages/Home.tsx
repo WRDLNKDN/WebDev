@@ -37,7 +37,6 @@ const WeirdlingWilson = () => {
 
   return (
     <Box
-      aria-label='""'
       component="img"
       src={`/assets/weirdling_${index}.png`}
       alt=""

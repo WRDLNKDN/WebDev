@@ -279,6 +279,8 @@ export const LandingPage = () => {
                 variant="outlined"
                 href={profile.resume_url}
                 target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View Document (opens in new tab)"
                 sx={{
                   mt: 2,
                   color: 'inherit',
@@ -316,6 +318,7 @@ export const LandingPage = () => {
                   <Box
                     component="img"
                     src={project.image_url}
+                    alt={project.title || 'Project image'}
                     sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
@@ -389,6 +392,7 @@ export const LandingPage = () => {
                     href={project.project_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`View ${project.title || 'Project'} (opens in new tab)`}
                     size="small"
                     endIcon={<OpenInNewIcon />}
                     sx={{

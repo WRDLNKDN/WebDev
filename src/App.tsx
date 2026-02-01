@@ -15,8 +15,11 @@ const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
-// NOTE: Dashboard component is next on our build list.
-// For now, we handle the route via redirect or placeholder in the Routes block.
+// SYSTEM UPGRADE: Dashboard Component (The "Living Room")
+const Dashboard = lazy(() =>
+  import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
+);
+
 const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
@@ -50,7 +53,6 @@ const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
-// PATCH: Pointing to /pages/admin/ instead of /pages/ to fix Vite build error
 const PendingProfiles = lazy(() =>
   import('./pages/admin/PendingProfiles').then((m) => ({
     default: m.PendingProfiles,
@@ -103,12 +105,9 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/directory" element={<Directory />} />
 
-            {/* TEMPORARY: Redirect Dashboard to Directory until we build the component.
-                PATCH: Fixed logic to redirect /dashboard -> /directory (was /directory -> /directory) */}
-            <Route
-              path="/dashboard"
-              element={<Navigate to="/directory" replace />}
-            />
+            {/* --- Authenticated User Zone --- */}
+            {/* Replaced the temporary redirect with the live Dashboard component */}
+            <Route path="/dashboard" element={<Dashboard />} />
 
             {/* --- Authentication --- */}
             <Route path="/signin" element={<SignIn />} />

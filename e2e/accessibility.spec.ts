@@ -5,28 +5,30 @@ test('Global Accessibility Audit', async ({ page }) => {
   // 1. Inhabit the Environment
   await page.goto('/');
 
-  // 2. Anchor Check (System Integrity)
-  // We wait for the Brand Header first. This is static.
-  // If this times out, the app is crashing (White Screen of Death).
-  await expect(
-    page.getByRole('heading', { level: 1, name: /WRDLNKDN/i }),
-  ).toBeVisible({ timeout: 15000 });
+  // 2. System Audit: Wait for the main content container to exist
+  // This ensures the React hydration has completed.
+  const mainLandmark = page.getByRole('main');
+  await expect(mainLandmark).toBeVisible({ timeout: 15000 });
 
-  // 3. CTA Verification (Role-Agnostic)
-  // We use getByText to catch the element regardless of whether it's a <button>, <a>, or <div>.
-  // This bypasses the specific "Link vs Button" semantic mismatch.
-  const exploreCta = page.getByText('Explore The Guild');
-  const signInCta = page.getByText('Sign In').first(); // .first() handles potential duplicates
+  // 3. Anchor Check: Find the H1 by role specifically.
+  // This is better for accessibility testing than just 'locator(h1)'.
+  const heading = page.getByRole('heading', { level: 1, name: /WRDLNKDN/i });
+  await heading.waitFor({ state: 'visible' });
 
-  await expect(exploreCta.or(signInCta).first()).toBeVisible();
+  // 4. Verification: Check the CTA exists (Role-Agnostic check)
+  // Since you have a Link (RouterLink) that looks like a Button,
+  // 'getByRole(link)' is the technically correct A11y check.
+  const cta = page.getByRole('link', { name: /Explore|Enter/i });
+  await expect(cta).toBeVisible();
 
-  // 4. Run the Scan
+  // 5. Run the Scan
+  // We include '#root' to skip the browser chrome and focus on your code.
   const results = await new AxeBuilder({ page })
     .include('#root')
     .withTags(['wcag2a', 'wcag2aa', 'wcag22aa', 'section508'])
-    .exclude('iframe')
     .analyze();
 
-  // 5. Verification
+  // 6. Logic Gate
+  // If there are violations, the system has an 'Efficiency Trap'.
   expect(results.violations).toEqual([]);
 });

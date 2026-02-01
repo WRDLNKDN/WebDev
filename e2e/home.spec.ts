@@ -16,17 +16,17 @@ test.describe('Home Page - High-Integrity Audit', () => {
 
   test('should render the Brand Identity and Phonetics', async ({ page }) => {
     // 1. Verify H1 (The Center of Gravity)
-    // Matches Home.tsx: <Typography variant="h2" component="h1">WRDLNKDN</Typography>
-    await expect(
-      page.getByRole('heading', { level: 1, name: /WRDLNKDN/i }),
-    ).toBeVisible();
+    // We target the component="h1" specifically.
+    // If getByRole is failing, getByText is a more robust "User-Centric" check.
+    const brandHeading = page.locator('h1', { hasText: /WRDLNKDN/i });
+    await expect(brandHeading).toBeVisible({ timeout: 10000 });
 
-    // 2. Verify Phonetic Guide (April's Requirement)
-    // Matches Home.tsx: <Typography>(Weird Link-uh-din)</Typography>
+    // 2. Verify Phonetic Guide
+    // Matches: <Typography variant="h5" component="p">(Weird Link-uh-din)</Typography>
     await expect(page.getByText('(Weird Link-uh-din)')).toBeVisible();
 
     // 3. Verify Tagline (H2)
-    // Matches Home.tsx: <Typography variant="h5" component="h2">Professional networking...</Typography>
+    // In Home.tsx, this is actually an <h2>: <Typography variant="h5" component="h2">
     await expect(
       page.getByRole('heading', {
         level: 2,

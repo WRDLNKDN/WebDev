@@ -1,10 +1,10 @@
 // src/pages/admin/AdminModerationPage.tsx
 
-import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -26,8 +26,8 @@ import {
   TableRow,
   TextField,
   Typography,
-  Checkbox,
 } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { ProfileRow, ProfileStatus } from '../../types/types';
 import {
@@ -345,7 +345,7 @@ export const AdminModerationPage = ({
               zIndex: 2,
             }}
           >
-            <CircularProgress />
+            <CircularProgress aria-label="Loading..." />
           </Box>
         )}
 

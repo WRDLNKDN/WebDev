@@ -1,0 +1,114 @@
+.profileStep {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.profileStepTitle {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.profileStepSubtext {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.profileStepAlert {
+  background-color: rgba(211, 47, 47, 0.15);
+  border: 1px solid rgba(211, 47, 47, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.profileStepAlert .MuiAlert-icon {
+  color: #f44336;
+}
+
+.profileStepTextField .MuiOutlinedInput-root {
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.profileStepTextField .MuiOutlinedInput-root fieldset {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.profileStepTextField .MuiOutlinedInput-root:hover fieldset {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.profileStepTextField .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: #4CAF50;
+}
+
+.profileStepTextField .MuiOutlinedInput-root.Mui-error fieldset {
+  border-color: #f44336;
+}
+
+.profileStepTextField .MuiInputLabel-root {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profileStepTextField .MuiInputLabel-root.Mui-focused {
+  color: #4CAF50;
+}
+
+.profileStepTextField .MuiInputLabel-root.Mui-error {
+  color: #f44336;
+}
+
+.profileStepTextField .MuiInputBase-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+}
+
+.profileStepTextField .MuiFormHelperText-root {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.profileStepTextField .MuiFormHelperText-root.Mui-error {
+  color: #f44336;
+}
+
+.profileStepTipBox {
+  padding: 16px;
+  background-color: rgba(33, 150, 243, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.profileStepTipText {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.profileStepButtonRow {
+  padding-top: 16px;
+}
+
+.profileStepBackButton {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profileStepBackButton:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.profileStepBackButton:disabled {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.profileStepSubmitButton {
+  flex: 1;
+  background-color: #4CAF50;
+  color: #ffffff;
+  font-size: 1.05rem;
+}
+
+.profileStepSubmitButton:hover {
+  background-color: #45a049;
+}
+
+.profileStepSubmitButton:disabled {
+  background-color: rgba(76, 175, 80, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+}

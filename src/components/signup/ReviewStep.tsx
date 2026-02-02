@@ -1,5 +1,6 @@
 import { Alert, Box, Stack, Typography } from '@mui/material';
 import { useSignup } from '../../context/useSignup';
+import './ReviewStep.css';
 
 export const ReviewStep = () => {
   const { state } = useSignup();
@@ -10,23 +11,16 @@ export const ReviewStep = () => {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h5" sx={{ fontWeight: 800 }}>
+      <Typography variant="h5" className="reviewStepTitle">
         Review
       </Typography>
 
-      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+      <Typography variant="body2" className="reviewStepSubtext">
         Confirm your details before submitting your registration request.
       </Typography>
 
-      <Box
-        sx={{
-          p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Box className="reviewStepSection">
+        <Typography variant="subtitle2" className="reviewStepSectionTitle">
           Identity
         </Typography>
         <Typography variant="body2">
@@ -45,15 +39,8 @@ export const ReviewStep = () => {
         </Typography>
       </Box>
 
-      <Box
-        sx={{
-          p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Box className="reviewStepSection">
+        <Typography variant="subtitle2" className="reviewStepSectionTitle">
           Values
         </Typography>
         <Typography variant="body2">
@@ -73,15 +60,8 @@ export const ReviewStep = () => {
         ) : null}
       </Box>
 
-      <Box
-        sx={{
-          p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Box className="reviewStepSection">
+        <Typography variant="subtitle2" className="reviewStepSectionTitle">
           Profile
         </Typography>
         <Typography variant="body2">

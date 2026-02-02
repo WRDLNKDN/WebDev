@@ -1,15 +1,16 @@
-import { useEffect } from 'react';
 import { Box } from '@mui/material';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 
-import { SignupProgress } from './SignupProgress';
-import { WelcomeStep } from './WelcomeStep';
-import { IdentityStep } from './IdentityStep';
-import { ValuesStep } from './ValuesStep';
-import { ProfileStep } from './ProfileStep';
 import { CompleteStep } from './CompleteStep';
+import { IdentityStep } from './IdentityStep';
+import { ProfileStep } from './ProfileStep';
+import './signup.css';
+import { SignupProgress } from './SignupProgress';
+import { ValuesStep } from './ValuesStep';
+import { WelcomeStep } from './WelcomeStep';
 
 export const SignupInner = () => {
   const navigate = useNavigate();
@@ -61,19 +62,9 @@ export const SignupInner = () => {
     state.currentStep !== 'welcome' && state.currentStep !== 'complete';
 
   return (
-    <Box
-      component="main"
-      sx={{
-        minHeight: '100vh',
-        py: 6,
-        px: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
+    <Box component="main" className="signupMain">
       {showProgress && (
-        <Box sx={{ width: '100%', maxWidth: 'md', mb: 4 }}>
+        <Box className="signupProgressWrapper">
           <SignupProgress
             currentStep={state.currentStep}
             completedSteps={state.completedSteps}

@@ -24,3 +24,23 @@ Copy/paste scripts into the Supabase SQL Editor in order:
 Optional (dev only):
 
 - `seeds/001_dev_seed.sql`
+
+## Microsoft (Azure) OAuth Setup
+
+If you see "provider is not enabled" when using Microsoft sign-in:
+
+1. **Create an Azure app** at [portal.azure.com](https://portal.azure.com) → Microsoft Entra ID → App registrations → New registration.
+
+2. **Add redirect URI** in the app: `http://localhost:54321/auth/v1/callback`
+   (Azure requires `localhost`, not `127.0.0.1`.)
+
+3. **Add to your `.env`** (project root):
+   ```
+   SUPABASE_AZURE_CLIENT_ID=your-application-client-id
+   SUPABASE_AZURE_CLIENT_SECRET=your-client-secret-value
+   ```
+
+4. **Restart Supabase** so it picks up the config:
+   ```bash
+   supabase stop && supabase start
+   ```

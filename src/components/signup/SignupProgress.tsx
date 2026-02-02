@@ -1,12 +1,13 @@
 import {
-  Box,
-  Step,
-  StepLabel,
-  Stepper,
-  useMediaQuery,
-  useTheme,
+    Box,
+    Step,
+    StepLabel,
+    Stepper,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import type { SignupStep } from '../../types/signup';
+import './SignupProgress.css';
 
 interface SignupProgressProps {
   currentStep: SignupStep;
@@ -35,7 +36,7 @@ export const SignupProgress = ({
   const activeStepIndex = STEP_ORDER.indexOf(currentStep);
 
   return (
-    <Box sx={{ width: '100%', mb: 4 }}>
+    <Box className="signupProgress">
       <Stepper
         activeStep={activeStepIndex}
         alternativeLabel={!isMobile}
@@ -50,10 +51,7 @@ export const SignupProgress = ({
               <StepLabel>
                 {STEP_LABELS[step]}
                 {isMobile && isActive && (
-                  <Box
-                    component="span"
-                    sx={{ ml: 1, opacity: 0.7, fontSize: '0.875rem' }}
-                  >
+                  <Box component="span" className="signupProgressStepLabel">
                     (Step {index + 1} of {STEP_ORDER.length})
                   </Box>
                 )}
@@ -64,8 +62,8 @@ export const SignupProgress = ({
       </Stepper>
 
       {!isMobile && (
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Box component="span" sx={{ opacity: 0.7, fontSize: '0.875rem' }}>
+        <Box className="signupProgressFooter">
+          <Box component="span">
             Step {activeStepIndex + 1} of {STEP_ORDER.length}
           </Box>
         </Box>

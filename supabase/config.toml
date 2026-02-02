@@ -154,11 +154,12 @@ client_id = "env(SUPABASE_FACEBOOK_CLIENT_ID)"
 secret = "env(SUPABASE_FACEBOOK_CLIENT_SECRET)"
 redirect_uri = "http://localhost:54321/auth/v1/callback"
 
-[auth.external.apple]
-enabled = false
-client_id = "env(SUPABASE_APPLE_CLIENT_ID)"
-secret = "env(SUPABASE_APPLE_CLIENT_SECRET)"
+[auth.external.azure]
+enabled = true
+client_id = "env(SUPABASE_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AZURE_CLIENT_SECRET)"
 redirect_uri = "http://localhost:54321/auth/v1/callback"
+# Azure app must allow "Accounts in any org + personal" (common) for personal Microsoft accounts.
 
 # Leave OAuth server OFF. Not needed for Google login.
 [auth.oauth_server]

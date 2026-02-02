@@ -1,23 +1,25 @@
-import { useState } from 'react';
 import {
-  Box,
-  Button,
-  Checkbox,
-  Container,
-  FormControlLabel,
-  FormGroup,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
+    Box,
+    Button,
+    Checkbox,
+    Container,
+    FormControlLabel,
+    FormGroup,
+    Paper,
+    Stack,
+    TextField,
+    Typography,
 } from '@mui/material';
+import { useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
 import {
-  JOIN_REASONS,
-  PARTICIPATION_STYLES,
-  type ValuesData,
+    JOIN_REASONS,
+    PARTICIPATION_STYLES,
+    type ValuesData,
 } from '../../types/signup';
+import './signup.css';
+import './ValuesStep.css';
 
 export const ValuesStep = () => {
   const { state, setValues, goToStep, completeStep } = useSignup();
@@ -62,30 +64,22 @@ export const ValuesStep = () => {
 
   return (
     <Container maxWidth="md">
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 3, md: 4 },
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
+      <Paper elevation={0} className="signupPaper valuesStep">
         <Stack spacing={4}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+            <Typography variant="h5" className="signupStepLabel">
               Values & Intent
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            <Typography variant="body2" className="signupStepSubtext">
               Help us keep the community aligned.
             </Typography>
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            <Typography variant="h6" className="valuesStepSectionTitle">
               Why are you joining?
             </Typography>
-            <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
+            <Typography variant="body2" className="valuesStepSectionSubtext">
               Select all that apply
             </Typography>
 
@@ -108,10 +102,10 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            <Typography variant="h6" className="valuesStepSectionTitle">
               How do you plan to participate?
             </Typography>
-            <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
+            <Typography variant="body2" className="valuesStepSectionSubtext">
               Select all that apply
             </Typography>
 
@@ -134,7 +128,7 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            <Typography variant="h6" className="valuesStepSectionTitle">
               Anything else we should know? (Optional)
             </Typography>
             <TextField
@@ -149,7 +143,7 @@ export const ValuesStep = () => {
             />
           </Box>
 
-          <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
+          <Stack direction="row" spacing={2} className="valuesStepButtonRow">
             <Button variant="text" onClick={handleBack}>
               Back
             </Button>
@@ -157,7 +151,7 @@ export const ValuesStep = () => {
               variant="contained"
               onClick={handleContinue}
               disabled={!canContinue}
-              sx={{ flex: 1 }}
+              className="valuesStepContinueButton"
             >
               Continue
             </Button>

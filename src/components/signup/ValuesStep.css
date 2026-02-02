@@ -1,0 +1,21 @@
+.valuesStep {
+  /* Uses shared signupPaper */
+}
+
+.valuesStepSectionTitle {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.valuesStepSectionSubtext {
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.valuesStepButtonRow {
+  padding-top: 16px;
+}
+
+.valuesStepContinueButton {
+  flex: 1;
+}

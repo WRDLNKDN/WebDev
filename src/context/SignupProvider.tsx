@@ -152,10 +152,11 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           additional_context: state.values.additionalContext || null,
           status: 'pending', // Start as pending for admin review
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase insert inference can fail with generated types
+
+        // Supabase client infers insert param as never; assert to satisfy type checker
         const { error: insertError } = await supabase
           .from('profiles')
-          .insert(profileRow as any);
+          .insert(profileRow as never);
 
         if (insertError) {
           console.error('❌ Profile insert error:', insertError);

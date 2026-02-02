@@ -1,13 +1,10 @@
 import {
   Alert,
-  AppBar,
   Box,
   Button,
-  CircularProgress,
   Container,
   Paper,
   Stack,
-  Toolbar,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -16,12 +13,9 @@ import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getContrastColor } from '../utils/contrast';
 
-// 1. High-Fidelity Assets & Constants (OUR UI)
 const SYNERGY_BG = 'url("/assets/background.svg")';
 const HERO_CARD_BG = 'rgba(30, 30, 30, 0.85)';
 const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
-
-// 2. Calculate Contrast Dynamically
 const HERO_TEXT_COLOR = getContrastColor(HERO_CARD_BG);
 const GRID_TEXT_COLOR = getContrastColor('#1a1a1a');
 
@@ -32,13 +26,10 @@ const toMessage = (e: unknown) => {
 };
 
 export const Home = () => {
-  // --- NICK'S LOGIC START ---
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false); // Nick's Admin State
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  // 1. Session Init & Subscription
+  // We still check session here for conditional rendering of the "Enter Dashboard" button text
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -48,163 +39,25 @@ export const Home = () => {
       setSession(data.session ?? null);
     };
     void init();
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_evt, newSession) => {
-        if (!cancelled) setSession(newSession ?? null);
-      },
-    );
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
   }, []);
 
-  // 2. Admin Check (RPC Call)
-  useEffect(() => {
-    let cancelled = false;
-    const checkAdmin = async () => {
-      if (!session) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const { data, error } = await supabase.rpc('is_admin');
-        if (cancelled) return;
-        if (error) {
-          setIsAdmin(false);
-          return;
-        }
-        setIsAdmin(Boolean(data));
-      } catch {
-        if (!cancelled) setIsAdmin(false);
-      }
-    };
-    void checkAdmin();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  // 3. Robust Sign In (Updated to point to /dashboard)
-  const signInGoogle = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const origin = window.location.origin;
-      // MERGE: Pointing to /dashboard for Profile-First Epic
-      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
-
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      });
-      if (signInError) throw signInError;
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
-
-  // 4. Robust Sign Out (Local Storage Cleanup)
-  const signOut = async () => {
-    setError(null);
-    setBusy(true);
-    try {
-      const { error: outErr } = await supabase.auth.signOut();
-      if (outErr) throw outErr;
-
-      // Nick's cleanup logic to prevent "sticky" UI state
-      try {
-        localStorage.removeItem('sb-wrdlnkdn-auth');
-      } catch {
-        // ignore
-      }
-      setSession(null);
-      // Force UI reset
-      window.location.assign('/');
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
-  // --- NICK'S LOGIC END ---
-
-  // --- OUR UI START ---
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        flexGrow: 1, // Take up remaining space below navbar
         display: 'flex',
         flexDirection: 'column',
-        backgroundImage: SYNERGY_BG, // Our Brand BG
+        backgroundImage: SYNERGY_BG,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
-        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* HEADER LANDMARK */}
-      <AppBar
-        component="header"
-        position="static"
-        color="transparent"
-        elevation={0}
-        sx={{ bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}
-      >
-        <Toolbar>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 'bold',
-              letterSpacing: 1,
-              color: 'white',
-            }}
-          >
-            WRDLNKDN
-          </Typography>
+      {/* HEADER IS GONE - HANDLED BY LAYOUT */}
 
-          <Stack direction="row" spacing={2}>
-            {!session ? (
-              <Button
-                variant="outlined"
-                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
-                onClick={() => void signInGoogle()}
-                disabled={busy}
-              >
-                {busy ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-            ) : (
-              <>
-                {/* MERGE: Only show Admin Console if RPC check passed */}
-                {isAdmin && (
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    sx={{ color: 'white' }}
-                  >
-                    Admin Console
-                  </Button>
-                )}
-                <Button
-                  sx={{ color: 'white' }}
-                  onClick={() => void signOut()}
-                  disabled={busy}
-                >
-                  Sign Out
-                </Button>
-              </>
-            )}
-          </Stack>
-        </Toolbar>
-      </AppBar>
-
-      {/* MAIN LANDMARK */}
       <Box
         component="main"
         sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
@@ -212,6 +65,7 @@ export const Home = () => {
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', py: 8 }}>
           <Container maxWidth="md">
             <Paper
+              data-testid="hero-paper"
               elevation={24}
               sx={{
                 p: { xs: 4, md: 6 },
@@ -224,7 +78,6 @@ export const Home = () => {
             >
               <Stack spacing={4} alignItems="center">
                 <Box>
-                  {/* BRANDING */}
                   <Typography
                     variant="h2"
                     component="h1"
@@ -237,7 +90,6 @@ export const Home = () => {
                   >
                     WRDLNKDN
                   </Typography>
-
                   <Typography
                     variant="h5"
                     component="p"
@@ -250,8 +102,6 @@ export const Home = () => {
                   >
                     (Weird Link-uh-din)
                   </Typography>
-
-                  {/* PROFILE-FIRST WELCOME */}
                   <Typography
                     variant="h5"
                     component="h2"
@@ -295,37 +145,28 @@ export const Home = () => {
 
                 <Button
                   component={RouterLink}
-                  // Logic: Dashboard if logged in, Directory if guest
                   to={session ? '/dashboard' : '/directory'}
                   variant="contained"
                   size="large"
                   sx={{
                     px: 6,
                     py: 1.5,
-                    fontSize: '1.2rem',
                     borderRadius: 2,
                     textTransform: 'none',
+                    fontSize: '1.2rem',
                   }}
                 >
                   {session ? 'Enter Your Dashboard' : 'Explore The Guild'}
                 </Button>
-
-                <Typography
-                  variant="caption"
-                  sx={{ opacity: 0.5, color: HERO_TEXT_COLOR }}
-                >
-                  {session
-                    ? 'Your portfolio is your professional body of work.'
-                    : 'Join the Guild of the Verified Generalists.'}
-                </Typography>
               </Stack>
             </Paper>
           </Container>
         </Box>
 
-        {/* MISSION GRID */}
         <Box sx={{ bgcolor: 'rgba(0,0,0,0.9)', py: 8 }}>
           <Container maxWidth="lg">
+            {/* ... (Mission Grid Logic - Keeping it brief for readability) ... */}
+            {/* Just verify you kept the map loop here! */}
             <Stack
               component="section"
               sx={{
@@ -334,51 +175,38 @@ export const Home = () => {
                 gap: 4,
               }}
             >
-              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                <Stack spacing={2}>
-                  <Typography variant="h6" component="h3" color="primary.light">
-                    Our Vision
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
-                  >
-                    We envision a world where professional and technical
-                    communities are open, inclusive, and built around people
-                    rather than hierarchy or gatekeeping.
-                  </Typography>
-                </Stack>
-              </Paper>
-
-              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                <Stack spacing={2}>
-                  <Typography variant="h6" component="h3" color="primary.light">
-                    Our Team
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
-                  >
-                    We are a fully volunteer, open-source software community
-                    working together through collaboration and shared effort.
-                  </Typography>
-                </Stack>
-              </Paper>
-
-              <Paper sx={{ p: 3, height: '100%', bgcolor: GRID_CARD_BG }}>
-                <Stack spacing={2}>
-                  <Typography variant="h6" component="h3" color="primary.light">
-                    Our Pride
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
-                  >
-                    WRDLNKDN is shaped by people who choose authenticity over
-                    conformity and collaboration over competition.
-                  </Typography>
-                </Stack>
-              </Paper>
+              {[
+                {
+                  title: 'Our Vision',
+                  body: 'We envision a world where professional communities are open and built around people rather than gatekeeping.',
+                },
+                {
+                  title: 'Our Team',
+                  body: 'We are a fully volunteer, open-source software community working through shared effort.',
+                },
+                {
+                  title: 'Our Pride',
+                  body: 'WRDLNKDN is shaped by people who choose authenticity over conformity.',
+                },
+              ].map((item, i) => (
+                <Paper key={i} sx={{ p: 3, bgcolor: GRID_CARD_BG }}>
+                  <Stack spacing={2}>
+                    <Typography
+                      variant="h6"
+                      component="h3"
+                      color="primary.light"
+                    >
+                      {item.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
+                    >
+                      {item.body}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              ))}
             </Stack>
           </Container>
         </Box>
@@ -389,7 +217,6 @@ export const Home = () => {
         component="footer"
         sx={{
           py: 3,
-          px: 2,
           bgcolor: 'black',
           borderTop: '1px solid rgba(255,255,255,0.1)',
         }}
@@ -399,13 +226,10 @@ export const Home = () => {
             variant="body2"
             sx={{ color: 'grey.500', textAlign: 'center' }}
           >
-            {'© '}
-            {new Date().getFullYear()}
-            {' WRDLNKDN. Built by Humans.'}
+            © {new Date().getFullYear()} WRDLNKDN. Built by Humans.
           </Typography>
         </Container>
       </Box>
     </Box>
   );
-}; // --- OUR UI END ---
-export default Home;
+};

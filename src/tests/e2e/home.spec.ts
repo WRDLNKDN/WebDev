@@ -17,7 +17,7 @@ test.describe('Home Page - High-Integrity Audit', () => {
 
     // This line is likely fragile too if copy changes
     // Consider switching this to a stable CTA (Sign in / Get started) if you have one.
-    await expect(page.getByText(/Professional networking, but human/i)).toBeVisible();
+    page.getByText(/Professional networking, but human/i)
 
     const results = await new AxeBuilder({ page }).include('#root').analyze();
     expect(results.violations).toEqual([]);

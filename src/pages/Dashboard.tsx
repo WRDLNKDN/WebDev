@@ -217,7 +217,6 @@ export const Dashboard = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
         backgroundImage: SYNERGY_BG,
         backgroundSize: 'cover',
         backgroundPosition: 'center',

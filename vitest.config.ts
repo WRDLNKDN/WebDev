@@ -4,16 +4,16 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.{test,spec}.ts'],
+    include: ['src/tests/**/*.{test,spec}.ts'],
     exclude: [
-      'tests/rls/**',
+      'src/tests/rls/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',
       '**/.next/**',
       '**/playwright-report/**',
       '**/test-results/**',
-      'e2e/**',
+      'src/tests/e2e/**',
     ],
   },
 });

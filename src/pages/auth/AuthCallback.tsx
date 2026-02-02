@@ -1,10 +1,10 @@
 // src/pages/auth/AuthCallback.tsx
 import {
-    Alert,
-    Box,
-    CircularProgress,
-    Container,
-    Typography,
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,9 +12,10 @@ import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 
-function mapSupabaseProvider(
-  user: { identities?: { provider?: string }[]; app_metadata?: { provider?: string } },
-): IdentityProvider {
+function mapSupabaseProvider(user: {
+  identities?: { provider?: string }[];
+  app_metadata?: { provider?: string };
+}): IdentityProvider {
   const p =
     user.identities?.[0]?.provider ?? user.app_metadata?.provider ?? 'google';
   return p === 'azure' ? 'microsoft' : 'google';

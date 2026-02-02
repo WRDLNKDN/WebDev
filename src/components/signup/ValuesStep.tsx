@@ -1,22 +1,22 @@
 import {
-    Box,
-    Button,
-    Checkbox,
-    Container,
-    FormControlLabel,
-    FormGroup,
-    Paper,
-    Stack,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Checkbox,
+  Container,
+  FormControlLabel,
+  FormGroup,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
 import {
-    JOIN_REASONS,
-    PARTICIPATION_STYLES,
-    type ValuesData,
+  JOIN_REASONS,
+  PARTICIPATION_STYLES,
+  type ValuesData,
 } from '../../types/signup';
 import './signup.css';
 import './ValuesStep.css';

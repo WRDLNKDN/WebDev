@@ -1,16 +1,16 @@
 import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
-    Alert,
-    Box,
-    Button,
-    Checkbox,
-    CircularProgress,
-    Container,
-    FormControlLabel,
-    Paper,
-    Stack,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Container,
+  FormControlLabel,
+  Paper,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 
@@ -20,12 +20,10 @@ import type { IdentityProvider } from '../../types/signup';
 import './IdentityStep.css';
 import './signup.css';
 
-const mapSupabaseProvider = (
-  user: {
-    identities?: { provider?: string }[];
-    app_metadata?: { provider?: string };
-  },
-): IdentityProvider => {
+const mapSupabaseProvider = (user: {
+  identities?: { provider?: string }[];
+  app_metadata?: { provider?: string };
+}): IdentityProvider => {
   const p =
     user.identities?.[0]?.provider ?? user.app_metadata?.provider ?? 'google';
   return p === 'azure' ? 'microsoft' : 'google';

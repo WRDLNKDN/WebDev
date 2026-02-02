@@ -1,10 +1,10 @@
 import {
-    Box,
-    Button,
-    Container,
-    Paper,
-    Stack,
-    Typography,
+  Box,
+  Button,
+  Container,
+  Paper,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';

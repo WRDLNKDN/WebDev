@@ -1,10 +1,10 @@
 import {
-    Box,
-    Button,
-    Container,
-    Paper,
-    Stack,
-    Typography,
+  Box,
+  Button,
+  Container,
+  Paper,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useSignup } from '../../context/useSignup';
 import './signup.css';

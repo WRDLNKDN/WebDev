@@ -1,10 +1,10 @@
 import {
-    Box,
-    Step,
-    StepLabel,
-    Stepper,
-    useMediaQuery,
-    useTheme,
+  Box,
+  Step,
+  StepLabel,
+  Stepper,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import type { SignupStep } from '../../types/signup';
 import './SignupProgress.css';

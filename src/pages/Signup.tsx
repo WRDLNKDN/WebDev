@@ -2,15 +2,15 @@
 import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
-    Alert,
-    Box,
-    Button,
-    Checkbox,
-    CircularProgress,
-    Container,
-    FormControlLabel,
-    Stack,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Container,
+  FormControlLabel,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -217,7 +217,10 @@ export const Signup = () => {
                 />
               }
               label={
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255,255,255,0.9)' }}
+                >
                   I accept the{' '}
                   <Box
                     component="a"
@@ -243,7 +246,10 @@ export const Signup = () => {
                 />
               }
               label={
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255,255,255,0.9)' }}
+                >
                   I accept the{' '}
                   <Box
                     component="a"

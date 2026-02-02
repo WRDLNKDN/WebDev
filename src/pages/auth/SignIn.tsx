@@ -1,15 +1,15 @@
 import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Container,
-    Divider,
-    Paper,
-    Stack,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Divider,
+  Paper,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -139,7 +139,6 @@ export const SignIn = () => {
               >
                 Sign in with Microsoft
               </Button>
-
             </Stack>
 
             <Divider />

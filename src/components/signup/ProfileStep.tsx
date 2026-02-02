@@ -1,11 +1,11 @@
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Stack,
-    TextField,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { useState } from 'react';
 
@@ -115,7 +115,9 @@ const ProfileStep = () => {
       <Box className="profileStepTipBox">
         <Typography variant="body2" className="profileStepTipText">
           💡 <strong>Your profile will be reviewed by admins</strong> before
-          {' appearing in the directory. We will notify you once it\'s approved!'}
+          {
+            " appearing in the directory. We will notify you once it's approved!"
+          }
         </Typography>
       </Box>
 

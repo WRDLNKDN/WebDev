@@ -38,7 +38,7 @@
 }
 
 .profileStepTextField .MuiOutlinedInput-root.Mui-focused fieldset {
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 .profileStepTextField .MuiOutlinedInput-root.Mui-error fieldset {
@@ -50,7 +50,7 @@
 }
 
 .profileStepTextField .MuiInputLabel-root.Mui-focused {
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .profileStepTextField .MuiInputLabel-root.Mui-error {
@@ -99,7 +99,7 @@
 
 .profileStepSubmitButton {
   flex: 1;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: #ffffff;
   font-size: 1.05rem;
 }

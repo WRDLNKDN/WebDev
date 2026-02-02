@@ -1,4 +1,4 @@
-name: 🌐 WebDev
+name: WebDev
 
 on:
   pull_request:
@@ -75,7 +75,7 @@ jobs:
           retention-days: 7
 
   webdev-expected:
-    name: 🧾 WebDevExpected
+    name: WebDevExpected
     runs-on: ubuntu-latest
     needs: [quality-and-unit, e2e]
     if: always()

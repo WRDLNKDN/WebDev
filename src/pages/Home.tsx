@@ -23,37 +23,6 @@ const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
 const HERO_TEXT_COLOR = getContrastColor(HERO_CARD_BG);
 const GRID_TEXT_COLOR = getContrastColor('#1a1a1a');
 
-// --- WILSON COMPONENT (The Rotating Cast) ---
-const WeirdlingWilson = () => {
-  const [index, setIndex] = useState(1);
-  const totalWeirdlings = 24; // Assuming assets/weirdling_1.png through 24.png exist
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev % totalWeirdlings) + 1);
-    }, 7000); // 7-second "Activation Energy" interval
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <Box
-      component="img"
-      src={`/assets/weirdling_${index}.png`}
-      alt=""
-      sx={{
-        position: 'absolute',
-        bottom: '-15px', // Peeking over the edge
-        left: '8%',
-        height: '100px',
-        zIndex: -1, // Sits behind the glass header
-        pointerEvents: 'none',
-        transition: 'all 0.5s ease-in-out',
-        filter: 'drop-shadow(0px 4px 12px rgba(0,0,0,0.7))',
-      }}
-    />
-  );
-};
-
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
@@ -66,7 +35,19 @@ export const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // 1. Session Init & Auth Listener
+  // --- WEIRDLING ROTATION STATE ---
+  const [weirdlingIndex, setWeirdlingIndex] = useState(1);
+  const totalWeirdlings = 24;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWeirdlingIndex((prev) => (prev % totalWeirdlings) + 1);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ... (Session and Admin UseEffects remain exactly the same) ...
+  // 1. Session Init
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -87,7 +68,7 @@ export const Home = () => {
     };
   }, []);
 
-  // 2. Admin System Audit
+  // 2. Admin Check
   useEffect(() => {
     let cancelled = false;
     const checkAdmin = async () => {
@@ -151,40 +132,68 @@ export const Home = () => {
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* HEADER LANDMARK */}
+      {/* HEADER LANDMARK - BULMA STYLE WITH ZOOMED LOGO */}
       <AppBar
         component="header"
-        position="relative"
+        position="static"
         color="transparent"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(0,0,0,0.6)',
+          bgcolor: 'rgba(0,0,0,0.6)', // Glass effect
           backdropFilter: 'blur(10px)',
-          overflow: 'visible', // Allows Wilson to peek out
           zIndex: 10,
         }}
       >
-        <WeirdlingWilson />
-
-        <Toolbar sx={{ zIndex: 1 }}>
-          <Typography
-            variant="h6"
-            component="div"
+        <Toolbar sx={{ py: 1 }}>
+          {' '}
+          {/* Added slight padding for vertical centering */}
+          {/* 1. NAVBAR-BRAND AREA (The Viewfinder Container) */}
+          <Box
+            component={RouterLink}
+            to="/"
             sx={{
-              flexGrow: 1,
-              fontWeight: 'bold',
-              color: 'white',
-              letterSpacing: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              mr: 2,
+              // --- ZOOM MAGIC STARTS HERE ---
+              width: '64px', // 1. Define fixed size frame
+              height: '64px', //
+              overflow: 'hidden', // 2. Clip anything outside
+              borderRadius: '12px', // 3. Round the frame corners
+              position: 'relative', // Ensure image stays anchored
+              // ---------------------------
             }}
           >
-            WRDLNKDN
-          </Typography>
-
+            {/* The Rotating Weirdling Subject */}
+            <Box
+              component="img"
+              src={`/assets/weirdling_${weirdlingIndex}.png`}
+              alt="WRDLNKDN Logo"
+              sx={{
+                // --- ZOOM MAGIC PART 2 ---
+                height: '100%', // Fill the frame height
+                width: 'auto', // Maintain aspect ratio
+                // 4. Scale up to zoom in (adjust 1.6 to taste)
+                // Focussing on the center/top area by default
+                transform: 'scale(2.1) translateY(10%)',
+                transition: 'all 0.5s ease-in-out',
+                // -------------------------
+              }}
+            />
+          </Box>
+          {/* 2. THE SPACER */}
+          <Box sx={{ flexGrow: 1 }} />
+          {/* 3. NAVBAR-MENU AREA (Right Side) */}
           <Stack direction="row" spacing={2}>
             {!session ? (
               <Button
                 variant="outlined"
-                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+                sx={{
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.5)',
+                }}
                 onClick={() => void signInGoogle()}
                 disabled={busy}
               >
@@ -229,6 +238,7 @@ export const Home = () => {
           zIndex: 2,
         }}
       >
+        {/* ... Rest of Main Content ... */}
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', py: 8 }}>
           <Container maxWidth="md">
             <Paper

@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import {
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} from './env';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './env';
 
 type Database = {
   public: {

@@ -215,7 +215,11 @@ export const LandingPage = () => {
               }}
             />
             <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', md: 'left' } }}>
-              <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{ fontWeight: 700, mb: 1 }}
+              >
                 {displayName}
               </Typography>
               <Typography
@@ -237,7 +241,11 @@ export const LandingPage = () => {
         </Paper>
 
         {/* 2. THE CAROUSEL */}
-        <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 600, pl: 2 }}>
+        <Typography
+          variant="h5"
+          component="h2"
+          sx={{ mb: 3, fontWeight: 600, pl: 2 }}
+        >
           Portfolio Frame
         </Typography>
         <Stack

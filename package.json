@@ -23,7 +23,7 @@
     "format:check": "prettier --check .",
     "--- TESTING (Behavioral Integrity) ---": "",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:unit": "vitest run",
     "test:rls": "vitest run -c vitest.rls.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

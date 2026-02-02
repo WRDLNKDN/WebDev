@@ -2,7 +2,7 @@ name: WRDLNKDN Deploy to Vercel
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   deploy:

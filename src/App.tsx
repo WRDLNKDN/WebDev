@@ -2,6 +2,7 @@ import { Box, CircularProgress } from '@mui/material';
 import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
+import { Layout } from './components/layout/Layout'; // IMPORT THE LAYOUT
 import { SignupProvider } from './context/SignupProvider';
 import { supabase } from './lib/supabaseClient';
 
@@ -101,37 +102,40 @@ const App = () => {
       <SignupProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* --- Public Access --- */}
-            {/* THE SHOWROOM: Open to everyone */}
-            <Route path="/" element={<LandingPage />} />
-            {/* Dynamic Vanity URL */}
-            <Route path="/u/:handle" element={<LandingPage />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/directory" element={<Directory />} />
+            {/* WRAP EVERYTHING IN THE LAYOUT */}
+            <Route element={<Layout />}>
+              {/* --- Public Access --- */}
+              {/* THE SHOWROOM: Open to everyone */}
+              <Route path="/" element={<LandingPage />} />
+              {/* Dynamic Vanity URL */}
+              <Route path="/u/:handle" element={<LandingPage />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/directory" element={<Directory />} />
 
-            {/* --- Authenticated User Zone --- */}
-            {/* THE WORKSHOP: Private area for the owner */}
-            <Route path="/dashboard" element={<Dashboard />} />
+              {/* --- Authenticated User Zone --- */}
+              {/* THE WORKSHOP: Private area for the owner */}
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* --- Authentication --- */}
-            {/* 'login' is now the standard entry point, pointing to SignIn */}
-            <Route path="/login" element={<SignIn />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+              {/* --- Authentication --- */}
+              {/* 'login' is now the standard entry point, pointing to SignIn */}
+              <Route path="/login" element={<SignIn />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* --- Legal --- */}
-            <Route path="/guidelines" element={<Guidelines />} />
-            <Route path="/terms" element={<Terms />} />
+              {/* --- Legal --- */}
+              <Route path="/guidelines" element={<Guidelines />} />
+              <Route path="/terms" element={<Terms />} />
 
-            {/* --- Administration (Merged) --- */}
-            <Route path="/admin" element={<AdminApp />} />
-            <Route path="/admin/pending" element={<PendingProfiles />} />
-            <Route path="/admin/approved" element={<ApprovedProfiles />} />
-            <Route path="/admin/review/:id" element={<ProfileReview />} />
+              {/* --- Administration (Merged) --- */}
+              <Route path="/admin" element={<AdminApp />} />
+              <Route path="/admin/pending" element={<PendingProfiles />} />
+              <Route path="/admin/approved" element={<ApprovedProfiles />} />
+              <Route path="/admin/review/:id" element={<ProfileReview />} />
 
-            {/* --- Fallback --- */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+              {/* --- Fallback --- */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
           </Routes>
         </Suspense>
       </SignupProvider>

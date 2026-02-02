@@ -221,7 +221,7 @@ export const Dashboard = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
-        pt: 12,
+        pt: 4,
         pb: 8,
       }}
     >

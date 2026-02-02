@@ -1,13 +1,10 @@
 import {
   Alert,
-  AppBar,
   Box,
   Button,
-  CircularProgress,
   Container,
   Paper,
   Stack,
-  Toolbar,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -16,7 +13,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getContrastColor } from '../utils/contrast';
 
-// --- ASSETS & CONSTANTS ---
 const SYNERGY_BG = 'url("/assets/background.svg")';
 const HERO_CARD_BG = 'rgba(30, 30, 30, 0.85)';
 const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
@@ -31,23 +27,9 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  // --- WEIRDLING ROTATION STATE ---
-  const [weirdlingIndex, setWeirdlingIndex] = useState(1);
-  const totalWeirdlings = 24;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWeirdlingIndex((prev) => (prev % totalWeirdlings) + 1);
-    }, 7000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ... (Session and Admin UseEffects remain exactly the same) ...
-  // 1. Session Init
+  // We still check session here for conditional rendering of the "Enter Dashboard" button text
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -57,73 +39,15 @@ export const Home = () => {
       setSession(data.session ?? null);
     };
     void init();
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_evt, newSession) => {
-        if (!cancelled) setSession(newSession ?? null);
-      },
-    );
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
   }, []);
-
-  // 2. Admin Check
-  useEffect(() => {
-    let cancelled = false;
-    const checkAdmin = async () => {
-      if (!session) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const { data, error } = await supabase.rpc('is_admin');
-        if (cancelled) return;
-        setIsAdmin(error ? false : Boolean(data));
-      } catch {
-        if (!cancelled) setIsAdmin(false);
-      }
-    };
-    void checkAdmin();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  const signInGoogle = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      });
-      if (signInError) throw signInError;
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
-
-  const signOut = async () => {
-    setError(null);
-    setBusy(true);
-    try {
-      await supabase.auth.signOut();
-      localStorage.removeItem('sb-wrdlnkdn-auth');
-      setSession(null);
-      window.location.assign('/');
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        flexGrow: 1, // Take up remaining space below navbar
         display: 'flex',
         flexDirection: 'column',
         backgroundImage: SYNERGY_BG,
@@ -132,113 +56,12 @@ export const Home = () => {
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* HEADER LANDMARK - BULMA STYLE WITH ZOOMED LOGO */}
-      <AppBar
-        component="header"
-        position="static"
-        color="transparent"
-        elevation={0}
-        sx={{
-          bgcolor: 'rgba(0,0,0,0.6)', // Glass effect
-          backdropFilter: 'blur(10px)',
-          zIndex: 10,
-        }}
-      >
-        <Toolbar sx={{ py: 1 }}>
-          {' '}
-          {/* Added slight padding for vertical centering */}
-          {/* 1. NAVBAR-BRAND AREA (The Viewfinder Container) */}
-          <Box
-            component={RouterLink}
-            to="/"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textDecoration: 'none',
-              mr: 2,
-              // --- ZOOM MAGIC STARTS HERE ---
-              width: '64px', // 1. Define fixed size frame
-              height: '64px', //
-              overflow: 'hidden', // 2. Clip anything outside
-              borderRadius: '12px', // 3. Round the frame corners
-              position: 'relative', // Ensure image stays anchored
-              // ---------------------------
-            }}
-          >
-            {/* The Rotating Weirdling Subject */}
-            <Box
-              component="img"
-              src={`/assets/weirdling_${weirdlingIndex}.png`}
-              alt="WRDLNKDN Logo"
-              sx={{
-                // --- ZOOM MAGIC PART 2 ---
-                height: '100%', // Fill the frame height
-                width: 'auto', // Maintain aspect ratio
-                // 4. Scale up to zoom in (adjust 1.6 to taste)
-                // Focussing on the center/top area by default
-                transform: 'scale(2.1) translateY(10%)',
-                transition: 'all 0.5s ease-in-out',
-                // -------------------------
-              }}
-            />
-          </Box>
-          {/* 2. THE SPACER */}
-          <Box sx={{ flexGrow: 1 }} />
-          {/* 3. NAVBAR-MENU AREA (Right Side) */}
-          <Stack direction="row" spacing={2}>
-            {!session ? (
-              <Button
-                variant="outlined"
-                sx={{
-                  color: 'white',
-                  borderColor: 'rgba(255,255,255,0.5)',
-                }}
-                onClick={() => void signInGoogle()}
-                disabled={busy}
-              >
-                {busy ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-            ) : (
-              <>
-                {isAdmin && (
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    sx={{ color: 'white' }}
-                  >
-                    Admin Console
-                  </Button>
-                )}
-                <Button
-                  sx={{ color: 'white' }}
-                  onClick={() => void signOut()}
-                  disabled={busy}
-                >
-                  Sign Out
-                </Button>
-              </>
-            )}
-          </Stack>
-        </Toolbar>
-      </AppBar>
+      {/* HEADER IS GONE - HANDLED BY LAYOUT */}
 
-      {/* MAIN LANDMARK */}
       <Box
         component="main"
-        sx={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          zIndex: 2,
-        }}
+        sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
       >
-        {/* ... Rest of Main Content ... */}
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', py: 8 }}>
           <Container maxWidth="md">
             <Paper
@@ -340,9 +163,10 @@ export const Home = () => {
           </Container>
         </Box>
 
-        {/* MISSION GRID */}
         <Box sx={{ bgcolor: 'rgba(0,0,0,0.9)', py: 8 }}>
           <Container maxWidth="lg">
+            {/* ... (Mission Grid Logic - Keeping it brief for readability) ... */}
+            {/* Just verify you kept the map loop here! */}
             <Stack
               component="section"
               sx={{
@@ -409,5 +233,3 @@ export const Home = () => {
     </Box>
   );
 };
-
-export default Home;

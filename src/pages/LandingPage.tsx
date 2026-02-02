@@ -1,5 +1,4 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import LoginIcon from '@mui/icons-material/Login';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Avatar,
@@ -12,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import type { PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../types/profile';
@@ -72,7 +71,6 @@ const safeStr = (val: unknown, fallback: string = ''): string => {
 
 export const LandingPage = () => {
   const { handle } = useParams<{ handle: string }>(); // Grab the handle from the URL
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,17 +162,6 @@ export const LandingPage = () => {
       }}
     >
       <Container maxWidth="lg">
-        {/* NAV: Owner Access */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <Button
-            startIcon={<LoginIcon />}
-            onClick={() => navigate('/login')} // Changed to /login to match App.tsx route
-            sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'none' }}
-          >
-            Owner Access
-          </Button>
-        </Box>
-
         {/* 1. IDENTITY HEADER */}
         <Paper
           elevation={0}

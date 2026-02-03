@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
 type Props = {
@@ -57,7 +57,10 @@ export const AdminGate = ({ children }: Props) => {
           return;
         }
 
-        const { data, error: rpcError } = await supabase.rpc('is_admin');
+        const { data, error: rpcError } = (await supabase.rpc('is_admin')) as {
+          data: boolean | null;
+          error: Error | null;
+        };
 
         if (rpcError) {
           console.error('Admin check error:', rpcError);

@@ -1,10 +1,10 @@
 import {
-  AppBar,
-  Box,
-  Button,
-  CircularProgress,
-  Stack,
-  Toolbar,
+    AppBar,
+    Box,
+    Button,
+    CircularProgress,
+    Stack,
+    Toolbar,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
@@ -63,7 +63,10 @@ export const Navbar = () => {
       }
 
       try {
-        const { data, error } = await supabase.rpc('is_admin');
+        const { data, error } = (await supabase.rpc('is_admin')) as {
+          data: boolean | null;
+          error: Error | null;
+        };
         if (cancelled) return;
 
         setIsAdmin(!error && data === true);

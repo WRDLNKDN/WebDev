@@ -11,25 +11,39 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { getContrastColor } from '../utils/contrast';
+import {
+  GRID_CARD_BG,
+  HERO_CARD_BG,
+  MISSION_SECTION_BG,
+  SYNERGY_BG,
+} from '../theme/candyStyles';
 
-const SYNERGY_BG = 'url("/assets/background.svg")';
-const HERO_CARD_BG = 'rgba(30, 30, 30, 0.85)';
-const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
-const HERO_TEXT_COLOR = getContrastColor(HERO_CARD_BG);
-const GRID_TEXT_COLOR = getContrastColor('#1a1a1a');
-
+// 1. UTILITY SECTOR
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
   return 'Request failed';
 };
 
+const MISSION_DATA = [
+  {
+    title: 'Our Vision',
+    body: 'We envision a world where professional communities are open and built around people rather than gatekeeping.',
+  },
+  {
+    title: 'Our Team',
+    body: 'We are a fully volunteer, open-source software community working through shared effort.',
+  },
+  {
+    title: 'Our Pride',
+    body: 'WRDLNKDN is shaped by people who choose authenticity over conformity.',
+  },
+];
+
 export const Home = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // We still check session here for conditional rendering of the "Enter Dashboard" button text
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -47,7 +61,7 @@ export const Home = () => {
   return (
     <Box
       sx={{
-        flexGrow: 1, // Take up remaining space below navbar
+        flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
         backgroundImage: SYNERGY_BG,
@@ -56,8 +70,7 @@ export const Home = () => {
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* HEADER IS GONE - HANDLED BY LAYOUT */}
-
+      {/* 2. HERO SECTOR */}
       <Box
         component="main"
         sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
@@ -65,7 +78,6 @@ export const Home = () => {
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', py: 8 }}>
           <Container maxWidth="md">
             <Paper
-              data-testid="hero-paper"
               elevation={24}
               sx={{
                 p: { xs: 4, md: 6 },
@@ -84,7 +96,7 @@ export const Home = () => {
                     sx={{
                       fontWeight: 900,
                       mb: 0.5,
-                      color: HERO_TEXT_COLOR,
+                      color: 'white',
                       letterSpacing: 2,
                     }}
                   >
@@ -92,12 +104,11 @@ export const Home = () => {
                   </Typography>
                   <Typography
                     variant="h5"
-                    component="p"
                     sx={{
                       mb: 3,
                       fontWeight: 400,
                       opacity: 0.6,
-                      color: HERO_TEXT_COLOR,
+                      color: 'white',
                     }}
                   >
                     (Weird Link-uh-din)
@@ -105,24 +116,9 @@ export const Home = () => {
                   <Typography
                     variant="h5"
                     component="h2"
-                    sx={{
-                      opacity: 0.9,
-                      fontWeight: 300,
-                      color: HERO_TEXT_COLOR,
-                    }}
+                    sx={{ opacity: 0.9, fontWeight: 300, color: 'white' }}
                   >
-                    {!session ? (
-                      <>
-                        Professional networking, but{' '}
-                        <Box
-                          component="span"
-                          sx={{ color: 'primary.main', fontWeight: 'bold' }}
-                        >
-                          human
-                        </Box>
-                        .
-                      </>
-                    ) : (
+                    {session ? (
                       <>
                         Welcome back,{' '}
                         <Box
@@ -130,6 +126,17 @@ export const Home = () => {
                           sx={{ color: 'primary.main', fontWeight: 'bold' }}
                         >
                           Verified Generalist
+                        </Box>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Professional networking, but{' '}
+                        <Box
+                          component="span"
+                          sx={{ color: 'primary.main', fontWeight: 'bold' }}
+                        >
+                          human
                         </Box>
                         .
                       </>
@@ -148,13 +155,7 @@ export const Home = () => {
                   to={session ? '/dashboard' : '/directory'}
                   variant="contained"
                   size="large"
-                  sx={{
-                    px: 6,
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '1.2rem',
-                  }}
+                  sx={{ px: 6, py: 1.5, borderRadius: 2, fontSize: '1.2rem' }}
                 >
                   {session ? 'Enter Your Dashboard' : 'Explore The Guild'}
                 </Button>
@@ -163,10 +164,9 @@ export const Home = () => {
           </Container>
         </Box>
 
-        <Box sx={{ bgcolor: 'rgba(0,0,0,0.9)', py: 8 }}>
+        {/* 3. MISSION SECTOR */}
+        <Box sx={{ bgcolor: MISSION_SECTION_BG, py: 8 }}>
           <Container maxWidth="lg">
-            {/* ... (Mission Grid Logic - Keeping it brief for readability) ... */}
-            {/* Just verify you kept the map loop here! */}
             <Stack
               component="section"
               sx={{
@@ -175,21 +175,15 @@ export const Home = () => {
                 gap: 4,
               }}
             >
-              {[
-                {
-                  title: 'Our Vision',
-                  body: 'We envision a world where professional communities are open and built around people rather than gatekeeping.',
-                },
-                {
-                  title: 'Our Team',
-                  body: 'We are a fully volunteer, open-source software community working through shared effort.',
-                },
-                {
-                  title: 'Our Pride',
-                  body: 'WRDLNKDN is shaped by people who choose authenticity over conformity.',
-                },
-              ].map((item, i) => (
-                <Paper key={i} sx={{ p: 3, bgcolor: GRID_CARD_BG }}>
+              {MISSION_DATA.map((item, i) => (
+                <Paper
+                  key={i}
+                  sx={{
+                    p: 3,
+                    bgcolor: GRID_CARD_BG,
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}
+                >
                   <Stack spacing={2}>
                     <Typography
                       variant="h6"
@@ -200,7 +194,7 @@ export const Home = () => {
                     </Typography>
                     <Typography
                       variant="body2"
-                      sx={{ opacity: 0.7, color: GRID_TEXT_COLOR }}
+                      sx={{ opacity: 0.7, color: 'white' }}
                     >
                       {item.body}
                     </Typography>
@@ -212,7 +206,7 @@ export const Home = () => {
         </Box>
       </Box>
 
-      {/* FOOTER */}
+      {/* 4. FOOTER SECTOR */}
       <Box
         component="footer"
         sx={{

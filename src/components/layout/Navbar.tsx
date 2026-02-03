@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -7,7 +8,6 @@ import {
   Toolbar,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient'; // Adjust path based on your structure
 
@@ -31,11 +31,13 @@ export const Navbar = () => {
   // --- AUTH & ADMIN LOGIC ---
   useEffect(() => {
     let cancelled = false;
+
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setSession(data.session ?? null);
     };
-    init();
+
+    void init();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
@@ -51,20 +53,26 @@ export const Navbar = () => {
 
   useEffect(() => {
     let cancelled = false;
+
     const checkAdmin = async () => {
       if (!session) {
         setIsAdmin(false);
         return;
       }
+
       try {
-        const { data, error } = await supabase.rpc('is_admin');
+        // Supabase generated types may not include RPCs, so rpc() becomes `never`.
+        // Cast to any to avoid blocking TS until types are regenerated.
+        const { data, error } = await (supabase as any).rpc('is_admin');
         if (cancelled) return;
         setIsAdmin(error ? false : Boolean(data));
       } catch {
         if (!cancelled) setIsAdmin(false);
       }
     };
-    checkAdmin();
+
+    void checkAdmin();
+
     return () => {
       cancelled = true;
     };
@@ -91,7 +99,7 @@ export const Navbar = () => {
       await supabase.auth.signOut();
       localStorage.removeItem('sb-wrdlnkdn-auth');
       setSession(null);
-      navigate('/'); // Use navigate instead of window.reload for smoother UX
+      navigate('/');
     } catch (error) {
       console.error(error);
       setBusy(false);
@@ -101,13 +109,13 @@ export const Navbar = () => {
   return (
     <AppBar
       component="nav"
-      position="sticky" // Sticky feels better for a global nav
+      position="sticky"
       color="transparent"
       elevation={0}
       sx={{
         bgcolor: 'rgba(0,0,0,0.6)',
         backdropFilter: 'blur(10px)',
-        zIndex: 1100, // Ensure it sits above everything
+        zIndex: 1100,
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}
     >
@@ -127,8 +135,6 @@ export const Navbar = () => {
             overflow: 'hidden',
             borderRadius: '12px',
             position: 'relative',
-            // Mobile Optimization: Hide on very small screens if needed,
-            // or keep it because it's the brand. Keeping it for now.
           }}
         >
           <Box
@@ -138,7 +144,7 @@ export const Navbar = () => {
             sx={{
               height: '100%',
               width: 'auto',
-              transform: 'scale(2.1) translateY(10%)', // The "Eyes Up" Zoom
+              transform: 'scale(2.1) translateY(10%)',
               transition: 'all 0.5s ease-in-out',
             }}
           />

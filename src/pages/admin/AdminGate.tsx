@@ -58,7 +58,11 @@ export const AdminGate = ({ children }: Props) => {
           return;
         }
 
-        const { data, error: rpcError } = await supabase.rpc('is_admin');
+        // Supabase generated types may not include RPCs, so rpc() becomes `never`.
+        // Cast to any to avoid blocking TS until types are regenerated.
+        const { data, error: rpcError } = await (supabase as any).rpc(
+          'is_admin',
+        );
 
         if (rpcError) {
           console.error('Admin check error:', rpcError);
@@ -76,7 +80,7 @@ export const AdminGate = ({ children }: Props) => {
       }
     };
 
-    checkAdmin();
+    void checkAdmin();
   }, []);
 
   if (loading) {

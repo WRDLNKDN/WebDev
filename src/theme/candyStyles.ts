@@ -95,12 +95,13 @@ export const GLASS_CARD = {
 };
 
 export const SIGNUP_BG = {
+  position: 'relative',
   minHeight: '100vh',
   display: 'grid',
   placeItems: 'center',
   px: 2,
   py: 6,
-  backgroundImage: 'url(/landing-bg.png)',
+  backgroundImage: 'url(/assets/landing-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundAttachment: 'fixed',

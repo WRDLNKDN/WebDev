@@ -1,8 +1,15 @@
-name: Deploy UAT then Prod (DB + Vercel)
+name: Deploy UAT + Prod (main-only)
 
 on:
-  pull_request:
-    branches: [main]
+  # Manual UAT deploy (button)
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (branch, tag, or SHA). Default: main'
+        required: false
+        default: 'main'
+
+  # Automatic prod deploy on main
   push:
     branches: [main]
 
@@ -10,7 +17,12 @@ jobs:
   db-migrate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        with:
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
+            github.sha }}
 
       - uses: actions/setup-node@v5
         with:
@@ -23,7 +35,7 @@ jobs:
         run:
           supabase login --access-token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
 
-      - name: Link correct project
+      - name: Link correct Supabase project
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             supabase link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
@@ -38,12 +50,20 @@ jobs:
     needs: db-migrate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        with:
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
+            github.sha }}
 
-      - name: Deploy to Vercel (Preview=UAT, Prod=main)
+      - name: Deploy to Vercel (UAT or Prod)
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: ${{ github.event_name == 'push' && '--prod' || '' }}
+          vercel-project-id:
+            ${{ github.event_name == 'push' && secrets.VERCEL_PROJECT_ID_PROD ||
+            secrets.VERCEL_PROJECT_ID_UAT }}
+          vercel-args:
+            ${{ github.event_name == 'push' && '--prod' || '--prod' }}

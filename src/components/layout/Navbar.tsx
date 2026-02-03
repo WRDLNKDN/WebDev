@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -8,8 +7,9 @@ import {
   Toolbar,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient'; // Adjust path based on your structure
+import { supabase } from '../../lib/supabaseClient';
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // --- WEIRDLING ROTATION STATE ---
+  // Weirdling rotation state
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
   const totalWeirdlings = 24;
 
@@ -25,10 +25,11 @@ export const Navbar = () => {
     const interval = setInterval(() => {
       setWeirdlingIndex((prev) => (prev % totalWeirdlings) + 1);
     }, 7000);
+
     return () => clearInterval(interval);
   }, []);
 
-  // --- AUTH & ADMIN LOGIC ---
+  // Auth session wiring
   useEffect(() => {
     let cancelled = false;
 
@@ -51,6 +52,7 @@ export const Navbar = () => {
     };
   }, []);
 
+  // Admin check
   useEffect(() => {
     let cancelled = false;
 
@@ -61,11 +63,10 @@ export const Navbar = () => {
       }
 
       try {
-        // Supabase generated types may not include RPCs, so rpc() becomes `never`.
-        // Cast to any to avoid blocking TS until types are regenerated.
-        const { data, error } = await (supabase as any).rpc('is_admin');
+        const { data, error } = await supabase.rpc<boolean>('is_admin');
         if (cancelled) return;
-        setIsAdmin(error ? false : Boolean(data));
+
+        setIsAdmin(!error && data === true);
       } catch {
         if (!cancelled) setIsAdmin(false);
       }
@@ -80,12 +81,17 @@ export const Navbar = () => {
 
   const signInGoogle = async () => {
     setBusy(true);
+
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+        '/dashboard',
+      )}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
       });
+
       if (error) throw error;
     } catch (error) {
       console.error(error);
@@ -95,6 +101,7 @@ export const Navbar = () => {
 
   const signOut = async () => {
     setBusy(true);
+
     try {
       await supabase.auth.signOut();
       localStorage.removeItem('sb-wrdlnkdn-auth');
@@ -120,7 +127,7 @@ export const Navbar = () => {
       }}
     >
       <Toolbar sx={{ py: 1 }}>
-        {/* 1. NAVBAR-BRAND AREA (The Viewfinder) */}
+        {/* Brand */}
         <Box
           component={RouterLink}
           to="/"
@@ -150,10 +157,9 @@ export const Navbar = () => {
           />
         </Box>
 
-        {/* 2. THE SPACER */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* 3. NAVBAR-MENU AREA */}
+        {/* Menu */}
         <Stack direction="row" spacing={2}>
           {!session ? (
             <Button
@@ -179,6 +185,7 @@ export const Navbar = () => {
                   Admin Console
                 </Button>
               )}
+
               <Button
                 sx={{ color: 'white' }}
                 onClick={() => void signOut()}

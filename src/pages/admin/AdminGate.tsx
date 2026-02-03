@@ -52,25 +52,22 @@ export const AdminGate = ({ children }: Props) => {
         } = await supabase.auth.getSession();
 
         if (!session) {
-          // Not signed in - let them through, AdminApp will show sign-in button
+          // Not signed in: allow through so AdminApp can show its own sign-in UI
           setIsAdmin(true);
-          setLoading(false);
           return;
         }
 
-        // Supabase generated types may not include RPCs, so rpc() becomes `never`.
-        // Cast to any to avoid blocking TS until types are regenerated.
-        const { data, error: rpcError } = await (supabase as any).rpc(
-          'is_admin',
-        );
+        const { data, error: rpcError } =
+          await supabase.rpc<boolean>('is_admin');
 
         if (rpcError) {
           console.error('Admin check error:', rpcError);
           setError('Failed to verify admin access');
           setIsAdmin(false);
-        } else {
-          setIsAdmin(data === true);
+          return;
         }
+
+        setIsAdmin(data === true);
       } catch (err) {
         console.error('Admin gate error:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');

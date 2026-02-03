@@ -43,5 +43,8 @@
     "**/.DS_Store": true,
     "**/node_modules": true,
     "**/.eslintcache": true
-  }
+  },
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wrappingIndent": "same",
+  "editor.wordWrapColumn": 60
 }

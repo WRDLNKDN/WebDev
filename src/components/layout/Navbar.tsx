@@ -1,10 +1,10 @@
 import {
-    AppBar,
-    Box,
-    Button,
-    CircularProgress,
-    Stack,
-    Toolbar,
+  AppBar,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  Toolbar,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';

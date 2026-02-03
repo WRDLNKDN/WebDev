@@ -63,7 +63,7 @@ export const Navbar = () => {
       }
 
       try {
-        const { data, error } = await supabase.rpc<boolean>('is_admin');
+        const { data, error } = await supabase.rpc('is_admin');
         if (cancelled) return;
 
         setIsAdmin(!error && data === true);

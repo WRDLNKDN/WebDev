@@ -57,8 +57,7 @@ export const AdminGate = ({ children }: Props) => {
           return;
         }
 
-        const { data, error: rpcError } =
-          await supabase.rpc<boolean>('is_admin');
+        const { data, error: rpcError } = await supabase.rpc('is_admin');
 
         if (rpcError) {
           console.error('Admin check error:', rpcError);

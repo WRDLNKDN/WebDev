@@ -2,9 +2,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 
 // --- ASSET SECTOR ---
-// ⚠️ ACTION REQUIRED: Convert your 'ChatGPT_Image...png' to Base64 and paste it here!
-// You can use a site like https://www.base64-image.de/
-// For now, I've put a simple placeholder string. If it fails, the game will auto-draw a pink box.
+// Imports the base64 string from the separate assets file to keep logic clean
 import { WEIRDLING_URI } from '../../theme/assets';
 
 // --- TYPES ---

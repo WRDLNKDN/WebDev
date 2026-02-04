@@ -4,51 +4,36 @@ on:
   pull_request:
     branches: [main]
 
+  # Optional manual run (for e2e UI mode, or ad-hoc)
+  workflow_dispatch:
+    inputs:
+      run_e2e_ui:
+        description: 'Run Playwright UI mode (interactive). Not for normal CI.'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
 concurrency:
   group: WebDev-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality-and-unit:
-    name: ✅ Quality + Unit Tests
+  webdev:
+    name: ✅ WebDev CI (Quality + Unit + E2E)
     runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v5
-
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: 📦 Install dependencies
-        run: npm ci
-        env:
-          NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
-
-      - name: 🧹 ESLint
-        run: npm run lint
-
-      - name: 🧪 TypeScript typecheck
-        run: npm run typecheck
-
-      - name: 🎨 Prettier check
-        run: npm run format:check
-
-      - name: 🧫 Vitest (unit only)
-        run: npm run test:unit
-
-  e2e:
-    name: 🎭 Playwright (E2E)
-    runs-on: ubuntu-latest
-    needs: quality-and-unit
 
     env:
+      # Safe dummy values for build/test where needed
       VITE_SUPABASE_URL: 'https://example.supabase.co'
       VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
       E2E_PORT: '5173'
 
+      # If you still need this for react-helmet-async peer deps resolution
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v5
@@ -62,39 +47,96 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      # -----------------------
+      # Quality + Unit (Vitest)
+      # -----------------------
+      - name: 🧹 ESLint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: 🧪 TypeScript typecheck
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: 🎨 Prettier check
+        id: format
+        continue-on-error: true
+        run: npm run format:check
+
+      - name: 🧫 Markdown lint
+        id: mdlint
+        continue-on-error: true
+        run: npm run lint:md
+
+      - name: 🧪 Vitest (unit)
+        id: unit
+        continue-on-error: true
+        run: npm run test:unit
+
+      # -------------
+      # E2E (Playwright)
+      # -------------
       - name: 🎭 Install Playwright Browsers
+        id: pwinstall
+        continue-on-error: true
         run: npx playwright install --with-deps chromium
 
-      - name: 🎭 Run Playwright tests
+      - name: 🎭 Run Playwright tests (E2E)
+        id: e2e
+        continue-on-error: true
         run: npm run test:e2e
 
       - name: 📎 Upload Playwright report (on failure)
-        if: failure()
+        if: steps.e2e.outcome != 'success'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report
           retention-days: 7
 
-  webdev-expected:
-    name: WebDevExpected
-    runs-on: ubuntu-latest
-    needs: [quality-and-unit, e2e]
-    if: always()
-    steps:
-      - name: 🔎 Summarize job results
+      # Optional: UI mode (manual only)
+      - name: 🎭 Playwright UI mode (manual only)
+        if:
+          github.event_name == 'workflow_dispatch' && inputs.run_e2e_ui ==
+          'true'
+        run: npm run test:e2e:ui
+
+      # -----------------------
+      # Summary gate (single status)
+      # -----------------------
+      - name: 🔎 WebDevExpected (summary gate)
+        if: always()
         run: |
-          echo "quality-and-unit: ${{ needs.quality-and-unit.result }}"
-          echo "e2e:             ${{ needs.e2e.result }}"
+          echo "lint:       ${{ steps.lint.outcome }}"
+          echo "typecheck:  ${{ steps.typecheck.outcome }}"
+          echo "format:     ${{ steps.format.outcome }}"
+          echo "mdlint:     ${{ steps.mdlint.outcome }}"
+          echo "unit:       ${{ steps.unit.outcome }}"
+          echo "pwinstall:  ${{ steps.pwinstall.outcome }}"
+          echo "e2e:        ${{ steps.e2e.outcome }}"
 
-          if [ "${{ needs.quality-and-unit.result }}" != "success" ]; then
-            echo "quality-and-unit did not succeed"
+          fail=0
+
+          for step in lint typecheck format mdlint unit pwinstall e2e; do
+            outcome="$(echo "${{ steps[step].outcome }}" )"
+          done
+
+          # Explicit checks (more readable than a loop in bash with Actions expressions)
+          [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.format.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.mdlint.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.unit.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.pwinstall.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.e2e.outcome }}" = "success" ] || fail=1
+
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "❌ WebDevExpected failed. One or more required steps failed."
             exit 1
           fi
 
-          if [ "${{ needs.e2e.result }}" != "success" ]; then
-            echo "e2e did not succeed"
-            exit 1
-          fi
-
-          echo "All required jobs passed."
+          echo ""
+          echo "✅ WebDevExpected passed. All required steps succeeded."

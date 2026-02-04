@@ -20,7 +20,7 @@ ways:
 - Suggested features to improve the project,
 - Helped with testing,
 - Reviewed and fixed broken PRs,
-- Implememented/improved CI/CD pipelines
+- Implemented/improved CI/CD pipelines
 - Improvements to performance
 - Improvements to styling
 - Implementing accessibility and keyboard navigation support

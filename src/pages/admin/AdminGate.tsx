@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
 type Props = {
@@ -52,21 +52,24 @@ export const AdminGate = ({ children }: Props) => {
         } = await supabase.auth.getSession();
 
         if (!session) {
-          // Not signed in - let them through, AdminApp will show sign-in button
+          // Not signed in: allow through so AdminApp can show its own sign-in UI
           setIsAdmin(true);
-          setLoading(false);
           return;
         }
 
-        const { data, error: rpcError } = await supabase.rpc('is_admin');
+        const { data, error: rpcError } = (await supabase.rpc('is_admin')) as {
+          data: boolean | null;
+          error: Error | null;
+        };
 
         if (rpcError) {
           console.error('Admin check error:', rpcError);
           setError('Failed to verify admin access');
           setIsAdmin(false);
-        } else {
-          setIsAdmin(data === true);
+          return;
         }
+
+        setIsAdmin(data === true);
       } catch (err) {
         console.error('Admin gate error:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -76,7 +79,7 @@ export const AdminGate = ({ children }: Props) => {
       }
     };
 
-    checkAdmin();
+    void checkAdmin();
   }, []);
 
   if (loading) {

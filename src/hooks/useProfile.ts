@@ -12,9 +12,7 @@ export function useProfile() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ☢️ NUCLEAR OPTION: Cast client to 'any' to bypass strict schema checks
-  const client = supabase as any;
-
+  // LOGIC SECTOR: FETCH DATA
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -23,7 +21,7 @@ export function useProfile() {
       const {
         data: { session },
         error: sessionError,
-      } = await client.auth.getSession();
+      } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
       if (!session?.user) {
         setLoading(false);
@@ -31,27 +29,32 @@ export function useProfile() {
       }
 
       // 1. Fetch Profile
-      const { data: profileData, error: profileError } = await client
+      const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      // EXPLICIT CASTING: Forcing the system to recognize our custom types
+      const profileData = data as DashboardProfile | null;
 
-      // Safe Cast
-      const safeNerdCreds =
-        profileData.nerd_creds && typeof profileData.nerd_creds === 'object'
-          ? (profileData.nerd_creds as unknown as NerdCreds)
-          : {};
+      if (profileError || !profileData)
+        throw profileError || new Error('Profile not found');
+
+      // Safe Data Hydration
+      const rawCreds = profileData.nerd_creds;
+      const safeNerdCreds: NerdCreds =
+        rawCreds && typeof rawCreds === 'object'
+          ? (rawCreds as unknown as NerdCreds)
+          : ({} as NerdCreds);
 
       setProfile({
         ...profileData,
         nerd_creds: safeNerdCreds,
       } as DashboardProfile);
 
-      // 2. Fetch Projects (TypeScript can't block this now)
-      const { data: projectsData, error: projectsError } = await client
+      // 2. Fetch Projects
+      const { data: projectsData, error: projectsError } = await supabase
         .from('portfolio_items')
         .select('*')
         .eq('owner_id', session.user.id)
@@ -60,20 +63,74 @@ export function useProfile() {
       if (projectsError) throw projectsError;
 
       setProjects((projectsData || []) as PortfolioItem[]);
-    } catch (err) {
-      console.error('Data Load Error:', err);
+    } catch (err: unknown) {
+      console.error('SYSTEM_LOG: Data Load Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data.');
     } finally {
       setLoading(false);
     }
-  }, [client]);
+  }, []);
 
+  // LOGIC SECTOR: ASYNCHRONOUS UPDATES
+  const updateProfile = async (
+    updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
+  ) => {
+    try {
+      setUpdating(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('AUTH_FAILURE: No active session');
+
+      // Preserve existing keys (Deep Merge)
+      const currentCreds =
+        (profile?.nerd_creds as Record<string, unknown>) || {};
+      const newCreds = (updates.nerd_creds as Record<string, unknown>) || {};
+      const mergedNerdCreds = { ...currentCreds, ...newCreds };
+
+      // Strip nerd_creds to prevent double-mapping in the payload
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { nerd_creds: _, ...topLevelUpdates } = updates;
+
+      const payload = {
+        ...topLevelUpdates,
+        nerd_creds: mergedNerdCreds as unknown as Json,
+        updated_at: new Date().toISOString(),
+      };
+
+      // 4. ASYNCHRONOUS EXECUTION (The Database Write)
+      // Casting to 'any' here acts as a bridge while the schema synchronizes
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(payload as any)
+        .eq('id', session.user.id);
+
+      if (updateError) throw updateError;
+
+      // Optimistic State Sync
+      setProfile((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          ...topLevelUpdates,
+          nerd_creds: mergedNerdCreds,
+        } as DashboardProfile;
+      });
+    } catch (err: unknown) {
+      console.error('SYSTEM_LOG: Profile Update Error:', err);
+      throw err;
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // LOGIC SECTOR: ASSETS & PROJECTS
   const addProject = async (newProject: NewProject, imageFile?: File) => {
     try {
       setUpdating(true);
       const {
         data: { session },
-      } = await client.auth.getSession();
+      } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No active session');
 
       let finalImageUrl = newProject.image_url;
@@ -83,7 +140,7 @@ export function useProfile() {
         const fileName = `project-${Date.now()}.${fileExt}`;
         const filePath = `${session.user.id}/${fileName}`;
 
-        const { error: uploadError } = await client.storage
+        const { error: uploadError } = await supabase.storage
           .from('project-images')
           .upload(filePath, imageFile);
 
@@ -91,12 +148,12 @@ export function useProfile() {
 
         const {
           data: { publicUrl },
-        } = client.storage.from('project-images').getPublicUrl(filePath);
+        } = supabase.storage.from('project-images').getPublicUrl(filePath);
 
         finalImageUrl = publicUrl;
       }
 
-      const { data, error: insertError } = await client
+      const { data, error: insertError } = await supabase
         .from('portfolio_items')
         .insert({
           owner_id: session.user.id,
@@ -120,78 +177,23 @@ export function useProfile() {
     }
   };
 
-  const updateProfile = async (
-    updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
-  ) => {
-    try {
-      setUpdating(true);
-
-      // 1. SESSION VERIFICATION
-      const {
-        data: { session },
-      } = await client.auth.getSession();
-      if (!session?.user) throw new Error('AUTH_FAILURE: No active session');
-
-      // 2. DATA MERGE (JSONB Deep Merge Strategy)
-      // We preserve existing keys to avoid wiping out unseen metadata
-      const currentCreds =
-        (profile?.nerd_creds as Record<string, unknown>) || {};
-      const newCreds = (updates.nerd_creds as Record<string, unknown>) || {};
-      const mergedNerdCreds = { ...currentCreds, ...newCreds };
-
-      // 3. PAYLOAD ASSEMBLY
-      // Strip nerd_creds from the top-level updates to prevent double-mapping
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { nerd_creds: _ignored, ...topLevelUpdates } = updates;
-
-      const payload = {
-        ...topLevelUpdates,
-        nerd_creds: mergedNerdCreds as unknown as Json,
-        updated_at: new Date().toISOString(),
-      };
-
-      // 4. ASYNCHRONOUS EXECUTION (The Database Write)
-      const { error: updateError } = await client
-        .from('profiles')
-        .update(payload)
-        .eq('id', session.user.id);
-
-      if (updateError) throw updateError;
-
-      // 5. OPTIMISTIC STATE SYNC
-      setProfile((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          ...topLevelUpdates,
-          nerd_creds: mergedNerdCreds,
-        } as DashboardProfile;
-      });
-    } catch (err) {
-      console.error('SYSTEM_LOG: Profile Update Error:', err);
-      throw err;
-    } finally {
-      setUpdating(false); // Reset activation state
-    }
-  };
-
   const uploadAvatar = async (file: File) => {
     try {
       setUpdating(true);
       const {
         data: { session },
-      } = await client.auth.getSession();
+      } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user');
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
-      const { error } = await client.storage
+      const { error } = await supabase.storage
         .from('avatars')
         .upload(fileName, file);
       if (error) throw error;
       const {
         data: { publicUrl },
-      } = client.storage.from('avatars').getPublicUrl(fileName);
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
       await updateProfile({ avatar: publicUrl });
       return publicUrl;
@@ -208,13 +210,13 @@ export function useProfile() {
       setUpdating(true);
       const {
         data: { session },
-      } = await client.auth.getSession();
+      } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user');
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}/resume.${fileExt}`;
 
-      const { error } = await client.storage
+      const { error } = await supabase.storage
         .from('resumes')
         .upload(fileName, file, { upsert: true });
 
@@ -222,9 +224,9 @@ export function useProfile() {
 
       const {
         data: { publicUrl },
-      } = client.storage.from('resumes').getPublicUrl(fileName);
+      } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
-      await updateProfile({ resume_url: publicUrl } as any);
+      await updateProfile({ resume_url: publicUrl });
 
       return publicUrl;
     } catch (err) {

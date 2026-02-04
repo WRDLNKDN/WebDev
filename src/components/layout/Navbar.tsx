@@ -9,7 +9,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient'; // Adjust path based on your structure
+import { supabase } from '../../lib/supabaseClient';
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // --- WEIRDLING ROTATION STATE ---
+  // Weirdling rotation state
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
   const totalWeirdlings = 24;
 
@@ -25,17 +25,20 @@ export const Navbar = () => {
     const interval = setInterval(() => {
       setWeirdlingIndex((prev) => (prev % totalWeirdlings) + 1);
     }, 7000);
+
     return () => clearInterval(interval);
   }, []);
 
-  // --- AUTH & ADMIN LOGIC ---
+  // Auth session wiring
   useEffect(() => {
     let cancelled = false;
+
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setSession(data.session ?? null);
     };
-    init();
+
+    void init();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
@@ -49,22 +52,31 @@ export const Navbar = () => {
     };
   }, []);
 
+  // Admin check
   useEffect(() => {
     let cancelled = false;
+
     const checkAdmin = async () => {
       if (!session) {
         setIsAdmin(false);
         return;
       }
+
       try {
-        const { data, error } = await supabase.rpc('is_admin');
+        const { data, error } = (await supabase.rpc('is_admin')) as {
+          data: boolean | null;
+          error: Error | null;
+        };
         if (cancelled) return;
-        setIsAdmin(error ? false : Boolean(data));
+
+        setIsAdmin(!error && data === true);
       } catch {
         if (!cancelled) setIsAdmin(false);
       }
     };
-    checkAdmin();
+
+    void checkAdmin();
+
     return () => {
       cancelled = true;
     };
@@ -72,12 +84,17 @@ export const Navbar = () => {
 
   const signInGoogle = async () => {
     setBusy(true);
+
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+        '/dashboard',
+      )}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
       });
+
       if (error) throw error;
     } catch (error) {
       console.error(error);
@@ -87,11 +104,12 @@ export const Navbar = () => {
 
   const signOut = async () => {
     setBusy(true);
+
     try {
       await supabase.auth.signOut();
       localStorage.removeItem('sb-wrdlnkdn-auth');
       setSession(null);
-      navigate('/'); // Use navigate instead of window.reload for smoother UX
+      navigate('/');
     } catch (error) {
       console.error(error);
       setBusy(false);
@@ -101,18 +119,18 @@ export const Navbar = () => {
   return (
     <AppBar
       component="nav"
-      position="sticky" // Sticky feels better for a global nav
+      position="sticky"
       color="transparent"
       elevation={0}
       sx={{
         bgcolor: 'rgba(0,0,0,0.6)',
         backdropFilter: 'blur(10px)',
-        zIndex: 1100, // Ensure it sits above everything
+        zIndex: 1100,
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}
     >
       <Toolbar sx={{ py: 1 }}>
-        {/* 1. NAVBAR-BRAND AREA (The Viewfinder) */}
+        {/* Brand */}
         <Box
           component={RouterLink}
           to="/"
@@ -127,8 +145,6 @@ export const Navbar = () => {
             overflow: 'hidden',
             borderRadius: '12px',
             position: 'relative',
-            // Mobile Optimization: Hide on very small screens if needed,
-            // or keep it because it's the brand. Keeping it for now.
           }}
         >
           <Box
@@ -138,16 +154,15 @@ export const Navbar = () => {
             sx={{
               height: '100%',
               width: 'auto',
-              transform: 'scale(2.1) translateY(10%)', // The "Eyes Up" Zoom
+              transform: 'scale(2.1) translateY(10%)',
               transition: 'all 0.5s ease-in-out',
             }}
           />
         </Box>
 
-        {/* 2. THE SPACER */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* 3. NAVBAR-MENU AREA */}
+        {/* Menu */}
         <Stack direction="row" spacing={2}>
           {!session ? (
             <Button
@@ -173,6 +188,7 @@ export const Navbar = () => {
                   Admin Console
                 </Button>
               )}
+
               <Button
                 sx={{ color: 'white' }}
                 onClick={() => void signOut()}

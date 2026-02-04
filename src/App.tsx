@@ -1,9 +1,13 @@
 import { Box, CircularProgress } from '@mui/material';
 import { Suspense, lazy, useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Layout } from './components/layout/Layout'; // IMPORT THE LAYOUT
+// HOOKS & CONTEXT
 import { SignupProvider } from './context/SignupProvider';
+import { useKonamiCode } from './hooks/useKonamiCode';
+
+// LAYOUT & UTILS
+import { Layout } from './components/layout/Layout';
 import { supabase } from './lib/supabaseClient';
 
 /**
@@ -11,12 +15,10 @@ import { supabase } from './lib/supabaseClient';
  */
 
 // 1. Core Pages
-// LANDING PAGE: The Public Showroom (Replaces Home)
 const LandingPage = lazy(() =>
   import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
 );
 
-// SYSTEM UPGRADE: Dashboard Component (The "Workshop")
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
 );
@@ -27,6 +29,17 @@ const Directory = lazy(() =>
 
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
+);
+
+// --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
+// The dedicated Game Page (Easter Egg)
+const DivergencePage = lazy(() =>
+  import('./pages/DivergencePage').then((m) => ({ default: m.DivergencePage })),
+);
+
+// The Professional 404 Page (Standard Error)
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 );
 
 // 2. Auth Pages
@@ -95,6 +108,23 @@ const AuthBoot = () => {
 };
 
 const App = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // --- SYSTEM SECRET: KONAMI CODE LISTENER ---
+  useKonamiCode(() => {
+    console.log('🎮 KONAMI CODE DETECTED: ACTIVATING DIVERGENCE PROTOCOL');
+    navigate('/divergence');
+  });
+
+  // --- SYSTEM SECRET: QUERY STRING LISTENER ---
+  // Usage: http://localhost:5173/?mode=glitch
+  useEffect(() => {
+    if (searchParams.get('mode') === 'glitch') {
+      navigate('/divergence');
+    }
+  }, [searchParams, navigate]);
+
   return (
     <>
       <AuthBoot />
@@ -102,22 +132,17 @@ const App = () => {
       <SignupProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* WRAP EVERYTHING IN THE LAYOUT */}
             <Route element={<Layout />}>
               {/* --- Public Access --- */}
-              {/* THE SHOWROOM: Open to everyone */}
-              <Route path="/" element={<LandingPage />} />
-              {/* Dynamic Vanity URL */}
+              <Route path="/" element={<Home />} />
               <Route path="/u/:handle" element={<LandingPage />} />
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />
 
               {/* --- Authenticated User Zone --- */}
-              {/* THE WORKSHOP: Private area for the owner */}
               <Route path="/dashboard" element={<Dashboard />} />
 
               {/* --- Authentication --- */}
-              {/* 'login' is now the standard entry point, pointing to SignIn */}
               <Route path="/login" element={<SignIn />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<Signup />} />
@@ -127,14 +152,19 @@ const App = () => {
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/terms" element={<Terms />} />
 
-              {/* --- Administration (Merged) --- */}
+              {/* --- Administration --- */}
               <Route path="/admin" element={<AdminApp />} />
               <Route path="/admin/pending" element={<PendingProfiles />} />
               <Route path="/admin/approved" element={<ApprovedProfiles />} />
               <Route path="/admin/review/:id" element={<ProfileReview />} />
 
-              {/* --- Fallback --- */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
+
+              {/* 1. The Game (Konami Code Target) */}
+              <Route path="/divergence" element={<DivergencePage />} />
+
+              {/* 2. The Professional 404 (Catch-All) */}
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </Suspense>

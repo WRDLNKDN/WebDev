@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Navbar } from './Navbar';
 
 export const Layout = () => {
@@ -14,7 +15,9 @@ export const Layout = () => {
         component="div"
         sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
       >
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </Box>
     </>
   );

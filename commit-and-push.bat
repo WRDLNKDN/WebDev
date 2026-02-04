@@ -19,7 +19,7 @@ git branch -M main
 REM Add remote (replace if already exists)
 git remote remove origin 2>nul
 
-git remote add origin https://github.com/WRDLNKDN/WebDev.git
+git remote add origin https://github.com/AprilLorDrake/WRDLNKDN.git
 
 REM Push to GitHub
 git push -u origin main

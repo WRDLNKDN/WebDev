@@ -1,5 +1,7 @@
 <!-- GitHub Project Board setup instructions for WRDLNKDN -->
 
+# Project Board
+
 1. Go to your GitHub repository for WRDLNKDN.
 2. Click on the 'Projects' tab.
 3. Create a new project board (e.g., 'WRDLNKDN Board').
@@ -8,4 +10,4 @@
 6. Add 'NickTheDevOpsGuy' as a collaborator/contributor to the repo and board.
 
 For more details, see:
-https://docs.github.com/en/issues/organizing-your-work-with-project-boards
+[GitHub Project Boards documentation](https://docs.github.com/en/issues/organizing-your-work-with-project-boards)

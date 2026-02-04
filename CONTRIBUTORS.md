@@ -1,55 +1,86 @@
-# 👥 Contributors
+# Contributors:
 
-This page acknowledges the people who have contributed time, effort, and ideas
-to the WRDLNKDN project.
+- **Amber Adamson** [GitHub](https://github.com/aadamsongit)
+  [LinkedIn](https://www.linkedin.com/in/amber-adamson-a33a3860/)
 
-It is **not** the system of record for contributor participation.
+  - Refactored App component to remove manual DOM modal manipulation
+  - Improved React best practices by removing useEffect with direct DOM access
+  - Help with refactoring on App.tsx and utils files
+  - Suggestions for improving other parts of the project so it better follows
+    React conventions
 
----
+- **BJ Rutledge** [LinkedIn](https://www.linkedin.com/in/bj-rutledge/)
 
-## Source of Truth (IMPORTANT)
+  - Made suggestions that improved code cleanliness and separation of concerns.
 
-The authoritative record of stakeholders and contributors is maintained in the
-official WRDLNKDN Google Drive.
+- **Brenda Hensley** [LinkedIn](https://www.linkedin.com/in/brenda-hensley-/)
 
-**Stakeholders and Contributors (Read-Only):**  
-https://docs.google.com/spreadsheets/d/1cZCn5OZLiO7s1oRL5d9zkjlYf6bLdQs4WaudxdI78ZE/edit?usp=drive_link
+  - Helped fix issues in the ESLint configuration file
+  - Added automation scripts for ESLint and Prettier checks
 
-This spreadsheet reflects:
+- **Daniela Grothe**
+  [LinkedIn](https://www.linkedin.com/in/daniela-grothe-743ab8235/)
 
-- Contributor-submitted information
-- Self-identified roles and interests
-- Committee participation
-- Ongoing and historical involvement
+  - Identified an issue with longpress not working on Safari and helped with
+    finding solut
 
-Updates, corrections, or additions should be made through the contributor intake
-process, not by editing this repository file.
+- **Engombe Lokanga** [LinkedIn](https://www.linkedin.com/in/engombelokanga/)
 
----
+  - Help with refactoring the component organisation and naming
 
-## Recognition
+- **Gavin Hensley** [LinkedIn](https://www.linkedin.com/in/g-hensley/)
 
-Contributors are recognized across technical, creative, security, operational,
-and advisory roles.
+  - Help with implementing accessibility
+  - Suggestions for improvements
+  - Help with refactoring the utils file into TypeScript
 
-Recognition here is **honorary**, editorial, and non-exhaustive.  
-Inclusion or omission does not confer authority, ownership, or status.
+- **Hannah Olbrich** [GitHub](https://github.com/hannahro15)
+  [LinkedIn](https://www.linkedin.com/in/hannaholbrich/)
 
----
+  - Identified inconsistent CSS naming conventions across modules and suggested
+    standardising all rule names to use kebab-case for consistency and
+    readability
 
-## Want to Contribute or Update Your Info?
+- **Heliomar Pena** [LinkedIn](https://www.linkedin.com/in/heliomar/)
 
-- Review **Contributor Onboarding**  
-  https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
+  - Offered various suggestions to write cleaner code
+  - Suggested exploring the Phosphor Icons library
+  - Provided feedback on issues and helped with testing and approving PRs
+  - Identified and fixed a rendering performance issue
+  - Helping with TypeScript conversion
 
-- Submit or update your details via the **Contributor Intake Form**  
-  https://docs.google.com/forms/d/e/1FAIpQLSezRIhc7pvsQqEY0KnSIUI-PYXxLil4c7MPwPTalcKX9P-MQg/viewform?usp=publish-editor
+- **James Baskett** [LinkedIn](https://www.linkedin.com/in/james-blaskett/)
 
-Contribution workflow details live in:
+  - Provided suggestions that helped improve performance and architecture
+  - Significantly helped with improving the position, styling an animation of
+    the GameResultModal
 
-- **CONTRIBUTING.md**  
-  https://github.com/WRDLNKDN/WebDev/blob/main/CONTRIBUTING.md
+- **Nick Clark** [GitHub](https://github.com/NickTheDevOpsGuy)
 
----
+  - Help with reviewing and fixing issues on various PRs
+  - Added GitHub Actions and some tests.
+  - Helping with TypeScript conversion
+  - Help with improvements to the README
+  - Help with reviewing, testing and approving PRs
 
-Thank you to everyone who has contributed to WRDLNKDN.
+- **Rishik Chakravarty** [GitHub](https://github.com/rishikrc3)
+  [LinkedIn](https://www.linkedin.com/in/rishik-chakravarty/)
+
+  - Helping with DevOps tasks
+  - Breaking the GitHub Actions into their own workflow files
+  - Helping improve and clean up Docker configuration
+
+- **Tawheed Ahmed** [LinkedIn](https://www.linkedin.com/in/tawheed-ahmed-dev/)
+
+  - Helping with building UI features
+  - Helping with redesigning the UI and navigation UX
+
+- **Umer Farooq Mala** [GitHub](https://github.com/umermala)
+
+  - Created a Dockerfile and updated the README with Docker-related
+    instructions.
+
+- **Velimir Đurković** [LinkedIn](https://www.linkedin.com/in/djvelimir/)
+  - Reported a critical bug related to the game win logic.
+  - Provided a improvement suggestion (automaticaly placing red flags on the
+    remaining mines once all non-mines fields have been revealed).

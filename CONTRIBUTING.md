@@ -1,111 +1,96 @@
-# Contributing to WRDLNKDN WebDev
+# Contributing Guide
 
-Thank you for your interest in contributing! We welcome all kinds of
-contributions, including code, documentation, design, and ideas.
+## Introduction
 
-This file explains _how_ to contribute.  
-Project rules, governance, naming guidance, agreements, and records are
-documented elsewhere and linked below.
+Welcome! Thank you for considering making a contribution to the project. A
+variety of contributions so far have really helped to improve the project, and
+yours could too!
 
----
+## Guidelines
 
-## 📋 How to Contribute
+Following these guidelines helps to ensure everyone is using the same process to
+help improve the project.
 
-- **Fork the repository** and create your branch from `main`
-- **Open a pull request** with a clear description of your changes
-- **Use Issues** for bugs, feature requests, or questions
-- **Coordinate via Discord or GitHub**, depending on preference
+## What Contributions Are Welcome
 
-> Note: Discord invite links are not perpetual.  
-> If you need access and do not have a valid invite, email
-> **wrdlnkdn@gmail.com** to request one.
+A variety of contributions are welcome! People have helped in the following
+ways:
 
----
+- Bugs
+- Suggested features to improve the project,
+- Helped with testing,
+- Reviewed and fixed broken PRs,
+- Implememented/improved CI/CD pipelines
+- Improvements to performance
+- Improvements to styling
+- Implementing accessibility and keyboard navigation support
+- Help with the documentation (this guide itself, the README and the Wiki)
 
-## 📝 Code Style & Commit Messages
+Any help with testing, in particular on Safari browsers, is particularly
+appreciated!!
 
-- Use clear, descriptive commit messages
-- Follow the existing code style (TypeScript, Prettier, ESLint)
-- Keep pull requests focused and minimal (one topic per PR)
+## What Contributions Are Not Needed (Currently)
 
----
+- We are currently not looking for any more contributions to the UI mock-ups,
+  but this may change in the future.
+- Contributions that aim to recreate the pixelated, old-school feel of the
+  original Minesweeper or many of its clones.  
+  We have very carefully chosen modern styling to differentiate our version and
+  maintain a consistent, contemporary user experience.
 
-## 🏷️ Labels & Workflow
+## Ground Rules
 
-- Issues and PRs are labeled for clarity (e.g. `bug`, `feature`, `help wanted`)
-- Milestones track major releases and goals
-- All contributions are reviewed before merging
+Please read the
+[Code of Conduct](https://github.com/v-gajjar/Minesweeper/blob/develop/CODE_OF_CONDUCT.md).
 
----
+## Creating an Issue – To Report Bugs or Suggest Features/Enhancements
 
-## 🤝 Contributor Onboarding, Records, and Agreements
+Before creating an issue, please first check the
+[Kanban board](https://github.com/users/v-gajjar/projects/2) to see whether a
+ticket already exists — this helps avoid duplicates and keeps the project
+organized.
 
-Most casual contributions do **not** require onboarding or agreement acceptance.
+If you don't find a matching issue, feel free to create one using the
+appropriate issue template.  
+Please follow the relevant template rather than submitting in an arbitrary
+format.
 
-If you plan to:
-
-- Contribute on an ongoing basis
-- Take ownership of work
-- Incur reimbursable expenses
-- Join committees or planning activities
-- Represent WRDLNKDN in an official or operational capacity
-
-You must complete onboarding and accept the Contributor Agreement **before
-proceeding**.
-
-### Start Here
-
-- **Contributor Onboarding**  
-  https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
-
-- **Contributor Intake Form (Stakeholders & Contributors)**  
-  https://docs.google.com/forms/d/e/1FAIpQLSezRIhc7pvsQqEY0KnSIUI-PYXxLil4c7MPwPTalcKX9P-MQg/viewform?usp=publish-editor
-
-- **Published Responses (Read-Only)**  
-  https://docs.google.com/spreadsheets/d/1cZCn5OZLiO7s1oRL5d9zkjlYf6bLdQs4WaudxdI78ZE/edit?usp=drive_link
-
-Contributor intake records and participation history are maintained in the
-official WRDLNKDN Google Drive, which serves as the system of record.
-
-Shared project Drive:  
-https://drive.google.com/drive/folders/1G8CrDH7P7VY7goEZviS-QqWgrvQRH_ir
+Once created, your ticket will automatically appear in the **“Under
+Consideration”** column of the project's Kanban board.
 
 ---
 
-## 📄 Contributor Agreement (Source of Truth)
+## Choosing an Existing Issue
 
-Authoritative agreement text lives here:
+If you'd like to contribute to an existing issue, check the
+[Kanban board](https://github.com/users/v-gajjar/projects/2) for tickets in the
+**TODO** column that aren’t already assigned.
 
-- **WRDLNKDN Agreements Wiki**  
-  https://github.com/WRDLNKDN/Agreements/wiki/Contributor-Agreement
+We’d especially appreciate help on tasks labelled  
+[`priority:high`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22priority%3A%20high%22) or  
+[`priority:medium`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3Apriority%3Amedium),  
+as
+these are currently the most impactful for the project.
 
-This repository does not duplicate agreement text.
+If you're unsure whether a ticket is available or appropriate to work on, feel
+free to comment on the issue to ask!
 
----
+## Submitting a PR
 
-## 📛 Naming and Trademark Reminder (IMPORTANT)
+Before submitting, link your PR to its related issue.  
+If one doesn’t exist yet, please create it first — this helps with tracking and
+discussion.
 
-Contributors are expected to follow project naming and trademark guidance in all
-code, documentation, metadata, and public references.
+**Note:** We all sometimes forget! Creating and linking an issue afterward is
+totally fine — thank you for doing it.
 
-Before contributing, review:
+### Branching Strategy (Git Flow)
 
-- **Naming and Trademark Guidance**  
-  https://github.com/WRDLNKDN/WebDev/wiki/Naming-and-Trademark-Guidance
+- Please branch off the `develop` branch (not `main`).
+- Make sure your local `develop` branch is up to date before branching off.
+- PRs should be submitted against the `develop` branch unless otherwise
+  discussed.
 
-This protects contributors and the project by avoiding implied affiliation or
-confusing usage.
+## Any Concerns or Questions?
 
----
-
-## 🙏 Credits
-
-See [CONTRIBUTORS.md](CONTRIBUTORS.md) for a curated list of people who have
-helped build WRDLNKDN.
-
-Contributor intake records and participation history are maintained in the
-official WRDLNKDN Google Drive as the system of record.
-
----
-
-Thank you for helping build WRDLNKDN. Stay weird.
+Please don't hesitate to reach out!

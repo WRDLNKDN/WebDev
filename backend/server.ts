@@ -1,210 +1,272 @@
-// src/backend
-
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from 'express';
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-
-dotenv.config();
+import 'dotenv/config';
 
 const PORT = Number(process.env.PORT || 3001);
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'test';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 
 if (!SUPABASE_URL) throw new Error('Missing SUPABASE_URL in backend env');
 if (!SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY in backend env');
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
 const app = express();
-app.use(cors());
+
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
-const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+type AdminRequest = Request & { adminEmail?: string };
 
-  if (!token || token !== ADMIN_TOKEN) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
 
-  next();
+type SortField = 'created_at' | 'updated_at';
+
+const normalizeStatus = (s: string): Status | 'all' => {
+  const v = s.toLowerCase();
+  if (v === 'all') return 'all';
+  if (v === 'approved') return 'approved';
+  if (v === 'rejected') return 'rejected';
+  if (v === 'disabled') return 'disabled';
+  return 'pending';
 };
 
-app.get('/api/admin/health', (_req: Request, res: Response) => {
-  res.json({ ok: true });
-});
+const pickBearer = (req: Request) => {
+  const h = req.headers.authorization;
+  if (!h) return null;
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  return m?.[1] ?? null;
+};
 
+const errorMessage = (e: unknown, fallback: string) => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string' && e.trim()) return e;
+  return fallback;
+};
+
+const requireAdmin = async (
+  req: AdminRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // 1) Preferred: Supabase access token in Authorization: Bearer <jwt>
+    const bearer = pickBearer(req);
+    if (bearer) {
+      const { data, error } = await adminSupabase.auth.getUser(bearer);
+      if (error || !data.user?.email) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const email = data.user.email;
+
+      const { data: allowRow, error: allowErr } = await adminSupabase
+        .from('admin_allowlist')
+        .select('email')
+        .ilike('email', email)
+        .maybeSingle();
+
+      if (allowErr) {
+        return res.status(500).json({ error: allowErr.message });
+      }
+
+      if (!allowRow?.email) {
+        return res.status(403).json({ error: `Forbidden: ${email}` });
+      }
+
+      req.adminEmail = email;
+      return next();
+    }
+
+    // 2) Fallback: legacy token header
+    const token = String(req.header('x-admin-token') || '').trim();
+    if (token && ADMIN_TOKEN && token === ADMIN_TOKEN) return next();
+
+    return res.status(401).json({ error: 'Unauthorized' });
+  } catch (e: unknown) {
+    return res.status(500).json({ error: errorMessage(e, 'Server error') });
+  }
+};
+
+// GET /api/admin/profiles?status=pending&q=&limit=25&offset=0&sort=created_at&order=asc
 app.get(
   '/api/admin/profiles',
   requireAdmin,
   async (req: Request, res: Response) => {
-    try {
-      const status = String(req.query.status || 'pending');
-      const q = String(req.query.q || '').trim();
-      const limit = Math.min(100, Math.max(1, Number(req.query.limit || 25)));
-      const offset = Math.max(0, Number(req.query.offset || 0));
-      const sort =
-        req.query.sort === 'updated_at' ? 'updated_at' : 'created_at';
-      const order = req.query.order === 'desc' ? 'desc' : 'asc';
+    const status = normalizeStatus(String(req.query.status || 'pending'));
 
-      let query = supabase
-        .from('profiles')
-        .select(
-          'id, handle, status, created_at, updated_at, pronouns, geek_creds, nerd_creds, socials, reviewed_at, reviewed_by',
-          { count: 'exact' },
-        );
+    const qRaw = String(req.query.q || '').trim();
+    // PostgREST .or() uses a comma-delimited syntax; keep user input from breaking it.
+    const q = qRaw.replaceAll(',', ' ').trim();
 
-      if (status !== 'all') query = query.eq('status', status);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
 
-      if (q) {
-        const safeQ = q.replace(/[(),]/g, '');
-        query = query.or(`handle.ilike.*${safeQ}*,id.eq.${safeQ}`);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 25)));
+    const offset = Math.max(0, Number(req.query.offset || 0));
+
+    const sortRaw = String(req.query.sort || 'created_at');
+    const sort: SortField =
+      sortRaw === 'updated_at' ? 'updated_at' : 'created_at';
+
+    const orderRaw = String(req.query.order || 'asc').toLowerCase();
+    const ascending = orderRaw !== 'desc';
+
+    let query = adminSupabase.from('profiles').select('*', { count: 'exact' });
+
+    if (status !== 'all') query = query.eq('status', status);
+
+    if (q) {
+      // UUID columns in Postgres do not support ILIKE. If q looks like a UUID, match id exactly.
+      if (isUuid) {
+        query = query.or(`handle.ilike.%${q}%,id.eq.${q}`);
+      } else {
+        query = query.or(`handle.ilike.%${q}%`);
       }
-
-      query = query.order(sort, { ascending: order === 'asc' });
-
-      const from = offset;
-      const to = offset + limit - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) return res.status(400).json({ message: error.message });
-
-      return res.json({ data: data || [], count: count || 0 });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Server error';
-      return res.status(500).json({ message });
     }
+
+    query = query.order(sort, { ascending });
+    query = query.range(offset, offset + (limit - 1));
+
+    const { data, error, count } = await query;
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    // IMPORTANT: UI expects { data, count } (not rows)
+    return res.json({
+      data: data ?? [],
+      count: count ?? 0,
+    });
   },
 );
 
-const updateStatus = async (ids: string[], nextStatus: string) => {
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      status: nextStatus,
-      reviewed_at: new Date().toISOString(),
-    })
-    .in('id', ids);
+type BulkIds = { ids: string[] };
 
-  if (error) throw error;
+type BulkDelete = { ids: string[]; hardDeleteAuthUsers?: boolean };
+
+const requireIds = (body: unknown): string[] => {
+  if (!body || typeof body !== 'object') return [];
+  const ids = (body as { ids?: unknown }).ids;
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+  return ids.map(String).filter(Boolean);
 };
 
+// Bulk approve
 app.post(
   '/api/admin/profiles/approve',
   requireAdmin,
   async (req: Request, res: Response) => {
-    try {
-      const ids = Array.isArray(req.body?.ids)
-        ? (req.body.ids as string[])
-        : [];
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-      if (!ids.length) {
-        return res.status(400).json({ message: 'No ids provided' });
-      }
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-      await updateStatus(ids, 'approved');
-      return res.json({ ok: true });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Approve failed';
-      return res.status(400).json({ message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
   },
 );
 
+// Bulk reject
 app.post(
   '/api/admin/profiles/reject',
   requireAdmin,
   async (req: Request, res: Response) => {
-    try {
-      const ids = Array.isArray(req.body?.ids)
-        ? (req.body.ids as string[])
-        : [];
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-      if (!ids.length) {
-        return res.status(400).json({ message: 'No ids provided' });
-      }
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-      await updateStatus(ids, 'rejected');
-      return res.json({ ok: true });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Reject failed';
-      return res.status(400).json({ message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
   },
 );
 
+// Bulk disable
 app.post(
   '/api/admin/profiles/disable',
   requireAdmin,
   async (req: Request, res: Response) => {
-    try {
-      const ids = Array.isArray(req.body?.ids)
-        ? (req.body.ids as string[])
-        : [];
+    const ids = requireIds(req.body as BulkIds);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-      if (!ids.length) {
-        return res.status(400).json({ message: 'No ids provided' });
-      }
+    const { error } = await adminSupabase
+      .from('profiles')
+      .update({
+        status: 'disabled',
+        reviewed_at: new Date().toISOString(),
+      })
+      .in('id', ids);
 
-      await updateStatus(ids, 'disabled');
-      return res.json({ ok: true });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Disable failed';
-      return res.status(400).json({ message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
   },
 );
 
+// Bulk delete (optionally also delete auth.users)
 app.post(
   '/api/admin/profiles/delete',
   requireAdmin,
   async (req: Request, res: Response) => {
-    try {
-      const ids = Array.isArray(req.body?.ids)
-        ? (req.body.ids as string[])
-        : [];
+    const body = req.body as BulkDelete;
+    const ids = requireIds(body);
+    if (ids.length === 0)
+      return res.status(400).json({ error: 'Missing ids[]' });
 
-      const hardDeleteAuthUsers = Boolean(req.body?.hardDeleteAuthUsers);
+    // Delete profiles first
+    const { error: profErr } = await adminSupabase
+      .from('profiles')
+      .delete()
+      .in('id', ids);
+    if (profErr) return res.status(500).json({ error: profErr.message });
 
-      if (!ids.length) {
-        return res.status(400).json({ message: 'No ids provided' });
-      }
-
-      const { error: delProfilesErr } = await supabase
-        .from('profiles')
-        .delete()
-        .in('id', ids);
-
-      if (delProfilesErr) throw delProfilesErr;
-
-      if (hardDeleteAuthUsers) {
-        for (const id of ids) {
-          const { error } = await supabase.auth.admin.deleteUser(id);
-          if (error) throw error;
+    // Optionally delete auth users (dangerous)
+    if (body.hardDeleteAuthUsers) {
+      for (const id of ids) {
+        try {
+          await adminSupabase.auth.admin.deleteUser(id);
+        } catch {
+          // Ignore individual failures to avoid partial delete blocking the rest
         }
       }
-
-      return res.json({ ok: true });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Delete failed';
-      return res.status(400).json({ message });
     }
+
+    return res.json({ ok: true });
   },
 );
 
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ ok: true });
+});
+
 app.listen(PORT, () => {
-  console.log(`Admin API listening on http://localhost:${PORT}`);
+  console.log(`[API] listening on http://localhost:${PORT}`);
 });

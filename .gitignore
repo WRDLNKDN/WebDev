@@ -12,6 +12,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.zip
 
 # --- Tooling Caches ---
 .eslintcache
@@ -39,8 +40,6 @@ playwright/.cache/
 .auth/
 
 # --- Editor & IDEs (Developer Personalization) ---
-.vscode/*
-!.vscode/extensions.json
 .idea/
 *.sublime-project
 *.sublime-workspace

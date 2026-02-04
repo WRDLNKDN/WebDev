@@ -9,26 +9,46 @@
 
 ## 🚀 Project Overview
 
+## <<<<<<< HEAD
+
+## WRDLNKDN
+
+![WRDLNKDN logo: Square](./assets/square%20logo.png)
+
+![Last Commit](https://img.shields.io/github/last-commit/WRDLNKDN/WebDev)
+![License](https://img.shields.io/github/license/WRDLNKDN/WebDev)
+![Node Version](https://img.shields.io/badge/node-18+-blue) =======
 ![WRDLNKDN logo: Square](./assets/square%20logo.png)
 
 ![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WRDLNKDN)
 ![License](https://img.shields.io/github/license/AprilLorDrake/WRDLNKDN)
 ![Node Version](https://img.shields.io/badge/node-22+-blue)
-![Made with TypeScript](https://img.shields.io/badge/made%20with-TypeScript-blue)
+
+> > > > > > > main
+> > > > > > > ![Made with TypeScript](https://img.shields.io/badge/made%20with-TypeScript-blue)
 
 **Professional networking, but human.**
 
-WRDLNKDN is a modern, accessibility-first professional directory and platform.
-It explores what professional networking looks like when we stop pretending it
+<<<<<<< HEAD WRDLNKDN is a modern, accessibility-first professional directory
+and platform.  
+It explores what professional presence and connection look like when we stop
+pretending it has to be polished, performative, or predictable. ======= WRDLNKDN
+is a modern, accessibility-first professional directory and platform. It
+explores what professional networking looks like when we stop pretending it
 isn't weird.
+
+> > > > > > > main
 
 ---
 
 ## 🌐 Platform Architecture
 
+<<<<<<< HEAD WRDLNKDN consists of: =======
+
 - **Frontend**: React 19 + Vite UI with a WCAG 2.2 AA compliant dark theme.
 - **Backend**: API deployed on Vercel handling profiles and moderation.
 - **Database/Auth**: Supabase (Local Docker stack for development).
+  > > > > > > > main
 
 ### 🛠️ Technology Stack
 
@@ -86,6 +106,11 @@ directory workflows**, and serve as a baseline for all platform decisions.
 # Install Dependencies
 
 ```bash
+<<<<<<< HEAD
+git clone https://github.com/WRDLNKDN/WebDev.git
+cd WebDev
+```
+=======
 npm install
 ````
 
@@ -154,3 +179,5 @@ contrib.rocks.
 ## License
 
 MIT License. Use and modify freely.
+
+> > > > > > > main

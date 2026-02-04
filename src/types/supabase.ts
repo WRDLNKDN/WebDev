@@ -74,6 +74,7 @@ export type Database = {
         Row: {
           id: string
           handle: string
+          email: string
           display_name: string | null
           tagline: string | null
           avatar: string | null
@@ -83,6 +84,9 @@ export type Database = {
           socials: Json | null
           nerd_creds: Json | null
           geek_creds: string[] | null
+          join_reason: string[] | null
+          participation_style: string[] | null
+          additional_context: string | null
           reviewed_by: string | null
           reviewed_at: string | null
           created_at: string
@@ -91,6 +95,7 @@ export type Database = {
         Insert: {
           id: string
           handle: string
+          email: string
           display_name?: string | null
           tagline?: string | null
           avatar?: string | null
@@ -100,6 +105,9 @@ export type Database = {
           socials?: Json | null
           nerd_creds?: Json | null
           geek_creds?: string[] | null
+          join_reason?: string[] | null
+          participation_style?: string[] | null
+          additional_context?: string | null
           reviewed_by?: string | null
           reviewed_at?: string | null
           created_at?: string
@@ -108,6 +116,7 @@ export type Database = {
         Update: {
           id?: string
           handle?: string
+          email?: string
           display_name?: string | null
           tagline?: string | null
           avatar?: string | null
@@ -117,6 +126,9 @@ export type Database = {
           socials?: Json | null
           nerd_creds?: Json | null
           geek_creds?: string[] | null
+          join_reason?: string[] | null
+          participation_style?: string[] | null
+          additional_context?: string | null
           reviewed_by?: string | null
           reviewed_at?: string | null
           created_at?: string

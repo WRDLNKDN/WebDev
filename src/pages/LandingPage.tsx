@@ -1,5 +1,5 @@
 // src/pages/LandingPage.tsx
-import { Box, Container } from '@mui/material';
+import { Box, CircularProgress, Container } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
@@ -11,9 +11,13 @@ import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { IdentityHeader } from '../components/profile/IdentityHeader';
 
-// --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
-import { DivergencePage } from './DivergencePage';
+// --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT (lazy to avoid large chunk in main bundle) ---
+import { lazy, Suspense } from 'react';
 import { NotFoundPage } from './NotFoundPage';
+
+const DivergencePage = lazy(() =>
+  import('./DivergencePage').then((m) => ({ default: m.DivergencePage })),
+);
 
 // LOGIC & TYPES
 import { supabase } from '../lib/supabaseClient';
@@ -84,8 +88,19 @@ export const LandingPage = () => {
   if (loading) return <LandingPageSkeleton />;
 
   // --- DIVERGENCE CHECK ---
-  // 1. If it's a secret handle, show the game.
-  if (isSecretHandle) return <DivergencePage />;
+  // 1. If it's a secret handle, show the game (lazy-loaded).
+  if (isSecretHandle)
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+            <CircularProgress aria-label="Loading game" />
+          </Box>
+        }
+      >
+        <DivergencePage />
+      </Suspense>
+    );
 
   // 2. If it's just a missing profile, show the Professional 404.
   if (!profile) return <NotFoundPage />;

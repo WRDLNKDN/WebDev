@@ -7,10 +7,7 @@ import type {
   SignupStep,
   ValuesData,
 } from '../types/signup';
-import type { Database } from '../types/supabase';
 import { SignupContext, type SignupContextValue } from './SignupContext';
-
-type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
 const STEPS: SignupStep[] = [
   'welcome',
@@ -140,23 +137,18 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         // Create URL-safe handle from display name
         const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
 
-        // Insert profile into database
-        const profileRow: ProfileInsert = {
+        // Insert profile into database (schema: profiles baseline migration)
+        const { error: insertError } = await supabase.from('profiles').insert({
           id: state.identity.userId,
           email: state.identity.email,
-          handle: handle,
+          handle,
           display_name: profile.displayName,
           tagline: profile.tagline || null,
           join_reason: state.values.joinReason || [],
           participation_style: state.values.participationStyle || [],
           additional_context: state.values.additionalContext || null,
-          status: 'pending', // Start as pending for admin review
-        };
-
-        // Supabase client infers insert param as never; assert to satisfy type checker
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert(profileRow as never);
+          status: 'pending',
+        } as never);
 
         if (insertError) {
           console.error('❌ Profile insert error:', insertError);

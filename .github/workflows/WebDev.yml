@@ -23,10 +23,10 @@ jobs:
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_UAT_SERVICE_ROLE_KEY }}
 
-      E2E_PORT: "5173"
+      E2E_PORT: '5173'
 
       # If you still need this for peer dep resolution in CI
-      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:
       - name: ⬇️ Checkout

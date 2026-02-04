@@ -4,39 +4,33 @@ on:
   pull_request:
     branches: [main]
 
-  # Optional manual run (for e2e UI mode, or ad-hoc)
-  workflow_dispatch:
-    inputs:
-      run_e2e_ui:
-        description: 'Run Playwright UI mode (interactive). Not for normal CI.'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
-
 concurrency:
   group: WebDev-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   webdev:
-    name: ✅ WebDev CI (Quality + Unit + E2E)
+    name: ✅ WebDevExpected (Quality + Unit + E2E)
     runs-on: ubuntu-latest
 
     env:
-      # Safe dummy values for build/test where needed
-      VITE_SUPABASE_URL: 'https://example.supabase.co'
-      VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
-      E2E_PORT: '5173'
+      # Vite client envs (used by code that reads import.meta.env)
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
 
-      # If you still need this for react-helmet-async peer deps resolution
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+      # Node tests envs (used by RLS tests reading process.env.SUPABASE_*)
+      SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_UAT_SERVICE_ROLE_KEY }}
+
+      E2E_PORT: "5173"
+
+      # If you still need this for peer dep resolution in CI
+      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
 
     steps:
       - name: ⬇️ Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: 🧰 Setup Node.js
         uses: actions/setup-node@v5
@@ -47,96 +41,69 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      # -----------------------
-      # Quality + Unit (Vitest)
-      # -----------------------
-      - name: 🧹 ESLint
-        id: lint
-        continue-on-error: true
-        run: npm run lint
+      - name: 🧪 Run all checks (collect failures)
+        id: checks
+        shell: bash
+        run: |
+          set +e
+          fail=0
 
-      - name: 🧪 TypeScript typecheck
-        id: typecheck
-        continue-on-error: true
-        run: npm run typecheck
+          echo "🧹 ESLint"
+          npm run lint
+          [ $? -eq 0 ] || fail=1
 
-      - name: 🎨 Prettier check
-        id: format
-        continue-on-error: true
-        run: npm run format:check
+          echo "🧪 TypeScript typecheck"
+          npm run typecheck
+          [ $? -eq 0 ] || fail=1
 
-      - name: 🧫 Markdown lint
-        id: mdlint
-        continue-on-error: true
-        run: npm run lint:md
+          echo "🎨 Prettier check"
+          npm run format:check
+          [ $? -eq 0 ] || fail=1
 
-      - name: 🧪 Vitest (unit)
-        id: unit
-        continue-on-error: true
-        run: npm run test:unit
+          echo "🧫 Markdown lint"
+          npm run lint:md
+          [ $? -eq 0 ] || fail=1
 
-      # -------------
-      # E2E (Playwright)
-      # -------------
-      - name: 🎭 Install Playwright Browsers
-        id: pwinstall
-        continue-on-error: true
-        run: npx playwright install --with-deps chromium
+          echo "🧪 Vitest (unit)"
+          npm run test:unit
+          [ $? -eq 0 ] || fail=1
 
-      - name: 🎭 Run Playwright tests (E2E)
-        id: e2e
-        continue-on-error: true
-        run: npm run test:e2e
+          echo "🧪 Vitest (RLS)"
+          npm run test:rls
+          [ $? -eq 0 ] || fail=1
 
-      - name: 📎 Upload Playwright report (on failure)
-        if: steps.e2e.outcome != 'success'
+          echo "🎭 Install Playwright Browsers"
+          npx playwright install --with-deps chromium
+          [ $? -eq 0 ] || fail=1
+
+          echo "🎭 Playwright (E2E)"
+          npm run test:e2e
+          e2e_exit=$?
+
+          if [ $e2e_exit -ne 0 ]; then
+            fail=1
+            echo "e2e_failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e_failed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "fail=$fail" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: 📎 Upload Playwright report (on E2E failure)
+        if: steps.checks.outputs.e2e_failed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report
           retention-days: 7
 
-      # Optional: UI mode (manual only)
-      - name: 🎭 Playwright UI mode (manual only)
-        if:
-          github.event_name == 'workflow_dispatch' && inputs.run_e2e_ui ==
-          'true'
-        run: npm run test:e2e:ui
-
-      # -----------------------
-      # Summary gate (single status)
-      # -----------------------
-      - name: 🔎 WebDevExpected (summary gate)
+      - name: 🔎 WebDevExpected (single gate)
         if: always()
+        shell: bash
         run: |
-          echo "lint:       ${{ steps.lint.outcome }}"
-          echo "typecheck:  ${{ steps.typecheck.outcome }}"
-          echo "format:     ${{ steps.format.outcome }}"
-          echo "mdlint:     ${{ steps.mdlint.outcome }}"
-          echo "unit:       ${{ steps.unit.outcome }}"
-          echo "pwinstall:  ${{ steps.pwinstall.outcome }}"
-          echo "e2e:        ${{ steps.e2e.outcome }}"
-
-          fail=0
-
-          for step in lint typecheck format mdlint unit pwinstall e2e; do
-            outcome="$(echo "${{ steps[step].outcome }}" )"
-          done
-
-          # Explicit checks (more readable than a loop in bash with Actions expressions)
-          [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.format.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.mdlint.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.unit.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.pwinstall.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.e2e.outcome }}" = "success" ] || fail=1
-
-          if [ "$fail" -ne 0 ]; then
-            echo ""
-            echo "❌ WebDevExpected failed. One or more required steps failed."
+          if [ "${{ steps.checks.outputs.fail }}" = "1" ]; then
+            echo "❌ WebDevExpected failed. One or more checks failed."
             exit 1
           fi
-
-          echo ""
-          echo "✅ WebDevExpected passed. All required steps succeeded."
+          echo "✅ WebDevExpected passed. All checks succeeded."

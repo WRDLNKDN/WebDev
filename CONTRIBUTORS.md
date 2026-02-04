@@ -16,6 +16,7 @@ official WRDLNKDN Google Drive.
 https://docs.google.com/spreadsheets/d/1cZCn5OZLiO7s1oRL5d9zkjlYf6bLdQs4WaudxdI78ZE/edit?usp=drive_link
 
 This spreadsheet reflects:
+
 - Contributor-submitted information
 - Self-identified roles and interests
 - Committee participation

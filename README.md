@@ -34,6 +34,7 @@ pretending it has to be polished, performative, or predictable.
 WRDLNKDN consists of:
 
 - **Frontend**
+
   - React 19 + Vite UI
   - Designed for GoDaddy website integration
   - WCAG 2.2 AA compliant dark theme
@@ -96,3 +97,4 @@ Optional but recommended:
 ```bash
 git clone https://github.com/WRDLNKDN/WebDev.git
 cd WebDev
+```

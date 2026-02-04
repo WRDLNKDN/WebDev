@@ -3,7 +3,7 @@
 Thank you for your interest in contributing! We welcome all kinds of
 contributions, including code, documentation, design, and ideas.
 
-This file explains *how* to contribute.  
+This file explains _how_ to contribute.  
 Project rules, governance, naming guidance, agreements, and records are
 documented elsewhere and linked below.
 
@@ -17,8 +17,8 @@ documented elsewhere and linked below.
 - **Coordinate via Discord or GitHub**, depending on preference
 
 > Note: Discord invite links are not perpetual.  
-> If you need access and do not have a valid invite, email **wrdlnkdn@gmail.com**
-> to request one.
+> If you need access and do not have a valid invite, email
+> **wrdlnkdn@gmail.com** to request one.
 
 ---
 
@@ -85,8 +85,8 @@ This repository does not duplicate agreement text.
 
 ## 📛 Naming and Trademark Reminder (IMPORTANT)
 
-Contributors are expected to follow project naming and trademark guidance in
-all code, documentation, metadata, and public references.
+Contributors are expected to follow project naming and trademark guidance in all
+code, documentation, metadata, and public references.
 
 Before contributing, review:
 
@@ -100,8 +100,8 @@ confusing usage.
 
 ## 🙏 Credits
 
-See [CONTRIBUTORS.md](CONTRIBUTORS.md) for a curated list of people who have helped
-build WRDLNKDN.
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for a curated list of people who have
+helped build WRDLNKDN.
 
 Contributor intake records and participation history are maintained in the
 official WRDLNKDN Google Drive as the system of record.

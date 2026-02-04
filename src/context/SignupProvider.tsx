@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import type {
+  IdentityData,
+  ProfileData,
   SignupState,
   SignupStep,
-  IdentityData,
   ValuesData,
-  ProfileData,
 } from '../types/signup';
+import type { Database } from '../types/supabase';
 import { SignupContext, type SignupContextValue } from './SignupContext';
-import { supabase } from '../lib/supabaseClient';
+
+type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
 const STEPS: SignupStep[] = [
   'welcome',
@@ -138,7 +141,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
 
         // Insert profile into database
-        const { error: insertError } = await supabase.from('profiles').insert({
+        const profileRow: ProfileInsert = {
           id: state.identity.userId,
           email: state.identity.email,
           handle: handle,
@@ -148,7 +151,12 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           participation_style: state.values.participationStyle || [],
           additional_context: state.values.additionalContext || null,
           status: 'pending', // Start as pending for admin review
-        });
+        };
+
+        // Supabase client infers insert param as never; assert to satisfy type checker
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(profileRow as never);
 
         if (insertError) {
           console.error('❌ Profile insert error:', insertError);

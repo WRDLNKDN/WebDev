@@ -62,11 +62,10 @@ Consideration”** column of the project's Kanban board.
 
 ## Choosing an Existing Issue
 
-<<<<<<< HEAD
-If you'd like to contribute to an existing issue, check the
+<<<<<<< HEAD If you'd like to contribute to an existing issue, check the
 [Kanban board](https://github.com/users/v-gajjar/projects/2) for tickets in the
-**TODO** column that aren’t already assigned.
-=======
+**TODO** column that aren’t already assigned. =======
+
 ### 1. The Workflow
 
 - **Fork the repository** and create your branch from `main`.
@@ -79,7 +78,7 @@ If you'd like to contribute to an existing issue, check the
 
 - **Join Discord** for discussion and coordination:
   [https://discord.gg/RkenxynH](https://discord.gg/RkenxynH)
->>>>>>> main
+  > > > > > > > main
 
 We’d especially appreciate help on tasks labelled  
 [`priority:high`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22priority%3A%20high%22) or  
@@ -87,12 +86,13 @@ We’d especially appreciate help on tasks labelled
 as
 these are currently the most impactful for the project.
 
-<<<<<<< HEAD
-If you're unsure whether a ticket is available or appropriate to work on, feel
-free to comment on the issue to ask!
+<<<<<<< HEAD If you're unsure whether a ticket is available or appropriate to
+work on, feel free to comment on the issue to ask!
 
 ## Submitting a PR
+
 =======
+
 ## 📝 Code Style & Quality
 
 We enforce **Logic Purity** through automated tooling. Please ensure your code
@@ -106,25 +106,28 @@ passes our local "System Audits" before pushing:
 
 _Note: This repo uses **Husky**. Pre-commit hooks will automatically block
 commits that fail linting or formatting checks._
->>>>>>> main
+
+> > > > > > > main
 
 Before submitting, link your PR to its related issue.  
 If one doesn’t exist yet, please create it first — this helps with tracking and
 discussion.
 
-<<<<<<< HEAD
-**Note:** We all sometimes forget! Creating and linking an issue afterward is
-totally fine — thank you for doing it.
+<<<<<<< HEAD **Note:** We all sometimes forget! Creating and linking an issue
+afterward is totally fine — thank you for doing it.
 
 ### Branching Strategy (Git Flow)
+
 =======
+
 ## 🏷️ Labels & Triage
 
 - **Issues and PRs** are labeled for clarity (e.g., `bug`, `feature`,
   `help wanted`).
 - **Milestones** track major releases and goals.
 - **Code Review**: All contributions require at least one review before merging.
->>>>>>> main
+
+  > > > > > > > main
 
 - Please branch off the `develop` branch (not `main`).
 - Make sure your local `develop` branch is up to date before branching off.
@@ -132,10 +135,11 @@ totally fine — thank you for doing it.
   discussed.
 
 <<<<<<< HEAD
+
 ## Any Concerns or Questions?
 
-Please don't hesitate to reach out!
-=======
+# Please don't hesitate to reach out!
+
 ## 🤝 Onboarding & Agreements
 
 Most casual contributions (typos, small bug fixes) do **not** require formal
@@ -169,4 +173,5 @@ make this project possible.
 ---
 
 **Thank you for helping make WRDLNKDN awesome!**
->>>>>>> main
+
+> > > > > > > main

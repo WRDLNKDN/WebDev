@@ -1,17 +1,10 @@
 services:
-  weirdlinkedin-ui:
+  WRDLNKDN-ui:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '5173:5173'
-    volumes:
-      - .:/app
-      - /app/node_modules
+      - '8080:80'
     environment:
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-
-  # Supabase Local Stack (via CLI)
-  # Pro Tip: Use 'npx supabase start' instead of manual compose
-  # for the database to ensure the "Legacy Code" of the DB is handled by experts.
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}

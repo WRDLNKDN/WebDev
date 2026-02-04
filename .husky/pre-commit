@@ -1,15 +1,10 @@
 #!/bin/bash
-
 # --- The "Anti-Bloat" Verification ---
-# List all files staged for commit, then grep for node_modules
-# We use -E to ensure the regex handles the slash correctly across OSs
+# System Audit: Detect node_modules in the stage
 STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)
 
 if [ -n "$STAGED_MODULES" ]; then
   echo "❌ [SYSTEM AUDIT FAILURE]: node_modules detected in commit!"
-  echo "The following paths are trying to sneak in:"
-  echo "$STAGED_MODULES"
-  echo ""
   echo "Manual Rewind Required: Run 'git rm -r --cached node_modules' to purge."
   exit 1 
 fi
@@ -18,21 +13,12 @@ fi
 echo "📂 Checking for empty files in staged changes..."
 
 ALLOW_EMPTY_REGEX='(^|/)\.gitkeep$|(^|/)\.keep$'
-
-# System Audit: We only care about STAGED files for a pre-commit. 
-# Checking untracked files here is an 'Efficiency Trap' because 
-# they aren't part of the commit anyway.
 CANDIDATES=$(git diff --cached --name-only --diff-filter=AM)
-
 EMPTY_FILES=""
 
-# Use a Here-string (<<<) to avoid subshell variable loss
 while IFS= read -r file; do
   [ -z "$file" ] && continue
-  
-  if echo "$file" | grep -Eq "$ALLOW_EMPTY_REGEX"; then
-    continue
-  fi
+  if echo "$file" | grep -Eq "$ALLOW_EMPTY_REGEX"; then continue; fi
 
   # Integrity Check: verify file exists and size is 0
   if [ -f "$file" ] && [ ! -s "$file" ]; then
@@ -43,7 +29,6 @@ done <<< "$CANDIDATES"
 if [ -n "$EMPTY_FILES" ]; then
   echo "🛑 [SYSTEM AUDIT FAILURE]: Empty files detected!"
   printf "%s" "$EMPTY_FILES"
-  echo -e "Please remove them or add content before committing."
   exit 1
 fi
 

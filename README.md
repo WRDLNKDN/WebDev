@@ -1,276 +1,155 @@
+# 📚 WRDLNKDN Central Documentation
+
+> **Primary Source of Truth:** >
+> [WRDLNKDN Home Wiki](https://github.com/WRDLNKDN/WebDev/wiki) > _Please
+> consult the Wiki for high-level guides, policies, and roadmap details before
+> contributing._
+
 ---
 
-## 📚 Resources
+## 🚀 Project Overview
 
-- [Project Wiki](https://github.com/WRDLNKDN/WebDev/wiki) — Full documentation, guides, and policies
-- [Contributing Guide](CONTRIBUTING.md) — How to contribute, code style, and PR process
-# WeirdLinkedIn
+![WRDLNKDN logo: Square](./assets/square%20logo.png)
 
-![WeirdLinkedIn logo: Square](./assets/square%20logo.png)
-
-![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WeirdLinkedIn)
-![License](https://img.shields.io/github/license/AprilLorDrake/WeirdLinkedIn)
-![Node Version](https://img.shields.io/badge/node-18+-blue)
+![Last Commit](https://img.shields.io/github/last-commit/AprilLorDrake/WRDLNKDN)
+![License](https://img.shields.io/github/license/AprilLorDrake/WRDLNKDN)
+![Node Version](https://img.shields.io/badge/node-22+-blue)
 ![Made with TypeScript](https://img.shields.io/badge/made%20with-TypeScript-blue)
 
 **Professional networking, but human.**
 
-WeirdLinkedIn is a modern, accessibility-first professional directory and platform.  
-It explores what professional networking looks like when we stop pretending it isn't weird.
+WRDLNKDN is a modern, accessibility-first professional directory and platform.
+It explores what professional networking looks like when we stop pretending it
+isn't weird.
 
 ---
 
-## 🌐 Platform Overview
+## 🌐 Platform Architecture
 
-WeirdLinkedIn consists of:
+- **Frontend**: React 19 + Vite UI with a WCAG 2.2 AA compliant dark theme.
+- **Backend**: API deployed on Vercel handling profiles and moderation.
+- **Database/Auth**: Supabase (Local Docker stack for development).
 
-- **Frontend**
+### 🛠️ Technology Stack
 
-  - React 19 + Vite UI
-  - Designed for GoDaddy website integration
-  - WCAG 2.2 AA compliant dark theme
-
-- **Backend**
-  - API deployed on Vercel
-  - Handles profiles, moderation, and directory access
-  - Built to scale beyond initial launch without redesign
-
----
-
-## 🛠️ Technology Stack
-
-| Category   | Technology   | Purpose                         |
-| ---------- | ------------ | ------------------------------- |
-| Framework  | React 19     | Modern APIs, future-proof DX    |
-| Build Tool | Vite         | Fast dev server and builds      |
-| Language   | TypeScript   | Type safety and maintainability |
-| UI         | Material UI  | Accessible component system     |
-| Design     | WCAG 2.2     | Accessibility-first defaults    |
-| Icons      | Font Awesome | Consistent SVG iconography      |
+| Category       | Technology  | Purpose                         |
+| :------------- | :---------- | :------------------------------ |
+| **Framework**  | React 19    | Modern APIs, future-proof DX    |
+| **Build Tool** | Vite        | Fast dev server and builds      |
+| **Language**   | TypeScript  | Type safety and maintainability |
+| **UI**         | Material UI | Accessible component system     |
+| **Design**     | WCAG 2.2    | Accessibility-first defaults    |
+| **Database**   | Supabase    | Auth, PostgreSQL, and Realtime  |
 
 ---
 
-## ⚙️ Code Quality & Tooling
+---
 
-- **ESLint** – Code correctness and best practices
-- **Prettier** – Canonical formatting
-- **Husky** – Local enforcement via Git hooks
-- **TypeScript** – Static analysis and safety
+## 📐 Non-Functional Requirements (NFRs)
 
-Checks run locally before code reaches CI.
+WRDLNKDN is governed by a set of **platform-level non-functional requirements**
+that define operational, scalability, security, and portability constraints,
+independent of implementation details or vendors.
+
+These constraints apply across **registration, approval, admin moderation, and
+directory workflows**, and serve as a baseline for all platform decisions.
+
+- **Source of Truth:**
+  [`docs/architecture/platform-nfrs.md`](./docs/architecture/platform-nfrs.md)
+- Referenced by architecture, platform, and implementation tickets
+- Designed to support future replatforming and external integrations
+
+> Any architectural or infrastructure change **must comply** with the defined
+> NFRs.
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Getting Started
 
-This project is split into a frontend (React + Vite) and a backend API.
-Each can be run independently for development.
+### 📦 Prerequisites
 
----
+- **Node.js**: Version 22 (Recommended via `nvm`)
+- **Docker**: Required for local Supabase inhabitants
+- **Git**: Configured with a GPG/SSH key for **Verified** commits
 
-## 📦 Requirements
+### 🛠️ Initial Setup
 
-- Node.js 18 or newer
-- npm (comes with Node)
-- A GitHub account (for issues and project board access)
+1. **Clone the repository:**
 
-Optional but recommended:
+   ```bash
+   git clone [https://github.com/WRDLNKDN/WebDev.git](https://github.com/WRDLNKDN/WebDev.git)
+   cd WebDev
+   ```
 
-- VS Code
-- Prettier + ESLint extensions
+````bash
 
----
-
-## ⚙️ Setup
-
-1. Clone the repository
+# Install Dependencies
 
 ```bash
-git clone https://github.com/<your-org-or-user>/WeirdLinkedIn.git
-cd WeirdLinkedIn
-```
-
-1. Install dependencies
-
-Install Docker
-
-```bash
-cd frontend
 npm install
+````
 
-cd ../backend
-npm install
-
-# Initialize the Supabase configuration (if not already present)
-npx supabase init
-
-# Start the local Docker containers
-npx supabase start
-
-```
-
-1. Environment configuration
-
-Each service uses environment variables.
-
-- Copy the example env file in each directory:
+## Initialize Local Environment
 
 ```bash
+# Start the local Supabase containers (Docker must be running)
+ npx supabase start
+
+# Copy environment variables
+touch .env (or manually copy)
 cp .env.example .env
 ```
 
-- Update values as needed for local development
+## Development Workflow
 
-Environment variables are documented in each subfolder’s README.
+### 1. Database & Auth (Supabase)
 
----
+The project inhabits a local Docker stack for data.
 
-## ▶️ Running Locally
+- **Start:** `npx supabase start`
+- **Stop:** `npx supabase stop`
+- **Studio (GUI):** [http://127.0.0.1:54323](http://127.0.0.1:54323)
 
-Frontend (UI)
+### 2. Running the UI
 
 ```bash
-cd frontend
 npm run dev
 ```
 
-You should see output similar to:
+The frontend will inhabit [http://localhost:5173](http://localhost:5173) (or
+8080 if running via the production Dockerfile).
 
-```bash
-VITE vX.X.X  ready in XXX ms
-➜  Local:   http://localhost:5173/
-```
+### 3. Code Quality Checks
 
-Backend (API)
+We enforce Logic Purity through local hooks:
 
-```bash
-cd backend
-npm run dev
-```
+- **Lint:** `npm run lint`
+- **Format:** `npm run format`
+- **Type-check:** `npm run typecheck`
 
-The API will start on the configured local port.
+> Note: Husky pre-commit hooks will automatically perform a System Audit on your
+> staged changes.
 
----
+## 📁 Resource Map
 
-## 🧪 Code Quality Checks
-
-From either directory (or root if configured):
-
-- Format code
-
-```bash
-npm run format
-```
-
-- Run Linting
-
-```bash
-npm run lint
-```
-
-- Type-check
-
-```bash
-npm run typecheck
-```
-
-Pre-commit hooks will also enforce these checks automatically via Husky.
-
----
-
-## 📁 Project Structure
-
-```js
-<details>
-<summary>📁 Click to expand file structure</summary>
-```
-
-```txt
-.
-├── .github
-│   └── workflows
-│       └── WebDev.yml
-├── .husky
-│   ├── pre-commit
-│   └── pre-push
-├── assets
-│   ├── banner.png
-│   ├── logo.png
-│   └── nyan-adventure.png
-├── backend
-│   ├── api-hello.js
-│   └── README.md
-├── frontend
-│   └── README.md
-├── public
-│   ├── assets
-│   │   └── gallerybanner.png
-│   └── vite.svg
-├── scripts
-│   └── precheck.sh
-├── src
-│   ├── assets
-│   │   └── react.svg
-│   ├── App.tsx
-│   ├── index.css
-│   ├── main.tsx
-│   └── theme.ts
-├── commit-and-push.bat
-├── CONTRIBUTORS.md
-├── eslint.config.cjs
-├── index.html
-├── INTEGRATION.md
-├── LICENSE
-├── package-lock.json
-├── package.json
-├── PROJECT_BOARD.md
-├── README.md
-├── tsconfig.app.json
-├── tsconfig.json
-├── tsconfig.node.json
-└── vite.config.ts
-```
-
-</details>
-
----
+- **Contributing Guide:** [CONTRIBUTING.md](CONTRIBUTING.md) — Workflow, Code
+  Style, and PR rules.
+- **Contributor Credits:** [CONTRIBUTORS.md](CONTRIBUTORS.md) — The humans
+  behind the OS.
+- **Project Board:** GitHub Projects
 
 ## ♿ Accessibility
 
 Accessibility is a core design constraint, not a retrofit.
 
-- WCAG 2.2 AA contrast
-- Keyboard navigation
-- Focus indicators
-- Semantic HTML
-
----
-
-## 📌 Project Board
-
-🔗 [WeirdLinkedIn Project](https://github.com/users/AprilLorDrake/projects/3)
-
----
+- WCAG 2.2 AA contrast compliance.
+- Full keyboard navigation and focus indicators.
+- Semantic HTML and ARIA inhabitation.
 
 ## Contributors
 
-Thanks to everyone who has helped build or improve WeirdLinkedIn.
-
-[![Contributors](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)](https://contrib.rocks/image?repo=AprilLorDrake/WeirdLinkedIn)
-
-Generated using [contrib.rocks](https://contrib.rocks)
-
-### Contributing
-
-Interested in contributing?
-
-- 📄 [CONTRIBUTORS.md](CONTRIBUTORS.md)
-- 🐛 Open an issue for bugs or feature requests
-- 🔀 Submit a pull request
-
-All contributions are welcome.
-
----
+Thanks to everyone who has helped build or improve WRDLNKDN. Generated using
+contrib.rocks.
 
 ## License
 

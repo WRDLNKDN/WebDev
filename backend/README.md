@@ -1,6 +1,7 @@
-# WeirdLinkedIn Backend
+# WRDLNKDN Backend
 
-This folder contains the backend API for the WeirdLinkedIn project, intended for deployment on Vercel.
+This folder contains the backend API for the WRDLNKDN project, intended for
+deployment on Vercel.
 
 ## Features
 
@@ -24,4 +25,5 @@ This folder contains the backend API for the WeirdLinkedIn project, intended for
 
 ## Additional Info
 
-- See the main project README for more details on the tech stack and project structure.
+- See the main project README for more details on the tech stack and project
+  structure.

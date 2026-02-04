@@ -1,24 +1,17 @@
-# .github/workflows/WebDev.yml
-name: 🌐 WebDev
+name: WebDev
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 concurrency:
   group: WebDev-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-typecheck:
-    name: 🌐 WebDev
+  quality-and-unit:
+    name: ✅ Quality + Unit Tests
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: .
-
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v5
@@ -26,12 +19,13 @@ jobs:
       - name: 🧰 Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: package-lock.json
 
       - name: 📦 Install dependencies
         run: npm ci
+        env:
+          NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
       - name: 🧹 ESLint
         run: npm run lint
@@ -41,3 +35,66 @@ jobs:
 
       - name: 🎨 Prettier check
         run: npm run format:check
+
+      - name: 🧫 Vitest (unit only)
+        run: npm run test:unit
+
+  e2e:
+    name: 🎭 Playwright (E2E)
+    runs-on: ubuntu-latest
+    needs: quality-and-unit
+
+    env:
+      VITE_SUPABASE_URL: 'https://example.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
+      E2E_PORT: '5173'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: 🎭 Run Playwright tests
+        run: npm run test:e2e
+
+      - name: 📎 Upload Playwright report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  webdev-expected:
+    name: WebDevExpected
+    runs-on: ubuntu-latest
+    needs: [quality-and-unit, e2e]
+    if: always()
+    steps:
+      - name: 🔎 Summarize job results
+        run: |
+          echo "quality-and-unit: ${{ needs.quality-and-unit.result }}"
+          echo "e2e:             ${{ needs.e2e.result }}"
+
+          if [ "${{ needs.quality-and-unit.result }}" != "success" ]; then
+            echo "quality-and-unit did not succeed"
+            exit 1
+          fi
+
+          if [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "e2e did not succeed"
+            exit 1
+          fi
+
+          echo "All required jobs passed."

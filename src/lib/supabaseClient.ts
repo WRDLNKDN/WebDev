@@ -1,9 +1,20 @@
+// src/lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../types/supabase'; // The newly generated types
-// The newly generated types
+import type { Database } from '../types/supabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// We pass the <Database> type here to establish 100% Logic Purity
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase env vars');
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'sb-wrdlnkdn-auth',
+    storage: window.localStorage,
+  },
+});

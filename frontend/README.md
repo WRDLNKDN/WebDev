@@ -1,6 +1,7 @@
-# WeirdLinkedIn Frontend
+# WRDLNKDN Frontend
 
-This folder contains the frontend UI for the WeirdLinkedIn project, designed for integration with a GoDaddy website.
+This folder contains the frontend UI for the WRDLNKDN project, designed for
+integration with a GoDaddy website.
 
 ## Features
 
@@ -21,8 +22,10 @@ This folder contains the frontend UI for the WeirdLinkedIn project, designed for
 
 ## Deployment
 
-- Deploy the frontend to your GoDaddy website or preferred static hosting provider.
+- Deploy the frontend to your GoDaddy website or preferred static hosting
+  provider.
 
 ## Additional Info
 
-- See the main project README for more details on the tech stack and project structure.
+- See the main project README for more details on the tech stack and project
+  structure.

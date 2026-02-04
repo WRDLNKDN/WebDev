@@ -1,31 +1,33 @@
-import { Container } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-import customTheme from './theme'; // MUI Theme
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
+import { BrowserRouter } from 'react-router-dom';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    {/* THEME PROVIDER WRAPS APP */}
-    <ThemeProvider theme={customTheme}>
-      {/* 1. Outer Container for Responsiveness */}
-      {/* The Container component centers the content horizontally and sets max-width based on screen size (default MUI behavior).
-         We set the background color here to the main page background color. */}
-      <Container
-        maxWidth="xl" // Use the full width for the outer container on large screens
-        sx={{
-          // Use the dark background color
-          minHeight: '100vh', // Ensures the background covers the whole viewport
-          minWidth: '100vw',
-          px: 0,
-          // No top/bottom padding is applied to this outer Container by default,
-          // allowing the inner Box to control the layout.
-        }}
-      >
-        <App />
-      </Container>
-    </ThemeProvider>
-  </StrictMode>,
+import App from './App';
+import theme from './theme/theme';
+
+// --- SYSTEM FIREWALL ---
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    {/* HelmetProvider handles the Head metadata */}
+    <HelmetProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+
+        {/* THE FIREWALL:
+           Placed inside ThemeProvider so the crash screen looks good.
+           Placed outside BrowserRouter to catch routing failures.
+        */}
+        <ErrorBoundary>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ErrorBoundary>
+      </ThemeProvider>
+    </HelmetProvider>
+  </React.StrictMode>,
 );

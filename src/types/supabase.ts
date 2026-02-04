@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -7,60 +7,120 @@
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
-      profiles: {
+      admin_allowlist: {
         Row: {
-          geek_creds: string[] | null
-          handle: string
+          created_at: string
+          created_by: string | null
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+        }
+        Relationships: []
+      }
+      portfolio_items: {
+        Row: {
           id: string
-          nerd_creds: Json | null
-          pronouns: string | null
-          socials: Json | null
+          owner_id: string
+          title: string
+          description: string | null
+          project_url: string | null
+          image_url: string | null
+          tech_stack: string[] | null
+          created_at: string
           updated_at: string | null
         }
         Insert: {
-          geek_creds?: string[] | null
-          handle: string
-          id: string
-          nerd_creds?: Json | null
-          pronouns?: string | null
-          socials?: Json | null
+          id?: string
+          owner_id: string
+          title: string
+          description?: string | null
+          project_url?: string | null
+          image_url?: string | null
+          tech_stack?: string[] | null
+          created_at?: string
           updated_at?: string | null
         }
         Update: {
-          geek_creds?: string[] | null
-          handle?: string
           id?: string
-          nerd_creds?: Json | null
-          pronouns?: string | null
-          socials?: Json | null
+          owner_id?: string
+          title?: string
+          description?: string | null
+          project_url?: string | null
+          image_url?: string | null
+          tech_stack?: string[] | null
+          created_at?: string
           updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_items_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      profiles: {
+        Row: {
+          id: string
+          handle: string
+          display_name: string | null
+          tagline: string | null
+          avatar: string | null
+          resume_url: string | null
+          pronouns: string | null
+          status: string
+          socials: Json | null
+          nerd_creds: Json | null
+          geek_creds: string[] | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          handle: string
+          display_name?: string | null
+          tagline?: string | null
+          avatar?: string | null
+          resume_url?: string | null
+          pronouns?: string | null
+          status?: string
+          socials?: Json | null
+          nerd_creds?: Json | null
+          geek_creds?: string[] | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          handle?: string
+          display_name?: string | null
+          tagline?: string | null
+          avatar?: string | null
+          resume_url?: string | null
+          pronouns?: string | null
+          status?: string
+          socials?: Json | null
+          nerd_creds?: Json | null
+          geek_creds?: string[] | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -69,7 +129,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
@@ -104,14 +167,14 @@ export type Tables<
     ? R
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+      DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
     : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
@@ -131,12 +194,12 @@ export type TablesInsert<
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
     : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
@@ -156,12 +219,12 @@ export type TablesUpdate<
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
     : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
@@ -177,32 +240,5 @@ export type Enums<
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {},
-  },
-} as const
-
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never

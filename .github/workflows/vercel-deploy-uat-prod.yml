@@ -1,4 +1,10 @@
-# .github/workflows/deploy-uat-prod.yml
+# .github/workflows/vercel-deploy-uat-prod.yml
+# Deploy UAT then PROD (approval gated)
+#
+# Required secrets (repo or environment-level):
+#   VERCEL_TOKEN, VERCEL_ORG_ID
+#   VERCEL_PROJECT_ID_UAT (uat env), VERCEL_PROJECT_ID_PROD (production env)
+# Get org/project IDs from: Vercel Dashboard > Project Settings > General
 name: Deploy UAT then PROD (approval gated)
 
 on:
@@ -34,10 +40,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_UAT_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
-
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
     steps:
       - name: Checkout
@@ -77,11 +80,16 @@ jobs:
       # Vercel (UAT) - hard link project for CLI
       # -----------------------
       - name: Link Vercel project (UAT)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
         run: |
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::VERCEL_PROJECT_ID_UAT secret is required. Add it in GitHub repo Settings > Secrets > Actions (or in the uat environment)."
+            exit 1
+          fi
           mkdir -p .vercel
-          cat > .vercel/project.json <<EOF
-          { "orgId": "${VERCEL_ORG_ID}", "projectId": "${VERCEL_PROJECT_ID}" }
-          EOF
+          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
       - name: Vercel pull (UAT)
         run: |
@@ -107,10 +115,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROD_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
-
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
     steps:
       - name: Checkout
@@ -150,11 +155,16 @@ jobs:
       # Vercel (PROD) - hard link project for CLI
       # -----------------------
       - name: Link Vercel project (PROD)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
         run: |
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::VERCEL_PROJECT_ID_PROD secret is required. Add it in GitHub repo Settings > Secrets > Actions (or in the production environment)."
+            exit 1
+          fi
           mkdir -p .vercel
-          cat > .vercel/project.json <<EOF
-          { "orgId": "${VERCEL_ORG_ID}", "projectId": "${VERCEL_PROJECT_ID}" }
-          EOF
+          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
       - name: Vercel pull (PROD)
         run: |

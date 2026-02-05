@@ -77,7 +77,7 @@ jobs:
       # -----------------------
       # Vercel (UAT)
       # -----------------------
-      - name: Link Vercel project (UAT)
+      - name: Verify Vercel IDs (UAT)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID_UAT"'"}' > .vercel/project.json
@@ -154,7 +154,7 @@ jobs:
       # -----------------------
       # Vercel (PROD)
       # -----------------------
-      - name: Link Vercel project (PROD)
+      - name: Verify Vercel IDs (PROD)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID_PROD"'"}' > .vercel/project.json

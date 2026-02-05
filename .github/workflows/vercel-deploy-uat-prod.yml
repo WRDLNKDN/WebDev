@@ -28,8 +28,12 @@ jobs:
       - run: npm ci
 
       # --- Supabase (UAT) ---
-      - run: npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}" --no-browser
-      - run: npx supabase@latest link --project-ref "${{ secrets.SUPABASE_UAT_PROJECT_REF }}"
+      - run:
+          npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN
+          }}" --no-browser
+      - run:
+          npx supabase@latest link --project-ref "${{
+          secrets.SUPABASE_UAT_PROJECT_REF }}"
       - run: npx supabase@latest db push
 
       # --- Vercel (UAT) ---
@@ -59,8 +63,12 @@ jobs:
       - run: npm ci
 
       # --- Supabase (PROD) ---
-      - run: npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}" --no-browser
-      - run: npx supabase@latest link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
+      - run:
+          npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN
+          }}" --no-browser
+      - run:
+          npx supabase@latest link --project-ref "${{
+          secrets.SUPABASE_PROD_PROJECT_REF }}"
       - run: npx supabase@latest db push
 
       # --- Vercel (PROD) ---

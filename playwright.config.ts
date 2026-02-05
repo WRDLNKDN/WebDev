@@ -9,8 +9,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 15_000 },
 
-  // Keep this deterministic. If you want retries/workers later,
-  // we can add them back after TS is happy.
+  // Keep deterministic for now. (You can bump retries/workers later.)
   retries: 1,
 
   use: {
@@ -23,7 +22,9 @@ export default defineConfig({
   webServer: {
     command: `npm run vite -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: BASE_URL,
-    reuseExistingServer: true,
+    // In CI there is never an existing server, so don't try to reuse.
+    // Locally, reuse helps if you already have Vite running.
+    reuseExistingServer: process.env.CI ? false : true,
     timeout: 120_000,
   },
 

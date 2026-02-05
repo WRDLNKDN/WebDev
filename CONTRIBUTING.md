@@ -34,9 +34,9 @@ appreciated!!
 - We are currently not looking for any more contributions to the UI mock-ups,
   but this may change in the future.
 - Contributions that aim to recreate the pixelated, old-school feel of the
-  original Minesweeper or many of its clones.
-  We have very carefully chosen modern styling to differentiate our version and
-  maintain a consistent, contemporary user experience.
+  original Minesweeper or many of its clones. We have very carefully chosen
+  modern styling to differentiate our version and maintain a consistent,
+  contemporary user experience.
 
 ## Ground Rules
 
@@ -51,9 +51,8 @@ ticket already exists — this helps avoid duplicates and keeps the project
 organized.
 
 If you don't find a matching issue, feel free to create one using the
-appropriate issue template.
-Please follow the relevant template rather than submitting in an arbitrary
-format.
+appropriate issue template. Please follow the relevant template rather than
+submitting in an arbitrary format.
 
 Once created, your ticket will automatically appear in the **“Under
 Consideration”** column of the project's Kanban board.
@@ -109,9 +108,8 @@ commits that fail linting or formatting checks._
 
 > > > > > > > main
 
-Before submitting, link your PR to its related issue.
-If one doesn’t exist yet, please create it first — this helps with tracking and
-discussion.
+Before submitting, link your PR to its related issue. If one doesn’t exist yet,
+please create it first — this helps with tracking and discussion.
 
 <<<<<<< HEAD **Note:** We all sometimes forget! Creating and linking an issue
 afterward is totally fine — thank you for doing it.

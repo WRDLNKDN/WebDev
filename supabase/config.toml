@@ -6,6 +6,8 @@ project_id = "WebDev"
 [api]
 enabled = true
 port = 54321
+# Azure requires localhost (not 127.0.0.1) for OAuth redirect URIs
+external_url = "http://localhost:54321"
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
@@ -124,7 +126,7 @@ max_frequency = "5s"
 # ------------------------------------------------------------
 # External OAuth Providers
 # Notes:
-# - Use env(VAR_NAME) and set the values in supabase/.env
+# - Use env(VAR_NAME) and set values in .env at PROJECT ROOT
 # - For local dev callback use:
 #   http://localhost:54321/auth/v1/callback
 # ------------------------------------------------------------

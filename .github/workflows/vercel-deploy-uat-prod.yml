@@ -40,14 +40,14 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_UAT_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
+            github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -77,23 +77,49 @@ jobs:
       # Vercel (UAT)
       # -----------------------
       - name: Link Vercel project (UAT)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_UAT in GitHub Settings > Secrets > Actions (or in the uat environment)."
+            echo "::error::Missing VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_UAT secret"
+            exit 1
+          fi
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "::error::Missing VERCEL_ORG_ID secret"
             exit 1
           fi
           mkdir -p .vercel
-          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          cat > .vercel/project.json <<EOF
+          {
+            "orgId": "$VERCEL_ORG_ID",
+            "projectId": "$VERCEL_PROJECT_ID"
+          }
+          EOF
+          echo "Created .vercel/project.json with orgId=$VERCEL_ORG_ID projectId=$VERCEL_PROJECT_ID"
 
       - name: Vercel pull (UAT)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (UAT)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (UAT)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
 
@@ -104,7 +130,9 @@ jobs:
 
     # Push to main always attempts prod (approval gate is the production environment reviewers)
     # Manual only runs if deploy_prod=true
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_prod) }}
+    if:
+      ${{ github.event_name == 'push' || (github.event_name ==
+      'workflow_dispatch' && inputs.deploy_prod) }}
 
     environment: production
 
@@ -112,14 +140,14 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROD_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
+            github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -149,22 +177,48 @@ jobs:
       # Vercel (PROD)
       # -----------------------
       - name: Link Vercel project (PROD)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_PROD in GitHub Settings > Secrets > Actions (or in the production environment)."
+            echo "::error::Missing VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_PROD secret"
+            exit 1
+          fi
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "::error::Missing VERCEL_ORG_ID secret"
             exit 1
           fi
           mkdir -p .vercel
-          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          cat > .vercel/project.json <<EOF
+          {
+            "orgId": "$VERCEL_ORG_ID",
+            "projectId": "$VERCEL_PROJECT_ID"
+          }
+          EOF
+          echo "Created .vercel/project.json with orgId=$VERCEL_ORG_ID projectId=$VERCEL_PROJECT_ID"
 
       - name: Vercel pull (PROD)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (PROD)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (PROD)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID:
+            ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"

@@ -1,4 +1,4 @@
-name: Deploy UAT then PROD (approval gated)
+name: Deploy UAT then PROD
 
 on:
   push:
@@ -6,154 +6,69 @@ on:
 
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref to deploy (branch, tag, or SHA). Default: main"
-        required: false
-        default: "main"
       deploy_prod:
-        description: "Also deploy production (requires approval)"
+        description: Deploy production
         required: false
         type: boolean
         default: false
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   deploy-uat:
-    name: Deploy UAT (Supabase + Vercel Preview)
+    name: Deploy UAT
     runs-on: ubuntu-latest
     environment: uat
 
-    env:
-      # Supabase
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
-
-      # Vercel
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: Verify required secrets (UAT)
+      - run: npm ci
+
+      # --- Supabase (UAT) ---
+      - run: npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}" --no-browser
+      - run: npx supabase@latest link --project-ref "${{ secrets.SUPABASE_UAT_PROJECT_REF }}"
+      - run: npx supabase@latest db push
+
+      # --- Vercel (UAT) ---
+      - name: Deploy UAT to Vercel
         run: |
-          set -e
-          [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
-          [ -n "${SUPABASE_PROJECT_REF:-}" ]   || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
-          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
-
-      # -----------------------
-      # Supabase migrations (UAT)
-      # -----------------------
-      - name: Supabase login
-        run: npx --yes supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
-
-      - name: Supabase link (UAT)
-        run: npx --yes supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
-
-      - name: Supabase db push (UAT)
-        run: npx --yes supabase@latest db push
-
-      # -----------------------
-      # Vercel deploy (UAT preview)
-      # -----------------------
-      - name: Link Vercel project (UAT)
-        run: |
-          mkdir -p .vercel
-          cat > .vercel/project.json <<EOF
-          { "orgId": "$VERCEL_ORG_ID", "projectId": "$VERCEL_PROJECT_ID" }
-          EOF
-
-      - name: Vercel pull (UAT = preview)
-        run: npx --yes vercel@latest pull --yes --environment=preview --token "$VERCEL_TOKEN"
-
-      - name: Vercel build (UAT)
-        run: npx --yes vercel@latest build --token "$VERCEL_TOKEN"
-
-      - name: Vercel deploy (UAT)
-        run: npx --yes vercel@latest deploy --prebuilt --token "$VERCEL_TOKEN"
+          npx vercel@latest deploy \
+            --prod \
+            --yes \
+            --token "${{ secrets.VERCEL_TOKEN }}" \
+            --scope "${{ secrets.VERCEL_SCOPE }}" \
+            --name webdev-uat
 
   deploy-prod:
-    name: Deploy PROD (Supabase + Vercel Prod)
+    name: Deploy PROD
     runs-on: ubuntu-latest
     needs: deploy-uat
     environment: production
-
-    # Push to main: attempt prod (approval gate is enforced by environment reviewers)
-    # Manual: only run prod if deploy_prod=true
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_prod) }}
-
-    env:
-      # Supabase
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
-
-      # Vercel
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
+    if: github.event_name == 'push' || inputs.deploy_prod
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: Verify required secrets (PROD)
+      - run: npm ci
+
+      # --- Supabase (PROD) ---
+      - run: npx supabase@latest login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}" --no-browser
+      - run: npx supabase@latest link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
+      - run: npx supabase@latest db push
+
+      # --- Vercel (PROD) ---
+      - name: Deploy PROD to Vercel
         run: |
-          set -e
-          [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
-          [ -n "${SUPABASE_PROJECT_REF:-}" ]   || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
-          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
-
-      # -----------------------
-      # Supabase migrations (PROD)
-      # -----------------------
-      - name: Supabase login
-        run: npx --yes supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
-
-      - name: Supabase link (PROD)
-        run: npx --yes supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
-
-      - name: Supabase db push (PROD)
-        run: npx --yes supabase@latest db push
-
-      # -----------------------
-      # Vercel deploy (PROD)
-      # -----------------------
-      - name: Link Vercel project (PROD)
-        run: |
-          mkdir -p .vercel
-          cat > .vercel/project.json <<EOF
-          { "orgId": "$VERCEL_ORG_ID", "projectId": "$VERCEL_PROJECT_ID" }
-          EOF
-
-      - name: Vercel pull (PROD)
-        run: npx --yes vercel@latest pull --yes --environment=production --token "$VERCEL_TOKEN"
-
-      - name: Vercel build (PROD)
-        run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
-
-      - name: Vercel deploy (PROD)
-        run: npx --yes vercel@latest deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          npx vercel@latest deploy \
+            --prod \
+            --yes \
+            --token "${{ secrets.VERCEL_TOKEN }}" \
+            --scope "${{ secrets.VERCEL_SCOPE }}" \
+            --name wrdlnkdn

@@ -35,7 +35,7 @@
     "--- BUILD & DEPLOY (Legacy Code Prevention) ---": "",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || husky"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

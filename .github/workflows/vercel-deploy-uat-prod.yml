@@ -1,14 +1,4 @@
 # .github/workflows/vercel-deploy-uat-prod.yml
-# Deploy UAT then PROD (approval gated)
-#
-# Required secrets (repo or environment-level):
-#   VERCEL_TOKEN, VERCEL_ORG_ID
-#   VERCEL_PROJECT_ID_UAT, VERCEL_PROJECT_ID_PROD
-#   SUPABASE_ACCESS_TOKEN
-#   SUPABASE_UAT_PROJECT_REF (for UAT environment)
-#   SUPABASE_PROD_PROJECT_REF (for production environment)
-#
-# Get org/project IDs from: Vercel Dashboard > Project Settings > General
 name: Deploy UAT then PROD (approval gated)
 
 on:
@@ -43,7 +33,7 @@ jobs:
 
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
+      VERCEL_PROJECT_ID_UAT: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
     steps:
       - name: Checkout
@@ -62,11 +52,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify required secrets (UAT)
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Missing SUPABASE_ACCESS_TOKEN"; exit 1; }
+          [ -n "$SUPABASE_UAT_PROJECT_REF" ] || { echo "::error::Missing SUPABASE_UAT_PROJECT_REF"; exit 1; }
+          [ -n "$VERCEL_TOKEN" ] || { echo "::error::Missing VERCEL_TOKEN"; exit 1; }
+          [ -n "$VERCEL_ORG_ID" ] || { echo "::error::Missing VERCEL_ORG_ID"; exit 1; }
+          [ -n "$VERCEL_PROJECT_ID_UAT" ] || { echo "::error::Missing VERCEL_PROJECT_ID_UAT"; exit 1; }
+
       # -----------------------
       # Supabase (UAT)
       # -----------------------
       - name: Supabase login (token)
-        run: npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+        run:
+          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN"
+          --no-browser
 
       - name: Supabase link (UAT)
         run: npx supabase@latest link --project-ref "$SUPABASE_UAT_PROJECT_REF"
@@ -79,22 +79,13 @@ jobs:
       # -----------------------
       - name: Verify Vercel IDs (UAT)
         run: |
-          if [ -z "$VERCEL_ORG_ID" ]; then
-            echo "::error::Missing VERCEL_ORG_ID secret."
-            exit 1
-          fi
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Missing VERCEL_PROJECT_ID_UAT secret."
-            exit 1
-          fi
-
-      - name: Link Vercel project (UAT)
-        run: |
           mkdir -p .vercel
-          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID_UAT"'"}' > .vercel/project.json
+          cat .vercel/project.json
 
       - name: Vercel pull (UAT)
-        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run:
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (UAT)
         run: npx vercel build --prod --token "$VERCEL_TOKEN"
@@ -107,9 +98,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-uat
 
-    # On push to main: attempts prod (approval gate is the production environment reviewers)
-    # On manual: runs only if deploy_prod=true
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_prod) }}
+    if:
+      ${{ github.event_name == 'push' || (github.event_name ==
+      'workflow_dispatch' && inputs.deploy_prod) }}
 
     environment: production
 
@@ -119,7 +110,7 @@ jobs:
 
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
+      VERCEL_PROJECT_ID_PROD: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
     steps:
       - name: Checkout
@@ -138,11 +129,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify required secrets (PROD)
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Missing SUPABASE_ACCESS_TOKEN"; exit 1; }
+          [ -n "$SUPABASE_PROD_PROJECT_REF" ] || { echo "::error::Missing SUPABASE_PROD_PROJECT_REF"; exit 1; }
+          [ -n "$VERCEL_TOKEN" ] || { echo "::error::Missing VERCEL_TOKEN"; exit 1; }
+          [ -n "$VERCEL_ORG_ID" ] || { echo "::error::Missing VERCEL_ORG_ID"; exit 1; }
+          [ -n "$VERCEL_PROJECT_ID_PROD" ] || { echo "::error::Missing VERCEL_PROJECT_ID_PROD"; exit 1; }
+
       # -----------------------
       # Supabase (PROD)
       # -----------------------
       - name: Supabase login (token)
-        run: npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+        run:
+          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN"
+          --no-browser
 
       - name: Supabase link (PROD)
         run: npx supabase@latest link --project-ref "$SUPABASE_PROD_PROJECT_REF"
@@ -155,22 +156,13 @@ jobs:
       # -----------------------
       - name: Verify Vercel IDs (PROD)
         run: |
-          if [ -z "$VERCEL_ORG_ID" ]; then
-            echo "::error::Missing VERCEL_ORG_ID secret."
-            exit 1
-          fi
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Missing VERCEL_PROJECT_ID_PROD secret."
-            exit 1
-          fi
-
-      - name: Link Vercel project (PROD)
-        run: |
           mkdir -p .vercel
-          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID_PROD"'"}' > .vercel/project.json
+          cat .vercel/project.json
 
       - name: Vercel pull (PROD)
-        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run:
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (PROD)
         run: npx vercel build --prod --token "$VERCEL_TOKEN"

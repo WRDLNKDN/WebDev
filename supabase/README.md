@@ -35,7 +35,8 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 
 1. Supabase Dashboard → **Authentication** → **Providers** → **Azure**
 2. Enable Azure and enter your Client ID and Secret from Azure
-3. Add redirect URI in Azure app: `https://<your-project-ref>.supabase.co/auth/v1/callback`
+3. Add redirect URI in Azure app:
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
 
 ### Using LOCAL Supabase (http://localhost:54321 or 127.0.0.1:54321)
 
@@ -44,9 +45,9 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 
 2. **Supported account types**: Choose **"Accounts in any organizational
    directory (Any Microsoft Entra ID tenant - Multitenant) and personal
-   Microsoft accounts (e.g. Skype, Xbox)"**. If you pick "My organization
-   only", you'll get "not enabled for consumers" when signing in with
-   @outlook.com or other personal accounts.
+   Microsoft accounts (e.g. Skype, Xbox)"**. If you pick "My organization only",
+   you'll get "not enabled for consumers" when signing in with @outlook.com or
+   other personal accounts.
 
 3. **Add redirect URI** in the app: `http://localhost:54321/auth/v1/callback`
    (Azure requires `localhost`, not `127.0.0.1`.)

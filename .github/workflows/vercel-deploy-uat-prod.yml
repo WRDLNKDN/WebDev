@@ -4,6 +4,9 @@
 # Required secrets (repo or environment-level):
 #   VERCEL_TOKEN, VERCEL_ORG_ID
 #   VERCEL_PROJECT_ID (shared) OR VERCEL_PROJECT_ID_UAT + VERCEL_PROJECT_ID_PROD
+#   SUPABASE_ACCESS_TOKEN
+#   SUPABASE_UAT_PROJECT_REF (for UAT environment)
+#   SUPABASE_PROD_PROJECT_REF (for production environment)
 # Get org/project IDs from: Vercel Dashboard > Project Settings > General
 name: Deploy UAT then PROD (approval gated)
 
@@ -41,6 +44,9 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_UAT_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID:
+        ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -56,9 +62,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name:
-          Install dependencies (pins Vercel CLI if you keep it in
-          devDependencies)
+      - name: Install dependencies
         run: npm ci
 
       # -----------------------
@@ -77,14 +81,9 @@ jobs:
           npx supabase@latest db push
 
       # -----------------------
-      # Vercel (UAT) - hard link project for CLI
+      # Vercel (UAT)
       # -----------------------
       - name: Link Vercel project (UAT)
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          # Prefer env-specific ID; fall back to shared VERCEL_PROJECT_ID
-          VERCEL_PROJECT_ID:
-            ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_UAT in GitHub Settings > Secrets > Actions (or in the uat environment)."
@@ -97,9 +96,13 @@ jobs:
         run: |
           npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
+      - name: Vercel build (UAT)
+        run: |
+          npx vercel build --prod --token "$VERCEL_TOKEN"
+
       - name: Vercel deploy (UAT)
         run: |
-          npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
 
   deploy-prod:
     name: Deploy PROD (DB + Vercel)
@@ -118,6 +121,9 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROD_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID:
+        ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -133,9 +139,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name:
-          Install dependencies (pins Vercel CLI if you keep it in
-          devDependencies)
+      - name: Install dependencies
         run: npm ci
 
       # -----------------------
@@ -154,14 +158,9 @@ jobs:
           npx supabase@latest db push
 
       # -----------------------
-      # Vercel (PROD) - hard link project for CLI
+      # Vercel (PROD)
       # -----------------------
       - name: Link Vercel project (PROD)
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          # Prefer env-specific ID; fall back to shared VERCEL_PROJECT_ID
-          VERCEL_PROJECT_ID:
-            ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_PROD in GitHub Settings > Secrets > Actions (or in the production environment)."
@@ -174,6 +173,10 @@ jobs:
         run: |
           npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
+      - name: Vercel build (PROD)
+        run: |
+          npx vercel build --prod --token "$VERCEL_TOKEN"
+
       - name: Vercel deploy (PROD)
         run: |
-          npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"

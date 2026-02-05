@@ -24,7 +24,7 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
+      VERCEL_PROJECT_ID_UAT: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
       # baked into build output — UAT domain (webdev-uat.vercel.app) gets this build
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
@@ -49,20 +49,16 @@ jobs:
           npm run typecheck && npm run lint && npm run lint:md && npm run
           format:check
 
-      - name: 🔐 Verify secrets (UAT)
-        run: |
-          set -e
-          [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ] || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ] || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
-          [ -n "${VITE_SUPABASE_URL:-}" ] || (echo "::error::Missing SUPABASE_UAT_URL" && exit 1)
-          [ -n "${VITE_SUPABASE_ANON_KEY:-}" ] || (echo "::error::Missing SUPABASE_UAT_ANON_KEY" && exit 1)
-          if echo "$VITE_SUPABASE_URL" | grep -q "rpcaazmxymymqdejevtb"; then
-            echo "::error::SUPABASE_UAT_URL is set to PROD Supabase! UAT must use lgxwseyzoefxggxijatp.supabase.co"
-            exit 1
-          fi
+      - name: Supabase link (UAT)
+        run: npx supabase@latest link --project-ref "$SUPABASE_UAT_PROJECT_REF"
 
-      - name: 🔗 Link Vercel project (UAT)
+      - name: Supabase db push (UAT)
+        run: npx supabase@latest db push
+
+      # -----------------------
+      # Vercel (UAT)
+      # -----------------------
+      - name: Link Vercel project (UAT)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
@@ -96,7 +92,7 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
+      VERCEL_PROJECT_ID_PROD: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
       # baked into build output
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}

@@ -49,7 +49,7 @@ if ! npx --no-install prettier --check .; then
   npx --no-install prettier --write .
   git add -A
   git commit -m "style: auto-format with Prettier [skip-precheck]" --no-verify
-  
+
   echo ""
   echo "----------------------------------------------------------------"
   echo "⚠️  [TIMELINE DESYNC]: Prettier fixed your files and committed them."
@@ -69,7 +69,7 @@ if ! npx --no-install eslint . --cache --max-warnings=0; then
   npx --no-install eslint . --cache --fix
   git add -A
   git commit -m "chore: auto-fix eslint [skip-precheck]" --no-verify
-  
+
   echo ""
   echo "----------------------------------------------------------------"
   echo "⚠️  [TIMELINE DESYNC]: ESLint auto-fixed what it could and committed."
@@ -81,17 +81,28 @@ if ! npx --no-install eslint . --cache --max-warnings=0; then
 fi
 echo "✅ [SUCCESS]: Logic is pure and accessible."
 
-# 4. TYPESCRIPT (Static Verification)
-echo "🛠️  [STEP 4]: Verifying Type Integrity (tsc)..."
+# 4. MARKDOWNLINT (Docs Integrity)
+echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
+if ! npx --no-install markdownlint '**/*.md' --ignore node_modules; then
+  echo "🛑 [DOCS FAULT]: Markdown lint failed."
+  echo "ACTION REQUIRED: Run one of these:"
+  echo "  - npm run lint:md"
+  echo "  - npm run lint:md:fix"
+  exit 1
+fi
+echo "✅ [SUCCESS]: Docs are clean."
+
+# 5. TYPESCRIPT (Static Verification)
+echo "🛠️  [STEP 5]: Verifying Type Integrity (tsc)..."
 if ! npx --no-install tsc --noEmit --pretty false; then
   echo "🛑 [SYSTEM FAULT]: TypeScript found type errors. Go fix those red squiggles!"
   exit 1
 fi
 echo "✅ [SUCCESS]: Types are verified."
 
-# 5. ACCESSIBILITY SMOKE TEST (The Core Requirement)
+# 6. ACCESSIBILITY SMOKE TEST (The Core Requirement)
 if docker ps | grep -q "supabase_db"; then
-  echo "♿ [STEP 5]: Running WCAG 2.2 Accessibility Audit..."
+  echo "♿ [STEP 6]: Running WCAG 2.2 Accessibility Audit..."
   if ! npx playwright test e2e/accessibility.spec.ts; then
     echo "🛑 [A11Y FAULT]: Accessibility is a core requirement, not a feature. Fix the violations above!"
     exit 1
@@ -101,9 +112,9 @@ else
   echo "⏭️  [SKIPPED]: Supabase isn't running. I can't check accessibility without a backend."
 fi
 
-# 6. FUNCTIONAL E2E TESTS (The Behavioral Audit)
+# 7. FUNCTIONAL E2E TESTS (The Behavioral Audit)
 if docker ps | grep -q "supabase_db"; then
-  echo "🤖 [STEP 6]: Running Functional E2E Tests (Non-Smoke Test)..."
+  echo "🤖 [STEP 7]: Running Functional E2E Tests (Non-Smoke Test)..."
   if ! npx playwright test --grep-invert "accessibility"; then
     echo "🛑 [LOGIC FAULT]: Functional tests failed. Back to the drawing board!"
     exit 1

@@ -34,7 +34,7 @@ appreciated!!
 - We are currently not looking for any more contributions to the UI mock-ups,
   but this may change in the future.
 - Contributions that aim to recreate the pixelated, old-school feel of the
-  original Minesweeper or many of its clones.  
+  original Minesweeper or many of its clones.
   We have very carefully chosen modern styling to differentiate our version and
   maintain a consistent, contemporary user experience.
 
@@ -51,7 +51,7 @@ ticket already exists — this helps avoid duplicates and keeps the project
 organized.
 
 If you don't find a matching issue, feel free to create one using the
-appropriate issue template.  
+appropriate issue template.
 Please follow the relevant template rather than submitting in an arbitrary
 format.
 
@@ -80,11 +80,11 @@ Consideration”** column of the project's Kanban board.
   [https://discord.gg/RkenxynH](https://discord.gg/RkenxynH)
   > > > > > > > main
 
-We’d especially appreciate help on tasks labelled  
-[`priority:high`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22priority%3A%20high%22) or  
-[`priority:medium`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3Apriority%3Amedium),  
-as
-these are currently the most impactful for the project.
+We’d especially appreciate help on tasks labelled
+[`priority:high`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22priority%3A%20high%22)
+or
+[`priority:medium`](https://github.com/v-gajjar/Minesweeper/issues?q=is%3Aissue%20state%3Aopen%20label%3Apriority%3Amedium),
+as these are currently the most impactful for the project.
 
 <<<<<<< HEAD If you're unsure whether a ticket is available or appropriate to
 work on, feel free to comment on the issue to ask!
@@ -109,7 +109,7 @@ commits that fail linting or formatting checks._
 
 > > > > > > > main
 
-Before submitting, link your PR to its related issue.  
+Before submitting, link your PR to its related issue.
 If one doesn’t exist yet, please create it first — this helps with tracking and
 discussion.
 
@@ -138,7 +138,7 @@ afterward is totally fine — thank you for doing it.
 
 ## Any Concerns or Questions?
 
-# Please don't hesitate to reach out!
+## Please don't hesitate to reach out
 
 ## 🤝 Onboarding & Agreements
 

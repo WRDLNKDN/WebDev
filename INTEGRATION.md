@@ -10,7 +10,7 @@
 
 1. Place your backend/serverless API code in the `backend` folder.
 2. Connect the `backend` folder to a new Vercel project
-   (https://vercel.com/import/git).
+   (<https://vercel.com/import/git>).
 3. Deploy and use the provided API endpoints in your frontend code.
 
 ## Example

@@ -109,21 +109,15 @@ jobs:
       - name: 🔎 WebDevExpected (summary gate)
         if: always()
         run: |
-          echo "lint:       ${{ steps.lint.outcome }}"
-          echo "typecheck:  ${{ steps.typecheck.outcome }}"
-          echo "format:     ${{ steps.format.outcome }}"
-          echo "mdlint:     ${{ steps.mdlint.outcome }}"
-          echo "unit:       ${{ steps.unit.outcome }}"
-          echo "pwinstall:  ${{ steps.pwinstall.outcome }}"
-          echo "e2e:        ${{ steps.e2e.outcome }}"
+          echo "lint:      ${{ steps.lint.outcome }}"
+          echo "typecheck: ${{ steps.typecheck.outcome }}"
+          echo "format:    ${{ steps.format.outcome }}"
+          echo "mdlint:    ${{ steps.mdlint.outcome }}"
+          echo "unit:      ${{ steps.unit.outcome }}"
+          echo "pwinstall: ${{ steps.pwinstall.outcome }}"
+          echo "e2e:       ${{ steps.e2e.outcome }}"
 
           fail=0
-
-          for step in lint typecheck format mdlint unit pwinstall e2e; do
-            outcome="$(echo "${{ steps[step].outcome }}" )"
-          done
-
-          # Explicit checks (more readable than a loop in bash with Actions expressions)
           [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
           [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
           [ "${{ steps.format.outcome }}" = "success" ] || fail=1

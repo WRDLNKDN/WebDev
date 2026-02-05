@@ -3,10 +3,11 @@
 #
 # Required secrets (repo or environment-level):
 #   VERCEL_TOKEN, VERCEL_ORG_ID
-#   VERCEL_PROJECT_ID (shared) OR VERCEL_PROJECT_ID_UAT + VERCEL_PROJECT_ID_PROD
+#   VERCEL_PROJECT_ID_UAT, VERCEL_PROJECT_ID_PROD
 #   SUPABASE_ACCESS_TOKEN
 #   SUPABASE_UAT_PROJECT_REF (for UAT environment)
 #   SUPABASE_PROD_PROJECT_REF (for production environment)
+#
 # Get org/project IDs from: Vercel Dashboard > Project Settings > General
 name: Deploy UAT then PROD (approval gated)
 
@@ -39,10 +40,10 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_UAT_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
+
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID:
-        ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
     steps:
       - name: Checkout
@@ -65,61 +66,60 @@ jobs:
       # Supabase (UAT)
       # -----------------------
       - name: Supabase login (token)
-        run: |
-          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+        run: npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
 
       - name: Supabase link (UAT)
-        run: |
-          npx supabase@latest link --project-ref "$SUPABASE_UAT_PROJECT_REF"
+        run: npx supabase@latest link --project-ref "$SUPABASE_UAT_PROJECT_REF"
 
       - name: Supabase db push (UAT)
-        run: |
-          npx supabase@latest db push
+        run: npx supabase@latest db push
 
       # -----------------------
       # Vercel (UAT)
       # -----------------------
-      - name: Link Vercel project (UAT)
+      - name: Verify Vercel IDs (UAT)
         run: |
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_UAT in GitHub Settings > Secrets > Actions (or in the uat environment)."
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "::error::Missing VERCEL_ORG_ID secret."
             exit 1
           fi
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::Missing VERCEL_PROJECT_ID_UAT secret."
+            exit 1
+          fi
+
+      - name: Link Vercel project (UAT)
+        run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
       - name: Vercel pull (UAT)
-        run: |
-          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (UAT)
-        run: |
-          npx vercel build --prod --token "$VERCEL_TOKEN"
+        run: npx vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (UAT)
-        run: |
-          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        run: npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
 
   deploy-prod:
     name: Deploy PROD (DB + Vercel)
     runs-on: ubuntu-latest
     needs: deploy-uat
 
-    # Push to main always attempts prod (approval gate is the production environment reviewers)
-    # Manual only runs if deploy_prod=true
-    if:
-      ${{ github.event_name == 'push' || (github.event_name ==
-      'workflow_dispatch' && inputs.deploy_prod) }}
+    # On push to main: attempts prod (approval gate is the production environment reviewers)
+    # On manual: runs only if deploy_prod=true
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_prod) }}
 
     environment: production
 
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROD_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID:
-        ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
     steps:
       - name: Checkout
@@ -142,37 +142,38 @@ jobs:
       # Supabase (PROD)
       # -----------------------
       - name: Supabase login (token)
-        run: |
-          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+        run: npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
 
       - name: Supabase link (PROD)
-        run: |
-          npx supabase@latest link --project-ref "$SUPABASE_PROD_PROJECT_REF"
+        run: npx supabase@latest link --project-ref "$SUPABASE_PROD_PROJECT_REF"
 
       - name: Supabase db push (PROD)
-        run: |
-          npx supabase@latest db push
+        run: npx supabase@latest db push
 
       # -----------------------
       # Vercel (PROD)
       # -----------------------
-      - name: Link Vercel project (PROD)
+      - name: Verify Vercel IDs (PROD)
         run: |
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Add VERCEL_PROJECT_ID or VERCEL_PROJECT_ID_PROD in GitHub Settings > Secrets > Actions (or in the production environment)."
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "::error::Missing VERCEL_ORG_ID secret."
             exit 1
           fi
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::Missing VERCEL_PROJECT_ID_PROD secret."
+            exit 1
+          fi
+
+      - name: Link Vercel project (PROD)
+        run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
       - name: Vercel pull (PROD)
-        run: |
-          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel build (PROD)
-        run: |
-          npx vercel build --prod --token "$VERCEL_TOKEN"
+        run: npx vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (PROD)
-        run: |
-          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        run: npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"

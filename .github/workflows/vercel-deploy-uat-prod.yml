@@ -30,6 +30,10 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pin the CLI so flags do not change under you
+  SUPABASE_CLI_VERSION: 2.75.4
+
 jobs:
   deploy-uat:
     name: Deploy UAT (DB + Vercel)

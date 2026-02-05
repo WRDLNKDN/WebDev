@@ -2,7 +2,7 @@
 name: Deploy UAT then Prod (approval gated)
 
 on:
-  # Automatic UAT deploy when main updates
+  # Automatic deploy on main updates
   push:
     branches: [main]
 
@@ -23,12 +23,17 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pin the CLI so flags do not change under you
+  SUPABASE_CLI_VERSION: 2.75.4
+
 jobs:
   deploy-uat:
     name: Deploy UAT (DB + Vercel)
     runs-on: ubuntu-latest
     environment:
       name: uat
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,16 +49,16 @@ jobs:
 
       - name: Supabase login
         run:
-          npx supabase@latest login --access-token "${{
+          npx supabase@${{ env.SUPABASE_CLI_VERSION }} login --token "${{
           secrets.SUPABASE_ACCESS_TOKEN }}"
 
       - name: Link Supabase (UAT)
         run:
-          npx supabase@latest link --project-ref "${{
-          secrets.SUPABASE_UAT_PROJECT_REF }}"
+          npx supabase@${{ env.SUPABASE_CLI_VERSION }} link --project-ref "${{
+          secrets.SUPABASE_UAT_PROJECT_REF }}" --yes
 
       - name: Push migrations (UAT)
-        run: npx supabase@latest db push
+        run: npx supabase@${{ env.SUPABASE_CLI_VERSION }} db push
 
       - name: Deploy to Vercel (UAT)
         uses: amondnet/vercel-action@v25
@@ -91,16 +96,16 @@ jobs:
 
       - name: Supabase login
         run:
-          npx supabase@latest login --access-token "${{
+          npx supabase@${{ env.SUPABASE_CLI_VERSION }} login --token "${{
           secrets.SUPABASE_ACCESS_TOKEN }}"
 
       - name: Link Supabase (PROD)
         run:
-          npx supabase@latest link --project-ref "${{
-          secrets.SUPABASE_PROD_PROJECT_REF }}"
+          npx supabase@${{ env.SUPABASE_CLI_VERSION }} link --project-ref "${{
+          secrets.SUPABASE_PROD_PROJECT_REF }}" --yes
 
       - name: Push migrations (PROD)
-        run: npx supabase@latest db push
+        run: npx supabase@${{ env.SUPABASE_CLI_VERSION }} db push
 
       - name: Deploy to Vercel (PROD)
         uses: amondnet/vercel-action@v25

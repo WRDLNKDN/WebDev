@@ -30,10 +30,6 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Pin the CLI so flags do not change under you
-  SUPABASE_CLI_VERSION: 2.75.4
-
 jobs:
   deploy-uat:
     name: Deploy UAT (DB + Vercel)
@@ -45,16 +41,13 @@ jobs:
       SUPABASE_UAT_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID:
-        ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref:
-            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
-            github.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -111,9 +104,7 @@ jobs:
 
     # Push to main always attempts prod (approval gate is the production environment reviewers)
     # Manual only runs if deploy_prod=true
-    if:
-      ${{ github.event_name == 'push' || (github.event_name ==
-      'workflow_dispatch' && inputs.deploy_prod) }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_prod) }}
 
     environment: production
 
@@ -122,16 +113,13 @@ jobs:
       SUPABASE_PROD_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID:
-        ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD || secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref:
-            ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
-            github.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5

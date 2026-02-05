@@ -1,8 +1,12 @@
+# .github/workflows/deploy.yml
 name: Deploy UAT then Prod (approval gated)
 
 on:
+  # Automatic UAT deploy when main updates
   push:
     branches: [main]
+
+  # Manual deploy button (UAT always, PROD optional)
   workflow_dispatch:
     inputs:
       ref:
@@ -21,41 +25,37 @@ concurrency:
 
 jobs:
   deploy-uat:
-    name: 🚧 Deploy UAT (DB + Vercel)
+    name: Deploy UAT (DB + Vercel)
     runs-on: ubuntu-latest
     environment:
       name: uat
     steps:
-      - name: ⬇️ Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref:
             ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
             github.sha }}
 
-      - name: 🧰 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔧 Install Supabase CLI
-        run: npm i -g supabase
-
-      - name: 🔐 Supabase login
+      - name: Supabase login
         run:
-          supabase login --access-token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+          npx supabase@latest login --access-token "${{
+          secrets.SUPABASE_ACCESS_TOKEN }}"
 
-      - name: 🔗 Link Supabase (UAT)
+      - name: Link Supabase (UAT)
         run:
-          supabase link --project-ref "${{ secrets.SUPABASE_UAT_PROJECT_REF }}"
+          npx supabase@latest link --project-ref "${{
+          secrets.SUPABASE_UAT_PROJECT_REF }}"
 
-      - name: 🗃️ Push migrations (UAT)
-        run: supabase db push
+      - name: Push migrations (UAT)
+        run: npx supabase@latest db push
 
-      - name: ▲ Deploy to Vercel (UAT)
+      - name: Deploy to Vercel (UAT)
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -64,45 +64,45 @@ jobs:
           vercel-args: --prod
 
   deploy-prod:
-    name: 🚀 Deploy PROD (DB + Vercel)
+    name: Deploy PROD (DB + Vercel)
     runs-on: ubuntu-latest
     needs: deploy-uat
+
+    # Auto deploy PROD on push to main, OR manual deploy when deploy_prod=true
     if:
       ${{ github.event_name == 'push' || (github.event_name ==
       'workflow_dispatch' && inputs.deploy_prod == true) }}
+
     environment:
       name: production
+
     steps:
-      - name: ⬇️ Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref:
             ${{ github.event_name == 'workflow_dispatch' && inputs.ref ||
             github.sha }}
 
-      - name: 🧰 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔧 Install Supabase CLI
-        run: npm i -g supabase
-
-      - name: 🔐 Supabase login
+      - name: Supabase login
         run:
-          supabase login --access-token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+          npx supabase@latest login --access-token "${{
+          secrets.SUPABASE_ACCESS_TOKEN }}"
 
-      - name: 🔗 Link Supabase (PROD)
+      - name: Link Supabase (PROD)
         run:
-          supabase link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
+          npx supabase@latest link --project-ref "${{
+          secrets.SUPABASE_PROD_PROJECT_REF }}"
 
-      - name: 🗃️ Push migrations (PROD)
-        run: supabase db push
+      - name: Push migrations (PROD)
+        run: npx supabase@latest db push
 
-      - name: ▲ Deploy to Vercel (PROD)
+      - name: Deploy to Vercel (PROD)
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}

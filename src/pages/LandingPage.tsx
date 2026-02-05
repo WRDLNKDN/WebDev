@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
-import { Box, CircularProgress, Container } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, CircularProgress, Container, Grid, Paper } from '@mui/material';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 
@@ -11,8 +11,10 @@ import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { IdentityHeader } from '../components/profile/IdentityHeader';
 
-// --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT (lazy to avoid large chunk in main bundle) ---
-import { lazy, Suspense } from 'react';
+// --- NEW WIDGET SECTOR ---
+import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
+
+// --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
 import { NotFoundPage } from './NotFoundPage';
 
 const DivergencePage = lazy(() =>
@@ -21,7 +23,7 @@ const DivergencePage = lazy(() =>
 
 // LOGIC & TYPES
 import { supabase } from '../lib/supabaseClient';
-import { SYNERGY_BG } from '../theme/candyStyles'; // Using global asset
+import { GLASS_CARD, SYNERGY_BG } from '../theme/candyStyles';
 import type { PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
@@ -41,7 +43,6 @@ export const LandingPage = () => {
 
   useEffect(() => {
     const fetchPublicData = async () => {
-      // Don't fetch if it's a secret handle, just let it fall through
       if (isSecretHandle) {
         setLoading(false);
         return;
@@ -49,7 +50,6 @@ export const LandingPage = () => {
 
       try {
         setLoading(true);
-        // Explicit typing to clear red squiggles
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -88,7 +88,6 @@ export const LandingPage = () => {
   if (loading) return <LandingPageSkeleton />;
 
   // --- DIVERGENCE CHECK ---
-  // 1. If it's a secret handle, show the game (lazy-loaded).
   if (isSecretHandle)
     return (
       <Suspense
@@ -102,7 +101,6 @@ export const LandingPage = () => {
       </Suspense>
     );
 
-  // 2. If it's just a missing profile, show the Professional 404.
   if (!profile) return <NotFoundPage />;
 
   const creds = profile.nerd_creds as Record<string, unknown>;
@@ -121,7 +119,7 @@ export const LandingPage = () => {
           minHeight: '100vh',
           backgroundImage: SYNERGY_BG,
           backgroundSize: 'cover',
-          backgroundAttachment: 'fixed', // Fixed for parallax feel
+          backgroundAttachment: 'fixed',
           py: 8,
         }}
       >
@@ -139,6 +137,7 @@ export const LandingPage = () => {
         />
 
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+          {/* 1. IDENTITY HEADER (Full Width) */}
           <IdentityHeader
             displayName={safeStr(profile.display_name)}
             tagline={safeStr(profile.tagline)}
@@ -148,13 +147,38 @@ export const LandingPage = () => {
             statusMessage={safeStr(creds.status_message)}
           />
 
-          <PortfolioFrame title="Portfolio Frame">
-            <ResumeCard url={profile.resume_url} />
+          {/* 2. THE GRID LAYOUT */}
+          {/* Note: 'container' prop is preserved for spacing context */}
+          <Grid container spacing={4} sx={{ mt: 2 }}>
+            {/* LEFT COLUMN: The "Widget" Sector */}
+            {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 4 }}' */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  ...GLASS_CARD,
+                  p: 3,
+                  mb: 4,
+                  position: { md: 'sticky' },
+                  top: { md: 24 },
+                }}
+              >
+                <ProfileLinksWidget socials={profile.socials || []} />
+              </Paper>
+            </Grid>
 
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </PortfolioFrame>
+            {/* RIGHT COLUMN: The "Main Content" Sector */}
+            {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 8 }}' */}
+            <Grid size={{ xs: 12, md: 8 }}>
+              <PortfolioFrame title="Portfolio Frame">
+                <ResumeCard url={profile.resume_url} />
+
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </PortfolioFrame>
+            </Grid>
+          </Grid>
         </Container>
       </Box>
     </>

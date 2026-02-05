@@ -1,6 +1,7 @@
 import EditIcon from '@mui/icons-material/Edit';
+import LinkIcon from '@mui/icons-material/Link';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Box, Button, Container } from '@mui/material';
+import { Box, Button, Container, Grid, Paper, Stack } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,9 +15,14 @@ import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../components/profile/IdentityHeader';
 
+// --- NEW WIDGET SECTORS ---
+import { EditLinksDialog } from '../components/profile/EditLinksDialog';
+import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
+
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabaseClient';
+import { GLASS_CARD } from '../theme/candyStyles';
 import type { NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
 
@@ -29,6 +35,9 @@ export const Dashboard = () => {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+
+  // WIRED UP: This controls the new Link Manager Modal
+  const [isLinksOpen, setIsLinksOpen] = useState(false);
 
   // AUTH GUARD
   useEffect(() => {
@@ -123,34 +132,97 @@ export const Dashboard = () => {
           }
         />
 
-        {/* 2. PORTFOLIO SECTOR */}
-        <PortfolioFrame title="Portfolio Frame">
-          {/* INITIALIZE ACTION */}
-          <AddProjectCard onClick={() => setIsAddProjectOpen(true)} />
+        {/* 2. THE GRID LAYOUT */}
+        <Grid container spacing={4} sx={{ mt: 2 }}>
+          {/* LEFT COLUMN: The "Links Widget" Editor */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                ...GLASS_CARD,
+                p: 3,
+                mb: 4,
+                position: { md: 'sticky' },
+                top: { md: 24 },
+              }}
+            >
+              {/* Editor Action: Manage Links */}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Box sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  LINKS
+                </Box>
+                <Button
+                  size="small"
+                  startIcon={<LinkIcon />}
+                  onClick={() => setIsLinksOpen(true)}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  Manage
+                </Button>
+              </Stack>
 
-          {/* VERIFIED DOCUMENT ACTION */}
-          <ResumeCard
-            url={profile?.resume_url}
-            onUpload={uploadResume}
-            isOwner
-          />
+              {/* The Display Widget (Preview) */}
+              <ProfileLinksWidget socials={profile?.socials || []} />
 
-          {/* ASYCHRONOUS PROJECT LIST */}
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </PortfolioFrame>
+              {/* ESCAPED QUOTES FIX */}
+              {(!profile?.socials || profile.socials.length === 0) && (
+                <Box
+                  sx={{
+                    color: 'text.disabled',
+                    fontSize: '0.85rem',
+                    fontStyle: 'italic',
+                    mt: 1,
+                  }}
+                >
+                  No links visible. Click &apos;Manage&apos; to add.
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+
+          {/* RIGHT COLUMN: The "Portfolio" Sector */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <PortfolioFrame title="Portfolio Frame">
+              <AddProjectCard onClick={() => setIsAddProjectOpen(true)} />
+
+              <ResumeCard
+                url={profile?.resume_url}
+                onUpload={uploadResume}
+                isOwner
+              />
+
+              {projects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </PortfolioFrame>
+          </Grid>
+        </Grid>
       </Container>
 
       {/* OVERLAY DIALOGS */}
       {profile && (
-        <EditProfileDialog
-          open={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
-          profile={profile}
-          onUpdate={updateProfile}
-          onUpload={uploadAvatar}
-        />
+        <>
+          <EditProfileDialog
+            open={isEditOpen}
+            onClose={() => setIsEditOpen(false)}
+            profile={profile}
+            onUpdate={updateProfile}
+            onUpload={uploadAvatar}
+          />
+
+          {/* THE NEW MANAGER */}
+          <EditLinksDialog
+            open={isLinksOpen}
+            onClose={() => setIsLinksOpen(false)}
+            currentLinks={profile.socials || []}
+            onUpdate={updateProfile}
+          />
+        </>
       )}
 
       <AddProjectDialog

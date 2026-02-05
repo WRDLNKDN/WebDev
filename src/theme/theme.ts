@@ -50,51 +50,85 @@ const FOCUS_RING = {
 const theme = createTheme({
   palette: PALETTE,
 
-  // TYPOGRAPHY: The "Brand vs Utility" Protocol
+  // TYPOGRAPHY: The "Fluid Scaling" Protocol
+  // clamp(MIN, VAL, MAX) -> Scales smoothly between MIN and MAX
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    fontSize: 16, // Mobile-First readability base
+    fontSize: 16,
     htmlFontSize: 16,
+
+    // H1: Hero Titles (Mobile: 32px -> Desktop: 72px)
     h1: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 700,
-      lineHeight: 1.2,
+      lineHeight: 1.1,
+      fontSize: 'clamp(2rem, 5vw + 1rem, 4.5rem)',
     },
+
+    // H2: Section Headers (Mobile: 24px -> Desktop: 48px)
     h2: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 600,
-      lineHeight: 1.3,
+      lineHeight: 1.2,
+      fontSize: 'clamp(1.5rem, 4vw + 1rem, 3rem)',
     },
+
+    // H3: Card Titles (Mobile: 20px -> Desktop: 36px)
     h3: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 600,
       lineHeight: 1.3,
+      fontSize: 'clamp(1.25rem, 3vw + 1rem, 2.25rem)',
     },
+
+    // H4: Subtitles (Mobile: 18px -> Desktop: 28px)
     h4: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 500,
       lineHeight: 1.4,
+      fontSize: 'clamp(1.125rem, 2vw + 1rem, 1.75rem)',
     },
+
+    // H5: Dense Headers
     h5: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 500,
       lineHeight: 1.4,
+      fontSize: 'clamp(1.1rem, 1.5vw + 1rem, 1.5rem)',
     },
+
+    // H6: Micro Headers
     h6: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 500,
       lineHeight: 1.5,
+      fontSize: 'clamp(1rem, 1vw + 1rem, 1.25rem)',
     },
+
     subtitle1: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
     subtitle2: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
+
     button: {
       fontFamily: '"Poppins", sans-serif',
       fontWeight: 600,
       textTransform: 'none',
     },
-    body1: { fontSize: '1rem', lineHeight: 1.6 }, // 16px - Optimal reading
-    body2: { fontSize: '0.875rem', lineHeight: 1.5 }, // 14px - Utilities
-    caption: { fontSize: '0.75rem', lineHeight: 1.5 }, // 12px - Disclaimers
+
+    // Body text scales slightly for better reading on large monitors
+    body1: {
+      fontSize: 'clamp(1rem, 0.5vw + 1rem, 1.125rem)',
+      lineHeight: 1.6,
+    },
+
+    body2: {
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
+    },
+
+    caption: {
+      fontSize: '0.75rem',
+      lineHeight: 1.5,
+    },
   },
 
   // COMPONENT OVERRIDES: The Compliance Engine

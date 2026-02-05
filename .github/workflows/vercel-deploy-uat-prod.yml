@@ -1,3 +1,4 @@
+# .github/workflows/deploy-uat-prod.yml
 name: Deploy UAT then PROD (approval gated)
 
 on:
@@ -48,38 +49,51 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies (for Vercel CLI pin)
+      - name:
+          Install dependencies (pins Vercel CLI if you keep it in
+          devDependencies)
         run: npm ci
 
-      # Supabase: authenticate + push migrations to UAT project
+      # -----------------------
+      # Supabase (UAT)
+      # -----------------------
       - name: Supabase login (token)
-        run:
-          npx supabase@latest login --token "${SUPABASE_ACCESS_TOKEN}"
-          --no-browser
+        run: |
+          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
 
       - name: Supabase link (UAT)
-        run:
-          npx supabase@latest link --project-ref "${SUPABASE_UAT_PROJECT_REF}"
+        run: |
+          npx supabase@latest link --project-ref "$SUPABASE_UAT_PROJECT_REF"
 
       - name: Supabase db push (UAT)
-        run: npx supabase@latest db push
+        run: |
+          npx supabase@latest db push
 
-      # Vercel: deploy UAT using pinned CLI from node_modules via `npx vercel`
+      # -----------------------
+      # Vercel (UAT) - hard link project for CLI
+      # -----------------------
+      - name: Link Vercel project (UAT)
+        run: |
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          { "orgId": "${VERCEL_ORG_ID}", "projectId": "${VERCEL_PROJECT_ID}" }
+          EOF
+
       - name: Vercel pull (UAT)
-        run:
-          npx vercel pull --yes --environment=production --token
-          "${VERCEL_TOKEN}"
+        run: |
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (UAT)
-        run: npx vercel deploy --prod --token "${VERCEL_TOKEN}"
+        run: |
+          npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
 
   deploy-prod:
     name: Deploy PROD (DB + Vercel)
     runs-on: ubuntu-latest
     needs: deploy-uat
 
-    # On push to main: run (approval gate comes from "production" environment)
-    # On manual: run only if deploy_prod=true
+    # Push to main always attempts prod (approval gate is the production environment reviewers)
+    # Manual only runs if deploy_prod=true
     if:
       ${{ github.event_name == 'push' || (github.event_name ==
       'workflow_dispatch' && inputs.deploy_prod) }}
@@ -108,27 +122,40 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies (for Vercel CLI pin)
+      - name:
+          Install dependencies (pins Vercel CLI if you keep it in
+          devDependencies)
         run: npm ci
 
-      # Supabase: authenticate + push migrations to PROD project
+      # -----------------------
+      # Supabase (PROD)
+      # -----------------------
       - name: Supabase login (token)
-        run:
-          npx supabase@latest login --token "${SUPABASE_ACCESS_TOKEN}"
-          --no-browser
+        run: |
+          npx supabase@latest login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
 
       - name: Supabase link (PROD)
-        run:
-          npx supabase@latest link --project-ref "${SUPABASE_PROD_PROJECT_REF}"
+        run: |
+          npx supabase@latest link --project-ref "$SUPABASE_PROD_PROJECT_REF"
 
       - name: Supabase db push (PROD)
-        run: npx supabase@latest db push
+        run: |
+          npx supabase@latest db push
 
-      # Vercel: deploy PROD using pinned CLI from node_modules via `npx vercel`
+      # -----------------------
+      # Vercel (PROD) - hard link project for CLI
+      # -----------------------
+      - name: Link Vercel project (PROD)
+        run: |
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          { "orgId": "${VERCEL_ORG_ID}", "projectId": "${VERCEL_PROJECT_ID}" }
+          EOF
+
       - name: Vercel pull (PROD)
-        run:
-          npx vercel pull --yes --environment=production --token
-          "${VERCEL_TOKEN}"
+        run: |
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Vercel deploy (PROD)
-        run: npx vercel deploy --prod --token "${VERCEL_TOKEN}"
+        run: |
+          npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"

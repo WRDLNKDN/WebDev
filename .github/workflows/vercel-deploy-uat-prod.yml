@@ -56,7 +56,9 @@ jobs:
 
       # Pull preview env vars/config (optional, but nice if you rely on Vercel envs)
       - name: Vercel pull (preview)
-        run: npx --yes vercel@latest pull --yes --environment=preview --token "$VERCEL_TOKEN"
+        run:
+          npx --yes vercel@latest pull --yes --environment=preview --token
+          "$VERCEL_TOKEN"
 
       # Build locally so tsc is guaranteed available
       - name: Build locally
@@ -64,7 +66,9 @@ jobs:
 
       # Deploy prebuilt output to UAT project as a PREVIEW deploy
       - name: Vercel deploy (prebuilt preview)
-        run: npx --yes vercel@latest deploy --prebuilt --yes --token "$VERCEL_TOKEN"
+        run:
+          npx --yes vercel@latest deploy --prebuilt --yes --token
+          "$VERCEL_TOKEN"
 
   deploy-prod:
     name: Deploy PROD (wrdlnkdn, production)
@@ -106,11 +110,15 @@ jobs:
           cat .vercel/project.json
 
       - name: Vercel pull (production)
-        run: npx --yes vercel@latest pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run:
+          npx --yes vercel@latest pull --yes --environment=production --token
+          "$VERCEL_TOKEN"
 
       - name: Build locally
         run: npm run build
 
       # Deploy prebuilt output to PROD project as a PRODUCTION deploy
       - name: Vercel deploy (prebuilt production)
-        run: npx --yes vercel@latest deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"
+        run:
+          npx --yes vercel@latest deploy --prebuilt --prod --yes --token
+          "$VERCEL_TOKEN"

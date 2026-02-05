@@ -1,4 +1,4 @@
-# Contributors:
+# Contributors
 
 - **Amber Adamson** [GitHub](https://github.com/aadamsongit)
   [LinkedIn](https://www.linkedin.com/in/amber-adamson-a33a3860/)

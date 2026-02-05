@@ -11,10 +11,13 @@ deployment on Vercel.
 ## Setup & Development
 
 1. Install dependencies (if any):
+
    ```sh
    npm install
    ```
+
 2. Start the backend (if not using serverless):
+
    ```sh
    node api-hello.js
    ```

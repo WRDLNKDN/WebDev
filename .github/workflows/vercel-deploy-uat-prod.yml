@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref to deploy (branch, tag, or SHA). Default: main'
+        description: 'Git ref to deploy (branch, tag, SHA). Default: main'
         required: false
         default: 'main'
       deploy_prod:
@@ -23,16 +23,14 @@ concurrency:
 
 jobs:
   deploy-uat:
-    name: Deploy UAT (Supabase + Vercel UAT Project)
+    name: Deploy UAT (Supabase + Vercel)
     runs-on: ubuntu-latest
     environment: uat
 
     env:
-      # Supabase (UAT)
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
 
-      # Vercel (UAT project)
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
@@ -51,17 +49,19 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Verify required secrets (UAT)
         run: |
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
-          [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
-          [ -n "${VERCEL_TOKEN:-}" ]         || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ]        || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ]    || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
+          [ -n "${SUPABASE_PROJECT_REF:-}" ]   || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
+          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
+          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
+          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
+
+      # Your repo has vercel in devDependencies in some versions, so keep npm ci.
+      # Also ensures TypeScript and Vite are present if Vercel needs them.
+      - name: Install dependencies
+        run: npm ci
 
       # -----------------------
       # Supabase migrations (UAT)
@@ -80,7 +80,6 @@ jobs:
 
       # -----------------------
       # Vercel deploy (UAT)
-      # IMPORTANT: We link the UAT *Vercel project* via .vercel/project.json
       # -----------------------
       - name: Link Vercel project (UAT)
         run: |
@@ -94,9 +93,16 @@ jobs:
       - name: Vercel pull (UAT)
         run: npx --yes vercel@latest pull --yes --token "$VERCEL_TOKEN"
 
-      # Build locally so tsc is guaranteed available
-      - name: Build locally
-        run: npm run build
+      - name: Vercel build (UAT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest build --token "$VERCEL_TOKEN"
+          if [ ! -d ".vercel/output" ]; then
+            echo "::error::.vercel/output not found after vercel build (UAT)."
+            ls -la .vercel || true
+            exit 1
+          fi
 
       - name: Vercel deploy (UAT)
         run:
@@ -104,26 +110,20 @@ jobs:
           "$VERCEL_TOKEN"
 
   deploy-prod:
-    name: Deploy PROD (Supabase + Vercel PROD Project)
+    name: Deploy PROD (Supabase + Vercel, approval gated)
     runs-on: ubuntu-latest
     needs: deploy-uat
 
-    # This is what makes PROD require approval:
-    # Configure GitHub Environment "production" with Required Reviewers.
-    environment: production
-
-    # Push to main: attempt prod (approval gate enforced by environment)
-    # Manual: only run if deploy_prod=true
+    # On push to main: attempt prod (approval gate is enforced by the production environment)
+    # On manual: only run prod if deploy_prod=true
     if:
       ${{ github.event_name == 'push' || (github.event_name ==
       'workflow_dispatch' && inputs.deploy_prod) }}
 
     env:
-      # Supabase (PROD)
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
 
-      # Vercel (PROD project)
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
@@ -142,17 +142,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Verify required secrets (PROD)
         run: |
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
-          [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
-          [ -n "${VERCEL_TOKEN:-}" ]         || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ]        || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ]    || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
+          [ -n "${SUPABASE_PROJECT_REF:-}" ]   || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
+          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
+          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
+          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
+
+      - name: Install dependencies
+        run: npm ci
 
       # -----------------------
       # Supabase migrations (PROD)
@@ -184,11 +184,19 @@ jobs:
       - name: Vercel pull (PROD)
         run: npx --yes vercel@latest pull --yes --token "$VERCEL_TOKEN"
 
-      - name: Build locally
-        run: npm run build
+      - name: Vercel build (PROD)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
+          if [ ! -d ".vercel/output" ]; then
+            echo "::error::.vercel/output not found after vercel build --prod (PROD)."
+            ls -la .vercel || true
+            exit 1
+          fi
 
       # Deploy prebuilt output to PROD project as a PRODUCTION deploy
       - name: Vercel deploy (prebuilt production)
         run:
-          npx --yes vercel@latest deploy --prebuilt --prod --yes --token
-          "$VERCEL_TOKEN"
+          npx --yes vercel@latest deploy --prebuilt --prod --prebuilt --yes
+          --token "$VERCEL_TOKEN"

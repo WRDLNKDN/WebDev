@@ -12,13 +12,13 @@ on:
         required: false
         default: 'main'
       deploy_prod:
-        description: 'Also deploy production (requires approval)'
+        description: Deploy production (requires approval)
         required: false
         type: boolean
         default: false
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: vercel-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -75,8 +75,8 @@ jobs:
         run:
           npx --yes supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
 
-      - name: Supabase db push (UAT)
-        run: npx --yes supabase@latest db push
+      - name: Install deps (includes dev deps)
+        run: npm ci
 
       # -----------------------
       # Vercel deploy (UAT)
@@ -94,8 +94,9 @@ jobs:
       - name: Vercel pull (UAT)
         run: npx --yes vercel@latest pull --yes --token "$VERCEL_TOKEN"
 
-      - name: Vercel build (UAT)
-        run: npx --yes vercel@latest build --token "$VERCEL_TOKEN"
+      # Build locally so tsc is guaranteed available
+      - name: Build locally
+        run: npm run build
 
       - name: Vercel deploy (UAT)
         run:
@@ -165,8 +166,8 @@ jobs:
         run:
           npx --yes supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
 
-      - name: Supabase db push (PROD)
-        run: npx --yes supabase@latest db push
+      - name: Install deps (includes dev deps)
+        run: npm ci
 
       # -----------------------
       # Vercel deploy (PROD)
@@ -183,10 +184,11 @@ jobs:
       - name: Vercel pull (PROD)
         run: npx --yes vercel@latest pull --yes --token "$VERCEL_TOKEN"
 
-      - name: Vercel build (PROD)
-        run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
+      - name: Build locally
+        run: npm run build
 
-      - name: Vercel deploy (PROD)
+      # Deploy prebuilt output to PROD project as a PRODUCTION deploy
+      - name: Vercel deploy (prebuilt production)
         run:
           npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"

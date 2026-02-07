@@ -1,5 +1,7 @@
 # Contributing Guide
 
+See our Contributors Onboarding wiki for comprehensive information on how to get involved! https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
+
 ## Introduction
 
 Welcome! Thank you for considering making a contribution to the project. A
@@ -28,15 +30,6 @@ ways:
 
 Any help with testing, in particular on Safari browsers, is particularly
 appreciated!!
-
-## What Contributions Are Not Needed (Currently)
-
-- We are currently not looking for any more contributions to the UI mock-ups,
-  but this may change in the future.
-- Contributions that aim to recreate the pixelated, old-school feel of the
-  original Minesweeper or many of its clones. We have very carefully chosen
-  modern styling to differentiate our version and maintain a consistent,
-  contemporary user experience.
 
 ## Ground Rules
 

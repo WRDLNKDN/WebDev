@@ -1,4 +1,5 @@
 // src/pages/Signup.tsx
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -7,11 +8,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
 
 import { useSignup } from '../context/useSignup';
 import { supabase } from '../lib/supabaseClient';
-import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
 
 import { CompleteStep } from '../components/signup/CompleteStep';
 import { IdentityStep } from '../components/signup/IdentityStep';
@@ -38,7 +37,7 @@ const BG_SX = {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   overflow: 'hidden',
-  '::before': {
+  '&::before': {
     content: '""',
     position: 'absolute',
     inset: 0,
@@ -67,24 +66,26 @@ export const Signup = () => {
 
   useEffect(() => {
     let cancelled = false;
+
     const verifySession = async () => {
       try {
+        setError(null);
         setChecking(true);
-        const { data, error: sessErr } = await supabase.auth.getSession();
+
+        const { error: sessErr } = await supabase.auth.getSession();
         if (sessErr) throw sessErr;
 
         if (!cancelled) {
           setChecking(false);
         }
       } catch (e: unknown) {
-        // FIXED: Purged 'any' for high-integrity typing
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : 'Verification Failed';
-          setError(msg);
+          setError(toMessage(e));
           setChecking(false);
         }
       }
     };
+
     void verifySession();
     return () => {
       cancelled = true;
@@ -92,7 +93,6 @@ export const Signup = () => {
   }, []);
 
   const renderStep = () => {
-    // FIXED: Using React.ReactElement to satisfy the compiler's strict audit
     const steps: Record<string, React.ReactElement> = {
       welcome: <WelcomeStep />,
       identity: <IdentityStep />,
@@ -105,27 +105,27 @@ export const Signup = () => {
 
   const isFlowActive = !['welcome', 'complete'].includes(state.currentStep);
 
-  // --- RENDER SECTOR: SYSTEM INITIALIZING ---
-  if (checking)
+  if (checking) {
     return (
-      <Box sx={SIGNUP_BG}>
-        <Container maxWidth="sm" sx={{ ...GLASS_CARD, p: 4, zIndex: 1 }}>
+      <Box sx={BG_SX}>
+        <Container maxWidth="sm" sx={{ ...CARD_SX, p: 4, zIndex: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <CircularProgress size={20} thickness={5} />
+            <CircularProgress size={20} thickness={5} aria-label="Loading" />
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Initializing Human OS Signup...
+              Loading signup…
             </Typography>
           </Stack>
         </Container>
       </Box>
     );
+  }
 
   return (
-    <Box sx={SIGNUP_BG}>
+    <Box sx={BG_SX}>
       <Container
         maxWidth={state.currentStep === 'profile' ? 'md' : 'sm'}
         sx={{
-          ...GLASS_CARD,
+          ...CARD_SX,
           p: { xs: 3, md: 5 },
           zIndex: 1,
           transition: 'max-width 0.4s ease',
@@ -139,6 +139,13 @@ export const Signup = () => {
             />
           </Box>
         )}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
         {renderStep()}
       </Container>
     </Box>

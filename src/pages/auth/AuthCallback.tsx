@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
+import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 function mapSupabaseProvider(user: {
   identities?: { provider?: string }[];

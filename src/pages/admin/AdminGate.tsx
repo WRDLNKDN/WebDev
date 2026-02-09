@@ -15,7 +15,7 @@ const BG_SX = {
   px: 2,
   py: 6,
   backgroundColor: '#05070f',
-  backgroundImage: 'url(/landing-bg.png)',
+  backgroundImage: 'url(/assets/landing-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   overflow: 'hidden',

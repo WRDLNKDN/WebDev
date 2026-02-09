@@ -87,6 +87,7 @@ export type Database = {
           join_reason: string[] | null
           participation_style: string[] | null
           additional_context: string | null
+          policy_version: string | null
           reviewed_by: string | null
           reviewed_at: string | null
           created_at: string
@@ -108,6 +109,7 @@ export type Database = {
           join_reason?: string[] | null
           participation_style?: string[] | null
           additional_context?: string | null
+          policy_version?: string | null
           reviewed_by?: string | null
           reviewed_at?: string | null
           created_at?: string
@@ -129,6 +131,7 @@ export type Database = {
           join_reason?: string[] | null
           participation_style?: string[] | null
           additional_context?: string | null
+          policy_version?: string | null
           reviewed_by?: string | null
           reviewed_at?: string | null
           created_at?: string

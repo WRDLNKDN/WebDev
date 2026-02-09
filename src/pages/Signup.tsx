@@ -33,7 +33,7 @@ const BG_SX = {
   px: 2,
   py: 6,
   backgroundColor: '#05070f',
-  backgroundImage: 'url(/landing-bg.png)',
+  backgroundImage: 'url(/assets/landing-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   overflow: 'hidden',
@@ -123,7 +123,11 @@ export const Signup = () => {
   return (
     <Box sx={BG_SX}>
       <Container
-        maxWidth={state.currentStep === 'profile' ? 'md' : 'sm'}
+        maxWidth={
+          state.currentStep === 'welcome' || state.currentStep === 'complete'
+            ? 'sm'
+            : 'md'
+        }
         sx={{
           ...CARD_SX,
           p: { xs: 3, md: 5 },

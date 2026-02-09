@@ -7,12 +7,17 @@ export type SignupStep =
 
 export type IdentityProvider = 'google' | 'microsoft';
 
+/** Policy version string for Terms and Community Guidelines (e.g. v2026.02). */
+export const POLICY_VERSION = 'v2026.02';
+
 export type IdentityData = {
   provider: IdentityProvider;
   userId: string;
   email: string;
   termsAccepted: boolean;
   guidelinesAccepted: boolean;
+  /** Version of policies accepted (e.g. v2026.02). */
+  policyVersion: string;
   timestamp: string;
 };
 

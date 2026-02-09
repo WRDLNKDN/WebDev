@@ -1,14 +1,21 @@
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
   AppBar,
   Box,
   Button,
   CircularProgress,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 
 export const Navbar = () => {
@@ -16,6 +23,7 @@ export const Navbar = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
 
   // Weirdling rotation state
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
@@ -82,22 +90,21 @@ export const Navbar = () => {
     };
   }, [session]);
 
-  const signInGoogle = async () => {
+  const handleSignIn = async (provider: OAuthProvider) => {
+    setSignInAnchor(null);
     setBusy(true);
 
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/dashboard',
+        '/directory',
       )}`;
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      });
+      const { data, error } = await signInWithOAuth(provider, { redirectTo });
 
       if (error) throw error;
-    } catch (error) {
-      console.error(error);
+      if (data?.url) window.location.href = data.url;
+    } catch (err) {
+      console.error(err);
       setBusy(false);
     }
   };
@@ -163,20 +170,57 @@ export const Navbar = () => {
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Menu */}
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="center">
           {!session ? (
-            <Button
-              variant="outlined"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
-              onClick={() => void signInGoogle()}
-              disabled={busy}
-            >
-              {busy ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Sign In'
-              )}
-            </Button>
+            <>
+              <Button
+                component={RouterLink}
+                to="/signup"
+                sx={{ color: 'white' }}
+              >
+                Create account
+              </Button>
+              <Button
+                variant="outlined"
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+                onClick={(e) => setSignInAnchor(e.currentTarget)}
+                disabled={busy}
+                endIcon={
+                  busy ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : undefined
+                }
+              >
+                Sign in
+              </Button>
+              <Menu
+                anchorEl={signInAnchor}
+                open={Boolean(signInAnchor)}
+                onClose={() => setSignInAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{ paper: { sx: { minWidth: 200 } } }}
+              >
+                <MenuItem
+                  onClick={() => void handleSignIn('google')}
+                  disabled={busy}
+                >
+                  <ListItemIcon>
+                    <GoogleIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Sign in with Google</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => void handleSignIn('azure')}
+                  disabled={busy}
+                >
+                  <ListItemIcon>
+                    <MicrosoftIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Sign in with Microsoft</ListItemText>
+                </MenuItem>
+              </Menu>
+            </>
           ) : (
             <>
               {isAdmin && (

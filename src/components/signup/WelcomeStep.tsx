@@ -11,7 +11,7 @@ import './signup.css';
 import './WelcomeStep.css';
 
 export const WelcomeStep = () => {
-  const { goToStep } = useSignup();
+  const { goToStep, markComplete } = useSignup();
 
   return (
     <Container maxWidth="sm">
@@ -34,7 +34,10 @@ export const WelcomeStep = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={() => goToStep('identity')}
+            onClick={() => {
+              markComplete('welcome');
+              goToStep('identity');
+            }}
           >
             Start signup
           </Button>

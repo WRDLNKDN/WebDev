@@ -54,7 +54,7 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 
 4. **Add to `.env`** at project root (both must be non-empty):
 
-   ```
+   ```text
    SUPABASE_AZURE_CLIENT_ID=your-application-client-id
    SUPABASE_AZURE_CLIENT_SECRET=your-client-secret-value
    ```

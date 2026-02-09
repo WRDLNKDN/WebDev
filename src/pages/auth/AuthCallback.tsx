@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
+import { POLICY_VERSION } from '../../types/signup';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 function mapSupabaseProvider(user: {
@@ -86,6 +87,7 @@ export const AuthCallback = () => {
               email: user.email || '',
               termsAccepted: true,
               guidelinesAccepted: true,
+              policyVersion: POLICY_VERSION,
               timestamp: new Date().toISOString(),
             });
 

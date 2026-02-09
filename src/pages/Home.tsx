@@ -35,7 +35,7 @@ const BG_SX = {
   px: 2,
   py: 6,
   backgroundColor: '#05070f',
-  backgroundImage: 'url(/landing-bg.png)',
+  backgroundImage: 'url(/assets/landing-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   overflow: 'hidden',
@@ -68,6 +68,7 @@ export const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
+  const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +134,31 @@ export const Home = () => {
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
         '/directory',
+      )}`;
+
+      const { data, error: signInError } = await signInWithOAuth(provider, {
+        redirectTo,
+      });
+
+      if (signInError) throw signInError;
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+    } catch (e: unknown) {
+      setError(toMessage(e));
+      setBusy(false);
+    }
+  };
+
+  const handleCreateAccount = async (provider: OAuthProvider) => {
+    setCreateAnchor(null);
+    setBusy(true);
+    setError(null);
+
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+        '/signup',
       )}`;
 
       const { data, error: signInError } = await signInWithOAuth(provider, {
@@ -228,14 +254,44 @@ export const Home = () => {
             {!session ? (
               <React.Fragment>
                 <Button
-                  component={RouterLink}
-                  to="/signup"
                   variant="contained"
                   size="large"
                   disabled={busy}
+                  onClick={(e) => setCreateAnchor(e.currentTarget)}
+                  endIcon={
+                    busy ? (
+                      <CircularProgress size={16} aria-label="Signing up" />
+                    ) : undefined
+                  }
                 >
                   Create account
                 </Button>
+                <Menu
+                  anchorEl={createAnchor}
+                  open={Boolean(createAnchor)}
+                  onClose={() => setCreateAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                >
+                  <MenuItem
+                    onClick={() => void handleCreateAccount('google')}
+                    sx={{ minWidth: 220 }}
+                  >
+                    <ListItemIcon>
+                      <GoogleIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Create account with Google</ListItemText>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => void handleCreateAccount('azure')}
+                    sx={{ minWidth: 220 }}
+                  >
+                    <ListItemIcon>
+                      <MicrosoftIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Create account with Microsoft</ListItemText>
+                  </MenuItem>
+                </Menu>
 
                 <Button
                   variant="outlined"

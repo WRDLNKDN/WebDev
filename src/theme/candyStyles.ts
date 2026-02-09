@@ -101,7 +101,7 @@ export const SIGNUP_BG = {
   placeItems: 'center',
   px: 2,
   py: 6,
-  backgroundImage: 'url(/landing-bg.png)',
+  backgroundImage: 'url(/assets/landing-bg.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundAttachment: 'fixed',

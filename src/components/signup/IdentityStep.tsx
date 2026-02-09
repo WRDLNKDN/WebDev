@@ -6,7 +6,6 @@ import {
   Button,
   Checkbox,
   CircularProgress,
-  Container,
   FormControlLabel,
   ListItemIcon,
   ListItemText,
@@ -22,6 +21,7 @@ import { useSignup } from '../../context/useSignup';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
+import { POLICY_VERSION } from '../../types/signup';
 import './IdentityStep.css';
 import './signup.css';
 
@@ -35,7 +35,7 @@ const mapSupabaseProvider = (user: {
 };
 
 export const IdentityStep = () => {
-  const { goToStep, markComplete, setIdentity } = useSignup();
+  const { state, goToStep, markComplete, setIdentity } = useSignup();
 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [guidelinesAccepted, setGuidelinesAccepted] = useState(false);
@@ -53,6 +53,13 @@ export const IdentityStep = () => {
   const hasAdvanced = useRef(false);
 
   const canProceed = termsAccepted && guidelinesAccepted;
+
+  // State verification: ensure user has viewed WelcomeStep to prevent zombie sessions
+  useEffect(() => {
+    if (!state.completedSteps.includes('welcome')) {
+      goToStep('welcome');
+    }
+  }, [state.completedSteps, goToStep]);
 
   useEffect(() => {
     if (hasCheckedAuth.current) {
@@ -75,7 +82,11 @@ export const IdentityStep = () => {
           return;
         }
 
-        if (session?.user && !hasAdvanced.current) {
+        if (
+          session?.user &&
+          !hasAdvanced.current &&
+          state.completedSteps.includes('welcome')
+        ) {
           console.log('Session found, advancing to values step');
           hasAdvanced.current = true;
 
@@ -87,6 +98,7 @@ export const IdentityStep = () => {
             email: session.user.email || '',
             termsAccepted: true,
             guidelinesAccepted: true,
+            policyVersion: POLICY_VERSION,
             timestamp: new Date().toISOString(),
           });
 
@@ -152,20 +164,28 @@ export const IdentityStep = () => {
 
   if (checkingAuth) {
     return (
-      <Container maxWidth="sm">
-        <Paper elevation={0} className="signupPaper identityStep">
+      <Box sx={{ width: '100%' }}>
+        <Paper
+          elevation={0}
+          className="signupPaper identityStep"
+          sx={{ bgcolor: 'transparent', border: 'none' }}
+        >
           <Box className="identityStepChecking">
             <CircularProgress size={24} />
             <Typography>Checking authentication...</Typography>
           </Box>
         </Paper>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={0} className="signupPaper identityStep">
+    <Box sx={{ width: '100%' }}>
+      <Paper
+        elevation={0}
+        className="signupPaper identityStep"
+        sx={{ bgcolor: 'transparent', border: 'none' }}
+      >
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" className="signupStepLabel">
@@ -258,11 +278,17 @@ export const IdentityStep = () => {
               }
               className="IdentityStep__btn"
               sx={{
-                borderColor: 'rgba(255,255,255,0.4)',
-                color: 'rgba(255,255,255,0.9)',
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.5)',
+                color: '#fff',
+                bgcolor: 'rgba(255,255,255,0.06)',
                 '&:hover': {
-                  borderColor: 'rgba(255,255,255,0.6)',
-                  bgcolor: 'rgba(255,255,255,0.05)',
+                  borderColor: 'rgba(255,255,255,0.8)',
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                },
+                '&.Mui-disabled': {
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  color: 'rgba(255,255,255,0.4)',
                 },
               }}
             >
@@ -329,7 +355,7 @@ export const IdentityStep = () => {
           </Button>
         </Stack>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

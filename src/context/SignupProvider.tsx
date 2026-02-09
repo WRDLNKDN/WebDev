@@ -137,7 +137,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         // Create URL-safe handle from display name
         const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
 
-        // Insert profile into database (schema: profiles baseline migration)
+        // Insert profile into database (schema: profiles baseline + policy_version)
         const { error: insertError } = await supabase.from('profiles').insert({
           id: state.identity.userId,
           email: state.identity.email,
@@ -148,6 +148,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           participation_style: state.values.participationStyle || [],
           additional_context: state.values.additionalContext || null,
           status: 'pending',
+          policy_version: state.identity.policyVersion || null,
         } as never);
 
         if (insertError) {

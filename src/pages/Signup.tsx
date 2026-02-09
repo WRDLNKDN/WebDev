@@ -9,6 +9,8 @@ import {
   Typography,
 } from '@mui/material';
 
+import type { Session } from '@supabase/supabase-js';
+
 import { useSignup } from '../context/useSignup';
 import { supabase } from '../lib/supabaseClient';
 
@@ -72,9 +74,14 @@ export const Signup = () => {
         setError(null);
         setChecking(true);
 
-        const { error: sessErr } = await supabase.auth.getSession();
+        const { data, error: sessErr } = await supabase.auth.getSession();
         if (sessErr) throw sessErr;
 
+        // Type integrity: use typed session so IdP/session shape is not bypassed
+        const session: Session | null = data?.session ?? null;
+        if (session && !cancelled) {
+          // Already authenticated; wizard will show current step from context
+        }
         if (!cancelled) {
           setChecking(false);
         }

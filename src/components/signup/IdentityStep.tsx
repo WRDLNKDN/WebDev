@@ -51,6 +51,7 @@ export const IdentityStep = () => {
 
   const hasCheckedAuth = useRef(false);
   const hasAdvanced = useRef(false);
+  const signInButtonRef = useRef<HTMLButtonElement>(null);
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
@@ -266,11 +267,16 @@ export const IdentityStep = () => {
           </Typography>
           <Box>
             <Button
+              ref={signInButtonRef}
               variant="outlined"
               size="large"
               fullWidth
               onClick={(e) => setProviderAnchor(e.currentTarget)}
               disabled={loading || !canProceed}
+              aria-expanded={Boolean(providerAnchor)}
+              aria-haspopup="menu"
+              aria-controls={providerAnchor ? 'idp-menu' : undefined}
+              id="idp-signin-trigger"
               startIcon={
                 loadingProvider ? (
                   <CircularProgress size={20} color="inherit" />
@@ -295,9 +301,14 @@ export const IdentityStep = () => {
               {loadingProvider ? 'Signing in…' : 'Sign in'}
             </Button>
             <Menu
+              id="idp-menu"
+              aria-labelledby="idp-signin-trigger"
               anchorEl={providerAnchor}
               open={Boolean(providerAnchor)}
-              onClose={() => setProviderAnchor(null)}
+              onClose={() => {
+                setProviderAnchor(null);
+                signInButtonRef.current?.focus();
+              }}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
               transformOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
@@ -343,11 +354,16 @@ export const IdentityStep = () => {
             disabled={loading}
             className="signupBackButton"
             sx={{
-              borderColor: 'rgba(255,255,255,0.4)',
-              color: 'rgba(255,255,255,0.9)',
+              borderWidth: 1.5,
+              borderColor: 'rgba(255,255,255,0.6)',
+              color: '#fff',
               '&:hover': {
-                borderColor: 'rgba(255,255,255,0.7)',
+                borderColor: 'rgba(255,255,255,0.85)',
                 bgcolor: 'rgba(255,255,255,0.08)',
+              },
+              '&.Mui-disabled': {
+                borderColor: 'rgba(255,255,255,0.35)',
+                color: 'rgba(255,255,255,0.6)',
               },
             }}
           >

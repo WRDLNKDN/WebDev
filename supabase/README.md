@@ -66,3 +66,15 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
    ```bash
    supabase stop && supabase start
    ```
+
+## Security: OAuth redirect URLs
+
+To prevent **open redirect** attacks, OAuth callback URLs must be allowlisted:
+
+- **Hosted Supabase:** In Dashboard → **Authentication** → **URL
+  Configuration**, set **Redirect URLs** to your allowed origins only (e.g.
+  `https://yourdomain.com/auth/callback`,
+  `http://localhost:5173/auth/callback`). Do not use wildcards for production.
+
+- **Local:** `config.toml` and the Auth server restrict redirects; ensure
+  `redirectTo` in the app matches your configured site URL / redirect allowlist.

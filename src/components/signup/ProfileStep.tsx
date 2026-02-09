@@ -128,11 +128,16 @@ const ProfileStep = () => {
           disabled={submitting}
           className="profileStepBackButton"
           sx={{
-            borderColor: 'rgba(255,255,255,0.4)',
-            color: 'rgba(255,255,255,0.9)',
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.6)',
+            color: '#fff',
             '&:hover': {
-              borderColor: 'rgba(255,255,255,0.7)',
+              borderColor: 'rgba(255,255,255,0.85)',
               bgcolor: 'rgba(255,255,255,0.08)',
+            },
+            '&.Mui-disabled': {
+              borderColor: 'rgba(255,255,255,0.35)',
+              color: 'rgba(255,255,255,0.6)',
             },
           }}
         >

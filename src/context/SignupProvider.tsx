@@ -17,6 +17,7 @@ const STEPS: SignupStep[] = [
   'complete',
 ];
 
+/** Persists wizard state so refresh at any step (e.g. Values) restores progress. */
 const STORAGE_KEY = 'wrdlnkdn-signup-state';
 
 const initialState: SignupState = {
@@ -46,10 +47,9 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Save to localStorage whenever state changes
+  // Persist to localStorage on every state change so refresh does not lose step/data
   useEffect(() => {
     try {
-      console.log('💾 Saving signup state to localStorage:', state);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
       console.error('Failed to save signup state:', e);
@@ -137,7 +137,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         // Create URL-safe handle from display name
         const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
 
-        // Insert profile into database (schema: profiles baseline + policy_version)
+        // Insert profile (policy_version stored for audit; server-side verification recommended for strict compliance)
         const { error: insertError } = await supabase.from('profiles').insert({
           id: state.identity.userId,
           email: state.identity.email,

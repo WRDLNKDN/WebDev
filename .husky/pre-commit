@@ -32,4 +32,8 @@ if [ -n "$EMPTY_FILES" ]; then
   exit 1
 fi
 
-echo "✅ Integrity Verified. Proceeding with commit."
+# Lint and format staged files so syntax/lint issues are caught before commit
+echo "🔍 Running lint-staged (prettier + eslint + markdownlint) on staged files..."
+npx lint-staged
+
+echo "✅ Integrity verified. Proceeding with commit."

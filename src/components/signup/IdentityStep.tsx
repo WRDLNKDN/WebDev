@@ -115,7 +115,7 @@ export const IdentityStep = () => {
     };
 
     void checkAuthentication();
-  }, [goToStep, markComplete, setIdentity]);
+  }, [goToStep, markComplete, setIdentity, state.completedSteps]);
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     if (!canProceed) {

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import type {
+  IdentityData,
+  ProfileData,
   SignupState,
   SignupStep,
-  IdentityData,
   ValuesData,
-  ProfileData,
 } from '../types/signup';
 import { SignupContext, type SignupContextValue } from './SignupContext';
-import { supabase } from '../lib/supabaseClient';
 
 const STEPS: SignupStep[] = [
   'welcome',
@@ -137,18 +137,18 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         // Create URL-safe handle from display name
         const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
 
-        // Insert profile into database
+        // Insert profile into database (schema: profiles baseline migration)
         const { error: insertError } = await supabase.from('profiles').insert({
           id: state.identity.userId,
           email: state.identity.email,
-          handle: handle,
+          handle,
           display_name: profile.displayName,
           tagline: profile.tagline || null,
           join_reason: state.values.joinReason || [],
           participation_style: state.values.participationStyle || [],
           additional_context: state.values.additionalContext || null,
-          status: 'pending', // Start as pending for admin review
-        });
+          status: 'pending',
+        } as never);
 
         if (insertError) {
           console.error('❌ Profile insert error:', insertError);

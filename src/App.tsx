@@ -1,21 +1,48 @@
-// src/App.tsx
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { Suspense, lazy, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { Suspense, lazy, useEffect } from 'react';
+import { Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { supabase } from './lib/supabaseClient';
+// HOOKS & CONTEXT
 import { SignupProvider } from './context/SignupProvider';
+import { useKonamiCode } from './hooks/useKonamiCode';
+
+// LAYOUT & UTILS
+import { Layout } from './components/layout/Layout';
+import { supabase } from './lib/supabaseClient';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
  */
 
-// Public
+// 1. Core Pages
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+);
+
+const Dashboard = lazy(() =>
+  import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
+);
+
+const Directory = lazy(() =>
+  import('./pages/Directory').then((m) => ({ default: m.Directory })),
+);
+
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
-// Auth
+// --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
+// The dedicated Game Page (Easter Egg)
+const DivergencePage = lazy(() =>
+  import('./pages/DivergencePage').then((m) => ({ default: m.DivergencePage })),
+);
+
+// The Professional 404 Page (Standard Error)
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+);
+
+// 2. Auth Pages
 const SignIn = lazy(() =>
   import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
 );
@@ -26,12 +53,11 @@ const AuthCallback = lazy(() =>
   })),
 );
 
-// Signup
 const Signup = lazy(() =>
   import('./pages/Signup').then((m) => ({ default: m.Signup })),
 );
 
-// Legal
+// 3. Legal Pages
 const Guidelines = lazy(() =>
   import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
 );
@@ -40,16 +66,30 @@ const Terms = lazy(() =>
   import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
 );
 
-// App pages
-const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
-);
-
-// Admin - UPDATED PATH
+// 4. Admin Ecosystem
 const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
+const PendingProfiles = lazy(() =>
+  import('./pages/admin/PendingProfiles').then((m) => ({
+    default: m.PendingProfiles,
+  })),
+);
+
+const ApprovedProfiles = lazy(() =>
+  import('./pages/admin/ApprovedProfiles').then((m) => ({
+    default: m.ApprovedProfiles,
+  })),
+);
+
+const ProfileReview = lazy(() =>
+  import('./pages/admin/ProfileReview').then((m) => ({
+    default: m.ProfileReview,
+  })),
+);
+
+// 5. System Components
 const Loading = () => (
   <Box
     component="main"
@@ -59,11 +99,6 @@ const Loading = () => (
   </Box>
 );
 
-/**
- * Small boot-time auth sync.
- * This helps ensure the in-memory client state matches persisted storage quickly,
- * especially after redirects or hard reloads.
- */
 const AuthBoot = () => {
   useEffect(() => {
     void supabase.auth.getSession();
@@ -73,6 +108,23 @@ const AuthBoot = () => {
 };
 
 const App = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // --- SYSTEM SECRET: KONAMI CODE LISTENER ---
+  useKonamiCode(() => {
+    console.log('🎮 KONAMI CODE DETECTED: ACTIVATING DIVERGENCE PROTOCOL');
+    navigate('/divergence');
+  });
+
+  // --- SYSTEM SECRET: QUERY STRING LISTENER ---
+  // Usage: http://localhost:5173/?mode=glitch
+  useEffect(() => {
+    if (searchParams.get('mode') === 'glitch') {
+      navigate('/divergence');
+    }
+  }, [searchParams, navigate]);
+
   return (
     <>
       <AuthBoot />
@@ -80,28 +132,40 @@ const App = () => {
       <SignupProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* Public */}
-            <Route path="/" element={<Home />} />
+            <Route element={<Layout />}>
+              {/* --- Public Access --- */}
+              <Route path="/" element={<Home />} />
+              <Route path="/u/:handle" element={<LandingPage />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/directory" element={<Directory />} />
 
-            {/* Auth */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+              {/* --- Authenticated User Zone --- */}
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Signup */}
-            <Route path="/signup" element={<Signup />} />
+              {/* --- Authentication --- */}
+              <Route path="/login" element={<SignIn />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Legal */}
-            <Route path="/guidelines" element={<Guidelines />} />
-            <Route path="/terms" element={<Terms />} />
+              {/* --- Legal --- */}
+              <Route path="/guidelines" element={<Guidelines />} />
+              <Route path="/terms" element={<Terms />} />
 
-            {/* Directory */}
-            <Route path="/directory" element={<Directory />} />
+              {/* --- Administration --- */}
+              <Route path="/admin" element={<AdminApp />} />
+              <Route path="/admin/pending" element={<PendingProfiles />} />
+              <Route path="/admin/approved" element={<ApprovedProfiles />} />
+              <Route path="/admin/review/:id" element={<ProfileReview />} />
 
-            {/* Admin */}
-            <Route path="/admin" element={<AdminApp />} />
+              {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+              {/* 1. The Game (Konami Code Target) */}
+              <Route path="/divergence" element={<DivergencePage />} />
+
+              {/* 2. The Professional 404 (Catch-All) */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
           </Routes>
         </Suspense>
       </SignupProvider>

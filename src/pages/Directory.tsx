@@ -1,17 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  FilterList as FilterListIcon,
+  Search as SearchIcon,
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
+  Button,
+  CircularProgress,
   Container,
+  InputAdornment,
   Paper,
   Stack,
   TextField,
   Typography,
-  CircularProgress,
-  Divider,
 } from '@mui/material';
-
+import { useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import { DirectoryCard } from '../components/directory/DirectoryCard';
 import { supabase } from '../lib/supabaseClient';
+import { safeStr } from '../utils/stringUtils';
+
+// STYLES & ASSETS
+const SYNERGY_BG = 'url("/assets/background.svg")';
+const CARD_BG = 'rgba(30, 30, 30, 0.65)';
+const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
+const EMPTY_STATE_BG = 'rgba(18, 18, 18, 0.8)';
 
 type DirectoryProfile = {
   id: string;
@@ -20,56 +33,39 @@ type DirectoryProfile = {
   nerd_creds: unknown;
 };
 
-const safeString = (v: unknown): string => {
-  if (typeof v === 'string') return v;
-  return '';
-};
-
 const getTagline = (nerdCreds: unknown): string => {
-  // Your earlier signup payload had nerd_creds.additionalContext
-  // so we’ll show that as the “tagline” for now if present.
   if (!nerdCreds || typeof nerdCreds !== 'object') return '';
   const obj = nerdCreds as Record<string, unknown>;
-  return safeString(obj.tagline) || safeString(obj.additionalContext);
+  return safeStr(obj.tagline) || safeStr(obj.additionalContext);
 };
 
 export const Directory = () => {
   const [rows, setRows] = useState<DirectoryProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [q, setQ] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-
     const load = async () => {
       setLoading(true);
       setError(null);
-
-      // We try “approved only” first, but if your DB/types don’t have status yet,
-      // we fall back to “all” so the page still works.
       try {
-        const base = supabase
+        const { data, error: err } = await supabase
           .from('profiles')
-          .select('id, handle, pronouns, nerd_creds');
-
-        const { data, error: err } = await base.eq('status', 'approved');
+          .select('id, handle, pronouns, nerd_creds')
+          .eq('status', 'approved');
 
         if (cancelled) return;
 
         if (err) {
           const msg = err.message.toLowerCase();
-          const looksLikeMissingColumn =
-            msg.includes('column') && msg.includes('status');
-
-          if (looksLikeMissingColumn) {
+          if (msg.includes('column') && msg.includes('status')) {
             const { data: data2, error: err2 } = await supabase
               .from('profiles')
               .select('id, handle, pronouns, nerd_creds');
 
             if (cancelled) return;
-
             if (err2) throw err2;
             setRows((data2 as DirectoryProfile[]) ?? []);
           } else {
@@ -79,16 +75,13 @@ export const Directory = () => {
           setRows((data as DirectoryProfile[]) ?? []);
         }
       } catch (e: unknown) {
-        if (!cancelled) {
+        if (!cancelled)
           setError(e instanceof Error ? e.message : 'Failed to load directory');
-        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
-
     void load();
-
     return () => {
       cancelled = true;
     };
@@ -101,78 +94,147 @@ export const Directory = () => {
   }, [q, rows]);
 
   return (
-    <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
-        <Stack spacing={2}>
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            Directory
-          </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        backgroundImage: SYNERGY_BG,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+        pt: 12,
+        pb: 8,
+      }}
+    >
+      <Container maxWidth="lg">
+        {/* HUD SEARCH SECTOR */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 5 },
+            borderRadius: 4,
+            bgcolor: CARD_BG,
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            mb: 4,
+          }}
+        >
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                The Guild Directory
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ maxWidth: 600 }}
+              >
+                A curated registry of Verified Generalists. Search for skills,
+                names, or operating systems.
+              </Typography>
+            </Box>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <TextField
+                fullWidth
+                placeholder="Search by handle..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    bgcolor: SEARCH_BG,
+                    borderRadius: 2,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'white',
+                    '& fieldset': { border: 'none' },
+                  },
+                }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<FilterListIcon />}
+                sx={{
+                  minWidth: 120,
+                  height: 56,
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  color: 'text.secondary',
+                }}
+              >
+                Filters
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
 
-          <Typography variant="body2" sx={{ opacity: 0.75 }}>
-            Approved members only.
-          </Typography>
-
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <TextField
-              label="Search"
-              placeholder="Search by handle"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              fullWidth
-            />
-          </Paper>
-
-          {error && <Alert severity="error">{error}</Alert>}
+        {/* RESULTS SECTOR */}
+        <Box sx={{ minHeight: 400 }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 4 }}>
+              {error}
+            </Alert>
+          )}
 
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress />
+              <CircularProgress size={48} />
             </Box>
-          ) : (
+          ) : filtered.length === 0 ? (
             <Paper
-              elevation={0}
               sx={{
-                borderRadius: 3,
-                border: '1px solid',
-                borderColor: 'divider',
-                overflow: 'hidden',
+                p: 8,
+                textAlign: 'center',
+                borderRadius: 4,
+                bgcolor: EMPTY_STATE_BG,
+                backdropFilter: 'blur(8px)',
+                border: '2px dashed rgba(255,255,255,0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
               }}
             >
-              <Stack divider={<Divider />} sx={{ p: 2 }}>
-                {filtered.length === 0 ? (
-                  <Typography variant="body2" sx={{ opacity: 0.75 }}>
-                    No profiles found.
-                  </Typography>
-                ) : (
-                  filtered.map((p) => {
-                    const tagline = getTagline(p.nerd_creds);
-                    return (
-                      <Box key={p.id}>
-                        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                          {p.handle || '(no handle)'}
-                        </Typography>
-
-                        {(p.pronouns || tagline) && (
-                          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                            {[p.pronouns, tagline].filter(Boolean).join(' • ')}
-                          </Typography>
-                        )}
-                      </Box>
-                    );
-                  })
-                )}
-              </Stack>
+              <Typography variant="h5" sx={{ fontWeight: 600, color: 'white' }}>
+                No Signals Found
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  opacity: 0.7,
+                  maxWidth: 400,
+                  color: 'rgba(255,255,255,0.7)',
+                }}
+              >
+                {q
+                  ? `No results matching "${q}".`
+                  : 'The directory is initializing.'}
+                <br /> Be the first to verify your operating system.
+              </Typography>
+              <Button
+                component={RouterLink}
+                to="/signup"
+                variant="contained"
+                size="large"
+                sx={{ mt: 2, px: 4 }}
+              >
+                Join the Guild
+              </Button>
             </Paper>
+          ) : (
+            <Stack spacing={2}>
+              {filtered.map((p) => (
+                <DirectoryCard
+                  key={p.id}
+                  id={p.id}
+                  handle={p.handle}
+                  pronouns={p.pronouns}
+                  tagline={getTagline(p.nerd_creds)}
+                />
+              ))}
+            </Stack>
           )}
-        </Stack>
+        </Box>
       </Container>
     </Box>
   );

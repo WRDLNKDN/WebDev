@@ -1,20 +1,33 @@
-// src/main.tsx
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import App from './App';
-import { theme } from './theme';
+import theme from './theme/theme';
+
+// --- SYSTEM FIREWALL ---
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </ThemeProvider>
+    {/* HelmetProvider handles the Head metadata */}
+    <HelmetProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+
+        {/* THE FIREWALL:
+           Placed inside ThemeProvider so the crash screen looks good.
+           Placed outside BrowserRouter to catch routing failures.
+        */}
+        <ErrorBoundary>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ErrorBoundary>
+      </ThemeProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 );

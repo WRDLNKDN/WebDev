@@ -4,12 +4,14 @@ import {
   Box,
   CircularProgress,
   Container,
+  Stack,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import { useSignup } from '../context/useSignup';
 import { supabase } from '../lib/supabaseClient';
+import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
 
 import { CompleteStep } from '../components/signup/CompleteStep';
 import { IdentityStep } from '../components/signup/IdentityStep';
@@ -60,92 +62,83 @@ const CARD_SX = {
 
 export const Signup = () => {
   const { state } = useSignup();
-
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
-    const run = async () => {
+    const verifySession = async () => {
       try {
-        setError(null);
         setChecking(true);
-
-        const { data: sessData, error: sessErr } =
-          await supabase.auth.getSession();
+        const { data, error: sessErr } = await supabase.auth.getSession();
         if (sessErr) throw sessErr;
 
         if (!cancelled) {
           setChecking(false);
         }
       } catch (e: unknown) {
+        // FIXED: Purged 'any' for high-integrity typing
         if (!cancelled) {
-          setError(toMessage(e));
+          const msg = e instanceof Error ? e.message : 'Verification Failed';
+          setError(msg);
           setChecking(false);
         }
       }
     };
-
-    void run();
+    void verifySession();
     return () => {
       cancelled = true;
     };
   }, []);
 
   const renderStep = () => {
-    switch (state.currentStep) {
-      case 'welcome':
-        return <WelcomeStep />;
-      case 'identity':
-        return <IdentityStep />;
-      case 'values':
-        return <ValuesStep />;
-      case 'profile':
-        return <ProfileStep />;
-      case 'complete':
-        return <CompleteStep />;
-      default:
-        return <WelcomeStep />;
-    }
+    // FIXED: Using React.ReactElement to satisfy the compiler's strict audit
+    const steps: Record<string, React.ReactElement> = {
+      welcome: <WelcomeStep />,
+      identity: <IdentityStep />,
+      values: <ValuesStep />,
+      profile: <ProfileStep />,
+      complete: <CompleteStep />,
+    };
+    return steps[state.currentStep] || <WelcomeStep />;
   };
 
-  const showProgress =
-    state.currentStep !== 'welcome' && state.currentStep !== 'complete';
+  const isFlowActive = !['welcome', 'complete'].includes(state.currentStep);
 
-  if (checking) {
+  // --- RENDER SECTOR: SYSTEM INITIALIZING ---
+  if (checking)
     return (
-      <Box sx={BG_SX}>
-        <Container maxWidth="sm" sx={CARD_SX}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CircularProgress size={22} />
-            <Typography variant="body2" sx={{ opacity: 0.85 }}>
-              Loading signup…
+      <Box sx={SIGNUP_BG}>
+        <Container maxWidth="sm" sx={{ ...GLASS_CARD, p: 4, zIndex: 1 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <CircularProgress size={20} thickness={5} />
+            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              Initializing Human OS Signup...
             </Typography>
-          </Box>
+          </Stack>
         </Container>
       </Box>
     );
-  }
 
   return (
-    <Box sx={BG_SX}>
-      <Container sx={CARD_SX}>
-        {showProgress && (
-          <Box sx={{ width: '100%', mb: 3 }}>
+    <Box sx={SIGNUP_BG}>
+      <Container
+        maxWidth={state.currentStep === 'profile' ? 'md' : 'sm'}
+        sx={{
+          ...GLASS_CARD,
+          p: { xs: 3, md: 5 },
+          zIndex: 1,
+          transition: 'max-width 0.4s ease',
+        }}
+      >
+        {isFlowActive && (
+          <Box sx={{ mb: 4 }}>
             <SignupProgress
               currentStep={state.currentStep}
               completedSteps={state.completedSteps}
             />
           </Box>
         )}
-
-        {error && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
         {renderStep()}
       </Container>
     </Box>

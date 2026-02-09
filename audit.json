@@ -1,0 +1,361 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@vercel/blob": {
+      "name": "@vercel/blob",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": ["undici"],
+      "effects": ["vercel"],
+      "range": "0.0.3 - 2.0.0 || 2.1.0-062a059-20260128141057 - 2.1.0-39df1d8-20260121161119",
+      "nodes": ["node_modules/@vercel/blob"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/elysia": {
+      "name": "@vercel/elysia",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/elysia"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/express": {
+      "name": "@vercel/express",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/express"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/fastify": {
+      "name": "@vercel/fastify",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/fastify"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/fun": {
+      "name": "@vercel/fun",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["tar"],
+      "effects": ["vercel"],
+      "range": "<=1.2.1",
+      "nodes": ["node_modules/@vercel/fun"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/h3": {
+      "name": "@vercel/h3",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/h3"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/hono": {
+      "name": "@vercel/hono",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/hono"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/koa": {
+      "name": "@vercel/koa",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/koa"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/nestjs": {
+      "name": "@vercel/nestjs",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["@vercel/node"],
+      "effects": ["vercel"],
+      "range": "*",
+      "nodes": ["node_modules/@vercel/nestjs"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/node": {
+      "name": "@vercel/node",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["path-to-regexp", "undici"],
+      "effects": [
+        "@vercel/elysia",
+        "@vercel/express",
+        "@vercel/fastify",
+        "@vercel/h3",
+        "@vercel/hono",
+        "@vercel/koa",
+        "@vercel/nestjs",
+        "vercel"
+      ],
+      "range": ">=2.11.0",
+      "nodes": ["node_modules/@vercel/node"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/remix-builder": {
+      "name": "@vercel/remix-builder",
+      "severity": "high",
+      "isDirect": false,
+      "via": ["path-to-regexp"],
+      "effects": ["vercel"],
+      "range": "<=2.0.3 || >=5.2.4",
+      "nodes": ["node_modules/@vercel/remix-builder"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "path-to-regexp": {
+      "name": "path-to-regexp",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1101846,
+          "name": "path-to-regexp",
+          "dependency": "path-to-regexp",
+          "title": "path-to-regexp outputs backtracking regular expressions",
+          "url": "https://github.com/advisories/GHSA-9wv6-86v2-598j",
+          "severity": "high",
+          "cwe": ["CWE-1333"],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=4.0.0 <6.3.0"
+        }
+      ],
+      "effects": ["@vercel/node", "@vercel/remix-builder"],
+      "range": "4.0.0 - 6.2.2",
+      "nodes": [
+        "node_modules/@vercel/node/node_modules/path-to-regexp",
+        "node_modules/@vercel/remix-builder/node_modules/path-to-regexp"
+      ],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "tar": {
+      "name": "tar",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1112255,
+          "name": "tar",
+          "dependency": "tar",
+          "title": "node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization",
+          "url": "https://github.com/advisories/GHSA-8qq5-rm4j-mr97",
+          "severity": "high",
+          "cwe": ["CWE-22"],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=7.5.2"
+        },
+        {
+          "source": 1112329,
+          "name": "tar",
+          "dependency": "tar",
+          "title": "Race Condition in node-tar Path Reservations via Unicode Ligature Collisions on macOS APFS",
+          "url": "https://github.com/advisories/GHSA-r6q2-hw4h-h46w",
+          "severity": "high",
+          "cwe": ["CWE-176"],
+          "cvss": {
+            "score": 8.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:H/A:L"
+          },
+          "range": "<=7.5.3"
+        },
+        {
+          "source": 1112659,
+          "name": "tar",
+          "dependency": "tar",
+          "title": "node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal",
+          "url": "https://github.com/advisories/GHSA-34x7-hfp2-rc4v",
+          "severity": "high",
+          "cwe": ["CWE-22", "CWE-59"],
+          "cvss": {
+            "score": 8.2,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:L/A:N"
+          },
+          "range": "<7.5.7"
+        }
+      ],
+      "effects": ["@vercel/fun"],
+      "range": "<=7.5.6",
+      "nodes": ["node_modules/tar"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "undici": {
+      "name": "undici",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1101610,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "Use of Insufficiently Random Values in undici",
+          "url": "https://github.com/advisories/GHSA-c76h-2ccp-4975",
+          "severity": "moderate",
+          "cwe": ["CWE-330"],
+          "cvss": {
+            "score": 6.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=4.5.0 <5.28.5"
+        },
+        {
+          "source": 1104501,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici Denial of Service attack via bad certificate data",
+          "url": "https://github.com/advisories/GHSA-cxrh-j4jr-qwg3",
+          "severity": "low",
+          "cwe": ["CWE-401"],
+          "cvss": {
+            "score": 3.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<5.29.0"
+        },
+        {
+          "source": 1112496,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion",
+          "url": "https://github.com/advisories/GHSA-g9mf-h72j-4rw9",
+          "severity": "moderate",
+          "cwe": ["CWE-770"],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<6.23.0"
+        }
+      ],
+      "effects": ["@vercel/blob", "@vercel/node"],
+      "range": "<=6.22.0",
+      "nodes": [
+        "node_modules/@vercel/node/node_modules/undici",
+        "node_modules/undici"
+      ],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    },
+    "vercel": {
+      "name": "vercel",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@vercel/blob",
+        "@vercel/elysia",
+        "@vercel/express",
+        "@vercel/fastify",
+        "@vercel/fun",
+        "@vercel/h3",
+        "@vercel/hono",
+        "@vercel/koa",
+        "@vercel/nestjs",
+        "@vercel/node",
+        "@vercel/remix-builder"
+      ],
+      "effects": [],
+      "range": "28.12.3 || >=28.17.0",
+      "nodes": ["node_modules/vercel"],
+      "fixAvailable": {
+        "name": "vercel",
+        "version": "32.3.0",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 2,
+      "high": 13,
+      "critical": 0,
+      "total": 15
+    },
+    "dependencies": {
+      "prod": 171,
+      "dev": 920,
+      "optional": 197,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 1090
+    }
+  }
+}

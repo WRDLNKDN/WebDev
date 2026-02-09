@@ -1,24 +1,86 @@
-# 👥 Project Contributors
+# Contributors
 
-> **Start Here:** >
-> [Contributor Onboarding Wiki](https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding)
->
-> _Review the onboarding guide to learn how to join this list._
+- **Amber Adamson** [GitHub](https://github.com/aadamsongit)
+  [LinkedIn](https://www.linkedin.com/in/amber-adamson-a33a3860/)
 
----
+  - Refactored App component to remove manual DOM modal manipulation
+  - Improved React best practices by removing useEffect with direct DOM access
+  - Help with refactoring on App.tsx and utils files
+  - Suggestions for improving other parts of the project so it better follows
+    React conventions
 
-This project is built by humans. We track official contributions and credits in
-our Master Ledger.
+- **BJ Rutledge** [LinkedIn](https://www.linkedin.com/in/bj-rutledge/)
 
-## 📄 [View the Master Contributor Ledger (Google Sheets)](https://docs.google.com/spreadsheets/d/1cZCn5OZLiO7s1oRL5d9zkjlYf6bLdQs4WaudxdI78ZE/edit?usp=drive_link)
+  - Made suggestions that improved code cleanliness and separation of concerns.
 
----
+- **Brenda Hensley** [LinkedIn](https://www.linkedin.com/in/brenda-hensley-/)
 
-### 💡 Want to contribute?
+  - Helped fix issues in the ESLint configuration file
+  - Added automation scripts for ESLint and Prettier checks
 
-1. Review the
-   **[Contributor Onboarding](https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding)**
-   wiki.
-2. Check the local **[CONTRIBUTING.md](./CONTRIBUTING.md)** file for technical
-   setup instructions.
-3. Join us on Discord and pick up a ticket!
+- **Daniela Grothe**
+  [LinkedIn](https://www.linkedin.com/in/daniela-grothe-743ab8235/)
+
+  - Identified an issue with longpress not working on Safari and helped with
+    finding solut
+
+- **Engombe Lokanga** [LinkedIn](https://www.linkedin.com/in/engombelokanga/)
+
+  - Help with refactoring the component organisation and naming
+
+- **Gavin Hensley** [LinkedIn](https://www.linkedin.com/in/g-hensley/)
+
+  - Help with implementing accessibility
+  - Suggestions for improvements
+  - Help with refactoring the utils file into TypeScript
+
+- **Hannah Olbrich** [GitHub](https://github.com/hannahro15)
+  [LinkedIn](https://www.linkedin.com/in/hannaholbrich/)
+
+  - Identified inconsistent CSS naming conventions across modules and suggested
+    standardising all rule names to use kebab-case for consistency and
+    readability
+
+- **Heliomar Pena** [LinkedIn](https://www.linkedin.com/in/heliomar/)
+
+  - Offered various suggestions to write cleaner code
+  - Suggested exploring the Phosphor Icons library
+  - Provided feedback on issues and helped with testing and approving PRs
+  - Identified and fixed a rendering performance issue
+  - Helping with TypeScript conversion
+
+- **James Baskett** [LinkedIn](https://www.linkedin.com/in/james-blaskett/)
+
+  - Provided suggestions that helped improve performance and architecture
+  - Significantly helped with improving the position, styling an animation of
+    the GameResultModal
+
+- **Nick Clark** [GitHub](https://github.com/NickTheDevOpsGuy)
+
+  - Help with reviewing and fixing issues on various PRs
+  - Added GitHub Actions and some tests.
+  - Helping with TypeScript conversion
+  - Help with improvements to the README
+  - Help with reviewing, testing and approving PRs
+
+- **Rishik Chakravarty** [GitHub](https://github.com/rishikrc3)
+  [LinkedIn](https://www.linkedin.com/in/rishik-chakravarty/)
+
+  - Helping with DevOps tasks
+  - Breaking the GitHub Actions into their own workflow files
+  - Helping improve and clean up Docker configuration
+
+- **Tawheed Ahmed** [LinkedIn](https://www.linkedin.com/in/tawheed-ahmed-dev/)
+
+  - Helping with building UI features
+  - Helping with redesigning the UI and navigation UX
+
+- **Umer Farooq Mala** [GitHub](https://github.com/umermala)
+
+  - Created a Dockerfile and updated the README with Docker-related
+    instructions.
+
+- **Velimir Đurković** [LinkedIn](https://www.linkedin.com/in/djvelimir/)
+  - Reported a critical bug related to the game win logic.
+  - Provided a improvement suggestion (automaticaly placing red flags on the
+    remaining mines once all non-mines fields have been revealed).

@@ -1,5 +1,13 @@
 // vitest.rls.config.ts
 import { defineConfig } from 'vitest/config';
+import * as path from 'node:path';
+import * as dotenv from 'dotenv';
+
+// Load env for tests (supports .env, .env.local, etc)
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test.local') });
 
 export default defineConfig({
   test: {
@@ -7,7 +15,7 @@ export default defineConfig({
     globals: true,
 
     // Only run RLS tests
-    include: ['tests/rls/**/*.{test,spec}.ts'],
+    include: ['src/tests/rls/**/*.{test,spec}.ts'],
 
     exclude: [
       '**/node_modules/**',
@@ -16,7 +24,7 @@ export default defineConfig({
       '**/.next/**',
       '**/playwright-report/**',
       '**/test-results/**',
-      'e2e/**',
+      'src/e2e/**',
     ],
   },
 });

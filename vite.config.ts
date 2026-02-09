@@ -20,6 +20,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -27,8 +28,7 @@ export default defineConfig({
           if (id.includes('@mui')) return 'mui';
           if (id.includes('@emotion')) return 'emotion';
           if (id.includes('@supabase')) return 'supabase';
-          if (id.includes('react-router')) return 'router';
-          if (id.includes('react')) return 'react';
+          // Keep react, react-router, and other libs in vendor to avoid circular chunks
           return 'vendor';
         },
       },

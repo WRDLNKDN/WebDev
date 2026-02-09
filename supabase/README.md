@@ -29,7 +29,7 @@ Optional (dev only):
 
 If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 
-### Using HOSTED Supabase (https://xxx.supabase.co)
+### Using HOSTED Supabase (<https://xxx.supabase.co>)
 
 `config.toml` does **not** apply. Configure in the Dashboard:
 
@@ -38,7 +38,7 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 3. Add redirect URI in Azure app:
    `https://<your-project-ref>.supabase.co/auth/v1/callback`
 
-### Using LOCAL Supabase (http://localhost:54321 or 127.0.0.1:54321)
+### Using LOCAL Supabase (<http://localhost:54321> or 127.0.0.1:54321)
 
 1. **Create an Azure app** at [portal.azure.com](https://portal.azure.com) →
    Microsoft Entra ID → App registrations → New registration.
@@ -62,6 +62,7 @@ If you see `{"code":400,"msg":"Unsupported provider: provider is not enabled"}`:
 5. **Verify env** (optional): `bash scripts/verify-azure-env.sh`
 
 6. **Restart Supabase** from project root:
+
    ```bash
    supabase stop && supabase start
    ```

@@ -123,10 +123,18 @@ const ProfileStep = () => {
 
       <Stack direction="row" spacing={2} className="profileStepButtonRow">
         <Button
-          variant="text"
+          variant="outlined"
           onClick={handleBack}
           disabled={submitting}
           className="profileStepBackButton"
+          sx={{
+            borderColor: 'rgba(255,255,255,0.4)',
+            color: 'rgba(255,255,255,0.9)',
+            '&:hover': {
+              borderColor: 'rgba(255,255,255,0.7)',
+              bgcolor: 'rgba(255,255,255,0.08)',
+            },
+          }}
         >
           Back
         </Button>

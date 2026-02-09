@@ -144,7 +144,18 @@ export const ValuesStep = () => {
           </Box>
 
           <Stack direction="row" spacing={2} className="valuesStepButtonRow">
-            <Button variant="text" onClick={handleBack}>
+            <Button
+              variant="outlined"
+              onClick={handleBack}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.4)',
+                color: 'rgba(255,255,255,0.9)',
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.7)',
+                  bgcolor: 'rgba(255,255,255,0.08)',
+                },
+              }}
+            >
               Back
             </Button>
             <Button

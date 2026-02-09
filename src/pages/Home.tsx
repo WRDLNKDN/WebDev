@@ -1,17 +1,24 @@
 // src/pages/Home.tsx
 import { useEffect, useState } from 'react';
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
   Container,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
+import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
 const toMessage = (e: unknown) => {
@@ -61,6 +68,7 @@ export const Home = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,21 +126,18 @@ export const Home = () => {
     };
   }, [session]);
 
-  const signInGoogle = async () => {
-    console.log('🟢 HOME SIGN IN: Starting');
+  const handleSignIn = async (provider: OAuthProvider) => {
+    setSignInAnchor(null);
     setBusy(true);
     setError(null);
 
     try {
-      const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
         '/directory',
       )}`;
-      console.log('🟢 HOME SIGN IN: redirectTo =', redirectTo);
 
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
+      const { error: signInError } = await signInWithOAuth(provider, {
+        redirectTo,
       });
 
       if (signInError) throw signInError;
@@ -237,11 +242,38 @@ export const Home = () => {
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={() => void signInGoogle()}
+                  onClick={(e) => setSignInAnchor(e.currentTarget)}
                   disabled={busy}
+                  endIcon={busy ? <CircularProgress size={16} /> : undefined}
                 >
-                  {busy ? 'Working…' : 'Sign in with Google'}
+                  {busy ? 'Signing in…' : 'Sign in'}
                 </Button>
+                <Menu
+                  anchorEl={signInAnchor}
+                  open={Boolean(signInAnchor)}
+                  onClose={() => setSignInAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                >
+                  <MenuItem
+                    onClick={() => void handleSignIn('google')}
+                    sx={{ minWidth: 200 }}
+                  >
+                    <ListItemIcon>
+                      <GoogleIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Sign in with Google</ListItemText>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => void handleSignIn('azure')}
+                    sx={{ minWidth: 200 }}
+                  >
+                    <ListItemIcon>
+                      <MicrosoftIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Sign in with Microsoft</ListItemText>
+                  </MenuItem>
+                </Menu>
               </>
             ) : (
               <>

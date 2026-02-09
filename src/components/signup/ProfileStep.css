@@ -85,16 +85,9 @@
   padding-top: 16px;
 }
 
-.profileStepBackButton {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.profileStepBackButton:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
 .profileStepBackButton:disabled {
-  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .profileStepSubmitButton {

@@ -8,6 +8,10 @@ import {
   CircularProgress,
   Container,
   FormControlLabel,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   Typography,
@@ -15,6 +19,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
+import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import './IdentityStep.css';
@@ -40,6 +45,9 @@ export const IdentityStep = () => {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
+    null,
+  );
 
   const hasCheckedAuth = useRef(false);
   const hasAdvanced = useRef(false);
@@ -108,11 +116,8 @@ export const IdentityStep = () => {
     setError(null);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
-        },
+      const { data, error: authError } = await signInWithOAuth(provider, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
       });
 
       if (authError) throw authError;
@@ -164,7 +169,7 @@ export const IdentityStep = () => {
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" className="signupStepLabel">
-              Verify Your Identity
+              Continue to sign in
             </Typography>
             <Typography variant="body2" className="signupStepSubtext">
               Sign in with Google or Microsoft to continue
@@ -239,42 +244,65 @@ export const IdentityStep = () => {
           >
             Choose your identity provider:
           </Typography>
-          <Stack spacing={2}>
+          <Box>
             <Button
               variant="outlined"
               size="large"
-              onClick={() => void handleOAuthSignIn('google')}
+              fullWidth
+              onClick={(e) => setProviderAnchor(e.currentTarget)}
               disabled={loading || !canProceed}
               startIcon={
-                loadingProvider === 'google' ? (
+                loadingProvider ? (
                   <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <GoogleIcon />
-                )
+                ) : undefined
               }
-              fullWidth
-              className="IdentityStep__btn IdentityStep__btn--google"
+              className="IdentityStep__btn"
+              sx={{
+                borderColor: 'rgba(255,255,255,0.4)',
+                color: 'rgba(255,255,255,0.9)',
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.6)',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                },
+              }}
             >
-              Continue with Google
+              {loadingProvider ? 'Signing in…' : 'Sign in'}
             </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => void handleOAuthSignIn('azure')}
-              disabled={loading || !canProceed}
-              startIcon={
-                loadingProvider === 'azure' ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <MicrosoftIcon />
-                )
-              }
-              fullWidth
-              className="IdentityStep__btn IdentityStep__btn--microsoft"
+            <Menu
+              anchorEl={providerAnchor}
+              open={Boolean(providerAnchor)}
+              onClose={() => setProviderAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
-              Continue with Microsoft
-            </Button>
-          </Stack>
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('google');
+                }}
+                disabled={loading || !canProceed}
+                sx={{ minWidth: 240 }}
+              >
+                <ListItemIcon>
+                  <GoogleIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Continue with Google</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('azure');
+                }}
+                disabled={loading || !canProceed}
+                sx={{ minWidth: 240 }}
+              >
+                <ListItemIcon>
+                  <MicrosoftIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Continue with Microsoft</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
 
           <Box className="identityStepInfoBox" sx={{ mt: 2 }}>
             <Typography variant="caption" className="signupStepSubtext">
@@ -284,10 +312,18 @@ export const IdentityStep = () => {
           </Box>
 
           <Button
-            variant="text"
+            variant="outlined"
             onClick={handleBack}
             disabled={loading}
             className="signupBackButton"
+            sx={{
+              borderColor: 'rgba(255,255,255,0.4)',
+              color: 'rgba(255,255,255,0.9)',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.7)',
+                bgcolor: 'rgba(255,255,255,0.08)',
+              },
+            }}
           >
             Back
           </Button>

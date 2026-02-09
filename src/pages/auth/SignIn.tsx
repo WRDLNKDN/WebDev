@@ -7,19 +7,24 @@ import {
   CircularProgress,
   Container,
   Divider,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
+import { signInWithOAuth } from '../../lib/signInWithOAuth';
 
 export const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<
     'google' | 'azure' | null
   >(null);
+  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
@@ -28,11 +33,8 @@ export const SignIn = () => {
     setError(null);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const { data, error: authError } = await signInWithOAuth(provider, {
+        redirectTo: `${window.location.origin}/auth/callback`,
       });
 
       if (authError) throw authError;
@@ -83,63 +85,57 @@ export const SignIn = () => {
               </Alert>
             )}
 
-            <Stack spacing={2}>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => handleOAuthSignIn('google')}
-                disabled={loading}
-                startIcon={
-                  loadingProvider === 'google' ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <GoogleIcon />
-                  )
-                }
-                fullWidth
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  justifyContent: 'flex-start',
-                  borderColor: 'rgba(66, 133, 244, 0.5)',
-                  color: '#4285f4',
-                  '&:hover': {
-                    borderColor: '#4285f4',
-                    bgcolor: 'rgba(66, 133, 244, 0.08)',
-                  },
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={(e) => setProviderAnchor(e.currentTarget)}
+              disabled={loading}
+              startIcon={
+                loadingProvider ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : undefined
+              }
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                justifyContent: 'flex-start',
+              }}
+            >
+              {loadingProvider
+                ? 'Signing in…'
+                : 'Sign in with Google or Microsoft'}
+            </Button>
+            <Menu
+              anchorEl={providerAnchor}
+              open={Boolean(providerAnchor)}
+              onClose={() => setProviderAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('google');
                 }}
+                disabled={loading}
+                sx={{ minWidth: 240 }}
               >
+                <GoogleIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Sign in with Google
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => handleOAuthSignIn('azure')}
-                disabled={loading}
-                startIcon={
-                  loadingProvider === 'azure' ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <MicrosoftIcon />
-                  )
-                }
-                fullWidth
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  justifyContent: 'flex-start',
-                  borderColor: 'rgba(0, 120, 212, 0.5)',
-                  color: '#0078d4',
-                  '&:hover': {
-                    borderColor: '#0078d4',
-                    bgcolor: 'rgba(0, 120, 212, 0.08)',
-                  },
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('azure');
                 }}
+                disabled={loading}
+                sx={{ minWidth: 240 }}
               >
+                <MicrosoftIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Sign in with Microsoft
-              </Button>
-            </Stack>
+              </MenuItem>
+            </Menu>
 
             <Divider />
 

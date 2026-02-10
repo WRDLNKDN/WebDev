@@ -170,13 +170,15 @@ export const Navbar = () => {
         <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
           Store
         </Button>
-        <Button
-          component={RouterLink}
-          to="/weirdling/create"
-          sx={{ color: 'white' }}
-        >
-          Create My Weirdling
-        </Button>
+        {session && (
+          <Button
+            component={RouterLink}
+            to="/weirdling/create"
+            sx={{ color: 'white' }}
+          >
+            Create My Weirdling
+          </Button>
+        )}
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Menu */}

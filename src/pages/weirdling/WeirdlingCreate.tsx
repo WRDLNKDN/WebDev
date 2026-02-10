@@ -2,14 +2,17 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   Slider,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
 import {
   generateWeirdling,
   saveWeirdlingByJobId,
@@ -101,6 +104,32 @@ const WeirdlingThumbnailGrid = ({
 
 export const WeirdlingCreate = () => {
   const navigate = useNavigate();
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      setSession(data.session ?? null);
+      setSessionChecked(true);
+    };
+    void init();
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
+      if (!cancelled) setSession(s ?? null);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sessionChecked) return;
+    if (!session) navigate('/', { replace: true });
+  }, [sessionChecked, session, navigate]);
+
   const [step, setStep] = useState(0);
   const [inputs, setInputs] = useState<WeirdlingWizardInputs>({
     displayNameOrHandle: '',
@@ -174,6 +203,22 @@ export const WeirdlingCreate = () => {
   const handleCancel = () => {
     navigate('/dashboard');
   };
+
+  if (!sessionChecked || !session) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress size={48} aria-label="Loading" />
+      </Box>
+    );
+  }
 
   // Step 0: name/handle
   const step0 = (

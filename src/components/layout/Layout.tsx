@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Navbar } from './Navbar';
+import { Footer } from './Footer';
 
 export const Layout = () => {
   return (
@@ -18,6 +19,7 @@ export const Layout = () => {
         <ErrorBoundary>
           <Outlet />
         </ErrorBoundary>
+        <Footer />
       </Box>
     </>
   );

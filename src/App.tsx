@@ -35,6 +35,18 @@ const Store = lazy(() =>
   import('./pages/Store').then((m) => ({ default: m.Store })),
 );
 
+const About = lazy(() =>
+  import('./pages/About').then((m) => ({ default: m.About })),
+);
+
+const Community = lazy(() =>
+  import('./pages/Community').then((m) => ({ default: m.Community })),
+);
+
+const Platform = lazy(() =>
+  import('./pages/Platform').then((m) => ({ default: m.Platform })),
+);
+
 const WeirdlingCreate = lazy(() =>
   import('./pages/weirdling/WeirdlingCreate').then((m) => ({
     default: m.WeirdlingCreate,
@@ -149,6 +161,9 @@ const App = () => {
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />
               <Route path="/store" element={<Store />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/platform" element={<Platform />} />
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />

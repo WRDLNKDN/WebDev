@@ -36,7 +36,7 @@ export const HomeVisual = () => {
       {/* The Hero Asset */}
       <Box
         component="img"
-        src="/assets/weirdling_12.png"
+        src="/assets/og_weirdlings/weirdling_2.png"
         alt="Community Illustration"
         sx={{
           position: 'relative',

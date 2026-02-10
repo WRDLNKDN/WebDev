@@ -6,14 +6,13 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../components/home/GuestView';
 import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HomeVisual } from '../components/home/HomeVisual';
-import { UserView } from '../components/home/UserView';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -24,80 +23,62 @@ const toMessage = (e: unknown) => {
 };
 
 export const Home = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- 1. AUTH & SESSION LOGIC ---
+  // --- AUTH & REDIRECT LOGIC ---
   useEffect(() => {
     let mounted = true;
 
-    const initSession = async () => {
+    const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
+
         if (mounted) {
           if (error) console.warn('Session check warning:', error.message);
-          setSession(data.session);
+
+          if (data.session) {
+            // 🚀 USER FOUND: Redirect immediately to Feed
+            navigate('/directory', { replace: true });
+            return;
+          }
+
+          // No session? Stop loading and show Guest View
+          setIsLoading(false);
         }
       } catch (err) {
         console.error('Session check failed:', err);
-      } finally {
         if (mounted) setIsLoading(false);
       }
     };
 
-    void initSession();
+    void checkSession();
 
-    // FAIL-SAFE: If Supabase hangs, kill the spinner after 1.5s
+    // 2. Listen for realtime auth changes (e.g. login in another tab)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted && session) {
+        navigate('/directory', { replace: true });
+      }
+    });
+
+    // 3. Fail-safe timeout
     const safetyTimer = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('Supabase took too long. Forcing guest view.');
         setIsLoading(false);
       }
     }, 1500);
 
-    // REAL-TIME LISTENER
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (mounted) {
-        setSession(newSession);
-        setIsLoading(false); // Ensure we stop loading on change
-      }
-    });
-
     return () => {
       mounted = false;
       clearTimeout(safetyTimer);
-      subscription.unsubscribe();
+      sub.subscription.unsubscribe();
     };
-  }, [isLoading]); // Run once on mount
-
-  // --- ADMIN CHECK ---
-  useEffect(() => {
-    if (!session) return;
-
-    let mounted = true;
-    const checkAdmin = async () => {
-      try {
-        const { data, error } = await supabase.rpc('is_admin');
-        if (mounted && !error && data) {
-          setIsAdmin(true);
-        }
-      } catch {
-        // ignore
-      }
-    };
-    void checkAdmin();
-    return () => {
-      mounted = false;
-    };
-  }, [session]);
+  }, [navigate, isLoading]);
 
   const handleAuth = async (provider: OAuthProvider) => {
     setBusy(true);
@@ -106,9 +87,11 @@ export const Home = () => {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
         '/directory',
       )}`;
+
       const { data, error: signInError } = await signInWithOAuth(provider, {
         redirectTo,
       });
+
       if (signInError) throw signInError;
       if (data?.url) {
         window.location.href = data.url;
@@ -119,7 +102,7 @@ export const Home = () => {
     }
   };
 
-  // --- 2. RENDER ---
+  // --- RENDER ---
 
   if (isLoading) {
     return <HomeSkeleton />;
@@ -148,9 +131,9 @@ export const Home = () => {
       >
         <Container maxWidth="lg">
           <Grid container spacing={8} alignItems="center">
-            {/* --- LEFT COLUMN: Dynamic Content --- */}
+            {/* --- LEFT COLUMN: Guest Gateway --- */}
             <Grid size={{ xs: 12, md: 6 }}>
-              {!session && error && (
+              {error && (
                 <Alert
                   severity="error"
                   onClose={() => setError(null)}
@@ -160,14 +143,10 @@ export const Home = () => {
                 </Alert>
               )}
 
-              {!session ? (
-                <GuestView busy={busy} onAuth={handleAuth} />
-              ) : (
-                <UserView isAdmin={isAdmin} />
-              )}
+              <GuestView busy={busy} onAuth={handleAuth} />
             </Grid>
 
-            {/* --- RIGHT COLUMN: Static Visual --- */}
+            {/* --- RIGHT COLUMN: Brand Visual --- */}
             {!isMobile && (
               <Grid size={{ md: 6 }}>
                 <HomeVisual />

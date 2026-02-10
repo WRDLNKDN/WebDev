@@ -35,7 +35,7 @@ const Column = ({
   return (
     <Stack spacing={1.5} component="nav" aria-label={title}>
       <Typography
-        component="h3"
+        component="h2"
         variant="subtitle2"
         fontWeight={700}
         color="rgba(255,255,255,0.95)"

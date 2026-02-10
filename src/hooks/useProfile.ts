@@ -60,7 +60,7 @@ export function useProfile() {
             .select('*')
             .single();
           if (!insertErr && inserted) {
-            profileData = inserted as DashboardProfile;
+            profileData = inserted as unknown as DashboardProfile;
             break;
           }
           if (insertErr?.code === '23505') {

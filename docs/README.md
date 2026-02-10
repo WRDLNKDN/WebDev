@@ -12,6 +12,8 @@ Central index for WRDLNKDN WebDev documentation.
   response envelope.
 - [ADR: Unified signup wizard](./architecture/adr-unified-signup-wizard.md) —
   Decision record for the signup wizard flow.
+- [Epic: Ecommerce and Storefront](./architecture/epic-ecommerce-storefront.md)
+  — Embed-first Ecwid storefront (MVP scope and acceptance).
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling
   instructions.
 

@@ -31,6 +31,10 @@ const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
 
+const Store = lazy(() =>
+  import('./pages/Store').then((m) => ({ default: m.Store })),
+);
+
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
@@ -138,6 +142,7 @@ const App = () => {
               <Route path="/u/:handle" element={<LandingPage />} />
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />
+              <Route path="/store" element={<Store />} />
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />

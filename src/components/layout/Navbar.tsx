@@ -167,6 +167,9 @@ export const Navbar = () => {
           />
         </Box>
 
+        <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
+          Store
+        </Button>
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Menu */}

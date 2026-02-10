@@ -35,6 +35,12 @@ const Store = lazy(() =>
   import('./pages/Store').then((m) => ({ default: m.Store })),
 );
 
+const WeirdlingCreate = lazy(() =>
+  import('./pages/weirdling/WeirdlingCreate').then((m) => ({
+    default: m.WeirdlingCreate,
+  })),
+);
+
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
@@ -146,6 +152,7 @@ const App = () => {
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/weirdling/create" element={<WeirdlingCreate />} />
 
               {/* --- Authentication --- */}
               <Route path="/login" element={<SignIn />} />

@@ -1,10 +1,19 @@
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Box, Button, Container, Grid, Paper, Stack } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectCard } from '../components/portfolio/AddProjectCard';
@@ -14,6 +23,7 @@ import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../components/profile/IdentityHeader';
+import { SettingsDialog } from '../components/profile/SettingsDialog';
 
 // --- NEW WIDGET SECTORS ---
 import { EditLinksDialog } from '../components/profile/EditLinksDialog';
@@ -21,8 +31,10 @@ import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
 
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
+import { getMyWeirdling } from '../lib/weirdlingApi';
 import { supabase } from '../lib/supabaseClient';
 import { GLASS_CARD } from '../theme/candyStyles';
+import type { Weirdling } from '../types/weirdling';
 import type { NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
 
@@ -35,9 +47,15 @@ export const Dashboard = () => {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // WIRED UP: This controls the new Link Manager Modal
   const [isLinksOpen, setIsLinksOpen] = useState(false);
+
+  // My Weirdling (saved persona from Create My Weirdling)
+  const [weirdling, setWeirdling] = useState<Weirdling | null | undefined>(
+    undefined,
+  );
 
   // AUTH GUARD
   useEffect(() => {
@@ -49,6 +67,13 @@ export const Dashboard = () => {
       }
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (!session) return;
+    getMyWeirdling()
+      .then(setWeirdling)
+      .catch(() => setWeirdling(null));
+  }, [session]);
 
   const {
     profile,
@@ -124,6 +149,7 @@ export const Dashboard = () => {
               <Button
                 variant="text"
                 startIcon={<SettingsIcon />}
+                onClick={() => setIsSettingsOpen(true)}
                 sx={{ color: 'text.secondary' }}
               >
                 Settings
@@ -183,6 +209,83 @@ export const Dashboard = () => {
                 </Box>
               )}
             </Paper>
+
+            {/* My Weirdling (saved persona) */}
+            <Paper
+              elevation={0}
+              sx={{
+                ...GLASS_CARD,
+                p: 3,
+                mb: 4,
+              }}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Box sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  MY WEIRDLING
+                </Box>
+                <Button
+                  component={RouterLink}
+                  to="/weirdling/create"
+                  size="small"
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  {weirdling ? 'Edit' : 'Create'}
+                </Button>
+              </Stack>
+              {weirdling === undefined && (
+                <Box sx={{ py: 2, display: 'flex', justifyContent: 'center' }}>
+                  <CircularProgress size={24} />
+                </Box>
+              )}
+              {weirdling === null && (
+                <Typography variant="body2" color="text.secondary">
+                  Create a personalized Weirdling persona (name, vibe, tagline)
+                  and save it here.
+                </Typography>
+              )}
+              {weirdling && (
+                <Box>
+                  {weirdling.avatarUrl && (
+                    <Box
+                      component="img"
+                      src={weirdling.avatarUrl}
+                      alt={`${weirdling.displayName} Weirdling`}
+                      sx={{
+                        width: '100%',
+                        maxWidth: 120,
+                        height: 'auto',
+                        borderRadius: 2,
+                        mb: 2,
+                        display: 'block',
+                      }}
+                    />
+                  )}
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {weirdling.displayName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    @{weirdling.handle} · {weirdling.roleVibe}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {weirdling.tagline}
+                  </Typography>
+                  {weirdling.bio && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {weirdling.bio}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Paper>
           </Grid>
 
           {/* RIGHT COLUMN: The "Portfolio" Sector */}
@@ -221,6 +324,19 @@ export const Dashboard = () => {
             onClose={() => setIsLinksOpen(false)}
             currentLinks={profile.socials || []}
             onUpdate={updateProfile}
+          />
+
+          <SettingsDialog
+            open={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            onEditProfile={() => {
+              setIsSettingsOpen(false);
+              setIsEditOpen(true);
+            }}
+            onManageLinks={() => {
+              setIsSettingsOpen(false);
+              setIsLinksOpen(true);
+            }}
           />
         </>
       )}

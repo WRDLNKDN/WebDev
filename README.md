@@ -72,6 +72,8 @@ workflows**, independent of specific implementation details.
 - **Docs index:** [docs/README.md](./docs/README.md)
 - **Auth & password (user and admin):**
   [docs/auth-requirements.md](./docs/auth-requirements.md)
+- **Weirdling architecture (visual rules & contributing):**
+  [docs/architecture/weirdling-architecture-guide.md](./docs/architecture/weirdling-architecture-guide.md)
 
 ---
 
@@ -93,3 +95,22 @@ workflows**, independent of specific implementation details.
    git clone https://github.com/WRDLNKDN/WebDev.git
    cd WebDev
    ```
+
+2. **Install and run (dev):**
+
+   ```bash
+   npm install
+   npx supabase start   # apply migrations (includes Weirdling tables)
+   npm run dev          # Vite + API proxy; open http://localhost:5173
+   ```
+
+3. **Try the Weirdling generator:**
+   - Sign in (Create account or Sign in with Google/Microsoft).
+   - In the nav, click **Create My Weirdling** (or go to `/weirdling/create`).
+   - Complete the 4-step wizard (name, role & interests, tone & boundaries,
+     optional bio).
+   - Click **Generate** → preview → **Save**, **Regenerate**, **Edit**, or
+     **Cancel**.
+   - Backend uses a mock AI adapter (no API key); see
+     [Epic: Weirdling Generator](./docs/architecture/epic-weirdling-generator.md)
+     to plug in a real provider.

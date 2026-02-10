@@ -18,6 +18,9 @@ Central index for WRDLNKDN WebDev documentation.
   — Embed-first Ecwid storefront (MVP scope and acceptance).
 - [Epic: Personalized Weirdling Generator](./architecture/epic-weirdling-generator.md)
   — AI API backend, wizard UX, MVP model conformance.
+- [Epic: Home Dashboard](./architecture/epic-home-dashboard.md) —
+  Profile-centric landing experience; identity, portfolio, status, friends (MVP
+  scope).
 - [Guide: Weirdling Architecture](./architecture/weirdling-architecture-guide.md)
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling

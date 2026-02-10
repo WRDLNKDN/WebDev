@@ -83,7 +83,7 @@ echo "✅ [SUCCESS]: Logic is pure and accessible."
 
 # 4. MARKDOWNLINT (Docs Integrity)
 echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
-if ! npx --no-install markdownlint '**/*.md' --ignore node_modules; then
+if ! npx --no-install markdownlint . --ignore node_modules; then
   echo "🛑 [DOCS FAULT]: Markdown lint failed."
   echo "ACTION REQUIRED: Run one of these:"
   echo "  - npm run lint:md"

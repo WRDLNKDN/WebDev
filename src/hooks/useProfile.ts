@@ -28,18 +28,53 @@ export function useProfile() {
         return;
       }
 
-      // 1. Fetch Profile
+      // 1. Fetch Profile (maybeSingle: no row = null, don't throw)
       const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
-      // EXPLICIT CASTING: Forcing the system to recognize our custom types
-      const profileData = data as DashboardProfile | null;
+      if (profileError) throw profileError;
 
-      if (profileError || !profileData)
-        throw profileError || new Error('Profile not found');
+      let profileData = data as DashboardProfile | null;
+
+      // If no profile row exists, create one so Edit Profile / Settings can work
+      if (!profileData) {
+        const email = session.user.email ?? '';
+        const baseHandle =
+          email.split('@')[0]?.toLowerCase().replace(/\W/g, '') || 'user';
+        const handle = baseHandle;
+        let attempts = 0;
+        while (attempts < 10) {
+          const { data: inserted, error: insertErr } = await supabase
+            .from('profiles')
+            .insert({
+              id: session.user.id,
+              email,
+              handle: attempts === 0 ? handle : `${handle}${attempts}`,
+              display_name:
+                session.user.user_metadata?.full_name ?? email.split('@')[0],
+              status: 'pending',
+            })
+            .select('*')
+            .single();
+          if (!insertErr && inserted) {
+            profileData = inserted as DashboardProfile;
+            break;
+          }
+          if (insertErr?.code === '23505') {
+            attempts += 1;
+            continue;
+          }
+          break;
+        }
+        if (!profileData) {
+          setLoading(false);
+          setError('Could not create profile. Try again or contact support.');
+          return;
+        }
+      }
 
       // Safe Data Hydration
       const rawCreds = profileData.nerd_creds;

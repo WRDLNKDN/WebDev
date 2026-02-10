@@ -30,6 +30,12 @@ const ProfileStep = () => {
 
   const [localError, setLocalError] = useState<string | null>(null);
 
+  const combinedError = localError ?? submitError;
+  const friendlyError =
+    combinedError && !localError
+      ? 'Something went wrong while submitting your profile. Please try again in a moment — your answers on this step are still here.'
+      : combinedError;
+
   const handleContinue = async () => {
     setLocalError(null);
 
@@ -78,13 +84,13 @@ const ProfileStep = () => {
         </Typography>
       </Box>
 
-      {(localError || submitError) && (
+      {combinedError && (
         <Alert
           severity="error"
           onClose={() => setLocalError(null)}
           className="profileStepAlert"
         >
-          {localError ?? submitError}
+          {friendlyError}
         </Alert>
       )}
 

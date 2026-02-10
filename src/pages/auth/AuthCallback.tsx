@@ -2,6 +2,7 @@
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Container,
   Paper,
@@ -103,8 +104,20 @@ export const AuthCallback = () => {
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : 'Auth Sync Failed';
-          setError(msg);
+          const msg = e instanceof Error ? e.message : 'Authentication failed';
+
+          if (
+            msg.toLowerCase().includes('network') ||
+            msg.toLowerCase().includes('timeout')
+          ) {
+            setError(
+              'We had trouble completing sign-in due to a network issue. You can try again or return home.',
+            );
+          } else {
+            setError(
+              'We could not complete the sign-in sync. You can try again or go back home and start over.',
+            );
+          }
         }
       }
     };
@@ -148,13 +161,38 @@ export const AuthCallback = () => {
               </Typography>
 
               {error ? (
-                <Alert
-                  severity="error"
-                  variant="filled"
-                  sx={{ mt: 2, borderRadius: 2 }}
-                >
-                  {error}
-                </Alert>
+                <>
+                  <Alert
+                    severity="error"
+                    variant="filled"
+                    sx={{ mt: 2, borderRadius: 2, mb: 2 }}
+                  >
+                    {error}
+                  </Alert>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    justifyContent="center"
+                    sx={{ mt: 1 }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={() =>
+                        navigate(next === '/signup' ? '/signup' : '/signin', {
+                          replace: true,
+                        })
+                      }
+                    >
+                      Try again
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => navigate('/', { replace: true })}
+                    >
+                      Back home
+                    </Button>
+                  </Stack>
+                </>
               ) : (
                 <Typography
                   variant="body1"

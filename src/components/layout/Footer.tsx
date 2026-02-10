@@ -24,9 +24,25 @@ export const Footer = () => {
           flexWrap: 'wrap',
         }}
       >
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          © {new Date().getFullYear()} WRDLNKDN. Stay weird. Build cool stuff.
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Link
+            component={RouterLink}
+            to="/"
+            sx={{ display: 'block', lineHeight: 0 }}
+            aria-label="WRDLNKDN home"
+          >
+            <Box
+              component="img"
+              src="/assets/logo.png"
+              alt="WRDLNKDN"
+              sx={{ height: 36, width: 'auto', display: 'block' }}
+            />
+          </Link>
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            © {new Date().getFullYear()} WRDLNKDN. Stay weird. Build cool
+            stuff.
+          </Typography>
+        </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center">
           <Link

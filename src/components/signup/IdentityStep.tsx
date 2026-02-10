@@ -143,16 +143,23 @@ export const IdentityStep = () => {
         setLoadingProvider(null);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed';
-      if (
-        msg.toLowerCase().includes('provider') &&
-        msg.toLowerCase().includes('not enabled')
-      ) {
+      const raw = err instanceof Error ? err.message : 'Authentication failed';
+      const msg = raw.toLowerCase();
+
+      const providerLabel = provider === 'google' ? 'Google' : 'Microsoft';
+
+      if (msg.includes('provider') && msg.includes('not enabled')) {
         setError(
           'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env file, then run: supabase stop && supabase start. See supabase/README.md for details.',
         );
+      } else if (msg.includes('network') || msg.includes('timeout')) {
+        setError(
+          `${providerLabel} sign-in is having trouble connecting. Please check your connection and try again, or choose a different provider.`,
+        );
       } else {
-        setError(msg);
+        setError(
+          `${providerLabel} could not complete sign-in. Please try again in a moment or select a different provider.`,
+        );
       }
       setLoading(false);
       setLoadingProvider(null);

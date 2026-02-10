@@ -7,32 +7,26 @@ import {
   Typography,
 } from '@mui/material';
 import { useSignup } from '../../context/useSignup';
+import './signup.css';
+import './WelcomeStep.css';
 
 export const WelcomeStep = () => {
-  const { goToStep } = useSignup();
+  const { goToStep, markComplete } = useSignup();
 
   return (
     <Container maxWidth="sm">
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 3, md: 4 },
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
+      <Paper elevation={0} className="signupPaper">
         <Stack spacing={3}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+            <Typography variant="h5" className="welcomeStepTitle">
               Welcome to WRDLNKDN
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            <Typography variant="body2" className="welcomeStepSubtext">
               Professional networking, but human.
             </Typography>
           </Box>
 
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+          <Typography variant="body2" className="welcomeStepDescription">
             This is a curated directory. You submit a request, admins review it,
             and once approved you appear in the member list.
           </Typography>
@@ -40,7 +34,10 @@ export const WelcomeStep = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={() => goToStep('identity')}
+            onClick={() => {
+              markComplete('welcome');
+              goToStep('identity');
+            }}
           >
             Start signup
           </Button>

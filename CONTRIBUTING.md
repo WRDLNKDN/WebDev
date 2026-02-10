@@ -1,6 +1,7 @@
 # Contributing Guide
 
-See our Contributors Onboarding wiki for comprehensive information on how to get involved! https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding
+See our Contributors Onboarding wiki for comprehensive information on how to get
+involved! <https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding>
 
 ## Introduction
 

@@ -1,3 +1,4 @@
+// src/pages/auth/AuthCallback.tsx
 import {
   Alert,
   Box,
@@ -11,7 +12,25 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
+import type { IdentityProvider } from '../../types/signup';
+import { POLICY_VERSION } from '../../types/signup';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
+
+function mapSupabaseProvider(user: {
+  identities?: { provider?: string }[];
+  app_metadata?: { provider?: string };
+}): IdentityProvider {
+  const p =
+    user.identities?.[0]?.provider ?? user.app_metadata?.provider ?? 'google';
+  return p === 'azure' ? 'microsoft' : 'google';
+}
+
+/** Check URL for OAuth error params (from hash or query) */
+function getOAuthError(): string | null {
+  const hash = window.location.hash?.slice(1);
+  const params = new URLSearchParams(hash || window.location.search);
+  return params.get('error_description') || params.get('error') || null;
+}
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
@@ -26,9 +45,25 @@ export const AuthCallback = () => {
 
     const runSyncProtocol = async () => {
       try {
-        // --- HANDSHAKE INITIALIZATION ---
-        // Small delay to ensure Supabase processes the hash/query
-        await new Promise((r) => setTimeout(r, 400));
+        const oauthError = getOAuthError();
+        if (oauthError) {
+          const lower = oauthError.toLowerCase();
+          if (lower.includes('provider') && lower.includes('not enabled')) {
+            throw new Error(
+              'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env, then run: supabase stop && supabase start. See supabase/README.md.',
+            );
+          }
+          throw new Error(
+            `Sign-in failed: ${oauthError}. Try again or use a different sign-in method.`,
+          );
+        }
+
+        console.log('🔵 AuthCallback: Starting');
+        console.log('🔵 AuthCallback: next parameter =', next);
+        console.log('🔵 AuthCallback: Full URL =', window.location.href);
+
+        // Give Supabase time to process hash/query
+        await new Promise((r) => setTimeout(r, 200));
 
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
@@ -42,12 +77,17 @@ export const AuthCallback = () => {
         if (!cancelled) {
           // --- LOGIC BRANCH: SIGNUP VS DIRECT ENTRY ---
           if (next === '/signup') {
+            console.log('📝 AuthCallback: Setting up signup flow');
+
+            const provider = mapSupabaseProvider(user);
+
             setIdentity({
-              provider: 'google',
+              provider,
               userId: user.id,
               email: user.email || '',
               termsAccepted: true,
               guidelinesAccepted: true,
+              policyVersion: POLICY_VERSION,
               timestamp: new Date().toISOString(),
             });
 

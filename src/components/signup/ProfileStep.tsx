@@ -1,15 +1,16 @@
-import { useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Stack,
   TextField,
   Typography,
-  Alert,
-  CircularProgress,
 } from '@mui/material';
+import { useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
+import './ProfileStep.css';
 
 const ProfileStep = () => {
   const {
@@ -47,11 +48,9 @@ const ProfileStep = () => {
       tagline: tagline.trim(),
     };
 
-    // Save profile data to state
     setProfile(profileData);
 
     try {
-      // Pass profile data directly to avoid stale state
       await submitRegistration(profileData);
       completeStep('profile');
       goToStep('complete');
@@ -69,24 +68,12 @@ const ProfileStep = () => {
   };
 
   return (
-    <Stack spacing={4} sx={{ maxWidth: 600, mx: 'auto' }}>
+    <Stack spacing={4} className="profileStep">
       <Box>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            mb: 1,
-            color: '#ffffff',
-          }}
-        >
+        <Typography variant="h4" className="profileStepTitle">
           Create Your Profile
         </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'rgba(255,255,255,0.8)',
-          }}
-        >
+        <Typography variant="body1" className="profileStepSubtext">
           This is what will appear in the directory after approval.
         </Typography>
       </Box>
@@ -95,14 +82,7 @@ const ProfileStep = () => {
         <Alert
           severity="error"
           onClose={() => setLocalError(null)}
-          sx={{
-            bgcolor: 'rgba(211, 47, 47, 0.15)',
-            border: '1px solid rgba(211, 47, 47, 0.3)',
-            color: 'rgba(255,255,255,0.9)',
-            '& .MuiAlert-icon': {
-              color: '#f44336',
-            },
-          }}
+          className="profileStepAlert"
         >
           {localError ?? submitError}
         </Alert>
@@ -117,43 +97,7 @@ const ProfileStep = () => {
         helperText="This is your public name in the directory"
         required
         error={!displayName.trim() && displayName.length > 0}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            color: '#ffffff',
-            bgcolor: 'rgba(0,0,0,0.3)',
-            '& fieldset': {
-              borderColor: 'rgba(255,255,255,0.2)',
-            },
-            '&:hover fieldset': {
-              borderColor: 'rgba(255,255,255,0.3)',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#4CAF50',
-            },
-            '&.Mui-error fieldset': {
-              borderColor: '#f44336',
-            },
-          },
-          '& .MuiInputLabel-root': {
-            color: 'rgba(255,255,255,0.7)',
-            '&.Mui-focused': {
-              color: '#4CAF50',
-            },
-            '&.Mui-error': {
-              color: '#f44336',
-            },
-          },
-          '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(255,255,255,0.5)',
-            opacity: 1,
-          },
-          '& .MuiFormHelperText-root': {
-            color: 'rgba(255,255,255,0.6)',
-            '&.Mui-error': {
-              color: '#f44336',
-            },
-          },
-        }}
+        className="profileStepTextField"
       />
 
       <TextField
@@ -165,62 +109,35 @@ const ProfileStep = () => {
         rows={2}
         placeholder="One-liner about you (optional)"
         helperText="Optional: A short description or fun fact about yourself"
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            color: '#ffffff',
-            bgcolor: 'rgba(0,0,0,0.3)',
-            '& fieldset': {
-              borderColor: 'rgba(255,255,255,0.2)',
-            },
-            '&:hover fieldset': {
-              borderColor: 'rgba(255,255,255,0.3)',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#4CAF50',
-            },
-          },
-          '& .MuiInputLabel-root': {
-            color: 'rgba(255,255,255,0.7)',
-            '&.Mui-focused': {
-              color: '#4CAF50',
-            },
-          },
-          '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(255,255,255,0.5)',
-            opacity: 1,
-          },
-          '& .MuiFormHelperText-root': {
-            color: 'rgba(255,255,255,0.6)',
-          },
-        }}
+        className="profileStepTextField"
       />
 
-      <Box
-        sx={{
-          p: 2,
-          bgcolor: 'rgba(33, 150, 243, 0.1)',
-          borderRadius: 2,
-          border: '1px solid rgba(33, 150, 243, 0.2)',
-        }}
-      >
-        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+      <Box className="profileStepTipBox">
+        <Typography variant="body2" className="profileStepTipText">
           💡 <strong>Your profile will be reviewed by admins</strong> before
-          {' appearing in the directory. We’ll notify you once it’s approved!'}
+          {
+            " appearing in the directory. We will notify you once it's approved!"
+          }
         </Typography>
       </Box>
 
-      <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
+      <Stack direction="row" spacing={2} className="profileStepButtonRow">
         <Button
-          variant="text"
+          variant="outlined"
           onClick={handleBack}
           disabled={submitting}
+          className="profileStepBackButton"
           sx={{
-            color: 'rgba(255,255,255,0.7)',
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.6)',
+            color: '#fff',
             '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.05)',
+              borderColor: 'rgba(255,255,255,0.85)',
+              bgcolor: 'rgba(255,255,255,0.08)',
             },
-            '&:disabled': {
-              color: 'rgba(255,255,255,0.3)',
+            '&.Mui-disabled': {
+              borderColor: 'rgba(255,255,255,0.35)',
+              color: 'rgba(255,255,255,0.6)',
             },
           }}
         >
@@ -236,19 +153,7 @@ const ProfileStep = () => {
               <CircularProgress size={18} sx={{ color: '#ffffff' }} />
             ) : null
           }
-          sx={{
-            flex: 1,
-            bgcolor: '#4CAF50',
-            color: '#ffffff',
-            fontSize: '1.05rem',
-            '&:hover': {
-              bgcolor: '#45a049',
-            },
-            '&:disabled': {
-              bgcolor: 'rgba(76, 175, 80, 0.3)',
-              color: 'rgba(255,255,255,0.5)',
-            },
-          }}
+          className="profileStepSubmitButton"
         >
           {submitting ? 'Submitting…' : 'Submit Registration'}
         </Button>

@@ -1,0 +1,12 @@
+.welcomeStepTitle {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.welcomeStepSubtext {
+  opacity: 0.8;
+}
+
+.welcomeStepDescription {
+  opacity: 0.9;
+}

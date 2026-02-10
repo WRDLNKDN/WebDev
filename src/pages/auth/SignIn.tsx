@@ -1,40 +1,59 @@
-import { useState } from 'react';
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
+  Divider,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   Typography,
-  Alert,
-  CircularProgress,
-  Divider,
 } from '@mui/material';
+import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
+import { signInWithOAuth } from '../../lib/signInWithOAuth';
 
 export const SignIn = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<
+    'google' | 'azure' | null
+  >(null);
+  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     setLoading(true);
+    setLoadingProvider(provider);
     setError(null);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const { data, error: authError } = await signInWithOAuth(provider, {
+        redirectTo: `${window.location.origin}/auth/callback`,
       });
 
       if (authError) throw authError;
 
       if (data.url) window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      const msg = err instanceof Error ? err.message : 'Authentication failed';
+      if (
+        msg.toLowerCase().includes('provider') &&
+        msg.toLowerCase().includes('not enabled')
+      ) {
+        setError(
+          'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env, then run: supabase stop && supabase start. See supabase/README.md.',
+        );
+      } else {
+        setError(msg);
+      }
       setLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -66,29 +85,57 @@ export const SignIn = () => {
               </Alert>
             )}
 
-            <Stack spacing={2}>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => handleOAuthSignIn('google')}
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={(e) => setProviderAnchor(e.currentTarget)}
+              disabled={loading}
+              startIcon={
+                loadingProvider ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : undefined
+              }
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                justifyContent: 'flex-start',
+              }}
+            >
+              {loadingProvider
+                ? 'Signing in…'
+                : 'Sign in with Google or Microsoft'}
+            </Button>
+            <Menu
+              anchorEl={providerAnchor}
+              open={Boolean(providerAnchor)}
+              onClose={() => setProviderAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('google');
+                }}
                 disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : null}
-                fullWidth
+                sx={{ minWidth: 240 }}
               >
+                <GoogleIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Sign in with Google
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => handleOAuthSignIn('azure')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('azure');
+                }}
                 disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : null}
-                fullWidth
+                sx={{ minWidth: 240 }}
               >
+                <MicrosoftIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Sign in with Microsoft
-              </Button>
-            </Stack>
+              </MenuItem>
+            </Menu>
 
             <Divider />
 

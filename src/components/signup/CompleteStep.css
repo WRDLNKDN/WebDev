@@ -1,0 +1,18 @@
+.completeStep {
+  /* Uses shared signupPaper */
+}
+
+.completeStepTitle {
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.completeStepSubtext {
+  opacity: 0.8;
+  text-align: center;
+}
+
+.completeStepStack {
+  align-items: center;
+}

@@ -1,0 +1,22 @@
+.reviewStepTitle {
+  font-weight: 800;
+}
+
+.reviewStepSubtext {
+  opacity: 0.8;
+}
+
+.reviewStepSection {
+  padding: 16px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.reviewStepSectionTitle {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.reviewStepSection + .reviewStepSection {
+  margin-top: 16px;
+}

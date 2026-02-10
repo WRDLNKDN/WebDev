@@ -1,34 +1,66 @@
-import { useState, useEffect, useRef } from 'react';
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
-  Container,
+  CircularProgress,
   FormControlLabel,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   Typography,
-  Alert,
-  CircularProgress,
-  Divider,
 } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
+import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
+import type { IdentityProvider } from '../../types/signup';
+import { POLICY_VERSION } from '../../types/signup';
+import './IdentityStep.css';
+import './signup.css';
+
+const mapSupabaseProvider = (user: {
+  identities?: { provider?: string }[];
+  app_metadata?: { provider?: string };
+}): IdentityProvider => {
+  const p =
+    user.identities?.[0]?.provider ?? user.app_metadata?.provider ?? 'google';
+  return p === 'azure' ? 'microsoft' : 'google';
+};
 
 export const IdentityStep = () => {
-  const { goToStep, markComplete, setIdentity } = useSignup();
+  const { state, goToStep, markComplete, setIdentity } = useSignup();
 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [guidelinesAccepted, setGuidelinesAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<
+    'google' | 'azure' | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
+    null,
+  );
 
   const hasCheckedAuth = useRef(false);
   const hasAdvanced = useRef(false);
+  const signInButtonRef = useRef<HTMLButtonElement>(null);
 
   const canProceed = termsAccepted && guidelinesAccepted;
+
+  // State verification: ensure user has viewed WelcomeStep to prevent zombie sessions
+  useEffect(() => {
+    if (!state.completedSteps.includes('welcome')) {
+      goToStep('welcome');
+    }
+  }, [state.completedSteps, goToStep]);
 
   useEffect(() => {
     if (hasCheckedAuth.current) {
@@ -51,20 +83,26 @@ export const IdentityStep = () => {
           return;
         }
 
-        if (session?.user && !hasAdvanced.current) {
+        if (
+          session?.user &&
+          !hasAdvanced.current &&
+          state.completedSteps.includes('welcome')
+        ) {
           console.log('Session found, advancing to values step');
           hasAdvanced.current = true;
 
+          const provider = mapSupabaseProvider(session.user);
+
           setIdentity({
-            provider: 'google',
+            provider,
             userId: session.user.id,
             email: session.user.email || '',
             termsAccepted: true,
             guidelinesAccepted: true,
+            policyVersion: POLICY_VERSION,
             timestamp: new Date().toISOString(),
           });
 
-          // tiny tick so context/state updates settle before navigation
           await new Promise((resolve) => setTimeout(resolve, 0));
 
           markComplete('identity');
@@ -78,23 +116,21 @@ export const IdentityStep = () => {
     };
 
     void checkAuthentication();
-  }, [goToStep, markComplete, setIdentity]);
+  }, [goToStep, markComplete, setIdentity, state.completedSteps]);
 
-  const handleGoogleSignIn = async () => {
+  const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     if (!canProceed) {
       setError('Please accept the Terms and Community Guidelines to continue');
       return;
     }
 
     setLoading(true);
+    setLoadingProvider(provider);
     setError(null);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
-        },
+      const { data, error: authError } = await signInWithOAuth(provider, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
       });
 
       if (authError) throw authError;
@@ -104,10 +140,22 @@ export const IdentityStep = () => {
       } else {
         setError('OAuth redirect URL missing');
         setLoading(false);
+        setLoadingProvider(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      const msg = err instanceof Error ? err.message : 'Authentication failed';
+      if (
+        msg.toLowerCase().includes('provider') &&
+        msg.toLowerCase().includes('not enabled')
+      ) {
+        setError(
+          'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env file, then run: supabase stop && supabase start. See supabase/README.md for details.',
+        );
+      } else {
+        setError(msg);
+      }
       setLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -117,51 +165,35 @@ export const IdentityStep = () => {
 
   if (checkingAuth) {
     return (
-      <Container maxWidth="sm">
+      <Box sx={{ width: '100%' }}>
         <Paper
           elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
+          className="signupPaper identityStep"
+          sx={{ bgcolor: 'transparent', border: 'none' }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              justifyContent: 'center',
-              py: 4,
-            }}
-          >
+          <Box className="identityStepChecking">
             <CircularProgress size={24} />
             <Typography>Checking authentication...</Typography>
           </Box>
         </Paper>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="sm">
+    <Box sx={{ width: '100%' }}>
       <Paper
         elevation={0}
-        sx={{
-          p: { xs: 3, md: 4 },
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
+        className="signupPaper identityStep"
+        sx={{ bgcolor: 'transparent', border: 'none' }}
       >
         <Stack spacing={3}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-              Verify Your Identity
+            <Typography variant="h5" className="signupStepLabel">
+              Continue to sign in
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Sign in with Google to continue
+            <Typography variant="body2" className="signupStepSubtext">
+              Sign in with Google or Microsoft to continue
             </Typography>
           </Box>
 
@@ -171,22 +203,14 @@ export const IdentityStep = () => {
             </Alert>
           )}
 
-          <Stack spacing={2}>
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => void handleGoogleSignIn()}
-              disabled={loading || !canProceed}
-              startIcon={loading ? <CircularProgress size={20} /> : null}
-              fullWidth
-            >
-              Continue with Google
-            </Button>
-          </Stack>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Stack spacing={2}>
+          <Typography
+            variant="subtitle2"
+            className="IdentityStep__policyTitle"
+            sx={{ fontWeight: 600, mb: 1, display: 'block' }}
+          >
+            Before continuing, please review and accept:
+          </Typography>
+          <Stack spacing={2} sx={{ mb: 3 }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -202,14 +226,14 @@ export const IdentityStep = () => {
                     component="a"
                     href="/terms"
                     target="_blank"
-                    sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                    rel="noopener noreferrer"
+                    className="signupLink"
                   >
                     Terms of Service
                   </Typography>
                 </Typography>
               }
             />
-
             <FormControlLabel
               control={
                 <Checkbox
@@ -225,7 +249,8 @@ export const IdentityStep = () => {
                     component="a"
                     href="/guidelines"
                     target="_blank"
-                    sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                    rel="noopener noreferrer"
+                    className="signupLink"
                   >
                     Community Guidelines
                   </Typography>
@@ -234,32 +259,119 @@ export const IdentityStep = () => {
             />
           </Stack>
 
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: 'background.default',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: 600, mb: 1, display: 'block' }}
           >
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+            Choose your identity provider:
+          </Typography>
+          <Box>
+            <Button
+              ref={signInButtonRef}
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={(e) => setProviderAnchor(e.currentTarget)}
+              disabled={loading || !canProceed}
+              aria-expanded={Boolean(providerAnchor)}
+              aria-haspopup="menu"
+              aria-controls={providerAnchor ? 'idp-menu' : undefined}
+              id="idp-signin-trigger"
+              startIcon={
+                loadingProvider ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : undefined
+              }
+              className="IdentityStep__btn"
+              sx={{
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.5)',
+                color: '#fff',
+                bgcolor: 'rgba(255,255,255,0.06)',
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.8)',
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                },
+                '&.Mui-disabled': {
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  color: 'rgba(255,255,255,0.4)',
+                },
+              }}
+            >
+              {loadingProvider ? 'Signing in…' : 'Sign in'}
+            </Button>
+            <Menu
+              id="idp-menu"
+              aria-labelledby="idp-signin-trigger"
+              anchorEl={providerAnchor}
+              open={Boolean(providerAnchor)}
+              onClose={() => {
+                setProviderAnchor(null);
+                signInButtonRef.current?.focus();
+              }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('google');
+                }}
+                disabled={loading || !canProceed}
+                sx={{ minWidth: 240 }}
+              >
+                <ListItemIcon>
+                  <GoogleIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Continue with Google</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setProviderAnchor(null);
+                  void handleOAuthSignIn('azure');
+                }}
+                disabled={loading || !canProceed}
+                sx={{ minWidth: 240 }}
+              >
+                <ListItemIcon>
+                  <MicrosoftIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Continue with Microsoft</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
+
+          <Box className="identityStepInfoBox" sx={{ mt: 2 }}>
+            <Typography variant="caption" className="signupStepSubtext">
               We use OAuth for secure authentication. Your credentials are never
               stored on our servers.
             </Typography>
           </Box>
 
           <Button
-            variant="text"
+            variant="outlined"
             onClick={handleBack}
             disabled={loading}
-            sx={{ alignSelf: 'flex-start' }}
+            className="signupBackButton"
+            sx={{
+              borderWidth: 1.5,
+              borderColor: 'rgba(255,255,255,0.6)',
+              color: '#fff',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.85)',
+                bgcolor: 'rgba(255,255,255,0.08)',
+              },
+              '&.Mui-disabled': {
+                borderColor: 'rgba(255,255,255,0.35)',
+                color: 'rgba(255,255,255,0.6)',
+              },
+            }}
           >
             Back
           </Button>
         </Stack>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

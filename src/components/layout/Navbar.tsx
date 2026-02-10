@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
+import { WEIRDLING_ASSET_COUNT } from '../../types/weirdling';
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -25,13 +26,12 @@ export const Navbar = () => {
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
 
-  // Weirdling rotation state
+  // Weirdling rotation state (count from src/types/weirdling.ts)
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
-  const totalWeirdlings = 24;
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setWeirdlingIndex((prev) => (prev % totalWeirdlings) + 1);
+      setWeirdlingIndex((prev) => (prev % WEIRDLING_ASSET_COUNT) + 1);
     }, 7000);
 
     return () => clearInterval(interval);
@@ -169,6 +169,13 @@ export const Navbar = () => {
 
         <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
           Store
+        </Button>
+        <Button
+          component={RouterLink}
+          to="/weirdling/create"
+          sx={{ color: 'white' }}
+        >
+          Create My Weirdling
         </Button>
         <Box sx={{ flexGrow: 1 }} />
 

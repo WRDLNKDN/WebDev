@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
-import type { DashboardProfile, NerdCreds } from '../types/profile';
+import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
 
 export function useProfile() {
@@ -48,21 +48,41 @@ export function useProfile() {
           ? (rawCreds as unknown as NerdCreds)
           : ({} as NerdCreds);
 
+      // Normalize socials: DB may have legacy { discord, reddit, github } or SocialLink[]
+      const rawSocials = profileData.socials;
+      const safeSocials: SocialLink[] =
+        Array.isArray(rawSocials) &&
+        rawSocials.every(
+          (s) =>
+            s &&
+            typeof s === 'object' &&
+            'id' in s &&
+            'url' in s &&
+            'isVisible' in s,
+        )
+          ? (rawSocials as SocialLink[])
+          : [];
+
       setProfile({
         ...profileData,
         nerd_creds: safeNerdCreds,
+        socials: safeSocials,
       } as DashboardProfile);
 
-      // 2. Fetch Projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('portfolio_items')
-        .select('*')
-        .eq('owner_id', session.user.id)
-        .order('created_at', { ascending: false });
+      // 2. Fetch Projects (optional: table may not exist yet)
+      try {
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('portfolio_items')
+          .select('*')
+          .eq('owner_id', session.user.id)
+          .order('created_at', { ascending: false });
 
-      if (projectsError) throw projectsError;
-
-      setProjects((projectsData || []) as PortfolioItem[]);
+        if (!projectsError)
+          setProjects((projectsData || []) as PortfolioItem[]);
+        else setProjects([]);
+      } catch {
+        setProjects([]);
+      }
     } catch (err: unknown) {
       console.error('SYSTEM_LOG: Data Load Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data.');

@@ -3,6 +3,13 @@ import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
+import {
+  mockWeirdlingAdapter,
+  getPromptVersion,
+  getModelVersion,
+} from './weirdling/adapter';
+import { validateWeirdlingResponse } from './weirdling/validate';
+import { checkRateLimit } from './weirdling/rateLimit';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -31,6 +38,7 @@ app.use(
 app.use(express.json());
 
 type AdminRequest = Request & { adminEmail?: string };
+type AuthRequest = Request & { userId?: string };
 
 type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
 
@@ -101,6 +109,347 @@ const requireAdmin = async (
     return res.status(500).json({ error: errorMessage(e, 'Server error') });
   }
 };
+
+const requireAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const bearer = pickBearer(req);
+    if (!bearer) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { data, error } = await adminSupabase.auth.getUser(bearer);
+    if (error || !data.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    req.userId = data.user.id;
+    next();
+  } catch (e: unknown) {
+    return res.status(500).json({ error: errorMessage(e, 'Server error') });
+  }
+};
+
+// --- Weirdling generator (MVP-aligned) ---
+const PROMPT_VERSION = getPromptVersion();
+const MODEL_VERSION = getModelVersion();
+
+const handleWeirdlingGenerate = async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const rl = checkRateLimit(userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: 'Too many generations. Please try again later.',
+      retryAfter: rl.retryAfter,
+    });
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const idempotencyKey =
+    typeof body.idempotency_key === 'string' && body.idempotency_key.trim()
+      ? body.idempotency_key.trim()
+      : null;
+
+  const displayNameOrHandle =
+    typeof body.displayNameOrHandle === 'string'
+      ? body.displayNameOrHandle.trim()
+      : '';
+  const roleVibe =
+    typeof body.roleVibe === 'string' ? body.roleVibe.trim() : '';
+  const industryOrInterests = Array.isArray(body.industryOrInterests)
+    ? (body.industryOrInterests as unknown[]).map(String).filter(Boolean)
+    : [];
+  const tone =
+    typeof body.tone === 'number' && Number.isFinite(body.tone)
+      ? body.tone
+      : 0.5;
+  const boundaries =
+    typeof body.boundaries === 'string' ? body.boundaries.trim() : '';
+  const bioSeed =
+    typeof body.bioSeed === 'string' ? body.bioSeed.trim() : undefined;
+  const includeImage =
+    typeof body.includeImage === 'boolean' ? body.includeImage : false;
+
+  if (!displayNameOrHandle || !roleVibe) {
+    return res.status(400).json({
+      error: 'Missing required fields: displayNameOrHandle, roleVibe',
+    });
+  }
+
+  let jobId: string | null = null;
+  if (idempotencyKey) {
+    const { data: existing } = await adminSupabase
+      .from('generation_jobs')
+      .select('id, status, raw_response')
+      .eq('user_id', userId)
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle();
+    if (existing?.status === 'complete' && existing.raw_response) {
+      try {
+        const validated = validateWeirdlingResponse(
+          existing.raw_response as Record<string, unknown>,
+        );
+        return res.json({
+          ok: true,
+          jobId: existing.id,
+          preview: {
+            displayName: validated.displayName,
+            handle: validated.handle,
+            roleVibe: validated.roleVibe,
+            industryTags: validated.industryTags,
+            tone: validated.tone,
+            tagline: validated.tagline,
+            boundaries: validated.boundaries,
+            bio: validated.bio,
+            avatarUrl: validated.avatarUrl,
+            promptVersion: validated.promptVersion,
+            modelVersion: validated.modelVersion,
+          },
+        });
+      } catch {
+        // fall through to regenerate
+      }
+    }
+  }
+
+  const { data: job, error: jobErr } = await adminSupabase
+    .from('generation_jobs')
+    .insert({
+      user_id: userId,
+      status: 'running',
+      idempotency_key: idempotencyKey,
+      prompt_version: PROMPT_VERSION,
+      model_version: MODEL_VERSION,
+    })
+    .select('id')
+    .single();
+
+  if (jobErr || !job?.id) {
+    return res
+      .status(500)
+      .json({ error: jobErr?.message ?? 'Failed to create job' });
+  }
+  jobId = job.id;
+
+  try {
+    const result = await mockWeirdlingAdapter.generate({
+      displayNameOrHandle,
+      roleVibe,
+      industryOrInterests,
+      tone,
+      boundaries,
+      bioSeed,
+      includeImage,
+      promptVersion: PROMPT_VERSION,
+    });
+
+    const validated = validateWeirdlingResponse({
+      ...result.rawResponse,
+      promptVersion: PROMPT_VERSION,
+      modelVersion: result.modelVersion,
+    });
+
+    await adminSupabase
+      .from('generation_jobs')
+      .update({
+        status: 'complete',
+        raw_response: validated.rawResponse,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', jobId);
+
+    return res.json({
+      ok: true,
+      jobId,
+      preview: {
+        displayName: validated.displayName,
+        handle: validated.handle,
+        roleVibe: validated.roleVibe,
+        industryTags: validated.industryTags,
+        tone: validated.tone,
+        tagline: validated.tagline,
+        boundaries: validated.boundaries,
+        bio: validated.bio,
+        avatarUrl: validated.avatarUrl,
+        promptVersion: validated.promptVersion,
+        modelVersion: validated.modelVersion,
+      },
+    });
+  } catch (err) {
+    const msg = errorMessage(err, 'Generation failed');
+    await adminSupabase
+      .from('generation_jobs')
+      .update({
+        status: 'failed',
+        error_message: msg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', jobId);
+    return res.status(422).json({ error: msg });
+  }
+};
+
+app.post('/api/weirdling/generate', requireAuth, handleWeirdlingGenerate);
+app.post('/api/weirdling/regenerate', requireAuth, handleWeirdlingGenerate);
+
+app.post(
+  '/api/weirdling/save',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const body = req.body as Record<string, unknown>;
+
+    if (typeof body.jobId === 'string' && body.jobId.trim()) {
+      const jobId = body.jobId.trim();
+      const { data: job, error: jobError } = await adminSupabase
+        .from('generation_jobs')
+        .select('raw_response')
+        .eq('id', jobId)
+        .eq('user_id', userId)
+        .eq('status', 'complete')
+        .maybeSingle();
+
+      if (jobError || !job?.raw_response) {
+        return res.status(400).json({
+          error: 'Job not found or not complete',
+        });
+      }
+
+      let validated;
+      try {
+        validated = validateWeirdlingResponse(
+          job.raw_response as Record<string, unknown>,
+        );
+      } catch (e) {
+        return res.status(400).json({
+          error: errorMessage(e, 'Invalid job response'),
+        });
+      }
+
+      const { error: upsertErr } = await adminSupabase
+        .from('weirdlings')
+        .upsert(
+          {
+            user_id: userId,
+            display_name: validated.displayName,
+            handle: validated.handle,
+            role_vibe: validated.roleVibe,
+            industry_tags: validated.industryTags,
+            tone: validated.tone,
+            tagline: validated.tagline,
+            boundaries: validated.boundaries,
+            bio: validated.bio ?? null,
+            avatar_url: validated.avatarUrl ?? null,
+            raw_ai_response: validated.rawResponse,
+            prompt_version: validated.promptVersion,
+            model_version: validated.modelVersion,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' },
+        );
+
+      if (upsertErr) {
+        return res.status(500).json({ error: upsertErr.message });
+      }
+      return res.json({ ok: true });
+    }
+
+    // Save from preview payload
+    const displayName =
+      typeof body.displayName === 'string' ? body.displayName.trim() : '';
+    const handle = typeof body.handle === 'string' ? body.handle.trim() : '';
+    const roleVibe =
+      typeof body.roleVibe === 'string' ? body.roleVibe.trim() : '';
+    const industryTags = Array.isArray(body.industryTags)
+      ? (body.industryTags as unknown[]).map(String).filter(Boolean)
+      : [];
+    const tone =
+      typeof body.tone === 'number' && Number.isFinite(body.tone)
+        ? body.tone
+        : 0.5;
+    const tagline = typeof body.tagline === 'string' ? body.tagline.trim() : '';
+    const boundaries =
+      typeof body.boundaries === 'string' ? body.boundaries.trim() : '';
+    const bio = typeof body.bio === 'string' ? body.bio.trim() : undefined;
+
+    if (!displayName || !handle || !roleVibe || !tagline) {
+      return res.status(400).json({
+        error: 'Missing required preview fields',
+      });
+    }
+
+    const { error: upsertErr } = await adminSupabase.from('weirdlings').upsert(
+      {
+        user_id: userId,
+        display_name: displayName,
+        handle,
+        role_vibe: roleVibe,
+        industry_tags: industryTags,
+        tone,
+        tagline,
+        boundaries,
+        bio: bio ?? null,
+        avatar_url: (body.avatarUrl as string | null) ?? null,
+        prompt_version: (body.promptVersion as string) ?? PROMPT_VERSION,
+        model_version: (body.modelVersion as string) ?? MODEL_VERSION,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
+
+    if (upsertErr) {
+      return res.status(500).json({ error: upsertErr.message });
+    }
+    return res.json({ ok: true });
+  },
+);
+
+app.get(
+  '/api/weirdling/me',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data, error } = await adminSupabase
+      .from('weirdlings')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'No Weirdling found' });
+
+    return res.json({
+      ok: true,
+      weirdling: {
+        id: data.id,
+        userId: data.user_id,
+        displayName: data.display_name,
+        handle: data.handle,
+        roleVibe: data.role_vibe,
+        industryTags: data.industry_tags ?? [],
+        tone: Number(data.tone),
+        tagline: data.tagline,
+        boundaries: data.boundaries ?? '',
+        bio: data.bio ?? undefined,
+        avatarUrl: data.avatar_url ?? undefined,
+        promptVersion: data.prompt_version,
+        modelVersion: data.model_version,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      },
+    });
+  },
+);
 
 // GET /api/admin/profiles?status=pending&q=&limit=25&offset=0&sort=created_at&order=asc
 app.get(

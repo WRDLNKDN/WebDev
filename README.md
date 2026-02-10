@@ -67,6 +67,14 @@ workflows**, independent of specific implementation details.
 
 ---
 
+## 📖 Documentation
+
+- **Docs index:** [docs/README.md](./docs/README.md)
+- **Auth & password (user and admin):**
+  [docs/auth-requirements.md](./docs/auth-requirements.md)
+
+---
+
 ## ⚙️ Getting Started
 
 ### 📦 Prerequisites

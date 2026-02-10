@@ -197,7 +197,14 @@ export const Footer = () => {
                 component="img"
                 src="/assets/logo.png"
                 alt="WRDLNKDN"
-                sx={{ height: 36, width: 'auto', display: 'block' }}
+                sx={{
+                  height: 120,
+                  minHeight: 120,
+                  width: 'auto',
+                  maxWidth: 240,
+                  display: 'block',
+                  objectFit: 'contain',
+                }}
               />
             </Link>
             <Typography variant="body2" color="rgba(255,255,255,0.8)">

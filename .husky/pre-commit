@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/sh
+# ^ Changed to sh for compatibility
+
 # --- The "Anti-Bloat" Verification ---
 # System Audit: Detect node_modules in the stage
 STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)
@@ -6,42 +8,46 @@ STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)
 if [ -n "$STAGED_MODULES" ]; then
   echo "❌ [SYSTEM AUDIT FAILURE]: node_modules detected in commit!"
   echo "Manual Rewind Required: Run 'git rm -r --cached node_modules' to purge."
-  exit 1 
+  exit 1
 fi
 
 # Check for empty files in staged changes
 echo "📂 Checking for empty files in staged changes..."
 
-ALLOW_EMPTY_REGEX='(^|/)\.gitkeep$|(^|/)\.keep$'
-CANDIDATES=$(git diff --cached --name-only --diff-filter=AM)
-EMPTY_FILES=""
-
-while IFS= read -r file; do
+# We use a subshell and pipe (POSIX compliant) instead of '<<<' (Bash only)
+EMPTY_FILES=$(git diff --cached --name-only --diff-filter=AM | while IFS= read -r file; do
+  # Skip blank lines
   [ -z "$file" ] && continue
-  if echo "$file" | grep -Eq "$ALLOW_EMPTY_REGEX"; then continue; fi
 
-  # Integrity Check: verify file exists and size is 0
+  # Check allow-list using 'case' (works in all shells)
+  case "$file" in
+    *.gitkeep|*.keep|*/.gitkeep|*/.keep) continue ;;
+  esac
+
+  # Integrity Check: verify file exists (-f) and is empty (! -s)
   if [ -f "$file" ] && [ ! -s "$file" ]; then
-    EMPTY_FILES+="$file"$'\n'
+    echo "$file"
   fi
-done <<< "$CANDIDATES"
+done)
 
 if [ -n "$EMPTY_FILES" ]; then
   echo "🛑 [SYSTEM AUDIT FAILURE]: Empty files detected!"
-  printf "%s" "$EMPTY_FILES"
+  echo "$EMPTY_FILES"
   exit 1
 fi
 
 # Step 4: Markdown lint (docs integrity)
 echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
+# Using 'command -v' check is safer than blindly running npx if it might be missing,
+# but your original logic is fine if npx is guaranteed.
 if ! npx --no-install markdownlint . --ignore node_modules; then
   echo "🛑 [DOCS FAULT]: Markdown lint failed."
-  echo "  Run: npm run lint:md:fix"
+  echo "   Run: npm run lint:md:fix"
   exit 1
 fi
 echo "✅ [STEP 4]: Docs are clean."
 
-# Lint and format staged files so syntax/lint issues are caught before commit
+# Lint and format staged files
 echo "🔍 Running lint-staged (prettier + eslint + markdownlint) on staged files..."
 npx lint-staged
 

@@ -11,31 +11,25 @@ import {
   MenuItem,
   Stack,
   Toolbar,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
-import { WEIRDLING_ASSET_COUNT } from '../../types/weirdling';
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  // Hide detailed nav links on mobile to prevent crowding
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
-
-  // Weirdling rotation state (count from src/types/weirdling.ts)
-  const [weirdlingIndex, setWeirdlingIndex] = useState(1);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWeirdlingIndex((prev) => (prev % WEIRDLING_ASSET_COUNT) + 1);
-    }, 7000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Auth session wiring
   useEffect(() => {
@@ -95,6 +89,7 @@ export const Navbar = () => {
     setBusy(true);
 
     try {
+      // UPDATED: Redirect to the Directory (Feed) instead of Dashboard
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
         '/directory',
       )}`;
@@ -130,14 +125,14 @@ export const Navbar = () => {
       color="transparent"
       elevation={0}
       sx={{
-        bgcolor: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(10px)',
+        bgcolor: 'rgba(18, 18, 18, 0.9)', // Deep glass effect
+        backdropFilter: 'blur(12px)',
         zIndex: 1100,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}
     >
-      <Toolbar sx={{ py: 1 }}>
-        {/* Brand */}
+      <Toolbar sx={{ py: 0.5 }}>
+        {/* BRAND LOGO AREA */}
         <Box
           component={RouterLink}
           to="/"
@@ -146,55 +141,97 @@ export const Navbar = () => {
             alignItems: 'center',
             justifyContent: 'center',
             textDecoration: 'none',
-            mr: 2,
-            width: '64px',
+            mr: 3,
             height: '64px',
-            overflow: 'hidden',
-            borderRadius: '12px',
-            position: 'relative',
           }}
         >
           <Box
             component="img"
-            src={`/assets/weirdling_${weirdlingIndex}.png`}
-            alt="WRDLNKDN Logo"
+            src="/assets/wrdlnkdn_logo.png"
+            alt="WRDLNKDN"
             sx={{
-              height: '100%',
+              height: '32px', // Standard Nav Logo height
               width: 'auto',
-              transform: 'scale(2.1) translateY(10%)',
-              transition: 'all 0.5s ease-in-out',
+              transition: 'opacity 0.2s',
+              '&:hover': { opacity: 0.8 },
             }}
           />
         </Box>
 
-        <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
-          Store
-        </Button>
-        <Button
-          component={RouterLink}
-          to="/weirdling/create"
-          sx={{ color: 'white' }}
-        >
-          Create My Weirdling
-        </Button>
+        {/* --- MAIN NAVIGATION --- */}
+        {isDesktop && (
+          <Stack direction="row" spacing={1}>
+            {/* RENAMED: Directory -> Feed */}
+            <Button
+              component={RouterLink}
+              to="/directory"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+            >
+              Feed
+            </Button>
+
+            <Button
+              component={RouterLink}
+              to="/store"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+            >
+              Store
+            </Button>
+
+            <Button
+              component={RouterLink}
+              to="/weirdling/create"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+            >
+              Create
+            </Button>
+
+            {/* Dashboard only appears if logged in */}
+            {session && (
+              <Button
+                component={RouterLink}
+                to="/dashboard"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                Dashboard
+              </Button>
+            )}
+          </Stack>
+        )}
+
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Menu */}
+        {/* --- AUTH / ACTIONS --- */}
         <Stack direction="row" spacing={2} alignItems="center">
           {!session ? (
             <>
+              {/* Sign Up: Text Link */}
               <Button
                 component={RouterLink}
                 to="/signup"
-                sx={{ color: 'white' }}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
               >
-                Create account
+                Join now
               </Button>
+
+              {/* Sign In: Pill Button */}
               <Button
                 variant="outlined"
-                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
                 onClick={(e) => setSignInAnchor(e.currentTarget)}
                 disabled={busy}
+                sx={{
+                  borderRadius: 20,
+                  px: 3,
+                  borderColor: 'rgba(255,255,255,0.4)',
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                  },
+                }}
                 endIcon={
                   busy ? (
                     <CircularProgress size={20} color="inherit" />
@@ -203,17 +240,21 @@ export const Navbar = () => {
               >
                 Sign in
               </Button>
+
               <Menu
                 anchorEl={signInAnchor}
                 open={Boolean(signInAnchor)}
                 onClose={() => setSignInAnchor(null)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                slotProps={{ paper: { sx: { minWidth: 200 } } }}
+                slotProps={{
+                  paper: { sx: { minWidth: 220, mt: 1, borderRadius: 2 } },
+                }}
               >
                 <MenuItem
                   onClick={() => void handleSignIn('google')}
                   disabled={busy}
+                  sx={{ py: 1.5 }}
                 >
                   <ListItemIcon>
                     <GoogleIcon fontSize="small" />
@@ -223,6 +264,7 @@ export const Navbar = () => {
                 <MenuItem
                   onClick={() => void handleSignIn('azure')}
                   disabled={busy}
+                  sx={{ py: 1.5 }}
                 >
                   <ListItemIcon>
                     <MicrosoftIcon fontSize="small" />
@@ -237,14 +279,14 @@ export const Navbar = () => {
                 <Button
                   component={RouterLink}
                   to="/admin"
-                  sx={{ color: 'white' }}
+                  sx={{ color: 'warning.main' }}
                 >
-                  Admin Console
+                  Admin
                 </Button>
               )}
 
               <Button
-                sx={{ color: 'white' }}
+                sx={{ color: 'text.secondary' }}
                 onClick={() => void signOut()}
                 disabled={busy}
               >

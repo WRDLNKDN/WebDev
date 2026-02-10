@@ -173,7 +173,7 @@ export const Footer = () => {
           }}
         >
           {columns.map((col) => (
-            <Grid item xs={12} sm={6} md={3} key={col.title}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={col.title}>
               <Column title={col.title} links={col.links} />
             </Grid>
           ))}

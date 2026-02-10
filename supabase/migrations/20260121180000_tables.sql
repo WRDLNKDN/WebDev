@@ -1,6 +1,5 @@
--- supabase/migrations/20260121180000_profiles_baseline.sql
--- Baseline schema for profiles + admin allowlist + helpers
--- Safe for fresh db reset (no references to missing tables).
+-- supabase/migrations/20260121180000_tables.sql
+-- All tables, functions, and triggers. Safe for fresh db reset.
 
 -- -----------------------------
 -- Drop functions first (no table refs)
@@ -8,10 +7,13 @@
 drop function if exists public.set_updated_at() cascade;
 drop function if exists public.profiles_block_status_change() cascade;
 drop function if exists public.is_admin() cascade;
+drop function if exists public.set_generation_jobs_updated_at() cascade;
 
 -- -----------------------------
--- Drop tables (this will drop triggers on them too)
+-- Drop tables (reverse dependency order)
 -- -----------------------------
+drop table if exists public.weirdlings cascade;
+drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.admin_allowlist cascade;
 
@@ -24,12 +26,10 @@ create table public.admin_allowlist (
   created_by uuid references auth.users(id)
 );
 
--- Lock it down (service_role bypasses anyway)
 revoke all on table public.admin_allowlist from anon, authenticated;
 
 -- -----------------------------
 -- is_admin() helper
--- SECURITY DEFINER so it can read admin_allowlist even though users cannot.
 -- -----------------------------
 create or replace function public.is_admin()
 returns boolean
@@ -81,6 +81,9 @@ create table public.profiles (
   participation_style text[],
   additional_context text,
 
+  policy_version text,
+  resume_url text,
+
   socials jsonb not null default '{
     "discord": null,
     "reddit": null,
@@ -90,17 +93,20 @@ create table public.profiles (
   is_admin boolean not null default false
 );
 
--- Indexes
+comment on column public.profiles.policy_version is
+  'Version of Terms and Community Guidelines accepted at registration (e.g. v2026.02)';
+comment on column public.profiles.resume_url is
+  'Public URL of the user resume (e.g. from storage bucket resumes)';
+
 create unique index idx_profiles_handle_lower_unique
   on public.profiles (lower(handle));
-
 create index idx_profiles_created_at on public.profiles (created_at);
 create index idx_profiles_status on public.profiles (status);
 create index idx_profiles_handle on public.profiles (handle);
 create index idx_profiles_email on public.profiles (email);
 
 -- -----------------------------
--- updated_at trigger
+-- updated_at trigger (profiles)
 -- -----------------------------
 create or replace function public.set_updated_at()
 returns trigger
@@ -153,3 +159,76 @@ create trigger trg_profiles_block_status_change
 before update of status on public.profiles
 for each row
 execute function public.profiles_block_status_change();
+
+-- -----------------------------
+-- generation_jobs (Weirdling audit + idempotency)
+-- -----------------------------
+create table public.generation_jobs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'queued'
+    check (status in ('queued', 'running', 'complete', 'failed')),
+  idempotency_key text unique,
+  raw_response jsonb,
+  error_message text,
+  prompt_version text not null default 'v1',
+  model_version text not null default 'mock',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_generation_jobs_user_id on public.generation_jobs(user_id);
+create index idx_generation_jobs_status on public.generation_jobs(status);
+create index idx_generation_jobs_idempotency on public.generation_jobs(idempotency_key)
+  where idempotency_key is not null;
+
+comment on table public.generation_jobs is
+  'Generation audit trail and idempotency for Weirdling creation.';
+
+-- -----------------------------
+-- weirdlings (one active per user)
+-- -----------------------------
+create table public.weirdlings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  display_name text not null,
+  handle text not null,
+  role_vibe text not null,
+  industry_tags text[] not null default '{}',
+  tone numeric not null default 0.5,
+  tagline text not null,
+  boundaries text not null default '',
+  bio text,
+  avatar_url text,
+  raw_ai_response jsonb,
+  prompt_version text not null default 'v1',
+  model_version text not null default 'mock',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id)
+);
+
+comment on table public.weirdlings is
+  'One Weirdling persona per user (replace on save); MVP-aligned.';
+
+-- -----------------------------
+-- updated_at triggers (generation_jobs, weirdlings)
+-- -----------------------------
+create or replace function public.set_generation_jobs_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger trg_generation_jobs_updated_at
+  before update on public.generation_jobs
+  for each row execute function public.set_generation_jobs_updated_at();
+
+create trigger trg_weirdlings_updated_at
+  before update on public.weirdlings
+  for each row execute function public.set_updated_at();

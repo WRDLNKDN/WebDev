@@ -127,42 +127,67 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         if (!state.identity) throw new Error('Missing identity step data.');
         if (!state.values) throw new Error('Missing values step data.');
 
-        // Use passed profile data or fall back to state
         const profile = profileData || state.profile;
         if (!profile) throw new Error('Missing profile step data.');
         if (!profile.displayName) throw new Error('Display name is required.');
 
         console.log('📝 Creating profile in database...');
 
-        // Create URL-safe handle from display name
-        const handle = profile.displayName.toLowerCase().replace(/\s+/g, '-');
+        const baseHandle =
+          profile.displayName
+            .toLowerCase()
+            .replace(/\W+/g, '')
+            .replace(/^-|-$/g, '') || 'user';
+        const handle = baseHandle;
+        let attempts = 0;
+        const maxAttempts = 10;
 
-        // Insert profile (policy_version stored for audit; server-side verification recommended for strict compliance)
-        const { error: insertError } = await supabase.from('profiles').insert({
-          id: state.identity.userId,
-          email: state.identity.email,
-          handle,
-          display_name: profile.displayName,
-          tagline: profile.tagline || null,
-          join_reason: state.values.joinReason || [],
-          participation_style: state.values.participationStyle || [],
-          additional_context: state.values.additionalContext || null,
-          status: 'pending',
-          policy_version: state.identity.policyVersion || null,
-        } as never);
+        while (attempts < maxAttempts) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: state.identity.userId,
+              email: state.identity.email,
+              handle: attempts === 0 ? handle : `${handle}${attempts}`,
+              display_name: profile.displayName,
+              tagline: profile.tagline || null,
+              join_reason: state.values.joinReason || [],
+              participation_style: state.values.participationStyle || [],
+              additional_context: state.values.additionalContext || null,
+              status: 'pending',
+              policy_version: state.identity.policyVersion || null,
+            } as never);
 
-        if (insertError) {
+          if (!insertError) {
+            console.log('✅ Profile created successfully');
+            setState((s) => ({ ...s, currentStep: 'complete' }));
+            markComplete('complete');
+            return;
+          }
+
+          if (insertError.code === '23505') {
+            attempts += 1;
+            continue;
+          }
+
           console.error('❌ Profile insert error:', insertError);
-          throw insertError;
+          const msg =
+            insertError.code === '42501'
+              ? 'You must be signed in to submit. Please sign in again and try again.'
+              : insertError.message || 'Registration failed';
+          throw new Error(msg);
         }
 
-        console.log('✅ Profile created successfully');
-
-        setState((s) => ({ ...s, currentStep: 'complete' }));
-        markComplete('complete');
+        throw new Error(
+          'That display name or handle is already taken. Try a different display name.',
+        );
       } catch (e: unknown) {
         console.error('❌ Registration error:', e);
-        setSubmitError(e instanceof Error ? e.message : 'Registration failed');
+        const msg =
+          e instanceof Error
+            ? e.message
+            : 'Registration failed. Please try again.';
+        setSubmitError(msg);
         throw e;
       } finally {
         setSubmitting(false);

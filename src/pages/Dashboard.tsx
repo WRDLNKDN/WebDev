@@ -307,7 +307,7 @@ export const Dashboard = () => {
         </Grid>
       </Container>
 
-      {/* OVERLAY DIALOGS */}
+      {/* OVERLAY DIALOGS — Settings always mounted so button works; Edit/Links need profile */}
       {profile && (
         <>
           <EditProfileDialog
@@ -317,29 +317,27 @@ export const Dashboard = () => {
             onUpdate={updateProfile}
             onUpload={uploadAvatar}
           />
-
-          {/* THE NEW MANAGER */}
           <EditLinksDialog
             open={isLinksOpen}
             onClose={() => setIsLinksOpen(false)}
             currentLinks={profile.socials || []}
             onUpdate={updateProfile}
           />
-
-          <SettingsDialog
-            open={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            onEditProfile={() => {
-              setIsSettingsOpen(false);
-              setIsEditOpen(true);
-            }}
-            onManageLinks={() => {
-              setIsSettingsOpen(false);
-              setIsLinksOpen(true);
-            }}
-          />
         </>
       )}
+
+      <SettingsDialog
+        open={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onEditProfile={() => {
+          setIsSettingsOpen(false);
+          setIsEditOpen(true);
+        }}
+        onManageLinks={() => {
+          setIsSettingsOpen(false);
+          setIsLinksOpen(true);
+        }}
+      />
 
       <AddProjectDialog
         open={isAddProjectOpen}

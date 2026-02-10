@@ -32,6 +32,15 @@ if [ -n "$EMPTY_FILES" ]; then
   exit 1
 fi
 
+# Step 4: Markdown lint (docs integrity)
+echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
+if ! npx --no-install markdownlint . --ignore node_modules; then
+  echo "🛑 [DOCS FAULT]: Markdown lint failed."
+  echo "  Run: npm run lint:md:fix"
+  exit 1
+fi
+echo "✅ [STEP 4]: Docs are clean."
+
 # Lint and format staged files so syntax/lint issues are caught before commit
 echo "🔍 Running lint-staged (prettier + eslint + markdownlint) on staged files..."
 npx lint-staged

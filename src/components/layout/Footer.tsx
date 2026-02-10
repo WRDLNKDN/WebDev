@@ -35,7 +35,7 @@ export const Footer = () => {
               component="img"
               src="/assets/logo.png"
               alt="WRDLNKDN"
-              sx={{ height: 36, width: 'auto', display: 'block' }}
+              sx={{ height: 56, width: 'auto', display: 'block' }}
             />
           </Link>
           <Typography variant="body2" sx={{ opacity: 0.8 }}>

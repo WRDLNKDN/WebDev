@@ -36,26 +36,49 @@ const getTagline = (nerdCreds: unknown): string => {
 
 export const Feed = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [rows, setRows] = useState<FeedProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Wait for session (OAuth callback can set it shortly after redirect)
   useEffect(() => {
-    const cancelled = false;
+    let cancelled = false;
 
-    const init = async () => {
+    const check = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!cancelled && !data.session) {
-        navigate('/', { replace: true });
+      if (cancelled) return;
+      if (data.session) {
+        setSession(data.session);
+        setSessionChecked(true);
         return;
       }
-      if (!cancelled) setSession(data.session ?? null);
+      // Give auth state time to settle after redirect (e.g. from callback)
+      await new Promise((r) => setTimeout(r, 400));
+      const { data: retry } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (retry.session) {
+        setSession(retry.session);
+      } else {
+        navigate('/', { replace: true });
+      }
+      setSessionChecked(true);
     };
 
-    void init();
+    void check();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
+      if (!cancelled && s) setSession(s);
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   useEffect(() => {
+    if (!session) return;
     let cancelled = false;
 
     const load = async () => {
@@ -76,9 +99,21 @@ export const Feed = () => {
             .select('id, handle, pronouns, nerd_creds, socials')
             .order('updated_at', { ascending: false })
             .limit(15);
-          setRows((fallback as FeedProfile[]) ?? []);
+          if (!cancelled) setRows((fallback as FeedProfile[]) ?? []);
         } else {
           setRows((data as FeedProfile[]) ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          try {
+            const { data: minimal } = await client
+              .from('profiles')
+              .select('id, handle, pronouns, nerd_creds')
+              .limit(15);
+            setRows((minimal as FeedProfile[]) ?? []);
+          } catch {
+            setRows([]);
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -89,9 +124,23 @@ export const Feed = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [session]);
 
-  if (!session) return null;
+  if (!sessionChecked || !session) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress size={48} aria-label="Loading feed" />
+      </Box>
+    );
+  }
 
   return (
     <Box

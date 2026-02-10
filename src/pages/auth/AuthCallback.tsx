@@ -39,7 +39,14 @@ export const AuthCallback = () => {
   const { setIdentity, goToStep } = useSignup();
   const [error, setError] = useState<string | null>(null);
 
-  const next = params.get('next') || '/';
+  const rawNext = params.get('next') || '/';
+  // After login, land on feed; only /signup and /admin keep their target
+  const next =
+    rawNext === '/signup' || rawNext === '/admin'
+      ? rawNext
+      : rawNext === '/' || rawNext === '/directory'
+        ? '/feed'
+        : rawNext;
 
   useEffect(() => {
     let cancelled = false;

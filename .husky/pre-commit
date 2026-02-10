@@ -1,7 +1,6 @@
 #!/bin/sh
-# ^ Changed to sh for compatibility
 
-# --- The "Anti-Bloat" Verification ---
+# --- 1. The "Anti-Bloat" Verification ---
 # System Audit: Detect node_modules in the stage
 STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)
 
@@ -11,8 +10,8 @@ if [ -n "$STAGED_MODULES" ]; then
   exit 1
 fi
 
-# Check for empty files in staged changes
-echo "📂 Checking for empty files in staged changes..."
+# --- 2. Empty File Check ---
+echo "📂 [STEP 2]: Checking for empty files..."
 
 # We use a subshell and pipe (POSIX compliant) instead of '<<<' (Bash only)
 EMPTY_FILES=$(git diff --cached --name-only --diff-filter=AM | while IFS= read -r file; do
@@ -35,11 +34,20 @@ if [ -n "$EMPTY_FILES" ]; then
   echo "$EMPTY_FILES"
   exit 1
 fi
+echo "✅ [STEP 2]: No empty files found."
 
-# Step 4: Markdown lint (docs integrity)
+# --- 3. Type Checking (The Missing Piece) ---
+echo "🏗️ [STEP 3]: Validating Types (TypeScript)..."
+# We run the command you defined in package.json
+if ! npm run typecheck; then
+  echo "🛑 [TYPE ERROR]: TypeScript compilation failed."
+  echo "   Fix the errors above or run 'npm run typecheck' to debug."
+  exit 1
+fi
+echo "✅ [STEP 3]: Types are valid."
+
+# --- 4. Markdown Lint ---
 echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
-# Using 'command -v' check is safer than blindly running npx if it might be missing,
-# but your original logic is fine if npx is guaranteed.
 if ! npx --no-install markdownlint . --ignore node_modules; then
   echo "🛑 [DOCS FAULT]: Markdown lint failed."
   echo "   Run: npm run lint:md:fix"
@@ -47,8 +55,8 @@ if ! npx --no-install markdownlint . --ignore node_modules; then
 fi
 echo "✅ [STEP 4]: Docs are clean."
 
-# Lint and format staged files
-echo "🔍 Running lint-staged (prettier + eslint + markdownlint) on staged files..."
+# --- 5. Lint Staged Files ---
+echo "🔍 [STEP 5]: Running lint-staged (prettier + eslint) on staged files..."
 npx lint-staged
 
 echo "✅ Integrity verified. Proceeding with commit."

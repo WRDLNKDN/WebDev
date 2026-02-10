@@ -16,16 +16,16 @@ export const CompleteStep = () => {
   const navigate = useNavigate();
   const { resetSignup } = useSignup();
 
-  const handleGoDashboard = () => {
+  const handleGoFeed = () => {
     resetSignup();
-    navigate('/dashboard');
+    navigate('/feed');
   };
 
   // On completion, gently transition the user into the product without extra clicks.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       resetSignup();
-      navigate('/dashboard');
+      navigate('/feed');
     }, 2500);
 
     return () => {
@@ -51,10 +51,10 @@ export const CompleteStep = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={handleGoDashboard}
+            onClick={handleGoFeed}
             fullWidth
           >
-            Go to your dashboard now
+            Go to your feed
           </Button>
         </Stack>
       </Paper>

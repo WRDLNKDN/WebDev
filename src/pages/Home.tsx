@@ -15,7 +15,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
@@ -63,12 +63,18 @@ const CARD_SX = {
 };
 
 export const Home = () => {
+  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
+
+  // Logged-in users visiting "/" go to feed
+  useEffect(() => {
+    if (session) navigate('/feed', { replace: true });
+  }, [session, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,7 +139,7 @@ export const Home = () => {
 
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error: signInError } = await signInWithOAuth(provider, {

@@ -96,7 +96,7 @@ export const Navbar = () => {
 
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error } = await signInWithOAuth(provider, { redirectTo });
@@ -233,6 +233,16 @@ export const Navbar = () => {
             </>
           ) : (
             <>
+              <Button component={RouterLink} to="/feed" sx={{ color: 'white' }}>
+                Feed
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/dashboard"
+                sx={{ color: 'white' }}
+              >
+                Dashboard
+              </Button>
               {isAdmin && (
                 <Button
                   component={RouterLink}

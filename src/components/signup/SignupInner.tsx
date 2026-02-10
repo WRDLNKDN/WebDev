@@ -31,9 +31,9 @@ export const SignupInner = () => {
           .maybeSingle();
 
         if (profile) {
-          // User already has profile, redirect home
+          // User already has profile, redirect to feed
           resetSignup();
-          navigate('/', { replace: true });
+          navigate('/feed', { replace: true });
         }
       }
     };

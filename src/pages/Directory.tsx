@@ -31,6 +31,7 @@ type DirectoryProfile = {
   handle: string | null;
   pronouns: string | null;
   nerd_creds: unknown;
+  socials: unknown;
 };
 
 const getTagline = (nerdCreds: unknown): string => {
@@ -54,7 +55,7 @@ export const Directory = () => {
       try {
         const { data, error: err } = await client
           .from('profiles')
-          .select('id, handle, pronouns, nerd_creds')
+          .select('id, handle, pronouns, nerd_creds, socials')
           .eq('status', 'approved');
 
         if (cancelled) return;
@@ -71,7 +72,7 @@ export const Directory = () => {
           if (needFallback) {
             const { data: data2, error: err2 } = await client
               .from('profiles')
-              .select('id, handle, pronouns, nerd_creds');
+              .select('id, handle, pronouns, nerd_creds, socials');
 
             if (cancelled) return;
             if (err2) throw err2;
@@ -238,6 +239,7 @@ export const Directory = () => {
                   handle={p.handle}
                   pronouns={p.pronouns}
                   tagline={getTagline(p.nerd_creds)}
+                  socials={Array.isArray(p.socials) ? p.socials : undefined}
                 />
               ))}
             </Stack>

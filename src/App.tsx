@@ -23,6 +23,10 @@ const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
 );
 
+const Feed = lazy(() =>
+  import('./pages/Feed').then((m) => ({ default: m.Feed })),
+);
+
 const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
@@ -151,6 +155,7 @@ const App = () => {
               <Route path="/store" element={<Store />} />
 
               {/* --- Authenticated User Zone --- */}
+              <Route path="/feed" element={<Feed />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />
 

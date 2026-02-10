@@ -18,3 +18,15 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     storage: window.localStorage,
   },
 });
+
+/**
+ * Anon-only client (no session). Use for public reads (e.g. directory) so
+ * the result does not depend on auth state and works the same when logged in or out.
+ */
+export function getSupabaseAnonOnly(): ReturnType<
+  typeof createClient<Database>
+> {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false },
+  });
+}

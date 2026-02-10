@@ -17,7 +17,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { DirectoryCard } from '../components/directory/DirectoryCard';
-import { supabase } from '../lib/supabaseClient';
+import { getSupabaseAnonOnly } from '../lib/supabaseClient';
 import { safeStr } from '../utils/stringUtils';
 
 // STYLES & ASSETS
@@ -50,8 +50,9 @@ export const Directory = () => {
     const load = async () => {
       setLoading(true);
       setError(null);
+      const client = getSupabaseAnonOnly();
       try {
-        const { data, error: err } = await supabase
+        const { data, error: err } = await client
           .from('profiles')
           .select('id, handle, pronouns, nerd_creds')
           .eq('status', 'approved');
@@ -61,7 +62,7 @@ export const Directory = () => {
         if (err) {
           const msg = err.message.toLowerCase();
           if (msg.includes('column') && msg.includes('status')) {
-            const { data: data2, error: err2 } = await supabase
+            const { data: data2, error: err2 } = await client
               .from('profiles')
               .select('id, handle, pronouns, nerd_creds');
 

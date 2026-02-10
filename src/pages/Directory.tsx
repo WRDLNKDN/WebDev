@@ -60,8 +60,15 @@ export const Directory = () => {
         if (cancelled) return;
 
         if (err) {
-          const msg = err.message.toLowerCase();
-          if (msg.includes('column') && msg.includes('status')) {
+          const msg =
+            (err as { message?: string }).message?.toLowerCase() ?? '';
+          const code = (err as { code?: string }).code;
+          const needFallback =
+            (msg.includes('column') && msg.includes('status')) ||
+            code === 'PGRST116' ||
+            (err as { status?: number }).status === 406;
+
+          if (needFallback) {
             const { data: data2, error: err2 } = await client
               .from('profiles')
               .select('id, handle, pronouns, nerd_creds');

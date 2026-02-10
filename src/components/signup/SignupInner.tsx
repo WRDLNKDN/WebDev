@@ -28,7 +28,7 @@ export const SignupInner = () => {
           .from('profiles')
           .select('id')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           // User already has profile, redirect home

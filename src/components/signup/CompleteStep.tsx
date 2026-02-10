@@ -24,13 +24,14 @@ export const CompleteStep = () => {
   // On completion, gently transition the user into the product without extra clicks.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      handleGoDashboard();
+      resetSignup();
+      navigate('/dashboard');
     }, 2500);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [navigate, resetSignup]);
 
   return (
     <Container maxWidth="sm">

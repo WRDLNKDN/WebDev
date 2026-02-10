@@ -18,8 +18,8 @@ This folder contains Supabase schema, security (RLS), and dev seed SQL.
 
 Copy/paste scripts into the Supabase SQL Editor in order:
 
-1. `migrations/001_profiles_table.sql`
-2. `migrations/002_profiles_rls.sql`
+1. `migrations/20260121180000_tables.sql` — all tables, functions, triggers
+2. `migrations/20260121180005_rls.sql` — all RLS policies and privileges
 
 Optional (dev only):
 

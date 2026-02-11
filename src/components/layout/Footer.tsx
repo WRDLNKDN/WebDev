@@ -82,55 +82,7 @@ export const Footer = () => {
 
   const columns = [
     {
-      title: 'About WRDLNKDN',
-      links: [
-        { label: 'About WRDLNKDN', href: '/about', external: false },
-        { label: 'Why WRDLNKDN', href: '/about#why', external: false },
-        { label: 'Values and Mission', href: '/about#values', external: false },
-        { label: 'Community Guidelines', href: '/guidelines', external: false },
-        { label: 'Contact', href: 'mailto:wrdlnkdn@gmail.com', external: true },
-        {
-          label: 'wrdlnkdn@gmail.com',
-          href: 'mailto:wrdlnkdn@gmail.com',
-          external: true,
-        },
-      ],
-    },
-    {
-      title: 'Community and Participation',
-      links: [
-        { label: 'Join the Community', href: '/signup', external: false },
-        {
-          label: 'Contributors and Volunteers',
-          href: '/community#contributors',
-          external: false,
-        },
-        { label: 'Community Voices', href: '/directory', external: false },
-        { label: 'Discord', href: '/community#discord', external: false },
-      ],
-    },
-    {
-      title: 'Open Source and Platform',
-      links: [
-        {
-          label: 'GitHub Organization',
-          href: 'https://github.com/WRDLNKDN',
-          external: true,
-        },
-        {
-          label: 'Documentation / Wiki',
-          href: '/platform#docs',
-          external: false,
-        },
-        {
-          label: 'Roadmap or Project Boards',
-          href: 'https://github.com/WRDLNKDN/WebDev/issues',
-          external: true,
-        },
-      ],
-    },
-    {
-      title: 'Legal and Governance',
+      title: 'Legal',
       links: [
         {
           label: 'Legal (Canonical Index)',
@@ -144,6 +96,27 @@ export const Footer = () => {
           href: LEGAL_WIKI.guidelines,
           external: true,
         },
+      ],
+    },
+    {
+      title: 'Contact',
+      links: [
+        { label: 'Contact', href: 'mailto:wrdlnkdn@gmail.com', external: true },
+        {
+          label: 'wrdlnkdn@gmail.com',
+          href: 'mailto:wrdlnkdn@gmail.com',
+          external: true,
+        },
+      ],
+    },
+    {
+      title: 'Links',
+      links: [
+        { label: 'Home', href: '/', external: false },
+        { label: 'Join', href: '/signup', external: false },
+        { label: 'Feed', href: '/feed', external: false },
+        { label: 'Directory', href: '/directory', external: false },
+        { label: 'Guidelines', href: '/guidelines', external: false },
       ],
     },
   ];
@@ -173,7 +146,7 @@ export const Footer = () => {
           }}
         >
           {columns.map((col) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={col.title}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={col.title}>
               <Column title={col.title} links={col.links} />
             </Grid>
           ))}

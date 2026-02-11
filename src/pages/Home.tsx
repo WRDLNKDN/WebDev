@@ -1,11 +1,23 @@
-import { Alert, Box, Container, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../components/home/GuestView';
-import { HeroMotionVideo } from '../components/home/HeroMotionVideo';
 import { HomeSkeleton } from '../components/home/HomeSkeleton';
+import { HomeVisual } from '../components/home/HomeVisual';
+import { HowItWorks } from '../components/home/HowItWorks';
+import { SocialProof } from '../components/home/SocialProof';
+import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -17,6 +29,8 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -101,14 +115,14 @@ export const Home = () => {
   return (
     <>
       <Helmet>
-        <title>WRDLNKDN | Business, But Weirder</title>
+        <title>WRDLNKDN | Connection in motion</title>
         <meta
           name="description"
-          content="Showcase your professional identity. Build your weird community."
+          content="A professional network built on values. Powered by participation."
         />
       </Helmet>
 
-      {/* Signed-out landing backdrop: grid, hero video (top-left), wordmark + tagline + sign-in (center) */}
+      {/* Hero: video background + value prop + CTAs */}
       <Box
         component="main"
         sx={{
@@ -116,7 +130,6 @@ export const Home = () => {
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
           overflow: 'hidden',
           bgcolor: '#05070f',
           backgroundImage: 'url(/assets/grid-background.png)',
@@ -124,93 +137,123 @@ export const Home = () => {
           backgroundPosition: 'center',
         }}
       >
-        {/* Contrast overlay for legibility */}
+        {/* Video background (place hero-bg.mp4 in public/assets/video/) */}
+        <Box
+          component="video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+          src="/assets/video/hero-bg.mp4"
+        />
         <Box
           sx={{
             position: 'absolute',
             inset: 0,
-            background:
-              'radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.75))',
-            zIndex: 0,
+            bgcolor: 'rgba(5, 7, 15, 0.6)',
+            zIndex: 1,
           }}
         />
-
-        {/* Hero motion: Greenling to Pinkling video, top-left */}
-        <HeroMotionVideo />
-
-        {/* Center: wordmark + tagline stack + sign-in */}
         <Container
-          maxWidth="sm"
-          sx={{ position: 'relative', zIndex: 2, py: 4 }}
+          maxWidth="lg"
+          sx={{ position: 'relative', zIndex: 2 }}
           data-testid="signed-out-landing"
         >
-          <Stack spacing={3} alignItems="center" textAlign="center">
-            {error && (
-              <Alert
-                severity="error"
-                onClose={() => setError(null)}
-                sx={{ mb: 0, width: '100%' }}
-              >
-                {error}
-              </Alert>
+          <Grid container spacing={8} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              {error && (
+                <Alert
+                  severity="error"
+                  onClose={() => setError(null)}
+                  sx={{ mb: 2 }}
+                >
+                  {error}
+                </Alert>
+              )}
+              <GuestView busy={busy} onAuth={handleAuth} />
+            </Grid>
+            {!isMobile && (
+              <Grid size={{ xs: 0, md: 6 }}>
+                <HomeVisual />
+              </Grid>
             )}
 
-            {/* Primary wordmark */}
-            <Typography
-              component="h1"
-              variant="h1"
-              sx={{
-                color: '#fff',
-                fontWeight: 700,
-                letterSpacing: '0.02em',
-                fontSize: { xs: '3rem', sm: '3.5rem', md: '4rem' },
-                lineHeight: 1.1,
-                textShadow: '0 2px 20px rgba(0,0,0,0.5)',
-              }}
-            >
-              WRDLNKDN
-            </Typography>
+            <Grid size={{ xs: 12 }}>
+              {/* Primary wordmark */}
+              <Typography
+                component="h1"
+                variant="h1"
+                sx={{
+                  color: '#fff',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  fontSize: { xs: '3rem', sm: '3.5rem', md: '4rem' },
+                  lineHeight: 1.1,
+                  textShadow: '0 2px 20px rgba(0,0,0,0.5)',
+                }}
+              >
+                WRDLNKDN
+              </Typography>
 
-            {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
-            <Stack spacing={0.5} sx={{ maxWidth: 420 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: 'rgba(255,255,255,0.85)',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  fontSize: '0.75rem',
-                }}
-              >
-                WEERD-LINK-DIN
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: 'primary.light',
-                  fontWeight: 600,
-                  fontStyle: 'italic',
-                }}
-              >
-                Business, But Weirder
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 400,
-                  lineHeight: 1.5,
-                }}
-              >
-                Showcase your professional identity. Build your weird community.
-              </Typography>
-            </Stack>
+              {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
+              <Stack spacing={0.5} sx={{ maxWidth: 420 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  WEERD-LINK-DIN
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: 'primary.light',
+                    fontWeight: 600,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  Business, But Weirder
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255,255,255,0.9)',
+                    fontWeight: 400,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Showcase your professional identity. Build your weird
+                  community.
+                </Typography>
+              </Stack>
 
-            {/* Sign-in buttons (above fold, below tagline) */}
-            <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
-          </Stack>
+              {/* Sign-in buttons (above fold, below tagline) */}
+              <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
+            </Grid>
+          </Grid>
         </Container>
       </Box>
+
+      {/* What Makes This Different */}
+      <WhatMakesDifferent />
+
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Social Proof */}
+      <SocialProof />
     </>
   );
 };

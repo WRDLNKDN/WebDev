@@ -162,7 +162,13 @@ export const Navbar = () => {
           />
         </Box>
 
-        <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
+        <Button
+          component="a"
+          href="https://wrdlnkdn.com/store-1"
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{ color: 'white', textDecoration: 'none' }}
+        >
           Store
         </Button>
         {session && (

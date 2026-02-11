@@ -7,6 +7,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import type { OAuthProvider } from '../../lib/signInWithOAuth';
 
 interface GuestViewProps {
@@ -92,20 +93,83 @@ export const GuestView = ({
             fontSize: { xs: '2.5rem', md: '3.75rem' },
           }}
         >
-          Welcome to your{' '}
-          <Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            professional community
-          </Box>
+          Connection in motion.
         </Typography>
         <Typography
           variant="h5"
           sx={{ color: 'text.secondary', fontWeight: 400 }}
         >
-          Professional networking, but human. Verified, authentic, and
-          noise-free.
+          A professional network built on values. Powered by participation.
         </Typography>
       </Box>
-      {buttons}
+
+      {/* Primary CTA: Join */}
+      <Stack spacing={2} sx={{ pt: 2 }}>
+        <Button
+          variant="outlined"
+          size="large"
+          fullWidth
+          startIcon={
+            busy ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <GoogleIcon />
+            )
+          }
+          onClick={() => void onAuth('google')}
+          disabled={busy}
+          sx={{
+            borderRadius: 20,
+            height: 56,
+            fontSize: '1.1rem',
+            textTransform: 'none',
+            borderColor: 'rgba(255,255,255,0.4)',
+            color: 'white',
+            bgcolor: 'rgba(255,255,255,0.02)',
+            '&:hover': {
+              borderColor: 'primary.main',
+              bgcolor: 'rgba(66, 165, 245, 0.08)',
+            },
+          }}
+        >
+          {busy ? 'Connecting...' : 'Continue with Google'}
+        </Button>
+
+        {/* Secondary: Microsoft */}
+        <Button
+          variant="text"
+          size="large"
+          fullWidth
+          startIcon={<MicrosoftIcon />}
+          onClick={() => void onAuth('azure')}
+          disabled={busy}
+          sx={{
+            borderRadius: 20,
+            height: 56,
+            textTransform: 'none',
+            color: 'text.secondary',
+            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Sign in with Microsoft
+        </Button>
+        {/* Secondary CTA: Explore Feed */}
+        <Button
+          component={RouterLink}
+          to="/feed"
+          variant="text"
+          size="large"
+          fullWidth
+          sx={{
+            borderRadius: 20,
+            textTransform: 'none',
+            color: 'text.secondary',
+            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Explore Feed
+        </Button>
+      </Stack>
     </Stack>
   );
 };

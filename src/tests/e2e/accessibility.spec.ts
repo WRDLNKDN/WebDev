@@ -11,11 +11,7 @@ test('Global Accessibility Audit', async ({ page }) => {
   });
 
   await expect(
-    page.getByTestId('signed-out-landing').getByText('WRDLNKDN'),
-  ).toBeVisible();
-
-  await expect(
-    page.getByRole('button', { name: /Continue with Google/i }),
+    page.getByRole('button', { name: /Continue with Google/i }).first(),
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page })

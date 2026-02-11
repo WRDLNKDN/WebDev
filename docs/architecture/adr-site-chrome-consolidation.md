@@ -6,8 +6,8 @@
 ## Context
 
 Historically, GoDaddy hosted the **header, footer, hero**, and the Ecwid
-storefront, while the **application** (signup, profiles, admin, directory) lived
-in Vercel/Supabase. This split:
+storefront, while the **application** (Join, profiles, admin, Feed) lived in
+Vercel/Supabase. This split:
 
 - Increased cognitive load and deployment complexity
 - Encouraged duplicated navigation and branding logic

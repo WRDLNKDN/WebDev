@@ -20,7 +20,7 @@
 
 **Professional networking, but human.**
 
-WRDLNKDN is a modern, accessibility-first professional directory and platform.  
+WRDLNKDN is a modern, accessibility-first professional feed and platform.  
 It explores what professional presence and connection look like when we stop
 pretending it has to be polished, performative, or predictable.
 
@@ -54,7 +54,7 @@ WRDLNKDN consists of:
 WRDLNKDN is governed by a set of **platform-level non-functional requirements**
 that define operational, scalability, security, and portability constraints.
 
-These apply across **registration, approval, admin moderation, and directory
+These apply across **registration, approval, admin moderation, and feed
 workflows**, independent of specific implementation details.
 
 - **Source of Truth:**  
@@ -70,6 +70,8 @@ workflows**, independent of specific implementation details.
 ## 📖 Documentation
 
 - **Docs index:** [docs/README.md](./docs/README.md)
+- **Information architecture (routes, nav, access):**
+  [docs/architecture/information-architecture.md](./docs/architecture/information-architecture.md)
 - **Auth & password (user and admin):**
   [docs/auth-requirements.md](./docs/auth-requirements.md)
 - **Weirdling architecture (visual rules & contributing):**

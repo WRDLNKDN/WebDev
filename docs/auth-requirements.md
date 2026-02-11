@@ -17,8 +17,9 @@ control.
 
 ### 1.2 Requirements
 
-- Users must complete the **signup wizard** (Welcome → Identity → Profile →
-  Values → Review → Complete) before their profile is submitted for moderation.
+- Users must complete the **Join flow** (Welcome → Identity → Profile → Values →
+  Review → Complete) at `/join` before their profile is submitted for
+  moderation.
 - **Identity step:** User chooses an IdP (e.g. Google or Microsoft) and is
   redirected to that provider; on success, Supabase Auth issues a session (JWT).
 - **Session:** The frontend uses the Supabase client and

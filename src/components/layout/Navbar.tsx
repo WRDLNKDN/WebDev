@@ -23,7 +23,11 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
-  const isFeedActive = location.pathname === '/feed';
+  const path = location.pathname;
+  const isFeedActive = path === '/feed';
+  const isJoinActive = path === '/join';
+  const isDashboardActive =
+    path === '/dashboard' || path.startsWith('/dashboard/');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -190,9 +194,15 @@ export const Navbar = () => {
             <Button
               component={RouterLink}
               to="/dashboard"
-              sx={{ color: 'white' }}
+              sx={{
+                color: 'white',
+                ...(isDashboardActive && {
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                }),
+              }}
             >
-              Profile
+              Dashboard
             </Button>
           </>
         )}
@@ -207,7 +217,15 @@ export const Navbar = () => {
               <Button
                 component={RouterLink}
                 to="/join"
-                sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'white' },
+                  ...(isJoinActive && {
+                    color: 'white',
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                  }),
+                }}
               >
                 Join
               </Button>

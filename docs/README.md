@@ -4,6 +4,9 @@ Central index for WRDLNKDN WebDev documentation.
 
 ## Docs
 
+- [Information architecture](./architecture/information-architecture.md) —
+  Canonical routes, navigation labels, public vs authenticated access; single
+  source of truth for Home, Feed, Join, Profile, Dashboard.
 - [Auth & password requirements](./auth-requirements.md) — User and admin
   authentication; password/OAuth and admin access rules.
 - [Platform NFRs](./architecture/platform-nfrs.md) — Non-functional requirements
@@ -11,7 +14,7 @@ Central index for WRDLNKDN WebDev documentation.
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and
   response envelope.
 - [ADR: Unified signup wizard](./architecture/adr-unified-signup-wizard.md) —
-  Decision record for the signup wizard flow.
+  Decision record for the Join flow (signup wizard implementation).
 - [ADR: Site chrome consolidation](./architecture/adr-site-chrome-consolidation.md)
   — Vercel as source of truth for header, footer, hero, and navigation.
 - [Epic: Ecommerce and Storefront](./architecture/epic-ecommerce-storefront.md)
@@ -25,6 +28,8 @@ Central index for WRDLNKDN WebDev documentation.
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling
   instructions.
+- [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
+  everything; pre-commit and commands.
 
 ## See also
 

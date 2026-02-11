@@ -1,6 +1,12 @@
 import { Box, CircularProgress } from '@mui/material';
 import { Suspense, lazy, useEffect } from 'react';
-import { Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 
 // HOOKS & CONTEXT
 import { SignupProvider } from './context/SignupProvider';
@@ -21,10 +27,6 @@ const LandingPage = lazy(() =>
 
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
-);
-
-const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
 
 const Feed = lazy(() =>
@@ -163,7 +165,10 @@ const App = () => {
               <Route path="/" element={<Home />} />
               <Route path="/u/:handle" element={<LandingPage />} />
               <Route path="/home" element={<Home />} />
-              <Route path="/directory" element={<Directory />} />
+              <Route
+                path="/directory"
+                element={<Navigate to="/feed" replace />}
+              />
               <Route path="/feed" element={<Feed />} />
               <Route path="/store" element={<Store />} />
               <Route path="/about" element={<About />} />
@@ -178,7 +183,7 @@ const App = () => {
               <Route path="/login" element={<SignIn />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/join" element={<Signup />} />
-              <Route path="/signup" element={<Signup />} />
+              <Route path="/signup" element={<Navigate to="/join" replace />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
 
               {/* --- Legal --- */}

@@ -6,8 +6,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { hasBumperBeenShown } from '../../lib/bumperSession';
 import {
   completeStepStack,
   completeStepSubtext,
@@ -16,26 +17,25 @@ import {
 } from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
 
+const BUMPER_FROM_JOIN = '/bumper?from=join&next=/feed';
+
 export const CompleteStep = () => {
   const navigate = useNavigate();
   const { resetSignup } = useSignup();
 
-  const handleGoDashboard = () => {
+  const goToFeedOrBumper = useCallback(() => {
     resetSignup();
-    navigate('/dashboard');
-  };
-
-  // On completion, gently transition the user into the product without extra clicks.
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      resetSignup();
-      navigate('/dashboard');
-    }, 2500);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
+    if (hasBumperBeenShown()) {
+      navigate('/feed');
+    } else {
+      navigate(BUMPER_FROM_JOIN);
+    }
   }, [navigate, resetSignup]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(goToFeedOrBumper, 2500);
+    return () => window.clearTimeout(timer);
+  }, [goToFeedOrBumper]);
 
   return (
     <Container maxWidth="sm">
@@ -47,7 +47,7 @@ export const CompleteStep = () => {
             </Typography>
             <Typography variant="body2" sx={completeStepSubtext}>
               Your signup request has been submitted. We&apos;ll review it soon.
-              In the meantime, you can explore your dashboard and the directory
+              In the meantime, you can explore your dashboard and the feed
               without needing to do anything else.
             </Typography>
           </Box>
@@ -55,7 +55,7 @@ export const CompleteStep = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={handleGoDashboard}
+            onClick={goToFeedOrBumper}
             fullWidth
           >
             Go to your dashboard now

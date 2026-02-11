@@ -43,8 +43,7 @@ export const Home = () => {
           if (error) console.warn('Session check warning:', error.message);
 
           if (data.session) {
-            // 🚀 USER FOUND: Redirect immediately to Feed
-            navigate('/directory', { replace: true });
+            navigate('/feed', { replace: true });
             return;
           }
 
@@ -62,7 +61,7 @@ export const Home = () => {
     // 2. Listen for realtime auth changes (e.g. login in another tab)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted && session) {
-        navigate('/directory', { replace: true });
+        navigate('/feed', { replace: true });
       }
     });
 

@@ -11,8 +11,6 @@ import {
   MenuItem,
   Stack,
   Toolbar,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
@@ -22,9 +20,6 @@ import { supabase } from '../../lib/supabaseClient';
 
 export const Navbar = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  // Hide detailed nav links on mobile to prevent crowding
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);

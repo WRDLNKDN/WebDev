@@ -35,6 +35,7 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
   useEffect(() => {
     if (!autoPlay) return;
 
+    const video = videoRef.current;
     const popTimer = setTimeout(() => setPopVisible(true), POP_DELAY_MS);
 
     const taglineTimer = setTimeout(() => {
@@ -50,7 +51,7 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
     return () => {
       clearTimeout(popTimer);
       clearTimeout(taglineTimer);
-      videoRef.current?.pause();
+      video?.pause();
     };
   }, [autoPlay]);
 

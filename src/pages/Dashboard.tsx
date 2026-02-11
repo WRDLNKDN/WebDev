@@ -38,8 +38,8 @@ import type { Weirdling } from '../types/weirdling';
 import type { NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
 
-// ASSETS
-const SYNERGY_BG = 'url("/assets/profile-bg.png")';
+// ASSETS (same as Layout so dashboard matches other pages)
+const SYNERGY_BG = 'url("/assets/background.png")';
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);

@@ -21,7 +21,7 @@ import { supabase } from '../lib/supabaseClient';
 import { safeStr } from '../utils/stringUtils';
 
 // STYLES & ASSETS
-const SYNERGY_BG = 'url("/assets/background.svg")';
+const SYNERGY_BG = 'url("/assets/background.png")';
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
 const EMPTY_STATE_BG = 'rgba(18, 18, 18, 0.8)';

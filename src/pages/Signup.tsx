@@ -27,15 +27,16 @@ const toMessage = (e: unknown) => {
   return 'Signup failed';
 };
 
+// Join page background: use GRID BACKGROUND ONLY.png at public/assets/grid-background.png
 const BG_SX = {
   minHeight: '100vh',
-  position: 'relative',
+  position: 'relative' as const,
   display: 'grid',
   placeItems: 'center',
   px: 2,
   py: 6,
   backgroundColor: '#05070f',
-  backgroundImage: 'url(/assets/landing-bg.png)',
+  backgroundImage: 'url(/assets/grid-background.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   overflow: 'hidden',

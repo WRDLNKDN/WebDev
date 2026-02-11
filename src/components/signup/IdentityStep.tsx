@@ -7,10 +7,6 @@ import {
   Checkbox,
   CircularProgress,
   FormControlLabel,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
   Paper,
   Stack,
   Typography,
@@ -32,6 +28,25 @@ import {
 } from '../../theme/signupStyles';
 import { POLICY_VERSION } from '../../types/signup';
 
+const oauthButtonSx = {
+  textTransform: 'none' as const,
+  fontWeight: 600,
+  py: 1.5,
+  px: 2,
+  borderWidth: 2,
+  borderColor: 'rgba(255,255,255,0.5)',
+  color: '#fff',
+  bgcolor: 'rgba(255,255,255,0.06)',
+  '&:hover': {
+    borderColor: 'rgba(255,255,255,0.8)',
+    bgcolor: 'rgba(255,255,255,0.12)',
+  },
+  '&.Mui-disabled': {
+    borderColor: 'rgba(255,255,255,0.2)',
+    color: 'rgba(255,255,255,0.4)',
+  },
+};
+
 const mapSupabaseProvider = (user: {
   identities?: { provider?: string }[];
   app_metadata?: { provider?: string };
@@ -52,13 +67,9 @@ export const IdentityStep = () => {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
-    null,
-  );
 
   const hasCheckedAuth = useRef(false);
   const hasAdvanced = useRef(false);
-  const signInButtonRef = useRef<HTMLButtonElement>(null);
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
@@ -202,10 +213,10 @@ export const IdentityStep = () => {
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
-              Continue to sign in
+              Sign in to continue
             </Typography>
             <Typography variant="body2" sx={signupStepSubtext}>
-              Sign in to continue
+              Use your Google or Microsoft account.
             </Typography>
           </Box>
 
@@ -219,7 +230,7 @@ export const IdentityStep = () => {
             variant="subtitle2"
             sx={{ fontWeight: 600, mb: 1, display: 'block' }}
           >
-            Before continuing, please review and accept:
+            Before continuing, please confirm:
           </Typography>
           <Stack spacing={2} sx={{ mb: 3 }}>
             <FormControlLabel
@@ -270,95 +281,50 @@ export const IdentityStep = () => {
             />
           </Stack>
 
-          <Typography
-            variant="subtitle2"
-            sx={{ fontWeight: 600, mb: 1, display: 'block' }}
-          >
-            Choose your identity provider:
-          </Typography>
-          <Box>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button
-              ref={signInButtonRef}
               variant="outlined"
               size="large"
               fullWidth
-              onClick={(e) => setProviderAnchor(e.currentTarget)}
+              onClick={() => void handleOAuthSignIn('google')}
               disabled={loading || !canProceed}
-              aria-expanded={Boolean(providerAnchor)}
-              aria-haspopup="menu"
-              aria-controls={providerAnchor ? 'idp-menu' : undefined}
-              id="idp-signin-trigger"
               startIcon={
-                loadingProvider ? (
+                loadingProvider === 'google' ? (
                   <CircularProgress size={20} color="inherit" />
-                ) : undefined
+                ) : (
+                  <GoogleIcon />
+                )
               }
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                justifyContent: 'flex-start',
-                py: 1.5,
-                px: 2,
-                borderWidth: 2,
-                borderColor: 'rgba(255,255,255,0.5)',
-                color: '#fff',
-                bgcolor: 'rgba(255,255,255,0.06)',
-                '&:hover': {
-                  borderColor: 'rgba(255,255,255,0.8)',
-                  bgcolor: 'rgba(255,255,255,0.12)',
-                },
-                '&.Mui-disabled': {
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  color: 'rgba(255,255,255,0.4)',
-                },
-              }}
+              sx={oauthButtonSx}
             >
-              {loadingProvider ? 'Signing in…' : 'Sign in'}
+              {loadingProvider === 'google'
+                ? 'Signing in…'
+                : 'Continue with Google'}
             </Button>
-            <Menu
-              id="idp-menu"
-              aria-labelledby="idp-signin-trigger"
-              anchorEl={providerAnchor}
-              open={Boolean(providerAnchor)}
-              onClose={() => {
-                setProviderAnchor(null);
-                signInButtonRef.current?.focus();
-              }}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={() => void handleOAuthSignIn('azure')}
+              disabled={loading || !canProceed}
+              startIcon={
+                loadingProvider === 'azure' ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <MicrosoftIcon />
+                )
+              }
+              sx={oauthButtonSx}
             >
-              <MenuItem
-                onClick={() => {
-                  setProviderAnchor(null);
-                  void handleOAuthSignIn('google');
-                }}
-                disabled={loading || !canProceed}
-                sx={{ minWidth: 240 }}
-              >
-                <ListItemIcon>
-                  <GoogleIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Continue with Google</ListItemText>
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setProviderAnchor(null);
-                  void handleOAuthSignIn('azure');
-                }}
-                disabled={loading || !canProceed}
-                sx={{ minWidth: 240 }}
-              >
-                <ListItemIcon>
-                  <MicrosoftIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Continue with Microsoft</ListItemText>
-              </MenuItem>
-            </Menu>
-          </Box>
+              {loadingProvider === 'azure'
+                ? 'Signing in…'
+                : 'Continue with Microsoft'}
+            </Button>
+          </Stack>
 
           <Box sx={{ ...identityStepInfoBox, mt: 2 }}>
             <Typography variant="caption" sx={signupStepSubtext}>
-              We use OAuth for secure authentication. Your credentials are never
+              We use secure OAuth authentication. Your credentials are never
               stored on our servers.
             </Typography>
           </Box>

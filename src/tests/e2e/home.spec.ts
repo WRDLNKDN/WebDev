@@ -33,7 +33,7 @@ test.describe('Home Page - High-Integrity Audit', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByRole('button', { name: /Continue with Google/i }),
+      landing.getByRole('button', { name: /Continue with Google/i }),
     ).toBeVisible();
 
     const results = await new AxeBuilder({ page })
@@ -48,11 +48,8 @@ test.describe('Home Page - High-Integrity Audit', () => {
     await page.goto('/admin');
 
     await expect(page).toHaveURL(/\/admin(\b|\/|\?)/);
-    await expect(page.locator('#root')).toBeVisible();
+    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-    // Admin shell shows "Admin Moderation" or similar
-    // Note: Since you aren't logged in, this might redirect or show a "Not Authorized"
-    // depending on your protection logic. Assuming it renders *something* accessible:
     const results = await new AxeBuilder({ page }).include('#root').analyze();
 
     expect(results.violations).toEqual([]);

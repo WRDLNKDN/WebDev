@@ -109,6 +109,10 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
+  const clearSubmitError = useCallback(() => {
+    setSubmitError(null);
+  }, []);
+
   const resetSignup = useCallback(() => {
     console.log('🔄 Resetting signup state');
     setState(initialState);
@@ -116,6 +120,45 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
     setSubmitError(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
+
+  /** Map Supabase/backend errors to user-facing messages. */
+  const toFriendlyMessage = useCallback(
+    (err: { code?: string; message?: string; details?: string }): string => {
+      const code = err.code;
+      const msg = (err.message ?? '').toLowerCase();
+      const details = (err.details ?? '').toLowerCase();
+
+      if (
+        code === '42501' ||
+        msg.includes('policy') ||
+        msg.includes('row level security')
+      ) {
+        return 'You must be signed in to submit. Please sign in again and try again.';
+      }
+      if (code === '23505') {
+        if (
+          msg.includes('pkey') ||
+          msg.includes('primary') ||
+          details.includes('id') ||
+          msg.includes('profiles_pkey')
+        ) {
+          return 'You already have a profile. Go to Feed or Directory to get started.';
+        }
+        return 'That display name is already taken. Try a different display name.';
+      }
+      if (code === '23502') {
+        return 'Required profile data is missing. Please fill in display name and try again.';
+      }
+      if (code === '23503') {
+        return 'Your session may have expired. Please sign in again and try again.';
+      }
+      if (err.message && err.message.length > 0 && err.message.length < 200) {
+        return err.message;
+      }
+      return 'Registration failed. Please try again.';
+    },
+    [],
+  );
 
   // Accept profile data as parameter to avoid stale state
   const submitRegistration = useCallback(
@@ -129,12 +172,27 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
 
         const profile = profileData || state.profile;
         if (!profile) throw new Error('Missing profile step data.');
-        if (!profile.displayName) throw new Error('Display name is required.');
+        if (!profile.displayName?.trim())
+          throw new Error('Display name is required.');
 
         console.log('📝 Creating profile in database...');
 
+        // Check if user already has a profile (avoids generic 23505 and gives clear message)
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', state.identity.userId)
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error(
+            'You already have a profile. Go to Feed or Directory to get started.',
+          );
+        }
+
         const baseHandle =
           profile.displayName
+            .trim()
             .toLowerCase()
             .replace(/\W+/g, '')
             .replace(/^-|-$/g, '') || 'user';
@@ -149,11 +207,12 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
               id: state.identity.userId,
               email: state.identity.email,
               handle: attempts === 0 ? handle : `${handle}${attempts}`,
-              display_name: profile.displayName,
-              tagline: profile.tagline || null,
+              display_name: profile.displayName.trim(),
+              tagline: profile.tagline?.trim() || null,
               join_reason: state.values.joinReason || [],
               participation_style: state.values.participationStyle || [],
-              additional_context: state.values.additionalContext || null,
+              additional_context:
+                state.values.additionalContext?.trim() || null,
               status: 'pending',
               policy_version: state.identity.policyVersion || null,
             } as never);
@@ -166,20 +225,20 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           if (insertError.code === '23505') {
+            const friendly = toFriendlyMessage(insertError);
+            if (friendly.includes('already have a profile')) {
+              throw new Error(friendly);
+            }
             attempts += 1;
             continue;
           }
 
           console.error('❌ Profile insert error:', insertError);
-          const msg =
-            insertError.code === '42501'
-              ? 'You must be signed in to submit. Please sign in again and try again.'
-              : insertError.message || 'Registration failed';
-          throw new Error(msg);
+          throw new Error(toFriendlyMessage(insertError));
         }
 
         throw new Error(
-          'That display name or handle is already taken. Try a different display name.',
+          'That display name is already taken. Try a different display name.',
         );
       } catch (e: unknown) {
         console.error('❌ Registration error:', e);
@@ -193,7 +252,13 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         setSubmitting(false);
       }
     },
-    [markComplete, state.identity, state.values, state.profile],
+    [
+      markComplete,
+      state.identity,
+      state.values,
+      state.profile,
+      toFriendlyMessage,
+    ],
   );
 
   const value: SignupContextValue = useMemo(
@@ -213,6 +278,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
 
       submitting,
       submitError,
+      clearSubmitError,
       submitRegistration,
 
       resetSignup,
@@ -229,6 +295,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile,
       submitting,
       submitError,
+      clearSubmitError,
       submitRegistration,
       resetSignup,
       next,

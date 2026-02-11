@@ -7,6 +7,9 @@
 declare module '@mui/icons-material/UploadFile';
 declare module '@mui/icons-material/Settings';
 declare module '@mui/icons-material/SendOutlined';
+declare module '@mui/icons-material/ThumbUp';
 declare module '@mui/icons-material/ThumbUpOutlined';
 declare module '@mui/icons-material/RepeatOutlined';
 declare module '@mui/icons-material/ChatBubbleOutlineOutlined';
+declare module '@mui/icons-material/VolumeOff';
+declare module '@mui/icons-material/VolumeUp';

@@ -1,7 +1,7 @@
 // src/theme/candyStyles.ts
 
 // --- BACKGROUND ASSETS (The Substrate) ---
-export const SYNERGY_BG = 'url("/assets/background.svg")';
+export const SYNERGY_BG = 'url("/assets/background.png")';
 export const PROFILE_BG = 'url("/assets/profile-bg.png")';
 export const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 export const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';

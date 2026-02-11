@@ -1,16 +1,10 @@
-import {
-  Alert,
-  Box,
-  Container,
-  Grid,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { Alert, Box, Container, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../components/home/GuestView';
+import { HeroMotionVideo } from '../components/home/HeroMotionVideo';
 import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HomeVisual } from '../components/home/HomeVisual';
 import { HowItWorks } from '../components/home/HowItWorks';
@@ -27,8 +21,6 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -129,6 +121,10 @@ export const Home = () => {
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
+          bgcolor: '#05070f',
+          backgroundImage: 'url(/assets/grid-background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
         {/* Video background (place hero-bg.mp4 in public/assets/video/) */}
@@ -175,7 +171,61 @@ export const Home = () => {
                 <HomeVisual />
               </Grid>
             )}
-          </Grid>
+
+            {/* Primary wordmark */}
+            <Typography
+              component="h1"
+              variant="h1"
+              sx={{
+                color: '#fff',
+                fontWeight: 700,
+                letterSpacing: '0.02em',
+                fontSize: { xs: '3rem', sm: '3.5rem', md: '4rem' },
+                lineHeight: 1.1,
+                textShadow: '0 2px 20px rgba(0,0,0,0.5)',
+              }}
+            >
+              WRDLNKDN
+            </Typography>
+
+            {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
+            <Stack spacing={0.5} sx={{ maxWidth: 420 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: 'rgba(255,255,255,0.85)',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                }}
+              >
+                WEERD-LINK-DIN
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'primary.light',
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                }}
+              >
+                Business, But Weirder
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: 400,
+                  lineHeight: 1.5,
+                }}
+              >
+                Showcase your professional identity. Build your weird community.
+              </Typography>
+            </Stack>
+
+            {/* Sign-in buttons (above fold, below tagline) */}
+            <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
+          </Stack>
         </Container>
       </Box>
 

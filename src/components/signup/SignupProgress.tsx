@@ -24,8 +24,8 @@ const STEP_ORDER: SignupStep[] = ['welcome', 'identity', 'values', 'profile'];
 // Labels for every possible step in the union (including "complete")
 const STEP_LABELS: Record<SignupStep, string> = {
   welcome: 'Welcome',
-  identity: 'Identity',
-  values: 'Values',
+  identity: 'Sign in',
+  values: 'Intent',
   profile: 'Profile',
   complete: 'Complete',
 };

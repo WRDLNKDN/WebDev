@@ -3,41 +3,39 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the Conversion Gateway
-    await page.goto('/home');
+    await page.goto('/');
 
-    // 1. Wait for the app root
     await expect(page.locator('#root')).toBeVisible();
 
-    // 2. Wait for the NEW H1 (This confirms the Skeleton is gone)
+    // Wait for signed-out landing: wordmark WRDLNKDN (confirms skeleton is gone)
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: /Welcome to your professional community/i,
+        name: /WRDLNKDN/i,
       }),
     ).toBeVisible({ timeout: 10000 });
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
-    // 1. Check Headline
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: /Welcome to your professional community/i,
+        name: /WRDLNKDN/i,
       }),
     ).toBeVisible();
 
-    // 2. Check Subtitle (This text was preserved)
     await expect(
-      page.getByText(/Professional networking, but human/i),
+      page.getByText(/Business, But Weirder/i),
     ).toBeVisible();
 
-    // 3. Check Primary Action (The Pill Button)
+    await expect(
+      page.getByText(/Showcase your professional identity/i),
+    ).toBeVisible();
+
     await expect(
       page.getByRole('button', { name: /Continue with Google/i }),
     ).toBeVisible();
 
-    // 4. Run Accessibility Audit on the *Real* UI
     const results = await new AxeBuilder({ page })
       .include('#root')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])

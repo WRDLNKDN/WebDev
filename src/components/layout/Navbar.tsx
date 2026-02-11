@@ -17,9 +17,18 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
+import { WEIRDLING_ASSET_COUNT } from '../../types/weirdling';
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const [weirdlingIndex, setWeirdlingIndex] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWeirdlingIndex((prev) => (prev % WEIRDLING_ASSET_COUNT) + 1);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);

@@ -6,6 +6,7 @@ import { CARD_BG } from '../../theme/candyStyles';
 interface DirectoryCardProps {
   id: string;
   handle: string | null;
+  displayName?: string | null;
   pronouns: string | null;
   tagline: string;
 }
@@ -13,11 +14,13 @@ interface DirectoryCardProps {
 export const DirectoryCard = ({
   id,
   handle,
+  displayName,
   pronouns,
   tagline,
 }: DirectoryCardProps) => {
   // Use the handle for the URL, or fallback to ID if no handle exists
   const profileLink = handle ? `/u/${handle}` : `/u/${id}`;
+  const title = displayName || handle || '(Anonymous Entity)';
 
   return (
     <Paper
@@ -53,7 +56,7 @@ export const DirectoryCard = ({
         </Avatar>
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
-            {handle || '(Anonymous Entity)'}
+            {title}
           </Typography>
           {(pronouns || tagline) && (
             <Typography

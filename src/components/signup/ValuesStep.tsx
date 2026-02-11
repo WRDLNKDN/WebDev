@@ -14,12 +14,19 @@ import { useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
 import {
+  signupPaper,
+  signupStepLabel,
+  signupStepSubtext,
+  valuesStepButtonRow,
+  valuesStepContinueButton,
+  valuesStepSectionSubtext,
+  valuesStepSectionTitle,
+} from '../../theme/signupStyles';
+import {
   JOIN_REASONS,
   PARTICIPATION_STYLES,
   type ValuesData,
 } from '../../types/signup';
-import './signup.css';
-import './ValuesStep.css';
 
 export const ValuesStep = () => {
   const { state, setValues, goToStep, completeStep } = useSignup();
@@ -64,22 +71,22 @@ export const ValuesStep = () => {
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={0} className="signupPaper valuesStep">
+      <Paper elevation={0} sx={signupPaper}>
         <Stack spacing={4}>
           <Box>
-            <Typography variant="h5" className="signupStepLabel">
+            <Typography variant="h5" sx={signupStepLabel}>
               Values & Intent
             </Typography>
-            <Typography variant="body2" className="signupStepSubtext">
+            <Typography variant="body2" sx={signupStepSubtext}>
               Help us keep the community aligned.
             </Typography>
           </Box>
 
           <Box>
-            <Typography variant="h6" className="valuesStepSectionTitle">
+            <Typography variant="h6" sx={valuesStepSectionTitle}>
               Why are you joining?
             </Typography>
-            <Typography variant="body2" className="valuesStepSectionSubtext">
+            <Typography variant="body2" sx={valuesStepSectionSubtext}>
               Select all that apply
             </Typography>
 
@@ -102,10 +109,10 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" className="valuesStepSectionTitle">
+            <Typography variant="h6" sx={valuesStepSectionTitle}>
               How do you plan to participate?
             </Typography>
-            <Typography variant="body2" className="valuesStepSectionSubtext">
+            <Typography variant="body2" sx={valuesStepSectionSubtext}>
               Select all that apply
             </Typography>
 
@@ -128,7 +135,7 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" className="valuesStepSectionTitle">
+            <Typography variant="h6" sx={valuesStepSectionTitle}>
               Anything else we should know? (Optional)
             </Typography>
             <TextField
@@ -143,7 +150,7 @@ export const ValuesStep = () => {
             />
           </Box>
 
-          <Stack direction="row" spacing={2} className="valuesStepButtonRow">
+          <Stack direction="row" spacing={2} sx={valuesStepButtonRow}>
             <Button
               variant="outlined"
               onClick={handleBack}
@@ -167,7 +174,7 @@ export const ValuesStep = () => {
               variant="contained"
               onClick={handleContinue}
               disabled={!canContinue}
-              className="valuesStepContinueButton"
+              sx={valuesStepContinueButton}
             >
               Continue
             </Button>

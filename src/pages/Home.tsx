@@ -133,7 +133,7 @@ export const Home = () => {
 
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error: signInError } = await signInWithOAuth(provider, {
@@ -320,7 +320,7 @@ export const Home = () => {
                     <ListItemIcon>
                       <GoogleIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Sign in with Google</ListItemText>
+                    <ListItemText>Google</ListItemText>
                   </MenuItem>
                   <MenuItem
                     onClick={() => void handleSignIn('azure')}
@@ -329,7 +329,7 @@ export const Home = () => {
                     <ListItemIcon>
                       <MicrosoftIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Sign in with Microsoft</ListItemText>
+                    <ListItemText>Microsoft</ListItemText>
                   </MenuItem>
                 </Menu>
               </React.Fragment>

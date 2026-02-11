@@ -14,16 +14,69 @@ This folder contains Supabase schema, security (RLS), and dev seed SQL.
 - RLS policies should be minimal and explicit.
 - Public read access must never expose pending/rejected/disabled profiles.
 
+## Storage: avatars bucket
+
+Profile avatar uploads use the **`avatars`** storage bucket. The main tables and
+RLS migrations configure it:
+
+- `20260121180000_tables.sql` inserts/updates the `avatars` bucket (public, 2MB
+  limit, image MIME types).
+- `20260121180005_rls.sql` adds storage policies so authenticated users can
+  **INSERT** to `avatars` and anyone can **SELECT** (public read for profile
+  images).
+
+If you still see \"Bucket not found\" after running migrations, create the
+bucket manually in **Supabase Dashboard** → **Storage** → **New bucket**
+(`avatars`, public).
+
 ## Running
+
+### Local CLI (`supabase start`)
+
+From the **project root** (parent of `supabase/`):
+
+```bash
+supabase start
+```
+
+To **reset the database** and re-apply migrations + seed without hitting a known
+502 on container restart, use DB-only reset then start:
+
+```bash
+supabase stop
+SUPABASE_DB_ONLY=true supabase db reset
+supabase start
+```
+
+If you already ran `supabase db reset` and got **502: An invalid response was
+received from the upstream server** after "Restarting containers...", the
+migrations and seed usually applied correctly; the 502 is from Kong failing to
+reach a service during restart. Fix it by:
+
+```bash
+supabase stop
+supabase start
+```
+
+Then open `http://localhost:54321` (or Studio at 54323). If 502 persists, try
+the DB-only reset flow above.
+
+**NOTICEs** like `function public.get_feed_page(...) does not exist, skipping`
+are normal on a fresh or reset DB: the migration drops objects before creating
+them, and "skipping" just means there was nothing to drop.
+
+### Hosted / SQL Editor
 
 Copy/paste scripts into the Supabase SQL Editor in order:
 
 1. `migrations/20260121180000_tables.sql` — all tables, functions, triggers
+   (including avatars bucket)
 2. `migrations/20260121180005_rls.sql` — all RLS policies and privileges
+   (including avatars storage policies)
 
 Optional (dev only):
 
-- `seeds/001_dev_seed.sql`
+- `seed/seed.sql`
 
 ## Microsoft (Azure) OAuth Setup
 

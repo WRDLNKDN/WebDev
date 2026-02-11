@@ -92,6 +92,7 @@ export type Database = {
           reviewed_at: string | null
           created_at: string
           updated_at: string
+          use_weirdling_avatar: boolean
         }
         Insert: {
           id: string
@@ -103,6 +104,7 @@ export type Database = {
           resume_url?: string | null
           pronouns?: string | null
           status?: string
+          use_weirdling_avatar?: boolean
           socials?: Json | null
           nerd_creds?: Json | null
           geek_creds?: string[] | null
@@ -136,6 +138,7 @@ export type Database = {
           reviewed_at?: string | null
           created_at?: string
           updated_at?: string
+          use_weirdling_avatar?: boolean
         }
         Relationships: []
       }

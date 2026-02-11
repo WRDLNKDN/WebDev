@@ -39,7 +39,8 @@ export const AuthCallback = () => {
   const { setIdentity, goToStep } = useSignup();
   const [error, setError] = useState<string | null>(null);
 
-  const next = params.get('next') || '/';
+  // Default post-login destination: Feed
+  const next = params.get('next') || '/feed';
 
   useEffect(() => {
     let cancelled = false;

@@ -1,6 +1,11 @@
 import { Alert, Box, Stack, Typography } from '@mui/material';
 import { useSignup } from '../../context/useSignup';
-import './ReviewStep.css';
+import {
+  reviewStepSection,
+  reviewStepSectionTitle,
+  reviewStepSubtext,
+  reviewStepTitle,
+} from '../../theme/signupStyles';
 
 export const ReviewStep = () => {
   const { state } = useSignup();
@@ -11,16 +16,16 @@ export const ReviewStep = () => {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h5" className="reviewStepTitle">
+      <Typography variant="h5" sx={reviewStepTitle}>
         Review
       </Typography>
 
-      <Typography variant="body2" className="reviewStepSubtext">
+      <Typography variant="body2" sx={reviewStepSubtext}>
         Confirm your details before submitting your registration request.
       </Typography>
 
-      <Box className="reviewStepSection">
-        <Typography variant="subtitle2" className="reviewStepSectionTitle">
+      <Box sx={reviewStepSection}>
+        <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
           Identity
         </Typography>
         <Typography variant="body2">
@@ -39,8 +44,8 @@ export const ReviewStep = () => {
         </Typography>
       </Box>
 
-      <Box className="reviewStepSection">
-        <Typography variant="subtitle2" className="reviewStepSectionTitle">
+      <Box sx={reviewStepSection}>
+        <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
           Values
         </Typography>
         <Typography variant="body2">
@@ -60,8 +65,8 @@ export const ReviewStep = () => {
         ) : null}
       </Box>
 
-      <Box className="reviewStepSection">
-        <Typography variant="subtitle2" className="reviewStepSectionTitle">
+      <Box sx={reviewStepSection}>
+        <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
           Profile
         </Typography>
         <Typography variant="body2">

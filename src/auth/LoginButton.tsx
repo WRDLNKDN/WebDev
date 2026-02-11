@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 
 export const LoginButton = () => {
   const signInWithGoogle = async () => {
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=/feed`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -22,7 +22,7 @@ export const LoginButton = () => {
       size="large"
       onClick={signInWithGoogle}
     >
-      Sign in with Google
+      Sign in
     </Button>
   );
 };

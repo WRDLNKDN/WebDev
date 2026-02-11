@@ -96,7 +96,7 @@ export const Navbar = () => {
 
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error } = await signInWithOAuth(provider, { redirectTo });
@@ -170,14 +170,22 @@ export const Navbar = () => {
         <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
           Store
         </Button>
+        <Button component={RouterLink} to="/directory" sx={{ color: 'white' }}>
+          Directory
+        </Button>
         {session && (
-          <Button
-            component={RouterLink}
-            to="/weirdling/create"
-            sx={{ color: 'white' }}
-          >
-            Create My Weirdling
-          </Button>
+          <>
+            <Button component={RouterLink} to="/feed" sx={{ color: 'white' }}>
+              Feed
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/weirdling/create"
+              sx={{ color: 'white' }}
+            >
+              Create My Weirdling
+            </Button>
+          </>
         )}
         <Box sx={{ flexGrow: 1 }} />
 
@@ -220,7 +228,7 @@ export const Navbar = () => {
                   <ListItemIcon>
                     <GoogleIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Sign in with Google</ListItemText>
+                  <ListItemText>Google</ListItemText>
                 </MenuItem>
                 <MenuItem
                   onClick={() => void handleSignIn('azure')}
@@ -229,7 +237,7 @@ export const Navbar = () => {
                   <ListItemIcon>
                     <MicrosoftIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Sign in with Microsoft</ListItemText>
+                  <ListItemText>Microsoft</ListItemText>
                 </MenuItem>
               </Menu>
             </>

@@ -203,7 +203,7 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
                 onClick={() => void signInGoogle()}
                 disabled={busy}
               >
-                Sign in with Google
+                Sign in
               </Button>
             </Box>
           ) : (

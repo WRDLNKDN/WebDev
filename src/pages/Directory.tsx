@@ -29,6 +29,8 @@ const EMPTY_STATE_BG = 'rgba(18, 18, 18, 0.8)';
 type DirectoryProfile = {
   id: string;
   handle: string | null;
+  display_name: string | null;
+  tagline: string | null;
   pronouns: string | null;
   nerd_creds: unknown;
 };
@@ -53,7 +55,7 @@ export const Directory = () => {
       try {
         const { data, error: err } = await supabase
           .from('profiles')
-          .select('id, handle, pronouns, nerd_creds')
+          .select('id, handle, display_name, tagline, pronouns, nerd_creds')
           .eq('status', 'approved');
 
         if (cancelled) return;
@@ -63,7 +65,9 @@ export const Directory = () => {
           if (msg.includes('column') && msg.includes('status')) {
             const { data: data2, error: err2 } = await supabase
               .from('profiles')
-              .select('id, handle, pronouns, nerd_creds');
+              .select(
+                'id, handle, display_name, tagline, pronouns, nerd_creds',
+              );
 
             if (cancelled) return;
             if (err2) throw err2;
@@ -90,7 +94,18 @@ export const Directory = () => {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return rows;
-    return rows.filter((r) => (r.handle || '').toLowerCase().includes(term));
+    return rows.filter((r) => {
+      const handle = (r.handle || '').toLowerCase();
+      const displayName = (r.display_name || '').toLowerCase();
+      const taglineTop = (r.tagline || '').toLowerCase();
+      const taglineCreds = getTagline(r.nerd_creds).toLowerCase();
+      return (
+        handle.includes(term) ||
+        displayName.includes(term) ||
+        taglineTop.includes(term) ||
+        taglineCreds.includes(term)
+      );
+    });
   }, [q, rows]);
 
   return (
@@ -134,7 +149,7 @@ export const Directory = () => {
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
                 fullWidth
-                placeholder="Search by handle..."
+                placeholder="Search by name, handle, or tagline..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 InputProps={{
@@ -228,8 +243,9 @@ export const Directory = () => {
                   key={p.id}
                   id={p.id}
                   handle={p.handle}
+                  displayName={p.display_name}
                   pronouns={p.pronouns}
-                  tagline={getTagline(p.nerd_creds)}
+                  tagline={p.tagline || getTagline(p.nerd_creds)}
                 />
               ))}
             </Stack>

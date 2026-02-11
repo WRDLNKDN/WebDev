@@ -34,7 +34,7 @@ export const SignIn = () => {
 
     try {
       const { data, error: authError } = await signInWithOAuth(provider, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/feed`,
       });
 
       if (authError) throw authError;
@@ -102,9 +102,7 @@ export const SignIn = () => {
                 justifyContent: 'flex-start',
               }}
             >
-              {loadingProvider
-                ? 'Signing in…'
-                : 'Sign in with Google or Microsoft'}
+              {loadingProvider ? 'Signing in…' : 'Sign in'}
             </Button>
             <Menu
               anchorEl={providerAnchor}
@@ -122,7 +120,7 @@ export const SignIn = () => {
                 sx={{ minWidth: 240 }}
               >
                 <GoogleIcon fontSize="small" sx={{ mr: 1.5 }} />
-                Sign in with Google
+                Google
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -133,7 +131,7 @@ export const SignIn = () => {
                 sx={{ minWidth: 240 }}
               >
                 <MicrosoftIcon fontSize="small" sx={{ mr: 1.5 }} />
-                Sign in with Microsoft
+                Microsoft
               </MenuItem>
             </Menu>
 

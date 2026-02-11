@@ -430,6 +430,7 @@ export const WeirdlingCreate = () => {
             Edit
           </Button>
           <Button
+            variant="outlined"
             component={RouterLink}
             to="/dashboard"
             onClick={handleCancel}

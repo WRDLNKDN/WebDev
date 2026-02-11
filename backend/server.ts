@@ -612,6 +612,151 @@ app.post(
   },
 );
 
+// GET /api/feeds — LinkedIn-inspired activity stream (authenticated, cursor pagination)
+app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const cursorRaw =
+    typeof req.query.cursor === 'string' ? req.query.cursor.trim() : null;
+  let cursorCreatedAt: string | null = null;
+  let cursorId: string | null = null;
+  if (cursorRaw) {
+    try {
+      const decoded = JSON.parse(
+        Buffer.from(cursorRaw, 'base64').toString('utf8'),
+      ) as { created_at?: string; id?: string };
+      cursorCreatedAt =
+        typeof decoded.created_at === 'string' ? decoded.created_at : null;
+      cursorId = typeof decoded.id === 'string' ? decoded.id : null;
+    } catch {
+      // ignore invalid cursor
+    }
+  }
+
+  const { data: rows, error } = await adminSupabase.rpc('get_feed_page', {
+    p_viewer_id: userId,
+    p_cursor_created_at: cursorCreatedAt,
+    p_cursor_id: cursorId,
+    p_limit: limit + 1,
+  });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  const list = Array.isArray(rows) ? rows : [];
+  const hasMore = list.length > limit;
+  const page = hasMore ? list.slice(0, limit) : list;
+  const last = page[page.length - 1] as
+    | { created_at?: string; id?: string }
+    | undefined;
+  const nextCursor =
+    hasMore && last?.created_at && last?.id
+      ? Buffer.from(
+          JSON.stringify({
+            created_at: last.created_at,
+            id: last.id,
+          }),
+          'utf8',
+        ).toString('base64')
+      : undefined;
+
+  const data = page.map(
+    (row: {
+      id?: string;
+      user_id?: string;
+      kind?: string;
+      payload?: unknown;
+      parent_id?: string | null;
+      created_at?: string;
+      actor_handle?: string | null;
+      actor_display_name?: string | null;
+      actor_avatar?: string | null;
+    }) => ({
+      id: row.id,
+      user_id: row.user_id,
+      kind: row.kind,
+      payload: row.payload ?? {},
+      parent_id: row.parent_id ?? null,
+      created_at: row.created_at,
+      actor: {
+        handle: row.actor_handle ?? null,
+        display_name: row.actor_display_name ?? null,
+        avatar: row.actor_avatar ?? null,
+      },
+    }),
+  );
+
+  return res.json({ data, nextCursor });
+});
+
+// POST /api/feeds — create a new feed item (post or external_link)
+app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const body = req.body as Record<string, unknown>;
+  const rawKind =
+    typeof body.kind === 'string' ? body.kind.trim().toLowerCase() : 'post';
+
+  if (rawKind !== 'post' && rawKind !== 'external_link') {
+    return res.status(400).json({ error: 'Unsupported kind' });
+  }
+
+  if (rawKind === 'post') {
+    const textRaw =
+      typeof body.body === 'string'
+        ? body.body
+        : typeof body.text === 'string'
+          ? body.text
+          : '';
+    const text = textRaw.trim();
+    if (!text) {
+      return res
+        .status(400)
+        .json({ error: 'Post body is required', field: 'body' });
+    }
+
+    const { error } = await adminSupabase.from('feed_items').insert({
+      user_id: userId,
+      kind: 'post',
+      payload: { body: text },
+    });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(201).json({ ok: true });
+  }
+
+  // external_link
+  const url = typeof body.url === 'string' ? body.url.trim() : ('' as string);
+  const label = typeof body.label === 'string' ? body.label.trim() : undefined;
+
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required', field: 'url' });
+  }
+
+  // Guardrail: treat URL as opaque metadata; do not fetch or scrape it.
+  const payload: Record<string, string> = { url };
+  if (label) payload.label = label;
+
+  const { error } = await adminSupabase.from('feed_items').insert({
+    user_id: userId,
+    kind: 'external_link',
+    payload,
+  });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  return res.status(201).json({ ok: true });
+});
+
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });

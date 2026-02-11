@@ -7,9 +7,11 @@ import {
   Avatar,
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Grid, // CORRECT: Standard Grid import for MUI v7
   IconButton,
   Snackbar,
@@ -56,6 +58,7 @@ type EditProfileDialogProps = {
   open: boolean;
   onClose: () => void;
   profile: DashboardProfile;
+  hasWeirdling?: boolean;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
@@ -73,6 +76,7 @@ export const EditProfileDialog = ({
   open,
   onClose,
   profile,
+  hasWeirdling = false,
   onUpdate,
   onUpload,
 }: EditProfileDialogProps) => {
@@ -88,6 +92,7 @@ export const EditProfileDialog = ({
     status_emoji: '',
     status_message: '',
     bio: '',
+    use_weirdling_avatar: false,
   });
 
   const [busy, setBusy] = useState(false);
@@ -95,12 +100,16 @@ export const EditProfileDialog = ({
   const [checkingHandle, setCheckingHandle] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
+    null,
+  );
 
-  // Sync state when profile opens
+  // Sync state when profile opens; clear local avatar when profile or dialog changes
   useEffect(() => {
     if (open && profile) {
       // We cast to any/Record to access properties, but we use safeStr to validate the output
       const creds = (profile.nerd_creds as Record<string, unknown>) || {};
+      const p = profile as unknown as { use_weirdling_avatar?: boolean };
 
       setFormData({
         handle: safeStr(profile.handle),
@@ -109,7 +118,9 @@ export const EditProfileDialog = ({
         status_emoji: safeStr(creds.status_emoji, '💬'),
         status_message: safeStr(creds.status_message),
         bio: safeStr(creds.bio),
+        use_weirdling_avatar: Boolean(p.use_weirdling_avatar),
       });
+      setUploadedAvatarUrl(null);
     }
   }, [open, profile]);
 
@@ -156,6 +167,7 @@ export const EditProfileDialog = ({
         handle: formData.handle,
         pronouns: formData.pronouns,
         tagline: formData.tagline,
+        use_weirdling_avatar: formData.use_weirdling_avatar,
         nerd_creds: {
           status_emoji: formData.status_emoji,
           status_message: formData.status_message,
@@ -175,22 +187,43 @@ export const EditProfileDialog = ({
       }, 1200);
     } catch (error) {
       console.error(error);
-      setToastMessage('CRITICAL_FAILURE: Write operation aborted.');
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Write operation failed. Check console for details.';
+      setToastMessage(message);
       setShowToast(true);
     } finally {
       setBusy(false);
     }
   };
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      try {
-        setBusy(true);
-        await onUpload(e.target.files[0]);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setBusy(false);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setBusy(true);
+      setToastMessage('');
+      const url = await onUpload(file);
+      if (url) {
+        setUploadedAvatarUrl(url);
+        setToastMessage('Photo updated.');
+        setShowToast(true);
       }
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Upload failed. Check that the avatars bucket exists and you have permission.';
+      setToastMessage(message);
+      setShowToast(true);
+    } finally {
+      setBusy(false);
+      e.target.value = '';
     }
   };
 
@@ -245,7 +278,7 @@ export const EditProfileDialog = ({
             <Stack alignItems="center" spacing={2}>
               <Box sx={{ position: 'relative' }}>
                 <Avatar
-                  src={profile.avatar || undefined}
+                  src={uploadedAvatarUrl || profile.avatar || undefined}
                   sx={{
                     width: 150,
                     height: 150,
@@ -280,6 +313,31 @@ export const EditProfileDialog = ({
               >
                 UPLOAD_VISUAL.exe
               </Typography>
+              {hasWeirdling && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.use_weirdling_avatar}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          use_weirdling_avatar: e.target.checked,
+                        }))
+                      }
+                      disabled={busy}
+                      sx={{
+                        color: 'white',
+                        '&.Mui-checked': { color: 'primary.main' },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: 'white' }}>
+                      Use my Weirdling as my profile picture
+                    </Typography>
+                  }
+                />
+              )}
             </Stack>
           </Grid>
 

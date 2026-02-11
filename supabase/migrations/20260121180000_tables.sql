@@ -4,6 +4,7 @@
 -- -----------------------------
 -- Drop functions first (no table refs)
 -- -----------------------------
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int) cascade;
 drop function if exists public.set_updated_at() cascade;
 drop function if exists public.profiles_block_status_change() cascade;
 drop function if exists public.is_admin() cascade;
@@ -12,6 +13,8 @@ drop function if exists public.set_generation_jobs_updated_at() cascade;
 -- -----------------------------
 -- Drop tables (reverse dependency order)
 -- -----------------------------
+drop table if exists public.feed_items cascade;
+drop table if exists public.feed_connections cascade;
 drop table if exists public.weirdlings cascade;
 drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
@@ -90,8 +93,12 @@ create table public.profiles (
     "github": null
   }'::jsonb,
 
-  is_admin boolean not null default false
+  is_admin boolean not null default false,
+  use_weirdling_avatar boolean not null default false
 );
+
+comment on column public.profiles.use_weirdling_avatar is
+  'When true, show saved Weirdling avatar as profile picture instead of uploaded avatar.';
 
 comment on column public.profiles.policy_version is
   'Version of Terms and Community Guidelines accepted at registration (e.g. v2026.02)';
@@ -232,3 +239,131 @@ create trigger trg_generation_jobs_updated_at
 create trigger trg_weirdlings_updated_at
   before update on public.weirdlings
   for each row execute function public.set_updated_at();
+
+-- -----------------------------
+-- Feed: connections (who follows whom) and activity stream
+-- -----------------------------
+create table public.feed_connections (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  connected_user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, connected_user_id),
+  check (user_id != connected_user_id)
+);
+
+create index idx_feed_connections_user_id on public.feed_connections(user_id);
+create index idx_feed_connections_connected_user_id on public.feed_connections(connected_user_id);
+
+comment on table public.feed_connections is
+  'Who follows whom; used to scope feed to self + connected users.';
+
+create table public.feed_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in (
+    'post',
+    'profile_update',
+    'external_link',
+    'repost',
+    'reaction'
+  )),
+  payload jsonb not null default '{}',
+  parent_id uuid references public.feed_items(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_feed_items_user_id on public.feed_items(user_id);
+create index idx_feed_items_created_at on public.feed_items(created_at desc);
+create index idx_feed_items_kind on public.feed_items(kind);
+create index idx_feed_items_parent_id on public.feed_items(parent_id) where parent_id is not null;
+
+comment on table public.feed_items is
+  'Unified activity stream: WRDLNKDN-native posts, profile updates, user-submitted external links (opaque), reposts, reactions.';
+comment on column public.feed_items.payload is
+  'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
+
+-- -----------------------------
+-- get_feed_page (cursor-based pagination; used by backend API)
+-- -----------------------------
+create or replace function public.get_feed_page(
+  p_viewer_id uuid,
+  p_cursor_created_at timestamptz default null,
+  p_cursor_id uuid default null,
+  p_limit int default 21
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  kind text,
+  payload jsonb,
+  parent_id uuid,
+  created_at timestamptz,
+  actor_handle text,
+  actor_display_name text,
+  actor_avatar text
+)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  actor_ids uuid[];
+begin
+  select array_agg(fc.connected_user_id)
+  into actor_ids
+  from public.feed_connections fc
+  where fc.user_id = p_viewer_id;
+
+  actor_ids := coalesce(actor_ids, '{}') || p_viewer_id;
+
+  return query
+  select
+    fi.id,
+    fi.user_id,
+    fi.kind,
+    fi.payload,
+    fi.parent_id,
+    fi.created_at,
+    p.handle::text as actor_handle,
+    p.display_name as actor_display_name,
+    (case
+      when p.use_weirdling_avatar = true and w.avatar_url is not null then w.avatar_url
+      else p.avatar
+    end)::text as actor_avatar
+  from public.feed_items fi
+  left join public.profiles p on p.id = fi.user_id
+  left join public.weirdlings w on w.user_id = fi.user_id and w.is_active = true
+  where fi.user_id = any(actor_ids)
+    and (
+      p_cursor_created_at is null
+      or (fi.created_at, fi.id) < (p_cursor_created_at, p_cursor_id)
+    )
+  order by fi.created_at desc, fi.id desc
+  limit least(p_limit, 51);
+end;
+$$;
+
+comment on function public.get_feed_page(uuid, timestamptz, uuid, int) is
+  'Returns feed items for viewer (self + followees) with cursor; used by GET /api/feeds.';
+
+revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
+grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
+
+-- -----------------------------
+-- Storage: avatars bucket (public so profile images load via URL)
+-- -----------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  2097152,
+  array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+

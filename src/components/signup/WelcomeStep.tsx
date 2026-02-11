@@ -6,27 +6,31 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import {
+  signupPaper,
+  welcomeStepDescription,
+  welcomeStepSubtext,
+  welcomeStepTitle,
+} from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
-import './signup.css';
-import './WelcomeStep.css';
 
 export const WelcomeStep = () => {
   const { goToStep, markComplete } = useSignup();
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={0} className="signupPaper">
+      <Paper elevation={0} sx={signupPaper}>
         <Stack spacing={3}>
           <Box>
-            <Typography variant="h5" className="welcomeStepTitle">
+            <Typography variant="h5" sx={welcomeStepTitle}>
               Welcome to WRDLNKDN
             </Typography>
-            <Typography variant="body2" className="welcomeStepSubtext">
+            <Typography variant="body2" sx={welcomeStepSubtext}>
               Professional networking, but human.
             </Typography>
           </Box>
 
-          <Typography variant="body2" className="welcomeStepDescription">
+          <Typography variant="body2" sx={welcomeStepDescription}>
             This is a curated directory. You submit a request, admins review it,
             and once approved you appear in the member list.
           </Typography>

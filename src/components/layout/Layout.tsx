@@ -4,17 +4,25 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 
+const PAGE_BG = {
+  backgroundImage: 'url("/assets/background.png")',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundAttachment: 'fixed',
+};
+
 export const Layout = () => {
   return (
     <>
       <Navbar />
-      {/* Outlet renders the child route (Home, Dashboard, etc).
-         We don't add padding here because your pages (Landing, Home)
-         have full-screen background images that need to touch the top.
-      */}
       <Box
-        component="div"
-        sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
+        component="main"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          ...PAGE_BG,
+        }}
       >
         <ErrorBoundary>
           <Outlet />

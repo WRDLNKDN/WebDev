@@ -113,7 +113,7 @@ export const Footer = () => {
       title: 'Links',
       links: [
         { label: 'Home', href: '/', external: false },
-        { label: 'Join', href: '/signup', external: false },
+        { label: 'Join', href: '/join', external: false },
         { label: 'Feed', href: '/feed', external: false },
         { label: 'Directory', href: '/directory', external: false },
         { label: 'Guidelines', href: '/guidelines', external: false },

@@ -47,7 +47,7 @@ export const Community = () => {
             </Typography>
             <Button
               component={RouterLink}
-              to="/signup"
+              to="/join"
               variant="contained"
               size="small"
             >

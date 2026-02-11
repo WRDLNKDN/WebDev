@@ -26,7 +26,7 @@ export const ReviewStep = () => {
 
       <Box sx={reviewStepSection}>
         <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
-          Identity
+          Sign in
         </Typography>
         <Typography variant="body2">
           <strong>Email:</strong> {identity?.email ?? '—'}
@@ -46,7 +46,7 @@ export const ReviewStep = () => {
 
       <Box sx={reviewStepSection}>
         <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
-          Values
+          Intent
         </Typography>
         <Typography variant="body2">
           <strong>Join reason:</strong>{' '}

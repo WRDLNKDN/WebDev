@@ -32,6 +32,7 @@ const ProfileStep = () => {
     submitRegistration,
     submitting,
     submitError,
+    clearSubmitError,
   } = useSignup();
 
   const [displayName, setDisplayName] = useState(
@@ -42,10 +43,11 @@ const ProfileStep = () => {
   const [localError, setLocalError] = useState<string | null>(null);
 
   const combinedError = localError ?? submitError;
-  const friendlyError =
-    combinedError && !localError
-      ? 'Something went wrong while submitting your profile. Please try again in a moment — your answers on this step are still here.'
-      : combinedError;
+
+  const handleDismissError = () => {
+    setLocalError(null);
+    clearSubmitError();
+  };
 
   const handleContinue = async () => {
     setLocalError(null);
@@ -88,20 +90,20 @@ const ProfileStep = () => {
     <Stack spacing={4} sx={profileStep}>
       <Box>
         <Typography variant="h4" sx={profileStepTitle}>
-          Create Your Profile
+          Create your profile
         </Typography>
         <Typography variant="body1" sx={profileStepSubtext}>
-          This is what will appear in the directory after approval.
+          This is how you will appear in the community.
         </Typography>
       </Box>
 
       {combinedError && (
         <Alert
           severity="error"
-          onClose={() => setLocalError(null)}
+          onClose={handleDismissError}
           sx={profileStepAlert}
         >
-          {friendlyError}
+          {combinedError}
         </Alert>
       )}
 
@@ -111,7 +113,7 @@ const ProfileStep = () => {
         onChange={(e) => setDisplayName(e.target.value)}
         fullWidth
         placeholder="How should we call you?"
-        helperText="This is your public name in the directory"
+        helperText="This is your public name."
         required
         error={!displayName.trim() && displayName.length > 0}
         sx={profileStepTextField}
@@ -125,16 +127,14 @@ const ProfileStep = () => {
         multiline
         rows={2}
         placeholder="One-liner about you (optional)"
-        helperText="Optional: A short description or fun fact about yourself"
+        helperText="Optional: A short description of how you show up or what you're building."
         sx={profileStepTextField}
       />
 
       <Box sx={profileStepTipBox}>
         <Typography variant="body2" sx={profileStepTipText}>
-          💡 <strong>Your profile will be reviewed by admins</strong> before
-          {
-            " appearing in the directory. We will notify you once it's approved!"
-          }
+          Your profile will be reviewed to keep the community aligned.
+          We&apos;ll notify you once it&apos;s live.
         </Typography>
       </Box>
 
@@ -172,7 +172,7 @@ const ProfileStep = () => {
           }
           sx={profileStepSubmitButton}
         >
-          {submitting ? 'Submitting…' : 'Submit Registration'}
+          {submitting ? 'Creating…' : 'Create profile'}
         </Button>
       </Stack>
     </Stack>

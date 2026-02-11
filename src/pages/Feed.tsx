@@ -928,282 +928,408 @@ export const Feed = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', py: 3, px: { xs: 1.5, md: 2 } }}>
-      <Grid container spacing={2}>
-        {/* Left column: profile summary (LinkedIn-style sidebar) */}
-        <Grid size={{ xs: 12, sm: 3 }}>
-          <Paper
-            variant="outlined"
+    <Box
+      sx={{
+        position: 'relative',
+        minHeight: '100%',
+        bgcolor: '#05070f',
+        backgroundImage: 'url(/assets/grid-background.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(circle at 50% 0%, rgba(0,0,0,0.3), rgba(0,0,0,0.6))',
+          zIndex: 0,
+        }}
+      />
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          maxWidth: 1200,
+          mx: 'auto',
+          py: 3,
+          px: { xs: 1.5, md: 2 },
+        }}
+      >
+        {/* Page header: Welcome to your Feed + subtext + search */}
+        <Box
+          sx={{
+            mb: 3,
+            pb: 2,
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <Typography
+            component="h1"
+            variant="h4"
             sx={{
-              borderRadius: 2,
-              mb: 2,
-              p: 2,
-              position: 'sticky',
-              top: 88,
+              fontWeight: 600,
+              color: 'text.primary',
+              mb: 1,
             }}
           >
-            <Stack spacing={2} alignItems="center">
-              <Avatar src={displayAvatar} sx={{ width: 72, height: 72 }}>
-                {(session?.user?.id ?? '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-              <Box textAlign="center">
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Your Weirdling
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Check your dashboard to tune your persona and profile.
-                </Typography>
-              </Box>
-              <Button
-                component={RouterLink}
-                to="/dashboard"
-                variant="outlined"
-                size="small"
-                sx={{ textTransform: 'none', borderRadius: 999 }}
-              >
-                View dashboard
-              </Button>
-            </Stack>
-          </Paper>
-
-          {/* Connections: people you follow + their LinkedIns */}
+            Welcome to your Feed
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mb: 2, maxWidth: 560 }}
+          >
+            Where ideas, updates, and voices from the community come together.
+            Discover people by what they share and how they show up.
+          </Typography>
           <Paper
             variant="outlined"
+            component="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = new FormData(e.currentTarget as HTMLFormElement).get(
+                'q',
+              );
+              const query = typeof q === 'string' ? q.trim() : '';
+              navigate(
+                query
+                  ? `/directory?q=${encodeURIComponent(query)}`
+                  : '/directory',
+              );
+            }}
             sx={{
+              display: 'inline-flex',
               borderRadius: 2,
-              mb: 2,
-              p: 2,
-              position: 'sticky',
-              top: 320,
+              overflow: 'hidden',
+              maxWidth: 360,
+              width: '100%',
             }}
           >
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Your connections
-            </Typography>
-            {connections.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                Connect with others from their profile to see them here. Add a
-                LinkedIn link in your profile so others can find you.
-              </Typography>
-            ) : (
-              <Stack spacing={1.5}>
-                {connections.map((c) => (
-                  <Stack
-                    key={c.id}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1.5}
-                    sx={{ py: 0.5 }}
-                  >
-                    <Avatar
-                      src={c.avatar ?? undefined}
-                      sx={{ width: 36, height: 36 }}
-                      component={RouterLink}
-                      to={`/u/${c.handle}`}
-                    >
-                      {(c.display_name || c.handle || '?')
-                        .charAt(0)
-                        .toUpperCase()}
-                    </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        component={RouterLink}
-                        to={`/u/${c.handle}`}
-                        variant="body2"
-                        fontWeight={600}
-                        sx={{
-                          display: 'block',
-                          color: 'text.primary',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {c.display_name || c.handle}
-                      </Typography>
-                      {c.linkedinUrl ? (
-                        <Link
-                          href={c.linkedinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          variant="caption"
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.25,
-                            color: 'primary.main',
-                          }}
-                        >
-                          LinkedIn
-                          <OpenInNewIcon sx={{ fontSize: 12 }} />
-                        </Link>
-                      ) : null}
-                    </Box>
-                  </Stack>
-                ))}
-              </Stack>
-            )}
+            <InputBase
+              name="q"
+              placeholder="Search for people"
+              sx={{
+                px: 2,
+                py: 1.25,
+                width: '100%',
+                fontSize: '0.9375rem',
+              }}
+            />
+            <Button type="submit" sx={{ textTransform: 'none' }}>
+              Search
+            </Button>
           </Paper>
-        </Grid>
+        </Box>
 
-        {/* Center column: composer + feed list */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          {/* Start a post */}
-          <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar src={displayAvatar} sx={{ width: 48, height: 48 }}>
+        <Grid container spacing={2}>
+          {/* Left column: profile summary (LinkedIn-style sidebar) */}
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <Paper
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                mb: 2,
+                p: 2,
+                position: 'sticky',
+                top: 88,
+              }}
+            >
+              <Stack spacing={2} alignItems="center">
+                <Avatar src={displayAvatar} sx={{ width: 72, height: 72 }}>
                   {(session?.user?.id ?? '?').slice(0, 1).toUpperCase()}
                 </Avatar>
-                <InputBase
-                  inputRef={composerRef}
-                  placeholder="Start a post"
-                  value={composerValue}
-                  onChange={(e) => setComposerValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void handleSubmitPost();
-                    }
-                  }}
-                  fullWidth
-                  sx={{
-                    bgcolor: 'action.hover',
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.5,
-                    '&.Mui-focused': { bgcolor: 'action.selected' },
-                  }}
-                />
-              </Stack>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mt: 2 }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  Share a post. You can include links in the text.
-                </Typography>
+                <Box textAlign="center">
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    Your Weirdling
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Check your dashboard to tune your persona and profile.
+                  </Typography>
+                </Box>
                 <Button
-                  variant="text"
-                  startIcon={<ArticleOutlinedIcon />}
-                  onClick={() => void handleSubmitPost()}
-                  disabled={posting || !composerValue.trim()}
-                  sx={{
-                    textTransform: 'none',
-                    color: 'text.secondary',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
+                  component={RouterLink}
+                  to="/dashboard"
+                  variant="outlined"
+                  size="small"
+                  sx={{ textTransform: 'none', borderRadius: 999 }}
                 >
-                  {posting ? 'Posting…' : 'Post'}
+                  View dashboard
                 </Button>
               </Stack>
-            </CardContent>
-          </Card>
+            </Paper>
 
-          {/* Sort */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 2 }}
-          >
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <Select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'recent')}
-                displayEmpty
-                sx={{ fontSize: '0.875rem' }}
-              >
-                <MenuItem value="recent">Sort by: Recent</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-
-          {/* Feed list */}
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress aria-label="Loading feed" />
-            </Box>
-          ) : items.length === 0 ? (
-            <Typography
-              color="text.secondary"
-              textAlign="center"
-              sx={{ py: 6 }}
+            {/* Connections: people you follow + their LinkedIns */}
+            <Paper
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                mb: 2,
+                p: 2,
+                position: 'sticky',
+                top: 320,
+              }}
             >
-              No activity yet. Share a post or connect with other Weirdlings to
-              see updates here.
-            </Typography>
-          ) : (
-            <>
-              {items.map((item) => (
-                <FeedCard
-                  key={item.id}
-                  item={item}
-                  actions={feedCardActions}
-                  commentsExpanded={expandedCommentsPostId === item.id}
-                  comments={commentsByPostId[item.id] ?? []}
-                  commentsLoading={commentsLoadingPostId === item.id}
-                  onAddComment={handleAddComment}
-                  isLinkPreviewDismissed={dismissedLinkPreviewIds.has(item.id)}
-                  onDismissLinkPreview={() => handleDismissLinkPreview(item.id)}
-                />
-              ))}
-              {nextCursor && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                  <Button
-                    variant="outlined"
-                    disabled={loadingMore}
-                    onClick={() => void loadPage(nextCursor, true)}
-                    startIcon={
-                      loadingMore ? <CircularProgress size={16} /> : null
-                    }
-                  >
-                    {loadingMore ? 'Loading…' : 'Load more'}
-                  </Button>
-                </Box>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Your connections
+              </Typography>
+              {connections.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  Connect with others from their profile to see them here. Add a
+                  LinkedIn link in your profile so others can find you.
+                </Typography>
+              ) : (
+                <Stack spacing={1.5}>
+                  {connections.map((c) => (
+                    <Stack
+                      key={c.id}
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.5}
+                      sx={{ py: 0.5 }}
+                    >
+                      <Avatar
+                        src={c.avatar ?? undefined}
+                        sx={{ width: 36, height: 36 }}
+                        component={RouterLink}
+                        to={`/u/${c.handle}`}
+                      >
+                        {(c.display_name || c.handle || '?')
+                          .charAt(0)
+                          .toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          component={RouterLink}
+                          to={`/u/${c.handle}`}
+                          variant="body2"
+                          fontWeight={600}
+                          sx={{
+                            display: 'block',
+                            color: 'text.primary',
+                            textDecoration: 'none',
+                            '&:hover': { textDecoration: 'underline' },
+                          }}
+                        >
+                          {c.display_name || c.handle}
+                        </Typography>
+                        {c.linkedinUrl ? (
+                          <Link
+                            href={c.linkedinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="caption"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.25,
+                              color: 'primary.main',
+                            }}
+                          >
+                            LinkedIn
+                            <OpenInNewIcon sx={{ fontSize: 12 }} />
+                          </Link>
+                        ) : null}
+                      </Box>
+                    </Stack>
+                  ))}
+                </Stack>
               )}
-            </>
-          )}
-        </Grid>
+            </Paper>
+          </Grid>
 
-        {/* Right column: news / tips */}
-        <Grid size={{ xs: 12, sm: 3 }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              borderRadius: 2,
-              mb: 2,
-              p: 2,
-              position: 'sticky',
-              top: 88,
-            }}
-          >
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              WRDLNKDN News
-            </Typography>
-            <Stack spacing={1.5}>
-              <Box>
-                <Typography variant="body2" fontWeight={500}>
-                  New: Weirdling Feed (MVP)
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Share text posts and curated links with your Weirdling
-                  network.
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" fontWeight={500}>
-                  Profiles review pipeline
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Approved profiles appear in feeds and the directory.
-                </Typography>
-              </Box>
+          {/* Center column: composer + feed list */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            {/* Start a post */}
+            <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar src={displayAvatar} sx={{ width: 48, height: 48 }}>
+                    {(session?.user?.id ?? '?').slice(0, 1).toUpperCase()}
+                  </Avatar>
+                  <InputBase
+                    inputRef={composerRef}
+                    placeholder="Start a post"
+                    value={composerValue}
+                    onChange={(e) => setComposerValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void handleSubmitPost();
+                      }
+                    }}
+                    fullWidth
+                    sx={{
+                      bgcolor: 'action.hover',
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.5,
+                      '&.Mui-focused': { bgcolor: 'action.selected' },
+                    }}
+                  />
+                </Stack>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mt: 2 }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Share a post. You can include links in the text.
+                  </Typography>
+                  <Button
+                    variant="text"
+                    startIcon={<ArticleOutlinedIcon />}
+                    onClick={() => void handleSubmitPost()}
+                    disabled={posting || !composerValue.trim()}
+                    sx={{
+                      textTransform: 'none',
+                      color: 'text.secondary',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    {posting ? 'Posting…' : 'Post'}
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Sort */}
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ mb: 2 }}
+            >
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'recent')}
+                  displayEmpty
+                  sx={{ fontSize: '0.875rem' }}
+                >
+                  <MenuItem value="recent">Sort by: Recent</MenuItem>
+                </Select>
+              </FormControl>
             </Stack>
-          </Paper>
+
+            {/* Feed list */}
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress aria-label="Loading feed" />
+              </Box>
+            ) : items.length === 0 ? (
+              <Stack
+                spacing={2}
+                alignItems="center"
+                justifyContent="center"
+                sx={{ py: 8, px: 2 }}
+              >
+                <Typography
+                  variant="h6"
+                  fontWeight={600}
+                  color="text.primary"
+                  textAlign="center"
+                >
+                  Nothing here yet.
+                </Typography>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  textAlign="center"
+                  sx={{ maxWidth: 400 }}
+                >
+                  Your Feed fills up when you follow people or join
+                  conversations. Start by discovering others in the community.
+                </Typography>
+                <Button
+                  component={RouterLink}
+                  to="/directory"
+                  variant="contained"
+                  size="large"
+                  sx={{ textTransform: 'none', borderRadius: 2 }}
+                >
+                  Discover People
+                </Button>
+              </Stack>
+            ) : (
+              <>
+                {items.map((item) => (
+                  <FeedCard
+                    key={item.id}
+                    item={item}
+                    actions={feedCardActions}
+                    commentsExpanded={expandedCommentsPostId === item.id}
+                    comments={commentsByPostId[item.id] ?? []}
+                    commentsLoading={commentsLoadingPostId === item.id}
+                    onAddComment={handleAddComment}
+                    isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
+                      item.id,
+                    )}
+                    onDismissLinkPreview={() =>
+                      handleDismissLinkPreview(item.id)
+                    }
+                  />
+                ))}
+                {nextCursor && (
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      disabled={loadingMore}
+                      onClick={() => void loadPage(nextCursor, true)}
+                      startIcon={
+                        loadingMore ? <CircularProgress size={16} /> : null
+                      }
+                    >
+                      {loadingMore ? 'Loading…' : 'Load more'}
+                    </Button>
+                  </Box>
+                )}
+              </>
+            )}
+          </Grid>
+
+          {/* Right column: news / tips */}
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <Paper
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                mb: 2,
+                p: 2,
+                position: 'sticky',
+                top: 88,
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                WRDLNKDN News
+              </Typography>
+              <Stack spacing={1.5}>
+                <Box>
+                  <Typography variant="body2" fontWeight={500}>
+                    New: Weirdling Feed (MVP)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Share text posts and curated links with your Weirdling
+                    network.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" fontWeight={500}>
+                    Profiles review pipeline
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Approved profiles appear in feeds and the community.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
 
       <ShareDialog
         item={shareModalItem}

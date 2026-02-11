@@ -14,14 +14,16 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { WEIRDLING_ASSET_COUNT } from '../../types/weirdling';
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [weirdlingIndex, setWeirdlingIndex] = useState(1);
+  const isFeedActive = location.pathname === '/feed';
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -93,7 +95,6 @@ export const Navbar = () => {
     setBusy(true);
 
     try {
-      // UPDATED: Redirect to the Directory (Feed) instead of Dashboard
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
         '/feed',
       )}`;
@@ -175,12 +176,15 @@ export const Navbar = () => {
           <>
             <Button
               component={RouterLink}
-              to="/directory"
-              sx={{ color: 'white' }}
+              to="/feed"
+              sx={{
+                color: 'white',
+                ...(isFeedActive && {
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                }),
+              }}
             >
-              Directory
-            </Button>
-            <Button component={RouterLink} to="/feed" sx={{ color: 'white' }}>
               Feed
             </Button>
             <Button

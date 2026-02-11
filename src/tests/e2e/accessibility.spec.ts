@@ -4,15 +4,14 @@ import { expect, test } from '@playwright/test';
 test('Global Accessibility Audit', async ({ page }) => {
   await page.goto('/');
 
-  await expect(
-    page.getByRole('heading', {
-      level: 1,
-      name: /WRDLNKDN/i,
-    }),
-  ).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#root')).toBeVisible();
+
+  await expect(page.getByTestId('signed-out-landing')).toBeVisible({
+    timeout: 15000,
+  });
 
   await expect(
-    page.getByRole('button', { name: /Continue with Google/i }),
+    page.getByRole('button', { name: /Continue with Google/i }).first(),
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page })

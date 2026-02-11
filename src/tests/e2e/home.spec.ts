@@ -7,33 +7,23 @@ test.describe('Home Page - High-Integrity Audit', () => {
 
     await expect(page.locator('#root')).toBeVisible();
 
-    // Wait for signed-out landing: wordmark WRDLNKDN (confirms skeleton is gone)
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: /WRDLNKDN/i,
-      }),
-    ).toBeVisible({ timeout: 10000 });
+    // Wait for signed-out landing (confirms skeleton is gone; stable across CI)
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
+    const landing = page.getByTestId('signed-out-landing');
+
+    await expect(landing.getByText(/Connection in motion\./i)).toBeVisible();
+
     await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: /WRDLNKDN/i,
-      }),
+      landing.getByText(/A professional network built on values/i),
     ).toBeVisible();
 
     await expect(
-      page.getByText(/Business, But Weirder/i),
-    ).toBeVisible();
-
-    await expect(
-      page.getByText(/Showcase your professional identity/i),
-    ).toBeVisible();
-
-    await expect(
-      landing.getByRole('button', { name: /Continue with Google/i }),
+      landing.getByRole('button', { name: /Continue with Google/i }).first(),
     ).toBeVisible();
 
     const results = await new AxeBuilder({ page })

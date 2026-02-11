@@ -13,3 +13,4 @@ declare module '@mui/icons-material/RepeatOutlined';
 declare module '@mui/icons-material/ChatBubbleOutlineOutlined';
 declare module '@mui/icons-material/VolumeOff';
 declare module '@mui/icons-material/VolumeUp';
+declare module '@mui/icons-material/TouchApp';

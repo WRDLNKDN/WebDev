@@ -153,7 +153,7 @@ export const WeirdlingCreate = () => {
     if (step === 1) {
       setIndustryText(inputs.industryOrInterests.join(', '));
     }
-  }, [step]);
+  }, [step, inputs.industryOrInterests]);
 
   const handleInput = (key: keyof WeirdlingWizardInputs, value: unknown) => {
     setInputs((prev) => ({ ...prev, [key]: value }));

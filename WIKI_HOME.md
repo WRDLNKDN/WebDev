@@ -20,6 +20,11 @@ we’re building.
   rules of the road for issues, labels, milestones, and keeping our workflow
   sharp.
 
+- **[Information architecture](docs/architecture/information-architecture.md)**  
+  Canonical
+  routes (Home, Feed, Join, Profile, Dashboard), nav labels, and public vs
+  authenticated access — single source of truth for design and engineering.
+
 > **Note:**
 >
 > - `CONTRIBUTING.md` = How to contribute, code style, PR process, and workflow

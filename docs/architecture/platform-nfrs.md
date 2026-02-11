@@ -15,7 +15,7 @@ independent of feature implementation or vendor choice.
 ### O-1 Availability
 
 The platform must support continuous operation with no single point of failure
-in the registration, authentication, approval, or directory workflows.
+in the registration, authentication, approval, or feed workflows.
 
 Target:
 
@@ -25,17 +25,17 @@ Applies to:
 
 - Registration
 - Admin approval
-- Directory browsing
+- Feed browsing
 
 ### O-2 Failure Isolation
 
 Failures in admin or moderation tooling must not impact public registration or
-directory availability.
+feed availability.
 
 Applies to:
 
 - Admin moderation
-- Directory
+- Feed
 
 ### O-3 Observability
 
@@ -65,7 +65,7 @@ Without architectural redesign.
 Applies to:
 
 - Registration
-- Directory
+- Feed
 
 ### S-2 Horizontal Scalability
 
@@ -75,7 +75,7 @@ possible, allowing scaling via replication rather than vertical upgrades.
 Applies to:
 
 - Registration
-- Directory
+- Feed
 - Admin moderation
 
 ### S-3 Admin Load Isolation
@@ -114,14 +114,14 @@ Applies to:
 
 ### P-3 Data Portability
 
-User profile, approval status, and directory data must be stored in formats that
-can be exported and migrated without vendor-specific tooling.
+User profile, approval status, and feed data must be stored in formats that can
+be exported and migrated without vendor-specific tooling.
 
 Applies to:
 
 - Registration
 - Approval
-- Directory
+- Feed
 
 ---
 
@@ -155,7 +155,7 @@ Applies to:
 | Registration     | O-1, O-3, S-1, S-2, P-1, P-3, SEC-2 |
 | Approval         | O-2, S-3, P-2, SEC-1                |
 | Admin Moderation | O-2, O-3, S-3, P-1, SEC-1           |
-| Directory        | O-1, S-1, S-2, P-2                  |
+| Feed             | O-1, S-1, S-2, P-2                  |
 
 ---
 
@@ -168,5 +168,5 @@ This document serves as the authoritative reference for:
 - Implementation tickets involving authentication, admin workflows, or data
   storage
 
-All future tickets affecting registration, approval, admin moderation, or
-directory must reference applicable constraints from this document.
+All future tickets affecting registration, approval, admin moderation, or feed
+must reference applicable constraints from this document.

@@ -115,7 +115,6 @@ export const Footer = () => {
         { label: 'Home', href: '/', external: false },
         { label: 'Join', href: '/join', external: false },
         { label: 'Feed', href: '/feed', external: false },
-        { label: 'Directory', href: '/directory', external: false },
         { label: 'Guidelines', href: '/guidelines', external: false },
       ],
     },
@@ -168,20 +167,20 @@ export const Footer = () => {
             >
               <Box
                 component="img"
-                src="/assets/logo.png"
+                src="/assets/github-ready/wrdlnkdn-logo-combo-horizontal.svg"
                 alt="WRDLNKDN"
                 sx={{
-                  height: 120,
-                  minHeight: 120,
+                  height: 56,
+                  minHeight: 40,
                   width: 'auto',
-                  maxWidth: 240,
+                  maxWidth: 280,
                   display: 'block',
                   objectFit: 'contain',
                 }}
               />
             </Link>
             <Typography variant="body2" color="rgba(255,255,255,0.8)">
-              © {year} WRDLNKDN. Stay weird. Build cool stuff.
+              © {year} WRDLNKDN. Business, but weirder.
             </Typography>
           </Stack>
           <Typography variant="body2" color="rgba(255,255,255,0.8)">

@@ -13,6 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import { GuestView } from '../components/home/GuestView';
 import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HomeVisual } from '../components/home/HomeVisual';
+import { HowItWorks } from '../components/home/HowItWorks';
+import { SocialProof } from '../components/home/SocialProof';
+import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -110,28 +113,51 @@ export const Home = () => {
   return (
     <>
       <Helmet>
-        <title>WRDLNKDN | Welcome to your professional community</title>
+        <title>WRDLNKDN | Connection in motion</title>
         <meta
           name="description"
-          content="The Human Operating System. A verified professional network built for authenticity."
+          content="A professional network built on values. Powered by participation."
         />
       </Helmet>
 
+      {/* Hero: video background + value prop + CTAs */}
       <Box
         component="main"
         sx={{
+          position: 'relative',
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
           alignItems: 'center',
-          bgcolor: '#05070f',
-          backgroundImage:
-            'radial-gradient(circle at 15% 50%, rgba(66, 165, 245, 0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(236, 64, 122, 0.08), transparent 25%)',
           overflow: 'hidden',
         }}
       >
-        <Container maxWidth="lg">
+        {/* Video background (place hero-bg.mp4 in public/assets/video/) */}
+        <Box
+          component="video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+          src="/assets/video/hero-bg.mp4"
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            bgcolor: 'rgba(5, 7, 15, 0.6)',
+            zIndex: 1,
+          }}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
           <Grid container spacing={8} alignItems="center">
-            {/* --- LEFT COLUMN: Guest Gateway --- */}
             <Grid size={{ xs: 12, md: 6 }}>
               {error && (
                 <Alert
@@ -152,6 +178,15 @@ export const Home = () => {
           </Grid>
         </Container>
       </Box>
+
+      {/* What Makes This Different */}
+      <WhatMakesDifferent />
+
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Social Proof */}
+      <SocialProof />
     </>
   );
 };

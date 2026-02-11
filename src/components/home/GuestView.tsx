@@ -7,6 +7,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import type { OAuthProvider } from '../../lib/signInWithOAuth';
 
 interface GuestViewProps {
@@ -28,23 +29,18 @@ export const GuestView = ({ busy, onAuth }: GuestViewProps) => {
             fontSize: { xs: '2.5rem', md: '3.75rem' },
           }}
         >
-          Welcome to your{' '}
-          <Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            professional community
-          </Box>
+          Connection in motion.
         </Typography>
         <Typography
           variant="h5"
           sx={{ color: 'text.secondary', fontWeight: 400 }}
         >
-          Professional networking, but human. Verified, authentic, and
-          noise-free.
+          A professional network built on values. Powered by participation.
         </Typography>
       </Box>
 
-      {/* AUTH ACTIONS */}
+      {/* Primary CTA: Join */}
       <Stack spacing={2} sx={{ pt: 2 }}>
-        {/* Primary: Google */}
         <Button
           variant="outlined"
           size="large"
@@ -92,6 +88,22 @@ export const GuestView = ({ busy, onAuth }: GuestViewProps) => {
           }}
         >
           Sign in with Microsoft
+        </Button>
+        {/* Secondary CTA: Explore Feed */}
+        <Button
+          component={RouterLink}
+          to="/feed"
+          variant="text"
+          size="large"
+          fullWidth
+          sx={{
+            borderRadius: 20,
+            textTransform: 'none',
+            color: 'text.secondary',
+            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Explore Feed
         </Button>
       </Stack>
     </Stack>

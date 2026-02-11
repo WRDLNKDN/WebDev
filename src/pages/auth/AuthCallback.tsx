@@ -78,8 +78,8 @@ export const AuthCallback = () => {
 
         if (!cancelled) {
           // --- LOGIC BRANCH: SIGNUP VS DIRECT ENTRY ---
-          if (next === '/signup') {
-            console.log('📝 AuthCallback: Setting up signup flow');
+          if (next === '/join' || next === '/signup') {
+            console.log('📝 AuthCallback: Setting up Join flow');
 
             const provider = mapSupabaseProvider(user);
 
@@ -95,9 +95,8 @@ export const AuthCallback = () => {
 
             goToStep('values');
 
-            // Brief pause to allow state to lock in
             await new Promise((r) => setTimeout(r, 200));
-            navigate('/signup', { replace: true });
+            navigate('/join', { replace: true });
           } else {
             // Standard sync for dashboard, directory, or admin
             navigate(next, { replace: true });
@@ -179,9 +178,14 @@ export const AuthCallback = () => {
                     <Button
                       variant="contained"
                       onClick={() =>
-                        navigate(next === '/signup' ? '/signup' : '/signin', {
-                          replace: true,
-                        })
+                        navigate(
+                          next === '/join' || next === '/signup'
+                            ? '/join'
+                            : '/signin',
+                          {
+                            replace: true,
+                          },
+                        )
                       }
                     >
                       Try again

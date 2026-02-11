@@ -120,7 +120,7 @@ export const Signup = () => {
           <Stack direction="row" spacing={2} alignItems="center">
             <CircularProgress size={20} thickness={5} aria-label="Loading" />
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Loading signup…
+              Loading…
             </Typography>
           </Stack>
         </Container>

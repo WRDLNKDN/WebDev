@@ -23,16 +23,16 @@ export const WelcomeStep = () => {
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" sx={welcomeStepTitle}>
-              Welcome to WRDLNKDN
+              Start with intent.
             </Typography>
             <Typography variant="body2" sx={welcomeStepSubtext}>
-              Professional networking, but human.
+              A professional community built on values and participation.
             </Typography>
           </Box>
 
           <Typography variant="body2" sx={welcomeStepDescription}>
-            This is a curated directory. You submit a request, admins review it,
-            and once approved you appear in the member list.
+            Tell us why you are here and how you plan to show up. We review each
+            submission to keep the community aligned.
           </Typography>
 
           <Button
@@ -43,7 +43,7 @@ export const WelcomeStep = () => {
               goToStep('identity');
             }}
           >
-            Start signup
+            Create your profile
           </Button>
         </Stack>
       </Paper>

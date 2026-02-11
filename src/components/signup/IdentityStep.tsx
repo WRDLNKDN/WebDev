@@ -148,7 +148,7 @@ export const IdentityStep = () => {
 
     try {
       const { data, error: authError } = await signInWithOAuth(provider, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/join`,
       });
 
       if (authError) throw authError;

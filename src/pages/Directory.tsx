@@ -228,7 +228,7 @@ export const Directory = () => {
               </Typography>
               <Button
                 component={RouterLink}
-                to="/signup"
+                to="/join"
                 variant="contained"
                 size="large"
                 sx={{ mt: 2, px: 4 }}

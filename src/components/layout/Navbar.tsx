@@ -203,13 +203,13 @@ export const Navbar = () => {
         <Stack direction="row" spacing={2} alignItems="center">
           {!session ? (
             <>
-              {/* Sign Up: Text Link */}
+              {/* Join: primary nav label */}
               <Button
                 component={RouterLink}
-                to="/signup"
+                to="/join"
                 sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
               >
-                Join now
+                Join
               </Button>
 
               {/* Sign In: Pill Button */}

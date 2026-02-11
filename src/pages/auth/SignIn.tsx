@@ -142,7 +142,7 @@ export const SignIn = () => {
                 {"Don't have an account? "}
                 <Typography
                   component={RouterLink}
-                  to="/signup"
+                  to="/join"
                   sx={{ color: 'primary.main', textDecoration: 'underline' }}
                 >
                   Sign up

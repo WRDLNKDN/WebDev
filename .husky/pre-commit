@@ -1,48 +1,62 @@
-#!/bin/bash
-# --- The "Anti-Bloat" Verification ---
+#!/bin/sh
+
+# --- 1. The "Anti-Bloat" Verification ---
 # System Audit: Detect node_modules in the stage
 STAGED_MODULES=$(git diff --cached --name-only | grep "node_modules/" || true)
 
 if [ -n "$STAGED_MODULES" ]; then
   echo "❌ [SYSTEM AUDIT FAILURE]: node_modules detected in commit!"
   echo "Manual Rewind Required: Run 'git rm -r --cached node_modules' to purge."
-  exit 1 
-fi
-
-# Check for empty files in staged changes
-echo "📂 Checking for empty files in staged changes..."
-
-ALLOW_EMPTY_REGEX='(^|/)\.gitkeep$|(^|/)\.keep$'
-CANDIDATES=$(git diff --cached --name-only --diff-filter=AM)
-EMPTY_FILES=""
-
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-  if echo "$file" | grep -Eq "$ALLOW_EMPTY_REGEX"; then continue; fi
-
-  # Integrity Check: verify file exists and size is 0
-  if [ -f "$file" ] && [ ! -s "$file" ]; then
-    EMPTY_FILES+="$file"$'\n'
-  fi
-done <<< "$CANDIDATES"
-
-if [ -n "$EMPTY_FILES" ]; then
-  echo "🛑 [SYSTEM AUDIT FAILURE]: Empty files detected!"
-  printf "%s" "$EMPTY_FILES"
   exit 1
 fi
 
-# Step 4: Markdown lint (docs integrity)
+# --- 2. Empty File Check ---
+echo "📂 [STEP 2]: Checking for empty files..."
+
+# We use a subshell and pipe (POSIX compliant) instead of '<<<' (Bash only)
+EMPTY_FILES=$(git diff --cached --name-only --diff-filter=AM | while IFS= read -r file; do
+  # Skip blank lines
+  [ -z "$file" ] && continue
+
+  # Check allow-list using 'case' (works in all shells)
+  case "$file" in
+    *.gitkeep|*.keep|*/.gitkeep|*/.keep) continue ;;
+  esac
+
+  # Integrity Check: verify file exists (-f) and is empty (! -s)
+  if [ -f "$file" ] && [ ! -s "$file" ]; then
+    echo "$file"
+  fi
+done)
+
+if [ -n "$EMPTY_FILES" ]; then
+  echo "🛑 [SYSTEM AUDIT FAILURE]: Empty files detected!"
+  echo "$EMPTY_FILES"
+  exit 1
+fi
+echo "✅ [STEP 2]: No empty files found."
+
+# --- 3. Type Checking (The Missing Piece) ---
+echo "🏗️ [STEP 3]: Validating Types (TypeScript)..."
+# We run the command you defined in package.json
+if ! npm run typecheck; then
+  echo "🛑 [TYPE ERROR]: TypeScript compilation failed."
+  echo "   Fix the errors above or run 'npm run typecheck' to debug."
+  exit 1
+fi
+echo "✅ [STEP 3]: Types are valid."
+
+# --- 4. Markdown Lint ---
 echo "📝 [STEP 4]: Auditing documentation (markdownlint)..."
 if ! npx --no-install markdownlint . --ignore node_modules; then
   echo "🛑 [DOCS FAULT]: Markdown lint failed."
-  echo "  Run: npm run lint:md:fix"
+  echo "   Run: npm run lint:md:fix"
   exit 1
 fi
 echo "✅ [STEP 4]: Docs are clean."
 
-# Lint and format staged files so syntax/lint issues are caught before commit
-echo "🔍 Running lint-staged (prettier + eslint + markdownlint) on staged files..."
+# --- 5. Lint Staged Files ---
+echo "🔍 [STEP 5]: Running lint-staged (prettier + eslint) on staged files..."
 npx lint-staged
 
 echo "✅ Integrity verified. Proceeding with commit."

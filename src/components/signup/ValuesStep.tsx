@@ -75,10 +75,11 @@ export const ValuesStep = () => {
         <Stack spacing={4}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
-              Values & Intent
+              Intent
             </Typography>
             <Typography variant="body2" sx={signupStepSubtext}>
-              Help us keep the community aligned.
+              Help us understand why you&apos;re here and how you plan to
+              participate.
             </Typography>
           </Box>
 

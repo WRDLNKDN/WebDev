@@ -30,6 +30,7 @@ export type SignupContextValue = {
   // Submission
   submitting: boolean;
   submitError: string | null;
+  clearSubmitError: () => void;
   submitRegistration: (profileData?: ProfileData) => Promise<void>;
 
   // Reset

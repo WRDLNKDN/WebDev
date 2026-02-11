@@ -3,41 +3,31 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the Conversion Gateway
-    await page.goto('/home');
+    await page.goto('/');
 
-    // 1. Wait for the app root
     await expect(page.locator('#root')).toBeVisible();
 
-    // 2. Wait for the NEW H1 (This confirms the Skeleton is gone)
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: /Welcome to your professional community/i,
-      }),
-    ).toBeVisible({ timeout: 10000 });
+    // Wait for signed-out landing (confirms skeleton is gone; stable across CI)
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
-    // 1. Check Headline
+    const landing = page.getByTestId('signed-out-landing');
+
+    await expect(landing.getByText('WRDLNKDN')).toBeVisible();
+
+    await expect(landing.getByText(/Business, But Weirder/i)).toBeVisible();
+
     await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: /Welcome to your professional community/i,
-      }),
+      landing.getByText(/Showcase your professional identity/i),
     ).toBeVisible();
 
-    // 2. Check Subtitle (This text was preserved)
     await expect(
-      page.getByText(/Professional networking, but human/i),
+      landing.getByRole('button', { name: /Continue with Google/i }),
     ).toBeVisible();
 
-    // 3. Check Primary Action (The Pill Button)
-    await expect(
-      page.getByRole('button', { name: /Continue with Google/i }),
-    ).toBeVisible();
-
-    // 4. Run Accessibility Audit on the *Real* UI
     const results = await new AxeBuilder({ page })
       .include('#root')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -50,11 +40,8 @@ test.describe('Home Page - High-Integrity Audit', () => {
     await page.goto('/admin');
 
     await expect(page).toHaveURL(/\/admin(\b|\/|\?)/);
-    await expect(page.locator('#root')).toBeVisible();
+    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-    // Admin shell shows "Admin Moderation" or similar
-    // Note: Since you aren't logged in, this might redirect or show a "Not Authorized"
-    // depending on your protection logic. Assuming it renders *something* accessible:
     const results = await new AxeBuilder({ page }).include('#root').analyze();
 
     expect(results.violations).toEqual([]);

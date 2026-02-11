@@ -142,6 +142,7 @@ export const Home = () => {
         <Container
           maxWidth="sm"
           sx={{ position: 'relative', zIndex: 2, py: 4 }}
+          data-testid="signed-out-landing"
         >
           <Stack spacing={3} alignItems="center" textAlign="center">
             {error && (

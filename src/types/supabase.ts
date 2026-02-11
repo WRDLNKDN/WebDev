@@ -27,6 +27,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_connections: {
+        Row: {
+          user_id: string
+          connected_user_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          connected_user_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          connected_user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           id: string

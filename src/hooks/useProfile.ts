@@ -147,10 +147,10 @@ export function useProfile() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { nerd_creds: _, ...topLevelUpdates } = updates;
 
+      // Only send columns we're allowed to update (RLS grants specific columns; updated_at is set by trigger)
       const payload = {
         ...topLevelUpdates,
         nerd_creds: mergedNerdCreds as unknown as Json,
-        updated_at: new Date().toISOString(),
       };
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)

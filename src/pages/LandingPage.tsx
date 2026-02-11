@@ -1,8 +1,19 @@
 // src/pages/LandingPage.tsx
-import { Box, CircularProgress, Container, Grid, Paper } from '@mui/material';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Grid,
+  Paper,
+  Stack,
+} from '@mui/material';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonIcon from '@mui/icons-material/Person';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
+import type { User } from '@supabase/supabase-js';
 
 // MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../components/layout/LandingPageSkeleton';
@@ -36,10 +47,92 @@ export const LandingPage = () => {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewer, setViewer] = useState<User | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [connectionLoading, setConnectionLoading] = useState(false);
+  const [followCheckDone, setFollowCheckDone] = useState(false);
 
   // Easter Egg Check
   const isSecretHandle =
     handle?.toLowerCase() === 'glitch' || handle?.toLowerCase() === 'neo';
+
+  // Viewer session for Connect button
+  useEffect(() => {
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setViewer(session?.user ?? null);
+    };
+    void init();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void init();
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Check if viewer is already following this profile
+  useEffect(() => {
+    if (!viewer || !profile || viewer.id === profile.id) {
+      setFollowCheckDone(!!viewer && !!profile);
+      setIsFollowing(false);
+      return;
+    }
+    let cancelled = false;
+    const check = async () => {
+      const { data } = await supabase
+        .from('feed_connections')
+        .select('connected_user_id')
+        .eq('user_id', viewer.id)
+        .eq('connected_user_id', profile.id)
+        .maybeSingle();
+      if (!cancelled) {
+        setIsFollowing(!!data);
+        setFollowCheckDone(true);
+      }
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer, profile]);
+
+  const follow = useCallback(async () => {
+    if (!viewer || !profile || viewer.id === profile.id) return;
+    setConnectionLoading(true);
+    try {
+      const { error } = await supabase.from('feed_connections').insert({
+        user_id: viewer.id,
+        connected_user_id: profile.id,
+      });
+      if (error) throw error;
+      setIsFollowing(true);
+    } catch (e) {
+      console.error('Follow failed:', e);
+    } finally {
+      setConnectionLoading(false);
+    }
+  }, [viewer, profile]);
+
+  const unfollow = useCallback(async () => {
+    if (!viewer || !profile) return;
+    setConnectionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('feed_connections')
+        .delete()
+        .eq('user_id', viewer.id)
+        .eq('connected_user_id', profile.id);
+      if (error) throw error;
+      setIsFollowing(false);
+    } catch (e) {
+      console.error('Unfollow failed:', e);
+    } finally {
+      setConnectionLoading(false);
+    }
+  }, [viewer, profile]);
 
   useEffect(() => {
     const fetchPublicData = async () => {
@@ -104,6 +197,43 @@ export const LandingPage = () => {
   if (!profile) return <NotFoundPage />;
 
   const creds = profile.nerd_creds as Record<string, unknown>;
+  const showConnect =
+    !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
+
+  const connectActions = showConnect ? (
+    <Stack direction="row" spacing={2} alignItems="center">
+      {isFollowing ? (
+        <>
+          <Button
+            variant="outlined"
+            startIcon={<PersonIcon />}
+            disabled
+            size="medium"
+          >
+            Following
+          </Button>
+          <Button
+            variant="text"
+            size="medium"
+            disabled={connectionLoading}
+            onClick={() => void unfollow()}
+          >
+            Unfollow
+          </Button>
+        </>
+      ) : (
+        <Button
+          variant="contained"
+          startIcon={<PersonAddIcon />}
+          disabled={connectionLoading}
+          onClick={() => void follow()}
+          size="medium"
+        >
+          {connectionLoading ? 'Connecting…' : 'Connect'}
+        </Button>
+      )}
+    </Stack>
+  ) : null;
 
   return (
     <>
@@ -145,6 +275,7 @@ export const LandingPage = () => {
             avatarUrl={safeStr(profile.avatar)}
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
+            actions={connectActions}
           />
 
           {/* 2. THE GRID LAYOUT */}

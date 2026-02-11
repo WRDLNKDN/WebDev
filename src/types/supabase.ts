@@ -27,6 +27,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_connections: {
+        Row: {
+          user_id: string
+          connected_user_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          connected_user_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          connected_user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           id: string
@@ -92,6 +110,7 @@ export type Database = {
           reviewed_at: string | null
           created_at: string
           updated_at: string
+          use_weirdling_avatar: boolean
         }
         Insert: {
           id: string
@@ -103,6 +122,7 @@ export type Database = {
           resume_url?: string | null
           pronouns?: string | null
           status?: string
+          use_weirdling_avatar?: boolean
           socials?: Json | null
           nerd_creds?: Json | null
           geek_creds?: string[] | null
@@ -136,6 +156,7 @@ export type Database = {
           reviewed_at?: string | null
           created_at?: string
           updated_at?: string
+          use_weirdling_avatar?: boolean
         }
         Relationships: []
       }

@@ -27,6 +27,10 @@ const Directory = lazy(() =>
   import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
 
+const Feed = lazy(() =>
+  import('./pages/Feed').then((m) => ({ default: m.Feed })),
+);
+
 const Home = lazy(() =>
   import('./pages/Home').then((m) => ({ default: m.Home })),
 );
@@ -160,6 +164,7 @@ const App = () => {
               <Route path="/u/:handle" element={<LandingPage />} />
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />
+              <Route path="/feed" element={<Feed />} />
               <Route path="/store" element={<Store />} />
               <Route path="/about" element={<About />} />
               <Route path="/community" element={<Community />} />

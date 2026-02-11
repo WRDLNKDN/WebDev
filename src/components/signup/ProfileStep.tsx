@@ -9,8 +9,19 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+import {
+  profileStep,
+  profileStepAlert,
+  profileStepBackButton,
+  profileStepButtonRow,
+  profileStepSubmitButton,
+  profileStepSubtext,
+  profileStepTextField,
+  profileStepTipBox,
+  profileStepTipText,
+  profileStepTitle,
+} from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
-import './ProfileStep.css';
 
 const ProfileStep = () => {
   const {
@@ -74,12 +85,12 @@ const ProfileStep = () => {
   };
 
   return (
-    <Stack spacing={4} className="profileStep">
+    <Stack spacing={4} sx={profileStep}>
       <Box>
-        <Typography variant="h4" className="profileStepTitle">
+        <Typography variant="h4" sx={profileStepTitle}>
           Create Your Profile
         </Typography>
-        <Typography variant="body1" className="profileStepSubtext">
+        <Typography variant="body1" sx={profileStepSubtext}>
           This is what will appear in the directory after approval.
         </Typography>
       </Box>
@@ -88,7 +99,7 @@ const ProfileStep = () => {
         <Alert
           severity="error"
           onClose={() => setLocalError(null)}
-          className="profileStepAlert"
+          sx={profileStepAlert}
         >
           {friendlyError}
         </Alert>
@@ -103,7 +114,7 @@ const ProfileStep = () => {
         helperText="This is your public name in the directory"
         required
         error={!displayName.trim() && displayName.length > 0}
-        className="profileStepTextField"
+        sx={profileStepTextField}
       />
 
       <TextField
@@ -115,11 +126,11 @@ const ProfileStep = () => {
         rows={2}
         placeholder="One-liner about you (optional)"
         helperText="Optional: A short description or fun fact about yourself"
-        className="profileStepTextField"
+        sx={profileStepTextField}
       />
 
-      <Box className="profileStepTipBox">
-        <Typography variant="body2" className="profileStepTipText">
+      <Box sx={profileStepTipBox}>
+        <Typography variant="body2" sx={profileStepTipText}>
           💡 <strong>Your profile will be reviewed by admins</strong> before
           {
             " appearing in the directory. We will notify you once it's approved!"
@@ -127,13 +138,13 @@ const ProfileStep = () => {
         </Typography>
       </Box>
 
-      <Stack direction="row" spacing={2} className="profileStepButtonRow">
+      <Stack direction="row" spacing={2} sx={profileStepButtonRow}>
         <Button
           variant="outlined"
           onClick={handleBack}
           disabled={submitting}
-          className="profileStepBackButton"
           sx={{
+            ...profileStepBackButton,
             borderWidth: 1.5,
             borderColor: 'rgba(255,255,255,0.6)',
             color: '#fff',
@@ -159,7 +170,7 @@ const ProfileStep = () => {
               <CircularProgress size={18} sx={{ color: '#ffffff' }} />
             ) : null
           }
-          className="profileStepSubmitButton"
+          sx={profileStepSubmitButton}
         >
           {submitting ? 'Submitting…' : 'Submit Registration'}
         </Button>

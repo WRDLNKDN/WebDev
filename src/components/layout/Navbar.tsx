@@ -11,20 +11,24 @@ import {
   MenuItem,
   Stack,
   Toolbar,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
+import { WEIRDLING_ASSET_COUNT } from '../../types/weirdling';
 
 export const Navbar = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  // Hide detailed nav links on mobile to prevent crowding
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const [weirdlingIndex, setWeirdlingIndex] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWeirdlingIndex((prev) => (prev % WEIRDLING_ASSET_COUNT) + 1);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -91,7 +95,7 @@ export const Navbar = () => {
     try {
       // UPDATED: Redirect to the Directory (Feed) instead of Dashboard
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error } = await signInWithOAuth(provider, { redirectTo });
@@ -147,8 +151,8 @@ export const Navbar = () => {
         >
           <Box
             component="img"
-            src="/assets/wrdlnkdn_logo.png"
-            alt="WRDLNKDN"
+            src={`/assets/og_weirdlings/weirdling_${weirdlingIndex}.png`}
+            alt="WRDLNKDN Logo"
             sx={{
               height: '32px', // Standard Nav Logo height
               width: 'auto',
@@ -158,48 +162,29 @@ export const Navbar = () => {
           />
         </Box>
 
-        {/* --- MAIN NAVIGATION --- */}
-        {isDesktop && (
-          <Stack direction="row" spacing={1}>
-            {/* RENAMED: Directory -> Feed */}
+        <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
+          Store
+        </Button>
+        {session && (
+          <>
             <Button
               component={RouterLink}
               to="/directory"
-              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+              sx={{ color: 'white' }}
             >
+              Directory
+            </Button>
+            <Button component={RouterLink} to="/feed" sx={{ color: 'white' }}>
               Feed
             </Button>
-
             <Button
               component={RouterLink}
-              to="/store"
-              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
+              to="/dashboard"
+              sx={{ color: 'white' }}
             >
-              Store
+              Profile
             </Button>
-
-            <Button
-              component={RouterLink}
-              to="/weirdling/create"
-              sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
-            >
-              Create
-            </Button>
-
-            {/* Dashboard only appears if logged in */}
-            {session && (
-              <Button
-                component={RouterLink}
-                to="/dashboard"
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                Dashboard
-              </Button>
-            )}
-          </Stack>
+          </>
         )}
 
         <Box sx={{ flexGrow: 1 }} />
@@ -259,7 +244,7 @@ export const Navbar = () => {
                   <ListItemIcon>
                     <GoogleIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Sign in with Google</ListItemText>
+                  <ListItemText>Google</ListItemText>
                 </MenuItem>
                 <MenuItem
                   onClick={() => void handleSignIn('azure')}
@@ -269,7 +254,7 @@ export const Navbar = () => {
                   <ListItemIcon>
                     <MicrosoftIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Sign in with Microsoft</ListItemText>
+                  <ListItemText>Microsoft</ListItemText>
                 </MenuItem>
               </Menu>
             </>

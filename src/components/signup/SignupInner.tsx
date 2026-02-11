@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/supabaseClient';
 
+import { signupMain, signupProgressWrapper } from '../../theme/signupStyles';
 import { CompleteStep } from './CompleteStep';
 import { IdentityStep } from './IdentityStep';
 import { ProfileStep } from './ProfileStep';
-import './signup.css';
 import { SignupProgress } from './SignupProgress';
 import { ValuesStep } from './ValuesStep';
 import { WelcomeStep } from './WelcomeStep';
@@ -62,9 +62,9 @@ export const SignupInner = () => {
     state.currentStep !== 'welcome' && state.currentStep !== 'complete';
 
   return (
-    <Box component="main" className="signupMain">
+    <Box component="main" sx={signupMain}>
       {showProgress && (
-        <Box className="signupProgressWrapper">
+        <Box sx={signupProgressWrapper}>
           <SignupProgress
             currentStep={state.currentStep}
             completedSteps={state.completedSteps}

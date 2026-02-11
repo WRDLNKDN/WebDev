@@ -94,8 +94,14 @@ export const Dashboard = () => {
     profile?.tagline,
     'Full Stack Developer | System Architect',
   );
+  const profileUseWeirdlingAvatar = Boolean(
+    (profile as { use_weirdling_avatar?: boolean } | null)
+      ?.use_weirdling_avatar,
+  );
   const avatarUrl = safeStr(
-    profile?.avatar || session.user.user_metadata.avatar_url,
+    profileUseWeirdlingAvatar && weirdling?.avatarUrl
+      ? weirdling.avatarUrl
+      : profile?.avatar || session.user.user_metadata.avatar_url,
   );
 
   // TYPE-SAFE NERD CREDS
@@ -314,6 +320,7 @@ export const Dashboard = () => {
             open={isEditOpen}
             onClose={() => setIsEditOpen(false)}
             profile={profile}
+            hasWeirdling={Boolean(weirdling)}
             onUpdate={updateProfile}
             onUpload={uploadAvatar}
           />

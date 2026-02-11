@@ -21,9 +21,16 @@ import { useSignup } from '../../context/useSignup';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
+import {
+  identityStepChecking,
+  identityStepInfoBox,
+  signupBackButton,
+  signupLink,
+  signupPaper,
+  signupStepLabel,
+  signupStepSubtext,
+} from '../../theme/signupStyles';
 import { POLICY_VERSION } from '../../types/signup';
-import './IdentityStep.css';
-import './signup.css';
 
 const mapSupabaseProvider = (user: {
   identities?: { provider?: string }[];
@@ -175,10 +182,9 @@ export const IdentityStep = () => {
       <Box sx={{ width: '100%' }}>
         <Paper
           elevation={0}
-          className="signupPaper identityStep"
-          sx={{ bgcolor: 'transparent', border: 'none' }}
+          sx={{ ...signupPaper, bgcolor: 'transparent', border: 'none' }}
         >
-          <Box className="identityStepChecking">
+          <Box sx={identityStepChecking}>
             <CircularProgress size={24} />
             <Typography>Checking authentication...</Typography>
           </Box>
@@ -191,16 +197,15 @@ export const IdentityStep = () => {
     <Box sx={{ width: '100%' }}>
       <Paper
         elevation={0}
-        className="signupPaper identityStep"
-        sx={{ bgcolor: 'transparent', border: 'none' }}
+        sx={{ ...signupPaper, bgcolor: 'transparent', border: 'none' }}
       >
         <Stack spacing={3}>
           <Box>
-            <Typography variant="h5" className="signupStepLabel">
+            <Typography variant="h5" sx={signupStepLabel}>
               Continue to sign in
             </Typography>
-            <Typography variant="body2" className="signupStepSubtext">
-              Sign in with Google or Microsoft to continue
+            <Typography variant="body2" sx={signupStepSubtext}>
+              Sign in to continue
             </Typography>
           </Box>
 
@@ -212,7 +217,6 @@ export const IdentityStep = () => {
 
           <Typography
             variant="subtitle2"
-            className="IdentityStep__policyTitle"
             sx={{ fontWeight: 600, mb: 1, display: 'block' }}
           >
             Before continuing, please review and accept:
@@ -234,7 +238,7 @@ export const IdentityStep = () => {
                     href="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="signupLink"
+                    sx={signupLink}
                   >
                     Terms of Service
                   </Typography>
@@ -257,7 +261,7 @@ export const IdentityStep = () => {
                     href="/guidelines"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="signupLink"
+                    sx={signupLink}
                   >
                     Community Guidelines
                   </Typography>
@@ -289,8 +293,12 @@ export const IdentityStep = () => {
                   <CircularProgress size={20} color="inherit" />
                 ) : undefined
               }
-              className="IdentityStep__btn"
               sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                justifyContent: 'flex-start',
+                py: 1.5,
+                px: 2,
                 borderWidth: 2,
                 borderColor: 'rgba(255,255,255,0.5)',
                 color: '#fff',
@@ -348,8 +356,8 @@ export const IdentityStep = () => {
             </Menu>
           </Box>
 
-          <Box className="identityStepInfoBox" sx={{ mt: 2 }}>
-            <Typography variant="caption" className="signupStepSubtext">
+          <Box sx={{ ...identityStepInfoBox, mt: 2 }}>
+            <Typography variant="caption" sx={signupStepSubtext}>
               We use OAuth for secure authentication. Your credentials are never
               stored on our servers.
             </Typography>
@@ -359,8 +367,8 @@ export const IdentityStep = () => {
             variant="outlined"
             onClick={handleBack}
             disabled={loading}
-            className="signupBackButton"
             sx={{
+              ...signupBackButton,
               borderWidth: 1.5,
               borderColor: 'rgba(255,255,255,0.6)',
               color: '#fff',

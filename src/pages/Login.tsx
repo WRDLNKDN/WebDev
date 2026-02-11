@@ -24,8 +24,8 @@ export const Login = () => {
       setError(null);
 
       const origin = window.location.origin;
-      // High-Integrity Redirect: Ensures the Human OS returns to the Dashboard
-      const redirectTo = `${origin}/auth/callback?next=/dashboard`;
+      // High-Integrity Redirect: Ensure the Human OS returns to the Feed
+      const redirectTo = `${origin}/auth/callback?next=/feed`;
 
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',

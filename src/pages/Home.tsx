@@ -43,8 +43,7 @@ export const Home = () => {
           if (error) console.warn('Session check warning:', error.message);
 
           if (data.session) {
-            // 🚀 USER FOUND: Redirect immediately to Feed
-            navigate('/directory', { replace: true });
+            navigate('/feed', { replace: true });
             return;
           }
 
@@ -62,7 +61,7 @@ export const Home = () => {
     // 2. Listen for realtime auth changes (e.g. login in another tab)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted && session) {
-        navigate('/directory', { replace: true });
+        navigate('/feed', { replace: true });
       }
     });
 
@@ -85,7 +84,7 @@ export const Home = () => {
     setError(null);
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/directory',
+        '/feed',
       )}`;
 
       const { data, error: signInError } = await signInWithOAuth(provider, {
@@ -119,6 +118,7 @@ export const Home = () => {
       </Helmet>
 
       <Box
+        component="main"
         sx={{
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
@@ -142,13 +142,10 @@ export const Home = () => {
                   {error}
                 </Alert>
               )}
-
               <GuestView busy={busy} onAuth={handleAuth} />
             </Grid>
-
-            {/* --- RIGHT COLUMN: Brand Visual --- */}
             {!isMobile && (
-              <Grid size={{ md: 6 }}>
+              <Grid size={{ xs: 0, md: 6 }}>
                 <HomeVisual />
               </Grid>
             )}

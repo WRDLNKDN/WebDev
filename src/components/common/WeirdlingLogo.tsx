@@ -31,7 +31,7 @@ export const WeirdlingLogo = (props: BoxProps) => {
     >
       <Box
         component="img"
-        src={`/assets/weirdling_${weirdlingIndex}.png`}
+        src={`/assets/og_weirdlings/weirdling_${weirdlingIndex}.png`}
         alt="Weirdling Animation"
         sx={{
           height: '100%',

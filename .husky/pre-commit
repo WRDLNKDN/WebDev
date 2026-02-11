@@ -20,7 +20,9 @@ EMPTY_FILES=$(git diff --cached --name-only --diff-filter=AM | while IFS= read -
 
   # Check allow-list using 'case' (works in all shells)
   case "$file" in
-    *.gitkeep|*.keep|*/.gitkeep|*/.keep) continue ;;
+    *.gitkeep|*.keep|*/.gitkeep|*/.keep)
+      continue
+      ;;
   esac
 
   # Integrity Check: verify file exists (-f) and is empty (! -s)

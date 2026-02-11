@@ -69,7 +69,7 @@ export const mockWeirdlingAdapter: WeirdlingAdapter = {
 
     const imageIndex = weirdlingAssetIndex(handle, input.roleVibe);
     const avatarUrl = input.includeImage
-      ? `/assets/weirdling_${imageIndex + 1}.png`
+      ? `/assets/og_weirdlings/weirdling_${imageIndex + 1}.png`
       : null;
 
     return {

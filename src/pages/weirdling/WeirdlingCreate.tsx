@@ -86,7 +86,7 @@ const WeirdlingThumbnailGrid = ({
           >
             <Box
               component="img"
-              src={`/assets/weirdling_${n}.png`}
+              src={`/assets/og_weirdlings/weirdling_${n}.png`}
               alt={`Weirdling ${n}`}
               sx={{
                 width: size,
@@ -131,6 +131,7 @@ export const WeirdlingCreate = () => {
   }, [sessionChecked, session, navigate]);
 
   const [step, setStep] = useState(0);
+  const [industryText, setIndustryText] = useState('');
   const [inputs, setInputs] = useState<WeirdlingWizardInputs>({
     displayNameOrHandle: '',
     roleVibe: '',
@@ -141,6 +142,13 @@ export const WeirdlingCreate = () => {
     includeImage: true,
     selectedImageIndex: 1,
   });
+
+  // Sync industry text when entering step 1 so comma-separated input works
+  useEffect(() => {
+    if (step === 1) {
+      setIndustryText(inputs.industryOrInterests.join(', '));
+    }
+  }, [step]);
   const [preview, setPreview] = useState<WeirdlingPreview | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -160,7 +168,7 @@ export const WeirdlingCreate = () => {
         inputs.includeImage && inputs.selectedImageIndex != null
           ? {
               ...result.preview,
-              avatarUrl: `/assets/weirdling_${inputs.selectedImageIndex}.png`,
+              avatarUrl: `/assets/og_weirdlings/weirdling_${inputs.selectedImageIndex}.png`,
             }
           : result.preview;
       setPreview(previewWithImage);
@@ -251,16 +259,8 @@ export const WeirdlingCreate = () => {
       </Stack>
       <TextField
         label="Industry or interests (comma-separated)"
-        value={inputs.industryOrInterests.join(', ')}
-        onChange={(e) =>
-          handleInput(
-            'industryOrInterests',
-            e.target.value
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean),
-          )
-        }
+        value={industryText}
+        onChange={(e) => setIndustryText(e.target.value)}
         fullWidth
         placeholder="e.g. infra, frontend, design"
       />
@@ -359,7 +359,7 @@ export const WeirdlingCreate = () => {
                 component="img"
                 src={
                   preview.avatarUrl ??
-                  `/assets/weirdling_${previewImageIndex}.png`
+                  `/assets/og_weirdlings/weirdling_${previewImageIndex}.png`
                 }
                 alt={`${preview.displayName} Weirdling`}
                 sx={{
@@ -377,7 +377,12 @@ export const WeirdlingCreate = () => {
                 value={previewImageIndex}
                 onChange={(n) => {
                   setPreview((p) =>
-                    p ? { ...p, avatarUrl: `/assets/weirdling_${n}.png` } : p,
+                    p
+                      ? {
+                          ...p,
+                          avatarUrl: `/assets/og_weirdlings/weirdling_${n}.png`,
+                        }
+                      : p,
                   );
                   setInputs((prev) => ({ ...prev, selectedImageIndex: n }));
                 }}
@@ -445,7 +450,7 @@ export const WeirdlingCreate = () => {
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
       <Typography variant="h5" component="h1" gutterBottom>
-        Create your Weirdling
+        Create my Weirdling
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Step {step + 1} of {STEPS.length}: {STEPS[step]}
@@ -458,14 +463,39 @@ export const WeirdlingCreate = () => {
       <Box sx={{ mb: 3 }}>{stepsContent[step]}</Box>
       <Stack direction="row" spacing={2}>
         {step > 0 && (
-          <Button variant="outlined" onClick={() => setStep((s) => s - 1)}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              if (step === 1) {
+                setInputs((prev) => ({
+                  ...prev,
+                  industryOrInterests: industryText
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                }));
+              }
+              setStep((s) => s - 1);
+            }}
+          >
             Back
           </Button>
         )}
         {step < STEPS.length - 1 ? (
           <Button
             variant="contained"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => {
+              if (step === 1) {
+                setInputs((prev) => ({
+                  ...prev,
+                  industryOrInterests: industryText
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                }));
+              }
+              setStep((s) => s + 1);
+            }}
             disabled={
               (step === 0 && !inputs.displayNameOrHandle.trim()) ||
               (step === 1 && !inputs.roleVibe)

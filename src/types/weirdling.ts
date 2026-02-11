@@ -3,8 +3,8 @@
  * Final schema should match MVP models in Drive when reviewed.
  */
 
-/** Number of Weirdling image assets in public/assets (weirdling_1.png … weirdling_N.png). Single source of truth. */
-export const WEIRDLING_ASSET_COUNT = 24;
+/** Number of Weirdling image assets in public/assets/og_weirdlings (weirdling_1.png … weirdling_N.png). Single source of truth. */
+export const WEIRDLING_ASSET_COUNT = 6;
 
 export type WeirdlingWizardInputs = {
   displayNameOrHandle: string;

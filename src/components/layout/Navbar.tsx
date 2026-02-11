@@ -156,7 +156,7 @@ export const Navbar = () => {
         >
           <Box
             component="img"
-            src={`/assets/weirdling_${weirdlingIndex}.png`}
+            src={`/assets/og_weirdlings/weirdling_${weirdlingIndex}.png`}
             alt="WRDLNKDN Logo"
             sx={{
               height: '100%',

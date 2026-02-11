@@ -86,7 +86,7 @@ const WeirdlingThumbnailGrid = ({
           >
             <Box
               component="img"
-              src={`/assets/weirdling_${n}.png`}
+              src={`/assets/og_weirdlings/weirdling_${n}.png`}
               alt={`Weirdling ${n}`}
               sx={{
                 width: size,
@@ -160,7 +160,7 @@ export const WeirdlingCreate = () => {
         inputs.includeImage && inputs.selectedImageIndex != null
           ? {
               ...result.preview,
-              avatarUrl: `/assets/weirdling_${inputs.selectedImageIndex}.png`,
+              avatarUrl: `/assets/og_weirdlings/weirdling_${inputs.selectedImageIndex}.png`,
             }
           : result.preview;
       setPreview(previewWithImage);
@@ -359,7 +359,7 @@ export const WeirdlingCreate = () => {
                 component="img"
                 src={
                   preview.avatarUrl ??
-                  `/assets/weirdling_${previewImageIndex}.png`
+                  `/assets/og_weirdlings/weirdling_${previewImageIndex}.png`
                 }
                 alt={`${preview.displayName} Weirdling`}
                 sx={{
@@ -377,7 +377,12 @@ export const WeirdlingCreate = () => {
                 value={previewImageIndex}
                 onChange={(n) => {
                   setPreview((p) =>
-                    p ? { ...p, avatarUrl: `/assets/weirdling_${n}.png` } : p,
+                    p
+                      ? {
+                          ...p,
+                          avatarUrl: `/assets/og_weirdlings/weirdling_${n}.png`,
+                        }
+                      : p,
                   );
                   setInputs((prev) => ({ ...prev, selectedImageIndex: n }));
                 }}

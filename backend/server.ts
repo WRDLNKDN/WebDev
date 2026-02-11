@@ -10,6 +10,7 @@ import {
 } from './weirdling/adapter';
 import { validateWeirdlingResponse } from './weirdling/validate';
 import { checkRateLimit } from './weirdling/rateLimit';
+import { getFirstUrl, fetchLinkPreview } from './linkPreview';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -674,6 +675,9 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       actor_handle?: string | null;
       actor_display_name?: string | null;
       actor_avatar?: string | null;
+      like_count?: number | string | null;
+      viewer_liked?: boolean | null;
+      comment_count?: number | string | null;
     }) => ({
       id: row.id,
       user_id: row.user_id,
@@ -686,6 +690,9 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         display_name: row.actor_display_name ?? null,
         avatar: row.actor_avatar ?? null,
       },
+      like_count: Number(row.like_count ?? 0),
+      viewer_liked: Boolean(row.viewer_liked),
+      comment_count: Number(row.comment_count ?? 0),
     }),
   );
 
@@ -701,7 +708,12 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   const rawKind =
     typeof body.kind === 'string' ? body.kind.trim().toLowerCase() : 'post';
 
-  if (rawKind !== 'post' && rawKind !== 'external_link') {
+  if (
+    rawKind !== 'post' &&
+    rawKind !== 'external_link' &&
+    rawKind !== 'reaction' &&
+    rawKind !== 'repost'
+  ) {
     return res.status(400).json({ error: 'Unsupported kind' });
   }
 
@@ -719,16 +731,105 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         .json({ error: 'Post body is required', field: 'body' });
     }
 
+    const payload: {
+      body: string;
+      link_preview?: import('./linkPreview').LinkPreview;
+    } = {
+      body: text,
+    };
+    const firstUrl = getFirstUrl(text);
+    if (firstUrl) {
+      const linkPreview = await fetchLinkPreview(firstUrl);
+      if (linkPreview) payload.link_preview = linkPreview;
+    }
+
     const { error } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
       kind: 'post',
-      payload: { body: text },
+      payload,
     });
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
+    return res.status(201).json({ ok: true });
+  }
+
+  if (rawKind === 'reaction') {
+    const parentId =
+      typeof body.parent_id === 'string' ? body.parent_id.trim() : null;
+    const type =
+      typeof body.type === 'string' ? body.type.trim().toLowerCase() : '';
+    if (!parentId || (type !== 'like' && type !== 'comment')) {
+      return res
+        .status(400)
+        .json({ error: 'parent_id and type (like|comment) required' });
+    }
+    const payload: Record<string, string> = { type };
+    if (type === 'comment') {
+      const commentBody = typeof body.body === 'string' ? body.body.trim() : '';
+      if (!commentBody) {
+        return res
+          .status(400)
+          .json({ error: 'Comment body required', field: 'body' });
+      }
+      payload.body = commentBody;
+    }
+    const { error } = await adminSupabase.from('feed_items').insert({
+      user_id: userId,
+      kind: 'reaction',
+      parent_id: parentId,
+      payload,
+    });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(201).json({ ok: true });
+  }
+
+  if (rawKind === 'repost') {
+    const originalId =
+      typeof body.original_id === 'string' ? body.original_id.trim() : null;
+    if (!originalId) {
+      return res.status(400).json({ error: 'original_id required for repost' });
+    }
+    const { data: original, error: fetchErr } = await adminSupabase
+      .from('feed_items')
+      .select('id, payload, created_at, user_id')
+      .eq('id', originalId)
+      .single();
+    if (fetchErr || !original) {
+      return res.status(404).json({ error: 'Original post not found' });
+    }
+    const op = original.payload as Record<string, unknown> | null;
+    const { data: author } = await adminSupabase
+      .from('profiles')
+      .select('handle, display_name, avatar')
+      .eq('id', original.user_id)
+      .single();
+    let avatar: string | null = null;
+    const { data: w } = await adminSupabase
+      .from('weirdlings')
+      .select('avatar_url')
+      .eq('user_id', original.user_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (w?.avatar_url) avatar = w.avatar_url;
+    else if (author && (author as { avatar?: string }).avatar)
+      avatar = (author as { avatar: string }).avatar;
+    const snapshot = {
+      body: (op?.body as string) ?? (op?.text as string) ?? '',
+      created_at: original.created_at,
+      actor_handle: (author as { handle?: string })?.handle ?? null,
+      actor_display_name:
+        (author as { display_name?: string })?.display_name ?? null,
+      actor_avatar: avatar,
+    };
+    const { error } = await adminSupabase.from('feed_items').insert({
+      user_id: userId,
+      kind: 'repost',
+      payload: { original_id: originalId, snapshot },
+    });
+    if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json({ ok: true });
   }
 
@@ -756,6 +857,104 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
 
   return res.status(201).json({ ok: true });
 });
+
+// DELETE /api/feeds/items/:postId/reaction — remove viewer's like on a post
+app.delete(
+  '/api/feeds/items/:postId/reaction',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const postId = req.params.postId?.trim();
+    const type = (req.query.type as string)?.toLowerCase() || 'like';
+    if (!postId || type !== 'like') {
+      return res.status(400).json({ error: 'Invalid post id or type' });
+    }
+    const { data: rows, error } = await adminSupabase
+      .from('feed_items')
+      .select('id')
+      .eq('kind', 'reaction')
+      .eq('parent_id', postId)
+      .eq('user_id', userId)
+      .eq('payload->>type', 'like');
+    if (error) return res.status(500).json({ error: error.message });
+    if (!rows?.length) return res.status(204).send();
+    const { error: delErr } = await adminSupabase
+      .from('feed_items')
+      .delete()
+      .eq('id', rows[0].id);
+    if (delErr) return res.status(500).json({ error: delErr.message });
+    return res.status(204).send();
+  },
+);
+
+// GET /api/feeds/items/:postId/comments — list comments for a post
+app.get(
+  '/api/feeds/items/:postId/comments',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const postId = req.params.postId?.trim();
+    if (!postId) return res.status(400).json({ error: 'Invalid post id' });
+    const { data: rows, error } = await adminSupabase
+      .from('feed_items')
+      .select('id, user_id, payload, created_at')
+      .eq('kind', 'reaction')
+      .eq('parent_id', postId)
+      .eq('payload->>type', 'comment')
+      .order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    const comments = rows ?? [];
+    const userIds = [
+      ...new Set((comments as { user_id: string }[]).map((c) => c.user_id)),
+    ];
+    const profilesMap: Record<
+      string,
+      { handle?: string; display_name?: string; avatar?: string }
+    > = {};
+    const weirdlingsMap: Record<string, string | null> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await adminSupabase
+        .from('profiles')
+        .select('id, handle, display_name, avatar')
+        .in('id', userIds);
+      for (const p of profiles ?? []) {
+        const id = (p as { id: string }).id;
+        profilesMap[id] = p as {
+          handle?: string;
+          display_name?: string;
+          avatar?: string;
+        };
+      }
+      const { data: weirdlings } = await adminSupabase
+        .from('weirdlings')
+        .select('user_id, avatar_url')
+        .in('user_id', userIds)
+        .eq('is_active', true);
+      for (const w of weirdlings ?? []) {
+        const uid = (w as { user_id: string }).user_id;
+        weirdlingsMap[uid] =
+          (w as { avatar_url: string | null }).avatar_url ?? null;
+      }
+    }
+    const list = comments.map((r: Record<string, unknown>) => {
+      const uid = r.user_id as string;
+      const p = profilesMap[uid];
+      const avatar = weirdlingsMap[uid] ?? p?.avatar ?? null;
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        body: (r.payload as Record<string, unknown>)?.body ?? '',
+        created_at: r.created_at,
+        actor: {
+          handle: p?.handle ?? null,
+          display_name: p?.display_name ?? null,
+          avatar: avatar ?? null,
+        },
+      };
+    });
+    return res.json({ data: list });
+  },
+);
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true });

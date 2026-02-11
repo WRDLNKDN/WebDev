@@ -170,20 +170,24 @@ export const Navbar = () => {
         <Button component={RouterLink} to="/store" sx={{ color: 'white' }}>
           Store
         </Button>
-        <Button component={RouterLink} to="/directory" sx={{ color: 'white' }}>
-          Directory
-        </Button>
         {session && (
           <>
+            <Button
+              component={RouterLink}
+              to="/directory"
+              sx={{ color: 'white' }}
+            >
+              Directory
+            </Button>
             <Button component={RouterLink} to="/feed" sx={{ color: 'white' }}>
               Feed
             </Button>
             <Button
               component={RouterLink}
-              to="/weirdling/create"
+              to="/dashboard"
               sx={{ color: 'white' }}
             >
-              Create My Weirdling
+              Profile
             </Button>
           </>
         )}

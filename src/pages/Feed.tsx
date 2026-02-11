@@ -1,9 +1,11 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
-import LinkIcon from '@mui/icons-material/Link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Avatar,
@@ -18,8 +20,13 @@ import {
   DialogTitle,
   FormControl,
   Grid,
+  IconButton,
   InputBase,
   Link,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
   MenuItem,
   Paper,
   Select,
@@ -28,12 +35,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
-  createFeedExternalLink,
+  addComment,
   createFeedPost,
+  fetchComments,
   fetchFeeds,
+  likePost,
+  repostPost,
+  unlikePost,
+  type FeedComment,
   type FeedItem,
 } from '../lib/feedsApi';
 import { supabase } from '../lib/supabaseClient';
@@ -82,20 +95,289 @@ function formatTime(iso: string): string {
   return d.toLocaleDateString();
 }
 
-const FeedCard = ({ item }: { item: FeedItem }) => {
+/** Match URLs so we can render them as clickable links in post body. */
+const URL_REGEX = /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
+
+function linkifyBody(body: string): ReactNode {
+  if (!body.trim()) return null;
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  const re = new RegExp(URL_REGEX.source, 'gi');
+  while ((m = re.exec(body)) !== null) {
+    if (m.index > lastIndex) {
+      parts.push(body.slice(lastIndex, m.index));
+    }
+    parts.push(
+      <Link
+        key={m.index}
+        href={m[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{ color: 'primary.main' }}
+      >
+        {m[0]}
+      </Link>,
+    );
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < body.length) parts.push(body.slice(lastIndex));
+  return parts.length === 1 && typeof parts[0] === 'string' ? parts[0] : parts;
+}
+
+type LinkPreviewPayload = {
+  url: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+};
+
+function linkPreviewDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+const LinkPreviewCard = ({
+  preview,
+  onDismiss,
+}: {
+  preview: LinkPreviewPayload;
+  onDismiss?: () => void;
+}) => (
+  <Box sx={{ position: 'relative', display: 'block', mt: 1.5 }}>
+    {onDismiss && (
+      <IconButton
+        size="small"
+        aria-label="Dismiss link preview"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDismiss();
+        }}
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          zIndex: 1,
+          bgcolor: 'background.paper',
+          boxShadow: 1,
+          '&:hover': { bgcolor: 'action.hover' },
+          '&:focus': { bgcolor: 'background.paper' },
+        }}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    )}
+    <Link
+      href={preview.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      underline="none"
+      sx={{ display: 'block' }}
+    >
+      <Paper
+        variant="outlined"
+        sx={{
+          display: 'flex',
+          overflow: 'hidden',
+          borderRadius: 1.5,
+          borderColor: 'divider',
+          '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
+        }}
+      >
+        {preview.image && (
+          <Box
+            component="img"
+            src={preview.image}
+            alt=""
+            sx={{
+              width: 120,
+              minWidth: 120,
+              height: 120,
+              objectFit: 'cover',
+              bgcolor: 'action.hover',
+            }}
+          />
+        )}
+        <Box sx={{ p: 1.5, flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight={600}
+            sx={{ color: 'text.primary' }}
+            noWrap
+          >
+            {preview.title || linkPreviewDomain(preview.url)}
+          </Typography>
+          {preview.description && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.25 }}
+              noWrap
+            >
+              {preview.description}
+            </Typography>
+          )}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 0.5, display: 'block' }}
+          >
+            {preview.siteName || linkPreviewDomain(preview.url)}
+          </Typography>
+        </Box>
+      </Paper>
+    </Link>
+  </Box>
+);
+
+type FeedCardActions = {
+  updateItem: (id: string, patch: Partial<FeedItem>) => void;
+  onLike: (postId: string) => void;
+  onUnlike: (postId: string) => void;
+  onRepost: (item: FeedItem) => void;
+  onSend: (item: FeedItem) => void;
+  onCommentToggle: (postId: string) => void;
+};
+
+type FeedCardProps = {
+  item: FeedItem;
+  actions: FeedCardActions;
+  commentsExpanded: boolean;
+  comments: FeedComment[];
+  commentsLoading: boolean;
+  onAddComment: (postId: string, body: string) => void;
+  isLinkPreviewDismissed: boolean;
+  onDismissLinkPreview: () => void;
+};
+
+const ShareDialog = ({
+  item,
+  open,
+  onClose,
+  onCopyLink,
+}: {
+  item: FeedItem | null;
+  open: boolean;
+  onClose: () => void;
+  onCopyLink: (url: string) => void;
+}) => {
+  if (!item) return null;
+  const postUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/feed?post=${encodeURIComponent(item.id)}`
+      : '';
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Share this post</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            onClick={() => {
+              onCopyLink(postUrl);
+              onClose();
+            }}
+          >
+            Copy link
+          </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<OpenInNewIcon />}
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            component="a"
+          >
+            Share to LinkedIn
+          </Button>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+const FeedCard = ({
+  item,
+  actions,
+  commentsExpanded,
+  comments,
+  commentsLoading,
+  onAddComment,
+  isLinkPreviewDismissed,
+  onDismissLinkPreview,
+}: FeedCardProps) => {
+  const [commentDraft, setCommentDraft] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
   const displayName =
     (item.actor?.display_name as string) || item.actor?.handle || 'Weirdling';
   const handle = (item.actor?.handle as string) || null;
+  const snapshot =
+    item.kind === 'repost' && item.payload?.snapshot
+      ? (item.payload.snapshot as {
+          body?: string;
+          actor_handle?: string;
+          actor_display_name?: string;
+        })
+      : null;
   const body =
+    (snapshot?.body as string) ||
     (item.payload?.body as string) ||
     (item.payload?.text as string) ||
     (item.kind === 'external_link' && item.payload?.url
-      ? `Shared link: ${String(item.payload.url)}`
+      ? String(item.payload?.url)
       : '');
   const url =
     item.kind === 'external_link' ? (item.payload?.url as string) : null;
   const label =
     item.kind === 'external_link' ? (item.payload?.label as string) : null;
+  const linkPreview = item.payload?.link_preview as
+    | LinkPreviewPayload
+    | undefined;
+  const likeCount = item.like_count ?? 0;
+  const viewerLiked = item.viewer_liked ?? false;
+  const commentCount = item.comment_count ?? 0;
+
+  const handleLike = () => {
+    if (viewerLiked) {
+      actions.onUnlike(item.id);
+      actions.updateItem(item.id, {
+        viewer_liked: false,
+        like_count: Math.max(0, likeCount - 1),
+      });
+    } else {
+      actions.onLike(item.id);
+      actions.updateItem(item.id, {
+        viewer_liked: true,
+        like_count: likeCount + 1,
+      });
+    }
+  };
+
+  const handleAddComment = async () => {
+    const text = commentDraft.trim();
+    if (!text || submittingComment) return;
+    setSubmittingComment(true);
+    try {
+      await onAddComment(item.id, text);
+      setCommentDraft('');
+      actions.updateItem(item.id, {
+        comment_count: (item.comment_count ?? 0) + 1,
+      });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2, mb: 2 }}>
@@ -138,14 +420,30 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
               <Typography variant="body2" color="text.secondary">
                 • {formatTime(item.created_at)}
               </Typography>
+              {item.kind === 'repost' && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mt: 0.25 }}
+                >
+                  Reposted
+                </Typography>
+              )}
             </Stack>
             {body && (
               <Typography
                 variant="body1"
-                sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}
+                component="span"
+                sx={{ mt: 0.5, whiteSpace: 'pre-wrap', display: 'block' }}
               >
-                {body}
+                {linkifyBody(body)}
               </Typography>
+            )}
+            {linkPreview?.url && !isLinkPreviewDismissed && (
+              <LinkPreviewCard
+                preview={linkPreview}
+                onDismiss={onDismissLinkPreview}
+              />
             )}
             {url && (
               <Typography
@@ -159,36 +457,172 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
                 {label || url}
               </Typography>
             )}
-            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ mt: 1.5, flexWrap: 'nowrap', alignItems: 'center' }}
+            >
               <Button
                 size="small"
-                startIcon={<ThumbUpOutlinedIcon />}
-                sx={{ textTransform: 'none', color: 'text.secondary' }}
+                startIcon={
+                  viewerLiked ? (
+                    <ThumbUpIcon sx={{ color: 'primary.main' }} />
+                  ) : (
+                    <ThumbUpOutlinedIcon />
+                  )
+                }
+                onClick={handleLike}
+                sx={{
+                  textTransform: 'none',
+                  color: viewerLiked ? 'primary.main' : 'text.secondary',
+                  minWidth: 0,
+                }}
               >
                 Like
+                {likeCount > 0 && (
+                  <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
+                    {likeCount}
+                  </Typography>
+                )}
               </Button>
               <Button
                 size="small"
                 startIcon={<ChatBubbleOutlineOutlinedIcon />}
-                sx={{ textTransform: 'none', color: 'text.secondary' }}
+                onClick={() => actions.onCommentToggle(item.id)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                }}
               >
                 Comment
+                {commentCount > 0 && (
+                  <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
+                    {commentCount}
+                  </Typography>
+                )}
               </Button>
               <Button
                 size="small"
                 startIcon={<RepeatOutlinedIcon />}
-                sx={{ textTransform: 'none', color: 'text.secondary' }}
+                onClick={() => actions.onRepost(item)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                }}
               >
                 Repost
               </Button>
               <Button
                 size="small"
                 startIcon={<SendOutlinedIcon />}
-                sx={{ textTransform: 'none', color: 'text.secondary' }}
+                onClick={() => actions.onSend(item)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                }}
               >
                 Send
               </Button>
             </Stack>
+            {commentsExpanded && (
+              <Box sx={{ mt: 2, pl: 0 }}>
+                {commentsLoading ? (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ py: 1 }}
+                  >
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading comments…
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <>
+                    <List dense disablePadding>
+                      {comments.map((c) => (
+                        <ListItem
+                          key={c.id}
+                          alignItems="flex-start"
+                          disablePadding
+                          sx={{ py: 0.5 }}
+                        >
+                          <ListItemAvatar sx={{ minWidth: 36 }}>
+                            <Avatar
+                              src={c.actor?.avatar ?? undefined}
+                              sx={{ width: 28, height: 28 }}
+                            >
+                              {(c.actor?.display_name || c.actor?.handle || '?')
+                                .charAt(0)
+                                .toUpperCase()}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" fontWeight={600}>
+                                {c.actor?.display_name ||
+                                  c.actor?.handle ||
+                                  'Someone'}
+                              </Typography>
+                            }
+                            secondary={
+                              <>
+                                <Typography
+                                  variant="body2"
+                                  component="span"
+                                  sx={{ whiteSpace: 'pre-wrap' }}
+                                >
+                                  {c.body}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  display="block"
+                                  color="text.secondary"
+                                >
+                                  {formatTime(c.created_at)}
+                                </Typography>
+                              </>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ mt: 1 }}
+                    >
+                      <TextField
+                        size="small"
+                        placeholder="Write a comment…"
+                        value={commentDraft}
+                        onChange={(e) => setCommentDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void handleAddComment();
+                          }
+                        }}
+                        sx={{ flex: 1 }}
+                      />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => void handleAddComment()}
+                        disabled={!commentDraft.trim() || submittingComment}
+                      >
+                        Post
+                      </Button>
+                    </Stack>
+                  </>
+                )}
+              </Box>
+            )}
           </Box>
         </Stack>
       </CardContent>
@@ -211,15 +645,35 @@ export const Feed = () => {
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkLabel, setLinkLabel] = useState('');
   const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [useWeirdlingAvatar, setUseWeirdlingAvatar] = useState(false);
   const [weirdling, setWeirdling] = useState<Weirdling | null | undefined>(
     undefined,
   );
+  const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
+    string | null
+  >(null);
+  const [commentsByPostId, setCommentsByPostId] = useState<
+    Record<string, FeedComment[]>
+  >({});
+  const [commentsLoadingPostId, setCommentsLoadingPostId] = useState<
+    string | null
+  >(null);
+  const [shareModalItem, setShareModalItem] = useState<FeedItem | null>(null);
+  const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
+    Set<string>
+  >(new Set());
+
+  const handleDismissLinkPreview = useCallback((postId: string) => {
+    setDismissedLinkPreviewIds((prev) => new Set(prev).add(postId));
+  }, []);
+
+  const updateItem = useCallback((id: string, patch: Partial<FeedItem>) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, ...patch } : it)),
+    );
+  }, []);
 
   const handleAuthError = useCallback(
     async (error: unknown, fallback: string) => {
@@ -380,28 +834,97 @@ export const Feed = () => {
     }
   };
 
-  const handleLinkClick = () => {
-    setLinkDialogOpen(true);
-  };
+  const handleLike = useCallback(
+    async (postId: string) => {
+      try {
+        await likePost({ postId });
+      } catch (e) {
+        await handleAuthError(e, 'Failed to like');
+        const item = items.find((i) => i.id === postId);
+        if (item)
+          updateItem(postId, {
+            viewer_liked: false,
+            like_count: Math.max(0, (item.like_count ?? 0) - 1),
+          });
+      }
+    },
+    [handleAuthError, items, updateItem],
+  );
 
-  const handleSubmitLink = async () => {
-    const url = linkUrl.trim();
-    if (!url) {
-      setSnack('URL is required');
-      return;
-    }
-    try {
-      setPosting(true);
-      await createFeedExternalLink({ url, label: linkLabel });
-      setLinkDialogOpen(false);
-      setLinkUrl('');
-      setLinkLabel('');
-      await loadPage();
-    } catch (e) {
-      await handleAuthError(e, 'Failed to share link');
-    } finally {
-      setPosting(false);
-    }
+  const handleUnlike = useCallback(
+    async (postId: string) => {
+      try {
+        await unlikePost({ postId });
+      } catch (e) {
+        await handleAuthError(e, 'Failed to unlike');
+        const item = items.find((i) => i.id === postId);
+        if (item)
+          updateItem(postId, {
+            viewer_liked: true,
+            like_count: (item.like_count ?? 0) + 1,
+          });
+      }
+    },
+    [handleAuthError, items, updateItem],
+  );
+
+  const handleRepost = useCallback(
+    async (item: FeedItem) => {
+      const originalId =
+        (item.kind === 'repost' && (item.payload?.original_id as string)) ||
+        item.id;
+      try {
+        await repostPost({ originalId });
+        setSnack('Reposted');
+        await loadPage();
+      } catch (e) {
+        await handleAuthError(e, 'Failed to repost');
+      }
+    },
+    [handleAuthError, loadPage],
+  );
+
+  const handleSend = useCallback((item: FeedItem) => {
+    setShareModalItem(item);
+  }, []);
+
+  const handleCommentToggle = useCallback(
+    async (postId: string) => {
+      if (expandedCommentsPostId === postId) {
+        setExpandedCommentsPostId(null);
+        return;
+      }
+      setExpandedCommentsPostId(postId);
+      setCommentsLoadingPostId(postId);
+      try {
+        const { data } = await fetchComments({ postId });
+        setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+      } catch (e) {
+        await handleAuthError(e, 'Failed to load comments');
+      } finally {
+        setCommentsLoadingPostId(null);
+      }
+    },
+    [expandedCommentsPostId, handleAuthError],
+  );
+
+  const handleAddComment = useCallback(async (postId: string, body: string) => {
+    await addComment({ postId, body });
+    const { data } = await fetchComments({ postId });
+    setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+  }, []);
+
+  const handleCopyLink = useCallback((url: string) => {
+    void navigator.clipboard.writeText(url).then(() => setSnack('Link copied'));
+  }, []);
+
+  const feedCardActions: FeedCardActions = {
+    updateItem,
+    onLike: (postId) => void handleLike(postId),
+    onUnlike: (postId) => void handleUnlike(postId),
+    onRepost: handleRepost,
+    onSend: handleSend,
+    onCommentToggle: (postId) => void handleCommentToggle(postId),
   };
 
   return (
@@ -559,37 +1082,21 @@ export const Feed = () => {
                 sx={{ mt: 2 }}
               >
                 <Typography variant="caption" color="text.secondary">
-                  Share text updates now; links and richer posts are coming
-                  next.
+                  Share a post. You can include links in the text.
                 </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="text"
-                    startIcon={<ArticleOutlinedIcon />}
-                    onClick={() => void handleSubmitPost()}
-                    disabled={posting || !composerValue.trim()}
-                    sx={{
-                      textTransform: 'none',
-                      color: 'text.secondary',
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    {posting ? 'Posting…' : 'Post'}
-                  </Button>
-                  <Button
-                    variant="text"
-                    startIcon={<LinkIcon />}
-                    onClick={handleLinkClick}
-                    disabled={posting}
-                    sx={{
-                      textTransform: 'none',
-                      color: 'text.secondary',
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    Link
-                  </Button>
-                </Stack>
+                <Button
+                  variant="text"
+                  startIcon={<ArticleOutlinedIcon />}
+                  onClick={() => void handleSubmitPost()}
+                  disabled={posting || !composerValue.trim()}
+                  sx={{
+                    textTransform: 'none',
+                    color: 'text.secondary',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  {posting ? 'Posting…' : 'Post'}
+                </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -630,7 +1137,17 @@ export const Feed = () => {
           ) : (
             <>
               {items.map((item) => (
-                <FeedCard key={item.id} item={item} />
+                <FeedCard
+                  key={item.id}
+                  item={item}
+                  actions={feedCardActions}
+                  commentsExpanded={expandedCommentsPostId === item.id}
+                  comments={commentsByPostId[item.id] ?? []}
+                  commentsLoading={commentsLoadingPostId === item.id}
+                  onAddComment={handleAddComment}
+                  isLinkPreviewDismissed={dismissedLinkPreviewIds.has(item.id)}
+                  onDismissLinkPreview={() => handleDismissLinkPreview(item.id)}
+                />
               ))}
               {nextCursor && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -688,51 +1205,12 @@ export const Feed = () => {
         </Grid>
       </Grid>
 
-      {/* Link dialog */}
-      <Dialog
-        open={linkDialogOpen}
-        onClose={() => {
-          if (posting) return;
-          setLinkDialogOpen(false);
-        }}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Share a link</DialogTitle>
-        <DialogContent sx={{ pt: 1 }}>
-          <TextField
-            margin="dense"
-            label="URL"
-            type="url"
-            fullWidth
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-          />
-          <TextField
-            margin="dense"
-            label="Label (optional)"
-            fullWidth
-            value={linkLabel}
-            onChange={(e) => setLinkLabel(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              if (posting) return;
-              setLinkDialogOpen(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void handleSubmitLink()}
-            disabled={posting || !linkUrl.trim()}
-          >
-            {posting ? 'Sharing…' : 'Share'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ShareDialog
+        item={shareModalItem}
+        open={Boolean(shareModalItem)}
+        onClose={() => setShareModalItem(null)}
+        onCopyLink={handleCopyLink}
+      />
 
       <Snackbar
         open={Boolean(snack)}

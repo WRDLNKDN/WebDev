@@ -73,7 +73,7 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
           <input
             type="file"
             hidden
-            accept=".pdf"
+            accept=".pdf,.doc,.docx"
             onChange={(e) =>
               onUpload && e.target.files?.[0] && onUpload(e.target.files[0])
             }

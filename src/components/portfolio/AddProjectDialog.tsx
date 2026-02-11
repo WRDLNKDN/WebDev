@@ -206,7 +206,7 @@ export const AddProjectDialog = ({
                     sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Upload Screenshot
+                    Upload Screenshot (required)
                   </Typography>
                 </>
               )}
@@ -225,6 +225,7 @@ export const AddProjectDialog = ({
             <Stack spacing={3}>
               <TextField
                 fullWidth
+                required
                 label="Project Title"
                 value={formData.title}
                 onChange={handleChange('title')}
@@ -233,6 +234,7 @@ export const AddProjectDialog = ({
 
               <TextField
                 fullWidth
+                required
                 label="Description"
                 multiline
                 rows={3}
@@ -245,6 +247,7 @@ export const AddProjectDialog = ({
                 <LinkIcon sx={{ color: 'text.secondary' }} />
                 <TextField
                   fullWidth
+                  required
                   label="Project URL"
                   value={formData.project_url}
                   onChange={handleChange('project_url')}
@@ -263,12 +266,18 @@ export const AddProjectDialog = ({
                   <CodeIcon sx={{ color: 'text.secondary' }} />
                   <TextField
                     fullWidth
-                    label="Tech Stack (Press Enter to add)"
+                    required
+                    label="Tech Stack (Press Enter to add at least one)"
                     value={techInput}
                     onChange={(e) => setTechInput(e.target.value)}
                     onKeyDown={handleAddTech}
                     variant="filled"
                     size="small"
+                    helperText={
+                      formData.tech_stack.length === 0
+                        ? 'Add at least one tech'
+                        : undefined
+                    }
                   />
                 </Stack>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -304,7 +313,14 @@ export const AddProjectDialog = ({
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={busy}
+            disabled={
+              busy ||
+              !formData.title.trim() ||
+              !formData.description.trim() ||
+              !formData.project_url.trim() ||
+              formData.tech_stack.length === 0 ||
+              !selectedFile
+            }
             startIcon={<SaveIcon />}
             sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
           >

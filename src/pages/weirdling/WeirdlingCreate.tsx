@@ -141,10 +141,19 @@ export const WeirdlingCreate = () => {
     includeImage: true,
     selectedImageIndex: 1,
   });
+  /** Raw string for step 1 industry/interests so comma-separated input isn't cleared on every keystroke. */
+  const [industryText, setIndustryText] = useState('');
   const [preview, setPreview] = useState<WeirdlingPreview | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // When entering step 1, show existing industry/interests as comma-separated
+  useEffect(() => {
+    if (step === 1) {
+      setIndustryText(inputs.industryOrInterests.join(', '));
+    }
+  }, [step]);
 
   const handleInput = (key: keyof WeirdlingWizardInputs, value: unknown) => {
     setInputs((prev) => ({ ...prev, [key]: value }));
@@ -233,7 +242,7 @@ export const WeirdlingCreate = () => {
     </Stack>
   );
 
-  // Step 1: role + interests
+  // Step 1: role + interests — industryText is raw string so commas aren't stripped while typing
   const step1 = (
     <Stack spacing={2}>
       <Typography variant="subtitle2">Role vibe</Typography>
@@ -251,16 +260,15 @@ export const WeirdlingCreate = () => {
       </Stack>
       <TextField
         label="Industry or interests (comma-separated)"
-        value={inputs.industryOrInterests.join(', ')}
-        onChange={(e) =>
-          handleInput(
-            'industryOrInterests',
-            e.target.value
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean),
-          )
-        }
+        value={industryText}
+        onChange={(e) => setIndustryText(e.target.value)}
+        onBlur={() => {
+          const parsed = industryText
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          setInputs((prev) => ({ ...prev, industryOrInterests: parsed }));
+        }}
         fullWidth
         placeholder="e.g. infra, frontend, design"
       />
@@ -311,7 +319,7 @@ export const WeirdlingCreate = () => {
       </Button>
       {inputs.includeImage && (
         <Stack spacing={1}>
-          <Typography variant="subtitle2">Pick your Weirdling</Typography>
+          <Typography variant="subtitle2">Pick my Weirdling</Typography>
           <WeirdlingThumbnailGrid
             value={inputs.selectedImageIndex ?? 1}
             onChange={(n) => handleInput('selectedImageIndex', n)}
@@ -451,7 +459,7 @@ export const WeirdlingCreate = () => {
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
       <Typography variant="h5" component="h1" gutterBottom>
-        Create your Weirdling
+        Create My Weirdling
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Step {step + 1} of {STEPS.length}: {STEPS[step]}
@@ -471,7 +479,16 @@ export const WeirdlingCreate = () => {
         {step < STEPS.length - 1 ? (
           <Button
             variant="contained"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => {
+              if (step === 1) {
+                const parsed = industryText
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                setInputs((prev) => ({ ...prev, industryOrInterests: parsed }));
+              }
+              setStep((s) => s + 1);
+            }}
             disabled={
               (step === 0 && !inputs.displayNameOrHandle.trim()) ||
               (step === 1 && !inputs.roleVibe)

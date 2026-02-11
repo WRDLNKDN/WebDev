@@ -15,6 +15,7 @@ drop function if exists public.set_generation_jobs_updated_at() cascade;
 -- -----------------------------
 drop table if exists public.feed_items cascade;
 drop table if exists public.feed_connections cascade;
+drop table if exists public.portfolio_items cascade;
 drop table if exists public.weirdlings cascade;
 drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
@@ -168,6 +169,31 @@ for each row
 execute function public.profiles_block_status_change();
 
 -- -----------------------------
+-- portfolio_items (dashboard projects)
+-- -----------------------------
+create table public.portfolio_items (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  project_url text,
+  image_url text,
+  tech_stack text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
+
+comment on table public.portfolio_items is
+  'User portfolio projects (dashboard).';
+
+create trigger trg_portfolio_items_updated_at
+before update on public.portfolio_items
+for each row
+execute function public.set_updated_at();
+
+-- -----------------------------
 -- generation_jobs (Weirdling audit + idempotency)
 -- -----------------------------
 create table public.generation_jobs (
@@ -283,7 +309,7 @@ comment on column public.feed_items.payload is
   'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
 
 -- -----------------------------
--- get_feed_page (cursor-based pagination; used by backend API)
+-- get_feed_page (cursor-based pagination; used by backend API; includes engagement counts)
 -- -----------------------------
 create or replace function public.get_feed_page(
   p_viewer_id uuid,
@@ -300,7 +326,10 @@ returns table (
   created_at timestamptz,
   actor_handle text,
   actor_display_name text,
-  actor_avatar text
+  actor_avatar text,
+  like_count bigint,
+  viewer_liked boolean,
+  comment_count bigint
 )
 language plpgsql
 stable
@@ -330,10 +359,25 @@ begin
     (case
       when p.use_weirdling_avatar = true and w.avatar_url is not null then w.avatar_url
       else p.avatar
-    end)::text as actor_avatar
+    end)::text as actor_avatar,
+    coalesce(stats.like_cnt, 0::bigint),
+    coalesce(stats.viewer_liked, false),
+    coalesce(stats.comment_cnt, 0::bigint)
   from public.feed_items fi
   left join public.profiles p on p.id = fi.user_id
   left join public.weirdlings w on w.user_id = fi.user_id and w.is_active = true
+  left join lateral (
+    select
+      count(*) filter (where r.payload->>'type' = 'like') as like_cnt,
+      count(*) filter (where r.payload->>'type' = 'comment') as comment_cnt,
+      exists (
+        select 1 from public.feed_items r2
+        where r2.parent_id = fi.id and r2.kind = 'reaction'
+          and r2.payload->>'type' = 'like' and r2.user_id = p_viewer_id
+      ) as viewer_liked
+    from public.feed_items r
+    where r.parent_id = fi.id and r.kind = 'reaction'
+  ) stats on true
   where fi.user_id = any(actor_ids)
     and (
       p_cursor_created_at is null
@@ -345,7 +389,7 @@ end;
 $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int) is
-  'Returns feed items for viewer (self + followees) with cursor; used by GET /api/feeds.';
+  'Returns feed items for viewer (self + followees) with cursor and engagement counts.';
 
 revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
 grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
@@ -360,6 +404,34 @@ values (
   true,
   2097152,
   array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- project-images (portfolio project screenshots)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'project-images',
+  'project-images',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- resumes (user resume PDF or Word)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'resumes',
+  'resumes',
+  true,
+  5242880,
+  array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 )
 on conflict (id) do update set
   public = excluded.public,

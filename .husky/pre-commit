@@ -13,21 +13,21 @@ fi
 # --- 2. Empty File Check ---
 echo "📂 [STEP 2]: Checking for empty files..."
 
-# We use a subshell and pipe (POSIX compliant) instead of '<<<' (Bash only)
-EMPTY_FILES=$(git diff --cached --name-only --diff-filter=AM | while IFS= read -r file; do
-  # Skip blank lines
+# Use temp file so 'while read' runs in main shell (avoids case/;; parsing in pipe subshell)
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+git diff --cached --name-only --diff-filter=AM > "$tmp"
+EMPTY_FILES=""
+while IFS= read -r file; do
   [ -z "$file" ] && continue
-
-  # Check allow-list using 'case' (works in all shells)
-  case "$file" in
-    *.gitkeep|*.keep|*/.gitkeep|*/.keep) continue ;;
-  esac
-
-  # Integrity Check: verify file exists (-f) and is empty (! -s)
-  if [ -f "$file" ] && [ ! -s "$file" ]; then
-    echo "$file"
-  fi
-done)
+  # Skip allow-listed empty files
+  case "$file" in *.gitkeep) continue ;; esac
+  case "$file" in *.keep) continue ;; esac
+  case "$file" in */.gitkeep) continue ;; esac
+  case "$file" in */.keep) continue ;; esac
+  [ -f "$file" ] && [ ! -s "$file" ] && EMPTY_FILES="${EMPTY_FILES}${file}
+"
+done < "$tmp"
 
 if [ -n "$EMPTY_FILES" ]; then
   echo "🛑 [SYSTEM AUDIT FAILURE]: Empty files detected!"

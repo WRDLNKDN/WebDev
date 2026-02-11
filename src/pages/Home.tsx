@@ -119,6 +119,7 @@ export const Home = () => {
       </Helmet>
 
       <Box
+        component="main"
         sx={{
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
@@ -139,113 +140,15 @@ export const Home = () => {
                   onClose={() => setError(null)}
                   sx={{ mb: 2 }}
                 >
-                  Create account
-                </Button>
-                <Menu
-                  anchorEl={createAnchor}
-                  open={Boolean(createAnchor)}
-                  onClose={() => setCreateAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                >
-                  <MenuItem
-                    onClick={() => void handleCreateAccount('google')}
-                    sx={{ minWidth: 220 }}
-                  >
-                    <ListItemIcon>
-                      <GoogleIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Create account with Google</ListItemText>
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => void handleCreateAccount('azure')}
-                    sx={{ minWidth: 220 }}
-                  >
-                    <ListItemIcon>
-                      <MicrosoftIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Create account with Microsoft</ListItemText>
-                  </MenuItem>
-                </Menu>
-
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={(e) => setSignInAnchor(e.currentTarget)}
-                  disabled={busy}
-                  endIcon={
-                    busy ? (
-                      <CircularProgress size={16} aria-label="Signing in" />
-                    ) : undefined
-                  }
-                >
-                  {busy ? 'Signing in…' : 'Sign in'}
-                </Button>
-                <Menu
-                  anchorEl={signInAnchor}
-                  open={Boolean(signInAnchor)}
-                  onClose={() => setSignInAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                >
-                  <MenuItem
-                    onClick={() => void handleSignIn('google')}
-                    sx={{ minWidth: 200 }}
-                  >
-                    <ListItemIcon>
-                      <GoogleIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Google</ListItemText>
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => void handleSignIn('azure')}
-                    sx={{ minWidth: 200 }}
-                  >
-                    <ListItemIcon>
-                      <MicrosoftIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Microsoft</ListItemText>
-                  </MenuItem>
-                </Menu>
-              </React.Fragment>
-            ) : (
-              <React.Fragment>
-                <Button
-                  component={RouterLink}
-                  to="/directory"
-                  variant="contained"
-                  size="large"
-                  disabled={busy}
-                >
-                  View directory
-                </Button>
-
-                {isAdmin && (
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    variant="outlined"
-                    size="large"
-                    disabled={busy}
-                  >
-                    Admin moderation
-                  </Button>
-                )}
-
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => void signOut()}
-                  disabled={busy}
-                  startIcon={
-                    busy ? (
-                      <CircularProgress size={16} aria-label="Signing out" />
-                    ) : null
-                  }
-                >
-                  {busy ? 'Signing out…' : 'Sign out'}
-                </Button>
-              </React.Fragment>
+                  {error}
+                </Alert>
+              )}
+              <GuestView busy={busy} onAuth={handleAuth} />
+            </Grid>
+            {!isMobile && (
+              <Grid size={{ xs: 0, md: 6 }}>
+                <HomeVisual />
+              </Grid>
             )}
           </Grid>
         </Container>

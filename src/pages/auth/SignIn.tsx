@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { toMessage } from '../../lib/errors';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 
 export const SignIn = () => {
@@ -50,7 +51,7 @@ export const SignIn = () => {
           'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env, then run: supabase stop && supabase start. See supabase/README.md.',
         );
       } else {
-        setError(msg);
+        setError(toMessage(err));
       }
       setLoading(false);
       setLoadingProvider(null);

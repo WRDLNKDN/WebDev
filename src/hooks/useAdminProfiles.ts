@@ -1,6 +1,7 @@
 // src/hooks/useAdminProfiles.ts
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toMessage } from '../lib/errors';
 import type { ProfileRow, ProfileStatus } from '../pages/admin/adminApi';
 import { fetchProfiles } from '../pages/admin/adminApi';
 
@@ -45,7 +46,7 @@ export const useAdminProfiles = ({
       setCount(res.count);
       setSelected(new Set());
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load profiles');
+      setError(toMessage(e));
     } finally {
       setLoading(false);
     }

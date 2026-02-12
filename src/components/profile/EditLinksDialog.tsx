@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
+  Alert,
   Box,
   Button,
   Dialog,
@@ -16,10 +17,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
+import { toMessage } from '../../lib/errors';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
@@ -42,6 +44,11 @@ export const EditLinksDialog = ({
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setSaveError(null);
+  }, [open]);
 
   // 2. Form State: The "Add New" inputs
   const [newCategory, setNewCategory] = useState<LinkCategory>('Professional');
@@ -83,13 +90,14 @@ export const EditLinksDialog = ({
   };
 
   const handleSave = async () => {
+    setSaveError(null);
     try {
       setIsSubmitting(true);
-      // Send the full modified array to Supabase
       await onUpdate({ socials: links });
       onClose();
     } catch (error) {
       console.error('Failed to save links:', error);
+      setSaveError(toMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +108,11 @@ export const EditLinksDialog = ({
       <DialogTitle sx={{ fontWeight: 700 }}>Manage Links</DialogTitle>
       <DialogContent>
         <Stack spacing={4} sx={{ mt: 1 }}>
+          {saveError && (
+            <Alert severity="error" onClose={() => setSaveError(null)}>
+              {saveError}
+            </Alert>
+          )}
           {/* --- SECTION 1: ADD NEW LINK --- */}
           <Box
             sx={{

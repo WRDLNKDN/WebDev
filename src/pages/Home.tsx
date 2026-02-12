@@ -8,6 +8,7 @@ import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
+import { toMessage } from '../lib/errors';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -15,12 +16,6 @@ import { supabase } from '../lib/supabaseClient';
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
  * IF user has session → redirect to /feed. ELSE show guest hero + CTAs.
  */
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Request failed';
-};
-
 export const Home = () => {
   const navigate = useNavigate();
 
@@ -48,7 +43,10 @@ export const Home = () => {
         }
       } catch (err) {
         console.error('Session check failed:', err);
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setError(toMessage(err));
+          setIsLoading(false);
+        }
       }
     };
 
@@ -218,7 +216,7 @@ export const Home = () => {
                 WRDLNKDN
               </Typography>
 
-              {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
+              {/* Tagline stack: pronunciation, Business but weirder, long tagline */}
               <Stack spacing={0.5} sx={{ maxWidth: 420, alignItems: 'center' }}>
                 <Typography
                   variant="subtitle2"
@@ -226,7 +224,6 @@ export const Home = () => {
                     color: 'rgba(255,255,255,0.85)',
                     letterSpacing: '0.12em',
                     fontSize: '0.75rem',
-                    fontStyle: 'italic',
                   }}
                 >
                   (Weird Link-uh-din)
@@ -236,10 +233,9 @@ export const Home = () => {
                   sx={{
                     color: 'primary.light',
                     fontWeight: 600,
-                    fontStyle: 'italic',
                   }}
                 >
-                  Business, But Weirder
+                  Business, but weirder
                 </Typography>
                 <Typography
                   variant="body1"

@@ -42,18 +42,18 @@ export type SignupState = {
 };
 
 export const JOIN_REASONS = [
-  'Meet builders',
-  'Find mentorship',
-  'Hire or get hired',
-  'Show my work',
-  'Make friends',
-  'Other',
+  'Connect with builders',
+  'Find or offer mentorship',
+  'Hire or get hired intentionally',
+  'Share my work',
+  'Build real relationships',
+  'Something else',
 ] as const;
 
 export const PARTICIPATION_STYLES = [
-  'Post and share updates',
-  'Comment and support',
-  'Join events',
-  'DM and connect',
-  'Mostly lurk',
+  'Post thoughtful updates',
+  'Comment and support others',
+  'Join community events',
+  'Connect directly',
+  'Observe and learn',
 ] as const;

@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
+import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import { POLICY_VERSION } from '../../types/signup';
@@ -104,7 +105,7 @@ export const AuthCallback = () => {
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : 'Authentication failed';
+          const msg = e instanceof Error ? e.message : '';
 
           if (
             msg.toLowerCase().includes('network') ||
@@ -114,9 +115,7 @@ export const AuthCallback = () => {
               'We had trouble completing sign-in due to a network issue. You can try again or return home.',
             );
           } else {
-            setError(
-              'We could not complete the sign-in sync. You can try again or go back home and start over.',
-            );
+            setError(toMessage(e));
           }
         }
       }

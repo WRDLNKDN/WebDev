@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
+import { toMessage } from '../../lib/errors';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
@@ -175,9 +176,7 @@ export const IdentityStep = () => {
           `${providerLabel} sign-in is having trouble connecting. Please check your connection and try again, or choose a different provider.`,
         );
       } else {
-        setError(
-          `${providerLabel} could not complete sign-in. Please try again in a moment or select a different provider.`,
-        );
+        setError(toMessage(err));
       }
       setLoading(false);
       setLoadingProvider(null);
@@ -213,10 +212,10 @@ export const IdentityStep = () => {
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
-              Sign in to continue
+              Sign in with intent
             </Typography>
             <Typography variant="body2" sx={signupStepSubtext}>
-              Use your Google or Microsoft account.
+              Use your Google or Microsoft account to verify your identity.
             </Typography>
           </Box>
 
@@ -230,7 +229,7 @@ export const IdentityStep = () => {
             variant="subtitle2"
             sx={{ fontWeight: 600, mb: 1, display: 'block' }}
           >
-            Before continuing, please confirm:
+            Before entering, please confirm:
           </Typography>
           <Stack spacing={2} sx={{ mb: 3 }}>
             <FormControlLabel
@@ -243,7 +242,7 @@ export const IdentityStep = () => {
               }
               label={
                 <Typography variant="body2">
-                  I accept the{' '}
+                  I agree to the{' '}
                   <Typography
                     component="a"
                     href="/terms"
@@ -266,7 +265,7 @@ export const IdentityStep = () => {
               }
               label={
                 <Typography variant="body2">
-                  I accept the{' '}
+                  I agree to follow the{' '}
                   <Typography
                     component="a"
                     href="/guidelines"
@@ -324,8 +323,7 @@ export const IdentityStep = () => {
 
           <Box sx={{ ...identityStepInfoBox, mt: 2 }}>
             <Typography variant="caption" sx={signupStepSubtext}>
-              We use secure OAuth authentication. Your credentials are never
-              stored on our servers.
+              Secure OAuth authentication. We never store your credentials.
             </Typography>
           </Box>
 

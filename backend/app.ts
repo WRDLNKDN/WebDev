@@ -7,10 +7,10 @@ import {
   mockWeirdlingAdapter,
   getPromptVersion,
   getModelVersion,
-} from './weirdling/adapter';
-import { validateWeirdlingResponse } from './weirdling/validate';
-import { checkRateLimit } from './weirdling/rateLimit';
-import { getFirstUrl, fetchLinkPreview } from './linkPreview';
+} from './weirdling/adapter.js';
+import { validateWeirdlingResponse } from './weirdling/validate.js';
+import { checkRateLimit } from './weirdling/rateLimit.js';
+import { getFirstUrl, fetchLinkPreview } from './linkPreview.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -741,7 +741,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
 
     const payload: {
       body: string;
-      link_preview?: import('./linkPreview').LinkPreview;
+      link_preview?: import('./linkPreview.js').LinkPreview;
     } = {
       body: text,
     };
@@ -873,7 +873,8 @@ app.delete(
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const postId = req.params.postId?.trim();
+    const postIdRaw = req.params.postId;
+    const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
     const type = (req.query.type as string)?.toLowerCase() || 'like';
     if (!postId || type !== 'like') {
       return res.status(400).json({ error: 'Invalid post id or type' });
@@ -901,7 +902,8 @@ app.get(
   '/api/feeds/items/:postId/comments',
   requireAuth,
   async (req: AuthRequest, res: Response) => {
-    const postId = req.params.postId?.trim();
+    const postIdRaw = req.params.postId;
+    const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
     if (!postId) return res.status(400).json({ error: 'Invalid post id' });
     const { data: rows, error } = await adminSupabase
       .from('feed_items')

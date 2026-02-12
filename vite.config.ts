@@ -15,7 +15,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {
-          proxy.on('error', (err, _req, res) => {
+          proxy.on('error', (_err, _req, res) => {
             // When backend is down, respond 503 instead of leaking ECONNREFUSED to console
             if (res && !res.headersSent) {
               res.writeHead(503, { 'Content-Type': 'application/json' });

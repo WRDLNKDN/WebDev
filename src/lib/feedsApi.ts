@@ -17,7 +17,7 @@
 
 import sjson from 'secure-json-parse';
 
-/** Base URL for API requests. Empty in dev (relative /api + Vite proxy); set in prod. */
+/** Base URL for API requests (origin only; do not include /api). Empty in dev (relative /api + Vite proxy); set in prod to e.g. https://api.wrdlnkdn.com. Paths like /api/feeds are appended here. */
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
@@ -28,12 +28,16 @@ const API_BASE =
  * - If body is empty → throw short message (avoids confusing JSON parse error).
  * - Otherwise → sjson.parse; on failure throw with a short body snippet.
  */
-async function parseJsonResponse<T>(res: Response): Promise<T> {
+async function parseJsonResponse<T>(
+  res: Response,
+  requestUrl?: string,
+): Promise<T> {
   const text = await res.text();
   const trimmed = text.trim();
   if (trimmed.toLowerCase().startsWith('<!')) {
+    const urlHint = requestUrl ? ` Request URL: ${requestUrl}.` : '';
     throw new Error(
-      'Feeds API returned HTML instead of JSON. In production, set VITE_API_URL to your backend origin (e.g. https://api.yoursite.com) so /api/feeds is served by the API, not the SPA.',
+      `Feeds API returned HTML instead of JSON.${urlHint} Set VITE_API_URL to your API origin only (e.g. https://api.wrdlnkdn.com) — no trailing /api. Redeploy after changing the env so the build picks it up. If VITE_API_URL is already set, ensure the API server is running and returns JSON for /api/feeds.`,
     );
   }
   if (trimmed === '') {
@@ -107,14 +111,16 @@ async function postFeed(
     body: JSON.stringify(body),
   });
 
+  const postUrl = `${API_BASE}/api/feeds`;
   if (!res.ok) {
     // Re-throw our "returned HTML" error so devs see the VITE_API_URL hint; else use server error or fallback
-    const payload = await parseJsonResponse<{ error?: string }>(res).catch(
-      (e) => {
-        if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-        return { error: undefined }; // consistent shape so payload.error is always defined
-      },
-    );
+    const payload = await parseJsonResponse<{ error?: string }>(
+      res,
+      postUrl,
+    ).catch((e) => {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      return { error: undefined }; // consistent shape so payload.error is always defined
+    });
     const msg = typeof payload.error === 'string' ? payload.error : undefined;
     throw new Error(msg || res.statusText || 'Failed to create feed item');
   }
@@ -139,15 +145,17 @@ export async function fetchFeeds(options?: {
 
   if (!res.ok) {
     // Re-throw "returned HTML" so devs see VITE_API_URL hint; else use server error or fallback
-    const body = await parseJsonResponse<{ error?: string }>(res).catch((e) => {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      return { error: undefined };
-    });
+    const body = await parseJsonResponse<{ error?: string }>(res, url).catch(
+      (e) => {
+        if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+        return { error: undefined };
+      },
+    );
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(msg || res.statusText || 'Failed to load feed');
   }
 
-  return parseJsonResponse<FeedsResponse>(res);
+  return parseJsonResponse<FeedsResponse>(res, url);
 }
 
 export async function createFeedPost(params: {
@@ -190,13 +198,18 @@ export async function unlikePost(params: {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
   const headers = await getAuthHeaders(params.accessToken);
-  const res = await fetch(
-    `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/reaction?type=like`,
-    { method: 'DELETE', headers, credentials: API_BASE ? 'omit' : 'include' },
-  );
+  const unlikeUrl = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/reaction?type=like`;
+  const res = await fetch(unlikeUrl, {
+    method: 'DELETE',
+    headers,
+    credentials: API_BASE ? 'omit' : 'include',
+  });
   if (!res.ok && res.status !== 204) {
     // Re-throw "returned HTML"; else use server error or fallback
-    const body = await parseJsonResponse<{ error?: string }>(res).catch((e) => {
+    const body = await parseJsonResponse<{ error?: string }>(
+      res,
+      unlikeUrl,
+    ).catch((e) => {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
       return { error: undefined };
     });
@@ -220,20 +233,24 @@ export async function fetchComments(params: {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
   const headers = await getAuthHeaders(params.accessToken);
-  const res = await fetch(
-    `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/comments`,
-    { headers, credentials: API_BASE ? 'omit' : 'include' },
-  );
+  const commentsUrl = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/comments`;
+  const res = await fetch(commentsUrl, {
+    headers,
+    credentials: API_BASE ? 'omit' : 'include',
+  });
   if (!res.ok) {
     // Re-throw "returned HTML"; else use server error or fallback
-    const body = await parseJsonResponse<{ error?: string }>(res).catch((e) => {
+    const body = await parseJsonResponse<{ error?: string }>(
+      res,
+      commentsUrl,
+    ).catch((e) => {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
       return { error: undefined };
     });
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(msg || res.statusText || 'Failed to load comments');
   }
-  return parseJsonResponse<{ data: FeedComment[] }>(res);
+  return parseJsonResponse<{ data: FeedComment[] }>(res, commentsUrl);
 }
 
 export async function addComment(params: {

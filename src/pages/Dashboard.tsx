@@ -56,20 +56,28 @@ export const Dashboard = () => {
   );
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
       if (!data.session) {
         navigate('/');
       } else {
         setSession(data.session);
       }
-    });
+    };
+    void init();
   }, [navigate]);
 
   useEffect(() => {
     if (!session) return;
-    getMyWeirdlings()
-      .then(setWeirdlings)
-      .catch(() => setWeirdlings([]));
+    const load = async () => {
+      try {
+        const list = await getMyWeirdlings();
+        setWeirdlings(list);
+      } catch {
+        setWeirdlings([]);
+      }
+    };
+    void load();
   }, [session]);
 
   const {
@@ -112,10 +120,14 @@ export const Dashboard = () => {
     '"Building the Human OS. Prioritizing authenticity over engagement metrics."',
   );
 
-  const handleResumeUpload = (file: File) =>
-    uploadResume(file)
-      .then(() => refresh())
-      .catch((e) => setSnack(toMessage(e)));
+  const handleResumeUpload = async (file: File) => {
+    try {
+      await uploadResume(file);
+      await refresh();
+    } catch (e) {
+      setSnack(toMessage(e));
+    }
+  };
 
   return (
     <Box
@@ -141,13 +153,16 @@ export const Dashboard = () => {
             <ProfileLinksWidget
               socials={profile?.socials ?? []}
               isOwner
-              onRemove={(linkId) => {
+              onRemove={async (linkId) => {
                 const next = (profile?.socials ?? []).filter(
                   (s) => s.id !== linkId,
                 );
-                updateProfile({ socials: next })
-                  .then(() => refresh())
-                  .catch((e) => setSnack(toMessage(e)));
+                try {
+                  await updateProfile({ socials: next });
+                  await refresh();
+                } catch (e) {
+                  setSnack(toMessage(e));
+                }
               }}
             />
           }
@@ -184,11 +199,15 @@ export const Dashboard = () => {
         <WeirdlingCarousel
           weirdlings={weirdlings ?? []}
           onAddClick={() => setIsAddWeirdlingOpen(true)}
-          onRemove={(id) =>
-            deleteWeirdling(id)
-              .then(() => getMyWeirdlings().then(setWeirdlings))
-              .catch((e) => setSnack(toMessage(e)))
-          }
+          onRemove={async (id) => {
+            try {
+              await deleteWeirdling(id);
+              const list = await getMyWeirdlings();
+              setWeirdlings(list);
+            } catch (e) {
+              setSnack(toMessage(e));
+            }
+          }}
         />
 
         {/* 2. PORTFOLIO */}
@@ -267,9 +286,13 @@ export const Dashboard = () => {
                 <ProjectCard
                   project={project}
                   isOwner
-                  onDelete={(id) =>
-                    deleteProject(id).catch((e) => setSnack(toMessage(e)))
-                  }
+                  onDelete={async (id) => {
+                    try {
+                      await deleteProject(id);
+                    } catch (e) {
+                      setSnack(toMessage(e));
+                    }
+                  }}
                 />
               </Grid>
             ))}
@@ -280,11 +303,14 @@ export const Dashboard = () => {
       <WeirdlingCreateDialog
         open={isAddWeirdlingOpen}
         onClose={() => setIsAddWeirdlingOpen(false)}
-        onSuccess={() =>
-          getMyWeirdlings()
-            .then(setWeirdlings)
-            .catch(() => setWeirdlings([]))
-        }
+        onSuccess={async () => {
+          try {
+            const list = await getMyWeirdlings();
+            setWeirdlings(list);
+          } catch {
+            setWeirdlings([]);
+          }
+        }}
       />
       <EditProfileDialog
         open={isEditOpen}

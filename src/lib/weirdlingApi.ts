@@ -54,7 +54,12 @@ export async function generateWeirdling(
     credentials: 'include',
   });
 
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -70,7 +75,12 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
     body: JSON.stringify({ jobId }),
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -87,7 +97,12 @@ export async function saveWeirdlingPreview(
     body: JSON.stringify(preview),
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -101,7 +116,12 @@ export async function getMyWeirdlings(): Promise<Weirdling[]> {
     headers,
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -123,7 +143,12 @@ export async function deleteWeirdling(id: string): Promise<void> {
     headers,
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));

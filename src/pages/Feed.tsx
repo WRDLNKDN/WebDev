@@ -888,8 +888,9 @@ export const Feed = () => {
     setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
   }, []);
 
-  const handleCopyLink = useCallback((url: string) => {
-    void navigator.clipboard.writeText(url).then(() => setSnack('Link copied'));
+  const handleCopyLink = useCallback(async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    setSnack('Link copied');
   }, []);
 
   const feedCardActions: FeedCardActions = {

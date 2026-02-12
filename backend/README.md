@@ -1,32 +1,43 @@
 # WRDLNKDN Backend
 
-This folder contains the backend API for the WRDLNKDN project, intended for
-deployment on Vercel.
+Express API for feeds, admin, Weirdling, and health. Same code runs locally and
+on Vercel.
 
-## Features
+## Local development
 
-- Node.js backend (API-first)
-- Simple hello-world endpoint (`api-hello.js`)
+From the **project root**:
 
-## Setup & Development
+```sh
+npm run dev
+```
 
-1. Install dependencies (if any):
+This starts:
 
-   ```sh
-   npm install
-   ```
+- **Vite** (frontend) on port 5173 — proxies `/api` to the backend
+- **Supabase** (local)
+- **Backend** (`tsx watch backend/server.ts`) on port 3001
+- Health check script
 
-2. Start the backend (if not using serverless):
+So `/api/feeds`, `/api/health`, etc. are served by this backend; the frontend
+uses relative URLs and Vite forwards them to `http://localhost:3001`.
 
-   ```sh
-   node api-hello.js
-   ```
+Do **not** set `VITE_API_URL` in `.env` for local dev so the app uses the proxy.
 
-## Deployment
+## Production (Vercel)
 
-- Deploy the backend to Vercel or your preferred serverless/cloud provider.
+- The same Express app is mounted at `/api` via `api/index.ts` and `vercel.json`
+  rewrites.
+- Frontend and API are on the same host (`wrdlnkdn.vercel.app`), so leave
+  `VITE_API_URL` **unset** in Vercel; the app will request `/api/feeds` etc. on
+  the same origin.
 
-## Additional Info
+Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and (optional) `ADMIN_TOKEN` in
+Vercel for the API.
 
-- See the main project README for more details on the tech stack and project
-  structure.
+## Structure
+
+- `app.ts` — Express app (routes, middleware), exported for use by `server.ts`
+  and `api/index.ts`
+- `server.ts` — Local only: imports `app` and calls `app.listen(PORT)`
+- `api/index.ts` (project root) — Vercel serverless: imports `app` and forwards
+  `(req, res)` to it

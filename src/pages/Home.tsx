@@ -224,13 +224,12 @@ export const Home = () => {
                   variant="subtitle2"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
+                    letterSpacing: '0.12em',
                     fontSize: '0.75rem',
                     fontStyle: 'italic',
                   }}
                 >
-                  WEIRD-LINK-DIN
+                  (Weird Link-uh-din)
                 </Typography>
                 <Typography
                   variant="h5"

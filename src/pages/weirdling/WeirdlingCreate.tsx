@@ -12,6 +12,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import {
   generateWeirdling,
@@ -175,7 +176,7 @@ export const WeirdlingCreate = () => {
       setPreview(previewWithImage);
       setJobId(result.jobId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Generation failed');
+      setError(toMessage(e));
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,7 @@ export const WeirdlingCreate = () => {
       }
       navigate('/dashboard');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed');
+      setError(toMessage(e));
     } finally {
       setLoading(false);
     }

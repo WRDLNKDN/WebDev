@@ -16,6 +16,7 @@
  */
 
 import sjson from 'secure-json-parse';
+import { messageFromApiResponse } from './errors';
 
 /**
  * Base URL for API requests (origin only; do not include /api).
@@ -117,16 +118,15 @@ async function postFeed(
 
   const postUrl = `${API_BASE}/api/feeds`;
   if (!res.ok) {
-    // Re-throw our "returned HTML" error so devs see the VITE_API_URL hint; else use server error or fallback
     const payload = await parseJsonResponse<{ error?: string }>(
       res,
       postUrl,
     ).catch((e) => {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      return { error: undefined }; // consistent shape so payload.error is always defined
+      return { error: undefined };
     });
     const msg = typeof payload.error === 'string' ? payload.error : undefined;
-    throw new Error(msg || res.statusText || 'Failed to create feed item');
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 }
 
@@ -148,7 +148,6 @@ export async function fetchFeeds(options?: {
   });
 
   if (!res.ok) {
-    // Re-throw "returned HTML" so devs see VITE_API_URL hint; else use server error or fallback
     const body = await parseJsonResponse<{ error?: string }>(res, url).catch(
       (e) => {
         if (e instanceof Error && e.message.includes('returned HTML')) throw e;
@@ -156,7 +155,7 @@ export async function fetchFeeds(options?: {
       },
     );
     const msg = typeof body.error === 'string' ? body.error : undefined;
-    throw new Error(msg || res.statusText || 'Failed to load feed');
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 
   return parseJsonResponse<FeedsResponse>(res, url);
@@ -209,7 +208,6 @@ export async function unlikePost(params: {
     credentials: API_BASE ? 'omit' : 'include',
   });
   if (!res.ok && res.status !== 204) {
-    // Re-throw "returned HTML"; else use server error or fallback
     const body = await parseJsonResponse<{ error?: string }>(
       res,
       unlikeUrl,
@@ -218,7 +216,7 @@ export async function unlikePost(params: {
       return { error: undefined };
     });
     const msg = typeof body.error === 'string' ? body.error : undefined;
-    throw new Error(msg || res.statusText || 'Failed to unlike');
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 }
 
@@ -243,7 +241,6 @@ export async function fetchComments(params: {
     credentials: API_BASE ? 'omit' : 'include',
   });
   if (!res.ok) {
-    // Re-throw "returned HTML"; else use server error or fallback
     const body = await parseJsonResponse<{ error?: string }>(
       res,
       commentsUrl,
@@ -252,7 +249,7 @@ export async function fetchComments(params: {
       return { error: undefined };
     });
     const msg = typeof body.error === 'string' ? body.error : undefined;
-    throw new Error(msg || res.statusText || 'Failed to load comments');
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
   return parseJsonResponse<{ data: FeedComment[] }>(res, commentsUrl);
 }

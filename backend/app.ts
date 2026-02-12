@@ -46,6 +46,22 @@ app.use(
 
 app.use(express.json());
 
+// Vercel rewrites send /api/:path* to /api with path in query; restore req.url so routes match
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const q = req.query?.path;
+  const pathSeg = Array.isArray(q) ? q[0] : q;
+  if (pathSeg && typeof pathSeg === 'string' && req.url?.startsWith('/api')) {
+    const raw = req.url;
+    const qsPart = raw.includes('?') ? raw.slice(raw.indexOf('?') + 1) : '';
+    const params = new URLSearchParams(qsPart);
+    params.delete('path');
+    const qs = params.toString() ? '?' + params.toString() : '';
+    (req as Request & { url: string }).url =
+      `/api/${decodeURIComponent(pathSeg)}${qs}`;
+  }
+  next();
+});
+
 type AdminRequest = Request & { adminEmail?: string };
 type AuthRequest = Request & { userId?: string };
 

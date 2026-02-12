@@ -2,6 +2,7 @@
  * Weirdling API client — calls backend /api/weirdling (proxied in dev).
  */
 
+import { messageFromApiResponse } from './errors';
 import type {
   WeirdlingPreview,
   WeirdlingWizardInputs,
@@ -55,9 +56,8 @@ export async function generateWeirdling(
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(
-      (data?.error as string) || res.statusText || 'Generation failed',
-    );
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
   return data as GenerateResult;
 }
@@ -72,7 +72,8 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data?.error as string) || res.statusText || 'Save failed');
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 }
 
@@ -88,7 +89,8 @@ export async function saveWeirdlingPreview(
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data?.error as string) || res.statusText || 'Save failed');
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 }
 
@@ -101,9 +103,8 @@ export async function getMyWeirdling(): Promise<Weirdling | null> {
   if (res.status === 404) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(
-      (data?.error as string) || res.statusText || 'Fetch failed',
-    );
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
   return (data?.weirdling as Weirdling) ?? null;
 }

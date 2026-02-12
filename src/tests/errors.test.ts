@@ -11,6 +11,6 @@ describe('toMessage', () => {
   });
 
   it('handles unknown', () => {
-    expect(toMessage({})).toBe('Request failed');
+    expect(toMessage({})).toBe('Something went wrong. Please try again.');
   });
 });

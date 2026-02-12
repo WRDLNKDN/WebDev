@@ -1,21 +1,16 @@
 /**
- * WRDLNKDN bumper: full-screen layered intro/outro for recording or embedding.
- *
- * Layers (back to front):
- * 0. concept-bumper.mp4 (voiceover + video from public/assets/video)
- * 1. Grid background (full)
- * 2. Animated green→pink Weirdling (left)
- * 3. WRDLNKDN wordmark (pops out)
- * 4. "Business, but Weirder." (typing animation)
+ * WRDLNKDN bumper: full-screen intro/outro. Solid black; centered stack:
+ * WRDLNKDN → phonetic (Weird Link-uh-din) → tagline → Weirdling character.
  */
 
 import './bumperKeyframes.css';
 
-import { Box, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
 
+const PHONETIC = '(Weird Link-uh-din)';
 const TAGLINE = 'Business, but Weirder.';
 const TYPING_MS = 80;
 const POP_DELAY_MS = 400;
@@ -66,9 +61,10 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: '#000',
       }}
     >
-      {/* Layer 0: concept-bumper.mp4 (voiceover + video) */}
+      {/* Optional: video hidden behind black for audio-only; uncomment and lower zIndex to show */}
       <Box
         component="video"
         ref={videoRef}
@@ -85,103 +81,59 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
           height: '100%',
           objectFit: 'cover',
           zIndex: 0,
+          opacity: 0,
+          pointerEvents: 'none',
         }}
       />
 
-      {/* Layer 1: Full grid background */}
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          backgroundImage: 'url(/assets/grid-background.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: '#05070f',
-        }}
-      />
-
-      {/* Layer 2: Animated green→pink Weirdling (left); swap asset for green→pink Wonder Woman when ready */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: { xs: '40%', sm: '35%' },
-          maxWidth: 420,
-          zIndex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: `linear-gradient(135deg, 
-            rgba(0, 180, 120, 0.28) 0%, 
-            rgba(200, 80, 180, 0.22) 50%,
-            rgba(255, 100, 150, 0.18) 100%)`,
-          animation: 'bumperLayer2Pulse 4s ease-in-out infinite alternate',
-        }}
+      {/* Centered stack: WRDLNKDN → phonetic → tagline → character */}
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        spacing={{ xs: 1.5, md: 2 }}
+        sx={{ position: 'relative', zIndex: 1 }}
       >
+        {/* WRDLNKDN (pops out) */}
         <Box
-          component="img"
-          src="/assets/og_weirdlings/weirdling_1.png"
-          alt=""
-          aria-hidden
           sx={{
-            maxHeight: '70%',
-            maxWidth: '80%',
-            width: 'auto',
-            height: 'auto',
-            objectFit: 'contain',
-            filter: 'drop-shadow(0 0 24px rgba(0,200,140,0.4))',
-            animation: 'bumperWeirdlingFloat 3s ease-in-out infinite alternate',
+            opacity: popVisible ? 1 : 0,
+            transform: popVisible ? 'scale(1)' : 'scale(0.3)',
+            transition:
+              'opacity 0.5s ease-out, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
-        />
-      </Box>
+        >
+          <Typography
+            component="span"
+            sx={{
+              color: '#fff',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              fontSize: {
+                xs: 'clamp(2.5rem, 10vw, 5rem)',
+                md: 'clamp(3rem, 8vw, 6rem)',
+              },
+              lineHeight: 1,
+              textShadow:
+                '0 0 40px rgba(0,200,140,0.5), 0 4px 24px rgba(0,0,0,0.6)',
+            }}
+          >
+            WRDLNKDN
+          </Typography>
+        </Box>
 
-      {/* Layer 3: WRDLNKDN (pops out) */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: '38%',
-          zIndex: 2,
-          opacity: popVisible ? 1 : 0,
-          transform: popVisible
-            ? 'translate(-50%, -50%) scale(1)'
-            : 'translate(-50%, -50%) scale(0.3)',
-          transition:
-            'opacity 0.5s ease-out, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }}
-      >
+        {/* Phonetic pronunciation */}
         <Typography
           component="span"
           sx={{
-            color: '#fff',
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            fontSize: {
-              xs: 'clamp(2.5rem, 10vw, 5rem)',
-              md: 'clamp(3rem, 8vw, 6rem)',
-            },
-            lineHeight: 1,
-            textShadow:
-              '0 0 40px rgba(0,200,140,0.5), 0 4px 24px rgba(0,0,0,0.6)',
+            color: 'rgba(255,255,255,0.9)',
+            letterSpacing: '0.12em',
+            fontSize: { xs: '0.75rem', md: '0.85rem' },
           }}
         >
-          WRDLNKDN
+          {PHONETIC}
         </Typography>
-      </Box>
 
-      {/* Layer 4: "Business, but Weirder." (typing animation) */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: '58%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 3,
-        }}
-      >
+        {/* "Business, but Weirder." (typing animation) */}
         <Typography
           component="span"
           sx={{
@@ -210,7 +162,24 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
         >
           {typed}
         </Typography>
-      </Box>
+
+        {/* Weirdling character (centered under the words) */}
+        <Box
+          component="img"
+          src="/assets/og_weirdlings/weirdling_1.png"
+          alt=""
+          aria-hidden
+          sx={{
+            maxHeight: { xs: 140, md: 200 },
+            maxWidth: '80%',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 0 24px rgba(0,200,140,0.4))',
+            animation: 'bumperWeirdlingFloat 3s ease-in-out infinite alternate',
+          }}
+        />
+      </Stack>
     </Box>
   );
 };

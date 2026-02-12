@@ -17,6 +17,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { DirectoryCard } from '../components/directory/DirectoryCard';
+import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 import { safeStr } from '../utils/stringUtils';
 
@@ -82,8 +83,7 @@ export const Directory = () => {
           setRows((data as DirectoryProfile[]) ?? []);
         }
       } catch (e: unknown) {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : 'Failed to load directory');
+        if (!cancelled) setError(toMessage(e));
       } finally {
         if (!cancelled) setLoading(false);
       }

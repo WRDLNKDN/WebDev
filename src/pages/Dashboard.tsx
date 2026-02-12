@@ -8,6 +8,7 @@ import {
   Container,
   Grid,
   Paper,
+  Snackbar,
   Stack,
   Typography,
 } from '@mui/material';
@@ -31,6 +32,7 @@ import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
 
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
+import { toMessage } from '../lib/errors';
 import { getMyWeirdling } from '../lib/weirdlingApi';
 import { supabase } from '../lib/supabaseClient';
 import { GLASS_CARD } from '../theme/candyStyles';
@@ -79,11 +81,14 @@ export const Dashboard = () => {
     profile,
     projects,
     loading,
+    refresh,
     updateProfile,
     uploadAvatar,
     addProject,
     uploadResume,
   } = useProfile();
+
+  const [snack, setSnack] = useState<string | null>(null);
 
   if (!session) return null;
 
@@ -294,7 +299,11 @@ export const Dashboard = () => {
 
               <ResumeCard
                 url={profile?.resume_url}
-                onUpload={uploadResume}
+                onUpload={(file) =>
+                  uploadResume(file)
+                    .then(() => refresh())
+                    .catch((e) => setSnack(toMessage(e)))
+                }
                 isOwner
               />
 
@@ -343,6 +352,14 @@ export const Dashboard = () => {
         open={isAddProjectOpen}
         onClose={() => setIsAddProjectOpen(false)}
         onSubmit={addProject}
+      />
+
+      <Snackbar
+        open={Boolean(snack)}
+        autoHideDuration={6000}
+        onClose={() => setSnack(null)}
+        message={snack}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );

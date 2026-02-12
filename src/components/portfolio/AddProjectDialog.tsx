@@ -6,6 +6,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -20,7 +21,8 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toMessage } from '../../lib/errors';
 import type { NewProject } from '../../types/portfolio';
 
 // REUSING THE VIBE
@@ -76,6 +78,11 @@ export const AddProjectDialog = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
 
   const handleChange =
     (field: keyof NewProject) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +116,7 @@ export const AddProjectDialog = ({
   };
 
   const handleSubmit = async () => {
+    setSubmitError(null);
     try {
       setBusy(true);
       // Include any current tech input that wasn't yet added with Enter
@@ -130,6 +138,7 @@ export const AddProjectDialog = ({
       onClose();
     } catch (error) {
       console.error(error);
+      setSubmitError(toMessage(error));
     } finally {
       setBusy(false);
     }
@@ -301,6 +310,15 @@ export const AddProjectDialog = ({
           </Grid>
         </Grid>
 
+        {submitError && (
+          <Alert
+            severity="error"
+            onClose={() => setSubmitError(null)}
+            sx={{ mt: 2 }}
+          >
+            {submitError}
+          </Alert>
+        )}
         <Stack
           direction="row"
           justifyContent="flex-end"

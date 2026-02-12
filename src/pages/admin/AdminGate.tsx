@@ -53,7 +53,6 @@ export const AdminGate = ({ children }: Props) => {
         };
 
         if (rpcError) {
-          console.error('Admin check error:', rpcError);
           setError('Failed to verify admin access');
           setIsAdmin(false);
           return;
@@ -61,7 +60,6 @@ export const AdminGate = ({ children }: Props) => {
 
         setIsAdmin(data === true);
       } catch (err) {
-        console.error('Admin gate error:', err);
         setError(toMessage(err));
         setIsAdmin(false);
       } finally {

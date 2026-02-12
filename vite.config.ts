@@ -11,9 +11,23 @@ export default defineConfig({
     watch: { usePolling: true },
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, res) => {
+            // When backend is down, respond 503 instead of leaking ECONNREFUSED to console
+            if (res && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' });
+              res.end(
+                JSON.stringify({
+                  error: 'Service unavailable',
+                  detail: 'Backend not running. Start with: npm run api',
+                }),
+              );
+            }
+          });
+        },
       },
     },
   },

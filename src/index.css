@@ -34,7 +34,13 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Remove Vite demo button styles (MUI handles buttons) */
+/* Reset native button styles so MUI can control; keep cursor & pointer events */
 button {
-  all: unset;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
 }

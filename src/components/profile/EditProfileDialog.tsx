@@ -276,7 +276,6 @@ export const EditProfileDialog = ({
             variant="h6"
             sx={{
               fontWeight: 700,
-              fontFamily: '"Poppins", sans-serif',
               letterSpacing: 1,
             }}
           >

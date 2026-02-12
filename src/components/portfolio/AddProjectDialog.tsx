@@ -175,7 +175,6 @@ export const AddProjectDialog = ({
             variant="h6"
             sx={{
               fontWeight: 700,
-              fontFamily: '"Poppins", sans-serif',
               letterSpacing: 1,
             }}
           >

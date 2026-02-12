@@ -17,7 +17,11 @@
 
 import sjson from 'secure-json-parse';
 
-/** Base URL for API requests (origin only; do not include /api). Empty in dev (relative /api + Vite proxy); set in prod to e.g. https://api.wrdlnkdn.com. Paths like /api/feeds are appended here. */
+/**
+ * Base URL for API requests (origin only; do not include /api).
+ * Vite bakes this at build time from VITE_API_URL. If you set VITE_API_URL in Vercel
+ * after the last deploy, you must redeploy (new build) for it to take effect.
+ */
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';

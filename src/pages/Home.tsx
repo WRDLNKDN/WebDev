@@ -154,6 +154,7 @@ export const Home = () => {
             inset: 0,
             bgcolor: 'rgba(5, 7, 15, 0.6)',
             zIndex: 1,
+            pointerEvents: 'none',
           }}
         />
         <Container

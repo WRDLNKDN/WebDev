@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 
+import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import { AdminModerationPage } from './AdminModerationPage';
 import { AdminGate } from './AdminGate';
@@ -16,12 +17,6 @@ import type { ProfileStatus } from '../../types/types';
 
 type Props = {
   initialStatus?: ProfileStatus | 'all';
-};
-
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Request failed';
 };
 
 const BG_SX = {

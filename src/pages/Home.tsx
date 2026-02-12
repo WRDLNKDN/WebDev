@@ -8,6 +8,7 @@ import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
+import { toMessage } from '../lib/errors';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -15,12 +16,6 @@ import { supabase } from '../lib/supabaseClient';
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
  * IF user has session → redirect to /feed. ELSE show guest hero + CTAs.
  */
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Request failed';
-};
-
 export const Home = () => {
   const navigate = useNavigate();
 
@@ -48,7 +43,10 @@ export const Home = () => {
         }
       } catch (err) {
         console.error('Session check failed:', err);
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setError(toMessage(err));
+          setIsLoading(false);
+        }
       }
     };
 

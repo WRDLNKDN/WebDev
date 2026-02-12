@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from 'react';
+import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
@@ -120,7 +121,7 @@ export function useProfile() {
       }
     } catch (err: unknown) {
       console.error('SYSTEM_LOG: Data Load Error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data.');
+      setError(toMessage(err));
     } finally {
       setLoading(false);
     }

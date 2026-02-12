@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
+import { toMessage } from '../../lib/errors';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
@@ -175,9 +176,7 @@ export const IdentityStep = () => {
           `${providerLabel} sign-in is having trouble connecting. Please check your connection and try again, or choose a different provider.`,
         );
       } else {
-        setError(
-          `${providerLabel} could not complete sign-in. Please try again in a moment or select a different provider.`,
-        );
+        setError(toMessage(err));
       }
       setLoading(false);
       setLoadingProvider(null);

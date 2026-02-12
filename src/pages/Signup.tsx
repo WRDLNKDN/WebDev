@@ -21,11 +21,7 @@ import { SignupProgress } from '../components/signup/SignupProgress';
 import { ValuesStep } from '../components/signup/ValuesStep';
 import { WelcomeStep } from '../components/signup/WelcomeStep';
 
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Signup failed';
-};
+import { toMessage } from '../lib/errors';
 
 // Join page background: use GRID BACKGROUND ONLY.png at public/assets/grid-background.png
 const BG_SX = {

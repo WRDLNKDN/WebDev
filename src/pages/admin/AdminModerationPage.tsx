@@ -37,6 +37,7 @@ import {
   fetchProfiles,
   rejectProfiles,
 } from './adminApi';
+import { toMessage } from '../../lib/errors';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 
 const formatStatus = (status: string) => {
@@ -50,12 +51,6 @@ const formatStatus = (status: string) => {
     default:
       return { label: 'Pending', color: 'default' as const };
   }
-};
-
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Request failed';
 };
 
 type Props = {

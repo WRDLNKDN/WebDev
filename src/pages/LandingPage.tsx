@@ -6,6 +6,7 @@ import {
   Container,
   Grid,
   Paper,
+  Snackbar,
   Stack,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -33,6 +34,7 @@ const DivergencePage = lazy(() =>
 );
 
 // LOGIC & TYPES
+import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 import { GLASS_CARD, SYNERGY_BG } from '../theme/candyStyles';
 import type { PortfolioItem } from '../types/portfolio';
@@ -51,6 +53,7 @@ export const LandingPage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [followCheckDone, setFollowCheckDone] = useState(false);
+  const [snack, setSnack] = useState<string | null>(null);
 
   // Easter Egg Check
   const isSecretHandle =
@@ -111,6 +114,7 @@ export const LandingPage = () => {
       setIsFollowing(true);
     } catch (e) {
       console.error('Follow failed:', e);
+      setSnack(toMessage(e));
     } finally {
       setConnectionLoading(false);
     }
@@ -129,6 +133,7 @@ export const LandingPage = () => {
       setIsFollowing(false);
     } catch (e) {
       console.error('Unfollow failed:', e);
+      setSnack(toMessage(e));
     } finally {
       setConnectionLoading(false);
     }
@@ -171,6 +176,7 @@ export const LandingPage = () => {
         setProjects((projectsData || []) as PortfolioItem[]);
       } catch (err) {
         console.error('Public Data Load Error:', err);
+        setSnack(toMessage(err));
       } finally {
         setLoading(false);
       }
@@ -312,6 +318,13 @@ export const LandingPage = () => {
           </Grid>
         </Container>
       </Box>
+      <Snackbar
+        open={Boolean(snack)}
+        autoHideDuration={6000}
+        onClose={() => setSnack(null)}
+        message={snack}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </>
   );
 };

@@ -1,4 +1,4 @@
-import { Avatar, Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
 
 interface IdentityHeaderProps {
@@ -6,8 +6,8 @@ interface IdentityHeaderProps {
   tagline: string;
   bio: string;
   avatarUrl: string;
-  statusEmoji: string;
-  statusMessage: string;
+  statusEmoji?: string;
+  statusMessage?: string;
   actions?: React.ReactNode; // For the Edit/Settings buttons in Dashboard
 }
 
@@ -18,9 +18,9 @@ export const IdentityHeader = ({
   tagline,
   bio,
   avatarUrl,
-  statusEmoji,
-  statusMessage,
   actions,
+  statusEmoji: _statusEmoji,
+  statusMessage: _statusMessage,
 }: IdentityHeaderProps) => (
   <Paper
     elevation={24}
@@ -34,17 +34,6 @@ export const IdentityHeader = ({
       position: 'relative',
     }}
   >
-    <Chip
-      label={`${statusEmoji} ${statusMessage}`}
-      color="primary"
-      sx={{
-        position: 'absolute',
-        top: -16,
-        right: 32,
-        fontWeight: 600,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      }}
-    />
     <Stack
       direction={{ xs: 'column', md: 'row' }}
       spacing={4}

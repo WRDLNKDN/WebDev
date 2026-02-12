@@ -1,10 +1,9 @@
 /**
- * Full-screen bumper for recording or embedding.
- * No nav/footer — use /bumper for a clean capture.
- * Voiceover + video: public/assets/video/concept-bumper.mp4
+ * Full-screen bumper (no nav/footer). Video: public/assets/video/concept-bumper.mp4
  *
- * When reached after Join (?from=join&next=/feed): show bumper once per session,
- * then redirect to next (default /feed).
+ * IF URL has ?from=join → treat as post-Join flow: show bumper for POST_JOIN_BUMPER_MS,
+ * set sessionStorage so we don't show again this session, then redirect to ?next= (default /feed).
+ * ELSE → just show bumper (e.g. for recording at /bumper).
  */
 
 import { Helmet } from 'react-helmet-async';
@@ -22,6 +21,7 @@ export const BumperPage = () => {
   const fromJoin = searchParams.get('from') === 'join';
   const next = searchParams.get('next') ?? '/feed';
 
+  // IF from=join: after delay, mark bumper shown and redirect. ELSE: no redirect.
   useEffect(() => {
     if (!fromJoin) return;
     const timer = window.setTimeout(() => {

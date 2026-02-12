@@ -18,8 +18,8 @@ export const DirectoryCard = ({
   pronouns,
   tagline,
 }: DirectoryCardProps) => {
-  // Use the handle for the URL, or fallback to ID if no handle exists
-  const profileLink = handle ? `/u/${handle}` : `/u/${id}`;
+  /** Canonical profile URL per IA (docs/architecture/information-architecture.md). */
+  const profileLink = handle ? `/profile/${handle}` : `/profile/${id}`;
   const title = displayName || handle || '(Anonymous Entity)';
 
   return (

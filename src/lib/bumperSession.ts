@@ -1,4 +1,8 @@
-/** SessionStorage key: bumper shown once after Join (per session). */
+/**
+ * Bumper-after-Join: show bumper once per session.
+ * CompleteStep uses hasBumperBeenShown(): IF true → go to Feed; ELSE → go to /bumper?from=join.
+ * BumperPage (when from=join) calls setBumperShown() before redirect so next time we go straight to Feed.
+ */
 export const BUMPER_SHOWN_KEY = 'wrdlnkdn-bumper-shown';
 
 export function hasBumperBeenShown(): boolean {

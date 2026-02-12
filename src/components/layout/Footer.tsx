@@ -80,6 +80,7 @@ const Column = ({
 export const Footer = () => {
   const year = new Date().getFullYear();
 
+  /** Legal (wiki), Contact (Agreements #contact + mailto), in-app links. */
   const columns = [
     {
       title: 'Legal',
@@ -101,7 +102,11 @@ export const Footer = () => {
     {
       title: 'Contact',
       links: [
-        { label: 'Contact', href: 'mailto:wrdlnkdn@gmail.com', external: true },
+        {
+          label: 'Contact',
+          href: 'https://github.com/WRDLNKDN/Agreements?tab=readme-ov-file#contact',
+          external: true,
+        },
         {
           label: 'wrdlnkdn@gmail.com',
           href: 'mailto:wrdlnkdn@gmail.com',

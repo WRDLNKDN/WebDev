@@ -81,8 +81,10 @@ slot. Do not use "Directory" or "Signup" as nav labels.
   - Use **Feed**, not "Directory".
   - Use **Join**, not "Signup".
 
-Legacy routes redirect: `/directory` → `/feed`, `/signup` → `/join`. They are
-not the source of truth.
+Legacy routes redirect: `/signup` → `/join`, `/u/:handle` → `/profile/:handle`.
+The route `/directory` is used for people discovery (navbar search, Discover
+People) and is not shown in the nav; the nav label is **Feed** (links to
+`/feed`).
 
 ---
 

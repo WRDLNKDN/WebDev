@@ -1,26 +1,20 @@
-import {
-  Alert,
-  Box,
-  Container,
-  Grid,
-  Stack,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../components/home/GuestView';
 import { HomeSkeleton } from '../components/home/HomeSkeleton';
-import { HomeVisual } from '../components/home/HomeVisual';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
+/**
+ * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
+ * IF user has session → redirect to /feed. ELSE show guest hero + CTAs.
+ */
 const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
@@ -29,14 +23,12 @@ const toMessage = (e: unknown) => {
 
 export const Home = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- AUTH & REDIRECT LOGIC ---
+  // AUTH: IF session exists → redirect to /feed. ELSE stop loading and show Hero (GuestView).
   useEffect(() => {
     let mounted = true;
 
@@ -52,7 +44,6 @@ export const Home = () => {
             return;
           }
 
-          // No session? Stop loading and show Guest View
           setIsLoading(false);
         }
       } catch (err) {
@@ -137,13 +128,22 @@ export const Home = () => {
           backgroundPosition: 'center',
         }}
       >
-        {/* Video background (place hero-bg.mp4 in public/assets/video/) */}
+        {/* Hero video: prefer hero-green-pinky.mp4; IF load fails (e.g. file missing), ELSE fallback to hero-bg.mp4 */}
         <Box
           component="video"
           autoPlay
           muted
           loop
           playsInline
+          onError={(e) => {
+            const el = e.currentTarget;
+            if (
+              el.src?.includes('hero-green-pinky') &&
+              !el.src.includes('hero-bg')
+            ) {
+              el.src = '/assets/video/hero-bg.mp4';
+            }
+          }}
           sx={{
             position: 'absolute',
             inset: 0,
@@ -152,7 +152,7 @@ export const Home = () => {
             objectFit: 'cover',
             zIndex: 0,
           }}
-          src="/assets/video/hero-bg.mp4"
+          src="/assets/video/hero-green-pinky.mp4"
         />
         <Box
           sx={{
@@ -167,8 +167,21 @@ export const Home = () => {
           sx={{ position: 'relative', zIndex: 2 }}
           data-testid="signed-out-landing"
         >
-          <Grid container spacing={8} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
+          <Grid
+            container
+            spacing={8}
+            alignItems="center"
+            justifyContent="center"
+            sx={{ textAlign: 'center' }}
+          >
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
               {error && (
                 <Alert
                   severity="error"
@@ -180,13 +193,15 @@ export const Home = () => {
               )}
               <GuestView busy={busy} onAuth={handleAuth} />
             </Grid>
-            {!isMobile && (
-              <Grid size={{ xs: 0, md: 6 }}>
-                <HomeVisual />
-              </Grid>
-            )}
 
-            <Grid size={{ xs: 12 }}>
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
               {/* Primary wordmark */}
               <Typography
                 component="h1"
@@ -204,7 +219,7 @@ export const Home = () => {
               </Typography>
 
               {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
-              <Stack spacing={0.5} sx={{ maxWidth: 420 }}>
+              <Stack spacing={0.5} sx={{ maxWidth: 420, alignItems: 'center' }}>
                 <Typography
                   variant="subtitle2"
                   sx={{
@@ -238,9 +253,6 @@ export const Home = () => {
                   community.
                 </Typography>
               </Stack>
-
-              {/* Sign-in buttons (above fold, below tagline) */}
-              <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
             </Grid>
           </Grid>
         </Container>

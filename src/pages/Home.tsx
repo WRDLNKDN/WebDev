@@ -226,6 +226,7 @@ export const Home = () => {
                     color: 'rgba(255,255,255,0.85)',
                     letterSpacing: '0.12em',
                     fontSize: '0.75rem',
+                    fontStyle: 'italic',
                   }}
                 >
                   (Weird Link-uh-din)

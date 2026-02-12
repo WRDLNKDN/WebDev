@@ -59,6 +59,10 @@ const WeirdlingCreate = lazy(() =>
   })),
 );
 
+const BumperPage = lazy(() =>
+  import('./pages/BumperPage').then((m) => ({ default: m.BumperPage })),
+);
+
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
@@ -160,6 +164,9 @@ const App = () => {
       <SignupProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
+            {/* Bumper: full-screen, no nav/footer (for recording) */}
+            <Route path="/bumper" element={<BumperPage />} />
+
             <Route element={<Layout />}>
               {/* --- Public Access --- */}
               <Route path="/" element={<Home />} />

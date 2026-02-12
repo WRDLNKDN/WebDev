@@ -227,9 +227,10 @@ export const Home = () => {
                     letterSpacing: '0.15em',
                     textTransform: 'uppercase',
                     fontSize: '0.75rem',
+                    fontStyle: 'italic',
                   }}
                 >
-                  WEERD-LINK-DIN
+                  WEIRD-LINK-DIN
                 </Typography>
                 <Typography
                   variant="h5"

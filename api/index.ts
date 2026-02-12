@@ -3,7 +3,7 @@
  * Forwards to the shared Express app from backend/app (feeds, admin, weirdling, health).
  * Restores req.url from rewrite query param so Express sees /api/feeds etc.
  */
-import { app } from '../backend/app';
+import { app } from '../backend/app.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 type ReqWithQuery = IncomingMessage & { query?: Record<string, string> };

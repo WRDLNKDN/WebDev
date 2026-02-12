@@ -43,22 +43,27 @@ const Column = ({
       >
         {title}
       </Typography>
-      {links.map(({ label, href, external }) =>
-        external ? (
+      {links.map(({ label, href, external }) => {
+        const isMailto = href.startsWith('mailto:');
+        return external ? (
           <Link
             key={label}
             href={href}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...(!isMailto && {
+              target: '_blank',
+              rel: 'noopener noreferrer',
+            })}
             underline="hover"
             variant="body2"
             {...FOOTER_LINK}
           >
             {label}
-            <OpenInNewIcon
-              sx={{ fontSize: 14, ml: 0.25, verticalAlign: 'middle' }}
-              aria-hidden
-            />
+            {!isMailto && (
+              <OpenInNewIcon
+                sx={{ fontSize: 14, ml: 0.25, verticalAlign: 'middle' }}
+                aria-hidden
+              />
+            )}
           </Link>
         ) : (
           <Link
@@ -71,8 +76,8 @@ const Column = ({
           >
             {label}
           </Link>
-        ),
-      )}
+        );
+      })}
     </Stack>
   );
 };
@@ -172,13 +177,13 @@ export const Footer = () => {
             >
               <Box
                 component="img"
-                src="/assets/github-ready/wrdlnkdn-logo-combo-horizontal.svg"
+                src="/assets/og_weirdlings/weirdling_1.png"
                 alt="WRDLNKDN"
                 sx={{
                   height: 56,
                   minHeight: 40,
                   width: 'auto',
-                  maxWidth: 280,
+                  maxWidth: 80,
                   display: 'block',
                   objectFit: 'contain',
                 }}

@@ -21,7 +21,11 @@ import { LandingPageSkeleton } from '../components/layout/LandingPageSkeleton';
 import { PortfolioFrame } from '../components/portfolio/PortfolioFrame';
 import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
-import { IdentityHeader } from '../components/profile/IdentityHeader';
+import {
+  IdentityBadges,
+  IdentityHeader,
+} from '../components/profile/IdentityHeader';
+import { ViewTagsSkillsDialog } from '../components/profile/ViewTagsSkillsDialog';
 
 // --- NEW WIDGET SECTOR ---
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
@@ -36,13 +40,10 @@ const DivergencePage = lazy(() =>
 // LOGIC & TYPES
 import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
-import { GLASS_CARD, SYNERGY_BG } from '../theme/candyStyles';
+import { GLASS_CARD } from '../theme/candyStyles';
 import type { PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
-
-const HERO_HALO =
-  'radial-gradient(circle at 50% 30%, rgba(66, 165, 245, 0.15) 0%, transparent 70%)';
 
 export const LandingPage = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -54,6 +55,7 @@ export const LandingPage = () => {
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [followCheckDone, setFollowCheckDone] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
+  const [tagsSkillsDialogOpen, setTagsSkillsDialogOpen] = useState(false);
 
   // Easter Egg Check
   const isSecretHandle =
@@ -245,43 +247,36 @@ export const LandingPage = () => {
     <>
       <Helmet>
         <title>{safeStr(profile.display_name)} | Verified Generalist</title>
-        <meta name="description" content={safeStr(profile.tagline)} />
+        <meta name="description" content={safeStr(profile.display_name)} />
       </Helmet>
 
-      <Box
-        component="main"
-        sx={{
-          position: 'relative',
-          minHeight: '100vh',
-          backgroundImage: SYNERGY_BG,
-          backgroundSize: 'cover',
-          backgroundAttachment: 'fixed',
-          py: 8,
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '100%',
-            background: HERO_HALO,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+      <Box component="main" sx={{ position: 'relative', py: 8 }}>
+        <Container maxWidth="lg">
           {/* 1. IDENTITY HEADER (Full Width) */}
           <IdentityHeader
             displayName={safeStr(profile.display_name)}
-            tagline={safeStr(profile.tagline)}
+            tagline={profile.tagline ?? undefined}
             bio={safeStr(creds.bio)}
             avatarUrl={safeStr(profile.avatar)}
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
+            badges={
+              <IdentityBadges
+                onTagsClick={() => setTagsSkillsDialogOpen(true)}
+                onSkillsClick={() => setTagsSkillsDialogOpen(true)}
+              />
+            }
             actions={connectActions}
+          />
+          <ViewTagsSkillsDialog
+            open={tagsSkillsDialogOpen}
+            onClose={() => setTagsSkillsDialogOpen(false)}
+            tagline={profile.tagline ?? undefined}
+            skills={
+              Array.isArray(creds.skills)
+                ? (creds.skills as string[])
+                : undefined
+            }
           />
 
           {/* 2. THE GRID LAYOUT */}

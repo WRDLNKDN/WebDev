@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+const isCI = process.env.CI === 'true';
 
 export default defineConfig({
   testDir: './src/tests/e2e',
@@ -13,6 +14,10 @@ export default defineConfig({
   // we can add them back after TS is happy.
   retries: 1,
 
+  reporter: isCI
+    ? [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']]
+    : 'list',
+
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
@@ -21,9 +26,9 @@ export default defineConfig({
   },
 
   webServer: {
-    command: `npm run vite -- --host 127.0.0.1 --port ${PORT} --strictPort`,
+    command: isCI ? 'npm run e2e:serve:ci' : 'npm run e2e:serve',
     url: BASE_URL,
-    reuseExistingServer: true,
+    reuseExistingServer: !isCI,
     timeout: 120_000,
   },
 

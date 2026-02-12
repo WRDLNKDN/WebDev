@@ -81,17 +81,37 @@ export const CANDY_BLUEY = {
   },
 };
 
-// 4. Others
+// 4. Glass card (dark, subtle blue glow — profile/dashboard sections)
 export const GLASS_CARD = {
-  position: 'relative',
+  position: 'relative' as const,
   width: '100%',
   borderRadius: 4,
   border: '1px solid rgba(255,255,255,0.12)',
   bgcolor: 'rgba(16, 18, 24, 0.70)',
   backdropFilter: 'blur(16px)',
-  boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
+  boxShadow: '0 0 30px rgba(66, 165, 245, 0.08), 0 18px 60px rgba(0,0,0,0.55)',
   color: '#fff',
-  overflow: 'hidden',
+  overflow: 'hidden' as const,
+};
+
+// 5. Dashed add card (neutral — Portfolio "Add Project" / "Add Resume")
+export const DASHED_CARD_NEUTRAL = {
+  background: 'rgba(30, 30, 30, 0.6)',
+  backdropFilter: 'blur(8px)',
+  border: '2px dashed rgba(255,255,255,0.25)',
+  color: '#fff',
+  boxShadow: '0 0 20px rgba(0,0,0,0.3)',
+  transition: 'all 0.25s ease',
+  cursor: 'pointer' as const,
+  display: 'flex' as const,
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&:hover': {
+    borderColor: 'rgba(255,255,255,0.45)',
+    background: 'rgba(40, 40, 40, 0.7)',
+    boxShadow: '0 0 24px rgba(66, 165, 245, 0.12)',
+  },
 };
 
 export const SIGNUP_BG = {
@@ -101,7 +121,7 @@ export const SIGNUP_BG = {
   placeItems: 'center',
   px: 2,
   py: 6,
-  backgroundImage: 'url(/assets/landing-bg.png)',
+  backgroundImage: 'url(/assets/background.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundAttachment: 'fixed',

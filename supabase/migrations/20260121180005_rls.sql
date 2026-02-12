@@ -1,5 +1,5 @@
 -- supabase/migrations/20260121180005_rls.sql
--- All RLS policies and table privileges.
+-- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
 
 -- -----------------------------
 -- Optional: add use_weirdling_avatar if missing (idempotent for existing DBs)
@@ -13,6 +13,23 @@ begin
     alter table public.profiles add column use_weirdling_avatar boolean not null default false;
   end if;
 end $$;
+
+-- -----------------------------
+-- admin_allowlist: privileges (no RLS)
+-- -----------------------------
+revoke all on table public.admin_allowlist from anon, authenticated;
+
+-- -----------------------------
+-- is_admin(): execute grant
+-- -----------------------------
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+-- -----------------------------
+-- get_feed_page(): execute grant
+-- -----------------------------
+revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
+grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
 
 -- -----------------------------
 -- profiles: RLS

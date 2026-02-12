@@ -64,6 +64,10 @@ const WeirdlingCreate = lazy(() =>
   })),
 );
 
+const ProjectPage = lazy(() =>
+  import('./pages/ProjectPage').then((m) => ({ default: m.ProjectPage })),
+);
+
 const BumperPage = lazy(() =>
   import('./pages/BumperPage').then((m) => ({ default: m.BumperPage })),
 );
@@ -193,6 +197,7 @@ const App = () => {
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/projects/:id" element={<ProjectPage />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />
 
               {/* --- Authentication --- */}

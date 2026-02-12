@@ -8,7 +8,6 @@ interface DirectoryCardProps {
   handle: string | null;
   displayName?: string | null;
   pronouns: string | null;
-  tagline: string;
 }
 
 export const DirectoryCard = ({
@@ -16,7 +15,6 @@ export const DirectoryCard = ({
   handle,
   displayName,
   pronouns,
-  tagline,
 }: DirectoryCardProps) => {
   /** Canonical profile URL per IA (docs/architecture/information-architecture.md). */
   const profileLink = handle ? `/profile/${handle}` : `/profile/${id}`;
@@ -58,12 +56,12 @@ export const DirectoryCard = ({
           <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
             {title}
           </Typography>
-          {(pronouns || tagline) && (
+          {pronouns && (
             <Typography
               variant="body2"
               sx={{ color: 'text.secondary', mt: 0.5 }}
             >
-              {[pronouns, tagline].filter(Boolean).join(' • ')}
+              {pronouns}
             </Typography>
           )}
         </Box>

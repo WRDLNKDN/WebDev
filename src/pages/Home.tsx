@@ -120,10 +120,6 @@ export const Home = () => {
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
-          bgcolor: '#05070f',
-          backgroundImage: 'url(/assets/grid-background.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
         }}
       >
         {/* Hero video: prefer hero-green-pinky.mp4; IF load fails (e.g. file missing), ELSE fallback to hero-bg.mp4 */}

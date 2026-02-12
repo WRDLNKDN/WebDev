@@ -23,10 +23,13 @@
     "format:check": "prettier --check .",
     "--- TESTING (Behavioral Integrity) ---": "",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:unit": "vitest run",
     "test:rls": "vitest run -c vitest.rls.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "e2e:serve": "concurrently -k -n VITE,API \"vite --host 127.0.0.1 --port 5173 --strictPort\" \"tsx backend/server.ts\"",
+    "e2e:serve:ci": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "--- DATABASE (Physical Layer) ---": "",
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
@@ -51,6 +54,8 @@
     ]
   },
   "dependencies": {
+    "@dicebear/collection": "9.3.1",
+    "@dicebear/core": "9.3.1",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@fortawesome/fontawesome-svg-core": "7.1.0",

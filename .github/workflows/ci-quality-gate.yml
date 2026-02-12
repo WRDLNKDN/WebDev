@@ -96,12 +96,16 @@ jobs:
           path: playwright-report
           retention-days: 7
 
-      # Optional: UI mode (manual only)
-      - name: 🎭 Playwright UI mode (manual only)
+      # Optional: UI mode (manual only, run locally — no display in CI)
+      - name: 🎭 Playwright UI mode (manual only, local use)
         if:
           github.event_name == 'workflow_dispatch' && inputs.run_e2e_ui ==
-          'true'
-        run: npm run test:e2e:ui
+          'true' && env.CI != 'true'
+        env:
+          CI: ${{ env.CI }}
+        run:
+          echo "Skipping Playwright UI in CI (no display). Run npm run
+          test:e2e:ui locally."
 
       # -----------------------
       # Summary gate (single status)

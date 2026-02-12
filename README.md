@@ -116,3 +116,46 @@ workflows**, independent of specific implementation details.
    - Backend uses a mock AI adapter (no API key); see
      [Epic: Weirdling Generator](./docs/architecture/epic-weirdling-generator.md)
      to plug in a real provider.
+
+---
+
+## 🌍 UAT vs Production (Vercel)
+
+Two Vercel deployments:
+
+<!-- markdownlint-disable MD013 -->
+
+| Environment    | URL                                                     | Use                   |
+| -------------- | ------------------------------------------------------- | --------------------- |
+| **Production** | [wrdlnkdn.vercel.app](https://wrdlnkdn.vercel.app/)     | Live; PROD Supabase   |
+| **UAT**        | [webdev-uat.vercel.app](https://webdev-uat.vercel.app/) | UAT Supabase + banner |
+
+<!-- markdownlint-enable MD013 -->
+
+### Frontend distinction
+
+- **`VITE_APP_ENV`** — Set per **project** so the app knows which environment
+  it’s in.
+  - **Production (wrdlnkdn.vercel.app):** `VITE_APP_ENV=production` (or `prod`)
+    — no banner.
+  - **UAT (webdev-uat.vercel.app):** `VITE_APP_ENV=uat` — shows “UAT — This is a
+    test environment” banner below the nav.
+  - Unset or `development`: treated as dev (no banner).
+
+### How to set it in Vercel
+
+**Production project (wrdlnkdn):**
+
+1. **Settings** → **Environment Variables**.
+2. `VITE_APP_ENV` = `production` (all environments).
+3. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` = your **PROD** Supabase
+   project.
+
+**UAT project (webdev-uat):**
+
+1. **Settings** → **Environment Variables**.
+2. `VITE_APP_ENV` = `uat` (all environments).
+3. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` = your **UAT** Supabase
+   project.
+
+Redeploy after changing env vars so new builds pick them up.

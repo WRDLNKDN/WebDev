@@ -54,7 +54,12 @@ export async function generateWeirdling(
     credentials: 'include',
   });
 
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -70,7 +75,12 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
     body: JSON.stringify({ jobId }),
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
@@ -87,24 +97,60 @@ export async function saveWeirdlingPreview(
     body: JSON.stringify(preview),
     credentials: 'include',
   });
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 }
 
-export async function getMyWeirdling(): Promise<Weirdling | null> {
+/** Returns all active Weirdlings for the current user (newest first). */
+export async function getMyWeirdlings(): Promise<Weirdling[]> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/me`, {
     headers,
     credentials: 'include',
   });
-  if (res.status === 404) return null;
-  const data = await res.json().catch(() => ({}));
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
-  return (data?.weirdling as Weirdling) ?? null;
+  const list = Array.isArray(data?.weirdlings) ? data.weirdlings : [];
+  return list as Weirdling[];
+}
+
+/** @deprecated Use getMyWeirdlings(). Returns first Weirdling or null for backwards compatibility. */
+export async function getMyWeirdling(): Promise<Weirdling | null> {
+  const list = await getMyWeirdlings();
+  return list[0] ?? null;
+}
+
+export async function deleteWeirdling(id: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/me/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers,
+    credentials: 'include',
+  });
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
+  if (!res.ok) {
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
+  }
 }

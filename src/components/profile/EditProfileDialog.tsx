@@ -8,12 +8,14 @@ import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
   FormControlLabel,
   Grid, // CORRECT: Standard Grid import for MUI v7
   IconButton,
+  Popover,
   Snackbar,
   Stack,
   TextField,
@@ -25,6 +27,30 @@ import { useEffect, useRef, useState } from 'react';
 import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import type { DashboardProfile, NerdCreds } from '../../types/profile'; // Adjusted import path for subfolder
+
+// Common status emojis for picker (no extra dependency)
+const STATUS_EMOJI_OPTIONS = [
+  '💬',
+  '🚀',
+  '✨',
+  '🔥',
+  '💡',
+  '🎯',
+  '⚡',
+  '🌟',
+  '🛠️',
+  '📚',
+  '🎨',
+  '🧠',
+  '❤️',
+  '👍',
+  '🌱',
+  '☕',
+  '🎵',
+  '📷',
+  '🔧',
+  '🌈',
+];
 
 // 90s VIBE ASSETS
 const SOLO_GRADIENT =
@@ -58,7 +84,7 @@ const GLASS_MODAL = {
 type EditProfileDialogProps = {
   open: boolean;
   onClose: () => void;
-  profile: DashboardProfile;
+  profile: DashboardProfile | null;
   hasWeirdling?: boolean;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
@@ -89,10 +115,10 @@ export const EditProfileDialog = ({
   const [formData, setFormData] = useState({
     handle: '',
     pronouns: '',
-    tagline: '',
     status_emoji: '',
     status_message: '',
     bio: '',
+    skills: '',
     use_weirdling_avatar: false,
   });
 
@@ -104,6 +130,8 @@ export const EditProfileDialog = ({
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
     null,
   );
+  const [emojiPickerAnchor, setEmojiPickerAnchor] =
+    useState<HTMLElement | null>(null);
 
   // Sync state when profile opens; clear local avatar when profile or dialog changes
   useEffect(() => {
@@ -115,10 +143,16 @@ export const EditProfileDialog = ({
       setFormData({
         handle: safeStr(profile.handle),
         pronouns: safeStr(profile.pronouns),
-        tagline: safeStr(profile.tagline),
         status_emoji: safeStr(creds.status_emoji, '💬'),
         status_message: safeStr(creds.status_message),
         bio: safeStr(creds.bio),
+        skills: safeStr(
+          Array.isArray(creds.skills)
+            ? (creds.skills as string[]).join(', ')
+            : typeof creds.skills === 'string'
+              ? creds.skills
+              : '',
+        ),
         use_weirdling_avatar: Boolean(p.use_weirdling_avatar),
       });
       setUploadedAvatarUrl(null);
@@ -135,6 +169,7 @@ export const EditProfileDialog = ({
       setHandleAvailable(null);
       return;
     }
+    if (!profile) return;
 
     // Don't flag as "taken" if it's the one you already have
     if (val === profile.handle) {
@@ -164,15 +199,19 @@ export const EditProfileDialog = ({
 
     try {
       setBusy(true);
+      const skillsArr = formData.skills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       await onUpdate({
         handle: formData.handle,
         pronouns: formData.pronouns,
-        tagline: formData.tagline,
         use_weirdling_avatar: formData.use_weirdling_avatar,
         nerd_creds: {
           status_emoji: formData.status_emoji,
           status_message: formData.status_message,
           bio: formData.bio,
+          skills: skillsArr.length ? skillsArr : undefined,
         },
       });
 
@@ -221,7 +260,7 @@ export const EditProfileDialog = ({
       open={open}
       onClose={onClose}
       fullScreen={fullScreen}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       PaperProps={{ sx: GLASS_MODAL }}
     >
@@ -260,215 +299,317 @@ export const EditProfileDialog = ({
       </DialogTitle>
 
       <DialogContent sx={{ p: { xs: 2, md: 4 } }}>
-        {/* CORRECT GRID V7 SYNTAX: Use 'size' prop */}
-        <Grid container spacing={4} sx={{ mt: 0 }}>
-          {/* AVATAR COLUMN */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Stack alignItems="center" spacing={2}>
-              <Box sx={{ position: 'relative' }}>
-                <Avatar
-                  src={uploadedAvatarUrl || profile.avatar || undefined}
-                  sx={{
-                    width: 150,
-                    height: 150,
-                    border: '4px solid transparent',
-                    background: `linear-gradient(#1a1a1a, #1a1a1a) padding-box, ${SOLO_GRADIENT} border-box`,
-                  }}
-                />
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    bgcolor: '#00C4CC',
-                    color: 'black',
-                    '&:hover': { bgcolor: '#FF22C9' },
-                  }}
-                >
-                  <CameraIcon />
-                </IconButton>
-                <input
-                  type="file"
-                  hidden
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </Box>
-              <Typography
-                variant="caption"
-                sx={{ opacity: 0.7, fontFamily: 'monospace' }}
-              >
-                UPLOAD_VISUAL.exe
-              </Typography>
-              {hasWeirdling && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formData.use_weirdling_avatar}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          use_weirdling_avatar: e.target.checked,
-                        }))
-                      }
-                      disabled={busy}
+        {!profile ? (
+          <Stack
+            alignItems="center"
+            justifyContent="center"
+            spacing={2}
+            sx={{ py: 6 }}
+          >
+            <CircularProgress sx={{ color: 'white' }} />
+            <Typography color="text.secondary">Loading profile…</Typography>
+          </Stack>
+        ) : (
+          <>
+            {/* CORRECT GRID V7 SYNTAX: Use 'size' prop */}
+            <Grid container spacing={4} sx={{ mt: 0 }}>
+              {/* AVATAR COLUMN */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Stack alignItems="center" spacing={2}>
+                  <Box sx={{ position: 'relative' }}>
+                    <Avatar
+                      src={uploadedAvatarUrl || profile.avatar || undefined}
                       sx={{
-                        color: 'white',
-                        '&.Mui-checked': { color: 'primary.main' },
+                        width: 150,
+                        height: 150,
+                        border: '4px solid transparent',
+                        background: `linear-gradient(#1a1a1a, #1a1a1a) padding-box, ${SOLO_GRADIENT} border-box`,
                       }}
                     />
-                  }
-                  label={
-                    <Typography variant="body2" sx={{ color: 'white' }}>
-                      Use my Weirdling as my profile picture
-                    </Typography>
-                  }
-                />
-              )}
-            </Stack>
-          </Grid>
-
-          {/* FORM COLUMN */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography
-                  variant="overline"
-                  color="primary"
-                  sx={{ letterSpacing: 2, fontWeight: 'bold' }}
-                >
-                  Core Identity
-                </Typography>
-
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Handle (Vanity URL)"
-                      value={formData.handle}
-                      disabled={busy}
-                      variant="filled"
-                      error={handleAvailable === false}
-                      helperText={
-                        handleAvailable === false
-                          ? 'ACCESS_DENIED: Handle already in use.'
-                          : checkingHandle
-                            ? 'AUDITING...'
-                            : 'Your public link: /profile/' +
-                              (formData.handle || 'handle') // canonical route per IA
+                    <IconButton
+                      onClick={() => fileInputRef.current?.click()}
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        bgcolor: '#00C4CC',
+                        color: 'black',
+                        '&:hover': { bgcolor: '#FF22C9' },
+                      }}
+                    >
+                      <CameraIcon />
+                    </IconButton>
+                    <input
+                      type="file"
+                      hidden
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ opacity: 0.7, fontFamily: 'monospace' }}
+                  >
+                    UPLOAD_VISUAL.exe
+                  </Typography>
+                  {hasWeirdling && (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.use_weirdling_avatar}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              use_weirdling_avatar: e.target.checked,
+                            }))
+                          }
+                          disabled={busy}
+                          sx={{
+                            color: 'white',
+                            '&.Mui-checked': { color: 'primary.main' },
+                          }}
+                        />
                       }
-                      onChange={(e) => {
-                        const val = e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9-]/g, '');
-                        setFormData((prev) => ({ ...prev, handle: val }));
-                        checkHandle(val);
-                      }}
+                      label={
+                        <Typography variant="body2" sx={{ color: 'white' }}>
+                          Use my Weirdling as my profile picture
+                        </Typography>
+                      }
                     />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="Pronouns"
-                      value={formData.pronouns}
-                      onChange={handleChange('pronouns')}
-                      disabled={busy}
-                      variant="filled"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="Tagline"
-                      value={formData.tagline}
-                      onChange={handleChange('tagline')}
-                      disabled={busy}
-                      variant="filled"
-                    />
-                  </Grid>
-                </Grid>
-              </Box>
-
-              <Box>
-                <Typography
-                  variant="overline"
-                  color="secondary"
-                  sx={{ letterSpacing: 2, fontWeight: 'bold' }}
-                >
-                  Status Signal
-                </Typography>
-                <Stack direction="row" spacing={2}>
-                  <TextField
-                    sx={{ width: 80 }}
-                    label="Emoji"
-                    value={formData.status_emoji}
-                    onChange={handleChange('status_emoji')}
-                    disabled={busy}
-                    variant="filled"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Message"
-                    value={formData.status_message}
-                    onChange={handleChange('status_message')}
-                    disabled={busy}
-                    variant="filled"
-                  />
+                  )}
                 </Stack>
-              </Box>
+              </Grid>
 
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    letterSpacing: 2,
-                    fontWeight: 'bold',
-                    color: '#00C4CC',
-                  }}
-                >
-                  System Logs
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Bio"
-                  value={formData.bio}
-                  onChange={handleChange('bio')}
-                  disabled={busy}
-                  variant="filled"
-                />
-              </Box>
+              {/* FORM COLUMN */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Stack spacing={3}>
+                  <Box>
+                    <Typography
+                      variant="overline"
+                      color="primary"
+                      sx={{ letterSpacing: 2, fontWeight: 'bold' }}
+                    >
+                      Core Identity
+                    </Typography>
+
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          fullWidth
+                          label="Handle (Vanity URL)"
+                          value={formData.handle}
+                          disabled={busy}
+                          variant="filled"
+                          error={handleAvailable === false}
+                          helperText={
+                            handleAvailable === false
+                              ? 'ACCESS_DENIED: Handle already in use.'
+                              : checkingHandle
+                                ? 'AUDITING...'
+                                : 'Your public link: /profile/' +
+                                  (formData.handle || 'handle') // canonical route per IA
+                          }
+                          onChange={(e) => {
+                            const val = e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, '');
+                            setFormData((prev) => ({ ...prev, handle: val }));
+                            checkHandle(val);
+                          }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                          fullWidth
+                          label="Pronouns"
+                          value={formData.pronouns}
+                          onChange={handleChange('pronouns')}
+                          disabled={busy}
+                          variant="filled"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="overline"
+                      color="secondary"
+                      sx={{ letterSpacing: 2, fontWeight: 'bold' }}
+                    >
+                      Status
+                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={(e) =>
+                          !busy && setEmojiPickerAnchor(e.currentTarget)
+                        }
+                        disabled={busy}
+                        aria-label="Choose status emoji"
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.75rem',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          borderRadius: 1,
+                          bgcolor: 'rgba(255,255,255,0.06)',
+                          color: 'inherit',
+                          cursor: busy ? 'default' : 'pointer',
+                          '&:hover': busy
+                            ? {}
+                            : { bgcolor: 'rgba(255,255,255,0.12)' },
+                          '&:focus-visible': {
+                            outline: '2px solid',
+                            outlineColor: 'primary.main',
+                            outlineOffset: 2,
+                          },
+                        }}
+                      >
+                        {formData.status_emoji || '😀'}
+                      </Box>
+                      <Popover
+                        open={Boolean(emojiPickerAnchor)}
+                        anchorEl={emojiPickerAnchor}
+                        onClose={() => setEmojiPickerAnchor(null)}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                        PaperProps={{
+                          sx: {
+                            p: 1.5,
+                            bgcolor: 'background.paper',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            maxHeight: 280,
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(5, 1fr)',
+                            gap: 0.5,
+                          }}
+                        >
+                          {STATUS_EMOJI_OPTIONS.map((emoji) => (
+                            <IconButton
+                              key={emoji}
+                              size="small"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  status_emoji: emoji,
+                                }));
+                                setEmojiPickerAnchor(null);
+                              }}
+                              sx={{
+                                fontSize: '1.5rem',
+                                '&:hover': { bgcolor: 'action.hover' },
+                              }}
+                              aria-label={`Select ${emoji}`}
+                            >
+                              {emoji}
+                            </IconButton>
+                          ))}
+                        </Box>
+                      </Popover>
+                      <TextField
+                        fullWidth
+                        label="Message"
+                        value={formData.status_message}
+                        onChange={handleChange('status_message')}
+                        disabled={busy}
+                        variant="filled"
+                      />
+                    </Stack>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        letterSpacing: 2,
+                        fontWeight: 'bold',
+                        color: '#00C4CC',
+                      }}
+                    >
+                      Skills
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      label="Skills (comma-separated)"
+                      placeholder="e.g. React, TypeScript, Systems thinking"
+                      value={formData.skills}
+                      onChange={handleChange('skills')}
+                      disabled={busy}
+                      variant="filled"
+                      helperText="List skills or tags for your profile."
+                      sx={{ mb: 2 }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        letterSpacing: 2,
+                        fontWeight: 'bold',
+                        color: '#00C4CC',
+                      }}
+                    >
+                      Bio
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Bio"
+                      value={formData.bio}
+                      onChange={handleChange('bio')}
+                      disabled={busy}
+                      variant="filled"
+                    />
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+
+            <Stack
+              direction="row"
+              justifyContent="flex-end"
+              spacing={2}
+              sx={{ mt: 4 }}
+            >
+              <Button
+                onClick={onClose}
+                disabled={busy}
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+                variant="outlined"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={busy || handleAvailable === false || checkingHandle} // Added guards here
+                startIcon={<SaveIcon />}
+                sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
+              >
+                {checkingHandle ? 'AUDITING...' : 'Save Changes'}
+              </Button>
             </Stack>
-          </Grid>
-        </Grid>
-
-        <Stack
-          direction="row"
-          justifyContent="flex-end"
-          spacing={2}
-          sx={{ mt: 4 }}
-        >
-          <Button
-            onClick={onClose}
-            disabled={busy}
-            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
-            variant="outlined"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={busy || handleAvailable === false || checkingHandle} // Added guards here
-            startIcon={<SaveIcon />}
-            sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
-          >
-            {checkingHandle ? 'AUDITING...' : 'Save Changes'}
-          </Button>
-        </Stack>
+          </>
+        )}
       </DialogContent>
       {/* WRAP YOUR BOX IN THIS SNACKBAR
           This is what actually 'uses' the showToast variable

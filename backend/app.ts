@@ -356,31 +356,27 @@ app.post(
         });
       }
 
-      const { error: upsertErr } = await adminSupabase
+      const { error: insertErr } = await adminSupabase
         .from('weirdlings')
-        .upsert(
-          {
-            user_id: userId,
-            display_name: validated.displayName,
-            handle: validated.handle,
-            role_vibe: validated.roleVibe,
-            industry_tags: validated.industryTags,
-            tone: validated.tone,
-            tagline: validated.tagline,
-            boundaries: validated.boundaries,
-            bio: validated.bio ?? null,
-            avatar_url: validated.avatarUrl ?? null,
-            raw_ai_response: validated.rawResponse,
-            prompt_version: validated.promptVersion,
-            model_version: validated.modelVersion,
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' },
-        );
+        .insert({
+          user_id: userId,
+          display_name: validated.displayName,
+          handle: validated.handle,
+          role_vibe: validated.roleVibe,
+          industry_tags: validated.industryTags,
+          tone: validated.tone,
+          tagline: validated.tagline,
+          boundaries: validated.boundaries,
+          bio: validated.bio ?? null,
+          avatar_url: validated.avatarUrl ?? null,
+          raw_ai_response: validated.rawResponse,
+          prompt_version: validated.promptVersion,
+          model_version: validated.modelVersion,
+          is_active: true,
+        });
 
-      if (upsertErr) {
-        return res.status(500).json({ error: upsertErr.message });
+      if (insertErr) {
+        return res.status(500).json({ error: insertErr.message });
       }
       return res.json({ ok: true });
     }
@@ -409,28 +405,24 @@ app.post(
       });
     }
 
-    const { error: upsertErr } = await adminSupabase.from('weirdlings').upsert(
-      {
-        user_id: userId,
-        display_name: displayName,
-        handle,
-        role_vibe: roleVibe,
-        industry_tags: industryTags,
-        tone,
-        tagline,
-        boundaries,
-        bio: bio ?? null,
-        avatar_url: (body.avatarUrl as string | null) ?? null,
-        prompt_version: (body.promptVersion as string) ?? PROMPT_VERSION,
-        model_version: (body.modelVersion as string) ?? MODEL_VERSION,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' },
-    );
+    const { error: insertErr } = await adminSupabase.from('weirdlings').insert({
+      user_id: userId,
+      display_name: displayName,
+      handle,
+      role_vibe: roleVibe,
+      industry_tags: industryTags,
+      tone,
+      tagline,
+      boundaries,
+      bio: bio ?? null,
+      avatar_url: (body.avatarUrl as string | null) ?? null,
+      prompt_version: (body.promptVersion as string) ?? PROMPT_VERSION,
+      model_version: (body.modelVersion as string) ?? MODEL_VERSION,
+      is_active: true,
+    });
 
-    if (upsertErr) {
-      return res.status(500).json({ error: upsertErr.message });
+    if (insertErr) {
+      return res.status(500).json({ error: insertErr.message });
     }
     return res.json({ ok: true });
   },
@@ -443,36 +435,54 @@ app.get(
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { data, error } = await adminSupabase
+    const { data: rows, error } = await adminSupabase
       .from('weirdlings')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'No Weirdling found' });
 
-    return res.json({
-      ok: true,
-      weirdling: {
-        id: data.id,
-        userId: data.user_id,
-        displayName: data.display_name,
-        handle: data.handle,
-        roleVibe: data.role_vibe,
-        industryTags: data.industry_tags ?? [],
-        tone: Number(data.tone),
-        tagline: data.tagline,
-        boundaries: data.boundaries ?? '',
-        bio: data.bio ?? undefined,
-        avatarUrl: data.avatar_url ?? undefined,
-        promptVersion: data.prompt_version,
-        modelVersion: data.model_version,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      },
-    });
+    const weirdlings = (rows ?? []).map((row: Record<string, unknown>) => ({
+      id: row.id,
+      userId: row.user_id,
+      displayName: row.display_name,
+      handle: row.handle,
+      roleVibe: row.role_vibe,
+      industryTags: row.industry_tags ?? [],
+      tone: Number(row.tone),
+      tagline: row.tagline,
+      boundaries: row.boundaries ?? '',
+      bio: row.bio ?? undefined,
+      avatarUrl: row.avatar_url ?? undefined,
+      promptVersion: row.prompt_version,
+      modelVersion: row.model_version,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+
+    return res.json({ ok: true, weirdlings });
+  },
+);
+
+app.delete(
+  '/api/weirdling/me/:id',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const id = (req.params as { id?: string }).id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!id) return res.status(400).json({ error: 'Missing weirdling id' });
+
+    const { error } = await adminSupabase
+      .from('weirdlings')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
   },
 );
 
@@ -639,88 +649,104 @@ app.post(
 
 // GET /api/feeds — LinkedIn-inspired activity stream (authenticated, cursor pagination)
 app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
-  const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
-  const cursorRaw =
-    typeof req.query.cursor === 'string' ? req.query.cursor.trim() : null;
-  let cursorCreatedAt: string | null = null;
-  let cursorId: string | null = null;
-  if (cursorRaw) {
-    try {
-      const decoded = JSON.parse(
-        Buffer.from(cursorRaw, 'base64').toString('utf8'),
-      ) as { created_at?: string; id?: string };
-      cursorCreatedAt =
-        typeof decoded.created_at === 'string' ? decoded.created_at : null;
-      cursorId = typeof decoded.id === 'string' ? decoded.id : null;
-    } catch {
-      // ignore invalid cursor
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const cursorRaw =
+      typeof req.query.cursor === 'string' ? req.query.cursor.trim() : null;
+    let cursorCreatedAt: string | null = null;
+    let cursorId: string | null = null;
+    if (cursorRaw) {
+      try {
+        const decoded = JSON.parse(
+          Buffer.from(cursorRaw, 'base64').toString('utf8'),
+        ) as { created_at?: string; id?: string };
+        cursorCreatedAt =
+          typeof decoded.created_at === 'string' ? decoded.created_at : null;
+        cursorId = typeof decoded.id === 'string' ? decoded.id : null;
+      } catch {
+        // ignore invalid cursor
+      }
     }
+
+    const { data: rows, error } = await adminSupabase.rpc('get_feed_page', {
+      p_viewer_id: userId,
+      p_cursor_created_at: cursorCreatedAt,
+      p_cursor_id: cursorId,
+      p_limit: limit + 1,
+    });
+
+    if (error) {
+      console.error(
+        '[GET /api/feeds] Supabase RPC error:',
+        error.message,
+        error,
+      );
+      return res.status(500).json({
+        error:
+          error.message ||
+          'Feed could not be loaded. Ensure Supabase migrations are applied (feed_items, feed_connections, get_feed_page).',
+      });
+    }
+
+    const list = Array.isArray(rows) ? rows : [];
+    const hasMore = list.length > limit;
+    const page = hasMore ? list.slice(0, limit) : list;
+    const last = page[page.length - 1] as
+      | { created_at?: string; id?: string }
+      | undefined;
+    const nextCursor =
+      hasMore && last?.created_at && last?.id
+        ? Buffer.from(
+            JSON.stringify({
+              created_at: last.created_at,
+              id: last.id,
+            }),
+            'utf8',
+          ).toString('base64')
+        : undefined;
+
+    const data = page.map(
+      (row: {
+        id?: string;
+        user_id?: string;
+        kind?: string;
+        payload?: unknown;
+        parent_id?: string | null;
+        created_at?: string;
+        actor_handle?: string | null;
+        actor_display_name?: string | null;
+        actor_avatar?: string | null;
+        like_count?: number | string | null;
+        viewer_liked?: boolean | null;
+        comment_count?: number | string | null;
+      }) => ({
+        id: row.id,
+        user_id: row.user_id,
+        kind: row.kind,
+        payload: row.payload ?? {},
+        parent_id: row.parent_id ?? null,
+        created_at: row.created_at,
+        actor: {
+          handle: row.actor_handle ?? null,
+          display_name: row.actor_display_name ?? null,
+          avatar: row.actor_avatar ?? null,
+        },
+        like_count: Number(row.like_count ?? 0),
+        viewer_liked: Boolean(row.viewer_liked),
+        comment_count: Number(row.comment_count ?? 0),
+      }),
+    );
+
+    return res.json({ data, nextCursor });
+  } catch (e: unknown) {
+    console.error('[GET /api/feeds] Unhandled error:', e);
+    return res
+      .status(500)
+      .json({ error: errorMessage(e, 'Feed could not be loaded.') });
   }
-
-  const { data: rows, error } = await adminSupabase.rpc('get_feed_page', {
-    p_viewer_id: userId,
-    p_cursor_created_at: cursorCreatedAt,
-    p_cursor_id: cursorId,
-    p_limit: limit + 1,
-  });
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-
-  const list = Array.isArray(rows) ? rows : [];
-  const hasMore = list.length > limit;
-  const page = hasMore ? list.slice(0, limit) : list;
-  const last = page[page.length - 1] as
-    | { created_at?: string; id?: string }
-    | undefined;
-  const nextCursor =
-    hasMore && last?.created_at && last?.id
-      ? Buffer.from(
-          JSON.stringify({
-            created_at: last.created_at,
-            id: last.id,
-          }),
-          'utf8',
-        ).toString('base64')
-      : undefined;
-
-  const data = page.map(
-    (row: {
-      id?: string;
-      user_id?: string;
-      kind?: string;
-      payload?: unknown;
-      parent_id?: string | null;
-      created_at?: string;
-      actor_handle?: string | null;
-      actor_display_name?: string | null;
-      actor_avatar?: string | null;
-      like_count?: number | string | null;
-      viewer_liked?: boolean | null;
-      comment_count?: number | string | null;
-    }) => ({
-      id: row.id,
-      user_id: row.user_id,
-      kind: row.kind,
-      payload: row.payload ?? {},
-      parent_id: row.parent_id ?? null,
-      created_at: row.created_at,
-      actor: {
-        handle: row.actor_handle ?? null,
-        display_name: row.actor_display_name ?? null,
-        avatar: row.actor_avatar ?? null,
-      },
-      like_count: Number(row.like_count ?? 0),
-      viewer_liked: Boolean(row.viewer_liked),
-      comment_count: Number(row.comment_count ?? 0),
-    }),
-  );
-
-  return res.json({ data, nextCursor });
 });
 
 // POST /api/feeds — create a new feed item (post or external_link)

@@ -1,7 +1,6 @@
 import {
   AddPhotoAlternate as AddPhotoIcon,
   Close as CloseIcon,
-  Code as CodeIcon,
   Link as LinkIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
@@ -9,7 +8,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -23,7 +21,7 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { toMessage } from '../../lib/errors';
-import type { NewProject } from '../../types/portfolio';
+import type { NewProject, PortfolioItem } from '../../types/portfolio';
 
 // REUSING THE VIBE
 const SOLO_GRADIENT =
@@ -54,58 +52,69 @@ const GLASS_MODAL = {
 type AddProjectDialogProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (project: NewProject, file?: File) => Promise<void>;
+  onSubmit: (
+    project: NewProject,
+    file?: File,
+    projectId?: string,
+  ) => Promise<void>;
+  /** When set, dialog is in edit mode (prefill form, title "Edit Project") */
+  initialProject?: PortfolioItem | null;
+  projectId?: string;
+};
+
+const emptyForm: NewProject = {
+  title: '',
+  description: '',
+  image_url: '',
+  project_url: '',
+  tech_stack: [],
 };
 
 export const AddProjectDialog = ({
   open,
   onClose,
   onSubmit,
+  initialProject,
+  projectId,
 }: AddProjectDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<NewProject>({
-    title: '',
-    description: '',
-    image_url: '',
-    project_url: '',
-    tech_stack: [],
-  });
+  const [formData, setFormData] = useState<NewProject>(emptyForm);
 
-  const [techInput, setTechInput] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const isEdit = Boolean(initialProject && projectId);
+
   useEffect(() => {
     if (open) setSubmitError(null);
   }, [open]);
+
+  useEffect(() => {
+    if (open && initialProject) {
+      setFormData({
+        title: initialProject.title,
+        description: initialProject.description ?? '',
+        image_url: initialProject.image_url ?? '',
+        project_url: initialProject.project_url ?? '',
+        tech_stack: initialProject.tech_stack ?? [],
+      });
+      setPreviewUrl(initialProject.image_url ?? null);
+    } else if (open && !initialProject) {
+      setFormData(emptyForm);
+      setPreviewUrl(null);
+      setSelectedFile(undefined);
+    }
+  }, [open, initialProject]);
 
   const handleChange =
     (field: keyof NewProject) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({ ...prev, [field]: e.target.value }));
     };
-
-  const handleAddTech = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && techInput.trim()) {
-      e.preventDefault();
-      setFormData((prev) => ({
-        ...prev,
-        tech_stack: [...prev.tech_stack, techInput.trim()],
-      }));
-      setTechInput('');
-    }
-  };
-
-  const handleDeleteTech = (chipToDelete: string) => () => {
-    setFormData((prev) => ({
-      ...prev,
-      tech_stack: prev.tech_stack.filter((chip) => chip !== chipToDelete),
-    }));
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -115,26 +124,27 @@ export const AddProjectDialog = ({
     }
   };
 
+  const isExternalUrl = (url: string) => /^https?:\/\//i.test(url.trim());
+
   const handleSubmit = async () => {
     setSubmitError(null);
+    const url = formData.project_url?.trim() ?? '';
+    if (!isExternalUrl(url)) {
+      setSubmitError('Project URL must be an external URL (e.g. https://...).');
+      return;
+    }
     try {
       setBusy(true);
-      // Include any current tech input that wasn't yet added with Enter
-      const techWithInput =
-        techInput.trim() && !formData.tech_stack.includes(techInput.trim())
-          ? [...formData.tech_stack, techInput.trim()]
-          : formData.tech_stack;
-      await onSubmit({ ...formData, tech_stack: techWithInput }, selectedFile);
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        image_url: '',
-        project_url: '',
-        tech_stack: [],
-      });
-      setPreviewUrl(null);
-      setSelectedFile(undefined);
+      await onSubmit(
+        { ...formData, tech_stack: formData.tech_stack ?? [] },
+        selectedFile,
+        projectId,
+      );
+      if (!isEdit) {
+        setFormData(emptyForm);
+        setPreviewUrl(null);
+        setSelectedFile(undefined);
+      }
       onClose();
     } catch (error) {
       console.error(error);
@@ -149,7 +159,7 @@ export const AddProjectDialog = ({
       open={open}
       onClose={onClose}
       fullScreen={fullScreen}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       PaperProps={{ sx: GLASS_MODAL }}
     >
@@ -169,7 +179,7 @@ export const AddProjectDialog = ({
               letterSpacing: 1,
             }}
           >
-            NEW{' '}
+            {isEdit ? 'EDIT ' : 'NEW '}
             <Box
               component="span"
               sx={{
@@ -257,55 +267,24 @@ export const AddProjectDialog = ({
                 variant="filled"
               />
 
-              <Stack direction="row" spacing={2} alignItems="center">
-                <LinkIcon sx={{ color: 'text.secondary' }} />
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+                <LinkIcon sx={{ color: 'text.secondary', mt: 1.5 }} />
                 <TextField
                   fullWidth
                   required
                   label="Project URL"
+                  placeholder="https://example.com/my-project"
+                  helperText="External URL only (e.g. https://...). Internal paths are not allowed."
                   value={formData.project_url}
                   onChange={handleChange('project_url')}
                   variant="filled"
                   size="small"
+                  error={
+                    !!formData.project_url &&
+                    !/^https?:\/\//i.test(formData.project_url.trim())
+                  }
                 />
               </Stack>
-
-              <Box>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  alignItems="center"
-                  sx={{ mb: 1 }}
-                >
-                  <CodeIcon sx={{ color: 'text.secondary' }} />
-                  <TextField
-                    fullWidth
-                    required
-                    label="Tech Stack (Press Enter to add at least one)"
-                    value={techInput}
-                    onChange={(e) => setTechInput(e.target.value)}
-                    onKeyDown={handleAddTech}
-                    variant="filled"
-                    size="small"
-                    helperText={
-                      formData.tech_stack.length === 0 && !techInput.trim()
-                        ? 'Type at least one tech (or press Enter to add multiple)'
-                        : undefined
-                    }
-                  />
-                </Stack>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {formData.tech_stack.map((tech) => (
-                    <Chip
-                      key={tech}
-                      label={tech}
-                      onDelete={handleDeleteTech(tech)}
-                      size="small"
-                      sx={{ bgcolor: 'rgba(255,255,255,0.1)' }}
-                    />
-                  ))}
-                </Box>
-              </Box>
             </Stack>
           </Grid>
         </Grid>
@@ -341,12 +320,12 @@ export const AddProjectDialog = ({
               !formData.title.trim() ||
               !formData.description.trim() ||
               !formData.project_url.trim() ||
-              (formData.tech_stack.length === 0 && !techInput.trim())
+              !isExternalUrl(formData.project_url.trim())
             }
             startIcon={<SaveIcon />}
             sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
           >
-            Add to Portfolio
+            {isEdit ? 'Save changes' : 'Add to Portfolio'}
           </Button>
         </Stack>
       </DialogContent>

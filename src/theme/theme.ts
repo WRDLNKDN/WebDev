@@ -50,10 +50,9 @@ const FOCUS_RING = {
 const theme = createTheme({
   palette: PALETTE,
 
-  // TYPOGRAPHY: The "Fluid Scaling" Protocol
-  // clamp(MIN, VAL, MAX) -> Scales smoothly between MIN and MAX
+  // TYPOGRAPHY: Poppins for all copy (Google Font, loaded in index.html)
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Poppins", "Helvetica", "Arial", sans-serif',
     fontSize: 16,
     htmlFontSize: 16,
 
@@ -116,18 +115,25 @@ const theme = createTheme({
 
     // Body text scales slightly for better reading on large monitors
     body1: {
+      fontFamily: '"Poppins", sans-serif',
       fontSize: 'clamp(1rem, 0.5vw + 1rem, 1.125rem)',
       lineHeight: 1.6,
     },
 
     body2: {
+      fontFamily: '"Poppins", sans-serif',
       fontSize: '0.875rem',
       lineHeight: 1.5,
     },
 
     caption: {
+      fontFamily: '"Poppins", sans-serif',
       fontSize: '0.75rem',
       lineHeight: 1.5,
+    },
+
+    overline: {
+      fontFamily: '"Poppins", sans-serif',
     },
   },
 

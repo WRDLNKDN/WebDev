@@ -59,11 +59,13 @@ export const fetchProfiles = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
+    let data: { error?: string };
+    try {
+      data = (await res.json()) as { error?: string };
+    } catch {
+      data = {};
+    }
+    const msg = typeof data.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 
@@ -98,11 +100,13 @@ const updateStatus = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
+    let data: { error?: string };
+    try {
+      data = (await res.json()) as { error?: string };
+    } catch {
+      data = {};
+    }
+    const msg = typeof data.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 };
@@ -145,11 +149,13 @@ export const deleteProfiles = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
+    let data: { error?: string };
+    try {
+      data = (await res.json()) as { error?: string };
+    } catch {
+      data = {};
+    }
+    const msg = typeof data.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 

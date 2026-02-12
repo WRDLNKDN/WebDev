@@ -118,13 +118,13 @@ async function postFeed(
 
   const postUrl = `${API_BASE}/api/feeds`;
   if (!res.ok) {
-    const payload = await parseJsonResponse<{ error?: string }>(
-      res,
-      postUrl,
-    ).catch((e) => {
+    let payload: { error?: string };
+    try {
+      payload = await parseJsonResponse<{ error?: string }>(res, postUrl);
+    } catch (e) {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      return { error: undefined };
-    });
+      payload = { error: undefined };
+    }
     const msg = typeof payload.error === 'string' ? payload.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
@@ -148,12 +148,13 @@ export async function fetchFeeds(options?: {
   });
 
   if (!res.ok) {
-    const body = await parseJsonResponse<{ error?: string }>(res, url).catch(
-      (e) => {
-        if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-        return { error: undefined };
-      },
-    );
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      body = { error: undefined };
+    }
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
@@ -208,13 +209,13 @@ export async function unlikePost(params: {
     credentials: API_BASE ? 'omit' : 'include',
   });
   if (!res.ok && res.status !== 204) {
-    const body = await parseJsonResponse<{ error?: string }>(
-      res,
-      unlikeUrl,
-    ).catch((e) => {
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, unlikeUrl);
+    } catch (e) {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      return { error: undefined };
-    });
+      body = { error: undefined };
+    }
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
@@ -241,13 +242,13 @@ export async function fetchComments(params: {
     credentials: API_BASE ? 'omit' : 'include',
   });
   if (!res.ok) {
-    const body = await parseJsonResponse<{ error?: string }>(
-      res,
-      commentsUrl,
-    ).catch((e) => {
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, commentsUrl);
+    } catch (e) {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      return { error: undefined };
-    });
+      body = { error: undefined };
+    }
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }

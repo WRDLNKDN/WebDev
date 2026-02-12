@@ -3,5 +3,8 @@
     { "source": "/api", "destination": "/api" },
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/(.*)", "destination": "/" }
-  ]
+  ],
+  "functions": {
+    "api/index.ts": { "runtime": "nodejs20.x" }
+  }
 }

@@ -50,6 +50,7 @@ import {
   type FeedComment,
   type FeedItem,
 } from '../lib/feedsApi';
+import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 
 const FEED_LIMIT = 20;
@@ -671,9 +672,8 @@ export const Feed = () => {
 
   const handleAuthError = useCallback(
     async (error: unknown, fallback: string) => {
-      const message =
-        error instanceof Error ? error.message : String(error ?? '');
-      const lower = message.toLowerCase();
+      const raw = error instanceof Error ? error.message : String(error ?? '');
+      const lower = raw.toLowerCase();
 
       if (lower.includes('unauthorized') || lower.includes('not signed in')) {
         try {
@@ -683,7 +683,7 @@ export const Feed = () => {
         }
         navigate('/signin', { replace: true });
       } else {
-        setSnack(message || fallback);
+        setSnack(toMessage(error) || fallback);
       }
     },
     [navigate],

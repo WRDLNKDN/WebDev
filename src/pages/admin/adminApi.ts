@@ -1,5 +1,6 @@
 // src/pages/admin/adminApi.ts
 
+import { messageFromApiResponse } from '../../lib/errors';
 import type { ProfileRow, ProfileStatus } from '../../types/types';
 
 // Re-export types so other components importing from adminApi don't explode
@@ -58,7 +59,12 @@ export const fetchProfiles = async (
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch profiles: ${res.statusText}`);
+    const data = await res.json().catch(() => ({}));
+    const msg =
+      typeof (data as { error?: string }).error === 'string'
+        ? (data as { error: string }).error
+        : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 
   const data = (await res.json()) as ProfileRow[];
@@ -92,7 +98,12 @@ const updateStatus = async (
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to update profiles: ${res.statusText}`);
+    const data = await res.json().catch(() => ({}));
+    const msg =
+      typeof (data as { error?: string }).error === 'string'
+        ? (data as { error: string }).error
+        : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 };
 
@@ -134,7 +145,12 @@ export const deleteProfiles = async (
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to delete profiles: ${res.statusText}`);
+    const data = await res.json().catch(() => ({}));
+    const msg =
+      typeof (data as { error?: string }).error === 'string'
+        ? (data as { error: string }).error
+        : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg));
   }
 
   // If hardDeleteAuthUsers is true, also delete from auth.users

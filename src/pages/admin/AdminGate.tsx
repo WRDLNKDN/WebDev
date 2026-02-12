@@ -1,5 +1,6 @@
 import { Alert, Box, CircularProgress, Container } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 
 type Props = {
@@ -72,7 +73,7 @@ export const AdminGate = ({ children }: Props) => {
         setIsAdmin(data === true);
       } catch (err) {
         console.error('Admin gate error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(toMessage(err));
         setIsAdmin(false);
       } finally {
         setLoading(false);

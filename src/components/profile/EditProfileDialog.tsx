@@ -22,6 +22,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import type { DashboardProfile, NerdCreds } from '../../types/profile'; // Adjusted import path for subfolder
 
@@ -187,13 +188,7 @@ export const EditProfileDialog = ({
       }, 1200);
     } catch (error) {
       console.error(error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error !== null && 'message' in error
-            ? String((error as { message: unknown }).message)
-            : 'Write operation failed. Check console for details.';
-      setToastMessage(message);
+      setToastMessage(toMessage(error));
       setShowToast(true);
     } finally {
       setBusy(false);
@@ -213,13 +208,7 @@ export const EditProfileDialog = ({
       }
     } catch (error) {
       console.error(error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error !== null && 'message' in error
-            ? String((error as { message: unknown }).message)
-            : 'Upload failed. Check that the avatars bucket exists and you have permission.';
-      setToastMessage(message);
+      setToastMessage(toMessage(error));
       setShowToast(true);
     } finally {
       setBusy(false);

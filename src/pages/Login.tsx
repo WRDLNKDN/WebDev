@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
 
@@ -34,10 +35,7 @@ export const Login = () => {
 
       if (signInError) throw signInError;
     } catch (e: unknown) {
-      // SQUIGGLE PROTECTION: Using 'unknown' over 'any'
-      const msg =
-        e instanceof Error ? e.message : 'Authentication Protocol Failed';
-      setError(msg);
+      setError(toMessage(e));
       setLoading(false);
     }
   };

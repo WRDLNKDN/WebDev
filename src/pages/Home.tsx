@@ -2,7 +2,7 @@ import {
   Alert,
   Box,
   Container,
-  Grid,
+  Stack,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -16,10 +16,27 @@ import { HomeVisual } from '../components/home/HomeVisual';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
-const toMessage = (e: unknown) => {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  return 'Request failed';
+// --- HUMAN OS ERROR TRANSLATOR ---
+const getFriendlyErrorMessage = (e: unknown) => {
+  let msg = 'An unexpected error occurred.';
+  if (e instanceof Error) msg = e.message;
+  if (typeof e === 'string') msg = e;
+
+  // Make common errors conversational
+  const lower = msg.toLowerCase();
+
+  if (lower.includes('popup closed') || lower.includes('closed by user')) {
+    return 'Login canceled. It looks like the window was closed before we could finish.';
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return "We can't reach the verification server. Check your signal and try again.";
+  }
+  if (lower.includes('timeout')) {
+    return "The connection timed out. Let's give it another shot.";
+  }
+
+  // Clean up technical jargon if we fall through
+  return `We hit a snag: ${msg.replace('AuthApiError: ', '')}`;
 };
 
 export const Home = () => {
@@ -43,12 +60,9 @@ export const Home = () => {
           if (error) console.warn('Session check warning:', error.message);
 
           if (data.session) {
-            // 🚀 USER FOUND: Redirect immediately to Feed
             navigate('/directory', { replace: true });
             return;
           }
-
-          // No session? Stop loading and show Guest View
           setIsLoading(false);
         }
       } catch (err) {
@@ -59,14 +73,12 @@ export const Home = () => {
 
     void checkSession();
 
-    // 2. Listen for realtime auth changes (e.g. login in another tab)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted && session) {
         navigate('/directory', { replace: true });
       }
     });
 
-    // 3. Fail-safe timeout
     const safetyTimer = setTimeout(() => {
       if (mounted && isLoading) {
         setIsLoading(false);
@@ -97,7 +109,8 @@ export const Home = () => {
         window.location.href = data.url;
       }
     } catch (e: unknown) {
-      setError(toMessage(e));
+      // Use the friendly translator here
+      setError(getFriendlyErrorMessage(e));
       setBusy(false);
     }
   };
@@ -130,29 +143,49 @@ export const Home = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={8} alignItems="center">
+          {/* Swapped Grid for Stack */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={{ xs: 6, md: 8 }}
+            alignItems="center"
+            justifyContent="space-between"
+          >
             {/* --- LEFT COLUMN: Guest Gateway --- */}
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ width: '100%', maxWidth: { md: '550px' } }}>
               {error && (
                 <Alert
                   severity="error"
                   onClose={() => setError(null)}
-                  sx={{ mb: 2 }}
+                  sx={{
+                    mb: 3,
+                    borderRadius: 2,
+                    // Slightly softer error styling
+                    border: '1px solid rgba(244, 67, 54, 0.3)',
+                    bgcolor: 'rgba(244, 67, 54, 0.05)',
+                  }}
                 >
                   {error}
                 </Alert>
               )}
 
               <GuestView busy={busy} onAuth={handleAuth} />
-            </Grid>
+            </Box>
 
             {/* --- RIGHT COLUMN: Brand Visual --- */}
+            {/* Using Box flex to center the visual in its 'lane' */}
             {!isMobile && (
-              <Grid size={{ md: 6 }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
+                }}
+              >
                 <HomeVisual />
-              </Grid>
+              </Box>
             )}
-          </Grid>
+          </Stack>
         </Container>
       </Box>
     </>

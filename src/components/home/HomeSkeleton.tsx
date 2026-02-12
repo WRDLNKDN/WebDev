@@ -1,4 +1,4 @@
-import { Box, Container, Grid, Skeleton, Stack } from '@mui/material';
+import { Box, Container, Skeleton, Stack } from '@mui/material';
 
 export const HomeSkeleton = () => {
   return (
@@ -7,83 +7,84 @@ export const HomeSkeleton = () => {
         minHeight: 'calc(100vh - 64px)',
         display: 'flex',
         alignItems: 'center',
-        bgcolor: '#05070f', // Match the Home.tsx background
+        bgcolor: '#05070f', // Matches Home.tsx
         overflow: 'hidden',
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={8} alignItems="center">
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={{ xs: 6, md: 8 }}
+          alignItems="center"
+          justifyContent="space-between"
+        >
           {/* --- LEFT COLUMN: Text & Buttons --- */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Stack
-              spacing={4}
-              sx={{ maxWidth: 520, mx: { xs: 'auto', md: 0 } }}
-            >
-              {/* Title Lines */}
-              <Box>
-                <Skeleton
-                  variant="text"
-                  width="80%"
-                  height={80}
-                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', mb: 1 }}
-                />
-                <Skeleton
-                  variant="text"
-                  width="50%"
-                  height={80}
-                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', mb: 2 }}
-                />
-
-                {/* Subtitle */}
-                <Skeleton
-                  variant="text"
-                  width="90%"
-                  height={30}
-                  sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}
-                />
-              </Box>
-
-              {/* Action Buttons (Pill Shapes) */}
-              <Stack spacing={2} sx={{ pt: 2 }}>
-                <Skeleton
-                  variant="rounded"
-                  height={56}
-                  width="100%"
-                  sx={{ borderRadius: 10, bgcolor: 'rgba(255,255,255,0.1)' }}
-                />
-                <Skeleton
-                  variant="rounded"
-                  height={56}
-                  width="100%"
-                  sx={{ borderRadius: 10, bgcolor: 'rgba(255,255,255,0.05)' }}
-                />
-              </Stack>
-            </Stack>
-          </Grid>
-
-          {/* --- RIGHT COLUMN: The Circular Halo --- */}
-          <Grid
-            size={{ md: 6, xs: 12 }}
-            sx={{ display: { xs: 'none', md: 'block' } }}
-          >
-            <Box
+          <Box sx={{ width: '100%', maxWidth: { md: '550px' } }}>
+            {/* Title Lines */}
+            <Skeleton
+              variant="text"
+              width="90%"
+              height={90}
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 600,
+                bgcolor: 'rgba(255,255,255,0.05)',
+                transform: 'scale(1, 0.8)',
               }}
-            >
-              {/* Big Circular Shimmer to mimic the Halo/Weirdling */}
-              <Skeleton
-                variant="circular"
-                width={500}
-                height={500}
-                sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}
-              />
-            </Box>
-          </Grid>
-        </Grid>
+            />
+            <Skeleton
+              variant="text"
+              width="60%"
+              height={90}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.05)',
+                transform: 'scale(1, 0.8)',
+                mb: 2,
+              }}
+            />
+
+            {/* Subtitle Lines */}
+            <Skeleton
+              variant="text"
+              width="80%"
+              height={30}
+              sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}
+            />
+            <Skeleton
+              variant="text"
+              width="65%"
+              height={30}
+              sx={{ bgcolor: 'rgba(255,255,255,0.03)', mb: 4 }}
+            />
+
+            {/* Auth Box Skeleton (The Glass Panel) */}
+            <Skeleton
+              variant="rounded"
+              width={320}
+              height={180} // Height of the Paper containing 2 buttons + padding
+              sx={{
+                borderRadius: 4,
+                bgcolor: 'rgba(255,255,255,0.05)',
+                mx: { xs: 'auto', md: 0 }, // Centers on mobile to match GuestView
+              }}
+            />
+          </Box>
+
+          {/* --- RIGHT COLUMN: The Visual --- */}
+          {/* Hidden on mobile to match the conditional rendering in Home.tsx */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              flex: 1,
+              justifyContent: 'center',
+            }}
+          >
+            <Skeleton
+              variant="rounded"
+              width={500}
+              height={400}
+              sx={{ borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)' }}
+            />
+          </Box>
+        </Stack>
       </Container>
     </Box>
   );

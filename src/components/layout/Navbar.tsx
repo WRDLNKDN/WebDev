@@ -171,8 +171,10 @@ export const Navbar = () => {
             </Button>
 
             <Button
-              component={RouterLink}
-              to="/store"
+              component="a"
+              href="https://wrdlnkdn.com/store-1"
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{ color: 'text.secondary', '&:hover': { color: 'white' } }}
             >
               Store

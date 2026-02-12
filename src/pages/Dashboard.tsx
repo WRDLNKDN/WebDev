@@ -110,11 +110,6 @@ export const Dashboard = () => {
       ? (profile.nerd_creds as unknown as NerdCreds)
       : ({} as NerdCreds);
 
-  const statusEmoji = safeStr(safeNerdCreds.status_emoji, '⚡');
-  const statusMessage = safeStr(
-    safeNerdCreds.status_message,
-    'Charging: Focused on MVP',
-  );
   const bio = safeStr(
     safeNerdCreds.bio,
     '"Building the Human OS. Prioritizing authenticity over engagement metrics."',
@@ -139,8 +134,6 @@ export const Dashboard = () => {
           tagline={tagline}
           bio={bio}
           avatarUrl={avatarUrl}
-          statusEmoji={statusEmoji}
-          statusMessage={statusMessage}
           actions={
             <>
               <Button

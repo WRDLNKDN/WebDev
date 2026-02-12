@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { DirectoryCard } from '../components/directory/DirectoryCard';
 import { supabase } from '../lib/supabaseClient';
 import { safeStr } from '../utils/stringUtils';
@@ -42,10 +42,13 @@ const getTagline = (nerdCreds: unknown): string => {
 };
 
 export const Directory = () => {
+  /** Search term from URL so navbar search and "Discover People" links land with ?q= pre-filled and filtered. */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get('q') ?? '';
+
   const [rows, setRows] = useState<DirectoryProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -151,7 +154,15 @@ export const Directory = () => {
                 fullWidth
                 placeholder="Search by name, handle, or tagline..."
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    if (v.trim()) next.set('q', v.trim());
+                    else next.delete('q');
+                    return next;
+                  });
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">

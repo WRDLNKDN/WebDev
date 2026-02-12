@@ -5,6 +5,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useParams,
   useSearchParams,
 } from 'react-router-dom';
 
@@ -51,6 +52,10 @@ const Community = lazy(() =>
 
 const Platform = lazy(() =>
   import('./pages/Platform').then((m) => ({ default: m.Platform })),
+);
+
+const Directory = lazy(() =>
+  import('./pages/Directory').then((m) => ({ default: m.Directory })),
 );
 
 const WeirdlingCreate = lazy(() =>
@@ -139,6 +144,12 @@ const AuthBoot = () => {
   return null;
 };
 
+/** Legacy: redirect /u/:handle to canonical /profile/:handle (IA) */
+const RedirectUToProfile = () => {
+  const { handle } = useParams<{ handle: string }>();
+  return <Navigate to={`/profile/${handle ?? ''}`} replace />;
+};
+
 const App = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -168,14 +179,12 @@ const App = () => {
             <Route path="/bumper" element={<BumperPage />} />
 
             <Route element={<Layout />}>
-              {/* --- Public Access --- */}
+              {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
               <Route path="/" element={<Home />} />
-              <Route path="/u/:handle" element={<LandingPage />} />
+              <Route path="/profile/:handle" element={<LandingPage />} />
+              <Route path="/u/:handle" element={<RedirectUToProfile />} />
               <Route path="/home" element={<Home />} />
-              <Route
-                path="/directory"
-                element={<Navigate to="/feed" replace />}
-              />
+              <Route path="/directory" element={<Directory />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/store" element={<Store />} />
               <Route path="/about" element={<About />} />

@@ -17,6 +17,10 @@ interface GuestViewProps {
   buttonsOnly?: boolean;
 }
 
+/**
+ * Hero guest block: IF buttonsOnly → just Join (Google/Microsoft) + Explore Feed;
+ * ELSE → "Connection in motion." + subtext + same buttons (centered).
+ */
 export const GuestView = ({
   busy,
   onAuth,
@@ -53,7 +57,7 @@ export const GuestView = ({
 
       {/* Secondary: Microsoft */}
       <Button
-        variant="text"
+        variant="outlined"
         size="large"
         fullWidth
         startIcon={<MicrosoftIcon />}
@@ -62,26 +66,58 @@ export const GuestView = ({
         sx={{
           borderRadius: 20,
           height: 56,
+          fontSize: '1rem',
           textTransform: 'none',
-          color: 'text.secondary',
-          '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+          borderColor: 'rgba(255,255,255,0.35)',
+          color: 'white',
+          bgcolor: 'rgba(255,255,255,0.04)',
+          '&:hover': {
+            borderColor: 'rgba(255,255,255,0.6)',
+            bgcolor: 'rgba(255,255,255,0.08)',
+          },
         }}
       >
         Sign in with Microsoft
+      </Button>
+      {/* Explore Feed: clearly a button */}
+      <Button
+        component={RouterLink}
+        to="/feed"
+        variant="outlined"
+        size="large"
+        fullWidth
+        sx={{
+          borderRadius: 20,
+          height: 56,
+          fontSize: '1rem',
+          textTransform: 'none',
+          borderColor: 'rgba(255,255,255,0.3)',
+          color: 'rgba(255,255,255,0.9)',
+          bgcolor: 'transparent',
+          '&:hover': {
+            borderColor: 'rgba(255,255,255,0.6)',
+            bgcolor: 'rgba(255,255,255,0.06)',
+          },
+        }}
+      >
+        Explore Feed
       </Button>
     </Stack>
   );
 
   if (buttonsOnly) {
     return (
-      <Stack spacing={4} sx={{ maxWidth: 420, mx: 'auto', width: '100%' }}>
+      <Stack
+        spacing={4}
+        sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
+      >
         {buttons}
       </Stack>
     );
   }
 
   return (
-    <Stack spacing={4} sx={{ maxWidth: 520, mx: { xs: 'auto', md: 0 } }}>
+    <Stack spacing={4} sx={{ maxWidth: 520, mx: 'auto', textAlign: 'center' }}>
       <Box>
         <Typography
           variant="h1"
@@ -104,7 +140,7 @@ export const GuestView = ({
       </Box>
 
       {/* Primary CTA: Join */}
-      <Stack spacing={2} sx={{ pt: 2 }}>
+      <Stack spacing={2} sx={{ pt: 2, alignItems: 'stretch' }}>
         <Button
           variant="outlined"
           size="large"
@@ -137,7 +173,7 @@ export const GuestView = ({
 
         {/* Secondary: Microsoft */}
         <Button
-          variant="text"
+          variant="outlined"
           size="large"
           fullWidth
           startIcon={<MicrosoftIcon />}
@@ -146,25 +182,38 @@ export const GuestView = ({
           sx={{
             borderRadius: 20,
             height: 56,
+            fontSize: '1rem',
             textTransform: 'none',
-            color: 'text.secondary',
-            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+            borderColor: 'rgba(255,255,255,0.35)',
+            color: 'white',
+            bgcolor: 'rgba(255,255,255,0.04)',
+            '&:hover': {
+              borderColor: 'rgba(255,255,255,0.6)',
+              bgcolor: 'rgba(255,255,255,0.08)',
+            },
           }}
         >
           Sign in with Microsoft
         </Button>
-        {/* Secondary CTA: Explore Feed */}
+        {/* Explore Feed: clearly a button */}
         <Button
           component={RouterLink}
           to="/feed"
-          variant="text"
+          variant="outlined"
           size="large"
           fullWidth
           sx={{
             borderRadius: 20,
+            height: 56,
+            fontSize: '1rem',
             textTransform: 'none',
-            color: 'text.secondary',
-            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+            borderColor: 'rgba(255,255,255,0.3)',
+            color: 'rgba(255,255,255,0.9)',
+            bgcolor: 'transparent',
+            '&:hover': {
+              borderColor: 'rgba(255,255,255,0.6)',
+              bgcolor: 'rgba(255,255,255,0.06)',
+            },
           }}
         >
           Explore Feed

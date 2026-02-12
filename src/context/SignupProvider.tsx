@@ -121,13 +121,22 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  /** Map Supabase/backend errors to user-facing messages. */
+  /** Contact email shown when we can't fix the issue (database/schema/config). */
+  const SUPPORT_EMAIL = 'wrdlnkdn@gmail.com';
+
+  /**
+   * Map Supabase/backend errors to user-facing messages. Never show raw technical
+   * errors (e.g. "Invalid schema: public"); always show a friendly message and
+   * point to support email when appropriate.
+   */
   const toFriendlyMessage = useCallback(
     (err: { code?: string; message?: string; details?: string }): string => {
       const code = err.code;
       const msg = (err.message ?? '').toLowerCase();
       const details = (err.details ?? '').toLowerCase();
+      const combined = `${msg} ${details}`;
 
+      // Already signed up / duplicate profile
       if (
         code === '42501' ||
         msg.includes('policy') ||
@@ -142,7 +151,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           details.includes('id') ||
           msg.includes('profiles_pkey')
         ) {
-          return 'You already have a profile. Go to Feed or Directory to get started.';
+          return 'You already have a profile. Go to Feed to get started.';
         }
         return 'That display name is already taken. Try a different display name.';
       }
@@ -152,12 +161,80 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       if (code === '23503') {
         return 'Your session may have expired. Please sign in again and try again.';
       }
-      if (err.message && err.message.length > 0 && err.message.length < 200) {
-        return err.message;
+
+      // Schema / config / backend errors — never show raw "Invalid schema: public" etc.
+      if (
+        combined.includes('invalid schema') ||
+        combined.includes('schema:') ||
+        (combined.includes('relation') &&
+          combined.includes('does not exist')) ||
+        combined.includes('permission denied') ||
+        combined.includes('configuration')
+      ) {
+        return `We're having a technical issue on our side. Please try again in a few minutes, or email us at ${SUPPORT_EMAIL} if it keeps happening.`;
       }
-      return 'Registration failed. Please try again.';
+
+      // Network / timeout / server errors
+      if (
+        code === 'PGRST301' ||
+        msg.includes('fetch') ||
+        msg.includes('network') ||
+        msg.includes('timeout')
+      ) {
+        return (
+          "We couldn't reach our servers. Check your connection and try again, or email us at " +
+          SUPPORT_EMAIL +
+          ' if it keeps happening.'
+        );
+      }
+
+      // Only pass through messages we explicitly threw (user-facing)
+      const raw = (err.message ?? '').trim();
+      if (
+        raw.length > 0 &&
+        raw.length < 200 &&
+        (raw.startsWith('You already have') ||
+          raw.startsWith('That display name') ||
+          raw.startsWith('Required profile') ||
+          raw.startsWith('Your session') ||
+          raw.startsWith('You must be signed in'))
+      ) {
+        return raw;
+      }
+
+      return `Something went wrong. Please try again or email us at ${SUPPORT_EMAIL} for help.`;
     },
     [],
+  );
+
+  /** Use in catch: turn unknown thrown value into a user-facing message. */
+  const toFriendlyMessageFromUnknown = useCallback(
+    (e: unknown): string => {
+      if (e instanceof Error) {
+        const msg = e.message.trim();
+        if (
+          msg.startsWith('You already have') ||
+          msg.startsWith('That display name') ||
+          msg.startsWith('Required profile') ||
+          msg.startsWith('Your session') ||
+          msg.startsWith('You must be signed in') ||
+          msg.includes(SUPPORT_EMAIL)
+        ) {
+          return msg;
+        }
+        return toFriendlyMessage({ message: msg });
+      }
+      const o = e as Record<string, unknown> | null;
+      if (o && typeof o === 'object' && (o.message != null || o.code != null)) {
+        return toFriendlyMessage({
+          message: String(o.message ?? ''),
+          code: o.code != null ? String(o.code) : undefined,
+          details: o.details != null ? String(o.details) : undefined,
+        });
+      }
+      return `Something went wrong. Please try again or email us at ${SUPPORT_EMAIL} for help.`;
+    },
+    [toFriendlyMessage],
   );
 
   // Accept profile data as parameter to avoid stale state
@@ -242,11 +319,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         );
       } catch (e: unknown) {
         console.error('❌ Registration error:', e);
-        const msg =
-          e instanceof Error
-            ? e.message
-            : 'Registration failed. Please try again.';
-        setSubmitError(msg);
+        setSubmitError(toFriendlyMessageFromUnknown(e));
         throw e;
       } finally {
         setSubmitting(false);
@@ -258,6 +331,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       state.values,
       state.profile,
       toFriendlyMessage,
+      toFriendlyMessageFromUnknown,
     ],
   );
 

@@ -17,6 +17,7 @@ import {
 } from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
 
+/** After Join: IF bumper already shown this session → go to Feed; ELSE → show bumper then redirect. */
 const BUMPER_FROM_JOIN = '/bumper?from=join&next=/feed';
 
 export const CompleteStep = () => {
@@ -32,6 +33,7 @@ export const CompleteStep = () => {
     }
   }, [navigate, resetSignup]);
 
+  // Auto-advance after 2.5s (or on button click) using the same IF/ELSE above
   useEffect(() => {
     const timer = window.setTimeout(goToFeedOrBumper, 2500);
     return () => window.clearTimeout(timer);

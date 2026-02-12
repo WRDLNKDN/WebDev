@@ -367,8 +367,8 @@ export const EditProfileDialog = ({
                           ? 'ACCESS_DENIED: Handle already in use.'
                           : checkingHandle
                             ? 'AUDITING...'
-                            : 'Your public link: /u/' +
-                              (formData.handle || 'handle')
+                            : 'Your public link: /profile/' +
+                              (formData.handle || 'handle') // canonical route per IA
                       }
                       onChange={(e) => {
                         const val = e.target.value

@@ -1,6 +1,6 @@
 /**
  * WRDLNKDN bumper: full-screen intro/outro. Solid black; centered stack:
- * WRDLNKDN → phonetic (WEIRD-LINK-DIN) → tagline → Weirdling character.
+ * WRDLNKDN → phonetic (Weird Link-uh-din) → tagline → Weirdling character.
  */
 
 import './bumperKeyframes.css';
@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
 
-const PHONETIC = 'WEIRD-LINK-DIN';
+const PHONETIC = '(Weird Link-uh-din)';
 const TAGLINE = 'Business, but Weirder.';
 const TYPING_MS = 80;
 const POP_DELAY_MS = 400;
@@ -121,12 +121,11 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
           </Typography>
         </Box>
 
-        {/* Phonetic pronunciation (italic) */}
+        {/* Phonetic pronunciation */}
         <Typography
           component="span"
           sx={{
             color: 'rgba(255,255,255,0.9)',
-            fontStyle: 'italic',
             letterSpacing: '0.12em',
             fontSize: { xs: '0.75rem', md: '0.85rem' },
           }}

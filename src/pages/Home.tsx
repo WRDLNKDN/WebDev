@@ -216,7 +216,7 @@ export const Home = () => {
                 WRDLNKDN
               </Typography>
 
-              {/* Tagline stack: pronunciation, Business But Weirder, long tagline */}
+              {/* Tagline stack: pronunciation, Business but weirder, long tagline */}
               <Stack spacing={0.5} sx={{ maxWidth: 420, alignItems: 'center' }}>
                 <Typography
                   variant="subtitle2"
@@ -224,7 +224,6 @@ export const Home = () => {
                     color: 'rgba(255,255,255,0.85)',
                     letterSpacing: '0.12em',
                     fontSize: '0.75rem',
-                    fontStyle: 'italic',
                   }}
                 >
                   (Weird Link-uh-din)
@@ -234,10 +233,9 @@ export const Home = () => {
                   sx={{
                     color: 'primary.light',
                     fontWeight: 600,
-                    fontStyle: 'italic',
                   }}
                 >
-                  Business, But Weirder
+                  Business, but weirder
                 </Typography>
                 <Typography
                   variant="body1"

@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
 
 const PHONETIC = '(Weird Link-uh-din)';
-const TAGLINE = 'Business, but Weirder.';
+const TAGLINE = 'Business, but weirder';
 const TYPING_MS = 80;
 const POP_DELAY_MS = 400;
 const TAGLINE_START_MS = 800;

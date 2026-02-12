@@ -75,20 +75,19 @@ export const ValuesStep = () => {
         <Stack spacing={4}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
-              Intent
+              Your Intent
             </Typography>
             <Typography variant="body2" sx={signupStepSubtext}>
-              Help us understand why you&apos;re here and how you plan to
-              participate.
+              Tell us why you&apos;re here and how you plan to show up.
             </Typography>
           </Box>
 
           <Box>
             <Typography variant="h6" sx={valuesStepSectionTitle}>
-              Why are you joining?
+              What brings you here?
             </Typography>
             <Typography variant="body2" sx={valuesStepSectionSubtext}>
-              Select all that apply
+              Select all that apply.
             </Typography>
 
             <FormGroup>
@@ -111,10 +110,10 @@ export const ValuesStep = () => {
 
           <Box>
             <Typography variant="h6" sx={valuesStepSectionTitle}>
-              How do you plan to participate?
+              How will you participate?
             </Typography>
             <Typography variant="body2" sx={valuesStepSectionSubtext}>
-              Select all that apply
+              Select all that apply.
             </Typography>
 
             <FormGroup>
@@ -137,7 +136,7 @@ export const ValuesStep = () => {
 
           <Box>
             <Typography variant="h6" sx={valuesStepSectionTitle}>
-              Anything else we should know? (Optional)
+              Anything else you&apos;d like us to know? (Optional)
             </Typography>
             <TextField
               multiline

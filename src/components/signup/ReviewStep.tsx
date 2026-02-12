@@ -46,7 +46,7 @@ export const ReviewStep = () => {
 
       <Box sx={reviewStepSection}>
         <Typography variant="subtitle2" sx={reviewStepSectionTitle}>
-          Intent
+          Your Intent
         </Typography>
         <Typography variant="body2">
           <strong>Join reason:</strong>{' '}

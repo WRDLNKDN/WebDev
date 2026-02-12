@@ -25,7 +25,7 @@ const STEP_ORDER: SignupStep[] = ['welcome', 'identity', 'values', 'profile'];
 const STEP_LABELS: Record<SignupStep, string> = {
   welcome: 'Welcome',
   identity: 'Sign in',
-  values: 'Intent',
+  values: 'Your Intent',
   profile: 'Profile',
   complete: 'Complete',
 };

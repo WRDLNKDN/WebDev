@@ -111,7 +111,12 @@ export const AddProjectDialog = ({
   const handleSubmit = async () => {
     try {
       setBusy(true);
-      await onSubmit(formData, selectedFile);
+      // Include any current tech input that wasn't yet added with Enter
+      const techWithInput =
+        techInput.trim() && !formData.tech_stack.includes(techInput.trim())
+          ? [...formData.tech_stack, techInput.trim()]
+          : formData.tech_stack;
+      await onSubmit({ ...formData, tech_stack: techWithInput }, selectedFile);
       // Reset form
       setFormData({
         title: '',
@@ -206,7 +211,7 @@ export const AddProjectDialog = ({
                     sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Upload Screenshot (required)
+                    Upload Screenshot (optional)
                   </Typography>
                 </>
               )}
@@ -274,8 +279,8 @@ export const AddProjectDialog = ({
                     variant="filled"
                     size="small"
                     helperText={
-                      formData.tech_stack.length === 0
-                        ? 'Add at least one tech'
+                      formData.tech_stack.length === 0 && !techInput.trim()
+                        ? 'Type at least one tech (or press Enter to add multiple)'
                         : undefined
                     }
                   />
@@ -318,8 +323,7 @@ export const AddProjectDialog = ({
               !formData.title.trim() ||
               !formData.description.trim() ||
               !formData.project_url.trim() ||
-              formData.tech_stack.length === 0 ||
-              !selectedFile
+              (formData.tech_stack.length === 0 && !techInput.trim())
             }
             startIcon={<SaveIcon />}
             sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}

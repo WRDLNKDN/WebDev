@@ -34,6 +34,13 @@ Do **not** set `VITE_API_URL` in `.env` for local dev so the app uses the proxy.
 Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and (optional) `ADMIN_TOKEN` in
 Vercel for the API.
 
+**Feed 500 errors:** If `/api/feeds` returns 500, the hosted Supabase project
+likely doesn’t have the feed schema. Run the migrations on your **hosted**
+project (see `supabase/README.md` → “Hosted / SQL Editor”): apply
+`migrations/20260121180000_tables.sql` then `migrations/20260121180005_rls.sql`
+in the Supabase Dashboard SQL Editor. That creates `feed_items`,
+`feed_connections`, and the `get_feed_page` RPC used by the API.
+
 ## Structure
 
 - `app.ts` — Express app (routes, middleware), exported for use by `server.ts`

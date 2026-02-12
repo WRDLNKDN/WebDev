@@ -19,6 +19,8 @@ import {
   saveWeirdlingByJobId,
   saveWeirdlingPreview,
 } from '../../lib/weirdlingApi';
+import { createAvatar } from '@dicebear/core';
+import { bottts } from '@dicebear/collection';
 import type {
   WeirdlingPreview,
   WeirdlingWizardInputs,
@@ -34,11 +36,14 @@ const ROLE_VIBES = [
   'Architect',
 ];
 
+/** Path A: pick from preset. Path B: create your own (generate). */
+type WeirdlingPath = 'choice' | 'pick' | 'generate';
+
 const STEPS = [
   'Name & handle',
   'Role & interests',
   'Tone & boundaries',
-  'Optional',
+  'Generate',
 ];
 
 /** Thumbnail grid for picking a Weirdling image (1..N). */
@@ -103,10 +108,41 @@ const WeirdlingThumbnailGrid = ({
   );
 };
 
-export const WeirdlingCreate = () => {
+export interface WeirdlingCreateProps {
+  /** When provided, wizard runs in dialog mode: call these instead of navigating. */
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export const WeirdlingCreate = ({
+  onClose,
+  onSuccess,
+}: WeirdlingCreateProps = {}) => {
   const navigate = useNavigate();
+  const isDialog = onClose != null || onSuccess != null;
   const [session, setSession] = useState<Session | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+
+  const [path, setPath] = useState<WeirdlingPath>('choice');
+  const [step, setStep] = useState(0);
+  const [inputs, setInputs] = useState<WeirdlingWizardInputs>({
+    displayNameOrHandle: '',
+    roleVibe: '',
+    industryOrInterests: [],
+    tone: 0.5,
+    boundaries: '',
+    bioSeed: '',
+    includeImage: true,
+    imageSource: 'preset',
+    selectedImageIndex: 1,
+  });
+  const [industryText, setIndustryText] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [selectedImageIndex, setSelectedImageIndex] = useState(1);
+  const [preview, setPreview] = useState<WeirdlingPreview | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,28 +164,12 @@ export const WeirdlingCreate = () => {
 
   useEffect(() => {
     if (!sessionChecked) return;
-    if (!session) navigate('/', { replace: true });
-  }, [sessionChecked, session, navigate]);
+    if (!session) {
+      if (onClose) onClose();
+      else navigate('/', { replace: true });
+    }
+  }, [sessionChecked, session, navigate, onClose]);
 
-  const [step, setStep] = useState(0);
-  const [inputs, setInputs] = useState<WeirdlingWizardInputs>({
-    displayNameOrHandle: '',
-    roleVibe: '',
-    industryOrInterests: [],
-    tone: 0.5,
-    boundaries: '',
-    bioSeed: '',
-    includeImage: true,
-    selectedImageIndex: 1,
-  });
-  /** Raw string for step 1 industry/interests so comma-separated input isn't cleared on every keystroke. */
-  const [industryText, setIndustryText] = useState('');
-  const [preview, setPreview] = useState<WeirdlingPreview | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // When entering step 1, show existing industry/interests as comma-separated
   useEffect(() => {
     if (step === 1) {
       setIndustryText(inputs.industryOrInterests.join(', '));
@@ -166,13 +186,26 @@ export const WeirdlingCreate = () => {
     setError(null);
     try {
       const result = await generateWeirdling(inputs, jobId ?? undefined);
-      const previewWithImage =
-        inputs.includeImage && inputs.selectedImageIndex != null
-          ? {
-              ...result.preview,
-              avatarUrl: `/assets/og_weirdlings/weirdling_${inputs.selectedImageIndex}.png`,
-            }
-          : result.preview;
+      const usePresetImage =
+        inputs.includeImage &&
+        inputs.imageSource === 'preset' &&
+        inputs.selectedImageIndex != null;
+      let previewWithImage = usePresetImage
+        ? {
+            ...result.preview,
+            avatarUrl: `/assets/og_weirdlings/weirdling_${inputs.selectedImageIndex}.png`,
+          }
+        : result.preview;
+      // Generate avatar image with DiceBear when user chose "Create one"
+      if (
+        inputs.includeImage &&
+        inputs.imageSource === 'generate' &&
+        result.preview.handle
+      ) {
+        const seed = `${result.preview.handle}|${result.preview.roleVibe}`;
+        const dataUri = createAvatar(bottts, { seed }).toDataUri();
+        previewWithImage = { ...previewWithImage, avatarUrl: dataUri };
+      }
       setPreview(previewWithImage);
       setJobId(result.jobId);
     } catch (e) {
@@ -182,17 +215,20 @@ export const WeirdlingCreate = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSavePreview = async () => {
     if (!preview) return;
     setLoading(true);
     setError(null);
     try {
-      if (jobId) {
-        await saveWeirdlingByJobId(jobId);
-      } else {
+      // When avatar is generated (data URI), save full preview so image is persisted
+      const hasGeneratedImage = preview.avatarUrl?.startsWith('data:');
+      if (hasGeneratedImage || !jobId) {
         await saveWeirdlingPreview(preview);
+      } else {
+        await saveWeirdlingByJobId(jobId);
       }
-      navigate('/dashboard');
+      if (onSuccess) onSuccess();
+      else navigate('/dashboard');
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -200,21 +236,49 @@ export const WeirdlingCreate = () => {
     }
   };
 
-  const handleRegenerate = () => {
-    setPreview(null);
-    handleGenerate();
-  };
-
-  const handleEdit = () => {
-    setPreview(null);
-    setStep(0);
+  const handleSavePick = async () => {
+    const name = displayName.trim() || 'My Weirdling';
+    const handle =
+      name.toLowerCase().replace(/\W+/g, '_').slice(0, 32) || 'weirdling';
+    const idx = selectedImageIndex ?? 1;
+    const previewPayload: WeirdlingPreview = {
+      displayName: name,
+      handle,
+      roleVibe: 'Builder',
+      industryTags: [],
+      tone: 0.5,
+      tagline: 'Picked from the set',
+      boundaries: '',
+      avatarUrl: `/assets/og_weirdlings/weirdling_${idx}.png`,
+      promptVersion: 'pick',
+      modelVersion: 'preset',
+    };
+    setLoading(true);
+    setError(null);
+    try {
+      await saveWeirdlingPreview(previewPayload);
+      if (onSuccess) onSuccess();
+      else navigate('/dashboard');
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    navigate('/dashboard');
+    if (onClose) onClose();
+    else navigate('/dashboard');
   };
 
   if (!sessionChecked || !session) {
+    if (isDialog) {
+      return (
+        <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+          <CircularProgress size={40} aria-label="Loading" />
+        </Box>
+      );
+    }
     return (
       <Box
         sx={{
@@ -230,7 +294,7 @@ export const WeirdlingCreate = () => {
     );
   }
 
-  // Step 0: name/handle
+  // Step content for generate path
   const step0 = (
     <Stack spacing={2}>
       <TextField
@@ -243,7 +307,6 @@ export const WeirdlingCreate = () => {
     </Stack>
   );
 
-  // Step 1: role + interests — industryText is raw string so commas aren't stripped while typing
   const step1 = (
     <Stack spacing={2}>
       <Typography variant="subtitle2">Role vibe</Typography>
@@ -276,7 +339,6 @@ export const WeirdlingCreate = () => {
     </Stack>
   );
 
-  // Step 2: tone + boundaries
   const step2 = (
     <Stack spacing={2}>
       <Typography variant="subtitle2">
@@ -301,50 +363,25 @@ export const WeirdlingCreate = () => {
     </Stack>
   );
 
-  // Step 3: optional + image choice
-  const step3 = (
+  const step3Generate = (
     <Stack spacing={2}>
-      <TextField
-        label="Optional: short bio seed"
-        value={inputs.bioSeed ?? ''}
-        onChange={(e) => handleInput('bioSeed', e.target.value)}
-        fullWidth
-        multiline
-        rows={2}
-      />
-      <Button
-        variant={inputs.includeImage ? 'contained' : 'outlined'}
-        onClick={() => handleInput('includeImage', !inputs.includeImage)}
-      >
-        {inputs.includeImage ? 'Include image' : 'No image'}
-      </Button>
-      {inputs.includeImage && (
-        <Stack spacing={1}>
-          <Typography variant="subtitle2">Pick my Weirdling</Typography>
-          <WeirdlingThumbnailGrid
-            value={inputs.selectedImageIndex ?? 1}
-            onChange={(n) => handleInput('selectedImageIndex', n)}
-            size={52}
-            columns={6}
-          />
-        </Stack>
-      )}
+      <Typography variant="body1" color="text.secondary">
+        We&apos;ll create your Weirdling from your name, role, and tone. Click
+        Generate to create it.
+      </Typography>
     </Stack>
   );
 
-  const stepsContent = [step0, step1, step2, step3];
+  const stepsContent = [step0, step1, step2, step3Generate];
 
+  // Preview screen (after generate)
   if (preview) {
-    const previewImageIndex =
-      preview.avatarUrl != null
-        ? (() => {
-            const m = preview.avatarUrl.match(/weirdling_(\d+)\.png$/);
-            return m ? Number(m[1]) : (inputs.selectedImageIndex ?? 1);
-          })()
-        : (inputs.selectedImageIndex ?? 1);
+    const previewImageSrc =
+      preview.avatarUrl ??
+      `/assets/og_weirdlings/weirdling_${inputs.selectedImageIndex ?? 1}.png`;
 
     return (
-      <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Container maxWidth="sm" sx={{ py: isDialog ? 2 : 4 }}>
         <Typography variant="h5" component="h1" gutterBottom>
           Your Weirdling preview
         </Typography>
@@ -366,10 +403,7 @@ export const WeirdlingCreate = () => {
             <Box sx={{ flex: '0 0 auto' }}>
               <Box
                 component="img"
-                src={
-                  preview.avatarUrl ??
-                  `/assets/og_weirdlings/weirdling_${previewImageIndex}.png`
-                }
+                src={previewImageSrc}
                 alt={`${preview.displayName} Weirdling`}
                 sx={{
                   width: '100%',
@@ -378,25 +412,6 @@ export const WeirdlingCreate = () => {
                   borderRadius: 2,
                   display: 'block',
                 }}
-              />
-              <Typography variant="subtitle2" sx={{ mt: 1.5, mb: 0.5 }}>
-                Choose image
-              </Typography>
-              <WeirdlingThumbnailGrid
-                value={previewImageIndex}
-                onChange={(n) => {
-                  setPreview((p) =>
-                    p
-                      ? {
-                          ...p,
-                          avatarUrl: `/assets/og_weirdlings/weirdling_${n}.png`,
-                        }
-                      : p,
-                  );
-                  setInputs((prev) => ({ ...prev, selectedImageIndex: n }));
-                }}
-                size={48}
-                columns={6}
               />
             </Box>
             <Box sx={{ flex: '1 1 200px' }}>
@@ -429,24 +444,25 @@ export const WeirdlingCreate = () => {
             {error}
           </Alert>
         )}
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          <Button variant="contained" onClick={handleSave} disabled={loading}>
+        <Stack
+          direction="row"
+          spacing={2}
+          justifyContent="space-between"
+          flexWrap="wrap"
+        >
+          <Button
+            variant="contained"
+            onClick={handleSavePreview}
+            disabled={loading}
+          >
             {loading ? 'Saving…' : 'Save'}
           </Button>
           <Button
             variant="outlined"
-            onClick={handleRegenerate}
-            disabled={loading}
-          >
-            Regenerate
-          </Button>
-          <Button variant="outlined" onClick={handleEdit} disabled={loading}>
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            component={RouterLink}
-            to="/dashboard"
+            {...(!isDialog && {
+              component: RouterLink,
+              to: '/dashboard',
+            })}
             onClick={handleCancel}
             disabled={loading}
           >
@@ -457,23 +473,139 @@ export const WeirdlingCreate = () => {
     );
   }
 
+  // Choice screen: Pick a Weirdling vs Create one
+  if (path === 'choice') {
+    return (
+      <Container maxWidth="sm" sx={{ py: isDialog ? 2 : 4 }}>
+        {!isDialog && (
+          <Typography variant="h5" component="h1" gutterBottom>
+            Add my Weirdling
+          </Typography>
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Pick one from the set or create your own.
+        </Typography>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <Stack direction="row" spacing={2} flexWrap="wrap">
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => setPath('pick')}
+            sx={{ minWidth: 180, textTransform: 'none' }}
+          >
+            Pick a Weirdling
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={() => {
+              setPath('generate');
+              setInputs((prev) => ({
+                ...prev,
+                imageSource: 'generate',
+                includeImage: true,
+              }));
+            }}
+            sx={{ minWidth: 180, textTransform: 'none' }}
+          >
+            Generate one
+          </Button>
+        </Stack>
+      </Container>
+    );
+  }
+
+  // Pick path: canned grid + optional name
+  if (path === 'pick') {
+    return (
+      <Container maxWidth="sm" sx={{ py: isDialog ? 2 : 4 }}>
+        {!isDialog && (
+          <Typography variant="h5" component="h1" gutterBottom>
+            Add my Weirdling
+          </Typography>
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Pick a Weirdling
+        </Typography>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <TextField
+            label="Display name (optional)"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            fullWidth
+            placeholder="e.g. My Weirdling"
+          />
+          <WeirdlingThumbnailGrid
+            value={selectedImageIndex}
+            onChange={setSelectedImageIndex}
+            size={64}
+            columns={6}
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Button
+            variant="outlined"
+            onClick={() => setPath('choice')}
+            sx={{ textTransform: 'none' }}
+          >
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSavePick}
+            disabled={loading}
+            sx={{ textTransform: 'none' }}
+          >
+            {loading ? 'Adding…' : 'Add my Weirdling'}
+          </Button>
+        </Stack>
+      </Container>
+    );
+  }
+
+  // Generate path: 4-step wizard
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h5" component="h1" gutterBottom>
-        Create My Weirdling
-      </Typography>
+    <Container maxWidth="sm" sx={{ py: isDialog ? 2 : 4 }}>
+      {!isDialog && (
+        <Typography variant="h5" component="h1" gutterBottom>
+          Add my Weirdling
+        </Typography>
+      )}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Step {step + 1} of {STEPS.length}: {STEPS[step]}
+        {`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}${
+          STEPS[step] === 'Generate' ? '' : ' — Generate'
+        }`}
       </Typography>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
-      <Box sx={{ mb: 3 }}>{stepsContent[step]}</Box>
-      <Stack direction="row" spacing={2}>
-        {step > 0 && (
-          <Button variant="outlined" onClick={() => setStep((s) => s - 1)}>
+      <Box sx={{ mb: 2 }}>{stepsContent[step]}</Box>
+      <Stack direction="row" spacing={2} justifyContent="space-between">
+        {step > 0 ? (
+          <Button
+            variant="outlined"
+            onClick={() => setStep((s) => s - 1)}
+            sx={{ textTransform: 'none' }}
+          >
+            Back
+          </Button>
+        ) : (
+          <Button
+            variant="outlined"
+            onClick={() => setPath('choice')}
+            sx={{ textTransform: 'none' }}
+          >
             Back
           </Button>
         )}
@@ -494,14 +626,16 @@ export const WeirdlingCreate = () => {
               (step === 0 && !inputs.displayNameOrHandle.trim()) ||
               (step === 1 && !inputs.roleVibe)
             }
+            sx={{ textTransform: 'none' }}
           >
-            Next
+            {step === STEPS.length - 2 ? 'Next: Generate' : 'Next'}
           </Button>
         ) : (
           <Button
             variant="contained"
-            onClick={handleGenerate}
+            onClick={() => void handleGenerate()}
             disabled={loading}
+            sx={{ textTransform: 'none' }}
           >
             {loading ? 'Generating…' : 'Generate'}
           </Button>

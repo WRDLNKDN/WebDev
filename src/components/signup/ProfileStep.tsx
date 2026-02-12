@@ -38,7 +38,6 @@ const ProfileStep = () => {
   const [displayName, setDisplayName] = useState(
     state.profile?.displayName ?? '',
   );
-  const [tagline, setTagline] = useState(state.profile?.tagline ?? '');
 
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -64,7 +63,6 @@ const ProfileStep = () => {
 
     const profileData = {
       displayName: displayName.trim(),
-      tagline: tagline.trim(),
     };
 
     setProfile(profileData);
@@ -81,7 +79,6 @@ const ProfileStep = () => {
   const handleBack = () => {
     setProfile({
       displayName: displayName.trim(),
-      tagline: tagline.trim(),
     });
     goToStep('values');
   };
@@ -116,18 +113,6 @@ const ProfileStep = () => {
         helperText="This name will be visible across the community."
         required
         error={!displayName.trim() && displayName.length > 0}
-        sx={profileStepTextField}
-      />
-
-      <TextField
-        label="Tagline or focus"
-        value={tagline}
-        onChange={(e) => setTagline(e.target.value)}
-        fullWidth
-        multiline
-        rows={2}
-        placeholder="One-liner about you (optional)"
-        helperText="Optional: A short description of how you show up, what you care about, or what you're building."
         sx={profileStepTextField}
       />
 

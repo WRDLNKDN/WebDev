@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
   Box,
@@ -7,7 +7,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   FormControl,
   IconButton,
   InputLabel,
@@ -46,9 +45,13 @@ export const EditLinksDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Sync links from profile when dialog opens so we always show latest
   useEffect(() => {
-    if (open) setSaveError(null);
-  }, [open]);
+    if (open) {
+      setSaveError(null);
+      setLinks(Array.isArray(currentLinks) ? [...currentLinks] : []);
+    }
+  }, [open, currentLinks]);
 
   // 2. Form State: The "Add New" inputs
   const [newCategory, setNewCategory] = useState<LinkCategory>('Professional');
@@ -64,22 +67,24 @@ export const EditLinksDialog = ({
   // --- ACTIONS ---
 
   const handleAddLink = () => {
-    if (!newUrl) return;
+    if (!newUrl.trim()) return;
 
+    const platform =
+      newCategory === 'Custom'
+        ? 'Custom'
+        : newPlatform || availablePlatforms[0]?.value || 'Custom';
     const newLinkItem: SocialLink = {
-      id: uuidv4(), // Generate a unique ID for React keys
+      id: uuidv4(),
       category: newCategory,
-      platform: newPlatform || 'Custom',
-      url: newUrl,
-      // If Custom, use user label. If Platform, use Platform name.
-      label: newLabel || newPlatform || 'Link',
+      platform,
+      url: newUrl.trim(),
+      label: newLabel?.trim() || (platform === 'Custom' ? 'Link' : platform),
       isVisible: true,
-      order: links.length, // Append to the end
+      order: links.length,
     };
 
     setLinks([...links, newLinkItem]);
 
-    // Reset the form inputs
     setNewPlatform('');
     setNewUrl('');
     setNewLabel('');
@@ -104,9 +109,21 @@ export const EditLinksDialog = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Manage Links</DialogTitle>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      aria-label="Manage Links"
+    >
+      <IconButton
+        aria-label="Close"
+        onClick={onClose}
+        sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
+      >
+        <CloseIcon />
+      </IconButton>
+      <DialogContent sx={{ pt: 5 }}>
         <Stack spacing={4} sx={{ mt: 1 }}>
           {saveError && (
             <Alert severity="error" onClose={() => setSaveError(null)}>
@@ -221,29 +238,30 @@ export const EditLinksDialog = ({
             )}
 
             {links.map((link) => (
-              <Stack
+              <Box
                 key={link.id}
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
                 sx={{
-                  p: 1.5,
-                  bgcolor: 'background.paper',
-                  borderRadius: 1,
-                  boxShadow: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
+                  p: 2,
+                  borderRadius: 2,
                   border: '1px solid',
                   borderColor: 'divider',
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  '&:hover': {
+                    borderColor: 'rgba(255,255,255,0.2)',
+                  },
                 }}
               >
                 <Stack
                   direction="row"
                   alignItems="center"
                   spacing={2}
-                  sx={{ overflow: 'hidden' }}
+                  sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}
                 >
-                  {/* The Icon Preview */}
                   <LinkIcon platform={link.platform} />
-
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="body2" fontWeight={600} noWrap>
                       {link.label || link.platform}
@@ -261,13 +279,23 @@ export const EditLinksDialog = ({
 
                 <IconButton
                   size="small"
-                  color="error"
                   onClick={() => handleDelete(link.id)}
-                  aria-label="Delete link"
+                  aria-label={`Remove ${link.label || link.platform}`}
+                  sx={{
+                    flexShrink: 0,
+                    p: 0.25,
+                    minWidth: 0,
+                    minHeight: 0,
+                    color: 'error.main',
+                    '&:hover': {
+                      bgcolor: 'error.main',
+                      color: 'error.contrastText',
+                    },
+                  }}
                 >
-                  <DeleteIcon fontSize="small" />
+                  <CloseIcon sx={{ fontSize: 16 }} />
                 </IconButton>
-              </Stack>
+              </Box>
             ))}
           </Stack>
         </Stack>

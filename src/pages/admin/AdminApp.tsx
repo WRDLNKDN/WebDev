@@ -26,18 +26,7 @@ const BG_SX = {
   flexDirection: 'column',
   px: 2,
   py: 6,
-  backgroundColor: '#05070f',
-  backgroundImage: 'url(/assets/landing-bg.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
   overflow: 'hidden',
-  '::before': {
-    content: '""',
-    position: 'absolute',
-    inset: 0,
-    background:
-      'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.85))',
-  },
 };
 
 const CARD_SX = {

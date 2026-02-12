@@ -23,11 +23,13 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
         ...(hasResume ? CANDY_SUCCESS : CANDY_HAZARD),
 
         // Instance-specific overrides
-        minWidth: 320,
+        width: '100%',
+        maxWidth: 360,
+        minHeight: 400,
         height: 400,
         borderRadius: 3,
         scrollSnapAlign: 'start',
-        // NOTE: 'position: relative' is removed because it's in the CANDY spread!
+        position: 'relative',
       }}
     >
       {hasResume ? (
@@ -55,8 +57,8 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
         </>
       )}
 
-      {/* Logic for the invisible upload trigger */}
-      {isOwner && (
+      {/* Logic for the invisible upload trigger - only when no resume yet */}
+      {isOwner && !hasResume && (
         <Button
           component="label"
           sx={{

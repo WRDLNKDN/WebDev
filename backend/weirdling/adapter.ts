@@ -50,9 +50,48 @@ function weirdlingAssetIndex(handle: string, roleVibe: string): number {
 }
 
 /**
+ * Build a short "generated" tagline from role + interests + tone.
+ * Makes Create-one feel like it produced something distinct.
+ */
+function buildTagline(input: WeirdlingGenerateInput): string {
+  if (input.bioSeed && input.bioSeed.trim().length > 0) {
+    return input.bioSeed.trim().slice(0, 200);
+  }
+  const parts: string[] = [input.roleVibe];
+  const interests = input.industryOrInterests.slice(0, 3).filter(Boolean);
+  if (interests.length > 0) {
+    parts.push(interests.join(', '));
+  }
+  const toneLabel =
+    input.tone < 0.33 ? 'serious' : input.tone > 0.66 ? 'absurd' : 'balanced';
+  parts.push(toneLabel);
+  return parts.join(' • ').slice(0, 200);
+}
+
+/**
+ * Build a one-line "generated" bio from name, role, interests, tone.
+ */
+function buildBio(input: WeirdlingGenerateInput, _handle: string): string {
+  const name =
+    input.displayNameOrHandle.trim().slice(0, 64) || 'This Weirdling';
+  const role = input.roleVibe;
+  const interests = input.industryOrInterests.slice(0, 3).filter(Boolean);
+  const interestPhrase =
+    interests.length > 0 ? ` into ${interests.join(', ')}` : '';
+  const tonePhrase =
+    input.tone < 0.33
+      ? ' Keeps it professional.'
+      : input.tone > 0.66
+        ? ' Leans into the chaos.'
+        : ' Mix of focus and fun.';
+  return `${name} is a ${role}${interestPhrase}.${tonePhrase}`.slice(0, 500);
+}
+
+/**
  * Mock adapter: returns structured output using existing public/assets Weirdling images.
- * When includeImage is true, picks one of weirdling_1..N (N = WEIRDLING_ASSET_COUNT) by handle+roleVibe.
- * Replace with real image generation (e.g. DALL·E, Replicate) when provider is chosen.
+ * "Generates" tagline and bio from inputs so Create-one produces distinct content.
+ * When includeImage is true, picks one of weirdling_1..N by handle+roleVibe.
+ * Replace with real LLM/image API when provider is chosen.
  */
 export const mockWeirdlingAdapter: WeirdlingAdapter = {
   async generate(
@@ -63,38 +102,34 @@ export const mockWeirdlingAdapter: WeirdlingAdapter = {
         .replace(/\s+/g, '')
         .toLowerCase()
         .slice(0, 24) || 'weirdling';
-    const tagline = input.bioSeed
-      ? `${input.bioSeed.slice(0, 80)}…`
-      : `${input.roleVibe} • ${input.industryOrInterests.slice(0, 2).join(', ')}`;
+    const displayName =
+      input.displayNameOrHandle.trim().slice(0, 64) || 'Weirdling';
+    const tagline = buildTagline(input);
+    const bio = buildBio(input, handle);
 
     const imageIndex = weirdlingAssetIndex(handle, input.roleVibe);
     const avatarUrl = input.includeImage
       ? `/assets/og_weirdlings/weirdling_${imageIndex + 1}.png`
       : null;
 
-    return {
-      displayName: input.displayNameOrHandle.slice(0, 64) || 'Weirdling',
+    const rawResponse = {
+      displayName,
       handle,
       roleVibe: input.roleVibe,
       industryTags: input.industryOrInterests.slice(0, 10),
       tone: input.tone,
-      tagline: tagline.slice(0, 200),
+      tagline,
       boundaries: input.boundaries.slice(0, 500),
-      bio: input.bioSeed?.slice(0, 500),
+      bio,
       avatarUrl,
+      promptVersion: input.promptVersion,
       modelVersion: MODEL_VERSION,
-      rawResponse: {
-        displayName: input.displayNameOrHandle.slice(0, 64) || 'Weirdling',
-        handle,
-        roleVibe: input.roleVibe,
-        industryTags: input.industryOrInterests.slice(0, 10),
-        tone: input.tone,
-        tagline: tagline.slice(0, 200),
-        boundaries: input.boundaries.slice(0, 500),
-        bio: input.bioSeed?.slice(0, 500),
-        avatarUrl,
-        modelVersion: MODEL_VERSION,
-      },
+    };
+
+    return {
+      ...rawResponse,
+      modelVersion: MODEL_VERSION,
+      rawResponse,
     };
   },
 };

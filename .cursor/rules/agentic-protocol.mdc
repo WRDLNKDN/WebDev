@@ -1,0 +1,17 @@
+---
+description: Follow the Agentic Coding Protocol (Human OS) for this project
+alwaysApply: true
+---
+
+# Agentic Coding Protocol
+
+**Read and follow the project protocol:** [AGENTIC_PROTOCOL.md](/AGENTIC_PROTOCOL.md) at the repo root.
+
+- **Phase 1:** Stay within the stack (MUI, Supabase, React Router). No new libraries without a system audit. Match project tone (e.g. Part-Time Stand-Up Philosopher).
+- **Phase 2:** Treat user requests as IRQs with a clear Definition of Done. Use context (files, errors). Iterate until the solution matches the vision.
+- **Phase 3:** Run relevant tests (e.g. `accessibility.spec.ts`) for UI/a11y changes. Protect legacy patterns and Supabase Auth. Keep UI feeling "Human."
+- **Phase 4:** Suggest commit messages as memos for handoffs. Persist decisions in the repo, not only in chat.
+- **Supabase migrations:** Always exactly two files—one for tables (all DDL: tables, indexes, triggers, FKs), one for RLS (policies and grants). Do not add a third migration; merge changes into the appropriate file.
+- **Human-in-the-loop:** Do not bypass A11y. Do not push to production. Flag sterile output so the human can inject brand voice.
+
+#InOmniaParatus #Verification #HumanOS

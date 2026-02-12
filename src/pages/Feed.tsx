@@ -1,4 +1,3 @@
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
@@ -7,7 +6,6 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import SearchIcon from '@mui/icons-material/Search';
 import {
   Avatar,
   Box,
@@ -37,7 +35,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   addComment,
@@ -634,14 +632,30 @@ export const Feed = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<{
     user: { id: string };
-    user_metadata?: { avatar_url?: string };
+    user_metadata?: { avatar_url?: string; full_name?: string };
   } | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [composerValue, setComposerValue] = useState('');
-  const [sortBy, setSortBy] = useState<'recent'>('recent');
+  type SortOption = 'recent' | 'oldest' | 'most_liked';
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const sortedItems = useMemo(() => {
+    if (sortBy === 'recent') return items;
+    if (sortBy === 'oldest')
+      return [...items].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+    if (sortBy === 'most_liked')
+      return [...items].sort(
+        (a, b) =>
+          (b.like_count ?? 0) - (a.like_count ?? 0) ||
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    return items;
+  }, [items, sortBy]);
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
@@ -656,6 +670,7 @@ export const Feed = () => {
     string | null
   >(null);
   const [shareModalItem, setShareModalItem] = useState<FeedItem | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
     Set<string>
   >(new Set());
@@ -701,7 +716,7 @@ export const Feed = () => {
       setSession(
         data.session as unknown as {
           user: { id: string };
-          user_metadata?: { avatar_url?: string };
+          user_metadata?: { avatar_url?: string; full_name?: string };
         },
       );
     };
@@ -784,6 +799,7 @@ export const Feed = () => {
       setPosting(true);
       await createFeedPost({ body: text });
       setComposerValue('');
+      setComposerOpen(false);
       await loadPage();
     } catch (e) {
       await handleAuthError(e, 'Failed to create post');
@@ -886,29 +902,9 @@ export const Feed = () => {
   };
 
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        minHeight: '100%',
-        bgcolor: '#05070f',
-        backgroundImage: 'url(/assets/grid-background.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
+    <Box sx={{ position: 'relative', flex: 1, width: '100%' }}>
       <Box
         sx={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(circle at 50% 0%, rgba(0,0,0,0.3), rgba(0,0,0,0.6))',
-          zIndex: 0,
-        }}
-      />
-      <Box
-        sx={{
-          position: 'relative',
-          zIndex: 1,
           maxWidth: 1200,
           mx: 'auto',
           py: 3,
@@ -945,59 +941,54 @@ export const Feed = () => {
         </Box>
 
         <Grid container spacing={2}>
-          {/* Left column: profile summary (LinkedIn-style sidebar) */}
-          <Grid size={{ xs: 12, sm: 3 }}>
-            <Paper
+          {/* Left column: Start a post trigger + connections sidebar */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card
               variant="outlined"
+              component="button"
+              type="button"
+              onClick={() => setComposerOpen(true)}
               sx={{
                 borderRadius: 2,
                 mb: 2,
-                p: 2,
                 position: 'sticky',
                 top: 88,
+                width: '100%',
+                cursor: 'pointer',
+                textAlign: 'left',
+                bgcolor: 'background.paper',
+                '&:hover': { bgcolor: 'action.hover' },
               }}
             >
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '1.25rem',
-                    flexShrink: 0,
-                  }}
-                >
-                  1
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    Your Weirdling
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Tweak your profile. Set your persona.
-                  </Typography>
-                  <Button
-                    component={RouterLink}
-                    to="/dashboard"
-                    variant="outlined"
-                    size="small"
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
                     sx={{
-                      textTransform: 'none',
-                      borderRadius: 999,
-                      mt: 1.5,
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      flexShrink: 0,
                     }}
                   >
-                    View Dashboard
-                  </Button>
-                </Box>
-              </Stack>
-            </Paper>
+                    2
+                  </Box>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ flex: 1 }}
+                  >
+                    Start a post
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
 
             {/* Your connections: tips (wireframe bullet list) */}
             <Paper
@@ -1058,87 +1049,8 @@ export const Feed = () => {
             </Paper>
           </Grid>
 
-          {/* Center column: composer + feed list */}
-          <Grid size={{ xs: 12, sm: 6 }}>
-            {/* Start a post */}
-            <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="flex-start">
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.25rem',
-                      flexShrink: 0,
-                    }}
-                  >
-                    2
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <InputBase
-                      inputRef={composerRef}
-                      placeholder="Start a post"
-                      value={composerValue}
-                      onChange={(e) => setComposerValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          void handleSubmitPost();
-                        }
-                      }}
-                      fullWidth
-                      multiline
-                      minRows={2}
-                      sx={{
-                        bgcolor: 'action.hover',
-                        borderRadius: 2,
-                        px: 2,
-                        py: 1.5,
-                        '&.Mui-focused': { bgcolor: 'action.selected' },
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mt: 1 }}
-                    >
-                      Start a post. You can include Links in the text.
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      sx={{ mt: 1.5 }}
-                    >
-                      <IconButton
-                        size="small"
-                        sx={{ color: 'text.secondary' }}
-                        aria-label="Add image"
-                      >
-                        <ArticleOutlinedIcon />
-                      </IconButton>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => void handleSubmitPost()}
-                        disabled={posting || !composerValue.trim()}
-                        sx={{ textTransform: 'none' }}
-                      >
-                        {posting ? 'Posting…' : 'Post'}
-                      </Button>
-                    </Stack>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-
+          {/* Center column: feed list */}
+          <Grid size={{ xs: 12, sm: 5 }}>
             {/* Sort */}
             <Stack
               direction="row"
@@ -1146,14 +1058,16 @@ export const Feed = () => {
               justifyContent="space-between"
               sx={{ mb: 2 }}
             >
-              <FormControl size="small" sx={{ minWidth: 160 }}>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
                 <Select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'recent')}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
                   displayEmpty
                   sx={{ fontSize: '0.875rem' }}
                 >
                   <MenuItem value="recent">Sort by: Recent</MenuItem>
+                  <MenuItem value="oldest">Sort by: Oldest</MenuItem>
+                  <MenuItem value="most_liked">Sort by: Most liked</MenuItem>
                 </Select>
               </FormControl>
             </Stack>
@@ -1198,7 +1112,7 @@ export const Feed = () => {
               </Stack>
             ) : (
               <>
-                {items.map((item) => (
+                {sortedItems.map((item) => (
                   <FeedCard
                     key={item.id}
                     item={item}
@@ -1284,26 +1198,6 @@ export const Feed = () => {
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 Your Connections
               </Typography>
-              <Stack direction="row" spacing={0.5} sx={{ mb: 1.5 }}>
-                <InputBase
-                  placeholder="Search…"
-                  sx={{
-                    flex: 1,
-                    fontSize: '0.875rem',
-                    bgcolor: 'action.hover',
-                    borderRadius: 1,
-                    px: 1.5,
-                    py: 0.75,
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  aria-label="Search"
-                  sx={{ flexShrink: 0 }}
-                >
-                  <SearchIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Stack>
               <Stack spacing={1}>
                 {connections.map((c) => (
                   <Stack
@@ -1357,6 +1251,69 @@ export const Feed = () => {
           </Grid>
         </Grid>
       </Box>
+
+      <Dialog
+        open={composerOpen}
+        onClose={() => setComposerOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 0 }}>New post</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <InputBase
+            inputRef={composerRef}
+            placeholder="What do you want to share?"
+            value={composerValue}
+            onChange={(e) => setComposerValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void handleSubmitPost();
+              }
+            }}
+            fullWidth
+            multiline
+            minRows={4}
+            sx={{
+              bgcolor: 'action.hover',
+              borderRadius: 2,
+              px: 2,
+              py: 1.5,
+              '&.Mui-focused': { bgcolor: 'action.selected' },
+            }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 1 }}
+          >
+            You can include links in the text.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 0 }}>
+          <Button
+            onClick={() => setComposerOpen(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void handleSubmitPost()}
+            disabled={posting || !composerValue.trim()}
+            sx={{ textTransform: 'none' }}
+          >
+            {posting ? 'Posting…' : 'Post'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ShareDialog
         item={shareModalItem}

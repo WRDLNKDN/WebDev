@@ -72,9 +72,6 @@ export const ReviewStep = () => {
         <Typography variant="body2">
           <strong>Display name:</strong> {profile?.displayName ?? '—'}
         </Typography>
-        <Typography variant="body2">
-          <strong>Tagline:</strong> {profile?.tagline ?? '—'}
-        </Typography>
       </Box>
 
       <Alert severity="info" sx={{ mt: 2 }}>

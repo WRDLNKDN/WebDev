@@ -22,7 +22,6 @@ import { supabase } from '../lib/supabaseClient';
 import { safeStr } from '../utils/stringUtils';
 
 // STYLES & ASSETS
-const SYNERGY_BG = 'url("/assets/background.png")';
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
 const EMPTY_STATE_BG = 'rgba(18, 18, 18, 0.8)';
@@ -112,16 +111,7 @@ export const Directory = () => {
   }, [q, rows]);
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundImage: SYNERGY_BG,
-        backgroundSize: 'cover',
-        backgroundAttachment: 'fixed',
-        pt: 12,
-        pb: 8,
-      }}
-    >
+    <Box sx={{ flex: 1, pt: 12, pb: 8 }}>
       <Container maxWidth="lg">
         {/* HUD SEARCH SECTOR */}
         <Paper
@@ -222,7 +212,7 @@ export const Directory = () => {
               }}
             >
               <Typography variant="h5" sx={{ fontWeight: 600, color: 'white' }}>
-                No Signals Found
+                No results
               </Typography>
               <Typography
                 variant="body2"
@@ -256,7 +246,6 @@ export const Directory = () => {
                   handle={p.handle}
                   displayName={p.display_name}
                   pronouns={p.pronouns}
-                  tagline={p.tagline || getTagline(p.nerd_creds)}
                 />
               ))}
             </Stack>

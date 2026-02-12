@@ -1,8 +1,9 @@
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { ErrorBoundary } from './ErrorBoundary';
-import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { Navbar } from './Navbar';
+import { UatBanner } from './UatBanner';
 
 const PAGE_BG = {
   backgroundImage: 'url("/assets/background.png")',
@@ -15,6 +16,7 @@ export const Layout = () => {
   return (
     <>
       <Navbar />
+      <UatBanner />
       <Box
         component="main"
         sx={{

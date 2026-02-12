@@ -23,7 +23,6 @@ import { WelcomeStep } from '../components/signup/WelcomeStep';
 
 import { toMessage } from '../lib/errors';
 
-// Join page background: use GRID BACKGROUND ONLY.png at public/assets/grid-background.png
 const BG_SX = {
   minHeight: '100vh',
   position: 'relative' as const,
@@ -31,18 +30,7 @@ const BG_SX = {
   placeItems: 'center',
   px: 2,
   py: 6,
-  backgroundColor: '#05070f',
-  backgroundImage: 'url(/assets/grid-background.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
   overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    inset: 0,
-    background:
-      'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.85))',
-  },
 };
 
 const CARD_SX = {

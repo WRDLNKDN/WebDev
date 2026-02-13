@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_prod:
-        description: 'Deploy production (requires approval)'
+        description: 'Also deploy production (requires approval)'
         required: false
         type: boolean
         default: false
@@ -83,6 +83,8 @@ jobs:
     needs: deploy-uat
     environment: production
 
+    # Push to main always attempts prod (approval is enforced by environment reviewers).
+    # Manual only runs if deploy_prod=true.
     if:
       ${{ github.event_name == 'push' || (github.event_name ==
       'workflow_dispatch' && inputs.deploy_prod) }}

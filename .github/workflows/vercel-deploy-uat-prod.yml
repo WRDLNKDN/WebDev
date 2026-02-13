@@ -37,9 +37,11 @@ jobs:
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -47,7 +49,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev
 
-      # ---------- Supabase ----------
+      # -----------------------
+      # Supabase migrations + seed
+      # -----------------------
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -66,8 +70,10 @@ jobs:
       # ---------- Vercel ----------
       - name: Link Vercel project (UAT)
         run: |
+          set -euo pipefail
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          cat .vercel/project.json
 
       - name: Vercel pull (preview)
         run:
@@ -107,9 +113,11 @@ jobs:
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PROD_ANON_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -117,7 +125,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev
 
-      # ---------- Supabase ----------
+      # -----------------------
+      # Supabase migrations + seed
+      # -----------------------
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -136,8 +146,10 @@ jobs:
       # ---------- Vercel ----------
       - name: Link Vercel project (PROD)
         run: |
+          set -euo pipefail
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
+          cat .vercel/project.json
 
       - name: Vercel pull (production)
         run:

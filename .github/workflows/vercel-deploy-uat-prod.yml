@@ -78,9 +78,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_UAT_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
 
-      - name: Push Supabase migrations (UAT)
+      - name: Push Supabase migrations and seed (UAT)
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
-        run: supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+        run:
+          supabase db push --project-ref "$SUPABASE_PROJECT_REF" --include-seed
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_UAT_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
@@ -158,9 +159,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
 
-      - name: Push Supabase migrations (PROD)
+      - name: Push Supabase migrations and seed (PROD)
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
-        run: supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+        run:
+          supabase db push --project-ref "$SUPABASE_PROJECT_REF" --include-seed
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}

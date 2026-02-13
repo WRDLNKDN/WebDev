@@ -59,14 +59,37 @@ export const fetchProfiles = async (
   });
 
   if (!res.ok) {
-    let data: { error?: string };
+    let data: {
+      error?: string;
+      message?: string;
+      details?: string;
+      hint?: string;
+    };
     try {
-      data = (await res.json()) as { error?: string };
+      data = (await res.json()) as typeof data;
     } catch {
       data = {};
     }
-    const msg = typeof data.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const rawMsg =
+      typeof data.error === 'string'
+        ? data.error
+        : typeof data.message === 'string'
+          ? data.message
+          : undefined;
+    const diagnostic = [rawMsg, data.details, data.hint]
+      .filter(Boolean)
+      .join(' | ');
+    if (diagnostic) {
+      console.error(
+        '[Admin fetchProfiles]',
+        res.status,
+        url.toString(),
+        diagnostic,
+      );
+    }
+    throw new Error(
+      messageFromApiResponse(res.status, rawMsg ?? (diagnostic || undefined)),
+    );
   }
 
   const data = (await res.json()) as ProfileRow[];

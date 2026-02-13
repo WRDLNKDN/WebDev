@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_prod:
-        description: 'Deploy production (requires approval)'
+        description: 'Also deploy production (requires approval)'
         required: false
         type: boolean
         default: false
@@ -29,6 +29,9 @@ jobs:
 
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+      # UAT specific
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
@@ -86,6 +89,8 @@ jobs:
     needs: deploy-uat
     environment: production
 
+    # Push to main always attempts prod (approval is enforced by environment reviewers).
+    # Manual only runs if deploy_prod=true.
     if:
       ${{ github.event_name == 'push' || (github.event_name ==
       'workflow_dispatch' && inputs.deploy_prod) }}
@@ -96,6 +101,9 @@ jobs:
 
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+      # PROD specific
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}

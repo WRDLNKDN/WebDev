@@ -24,13 +24,11 @@ jobs:
     environment: uat
 
     env:
-      # Shared
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
+
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-
-      # UAT specific
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
@@ -44,7 +42,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install deps
+      - name: Install deps (include dev deps so tsc exists)
         run: npm ci --include=dev
 
       # ---------- Supabase ----------
@@ -53,26 +51,31 @@ jobs:
         with:
           version: latest
 
-      - name: Push DB (UAT)
-        run: supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+      - name: Supabase link (UAT)
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Supabase db push (UAT)
+        run: supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       # ---------- Vercel ----------
-      - name: Link Vercel project
+      - name: Link Vercel project (UAT)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
-      - name: Pull Preview Env
+      - name: Vercel pull (preview)
         run:
           npx --yes vercel@latest pull --yes --environment=preview --token
           "$VERCEL_TOKEN"
 
-      - name: Build Preview
+      - name: Vercel build (preview)
         run: npx --yes vercel@latest build --token "$VERCEL_TOKEN"
 
-      - name: Deploy Preview
+      - name: Vercel deploy (preview)
         run:
           npx --yes vercel@latest deploy --prebuilt --yes --token
           "$VERCEL_TOKEN"
@@ -88,13 +91,11 @@ jobs:
       'workflow_dispatch' && inputs.deploy_prod) }}
 
     env:
-      # Shared
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-
-      # PROD specific
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
@@ -108,7 +109,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install deps
+      - name: Install deps (include dev deps so tsc exists)
         run: npm ci --include=dev
 
       # ---------- Supabase ----------
@@ -117,26 +118,31 @@ jobs:
         with:
           version: latest
 
-      - name: Push DB (PROD)
-        run: supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+      - name: Supabase link (PROD)
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Supabase db push (PROD)
+        run: supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       # ---------- Vercel ----------
-      - name: Link Vercel project
+      - name: Link Vercel project (PROD)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
 
-      - name: Pull Production Env
+      - name: Vercel pull (production)
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
 
-      - name: Build Production
+      - name: Vercel build (production)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
 
-      - name: Deploy Production
+      - name: Vercel deploy (production)
         run:
           npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"

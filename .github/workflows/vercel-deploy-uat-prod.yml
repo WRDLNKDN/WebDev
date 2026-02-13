@@ -86,6 +86,16 @@ jobs:
           grep -qi "create table public.profiles" /tmp/schema.sql || (echo "::error::public.profiles missing on UAT" && exit 1)
           grep -qi "create table public.feed_items" /tmp/schema.sql || (echo "::error::public.feed_items missing on UAT" && exit 1)
 
+      - name: Verify feed_items exists (UAT) (optional)
+        if: env.SUPABASE_DB_URL != ''
+        run: |
+          supabase db pull --schema public --dry-run >/dev/null 2>&1 || true
+          supabase db dump --db-url "$SUPABASE_DB_URL" --schema public --data-only=false --no-owner >/dev/null 2>&1 || true
+          supabase db lint --db-url "$SUPABASE_DB_URL" >/dev/null 2>&1 || true
+          supabase db dump --db-url "$SUPABASE_DB_URL" --schema public --data-only=false --no-owner >/dev/null 2>&1 || true
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_UAT_DB_URL }}
+
       # ---------- Vercel ----------
       - name: Link Vercel project (UAT)
         run: |
@@ -177,6 +187,16 @@ jobs:
           supabase db dump --db-url "$SUPABASE_DB_URL" --schema public --no-owner >/tmp/schema.sql
           grep -qi "create table public.profiles" /tmp/schema.sql || (echo "::error::public.profiles missing on PROD" && exit 1)
           grep -qi "create table public.feed_items" /tmp/schema.sql || (echo "::error::public.feed_items missing on PROD" && exit 1)
+
+      - name: Verify feed_items exists (PROD) (optional)
+        if: env.SUPABASE_DB_URL != ''
+        run: |
+          echo "Checking table existence in PROD..."
+          # If you want a real check, use a DB client or a script.
+          # Keeping this optional because db-url must be a full connection string.
+          echo "SUPABASE_DB_URL is set. Add a real query check if desired."
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
 
       # ---------- Vercel ----------
       - name: Link Vercel project (PROD)

@@ -1,3 +1,4 @@
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import {
   CameraAlt as CameraIcon,
   Close as CloseIcon,
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   FormControl,
   IconButton,
+  InputAdornment,
   MenuItem,
   Select,
   Snackbar,
@@ -49,18 +51,14 @@ const GLASS_MODAL = {
   width: '100%',
 };
 
-/** Consistent single-line input: 32px height, same padding on mobile & desktop */
-const INPUT_HEIGHT = 32;
-const INPUT_PADDING = '4px 12px';
-
 const INPUT_STYLES = {
   '& .MuiFilledInput-root': {
     bgcolor: INPUT_BG,
     borderRadius: '8px',
     border: `1px solid ${BORDER_COLOR}`,
-    paddingTop: 0,
-    paddingBottom: 0,
-    minHeight: INPUT_HEIGHT,
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    minHeight: '48px',
     '&:hover': {
       bgcolor: 'rgba(50, 50, 55, 0.9)',
       borderColor: 'rgba(255,255,255,0.12)',
@@ -69,9 +67,13 @@ const INPUT_STYLES = {
       bgcolor: 'rgba(50, 50, 55, 0.95)',
       borderColor: PURPLE_ACCENT,
     },
-    '&:before, &:after': { display: 'none' },
+    '&:before, &:after': {
+      display: 'none',
+    },
   },
-  '& .MuiFilledInput-input': { padding: INPUT_PADDING },
+  '& .MuiFilledInput-input': {
+    padding: '12px 14px',
+  },
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.6)',
     fontSize: '0.9rem',
@@ -298,13 +300,13 @@ export const EditProfileDialog = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
+      <DialogContent sx={{ pt: 3, pb: 3 }}>
         {busy && !uploadedAvatarUrl ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress sx={{ color: PURPLE_ACCENT }} />
           </Box>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={3}>
             {/* Avatar Section */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box sx={{ position: 'relative' }}>
@@ -355,7 +357,7 @@ export const EditProfileDialog = ({
                 sx={{
                   color: 'rgba(255,255,255,0.6)',
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                   fontWeight: 500,
                 }}
               >
@@ -391,18 +393,13 @@ export const EditProfileDialog = ({
                 sx={{
                   color: 'rgba(255,255,255,0.6)',
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                   fontWeight: 500,
                 }}
               >
                 Pronouns
               </Typography>
-              <FormControl
-                fullWidth
-                variant="filled"
-                disabled={busy}
-                sx={INPUT_STYLES}
-              >
+              <FormControl fullWidth variant="filled" disabled={busy}>
                 <Select
                   value={formData.pronouns || ''}
                   onChange={(e) =>
@@ -413,8 +410,18 @@ export const EditProfileDialog = ({
                   }
                   displayEmpty
                   sx={{
-                    '& .MuiSelect-select': { padding: INPUT_PADDING },
-                    '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
+                    ...INPUT_STYLES['& .MuiFilledInput-root'],
+                    color: 'white',
+                    minHeight: '48px',
+                    '& .MuiSelect-select': {
+                      padding: '12px 14px',
+                    },
+                    '& .MuiSelect-icon': {
+                      color: 'rgba(255,255,255,0.6)',
+                    },
+                    '&:before, &:after': {
+                      display: 'none',
+                    },
                   }}
                   MenuProps={{
                     PaperProps: {
@@ -444,7 +451,7 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                 }}
               >
                 STATUS
@@ -457,6 +464,28 @@ export const EditProfileDialog = ({
                 disabled={busy}
                 variant="filled"
                 sx={INPUT_STYLES}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          bgcolor: 'rgba(50, 50, 55, 0.9)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 1,
+                        }}
+                      >
+                        <ChatBubbleOutlineIcon
+                          sx={{ color: 'white', fontSize: 18 }}
+                        />
+                      </Box>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Box>
 
@@ -469,7 +498,7 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                 }}
               >
                 SKILLS
@@ -495,7 +524,7 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                 }}
               >
                 BIO
@@ -503,8 +532,7 @@ export const EditProfileDialog = ({
               <TextField
                 fullWidth
                 multiline
-                minRows={3}
-                maxRows={6}
+                rows={5}
                 placeholder="Bio"
                 value={formData.bio}
                 onChange={handleChange('bio')}
@@ -513,12 +541,9 @@ export const EditProfileDialog = ({
                 sx={{
                   ...INPUT_STYLES,
                   '& .MuiFilledInput-root': {
-                    minHeight: 'auto',
+                    ...INPUT_STYLES['& .MuiFilledInput-root'],
                     alignItems: 'flex-start',
-                    paddingTop: '8px',
-                  },
-                  '& .MuiFilledInput-input': {
-                    padding: INPUT_PADDING,
+                    paddingTop: '12px',
                   },
                 }}
               />

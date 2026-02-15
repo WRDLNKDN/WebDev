@@ -1,8 +1,11 @@
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FeedIcon from '@mui/icons-material/Feed';
 import GoogleIcon from '@mui/icons-material/Google';
 import MenuIcon from '@mui/icons-material/Menu';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
+import StoreIcon from '@mui/icons-material/Store';
 import {
   AppBar,
   Box,
@@ -11,6 +14,8 @@ import {
   Drawer,
   IconButton,
   InputBase,
+  List,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -51,6 +56,8 @@ const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 
 export const Navbar = () => {
+  const theme = useTheme();
+  const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
@@ -60,6 +67,7 @@ export const Navbar = () => {
     path === '/dashboard' || path.startsWith('/dashboard/');
 
   const [session, setSession] = useState<Session | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
@@ -194,6 +202,7 @@ export const Navbar = () => {
 
   const handleSignIn = async (provider: OAuthProvider) => {
     setSignInAnchor(null);
+    setMobileMenuOpen(false);
     setBusy(true);
 
     try {
@@ -226,6 +235,8 @@ export const Navbar = () => {
       setBusy(false);
     }
   };
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
     <>
@@ -272,7 +283,7 @@ export const Navbar = () => {
               src="/assets/wrdlnkdn_logo.png"
               alt="WRDLNKDN"
               sx={{
-                height: '32px',
+                height: { xs: 26, md: 32 },
                 width: 'auto',
                 transition: 'opacity 0.2s',
                 '&:hover': { opacity: 0.8 },
@@ -522,8 +533,55 @@ export const Navbar = () => {
               )}
             </>
           )}
+        </List>
 
-          <Box sx={{ flexGrow: 1 }} />
+        {/* Mobile search: compact bar that navigates to directory */}
+        <Box sx={{ px: 2, py: 1 }}>
+          <Box
+            component="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = (e.target as HTMLFormElement).query.value?.trim();
+              closeMobileMenu();
+              navigate(
+                q ? `/directory?q=${encodeURIComponent(q)}` : '/directory',
+              );
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              bgcolor: 'rgba(255,255,255,0.06)',
+              borderRadius: 2,
+              border: '1px solid rgba(255,255,255,0.1)',
+              pl: 1.5,
+            }}
+          >
+            <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 20 }} />
+            <InputBase
+              name="query"
+              placeholder="Search people"
+              fullWidth
+              sx={{
+                color: 'white',
+                fontSize: '0.875rem',
+                '& .MuiInputBase-input': {
+                  py: 1,
+                  '&::placeholder': { opacity: 0.7 },
+                },
+              }}
+            />
+            <Button
+              type="submit"
+              size="small"
+              sx={{ color: 'primary.main', textTransform: 'none' }}
+            >
+              Go
+            </Button>
+          </Box>
+        </Box>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 2 }} />
 
           {/* Desktop auth: hidden on mobile (shown in drawer) */}
           {!isMobile && (

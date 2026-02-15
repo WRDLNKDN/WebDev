@@ -17,6 +17,8 @@ import {
   MenuItem,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
@@ -32,6 +34,8 @@ import { GLASS_CARD } from '../../theme/candyStyles';
 const DRAWER_WIDTH = 360;
 
 export const MessengerOverlay = () => {
+  const theme = useTheme();
+  const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
   const [startDmOpen, setStartDmOpen] = useState(false);
@@ -134,13 +138,15 @@ export const MessengerOverlay = () => {
       {/* Floating chat tab */}
       {messenger && !messenger.overlayOpen && (
         <Button
-          endIcon={<MessageIcon />}
+          endIcon={!mobile ? <MessageIcon /> : undefined}
+          startIcon={mobile ? <MessageIcon /> : undefined}
           onClick={openOverlay}
           aria-label="Open messages"
+          size={mobile ? 'small' : 'medium'}
           sx={{
             position: 'fixed',
             right: 0,
-            top: 80,
+            top: mobile ? 64 : 80,
             zIndex: 1200,
             bgcolor: 'background.paper',
             border: '1px solid rgba(255,255,255,0.12)',
@@ -149,10 +155,12 @@ export const MessengerOverlay = () => {
             boxShadow: 2,
             color: 'text.primary',
             textTransform: 'none',
+            minWidth: mobile ? 48 : 80,
+            py: mobile ? 0.75 : 1,
             '&:hover': { bgcolor: 'action.hover' },
           }}
         >
-          Chat
+          {mobile ? '' : 'Chat'}
         </Button>
       )}
 
@@ -182,9 +190,9 @@ export const MessengerOverlay = () => {
                 ...GLASS_CARD,
                 position: 'fixed',
                 right: 0,
-                top: 64,
-                width: DRAWER_WIDTH,
-                height: 'calc(100vh - 64px)',
+                top: mobile ? 56 : 64,
+                width: mobile ? '100%' : DRAWER_WIDTH,
+                height: mobile ? 'calc(100vh - 56px)' : 'calc(100vh - 64px)',
                 zIndex: 1300,
                 borderLeft: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: '8px 0 0 8px',

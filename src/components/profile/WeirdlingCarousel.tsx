@@ -54,10 +54,10 @@ export const WeirdlingCarousel = ({
 
   if (weirdlings === undefined) {
     return (
-      <Paper elevation={0} sx={{ ...GLASS_CARD, p: 4, mb: 4 }}>
-        <Typography variant="overline" color="text.secondary">
-          WEIRDLINGS
-        </Typography>
+      <Paper
+        elevation={0}
+        sx={{ ...GLASS_CARD, p: { xs: 2, md: 4 }, mb: { xs: 3, md: 4 } }}
+      >
         <Box sx={{ py: 4, textAlign: 'center' }}>
           <Typography color="text.secondary">Loading…</Typography>
         </Box>
@@ -70,29 +70,25 @@ export const WeirdlingCarousel = ({
       elevation={0}
       sx={{
         ...GLASS_CARD,
-        p: 3,
-        mb: 4,
+        p: { xs: 2, md: 3 },
+        mb: { xs: 3, md: 4 },
       }}
     >
       <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        justifyContent="flex-end"
         flexWrap="wrap"
         gap={2}
         sx={{ mb: 2 }}
       >
-        <Typography
-          variant="overline"
-          sx={{
-            letterSpacing: 2,
-            color: 'text.secondary',
-            fontWeight: 600,
-          }}
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          flexWrap="wrap"
+          sx={{ justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}
         >
-          WEIRDLINGS
-        </Typography>
-        <Stack direction="row" alignItems="center" spacing={2}>
           <Button
             {...(onAddClick
               ? { onClick: onAddClick }
@@ -209,8 +205,8 @@ export const WeirdlingCarousel = ({
                 src={current.avatarUrl}
                 alt={current.displayName}
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: { xs: 80, sm: 120 },
+                  height: { xs: 80, sm: 120 },
                   borderRadius: 3,
                   objectFit: 'cover',
                   border: '2px solid rgba(255,255,255,0.15)',

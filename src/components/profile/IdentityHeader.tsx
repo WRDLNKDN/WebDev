@@ -50,7 +50,7 @@ export const IdentityHeader = ({
       backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255,255,255,0.12)',
       boxShadow: BANNER_GLOW,
-      mb: 4,
+      mb: { xs: 3, md: 4 },
       position: 'relative',
     }}
   >
@@ -69,7 +69,7 @@ export const IdentityHeader = ({
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      spacing={4}
+      spacing={{ xs: 3, md: 4 }}
       alignItems={{ xs: 'center', md: 'flex-start' }}
       sx={{ textAlign: { xs: 'center', md: 'left' } }}
     >
@@ -78,8 +78,8 @@ export const IdentityHeader = ({
           src={avatarUrl}
           alt={displayName}
           sx={{
-            width: 120,
-            height: 120,
+            width: { xs: 88, md: 120 },
+            height: { xs: 88, md: 120 },
             border: '4px solid rgba(255,255,255,0.1)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           }}
@@ -110,7 +110,12 @@ export const IdentityHeader = ({
       >
         <Typography
           variant="h4"
-          sx={{ fontWeight: 700, mb: 0.5, letterSpacing: -0.5 }}
+          sx={{
+            fontWeight: 700,
+            mb: 0.5,
+            letterSpacing: -0.5,
+            fontSize: { xs: '1.5rem', md: '2.125rem' },
+          }}
         >
           {displayName}
         </Typography>

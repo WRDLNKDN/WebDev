@@ -167,7 +167,7 @@ export const Dashboard = () => {
               <WeirdlingBannerSlot
                 weirdlings={weirdlings}
                 onAddClick={() => setIsAddWeirdlingOpen(true)}
-                onRemove={async (id) => {
+                onRemove={async (id: string) => {
                   try {
                     await deleteWeirdling(id);
                     const list = await getMyWeirdlings();

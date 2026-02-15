@@ -1,22 +1,16 @@
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import FeedIcon from '@mui/icons-material/Feed';
 import GoogleIcon from '@mui/icons-material/Google';
 import MenuIcon from '@mui/icons-material/Menu';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
-import StoreIcon from '@mui/icons-material/Store';
 import {
   AppBar,
   Box,
   Button,
   CircularProgress,
-  Divider,
   Drawer,
   IconButton,
   InputBase,
-  List,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -26,7 +20,6 @@ import {
   Snackbar,
   Stack,
   Toolbar,
-  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -58,8 +51,6 @@ const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 
 export const Navbar = () => {
-  const theme = useTheme();
-  const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
@@ -69,7 +60,6 @@ export const Navbar = () => {
     path === '/dashboard' || path.startsWith('/dashboard/');
 
   const [session, setSession] = useState<Session | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
@@ -84,6 +74,9 @@ export const Navbar = () => {
   const searchPopperRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   useEffect(() => {
@@ -201,7 +194,6 @@ export const Navbar = () => {
 
   const handleSignIn = async (provider: OAuthProvider) => {
     setSignInAnchor(null);
-    setMobileMenuOpen(false);
     setBusy(true);
 
     try {
@@ -235,8 +227,6 @@ export const Navbar = () => {
     }
   };
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
   return (
     <>
       <AppBar
@@ -251,8 +241,20 @@ export const Navbar = () => {
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <Toolbar sx={{ py: 0.5, minHeight: { xs: 56, md: 64 } }}>
-          {/* Brand: logo */}
+        <Toolbar sx={{ py: 0.5, px: { xs: 1, sm: 2 } }}>
+          {/* Mobile: hamburger menu */}
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="Open menu"
+              onClick={() => setDrawerOpen(true)}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
+          {/* Brand: single static logo (wrdlnkdn_logo.png); no cycling Weirdlings */}
           <Box
             component={RouterLink}
             to="/"
@@ -261,8 +263,8 @@ export const Navbar = () => {
               alignItems: 'center',
               justifyContent: 'center',
               textDecoration: 'none',
-              mr: mobile ? 1 : 3,
-              height: { xs: '56px', md: '64px' },
+              mr: isMobile ? 1 : 3,
+              height: '64px',
             }}
           >
             <Box
@@ -278,9 +280,9 @@ export const Navbar = () => {
             />
           </Box>
 
-          {/* DESKTOP: full nav bar */}
-          {!mobile && (
-            <>
+          {/* Desktop nav links: hidden on mobile (shown in drawer) */}
+          {!isMobile && (
+            <Box component="span" sx={{ display: 'contents' }}>
               {/* Store: external link (storeUrl from env or fallback) */}
               <Button
                 component="a"
@@ -518,289 +520,260 @@ export const Navbar = () => {
                   </Box>
                 </>
               )}
-
-              <Box sx={{ flexGrow: 1 }} />
-
-              {/* AUTH: IF no session → Join + Sign in; ELSE → Admin + Sign Out */}
-              <Stack direction="row" spacing={2} alignItems="center">
-                {!session ? (
-                  <>
-                    <Button
-                      component={RouterLink}
-                      to="/join"
-                      sx={{
-                        color: 'text.secondary',
-                        '&:hover': { color: 'white' },
-                        ...(isJoinActive && {
-                          color: 'white',
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                        }),
-                      }}
-                    >
-                      Join
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={(e) => setSignInAnchor(e.currentTarget)}
-                      disabled={busy}
-                      sx={{
-                        borderRadius: 20,
-                        px: 3,
-                        borderColor: 'rgba(255,255,255,0.4)',
-                        color: 'white',
-                        '&:hover': {
-                          borderColor: 'white',
-                          bgcolor: 'rgba(255,255,255,0.05)',
-                        },
-                      }}
-                      endIcon={
-                        busy ? (
-                          <CircularProgress size={20} color="inherit" />
-                        ) : undefined
-                      }
-                    >
-                      Sign in
-                    </Button>
-                    <Menu
-                      anchorEl={signInAnchor}
-                      open={Boolean(signInAnchor)}
-                      onClose={() => {
-                        setSignInAnchor(null);
-                        if (mobile) setMobileMenuOpen(false);
-                      }}
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                      slotProps={{
-                        paper: {
-                          sx: { minWidth: 220, mt: 1, borderRadius: 2 },
-                        },
-                      }}
-                    >
-                      <MenuItem
-                        onClick={() => void handleSignIn('google')}
-                        disabled={busy}
-                        sx={{ py: 1.5 }}
-                      >
-                        <ListItemIcon>
-                          <GoogleIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Google</ListItemText>
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => void handleSignIn('azure')}
-                        disabled={busy}
-                        sx={{ py: 1.5 }}
-                      >
-                        <ListItemIcon>
-                          <MicrosoftIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Microsoft</ListItemText>
-                      </MenuItem>
-                    </Menu>
-                  </>
-                ) : (
-                  <>
-                    {isAdmin && (
-                      <Button
-                        component={RouterLink}
-                        to="/admin"
-                        sx={{ color: 'warning.main' }}
-                      >
-                        Admin
-                      </Button>
-                    )}
-                    <Button
-                      sx={{ color: 'text.secondary' }}
-                      onClick={() => void signOut()}
-                      disabled={busy}
-                    >
-                      Sign Out
-                    </Button>
-                  </>
-                )}
-              </Stack>
-            </>
+            </Box>
           )}
 
-          {/* MOBILE: hamburger */}
-          {mobile && (
-            <IconButton
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open menu"
-              sx={{ color: 'white', ml: 'auto' }}
-            >
-              <MenuIcon />
-            </IconButton>
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Desktop auth: hidden on mobile (shown in drawer) */}
+          {!isMobile && (
+            <Stack direction="row" spacing={2} alignItems="center">
+              {!session ? (
+                <>
+                  {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
+                  <Button
+                    component={RouterLink}
+                    to="/join"
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': { color: 'white' },
+                      ...(isJoinActive && {
+                        color: 'white',
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Join
+                  </Button>
+
+                  {/* Sign In: Pill Button */}
+                  <Button
+                    variant="outlined"
+                    onClick={(e) => setSignInAnchor(e.currentTarget)}
+                    disabled={busy}
+                    sx={{
+                      borderRadius: 20,
+                      px: 3,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: 'white',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                      },
+                    }}
+                    endIcon={
+                      busy ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : undefined
+                    }
+                  >
+                    Sign in
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isAdmin && (
+                    <Button
+                      component={RouterLink}
+                      to="/admin"
+                      sx={{ color: 'warning.main' }}
+                    >
+                      Admin
+                    </Button>
+                  )}
+
+                  <Button
+                    sx={{ color: 'text.secondary' }}
+                    onClick={() => void signOut()}
+                    disabled={busy}
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              )}
+            </Stack>
+          )}
+
+          {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
+          {isMobile && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {!session ? (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/join"
+                    size="small"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Join
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={(e) => setSignInAnchor(e.currentTarget)}
+                    disabled={busy}
+                    sx={{
+                      borderRadius: 20,
+                      px: 2,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: 'white',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="small"
+                  sx={{ color: 'text.secondary' }}
+                  onClick={() => void signOut()}
+                  disabled={busy}
+                >
+                  Sign Out
+                </Button>
+              )}
+            </Stack>
           )}
         </Toolbar>
       </AppBar>
 
-      {/* Mobile drawer menu */}
+      {/* Sign-in provider menu (shared by desktop + mobile) */}
+      <Menu
+        anchorEl={signInAnchor}
+        open={Boolean(signInAnchor)}
+        onClose={() => setSignInAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{ sx: { minWidth: 220, mt: 1, borderRadius: 2 } }}
+      >
+        <MenuItem
+          onClick={() => void handleSignIn('google')}
+          disabled={busy}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <GoogleIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Google</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => void handleSignIn('azure')}
+          disabled={busy}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <MicrosoftIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Microsoft</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Mobile drawer */}
       <Drawer
-        anchor="right"
-        open={mobileMenuOpen}
-        onClose={closeMobileMenu}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: 'min(320px, 100vw)',
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 280,
             bgcolor: 'rgba(18, 18, 18, 0.98)',
-            backdropFilter: 'blur(12px)',
-            borderLeft: '1px solid rgba(255,255,255,0.08)',
+            borderRight: '1px solid rgba(255,255,255,0.08)',
           },
         }}
       >
         <Box sx={{ p: 2, pt: 3 }}>
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ fontWeight: 600, letterSpacing: 2 }}
-          >
-            Menu
-          </Typography>
-        </Box>
-        <List component="nav" sx={{ px: 1 }}>
-          <ListItemButton
-            component="a"
-            href={storeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={closeMobileMenu}
-            sx={{ borderRadius: 1 }}
-          >
-            <ListItemIcon>
-              <StoreIcon sx={{ color: 'text.secondary' }} />
-            </ListItemIcon>
-            <ListItemText primary="Store" />
-          </ListItemButton>
-          {session && (
-            <>
-              <ListItemButton
-                component={RouterLink}
-                to="/feed"
-                onClick={closeMobileMenu}
-                selected={isFeedActive}
-                sx={{ borderRadius: 1 }}
-              >
-                <ListItemIcon>
-                  <FeedIcon sx={{ color: 'text.secondary' }} />
-                </ListItemIcon>
-                <ListItemText primary="Feed" />
-              </ListItemButton>
-              <ListItemButton
-                component={RouterLink}
-                to="/dashboard"
-                onClick={closeMobileMenu}
-                selected={isDashboardActive}
-                sx={{ borderRadius: 1 }}
-              >
-                <ListItemIcon>
-                  <DashboardIcon sx={{ color: 'text.secondary' }} />
-                </ListItemIcon>
-                <ListItemText primary="Dashboard" />
-              </ListItemButton>
-            </>
-          )}
-        </List>
-
-        {/* Mobile search: compact bar that navigates to directory */}
-        <Box sx={{ px: 2, py: 1 }}>
-          <Box
-            component="form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const q = (e.target as HTMLFormElement).query.value?.trim();
-              closeMobileMenu();
-              navigate(
-                q ? `/directory?q=${encodeURIComponent(q)}` : '/directory',
-              );
-            }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              bgcolor: 'rgba(255,255,255,0.06)',
-              borderRadius: 2,
-              border: '1px solid rgba(255,255,255,0.1)',
-              pl: 1.5,
-            }}
-          >
-            <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 20 }} />
-            <InputBase
-              name="query"
-              placeholder="Search people"
-              fullWidth
-              sx={{
-                color: 'white',
-                fontSize: '0.875rem',
-                '& .MuiInputBase-input': {
-                  py: 1,
-                  '&::placeholder': { opacity: 0.7 },
-                },
-              }}
-            />
+          <Stack component="nav" spacing={0}>
             <Button
-              type="submit"
-              size="small"
-              sx={{ color: 'primary.main', textTransform: 'none' }}
+              component="a"
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setDrawerOpen(false)}
+              sx={{
+                justifyContent: 'flex-start',
+                color: 'white',
+                textTransform: 'none',
+                py: 1.5,
+              }}
             >
-              Go
+              Store
             </Button>
-          </Box>
-        </Box>
-
-        <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 2 }} />
-
-        <List sx={{ px: 1 }}>
-          {session ? (
-            <>
-              {isAdmin && (
-                <ListItemButton
+            {session && (
+              <>
+                <Button
                   component={RouterLink}
-                  to="/admin"
-                  onClick={closeMobileMenu}
-                  sx={{ borderRadius: 1, color: 'warning.main' }}
+                  to="/feed"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isFeedActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
                 >
-                  <ListItemText primary="Admin" />
-                </ListItemButton>
-              )}
-              <ListItemButton
-                onClick={() => {
-                  closeMobileMenu();
-                  void signOut();
-                }}
-                disabled={busy}
-                sx={{ borderRadius: 1, color: 'text.secondary' }}
-              >
-                <ListItemText primary="Sign Out" />
-              </ListItemButton>
-            </>
-          ) : (
-            <>
-              <ListItemButton
-                component={RouterLink}
-                to="/join"
-                onClick={closeMobileMenu}
-                selected={isJoinActive}
-                sx={{ borderRadius: 1 }}
-              >
-                <ListItemText primary="Join" />
-              </ListItemButton>
-              <ListItemButton
-                onClick={(e) => {
-                  setSignInAnchor(e.currentTarget as HTMLElement);
-                  // Keep drawer open so Menu has valid anchor; close on Menu close
-                }}
-                disabled={busy}
-                sx={{ borderRadius: 1 }}
-              >
-                <ListItemText primary="Sign in" />
-              </ListItemButton>
-            </>
-          )}
-        </List>
+                  Feed
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isDashboardActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/directory"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                  }}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                  }}
+                >
+                  Search / Directory
+                </Button>
+                {isAdmin && (
+                  <Button
+                    component={RouterLink}
+                    to="/admin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'warning.main',
+                      textTransform: 'none',
+                      py: 1.5,
+                    }}
+                  >
+                    Admin
+                  </Button>
+                )}
+              </>
+            )}
+          </Stack>
+        </Box>
       </Drawer>
-
       <Snackbar
         open={Boolean(snack)}
         autoHideDuration={6000}

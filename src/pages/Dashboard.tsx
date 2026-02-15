@@ -1,13 +1,14 @@
+import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
   Button,
   Container,
-  Divider,
   Grid,
   Paper,
   Snackbar,
+  Stack,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -16,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../components/portfolio/AddProjectDialog';
-import { CompactAddCard } from '../components/portfolio/CompactAddCard';
 import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../components/profile/EditProfileDialog';
@@ -49,7 +49,6 @@ export const Dashboard = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
-
   const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
     undefined,
   );
@@ -98,15 +97,8 @@ export const Dashboard = () => {
   const rawName =
     profile?.display_name || session.user.user_metadata?.full_name;
   const displayName = safeStr(rawName, 'Verified Generalist');
-  const profileUseWeirdlingAvatar = Boolean(
-    (profile as { use_weirdling_avatar?: boolean } | null)
-      ?.use_weirdling_avatar,
-  );
-  const firstWeirdling = weirdlings?.[0];
   const avatarUrl = safeStr(
-    profileUseWeirdlingAvatar && firstWeirdling?.avatarUrl
-      ? firstWeirdling.avatarUrl
-      : profile?.avatar || session.user.user_metadata?.avatar_url,
+    profile?.avatar || session.user.user_metadata?.avatar_url,
   );
 
   const safeNerdCreds =
@@ -137,7 +129,6 @@ export const Dashboard = () => {
       }}
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* 1. PROFILE IDENTITY BANNER */}
         <IdentityHeader
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
@@ -176,7 +167,7 @@ export const Dashboard = () => {
               <WeirdlingBannerSlot
                 weirdlings={weirdlings}
                 onAddClick={() => setIsAddWeirdlingOpen(true)}
-                onRemove={async (id) => {
+                onRemove={async (id: string) => {
                   try {
                     await deleteWeirdling(id);
                     const list = await getMyWeirdlings();
@@ -195,7 +186,10 @@ export const Dashboard = () => {
                 startIcon={<EditIcon />}
                 onClick={() => setIsEditOpen(true)}
                 disabled={loading}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                }}
               >
                 Edit Profile
               </Button>
@@ -203,7 +197,10 @@ export const Dashboard = () => {
                 variant="outlined"
                 startIcon={<SettingsIcon />}
                 onClick={() => setIsSettingsOpen(true)}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                }}
               >
                 Settings
               </Button>
@@ -218,7 +215,7 @@ export const Dashboard = () => {
           }
         />
 
-        {/* 2. PORTFOLIO */}
+        {/* PORTFOLIO: Action buttons + content cards */}
         <Paper
           elevation={0}
           sx={{
@@ -239,42 +236,139 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          <Grid container spacing={2} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Resume"
+          {/* Action buttons: responsive grid on mobile */}
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            useFlexGap
+            spacing={2}
+            sx={{ mb: 4 }}
+          >
+            <Box
+              component="label"
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Add Resume
+              </Typography>
+              <input
+                type="file"
+                hidden
                 accept=".pdf,.doc,.docx"
-                onFileSelect={handleResumeUpload}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleResumeUpload(f);
+                }}
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Project"
-                onClick={() => setIsAddProjectOpen(true)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Skills"
-                onClick={() => setIsEditOpen(true)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Links"
-                onClick={() => setIsLinksOpen(true)}
-              />
-            </Grid>
-          </Grid>
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsAddProjectOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Add Project
+              </Typography>
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Skills
+              </Typography>
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsLinksOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Links
+              </Typography>
+            </Box>
+          </Stack>
 
-          <Divider
-            sx={{ borderColor: 'rgba(255,255,255,0.12)', my: { xs: 3, md: 4 } }}
-          />
-
+          {/* Content cards: Resume + Projects */}
           <Grid container spacing={{ xs: 2, md: 4 }}>
             {profile?.resume_url && (
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>

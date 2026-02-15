@@ -45,7 +45,7 @@ export const IdentityHeader = ({
     elevation={0}
     sx={{
       p: { xs: 2, md: 4 },
-      borderRadius: { xs: 2, md: 4 },
+      borderRadius: 4,
       bgcolor: CARD_BG,
       backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255,255,255,0.12)',
@@ -54,38 +54,18 @@ export const IdentityHeader = ({
       position: 'relative',
     }}
   >
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      justifyContent="space-between"
-      alignItems={{ xs: 'stretch', sm: 'center' }}
-      flexWrap="wrap"
-      gap={2}
-      sx={{ mb: 2 }}
-    >
-      <Typography
-        variant="overline"
-        sx={{
-          letterSpacing: 2,
-          color: 'text.secondary',
-          fontWeight: 600,
-          fontSize: { xs: '0.7rem', md: 'inherit' },
-        }}
+    {actions && (
+      <Stack
+        direction="row"
+        justifyContent="flex-end"
+        alignItems="center"
+        flexWrap="wrap"
+        gap={2}
+        sx={{ mb: 2 }}
       >
-        PROFILE IDENTITY BANNER
-      </Typography>
-      {actions && (
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1.5}
-          sx={{
-            width: { xs: '100%', sm: 'auto' },
-            '& .MuiButton-root': { minWidth: { xs: '100%', sm: 'auto' } },
-          }}
-        >
-          {actions}
-        </Stack>
-      )}
-    </Stack>
+        {actions}
+      </Stack>
+    )}
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}

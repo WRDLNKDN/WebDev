@@ -44,7 +44,7 @@ export const IdentityHeader = ({
   <Paper
     elevation={0}
     sx={{
-      p: 4,
+      p: { xs: 2, md: 4 },
       borderRadius: 4,
       bgcolor: CARD_BG,
       backdropFilter: 'blur(16px)',
@@ -54,30 +54,18 @@ export const IdentityHeader = ({
       position: 'relative',
     }}
   >
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      flexWrap="wrap"
-      gap={2}
-      sx={{ mb: 2 }}
-    >
-      <Typography
-        variant="overline"
-        sx={{
-          letterSpacing: 2,
-          color: 'text.secondary',
-          fontWeight: 600,
-        }}
+    {actions && (
+      <Stack
+        direction="row"
+        justifyContent="flex-end"
+        alignItems="center"
+        flexWrap="wrap"
+        gap={2}
+        sx={{ mb: 2 }}
       >
-        PROFILE IDENTITY BANNER
-      </Typography>
-      {actions && (
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          {actions}
-        </Stack>
-      )}
-    </Stack>
+        {actions}
+      </Stack>
+    )}
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}

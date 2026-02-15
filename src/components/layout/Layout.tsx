@@ -15,7 +15,7 @@ const PAGE_BG = {
   backgroundImage: 'url("/assets/background.png")',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
-  backgroundAttachment: 'fixed',
+  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
 
 const LayoutContent = () => {
@@ -31,6 +31,7 @@ const LayoutContent = () => {
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
+          overflowX: 'hidden',
           ...PAGE_BG,
         }}
       >

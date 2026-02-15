@@ -1,4 +1,5 @@
 import GoogleIcon from '@mui/icons-material/Google';
+import MenuIcon from '@mui/icons-material/Menu';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
@@ -7,6 +8,8 @@ import {
   Box,
   Button,
   CircularProgress,
+  Drawer,
+  IconButton,
   InputBase,
   ListItemIcon,
   ListItemText,
@@ -17,6 +20,8 @@ import {
   Snackbar,
   Stack,
   Toolbar,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -69,6 +74,9 @@ export const Navbar = () => {
   const searchPopperRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   useEffect(() => {
@@ -233,7 +241,19 @@ export const Navbar = () => {
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <Toolbar sx={{ py: 0.5 }}>
+        <Toolbar sx={{ py: 0.5, px: { xs: 1, sm: 2 } }}>
+          {/* Mobile: hamburger menu */}
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="Open menu"
+              onClick={() => setDrawerOpen(true)}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
           {/* Brand: single static logo (wrdlnkdn_logo.png); no cycling Weirdlings */}
           <Box
             component={RouterLink}
@@ -243,7 +263,7 @@ export const Navbar = () => {
               alignItems: 'center',
               justifyContent: 'center',
               textDecoration: 'none',
-              mr: 3,
+              mr: isMobile ? 1 : 3,
               height: '64px',
             }}
           >
@@ -260,338 +280,504 @@ export const Navbar = () => {
             />
           </Box>
 
-          {/* Store: external link (storeUrl from env or fallback) */}
-          <Button
-            component="a"
-            href={storeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ color: 'white', textDecoration: 'none' }}
-          >
-            Store
-          </Button>
-          {/* IF logged in: show Feed + Dashboard + Search; ELSE these are hidden */}
-          {session && (
+          {/* Desktop nav links: hidden on mobile (shown in drawer) */}
+          {!isMobile && (
             <>
+              {/* Store: external link (storeUrl from env or fallback) */}
               <Button
-                component={RouterLink}
-                to="/feed"
-                sx={{
-                  color: 'white',
-                  ...(isFeedActive && {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                  }),
-                }}
+                component="a"
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: 'white', textDecoration: 'none' }}
               >
-                Feed
+                Store
               </Button>
-              <Button
-                component={RouterLink}
-                to="/dashboard"
-                sx={{
-                  color: 'white',
-                  ...(isDashboardActive && {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                  }),
-                }}
-              >
-                Dashboard
-              </Button>
-              <Box ref={setSearchAnchorEl} sx={{ position: 'relative' }}>
-                <Box
-                  component="form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const query = searchQuery.trim();
-                    closeSearchDropdown();
-                    navigate(
-                      query
-                        ? `/directory?q=${encodeURIComponent(query)}`
-                        : '/directory',
-                    );
-                  }}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    ml: 2,
-                    height: 36,
-                    minWidth: 200,
-                    maxWidth: 280,
-                    bgcolor: 'rgba(255,255,255,0.06)',
-                    borderRadius: '18px',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    transition: 'border-color 0.2s, background-color 0.2s',
-                    '&:focus-within': {
-                      bgcolor: 'rgba(255,255,255,0.08)',
-                      borderColor: 'rgba(255,255,255,0.2)',
-                    },
-                  }}
-                >
-                  <SearchIcon
-                    sx={{
-                      ml: 1.5,
-                      mr: 0.5,
-                      fontSize: 20,
-                      color: 'rgba(255,255,255,0.5)',
-                    }}
-                    aria-hidden
-                  />
-                  <InputBase
-                    placeholder="Search for people"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() =>
-                      searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                      setSearchOpen(true)
-                    }
-                    inputProps={{
-                      'aria-label': 'Search for people',
-                      'aria-expanded': searchOpen,
-                    }}
-                    fullWidth
+              {/* IF logged in: show Feed + Dashboard + Search; ELSE these are hidden */}
+              {session && (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/feed"
                     sx={{
                       color: 'white',
-                      fontSize: '0.875rem',
-                      '& .MuiInputBase-input': {
-                        py: 0.875,
-                        px: 0.5,
-                        '&::placeholder': {
-                          color: 'rgba(255,255,255,0.5)',
-                          opacity: 1,
-                        },
-                      },
-                    }}
-                  />
-                  <Button
-                    type="submit"
-                    size="small"
-                    sx={{
-                      color: 'rgba(255,255,255,0.8)',
-                      textTransform: 'none',
-                      mr: 0.5,
-                      minWidth: 56,
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                      ...(isFeedActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
                     }}
                   >
-                    Search
+                    Feed
                   </Button>
-                </Box>
-                <Popper
-                  open={
-                    searchOpen &&
-                    (searchMatches.length > 0 ||
-                      searchLoading ||
-                      (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                        !searchLoading))
-                  }
-                  anchorEl={searchAnchorEl}
-                  placement="bottom-start"
-                  sx={{ zIndex: 1300 }}
-                  modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
-                >
-                  <Paper
-                    ref={searchPopperRef}
-                    elevation={8}
+                  <Button
+                    component={RouterLink}
+                    to="/dashboard"
                     sx={{
-                      minWidth: searchAnchorEl?.offsetWidth ?? 280,
-                      maxWidth: 360,
-                      maxHeight: 320,
-                      overflow: 'auto',
-                      bgcolor: 'rgba(30,30,30,0.98)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'white',
+                      ...(isDashboardActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
                     }}
                   >
-                    {searchLoading ? (
-                      <Box
+                    Dashboard
+                  </Button>
+                  <Box ref={setSearchAnchorEl} sx={{ position: 'relative' }}>
+                    <Box
+                      component="form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const query = searchQuery.trim();
+                        closeSearchDropdown();
+                        navigate(
+                          query
+                            ? `/directory?q=${encodeURIComponent(query)}`
+                            : '/directory',
+                        );
+                      }}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        ml: 2,
+                        height: 36,
+                        minWidth: 200,
+                        maxWidth: 280,
+                        bgcolor: 'rgba(255,255,255,0.06)',
+                        borderRadius: '18px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        transition: 'border-color 0.2s, background-color 0.2s',
+                        '&:focus-within': {
+                          bgcolor: 'rgba(255,255,255,0.08)',
+                          borderColor: 'rgba(255,255,255,0.2)',
+                        },
+                      }}
+                    >
+                      <SearchIcon
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          py: 2,
+                          ml: 1.5,
+                          mr: 0.5,
+                          fontSize: 20,
+                          color: 'rgba(255,255,255,0.5)',
+                        }}
+                        aria-hidden
+                      />
+                      <InputBase
+                        placeholder="Search for people"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() =>
+                          searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                          setSearchOpen(true)
+                        }
+                        inputProps={{
+                          'aria-label': 'Search for people',
+                          'aria-expanded': searchOpen,
+                        }}
+                        fullWidth
+                        sx={{
+                          color: 'white',
+                          fontSize: '0.875rem',
+                          '& .MuiInputBase-input': {
+                            py: 0.875,
+                            px: 0.5,
+                            '&::placeholder': {
+                              color: 'rgba(255,255,255,0.5)',
+                              opacity: 1,
+                            },
+                          },
+                        }}
+                      />
+                      <Button
+                        type="submit"
+                        size="small"
+                        sx={{
+                          color: 'rgba(255,255,255,0.8)',
+                          textTransform: 'none',
+                          mr: 0.5,
+                          minWidth: 56,
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
                         }}
                       >
-                        <CircularProgress size={24} sx={{ color: 'white' }} />
-                      </Box>
-                    ) : searchMatches.length === 0 ? (
-                      <Box sx={{ px: 2, py: 2 }}>
-                        <Box
-                          sx={{
-                            color: 'rgba(255,255,255,0.7)',
-                            fontSize: '0.875rem',
-                            mb: 1,
-                          }}
-                        >
-                          No matches for &quot;{searchQuery.trim()}&quot;
-                        </Box>
-                        <Button
-                          component={RouterLink}
-                          to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
-                          size="small"
-                          onClick={closeSearchDropdown}
-                          sx={{ color: 'primary.light', textTransform: 'none' }}
-                        >
-                          View all in Directory
-                        </Button>
-                      </Box>
-                    ) : (
-                      <Stack
-                        component="ul"
-                        sx={{ listStyle: 'none', m: 0, p: 0.5 }}
+                        Search
+                      </Button>
+                    </Box>
+                    <Popper
+                      open={
+                        searchOpen &&
+                        (searchMatches.length > 0 ||
+                          searchLoading ||
+                          (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                            !searchLoading))
+                      }
+                      anchorEl={searchAnchorEl}
+                      placement="bottom-start"
+                      sx={{ zIndex: 1300 }}
+                      modifiers={[
+                        { name: 'offset', options: { offset: [0, 4] } },
+                      ]}
+                    >
+                      <Paper
+                        ref={searchPopperRef}
+                        elevation={8}
+                        sx={{
+                          minWidth: searchAnchorEl?.offsetWidth ?? 280,
+                          maxWidth: 360,
+                          maxHeight: 320,
+                          overflow: 'auto',
+                          bgcolor: 'rgba(30,30,30,0.98)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                        }}
                       >
-                        {searchMatches.map((p) => {
-                          const handle = p.handle || p.id;
-                          const label = p.display_name || p.handle || handle;
-                          return (
-                            <MenuItem
-                              key={p.id}
-                              component={RouterLink}
-                              to={`/profile/${handle}`}
-                              onClick={() => {
-                                setSearchQuery('');
-                                closeSearchDropdown();
-                              }}
+                        {searchLoading ? (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              py: 2,
+                            }}
+                          >
+                            <CircularProgress
+                              size={24}
+                              sx={{ color: 'white' }}
+                            />
+                          </Box>
+                        ) : searchMatches.length === 0 ? (
+                          <Box sx={{ px: 2, py: 2 }}>
+                            <Box
                               sx={{
-                                color: 'white',
-                                '&:hover': {
-                                  bgcolor: 'rgba(255,255,255,0.08)',
-                                },
+                                color: 'rgba(255,255,255,0.7)',
+                                fontSize: '0.875rem',
+                                mb: 1,
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 36 }}>
-                                <PersonIcon
-                                  sx={{
-                                    color: 'rgba(255,255,255,0.6)',
-                                    fontSize: 20,
+                              No matches for &quot;{searchQuery.trim()}&quot;
+                            </Box>
+                            <Button
+                              component={RouterLink}
+                              to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
+                              size="small"
+                              onClick={closeSearchDropdown}
+                              sx={{
+                                color: 'primary.light',
+                                textTransform: 'none',
+                              }}
+                            >
+                              View all in Directory
+                            </Button>
+                          </Box>
+                        ) : (
+                          <Stack
+                            component="ul"
+                            sx={{ listStyle: 'none', m: 0, p: 0.5 }}
+                          >
+                            {searchMatches.map((p) => {
+                              const handle = p.handle || p.id;
+                              const label =
+                                p.display_name || p.handle || handle;
+                              return (
+                                <MenuItem
+                                  key={p.id}
+                                  component={RouterLink}
+                                  to={`/profile/${handle}`}
+                                  onClick={() => {
+                                    setSearchQuery('');
+                                    closeSearchDropdown();
                                   }}
-                                />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={label}
-                                secondary={
-                                  p.handle && p.handle !== label
-                                    ? `@${p.handle}`
-                                    : null
-                                }
-                                primaryTypographyProps={{ fontWeight: 600 }}
-                                secondaryTypographyProps={{
-                                  variant: 'caption',
-                                }}
-                              />
-                            </MenuItem>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </Paper>
-                </Popper>
-              </Box>
+                                  sx={{
+                                    color: 'white',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(255,255,255,0.08)',
+                                    },
+                                  }}
+                                >
+                                  <ListItemIcon sx={{ minWidth: 36 }}>
+                                    <PersonIcon
+                                      sx={{
+                                        color: 'rgba(255,255,255,0.6)',
+                                        fontSize: 20,
+                                      }}
+                                    />
+                                  </ListItemIcon>
+                                  <ListItemText
+                                    primary={label}
+                                    secondary={
+                                      p.handle && p.handle !== label
+                                        ? `@${p.handle}`
+                                        : null
+                                    }
+                                    primaryTypographyProps={{ fontWeight: 600 }}
+                                    secondaryTypographyProps={{
+                                      variant: 'caption',
+                                    }}
+                                  />
+                                </MenuItem>
+                              );
+                            })}
+                          </Stack>
+                        )}
+                      </Paper>
+                    </Popper>
+                  </Box>
+                </>
+              )}
             </>
           )}
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* AUTH: IF no session → Join + Sign in (with provider menu); ELSE → Admin (if admin) + Sign Out */}
-          <Stack direction="row" spacing={2} alignItems="center">
-            {!session ? (
-              <>
-                {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
-                <Button
-                  component={RouterLink}
-                  to="/join"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': { color: 'white' },
-                    ...(isJoinActive && {
-                      color: 'white',
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Join
-                </Button>
-
-                {/* Sign In: Pill Button */}
-                <Button
-                  variant="outlined"
-                  onClick={(e) => setSignInAnchor(e.currentTarget)}
-                  disabled={busy}
-                  sx={{
-                    borderRadius: 20,
-                    px: 3,
-                    borderColor: 'rgba(255,255,255,0.4)',
-                    color: 'white',
-                    '&:hover': {
-                      borderColor: 'white',
-                      bgcolor: 'rgba(255,255,255,0.05)',
-                    },
-                  }}
-                  endIcon={
-                    busy ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : undefined
-                  }
-                >
-                  Sign in
-                </Button>
-
-                <Menu
-                  anchorEl={signInAnchor}
-                  open={Boolean(signInAnchor)}
-                  onClose={() => setSignInAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  slotProps={{
-                    paper: { sx: { minWidth: 220, mt: 1, borderRadius: 2 } },
-                  }}
-                >
-                  <MenuItem
-                    onClick={() => void handleSignIn('google')}
-                    disabled={busy}
-                    sx={{ py: 1.5 }}
-                  >
-                    <ListItemIcon>
-                      <GoogleIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Google</ListItemText>
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => void handleSignIn('azure')}
-                    disabled={busy}
-                    sx={{ py: 1.5 }}
-                  >
-                    <ListItemIcon>
-                      <MicrosoftIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Microsoft</ListItemText>
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <>
-                {isAdmin && (
+          {/* Desktop auth: hidden on mobile (shown in drawer) */}
+          {!isMobile && (
+            <Stack direction="row" spacing={2} alignItems="center">
+              {!session ? (
+                <>
+                  {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
                   <Button
                     component={RouterLink}
-                    to="/admin"
-                    sx={{ color: 'warning.main' }}
+                    to="/join"
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': { color: 'white' },
+                      ...(isJoinActive && {
+                        color: 'white',
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
                   >
-                    Admin
+                    Join
                   </Button>
-                )}
 
+                  {/* Sign In: Pill Button */}
+                  <Button
+                    variant="outlined"
+                    onClick={(e) => setSignInAnchor(e.currentTarget)}
+                    disabled={busy}
+                    sx={{
+                      borderRadius: 20,
+                      px: 3,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: 'white',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                      },
+                    }}
+                    endIcon={
+                      busy ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : undefined
+                    }
+                  >
+                    Sign in
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isAdmin && (
+                    <Button
+                      component={RouterLink}
+                      to="/admin"
+                      sx={{ color: 'warning.main' }}
+                    >
+                      Admin
+                    </Button>
+                  )}
+
+                  <Button
+                    sx={{ color: 'text.secondary' }}
+                    onClick={() => void signOut()}
+                    disabled={busy}
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              )}
+            </Stack>
+          )}
+
+          {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
+          {isMobile && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {!session ? (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/join"
+                    size="small"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Join
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={(e) => setSignInAnchor(e.currentTarget)}
+                    disabled={busy}
+                    sx={{
+                      borderRadius: 20,
+                      px: 2,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: 'white',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              ) : (
                 <Button
+                  size="small"
                   sx={{ color: 'text.secondary' }}
                   onClick={() => void signOut()}
                   disabled={busy}
                 >
                   Sign Out
                 </Button>
+              )}
+            </Stack>
+          )}
+        </Toolbar>
+      </AppBar>
+
+      {/* Sign-in provider menu (shared by desktop + mobile) */}
+      <Menu
+        anchorEl={signInAnchor}
+        open={Boolean(signInAnchor)}
+        onClose={() => setSignInAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: { sx: { minWidth: 220, mt: 1, borderRadius: 2 } },
+        }}
+      >
+        <MenuItem
+          onClick={() => void handleSignIn('google')}
+          disabled={busy}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <GoogleIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Google</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => void handleSignIn('azure')}
+          disabled={busy}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <MicrosoftIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Microsoft</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Mobile drawer */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 280,
+              bgcolor: 'rgba(18, 18, 18, 0.98)',
+              borderRight: '1px solid rgba(255,255,255,0.08)',
+            },
+          },
+        }}
+      >
+        <Box sx={{ p: 2, pt: 3 }}>
+          <Stack component="nav" spacing={0}>
+            <Button
+              component="a"
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setDrawerOpen(false)}
+              sx={{
+                justifyContent: 'flex-start',
+                color: 'white',
+                textTransform: 'none',
+                py: 1.5,
+              }}
+            >
+              Store
+            </Button>
+            {session && (
+              <>
+                <Button
+                  component={RouterLink}
+                  to="/feed"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isFeedActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Feed
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isDashboardActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/directory"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                  }}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                  }}
+                >
+                  Search / Directory
+                </Button>
+                {isAdmin && (
+                  <Button
+                    component={RouterLink}
+                    to="/admin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'warning.main',
+                      textTransform: 'none',
+                      py: 1.5,
+                    }}
+                  >
+                    Admin
+                  </Button>
+                )}
               </>
             )}
           </Stack>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Drawer>
       <Snackbar
         open={Boolean(snack)}
         autoHideDuration={6000}

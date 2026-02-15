@@ -27,12 +27,16 @@ import {
 import { SettingsDialog } from '../components/profile/SettingsDialog';
 import { EditLinksDialog } from '../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
+import { WeirdlingBannerSlot } from '../components/profile/WeirdlingBannerSlot';
+import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
 import { toMessage } from '../lib/errors';
+import { deleteWeirdling, getMyWeirdlings } from '../lib/weirdlingApi';
 import { supabase } from '../lib/supabaseClient';
 import { GLASS_CARD } from '../theme/candyStyles';
+import type { Weirdling } from '../types/weirdling';
 import type { NerdCreds } from '../types/profile';
 import { safeStr } from '../utils/stringUtils';
 
@@ -44,6 +48,10 @@ export const Dashboard = () => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
+  const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
+  const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const init = async () => {
@@ -56,6 +64,19 @@ export const Dashboard = () => {
     };
     void init();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!session) return;
+    const load = async () => {
+      try {
+        const list = await getMyWeirdlings();
+        setWeirdlings(list);
+      } catch {
+        setWeirdlings([]);
+      }
+    };
+    void load();
+  }, [session]);
 
   const {
     profile,
@@ -103,12 +124,11 @@ export const Dashboard = () => {
     <Box
       sx={{
         flex: 1,
-        pt: 4,
-        pb: 8,
+        pt: { xs: 2, md: 4 },
+        pb: { xs: 'calc(32px + env(safe-area-inset-bottom))', md: 8 },
       }}
     >
-      <Container maxWidth="lg">
-        {/* PROFILE IDENTITY BANNER */}
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <IdentityHeader
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
@@ -142,6 +162,23 @@ export const Dashboard = () => {
               onSkillsClick={() => setIsEditOpen(true)}
             />
           }
+          slotBetweenContentAndActions={
+            weirdlings && weirdlings.length > 0 ? (
+              <WeirdlingBannerSlot
+                weirdlings={weirdlings}
+                onAddClick={() => setIsAddWeirdlingOpen(true)}
+                onRemove={async (id) => {
+                  try {
+                    await deleteWeirdling(id);
+                    const list = await getMyWeirdlings();
+                    setWeirdlings(list);
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
+            ) : undefined
+          }
           actions={
             <>
               <Button
@@ -167,6 +204,13 @@ export const Dashboard = () => {
               >
                 Settings
               </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setIsAddWeirdlingOpen(true)}
+                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              >
+                Add weirdling
+              </Button>
             </>
           }
         />
@@ -176,7 +220,7 @@ export const Dashboard = () => {
           elevation={0}
           sx={{
             ...GLASS_CARD,
-            p: 3,
+            p: { xs: 2, md: 3 },
           }}
         >
           <Typography
@@ -192,12 +236,19 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          {/* Action buttons: + on top, label on bottom (card-style, full width) */}
-          <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+          {/* Action buttons: responsive grid on mobile */}
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            useFlexGap
+            spacing={2}
+            sx={{ mb: 4 }}
+          >
             <Box
               component="label"
               sx={{
-                flex: 1,
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -233,7 +284,8 @@ export const Dashboard = () => {
               type="button"
               onClick={() => setIsAddProjectOpen(true)}
               sx={{
-                flex: 1,
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -261,7 +313,8 @@ export const Dashboard = () => {
               type="button"
               onClick={() => setIsEditOpen(true)}
               sx={{
-                flex: 1,
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -289,7 +342,8 @@ export const Dashboard = () => {
               type="button"
               onClick={() => setIsLinksOpen(true)}
               sx={{
-                flex: 1,
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -315,7 +369,7 @@ export const Dashboard = () => {
           </Stack>
 
           {/* Content cards: Resume + Projects */}
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 2, md: 4 }}>
             {profile?.resume_url && (
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <ResumeCard
@@ -344,11 +398,23 @@ export const Dashboard = () => {
         </Paper>
       </Container>
 
+      <WeirdlingCreateDialog
+        open={isAddWeirdlingOpen}
+        onClose={() => setIsAddWeirdlingOpen(false)}
+        onSuccess={async () => {
+          try {
+            const list = await getMyWeirdlings();
+            setWeirdlings(list);
+          } catch {
+            setWeirdlings([]);
+          }
+        }}
+      />
       <EditProfileDialog
         open={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         profile={profile}
-        hasWeirdling={false}
+        hasWeirdling={Boolean(weirdlings?.length)}
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
       />
@@ -387,6 +453,7 @@ export const Dashboard = () => {
         onClose={() => setSnack(null)}
         message={snack}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: { xs: 'env(safe-area-inset-bottom)', md: 0 } }}
       />
     </Box>
   );

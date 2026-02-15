@@ -8,6 +8,7 @@ import {
   Grid,
   Paper,
   Snackbar,
+  Stack,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';

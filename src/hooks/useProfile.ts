@@ -180,14 +180,15 @@ export function useProfile() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { nerd_creds: _, ...topLevelUpdates } = updates;
 
-      // Only send columns we're allowed to update; include nerd_creds only when we're updating it (so links-only update doesn't overwrite nerd_creds)
+      // Only send columns we're allowed to update; include nerd_creds only when
+      // we're updating it (so links-only update doesn't overwrite nerd_creds)
       const payload: Record<string, unknown> = { ...topLevelUpdates };
       if (updates.nerd_creds !== undefined) {
         payload.nerd_creds = mergedNerdCreds as unknown as Json;
       }
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)
-      // Casting to 'any' here acts as a bridge while the schema synchronizes
+      // Cast to Record for .update() — Supabase types may lag behind schema changes
       const { error: updateError } = await supabase
         .from('profiles')
         .update(payload as Record<string, unknown>)

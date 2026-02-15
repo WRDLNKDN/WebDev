@@ -142,7 +142,10 @@ export const ValuesStep = () => {
               multiline
               rows={4}
               fullWidth
-              placeholder="Tell us more about your interests, what you're working on, or what you hope to get from the community..."
+              placeholder={
+                "Tell us more about your interests, what you're working on, " +
+                'or what you hope to get from the community...'
+              }
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
               inputProps={{ maxLength: 500 }}

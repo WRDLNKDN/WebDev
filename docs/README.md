@@ -26,6 +26,8 @@ Central index for WRDLNKDN WebDev documentation.
 - [Epic: Home Dashboard](./architecture/epic-home-dashboard.md) —
   Profile-centric landing experience; identity, portfolio, status, friends (MVP
   scope).
+- [Directory API](./directory.md) — Member discovery, search, filters,
+  connection actions (authenticated only).
 - [Guide: Weirdling Architecture](./architecture/weirdling-architecture-guide.md)
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling

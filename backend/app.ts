@@ -11,6 +11,15 @@ import {
 import { validateWeirdlingResponse } from './weirdling/validate.js';
 import { checkRateLimit } from './weirdling/rateLimit.js';
 import { getFirstUrl, fetchLinkPreview } from './linkPreview.js';
+import {
+  checkDirectoryRateLimit,
+  type DirectoryRateLimitAction,
+} from './directory/rateLimit.js';
+import {
+  logDirectoryRequest,
+  logDirectoryRateLimit,
+  logDirectoryError,
+} from './directory/logger.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -687,7 +696,8 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       return res.status(500).json({
         error:
           error.message ||
-          'Feed could not be loaded. Ensure Supabase migrations are applied (feed_items, feed_connections, get_feed_page).',
+          'Feed could not be loaded. Ensure Supabase migrations are applied ' +
+            '(feed_items, feed_connections, get_feed_page).',
       });
     }
 
@@ -1005,6 +1015,225 @@ app.get(
       };
     });
     return res.json({ data: list });
+  },
+);
+
+// --- Directory EPIC: Member discovery (authenticated only) ---
+// Rate limit + structured logging (NFR #265, #266)
+const directoryRateLimitAndLog = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const userId = req.userId;
+  if (!userId) {
+    next();
+    return;
+  }
+  const action: DirectoryRateLimitAction =
+    req.method === 'GET' ? 'list' : 'action';
+  const rl = checkDirectoryRateLimit(userId, action);
+  if (!rl.allowed) {
+    logDirectoryRateLimit({
+      userId,
+      action,
+      retryAfter: rl.retryAfter,
+    });
+    if (rl.retryAfter) res.setHeader('Retry-After', String(rl.retryAfter));
+    res.status(429).json({
+      error: 'Too many requests. Please try again later.',
+      retryAfter: rl.retryAfter,
+    });
+    return;
+  }
+  const start = Date.now();
+  res.on('finish', () => {
+    logDirectoryRequest({
+      method: req.method,
+      path: req.path || req.url?.split('?')[0] || '/api/directory',
+      userId,
+      status: res.statusCode,
+      durationMs: Date.now() - start,
+    });
+  });
+  next();
+};
+
+app.use('/api/directory', requireAuth, directoryRateLimitAndLog);
+
+app.get('/api/directory', async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const search =
+    typeof req.query.q === 'string' ? req.query.q.trim() || null : null;
+  const industry =
+    typeof req.query.industry === 'string'
+      ? req.query.industry.trim() || null
+      : null;
+  const location =
+    typeof req.query.location === 'string'
+      ? req.query.location.trim() || null
+      : null;
+  const connectionStatus =
+    typeof req.query.connection_status === 'string'
+      ? req.query.connection_status.trim() || null
+      : null;
+  const sort =
+    typeof req.query.sort === 'string' &&
+    ['recently_active', 'alphabetical', 'newest'].includes(req.query.sort)
+      ? req.query.sort
+      : 'recently_active';
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 25));
+
+  const skillsRaw = req.query.skills;
+  const skillsArr: string[] =
+    typeof skillsRaw === 'string'
+      ? skillsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : Array.isArray(skillsRaw)
+        ? (skillsRaw as string[]).map((s) => String(s).trim()).filter(Boolean)
+        : [];
+
+  const { data: rows, error } = await adminSupabase.rpc('get_directory_page', {
+    p_viewer_id: userId,
+    p_search: search,
+    p_industry: industry,
+    p_location: location,
+    p_skills: skillsArr.length > 0 ? skillsArr : null,
+    p_connection_status: connectionStatus,
+    p_sort: sort,
+    p_offset: offset,
+    p_limit: limit + 1,
+  });
+
+  if (error) {
+    logDirectoryError({
+      method: 'GET',
+      path: '/api/directory',
+      userId: userId ?? undefined,
+      error: error.message,
+    });
+    return res.status(500).json({ error: error.message });
+  }
+
+  const list = Array.isArray(rows) ? rows : [];
+  const hasMore = list.length > limit;
+  const data = hasMore ? list.slice(0, limit) : list;
+
+  return res.json({ data, hasMore });
+});
+
+// POST /api/directory/connect — send connection request
+app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  const targetId =
+    typeof (req.body as { targetId?: string }).targetId === 'string'
+      ? (req.body as { targetId: string }).targetId.trim()
+      : null;
+  if (!userId || !targetId)
+    return res.status(400).json({ error: 'Missing targetId' });
+
+  const { error } = await adminSupabase.from('connection_requests').insert({
+    requester_id: userId,
+    recipient_id: targetId,
+    status: 'pending',
+  });
+  if (error) {
+    if (error.code === '23505')
+      return res.status(409).json({ error: 'Request already exists' });
+    logDirectoryError({
+      method: 'POST',
+      path: '/api/directory/connect',
+      userId: userId ?? undefined,
+      error: error.message,
+    });
+    return res.status(500).json({ error: error.message });
+  }
+  return res.status(201).json({ ok: true });
+});
+
+// POST /api/directory/accept — accept connection request
+app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  const targetId =
+    typeof (req.body as { targetId?: string }).targetId === 'string'
+      ? (req.body as { targetId: string }).targetId.trim()
+      : null;
+  if (!userId || !targetId)
+    return res.status(400).json({ error: 'Missing targetId' });
+
+  const { data: reqRow } = await adminSupabase
+    .from('connection_requests')
+    .select('id')
+    .eq('requester_id', targetId)
+    .eq('recipient_id', userId)
+    .eq('status', 'pending')
+    .maybeSingle();
+  if (!reqRow)
+    return res.status(404).json({ error: 'No pending request found' });
+
+  await adminSupabase
+    .from('connection_requests')
+    .update({ status: 'accepted', updated_at: new Date().toISOString() })
+    .eq('id', (reqRow as { id: string }).id);
+
+  await adminSupabase.from('feed_connections').insert([
+    { user_id: userId, connected_user_id: targetId },
+    { user_id: targetId, connected_user_id: userId },
+  ]);
+
+  return res.json({ ok: true });
+});
+
+// POST /api/directory/decline — decline connection request
+app.post('/api/directory/decline', async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  const targetId =
+    typeof (req.body as { targetId?: string }).targetId === 'string'
+      ? (req.body as { targetId: string }).targetId.trim()
+      : null;
+  if (!userId || !targetId)
+    return res.status(400).json({ error: 'Missing targetId' });
+
+  const { data } = await adminSupabase
+    .from('connection_requests')
+    .update({ status: 'declined', updated_at: new Date().toISOString() })
+    .eq('requester_id', targetId)
+    .eq('recipient_id', userId)
+    .eq('status', 'pending')
+    .select('id');
+  if (!data?.length)
+    return res.status(404).json({ error: 'No pending request found' });
+  return res.json({ ok: true });
+});
+
+// POST /api/directory/disconnect — remove mutual connection
+app.post(
+  '/api/directory/disconnect',
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const targetId =
+      typeof (req.body as { targetId?: string }).targetId === 'string'
+        ? (req.body as { targetId: string }).targetId.trim()
+        : null;
+    if (!userId || !targetId)
+      return res.status(400).json({ error: 'Missing targetId' });
+
+    await adminSupabase
+      .from('feed_connections')
+      .delete()
+      .eq('user_id', userId)
+      .eq('connected_user_id', targetId);
+    await adminSupabase
+      .from('feed_connections')
+      .delete()
+      .eq('user_id', targetId)
+      .eq('connected_user_id', userId);
+    return res.json({ ok: true });
   },
 );
 

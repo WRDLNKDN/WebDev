@@ -324,6 +324,10 @@ export type Database = {
           avatar: string | null
           resume_url: string | null
           pronouns: string | null
+          industry: string | null
+          location: string | null
+          profile_visibility: string
+          last_active_at: string | null
           status: string
           socials: Json | null
           nerd_creds: Json | null
@@ -347,6 +351,10 @@ export type Database = {
           avatar?: string | null
           resume_url?: string | null
           pronouns?: string | null
+          industry?: string | null
+          location?: string | null
+          profile_visibility?: string
+          last_active_at?: string | null
           status?: string
           use_weirdling_avatar?: boolean
           socials?: Json | null
@@ -370,6 +378,10 @@ export type Database = {
           avatar?: string | null
           resume_url?: string | null
           pronouns?: string | null
+          industry?: string | null
+          location?: string | null
+          profile_visibility?: string
+          last_active_at?: string | null
           status?: string
           socials?: Json | null
           nerd_creds?: Json | null

@@ -22,6 +22,7 @@ drop function if exists public.chat_on_suspension() cascade;
 drop function if exists public.chat_on_unsuspend() cascade;
 drop function if exists public.chat_rate_limit_check() cascade;
 drop function if exists public.chat_audit_on_message() cascade;
+drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) cascade;
 
 -- -----------------------------
 -- Drop tables (reverse dependency order)
@@ -39,6 +40,7 @@ drop table if exists public.chat_suspensions cascade;
 drop table if exists public.chat_rooms cascade;
 drop table if exists public.feed_items cascade;
 drop table if exists public.feed_connections cascade;
+drop table if exists public.connection_requests cascade;
 drop table if exists public.portfolio_items cascade;
 drop table if exists public.weirdlings cascade;
 drop table if exists public.generation_jobs cascade;
@@ -102,6 +104,11 @@ create table public.profiles (
   geek_creds text[],
   nerd_creds jsonb,
   pronouns text,
+  industry text,
+  location text,
+  profile_visibility text not null default 'members_only'
+    check (profile_visibility in ('members_only', 'connections_only')),
+  last_active_at timestamptz default now(),
 
   join_reason text[],
   participation_style text[],
@@ -134,6 +141,9 @@ create index idx_profiles_created_at on public.profiles (created_at);
 create index idx_profiles_status on public.profiles (status);
 create index idx_profiles_handle on public.profiles (handle);
 create index idx_profiles_email on public.profiles (email);
+create index idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index idx_profiles_location on public.profiles(location) where location is not null;
+create index idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
 
 -- -----------------------------
 -- updated_at trigger (profiles)
@@ -304,6 +314,35 @@ create index idx_feed_connections_connected_user_id on public.feed_connections(c
 comment on table public.feed_connections is
   'Who follows whom; used to scope feed to self + connected users.';
 
+-- -----------------------------
+-- connection_requests (Directory: Connect flow -> accept/decline -> mutual feed_connections)
+-- -----------------------------
+create table public.connection_requests (
+  id uuid primary key default gen_random_uuid(),
+  requester_id uuid not null references auth.users(id) on delete cascade,
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending'
+    check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (requester_id, recipient_id),
+  check (requester_id != recipient_id)
+);
+
+create index idx_connection_requests_requester on public.connection_requests(requester_id);
+create index idx_connection_requests_recipient on public.connection_requests(recipient_id);
+create index idx_connection_requests_status on public.connection_requests(status) where status = 'pending';
+
+comment on table public.connection_requests is
+  'Connection requests: pending until accepted (creates mutual feed_connections) or declined.';
+
+create trigger trg_connection_requests_updated_at
+  before update on public.connection_requests
+  for each row execute function public.set_updated_at();
+
+-- -----------------------------
+-- Feed items
+-- -----------------------------
 create table public.feed_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -411,6 +450,168 @@ $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int) is
   'Returns feed items for viewer (self + followees) with cursor and engagement counts.';
+
+-- -----------------------------
+-- get_directory_page (Directory: paginated, searchable, filterable, connection-aware)
+-- -----------------------------
+create or replace function public.get_directory_page(
+  p_viewer_id uuid,
+  p_search text default null,
+  p_industry text default null,
+  p_location text default null,
+  p_skills text[] default null,
+  p_connection_status text default null,
+  p_sort text default 'recently_active',
+  p_offset int default 0,
+  p_limit int default 25
+)
+returns table (
+  id uuid,
+  handle text,
+  display_name text,
+  avatar text,
+  tagline text,
+  pronouns text,
+  industry text,
+  location text,
+  skills text[],
+  bio_snippet text,
+  connection_state text,
+  use_weirdling_avatar boolean
+)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_sql text;
+  v_skills_arr text[];
+  v_search_trim text;
+begin
+  if p_viewer_id is null then
+    return;
+  end if;
+
+  v_search_trim := nullif(trim(p_search), '');
+  v_skills_arr := coalesce(p_skills, '{}');
+
+  return query
+  with visible as (
+    select p.id, p.handle, p.display_name, p.avatar, p.tagline, p.pronouns,
+           p.industry, p.location, p.nerd_creds, p.created_at, p.last_active_at,
+           p.profile_visibility, p.use_weirdling_avatar,
+           w.avatar_url as weirdling_avatar
+    from public.profiles p
+    left join public.weirdlings w on w.user_id = p.id and w.is_active = true
+    where p.status = 'approved'
+      and p.id != p_viewer_id
+      and (
+        p.profile_visibility = 'members_only'
+        or exists (
+          select 1 from public.feed_connections fc
+          where (fc.user_id = p_viewer_id and fc.connected_user_id = p.id)
+             or (fc.user_id = p.id and fc.connected_user_id = p_viewer_id)
+        )
+      )
+      and (
+        v_search_trim is null
+        or p.display_name ilike '%' || v_search_trim || '%'
+        or p.handle ilike '%' || v_search_trim || '%'
+        or p.tagline ilike '%' || v_search_trim || '%'
+        or coalesce(p.industry, '') ilike '%' || v_search_trim || '%'
+        or coalesce(p.location, '') ilike '%' || v_search_trim || '%'
+        or coalesce(p.nerd_creds->>'bio', '') ilike '%' || v_search_trim || '%'
+        or exists (
+          select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
+          where s ilike '%' || v_search_trim || '%'
+        )
+      )
+      and (p_industry is null or p.industry ilike '%' || trim(p_industry) || '%')
+      and (p_location is null or p.location ilike '%' || trim(p_location) || '%')
+      and (
+        array_length(v_skills_arr, 1) is null
+        or exists (
+          select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
+          where lower(s) = any(
+            select lower(unnest(v_skills_arr))
+          )
+        )
+      )
+  ),
+  conn_state as (
+    select v.id,
+           case
+             when exists (
+               select 1 from public.feed_connections fc
+               where fc.user_id = p_viewer_id and fc.connected_user_id = v.id
+                 and exists (
+                   select 1 from public.feed_connections fc2
+                   where fc2.user_id = v.id and fc2.connected_user_id = p_viewer_id
+                 )
+             ) then 'connected'
+             when exists (
+               select 1 from public.connection_requests cr
+               where cr.requester_id = p_viewer_id and cr.recipient_id = v.id
+                 and cr.status = 'pending'
+             ) then 'pending'
+             when exists (
+               select 1 from public.connection_requests cr
+               where cr.requester_id = v.id and cr.recipient_id = p_viewer_id
+                 and cr.status = 'pending'
+             ) then 'pending_received'
+             else 'not_connected'
+           end as state
+    from visible v
+  )
+  select
+    v.id,
+    v.handle,
+    v.display_name,
+    coalesce(
+      case when v.use_weirdling_avatar then v.weirdling_avatar else null end,
+      v.avatar
+    )::text as avatar,
+    v.tagline,
+    v.pronouns,
+    v.industry,
+    v.location,
+    (
+      select coalesce(array_agg(t.val), '{}')
+      from (select s::text as val from jsonb_array_elements_text(coalesce(v.nerd_creds->'skills', '[]'::jsonb)) s limit 3) t
+    ) as skills,
+    left(coalesce(v.nerd_creds->>'bio', ''), 120) as bio_snippet,
+    cs.state as connection_state,
+    coalesce(v.use_weirdling_avatar, false) as use_weirdling_avatar
+  from visible v
+  join conn_state cs on cs.id = v.id
+  where (p_connection_status is null or cs.state = p_connection_status)
+  order by
+    case p_sort
+      when 'alphabetical' then 1
+      else 2
+    end,
+    case p_sort
+      when 'alphabetical' then coalesce(v.display_name, v.handle)
+      else null
+    end asc nulls last,
+    case p_sort
+      when 'alphabetical' then v.id
+      else null
+    end asc,
+    case p_sort
+      when 'newest' then v.created_at
+      when 'recently_active' then coalesce(v.last_active_at, v.created_at)
+      else null
+    end desc nulls last,
+    v.id desc
+  offset greatest(0, p_offset)
+  limit least(p_limit, 51);
+end;
+$$;
+
+comment on function public.get_directory_page is
+  'Directory listing: searchable, filterable, connection-aware, privacy-respecting.';
 
 -- -----------------------------
 -- Chat: rooms, members, messages, reactions, attachments, blocks, reports

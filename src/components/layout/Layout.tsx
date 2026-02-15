@@ -1,9 +1,12 @@
 import { Box } from '@mui/material';
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   MessengerProvider,
   useMessenger,
 } from '../../context/MessengerContext';
+import { updateLastActive } from '../../lib/updateLastActive';
+import { supabase } from '../../lib/supabaseClient';
 import { ChatPopover } from '../chat/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Footer } from './Footer';
@@ -20,6 +23,14 @@ const PAGE_BG = {
 
 const LayoutContent = () => {
   const messenger = useMessenger();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user?.id) {
+        void updateLastActive(supabase, data.session.user.id);
+      }
+    });
+  }, []);
 
   return (
     <>

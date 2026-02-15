@@ -68,6 +68,15 @@ jobs:
         with:
           version: latest
 
+      - name: Ensure placeholder migration exists (fails fast with clear error)
+        run: |
+          set -e
+          if [ ! -f "supabase/migrations/20260117015124_remote_placeholder.sql" ]; then
+            echo "::error::Missing supabase/migrations/20260117015124_remote_placeholder.sql"
+            echo "Create it (can be empty) to match remote migration history, commit, and rerun."
+            exit 1
+          fi
+
       - name: Supabase link (UAT)
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
@@ -153,6 +162,15 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Ensure placeholder migration exists (fails fast with clear error)
+        run: |
+          set -e
+          if [ ! -f "supabase/migrations/20260117015124_remote_placeholder.sql" ]; then
+            echo "::error::Missing supabase/migrations/20260117015124_remote_placeholder.sql"
+            echo "Create it (can be empty) to match remote migration history, commit, and rerun."
+            exit 1
+          fi
 
       - name: Supabase link (PROD)
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"

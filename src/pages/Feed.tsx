@@ -1,11 +1,17 @@
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import EventIcon from '@mui/icons-material/Event';
+import ForumIcon from '@mui/icons-material/Forum';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
-import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Avatar,
   Box,
@@ -25,6 +31,8 @@ import {
   List,
   ListItem,
   ListItemAvatar,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
   MenuItem,
   Paper,
@@ -52,32 +60,6 @@ import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 
 const FEED_LIMIT = 20;
-
-export type ConnectionProfile = {
-  id: string;
-  handle: string;
-  display_name: string | null;
-  avatar: string | null;
-  linkedinUrl: string | null;
-};
-
-function parseLinkedInFromSocials(socials: unknown): string | null {
-  if (!Array.isArray(socials)) return null;
-  const link = socials.find(
-    (s) =>
-      s &&
-      typeof s === 'object' &&
-      'platform' in s &&
-      'url' in s &&
-      'isVisible' in s &&
-      String((s as { platform: unknown }).platform).toLowerCase() ===
-        'linkedin' &&
-      (s as { isVisible: unknown }).isVisible === true,
-  );
-  return link && typeof (link as { url: unknown }).url === 'string'
-    ? ((link as { url: string }).url as string)
-    : null;
-}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -659,7 +641,6 @@ export const Feed = () => {
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
-  const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
     string | null
   >(null);
@@ -752,45 +733,6 @@ export const Feed = () => {
     if (!session) return;
     void loadPage();
   }, [session, loadPage]);
-
-  const loadConnections = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const { data: connRows, error: connErr } = await supabase
-        .from('feed_connections')
-        .select('connected_user_id')
-        .eq('user_id', session.user.id);
-      if (connErr || !connRows?.length) {
-        setConnections([]);
-        return;
-      }
-      const ids = connRows.map((r) => r.connected_user_id);
-      const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, handle, display_name, avatar, socials')
-        .in('id', ids)
-        .eq('status', 'approved');
-      if (profErr || !profiles?.length) {
-        setConnections([]);
-        return;
-      }
-      const list: ConnectionProfile[] = profiles.map((p) => ({
-        id: p.id,
-        handle: p.handle,
-        display_name: p.display_name ?? null,
-        avatar: p.avatar ?? null,
-        linkedinUrl: parseLinkedInFromSocials(p.socials),
-      }));
-      setConnections(list);
-    } catch {
-      setConnections([]);
-    }
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    if (!session) return;
-    void loadConnections();
-  }, [session, loadConnections]);
 
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
@@ -937,141 +879,243 @@ export const Feed = () => {
             sx={{ maxWidth: 560 }}
           >
             Where ideas, updates, and voices from the community come together.
-            Discover people by what they show up.
+            Discover people by how they show up.
           </Typography>
         </Box>
 
-        <Grid container spacing={2}>
-          {/* Left column: Start a post trigger + connections sidebar */}
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Card
+        <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
+          {/* LEFT SIDEBAR: Explore card with grouped nav */}
+          <Grid size={{ xs: 12, md: 3 }} sx={{ minWidth: 0 }}>
+            <Paper
               variant="outlined"
-              component="button"
-              type="button"
-              onClick={() => setComposerOpen(true)}
               sx={{
                 borderRadius: 2,
-                mb: 2,
+                overflow: 'hidden',
                 position: 'sticky',
                 top: 88,
                 width: '100%',
-                cursor: 'pointer',
-                textAlign: 'left',
-                bgcolor: 'background.paper',
-                '&:hover': { bgcolor: 'action.hover' },
+                minWidth: 220,
               }}
             >
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Explore
+                </Typography>
+              </Box>
+              <List dense disablePadding sx={{ py: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Community
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/events"
                     sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.25rem',
-                      flexShrink: 0,
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
                     }}
                   >
-                    2
-                  </Box>
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ flex: 1 }}
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <EventIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Events"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/forums"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
                   >
-                    Start a post
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <ForumIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Forums"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Your stuff
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/saved"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <BookmarkBorderIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Saved"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Platform
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/advertise"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <CampaignIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Advertise"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component="a"
+                    href="https://phuzzle.vercel.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <SportsEsportsIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Games"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Support
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/help"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <HelpOutlineIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Help"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Paper>
+          </Grid>
 
-            {/* Your connections: tips (wireframe bullet list) */}
+          {/* CENTER: Feed content with header row */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            {/* Feed header: title + Post + Sort */}
             <Paper
               variant="outlined"
               sx={{
                 borderRadius: 2,
                 mb: 2,
                 p: 2,
-                position: 'sticky',
-                top: 320,
               }}
             >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Your connections
-              </Typography>
-              <List
-                dense
-                disablePadding
-                sx={{ listStyleType: 'disc', pl: 2.5 }}
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                flexWrap="wrap"
+                gap={2}
               >
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="Connect with others from the profile to set on them"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="LinkedIn link in your profile"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="Share work mottos"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="Mutual contributions"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-              </List>
+                <Typography variant="h6" fontWeight={600}>
+                  Feed
+                </Typography>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Button
+                    variant="contained"
+                    onClick={() => setComposerOpen(true)}
+                    sx={{
+                      borderRadius: '9999px',
+                      px: 2.5,
+                      py: 1,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Post
+                  </Button>
+                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <Select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      displayEmpty
+                      sx={{ fontSize: '0.875rem' }}
+                    >
+                      <MenuItem value="recent">Sort by: Recent</MenuItem>
+                      <MenuItem value="oldest">Sort by: Oldest</MenuItem>
+                      <MenuItem value="most_liked">
+                        Sort by: Most liked
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
+              </Stack>
             </Paper>
-          </Grid>
-
-          {/* Center column: feed list */}
-          <Grid size={{ xs: 12, sm: 5 }}>
-            {/* Sort */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mb: 2 }}
-            >
-              <FormControl size="small" sx={{ minWidth: 180 }}>
-                <Select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  displayEmpty
-                  sx={{ fontSize: '0.875rem' }}
-                >
-                  <MenuItem value="recent">Sort by: Recent</MenuItem>
-                  <MenuItem value="oldest">Sort by: Oldest</MenuItem>
-                  <MenuItem value="most_liked">Sort by: Most liked</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
 
             {/* Feed list */}
             {loading ? (
@@ -1079,38 +1123,45 @@ export const Feed = () => {
                 <CircularProgress aria-label="Loading feed" />
               </Box>
             ) : items.length === 0 ? (
-              <Stack
-                spacing={2}
-                alignItems="center"
-                justifyContent="center"
-                sx={{ py: 8, px: 2 }}
+              <Paper
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                }}
               >
                 <Typography
                   variant="h6"
                   fontWeight={600}
                   color="text.primary"
-                  textAlign="center"
+                  gutterBottom
                 >
                   Nothing here yet.
                 </Typography>
                 <Typography
-                  variant="body1"
+                  variant="body2"
                   color="text.secondary"
-                  textAlign="center"
-                  sx={{ maxWidth: 400 }}
+                  sx={{ mb: 2 }}
                 >
-                  Fill your feed by connecting with Weirdlings.
+                  Connect with Weirdlings to fill your feed.
                 </Typography>
                 <Button
                   component={RouterLink}
                   to="/directory"
                   variant="contained"
-                  size="large"
                   sx={{ textTransform: 'none', borderRadius: 2 }}
                 >
                   Discover People
                 </Button>
-              </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mt: 2 }}
+                >
+                  Try searching for people or exploring events.
+                </Typography>
+              </Paper>
             ) : (
               <>
                 {sortedItems.map((item) => (
@@ -1150,104 +1201,34 @@ export const Feed = () => {
             )}
           </Grid>
 
-          {/* Right column: WRDLNKDN News + Your Connections */}
-          <Grid size={{ xs: 12, sm: 3 }}>
+          {/* RIGHT RAIL: Community Partners */}
+          <Grid size={{ xs: 12, md: 3 }} sx={{ minWidth: 0 }}>
             <Paper
               variant="outlined"
               sx={{
                 borderRadius: 2,
-                mb: 2,
                 p: 2,
                 position: 'sticky',
                 top: 88,
+                width: '100%',
+                minWidth: 220,
               }}
             >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                WRDLNKDN News
+              <Box
+                sx={{
+                  pb: 1.5,
+                  mb: 1,
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Community Partners
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Affiliated partners and monetization links. Coming soon.
               </Typography>
-              <Stack spacing={1.5}>
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    New: Weirdling Feed (MVP)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Share text posts and curated links with your Weirdling
-                    network.
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    Profiles review pipeline
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Approved profiles appear in feeds and the community.
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-
-            <Paper
-              variant="outlined"
-              sx={{
-                borderRadius: 2,
-                mb: 2,
-                p: 2,
-                position: 'sticky',
-                top: 320,
-              }}
-            >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Your Connections
-              </Typography>
-              <Stack spacing={1}>
-                {connections.map((c) => (
-                  <Stack
-                    key={c.id}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1.5}
-                    sx={{ py: 0.5 }}
-                  >
-                    <Avatar
-                      src={c.avatar ?? undefined}
-                      sx={{ width: 36, height: 36 }}
-                      component={RouterLink}
-                      to={`/profile/${c.handle}`}
-                    >
-                      {(c.display_name || c.handle || '?')
-                        .charAt(0)
-                        .toUpperCase()}
-                    </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        component={RouterLink}
-                        to={`/profile/${c.handle}`}
-                        variant="body2"
-                        fontWeight={600}
-                        sx={{
-                          display: 'block',
-                          color: 'text.primary',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {c.display_name || c.handle}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {c.linkedinUrl ? 'LinkedIn' : 'Weirdling'}
-                      </Typography>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      component={RouterLink}
-                      to={`/profile/${c.handle}`}
-                      aria-label={`View ${c.display_name || c.handle}`}
-                    >
-                      <OpenInNewIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Stack>
-                ))}
-              </Stack>
             </Paper>
           </Grid>
         </Grid>

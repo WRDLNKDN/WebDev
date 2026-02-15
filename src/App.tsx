@@ -78,6 +78,26 @@ const DivergencePage = lazy(() =>
   import('./pages/DivergencePage').then((m) => ({ default: m.DivergencePage })),
 );
 
+const EventsPage = lazy(() =>
+  import('./pages/EventsPage').then((m) => ({ default: m.EventsPage })),
+);
+
+const ForumsPage = lazy(() =>
+  import('./pages/ForumsPage').then((m) => ({ default: m.ForumsPage })),
+);
+
+const SavedPage = lazy(() =>
+  import('./pages/SavedPage').then((m) => ({ default: m.SavedPage })),
+);
+
+const AdvertisePage = lazy(() =>
+  import('./pages/AdvertisePage').then((m) => ({ default: m.AdvertisePage })),
+);
+
+const HelpPage = lazy(() =>
+  import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })),
+);
+
 // The Professional 404 Page (Standard Error)
 const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
@@ -194,6 +214,12 @@ const App = () => {
               <Route path="/about" element={<About />} />
               <Route path="/community" element={<Community />} />
               <Route path="/platform" element={<Platform />} />
+              <Route path="/events" element={<EventsPage />} />
+              <Route path="/forums" element={<ForumsPage />} />
+              <Route path="/saved" element={<SavedPage />} />
+              <Route path="/advertise" element={<AdvertisePage />} />
+              <Route path="/games" element={<DivergencePage />} />
+              <Route path="/help" element={<HelpPage />} />
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />

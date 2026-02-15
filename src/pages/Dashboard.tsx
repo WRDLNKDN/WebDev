@@ -28,8 +28,9 @@ import {
 import { SettingsDialog } from '../components/profile/SettingsDialog';
 import { EditLinksDialog } from '../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
-import { WeirdlingCarousel } from '../components/profile/WeirdlingCarousel';
+import { WeirdlingCard } from '../components/profile/WeirdlingCard';
 import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDialog';
+import { WeirdlingDeleteConfirmDialog } from '../components/profile/WeirdlingDeleteConfirmDialog';
 
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
@@ -50,6 +51,8 @@ export const Dashboard = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Weirdling | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
     undefined,
@@ -129,6 +132,25 @@ export const Dashboard = () => {
     }
   };
 
+  const handleWeirdlingDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      await deleteWeirdling(deleteTarget.id);
+      const list = await getMyWeirdlings();
+      setWeirdlings(list);
+      if (profileUseWeirdlingAvatar) {
+        await updateProfile({ use_weirdling_avatar: false });
+      }
+      await refresh();
+      setDeleteTarget(null);
+    } catch (e) {
+      setSnack(toMessage(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -138,79 +160,83 @@ export const Dashboard = () => {
       }}
     >
       <Container maxWidth="lg">
-        {/* 1. PROFILE IDENTITY BANNER */}
-        <IdentityHeader
-          displayName={displayName}
-          tagline={profile?.tagline ?? undefined}
-          bio={bio}
-          avatarUrl={avatarUrl}
-          slotUnderAvatarLabel={
-            (profile?.socials ?? []).some((s) => s.isVisible)
-              ? 'Links'
-              : undefined
-          }
-          slotUnderAvatar={
-            <ProfileLinksWidget
-              socials={profile?.socials ?? []}
-              isOwner
-              onRemove={async (linkId) => {
-                const next = (profile?.socials ?? []).filter(
-                  (s) => s.id !== linkId,
-                );
-                try {
-                  await updateProfile({ socials: next });
-                  await refresh();
-                } catch (e) {
-                  setSnack(toMessage(e));
-                }
-              }}
+        {/* TOP SECTION: Two-column on desktop — Banner left, Weirdling right */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <IdentityHeader
+              displayName={displayName}
+              tagline={profile?.tagline ?? undefined}
+              bio={bio}
+              avatarUrl={avatarUrl}
+              slotUnderAvatarLabel={
+                (profile?.socials ?? []).some((s) => s.isVisible)
+                  ? 'Links'
+                  : undefined
+              }
+              slotUnderAvatar={
+                <ProfileLinksWidget
+                  socials={profile?.socials ?? []}
+                  isOwner
+                  onRemove={async (linkId) => {
+                    const next = (profile?.socials ?? []).filter(
+                      (s) => s.id !== linkId,
+                    );
+                    try {
+                      await updateProfile({ socials: next });
+                      await refresh();
+                    } catch (e) {
+                      setSnack(toMessage(e));
+                    }
+                  }}
+                />
+              }
+              badges={
+                <IdentityBadges
+                  onTagsClick={() => setIsEditOpen(true)}
+                  onSkillsClick={() => setIsEditOpen(true)}
+                />
+              }
+              actions={
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => setIsEditOpen(true)}
+                    disabled={loading}
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                    }}
+                  >
+                    Edit Profile
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<SettingsIcon />}
+                    onClick={() => setIsSettingsOpen(true)}
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                    }}
+                  >
+                    Settings
+                  </Button>
+                </>
+              }
             />
-          }
-          badges={
-            <IdentityBadges
-              onTagsClick={() => setIsEditOpen(true)}
-              onSkillsClick={() => setIsEditOpen(true)}
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <WeirdlingCard
+              weirdling={weirdlings?.[0] ?? null}
+              loading={weirdlings === undefined}
+              onCreate={() => setIsAddWeirdlingOpen(true)}
+              onEdit={() => setIsAddWeirdlingOpen(true)}
+              onDeleteRequest={(w) => setDeleteTarget(w)}
             />
-          }
-          actions={
-            <>
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={() => setIsEditOpen(true)}
-                disabled={loading}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-              >
-                Edit Profile
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<SettingsIcon />}
-                onClick={() => setIsSettingsOpen(true)}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-              >
-                Settings
-              </Button>
-            </>
-          }
-        />
+          </Grid>
+        </Grid>
 
-        {/* WEIRDLINGS SECTION (showcase + add) */}
-        <WeirdlingCarousel
-          weirdlings={weirdlings ?? []}
-          onAddClick={() => setIsAddWeirdlingOpen(true)}
-          onRemove={async (id) => {
-            try {
-              await deleteWeirdling(id);
-              const list = await getMyWeirdlings();
-              setWeirdlings(list);
-            } catch (e) {
-              setSnack(toMessage(e));
-            }
-          }}
-        />
-
-        {/* 2. PORTFOLIO */}
+        {/* PORTFOLIO: Created Content first, Quick Links below */}
         <Paper
           elevation={0}
           sx={{
@@ -231,47 +257,8 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          <Stack
-            direction="row"
-            spacing={3}
-            sx={{ mb: 4 }}
-            flexWrap="wrap"
-            useFlexGap
-          >
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Resume"
-                accept=".pdf,.doc,.docx"
-                onFileSelect={handleResumeUpload}
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Project"
-                onClick={() => setIsAddProjectOpen(true)}
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Skills"
-                onClick={() => setIsEditOpen(true)}
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Links"
-                onClick={() => setIsLinksOpen(true)}
-              />
-            </Box>
-          </Stack>
-
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 4 }} />
-
-          <Grid container spacing={4}>
+          {/* Created Content first */}
+          <Grid container spacing={4} sx={{ mb: 4 }}>
             {profile?.resume_url && (
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <ResumeCard
@@ -297,6 +284,46 @@ export const Dashboard = () => {
               </Grid>
             ))}
           </Grid>
+
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 3 }} />
+
+          {/* Quick Links below — utility controls, reduced visual weight */}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mb: 1.5, fontWeight: 600 }}
+          >
+            Add more
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={2}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ gap: 1.5 }}
+          >
+            <CompactAddCard
+              variant="neutral"
+              label="Add Resume"
+              accept=".pdf,.doc,.docx"
+              onFileSelect={handleResumeUpload}
+            />
+            <CompactAddCard
+              variant="neutral"
+              label="Add Project"
+              onClick={() => setIsAddProjectOpen(true)}
+            />
+            <CompactAddCard
+              variant="neutral"
+              label="Skills"
+              onClick={() => setIsEditOpen(true)}
+            />
+            <CompactAddCard
+              variant="neutral"
+              label="Links"
+              onClick={() => setIsLinksOpen(true)}
+            />
+          </Stack>
         </Paper>
       </Container>
 
@@ -347,6 +374,14 @@ export const Dashboard = () => {
         open={isAddProjectOpen}
         onClose={() => setIsAddProjectOpen(false)}
         onSubmit={addProject}
+      />
+
+      <WeirdlingDeleteConfirmDialog
+        open={Boolean(deleteTarget)}
+        weirdlingName={deleteTarget?.displayName}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void handleWeirdlingDeleteConfirm()}
+        loading={deleting}
       />
 
       <Snackbar

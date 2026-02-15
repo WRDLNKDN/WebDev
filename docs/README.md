@@ -4,6 +4,8 @@ Central index for WRDLNKDN WebDev documentation.
 
 ## Docs
 
+- [Terminology and Language Standards](./TERMINOLOGY.md) — Canonical vocabulary
+  for UI, docs, EPICs, and UX copy. No drift without approval.
 - [Information architecture](./architecture/information-architecture.md) —
   Canonical routes, navigation labels, public vs authenticated access; single
   source of truth for Home, Feed, Join, Profile, Dashboard.

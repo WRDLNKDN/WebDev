@@ -233,9 +233,17 @@ export const EditProfileDialog = ({
       setBusy(false);
     }
   };
+  const MAX_AVATAR_BYTES = 6 * 1024 * 1024; // 6MB
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_AVATAR_BYTES) {
+      setToastMessage('File too large. Max 6MB. Try a smaller image.');
+      setShowToast(true);
+      e.target.value = '';
+      return;
+    }
     try {
       setBusy(true);
       setToastMessage('');
@@ -342,16 +350,10 @@ export const EditProfileDialog = ({
                       type="file"
                       hidden
                       ref={fileInputRef}
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png,.gif,.webp"
                       onChange={handleFileChange}
                     />
                   </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ opacity: 0.7, fontFamily: 'monospace' }}
-                  >
-                    UPLOAD_VISUAL.exe
-                  </Typography>
                   {hasWeirdling && (
                     <FormControlLabel
                       control={

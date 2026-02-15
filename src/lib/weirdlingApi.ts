@@ -111,23 +111,29 @@ export async function saveWeirdlingPreview(
 
 /** Returns all active Weirdlings for the current user (newest first). */
 export async function getMyWeirdlings(): Promise<Weirdling[]> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/me`, {
-    headers,
-    credentials: 'include',
-  });
-  let data: Record<string, unknown>;
   try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/me`, {
+      headers,
+      credentials: 'include',
+    });
+    let data: Record<string, unknown>;
+    try {
+      data = (await res.json()) as Record<string, unknown>;
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      if (res.status === 401) return [];
+      const msg = typeof data?.error === 'string' ? data.error : undefined;
+      throw new Error(messageFromApiResponse(res.status, msg));
+    }
+    const list = Array.isArray(data?.weirdlings) ? data.weirdlings : [];
+    return list as Weirdling[];
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Not signed in') return [];
+    throw e;
   }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
-  }
-  const list = Array.isArray(data?.weirdlings) ? data.weirdlings : [];
-  return list as Weirdling[];
 }
 
 /** @deprecated Use getMyWeirdlings(). Returns first Weirdling or null for backwards compatibility. */

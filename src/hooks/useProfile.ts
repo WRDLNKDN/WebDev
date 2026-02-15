@@ -47,24 +47,28 @@ export function useProfile() {
         const handle = baseHandle;
         let attempts = 0;
         while (attempts < 10) {
-          const { data: inserted, error: insertErr } = await supabase
+          const payload = {
+            id: session.user.id,
+            email,
+            handle: attempts === 0 ? handle : `${handle}${attempts}`,
+            display_name:
+              session.user.user_metadata?.full_name ?? email.split('@')[0],
+            status: 'pending',
+          };
+          const { data: upserted, error: upsertErr } = await supabase
             .from('profiles')
-            .insert({
-              id: session.user.id,
-              email,
-              handle: attempts === 0 ? handle : `${handle}${attempts}`,
-              display_name:
-                session.user.user_metadata?.full_name ?? email.split('@')[0],
-              status: 'pending',
+            .upsert(payload, {
+              onConflict: 'id',
+              ignoreDuplicates: true,
             })
             .select('*')
-            .single();
-          if (!insertErr && inserted) {
-            profileData = inserted as unknown as DashboardProfile;
+            .maybeSingle();
+          if (!upsertErr && upserted) {
+            profileData = upserted as unknown as DashboardProfile;
             break;
           }
-          if (insertErr?.code === '23505') {
-            // Race: another request may have created the profile (id conflict). Refetch.
+          if (upsertErr?.code === '23505') {
+            // Handle conflict: another request created it. Refetch.
             const { data: existing } = await supabase
               .from('profiles')
               .select('*')
@@ -77,7 +81,18 @@ export function useProfile() {
             attempts += 1;
             continue;
           }
-          break;
+          if (upsertErr) break;
+          // ignoreDuplicates: refetch in case row was created by another request
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (existing) {
+            profileData = existing as unknown as DashboardProfile;
+            break;
+          }
+          attempts += 1;
         }
         if (!profileData) {
           setLoading(false);
@@ -229,19 +244,17 @@ export function useProfile() {
       email.split('@')[0]?.toLowerCase().replace(/\W/g, '') || 'user';
     for (let attempts = 0; attempts < 10; attempts++) {
       const handle = attempts === 0 ? baseHandle : `${baseHandle}${attempts}`;
-      const { data: inserted, error: insertErr } = await supabase
-        .from('profiles')
-        .insert({
+      const { error: upsertErr } = await supabase.from('profiles').upsert(
+        {
           id: userId,
           email,
           handle,
           display_name: displayName,
           status: 'pending',
-        })
-        .select('id')
-        .maybeSingle();
-      if (!insertErr && inserted) return;
-      if (insertErr?.code === '23505') {
+        },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+      if (!upsertErr) {
         const { data: refetched } = await supabase
           .from('profiles')
           .select('id')
@@ -249,7 +262,15 @@ export function useProfile() {
           .maybeSingle();
         if (refetched) return;
       }
-      if (insertErr?.code !== '23505') break;
+      if (upsertErr?.code === '23505') {
+        const { data: refetched } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+        if (refetched) return;
+      }
+      if (upsertErr && upsertErr.code !== '23505') break;
     }
     throw new Error('Could not create profile. Please try again.');
   };

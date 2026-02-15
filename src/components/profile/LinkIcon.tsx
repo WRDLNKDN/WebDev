@@ -50,6 +50,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       brandColor = '#fc6d26';
       break;
     case 'stack overflow':
+    case 'stack exchange':
       Icon = Code;
       brandColor = '#f48024';
       break;

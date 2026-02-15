@@ -134,11 +134,7 @@ export const Dashboard = () => {
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           avatarUrl={avatarUrl}
-          slotUnderAvatarLabel={
-            (profile?.socials ?? []).some((s) => s.isVisible)
-              ? 'Links'
-              : undefined
-          }
+          slotUnderAvatarLabel={undefined}
           slotUnderAvatar={
             <ProfileLinksWidget
               socials={profile?.socials ?? []}

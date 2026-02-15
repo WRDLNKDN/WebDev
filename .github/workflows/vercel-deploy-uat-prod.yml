@@ -32,7 +32,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
-      # Build-time envs
+      # Vite build-time envs (baked into bundle at build time)
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
 
@@ -40,37 +40,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify required secrets (UAT)
+        run: |
+          set -e
+          [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
+          [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
+          [ -n "${VITE_SUPABASE_URL:-}" ]     || (echo "::error::Missing SUPABASE_UAT_URL" && exit 1)
+          [ -n "${VITE_SUPABASE_ANON_KEY:-}" ]|| (echo "::error::Missing SUPABASE_UAT_ANON_KEY" && exit 1)
+          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
+          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
+          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Install deps (include dev deps so tsc exists)
         run: npm ci --include=dev
 
       # -----------------------
-      # Supabase migrations + seed
+      # Supabase: push migrations + seed
       # -----------------------
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Link Supabase project (UAT)
+      - name: Ensure placeholder migration exists (fails fast with clear error)
+        run: |
+          set -e
+          if [ ! -f "supabase/migrations/20260117015124_remote_placeholder.sql" ]; then
+            echo "::error::Missing supabase/migrations/20260117015124_remote_placeholder.sql"
+            echo "Create it (can be empty) to match remote migration history, commit, and rerun."
+            exit 1
+          fi
+
+      - name: Supabase link (UAT)
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Push migrations + seed (UAT)
+      - name: Supabase db push (UAT) + seed
         run: supabase db push --include-all --include-seed
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      # ---------- Vercel ----------
+      # -----------------------
+      # Vercel: prebuilt deploy
+      # -----------------------
       - name: Link Vercel project (UAT)
         run: |
-          set -euo pipefail
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json
@@ -108,7 +125,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
-      # Build-time envs
+      # Vite build-time envs
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PROD_ANON_KEY }}
 
@@ -116,37 +133,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify required secrets (PROD)
+        run: |
+          set -e
+          [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
+          [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
+          [ -n "${VITE_SUPABASE_URL:-}" ]     || (echo "::error::Missing SUPABASE_PROD_URL" && exit 1)
+          [ -n "${VITE_SUPABASE_ANON_KEY:-}" ]|| (echo "::error::Missing SUPABASE_PROD_ANON_KEY" && exit 1)
+          [ -n "${VERCEL_TOKEN:-}" ]          || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
+          [ -n "${VERCEL_ORG_ID:-}" ]         || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
+          [ -n "${VERCEL_PROJECT_ID:-}" ]     || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Install deps (include dev deps so tsc exists)
         run: npm ci --include=dev
 
       # -----------------------
-      # Supabase migrations + seed
+      # Supabase: push migrations + seed
       # -----------------------
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Link Supabase project (PROD)
+      - name: Ensure placeholder migration exists (fails fast with clear error)
+        run: |
+          set -e
+          if [ ! -f "supabase/migrations/20260117015124_remote_placeholder.sql" ]; then
+            echo "::error::Missing supabase/migrations/20260117015124_remote_placeholder.sql"
+            echo "Create it (can be empty) to match remote migration history, commit, and rerun."
+            exit 1
+          fi
+
+      - name: Supabase link (PROD)
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Push migrations + seed (PROD)
+      - name: Supabase db push (PROD) + seed
         run: supabase db push --include-all --include-seed
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      # ---------- Vercel ----------
+      # -----------------------
+      # Vercel: prebuilt deploy
+      # -----------------------
       - name: Link Vercel project (PROD)
         run: |
-          set -euo pipefail
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json

@@ -21,7 +21,7 @@ export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
   if (!profile) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Profile Details</DialogTitle>
       <DialogContent>
         <Box sx={{ py: 2 }}>

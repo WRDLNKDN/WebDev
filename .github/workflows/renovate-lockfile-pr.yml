@@ -23,31 +23,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.0.0
-
       - name: 🧰 Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '22.19.0'
-          cache: 'pnpm'
+          node-version: '22'
+          cache: 'npm'
 
       - name: 📦 Install dependencies (CI mode)
-        run:
-          pnpm install --frozen-lockfile --ignore-scripts
-          --no-frozen-lockfile=false
+        run: npm ci
 
       - name: 🔍 Detect lockfile drift
         id: drift
         run: |
-          if git diff --quiet --exit-code -- pnpm-lock.yaml; then
+          if git diff --quiet --exit-code -- package-lock.json; then
             echo "✅ Lockfile is stable after install"
             echo "lockfile_status=clean" >> $GITHUB_OUTPUT
           else
             echo "::error::❌ Lockfile changed after install. Stale lockfile from Renovate?"
-            git --no-pager diff -- pnpm-lock.yaml || true
+            git --no-pager diff -- package-lock.json || true
             echo "lockfile_status=dirty" >> $GITHUB_OUTPUT
           fi
 
@@ -69,9 +62,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: pr.number,
               body: [
-                "🚫 Auto-closed: This PR contains a stale or invalid `pnpm-lock.yaml`.",
+                "🚫 Auto-closed: This PR contains a stale or invalid `package-lock.json`.",
                 "",
-                "Renovate generated a lockfile that isn't reproducible via `pnpm install --frozen-lockfile`.",
+                "Renovate generated a lockfile that isn't reproducible via `npm ci`.",
                 "Please rebase or rerun Renovate to regenerate the lockfile cleanly."
               ].join('\n')
             });

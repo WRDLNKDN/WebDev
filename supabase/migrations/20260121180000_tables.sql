@@ -46,7 +46,7 @@ drop table if exists public.profiles cascade;
 drop table if exists public.admin_allowlist cascade;
 
 -- -----------------------------
--- Admin allowlist (NO RLS)
+-- Admin allowlist (NO RLS; grants in rls.sql)
 -- -----------------------------
 create table public.admin_allowlist (
   email text primary key,
@@ -54,10 +54,8 @@ create table public.admin_allowlist (
   created_by uuid references auth.users(id)
 );
 
-revoke all on table public.admin_allowlist from anon, authenticated;
-
 -- -----------------------------
--- is_admin() helper
+-- is_admin() helper (grants in rls.sql)
 -- -----------------------------
 create or replace function public.is_admin()
 returns boolean
@@ -80,7 +78,7 @@ comment on function public.is_admin() is
   'True if current JWT email is in public.admin_allowlist.';
 
 -- -----------------------------
--- profiles table
+-- profiles table (RLS and grants in rls.sql)
 -- -----------------------------
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -197,7 +195,7 @@ execute function public.profiles_block_status_change();
 -- -----------------------------
 create table public.portfolio_items (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
+  owner_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
   description text,
   project_url text,
@@ -262,12 +260,11 @@ create table public.weirdlings (
   model_version text not null default 'mock',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id)
+  updated_at timestamptz not null default now()
 );
 
 comment on table public.weirdlings is
-  'One Weirdling persona per user (replace on save); MVP-aligned.';
+  'Weirdling personas; a user may have multiple.';
 
 -- -----------------------------
 -- updated_at triggers (generation_jobs, weirdlings)
@@ -414,9 +411,6 @@ $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int) is
   'Returns feed items for viewer (self + followees) with cursor and engagement counts.';
-
-revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
-grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
 
 -- -----------------------------
 -- Chat: rooms, members, messages, reactions, attachments, blocks, reports
@@ -932,7 +926,7 @@ values (
   'avatars',
   'avatars',
   true,
-  2097152,
+  6291456,
   array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 )
 on conflict (id) do update set

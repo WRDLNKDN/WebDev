@@ -59,12 +59,37 @@ export const fetchProfiles = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    let data: {
+      error?: string;
+      message?: string;
+      details?: string;
+      hint?: string;
+    };
+    try {
+      data = (await res.json()) as typeof data;
+    } catch {
+      data = {};
+    }
+    const rawMsg =
+      typeof data.error === 'string'
+        ? data.error
+        : typeof data.message === 'string'
+          ? data.message
+          : undefined;
+    const diagnostic = [rawMsg, data.details, data.hint]
+      .filter(Boolean)
+      .join(' | ');
+    if (diagnostic) {
+      console.error(
+        '[Admin fetchProfiles]',
+        res.status,
+        url.toString(),
+        diagnostic,
+      );
+    }
+    throw new Error(
+      messageFromApiResponse(res.status, rawMsg ?? (diagnostic || undefined)),
+    );
   }
 
   const data = (await res.json()) as ProfileRow[];
@@ -98,11 +123,13 @@ const updateStatus = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
+    let data: { error?: string };
+    try {
+      data = (await res.json()) as { error?: string };
+    } catch {
+      data = {};
+    }
+    const msg = typeof data.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 };
@@ -145,11 +172,13 @@ export const deleteProfiles = async (
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg =
-      typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : undefined;
+    let data: { error?: string };
+    try {
+      data = (await res.json()) as { error?: string };
+    } catch {
+      data = {};
+    }
+    const msg = typeof data.error === 'string' ? data.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
 

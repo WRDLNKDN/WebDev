@@ -47,19 +47,21 @@ const FOCUS_RING = {
   outlineOffset: '2px',
 };
 
+/** Sitewide font stack: Poppins + fallbacks (Helvetica, Arial, sans-serif) */
+const FONT_FAMILY = '"Poppins", "Helvetica", "Arial", sans-serif';
+
 const theme = createTheme({
   palette: PALETTE,
 
-  // TYPOGRAPHY: The "Fluid Scaling" Protocol
-  // clamp(MIN, VAL, MAX) -> Scales smoothly between MIN and MAX
+  // TYPOGRAPHY: Poppins for all copy (Google Font, loaded in index.html)
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
     htmlFontSize: 16,
 
     // H1: Hero Titles (Mobile: 32px -> Desktop: 72px)
     h1: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 700,
       lineHeight: 1.1,
       fontSize: 'clamp(2rem, 5vw + 1rem, 4.5rem)',
@@ -67,7 +69,7 @@ const theme = createTheme({
 
     // H2: Section Headers (Mobile: 24px -> Desktop: 48px)
     h2: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 600,
       lineHeight: 1.2,
       fontSize: 'clamp(1.5rem, 4vw + 1rem, 3rem)',
@@ -75,7 +77,7 @@ const theme = createTheme({
 
     // H3: Card Titles (Mobile: 20px -> Desktop: 36px)
     h3: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 600,
       lineHeight: 1.3,
       fontSize: 'clamp(1.25rem, 3vw + 1rem, 2.25rem)',
@@ -83,7 +85,7 @@ const theme = createTheme({
 
     // H4: Subtitles (Mobile: 18px -> Desktop: 28px)
     h4: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 500,
       lineHeight: 1.4,
       fontSize: 'clamp(1.125rem, 2vw + 1rem, 1.75rem)',
@@ -91,7 +93,7 @@ const theme = createTheme({
 
     // H5: Dense Headers
     h5: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 500,
       lineHeight: 1.4,
       fontSize: 'clamp(1.1rem, 1.5vw + 1rem, 1.5rem)',
@@ -99,35 +101,42 @@ const theme = createTheme({
 
     // H6: Micro Headers
     h6: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 500,
       lineHeight: 1.5,
       fontSize: 'clamp(1rem, 1vw + 1rem, 1.25rem)',
     },
 
-    subtitle1: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
-    subtitle2: { fontFamily: '"Poppins", sans-serif', fontWeight: 500 },
+    subtitle1: { fontFamily: FONT_FAMILY, fontWeight: 500 },
+    subtitle2: { fontFamily: FONT_FAMILY, fontWeight: 500 },
 
     button: {
-      fontFamily: '"Poppins", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontWeight: 600,
       textTransform: 'none',
     },
 
     // Body text scales slightly for better reading on large monitors
     body1: {
+      fontFamily: FONT_FAMILY,
       fontSize: 'clamp(1rem, 0.5vw + 1rem, 1.125rem)',
       lineHeight: 1.6,
     },
 
     body2: {
+      fontFamily: FONT_FAMILY,
       fontSize: '0.875rem',
       lineHeight: 1.5,
     },
 
     caption: {
+      fontFamily: FONT_FAMILY,
       fontSize: '0.75rem',
       lineHeight: 1.5,
+    },
+
+    overline: {
+      fontFamily: FONT_FAMILY,
     },
   },
 
@@ -424,3 +433,4 @@ const theme = createTheme({
 });
 
 export default theme;
+export { FONT_FAMILY };

@@ -14,20 +14,9 @@ body,
   margin: 0;
 }
 
-/* Let MUI control layout */
+/* Let MUI control layout — Poppins for all copy (loaded in index.html) */
 body {
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Open Sans',
-    'Helvetica Neue',
-    sans-serif;
+  font-family: 'Poppins', 'Helvetica', 'Arial', sans-serif;
 
   background-color: #f5f6f8; /* neutral admin background */
   color: #1f2937; /* readable dark text */
@@ -45,7 +34,13 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Remove Vite demo button styles (MUI handles buttons) */
+/* Reset native button styles so MUI can control; keep cursor & pointer events */
 button {
-  all: unset;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
 }

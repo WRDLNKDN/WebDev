@@ -6,6 +6,9 @@
 /** Number of Weirdling image assets in public/assets/og_weirdlings (weirdling_1.png … weirdling_N.png). Single source of truth. */
 export const WEIRDLING_ASSET_COUNT = 6;
 
+/** When includeImage is true: pick from preset grid or let backend pick one (by handle + roleVibe). */
+export type WeirdlingImageSource = 'preset' | 'generate';
+
 export type WeirdlingWizardInputs = {
   displayNameOrHandle: string;
   roleVibe: string;
@@ -14,7 +17,9 @@ export type WeirdlingWizardInputs = {
   boundaries: string;
   bioSeed?: string;
   includeImage?: boolean;
-  /** When includeImage is true, which asset to use (1..WEIRDLING_ASSET_COUNT). */
+  /** When includeImage is true: 'preset' = pick from grid, 'generate' = backend picks one. */
+  imageSource?: WeirdlingImageSource;
+  /** When includeImage and imageSource === 'preset', which asset (1..WEIRDLING_ASSET_COUNT). */
   selectedImageIndex?: number;
 };
 

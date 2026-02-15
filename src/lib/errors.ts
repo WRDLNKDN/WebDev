@@ -36,6 +36,15 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
     pattern: /failed to fetch|network error|load failed/i,
     friendly: 'Connection problem. Please check your network and try again.',
   },
+  {
+    pattern: /new row violates row-level security|rls policy/i,
+    friendly: "You don't have permission to add that. Try signing in again.",
+  },
+  {
+    pattern: /duplicate key|unique constraint|already exists/i,
+    friendly:
+      'A project with that title or URL may already exist. Try a different title or URL.',
+  },
 ];
 
 /**
@@ -51,6 +60,8 @@ export function messageForStatus(status: number): string {
       return "You don't have permission to do that.";
     case 404:
       return "That couldn't be found. It may have been removed.";
+    case 409:
+      return 'That conflicts with existing data. Try a different title or URL.';
     case 405:
       return "This action isn't available right now. Please refresh and try again.";
     case 429:

@@ -26,13 +26,13 @@ export const WelcomeStep = () => {
               Start with intent.
             </Typography>
             <Typography variant="body2" sx={welcomeStepSubtext}>
-              A professional community built on values and participation.
+              Business, but weirder. And built with care.
             </Typography>
           </Box>
 
           <Typography variant="body2" sx={welcomeStepDescription}>
-            Tell us why you are here and how you plan to show up. We review each
-            submission to keep the community aligned.
+            Tell us what brings you here and how you want to contribute. We
+            review submissions to protect the culture and the humans in it.
           </Typography>
 
           <Button

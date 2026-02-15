@@ -28,10 +28,10 @@ jobs:
               { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number }
             );
             const filenames = files.map(f => f.filename);
-            const onlyLockfile = filenames.length === 1 && filenames[0].endsWith('pnpm-lock.yaml');
+            const onlyLockfile = filenames.length === 1 && filenames[0] === 'package-lock.json';
 
             if (!onlyLockfile) {
-              core.setFailed(`❌ Lockfile maintenance PR must only touch pnpm-lock.yaml. Changed: ${filenames.join(', ')}`);
+              core.setFailed(`❌ Lockfile maintenance PR must only touch package-lock.json. Changed: ${filenames.join(', ')}`);
             } else {
               core.info('✅ Valid lockfile-only PR.');
             }

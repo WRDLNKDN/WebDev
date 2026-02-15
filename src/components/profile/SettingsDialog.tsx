@@ -1,18 +1,14 @@
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
-import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Stack,
-  Typography,
 } from '@mui/material';
 
 const GLASS_MODAL = {
@@ -52,39 +48,25 @@ export const SettingsDialog = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
+      aria-label="Settings"
       PaperProps={{ sx: GLASS_MODAL }}
     >
-      <DialogTitle
-        sx={{ borderBottom: '1px solid rgba(255,255,255,0.1)', p: 2 }}
+      <IconButton
+        aria-label="Close"
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+          zIndex: 1,
+          color: 'white',
+        }}
       >
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <SettingsIcon /> Settings
-          </Typography>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'white' }}
-            aria-label="Close"
-          >
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-      </DialogTitle>
-      <DialogContent sx={{ p: 0 }}>
+        <CloseIcon />
+      </IconButton>
+      <DialogContent sx={{ pt: 5, px: 0, pb: 0 }}>
         <List disablePadding>
           <ListItemButton
             onClick={handleEditProfile}

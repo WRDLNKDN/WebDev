@@ -38,7 +38,6 @@ const ProfileStep = () => {
   const [displayName, setDisplayName] = useState(
     state.profile?.displayName ?? '',
   );
-  const [tagline, setTagline] = useState(state.profile?.tagline ?? '');
 
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -64,7 +63,6 @@ const ProfileStep = () => {
 
     const profileData = {
       displayName: displayName.trim(),
-      tagline: tagline.trim(),
     };
 
     setProfile(profileData);
@@ -81,7 +79,6 @@ const ProfileStep = () => {
   const handleBack = () => {
     setProfile({
       displayName: displayName.trim(),
-      tagline: tagline.trim(),
     });
     goToStep('values');
   };
@@ -90,10 +87,10 @@ const ProfileStep = () => {
     <Stack spacing={4} sx={profileStep}>
       <Box>
         <Typography variant="h4" sx={profileStepTitle}>
-          Create your profile
+          Create your public profile
         </Typography>
         <Typography variant="body1" sx={profileStepSubtext}>
-          This is how you will appear in the community.
+          This is how you&apos;ll appear in the community.
         </Typography>
       </Box>
 
@@ -108,33 +105,21 @@ const ProfileStep = () => {
       )}
 
       <TextField
-        label="Display name"
+        label="Public display name"
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
         fullWidth
         placeholder="How should we call you?"
-        helperText="This is your public name."
+        helperText="This name will be visible across the community."
         required
         error={!displayName.trim() && displayName.length > 0}
         sx={profileStepTextField}
       />
 
-      <TextField
-        label="Tagline"
-        value={tagline}
-        onChange={(e) => setTagline(e.target.value)}
-        fullWidth
-        multiline
-        rows={2}
-        placeholder="One-liner about you (optional)"
-        helperText="Optional: A short description of how you show up or what you're building."
-        sx={profileStepTextField}
-      />
-
       <Box sx={profileStepTipBox}>
         <Typography variant="body2" sx={profileStepTipText}>
-          Your profile will be reviewed to keep the community aligned.
-          We&apos;ll notify you once it&apos;s live.
+          Profiles are reviewed to protect the integrity of the community.
+          We&apos;ll notify you when yours is live.
         </Typography>
       </Box>
 
@@ -172,7 +157,7 @@ const ProfileStep = () => {
           }
           sx={profileStepSubmitButton}
         >
-          {submitting ? 'Creating…' : 'Create profile'}
+          {submitting ? 'Submitting…' : 'Submit profile for review'}
         </Button>
       </Stack>
     </Stack>

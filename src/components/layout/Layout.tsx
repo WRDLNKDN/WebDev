@@ -23,6 +23,7 @@ const LayoutContent = () => {
   return (
     <>
       <Navbar />
+      <UatBanner />
       <Box
         component="main"
         sx={{

@@ -7,6 +7,7 @@ import {
 import { ChatPopover } from '../chat/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Footer } from './Footer';
+import { UatBanner } from './UatBanner';
 import { MessengerOverlay } from './MessengerOverlay';
 import { Navbar } from './Navbar';
 

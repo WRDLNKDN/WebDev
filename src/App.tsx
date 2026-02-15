@@ -72,10 +72,6 @@ const WeirdlingCreate = lazy(() =>
   })),
 );
 
-const ProjectPage = lazy(() =>
-  import('./pages/ProjectPage').then((m) => ({ default: m.ProjectPage })),
-);
-
 const BumperPage = lazy(() =>
   import('./pages/BumperPage').then((m) => ({ default: m.BumperPage })),
 );

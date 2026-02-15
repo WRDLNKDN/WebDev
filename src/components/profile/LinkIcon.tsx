@@ -1,27 +1,24 @@
 import {
-  faBehance,
-  faDev,
-  faDiscord,
-  faDribbble,
-  faFacebook,
-  faFigma,
-  faGithub,
-  faGitlab,
-  faInstagram,
-  faLinkedin,
-  faMastodon,
-  faMedium,
-  faReddit,
-  faStackOverflow,
-  faThreads,
-  faTwitch,
-  faTwitter,
-  faXTwitter,
-  faYoutube,
-} from '@fortawesome/free-brands-svg-icons';
-import { faGlobe, faRss } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import type { BoxProps } from '@mui/material';
+  Article,
+  Code,
+  DesignServices,
+  Description,
+  Facebook,
+  Forum,
+  GitHub,
+  Instagram,
+  LinkedIn,
+  Palette,
+  Public,
+  Reddit,
+  RssFeed,
+  Share,
+  Twitter,
+  VideoLibrary,
+  X,
+  YouTube,
+} from '@mui/icons-material';
+import type { BoxProps, SvgIconProps } from '@mui/material';
 import { Box } from '@mui/material';
 
 // We extend BoxProps so we can pass sx, m, p, etc. to the icon container
@@ -29,109 +26,109 @@ interface LinkIconProps extends BoxProps {
   platform: string;
 }
 
+type IconComponent = React.ComponentType<SvgIconProps>;
+
 export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
   const key = platform?.toLowerCase() || 'custom';
 
   // 1. Define the Icon and the Brand Color
-  let icon = faGlobe;
+  let Icon: IconComponent = Public;
   let brandColor = '#757575'; // Default Grey
 
   switch (key) {
     // --- PROFESSIONAL / MAKER ---
     case 'linkedin':
-      icon = faLinkedin;
+      Icon = LinkedIn;
       brandColor = '#0077b5';
       break;
     case 'github':
-      icon = faGithub;
-      brandColor = '#ffffff'; // White for dark mode
+      Icon = GitHub;
+      brandColor = '#ffffff';
       break;
     case 'gitlab':
-      icon = faGitlab;
+      Icon = Code;
       brandColor = '#fc6d26';
       break;
     case 'stack overflow':
-      icon = faStackOverflow;
+      Icon = Code;
       brandColor = '#f48024';
       break;
     case 'dev.to':
-      icon = faDev;
+      Icon = Code;
       brandColor = '#ffffff';
       break;
     case 'behance':
-      icon = faBehance;
+      Icon = Palette;
       brandColor = '#1769ff';
       break;
     case 'dribbble':
-      icon = faDribbble;
+      Icon = Palette;
       brandColor = '#ea4c89';
       break;
     case 'figma':
-      icon = faFigma;
+      Icon = DesignServices;
       brandColor = '#f24e1e';
       break;
     case 'notion':
-      // Fallback for Notion (No free FA brand icon yet)
-      icon = faGlobe;
+      Icon = Description;
       brandColor = '#ffffff';
       break;
 
     // --- SOCIAL / COMMUNITY ---
     case 'x':
-      icon = faXTwitter;
+      Icon = X;
       brandColor = '#ffffff';
       break;
     case 'twitter':
-      icon = faTwitter;
+      Icon = Twitter;
       brandColor = '#1da1f2';
       break;
     case 'facebook':
-      icon = faFacebook;
+      Icon = Facebook;
       brandColor = '#1877f2';
       break;
     case 'instagram':
-      icon = faInstagram;
+      Icon = Instagram;
       brandColor = '#e4405f';
       break;
     case 'reddit':
-      icon = faReddit;
+      Icon = Reddit;
       brandColor = '#ff4500';
       break;
     case 'discord':
-      icon = faDiscord;
+      Icon = Forum;
       brandColor = '#5865F2';
       break;
     case 'mastodon':
-      icon = faMastodon;
+      Icon = Share;
       brandColor = '#6364ff';
       break;
     case 'threads':
-      icon = faThreads;
+      Icon = Share;
       brandColor = '#ffffff';
       break;
 
     // --- CONTENT ---
     case 'youtube':
-      icon = faYoutube;
+      Icon = YouTube;
       brandColor = '#ff0000';
       break;
     case 'twitch':
-      icon = faTwitch;
+      Icon = VideoLibrary;
       brandColor = '#9146ff';
       break;
     case 'medium':
-      icon = faMedium;
+      Icon = Article;
       brandColor = '#ffffff';
       break;
     case 'substack':
-      // Substack doesn't have a free FA icon yet, using generic RSS
-      icon = faRss;
+      Icon = RssFeed;
       brandColor = '#ff6719';
       break;
 
     // --- CUSTOM / DEFAULT ---
     default:
-      icon = faGlobe;
+      Icon = Public;
       brandColor = 'inherit';
       break;
   }
@@ -146,11 +143,11 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.25rem', // Default size
-        ...props.sx, // Allow overrides
+        fontSize: '1.25rem',
+        ...props.sx,
       }}
     >
-      <FontAwesomeIcon icon={icon} />
+      <Icon sx={{ fontSize: 'inherit' }} />
     </Box>
   );
 };

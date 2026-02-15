@@ -30,6 +30,14 @@ const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
 );
 
+const ChatRedirect = lazy(() =>
+  import('./pages/ChatRedirect').then((m) => ({ default: m.ChatRedirect })),
+);
+
+const ChatPopupPage = lazy(() =>
+  import('./pages/ChatPopupPage').then((m) => ({ default: m.ChatPopupPage })),
+);
+
 const Feed = lazy(() =>
   import('./pages/Feed').then((m) => ({ default: m.Feed })),
 );
@@ -150,6 +158,12 @@ const ProfileReview = lazy(() =>
   })),
 );
 
+const AdminChatReports = lazy(() =>
+  import('./pages/admin/AdminChatReports').then((m) => ({
+    default: m.AdminChatReports,
+  })),
+);
+
 // 5. System Components
 const Loading = () => (
   <Box
@@ -202,6 +216,9 @@ const App = () => {
             {/* Bumper: full-screen, no nav/footer (for recording) */}
             <Route path="/bumper" element={<BumperPage />} />
 
+            {/* Popout chat: standalone window (LinkedIn-style) */}
+            <Route path="/chat-popup/:roomId" element={<ChatPopupPage />} />
+
             <Route element={<Layout />}>
               {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
               <Route path="/" element={<Home />} />
@@ -223,7 +240,8 @@ const App = () => {
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/projects/:id" element={<ProjectPage />} />
+              <Route path="/chat" element={<ChatRedirect />} />
+              <Route path="/chat/:roomId" element={<ChatRedirect />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />
 
               {/* --- Authentication --- */}
@@ -242,6 +260,10 @@ const App = () => {
               <Route path="/admin/pending" element={<PendingProfiles />} />
               <Route path="/admin/approved" element={<ApprovedProfiles />} />
               <Route path="/admin/review/:id" element={<ProfileReview />} />
+              <Route
+                path="/admin/chat-reports"
+                element={<AdminChatReports />}
+              />
 
               {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
 

@@ -88,6 +88,232 @@ export type Database = {
           }
         ]
       }
+      chat_blocks: {
+        Row: {
+          blocker_id: string
+          blocked_user_id: string
+          created_at: string
+        }
+        Insert: {
+          blocker_id: string
+          blocked_user_id: string
+          created_at?: string
+        }
+        Update: {
+          blocker_id?: string
+          blocked_user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_suspensions: {
+        Row: {
+          id: string
+          user_id: string
+          suspended_by: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          suspended_by: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          suspended_by?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_rooms: {
+        Row: {
+          id: string
+          room_type: string
+          name: string | null
+          created_by: string
+          original_admin_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          room_type: string
+          name?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          room_type?: string
+          name?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_room_members: {
+        Row: {
+          room_id: string
+          user_id: string
+          role: string
+          joined_at: string
+          left_at: string | null
+        }
+        Insert: {
+          room_id: string
+          user_id: string
+          role?: string
+          joined_at?: string
+          left_at?: string | null
+        }
+        Update: {
+          room_id?: string
+          user_id?: string
+          role?: string
+          joined_at?: string
+          left_at?: string | null
+        }
+        Relationships: []
+      }
+      chat_reports: {
+        Row: {
+          id: string
+          reporter_id: string
+          reported_message_id: string | null
+          reported_user_id: string | null
+          category: string
+          free_text: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reporter_id: string
+          reported_message_id?: string | null
+          reported_user_id?: string | null
+          category: string
+          free_text?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reporter_id?: string
+          reported_message_id?: string | null
+          reported_user_id?: string | null
+          category?: string
+          free_text?: string | null
+          status?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_message_reactions: {
+        Row: {
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          message_id?: string
+          user_id?: string
+          emoji?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_message_attachments: {
+        Row: {
+          id: string
+          message_id: string
+          storage_path: string
+          mime_type: string
+          file_size: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          storage_path: string
+          mime_type: string
+          file_size: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          storage_path?: string
+          mime_type?: string
+          file_size?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_read_receipts: {
+        Row: {
+          message_id: string
+          user_id: string
+          read_at: string
+        }
+        Insert: {
+          message_id: string
+          user_id: string
+          read_at?: string
+        }
+        Update: {
+          message_id?: string
+          user_id?: string
+          read_at?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          room_id: string
+          sender_id: string | null
+          content: string | null
+          is_system_message: boolean
+          is_deleted: boolean
+          edited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          sender_id?: string | null
+          content?: string | null
+          is_system_message?: boolean
+          is_deleted?: boolean
+          edited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          sender_id?: string | null
+          content?: string | null
+          is_system_message?: boolean
+          is_deleted?: boolean
+          edited_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
@@ -168,6 +394,22 @@ export type Database = {
       is_admin: {
         Args: Record<string, never>
         Returns: boolean
+      }
+      are_chat_connections: {
+        Args: { a: string; b: string }
+        Returns: boolean
+      }
+      chat_blocked: {
+        Args: { a: string; b: string }
+        Returns: boolean
+      }
+      is_chat_moderator: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+      chat_create_group: {
+        Args: { p_name: string; p_member_ids: string[] }
+        Returns: string
       }
     }
     Enums: {

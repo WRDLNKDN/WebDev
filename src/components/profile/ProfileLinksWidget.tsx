@@ -98,7 +98,7 @@ export const ProfileLinksWidget = ({
                 },
               }}
             >
-              <CloseIcon sx={{ fontSize: 16 }} />
+              <CloseIcon fontSize="small" />
             </IconButton>
           )}
         </Box>

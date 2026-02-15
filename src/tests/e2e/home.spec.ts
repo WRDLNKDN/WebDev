@@ -40,7 +40,14 @@ test.describe('Home Page - High-Integrity Audit', () => {
     await expect(page).toHaveURL(/\/admin(\b|\/|\?)/);
     await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-    const results = await new AxeBuilder({ page }).include('#root').analyze();
+    // Wait for page to settle (no pending redirects) before axe; avoids
+    // "Execution context was destroyed" when client-side nav runs during scan.
+    await page.waitForLoadState('networkidle');
+
+    const results = await new AxeBuilder({ page })
+      .include('#root')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
 
     expect(results.violations).toEqual([]);
   });

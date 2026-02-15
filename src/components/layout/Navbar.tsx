@@ -752,7 +752,7 @@ export const Navbar = () => {
                     py: 1.5,
                   }}
                 >
-                  Search / Directory
+                  Directory
                 </Button>
                 {isAdmin && (
                   <Button

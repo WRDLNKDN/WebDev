@@ -171,7 +171,10 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
         combined.includes('permission denied') ||
         combined.includes('configuration')
       ) {
-        return `We're having a technical issue on our side. Please try again in a few minutes, or email us at ${SUPPORT_EMAIL} if it keeps happening.`;
+        return (
+          `We're having a technical issue on our side. Please try again in a few ` +
+          `minutes, or email us at ${SUPPORT_EMAIL} if it keeps happening.`
+        );
       }
 
       // Network / timeout / server errors

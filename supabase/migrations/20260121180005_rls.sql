@@ -15,6 +15,31 @@ begin
 end $$;
 
 -- -----------------------------
+-- Optional: add directory columns to profiles if missing (idempotent for existing DBs)
+-- -----------------------------
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'industry') then
+    alter table public.profiles add column industry text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'location') then
+    alter table public.profiles add column location text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_visibility') then
+    alter table public.profiles add column profile_visibility text not null default 'members_only'
+      check (profile_visibility in ('members_only', 'connections_only'));
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_active_at') then
+    alter table public.profiles add column last_active_at timestamptz default now();
+  end if;
+end $$;
+
+-- Directory indexes (idempotent; tables.sql creates on fresh reset)
+create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
+create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+
+-- -----------------------------
 -- admin_allowlist: privileges (no RLS)
 -- -----------------------------
 revoke all on table public.admin_allowlist from anon, authenticated;
@@ -30,6 +55,12 @@ grant execute on function public.is_admin() to authenticated;
 -- -----------------------------
 revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
 grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
+
+-- -----------------------------
+-- get_directory_page(): execute grant
+-- -----------------------------
+revoke all on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) from public;
+grant execute on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) to authenticated, service_role;
 
 -- -----------------------------
 -- profiles: RLS
@@ -83,6 +114,10 @@ grant update (
   geek_creds,
   nerd_creds,
   pronouns,
+  industry,
+  location,
+  profile_visibility,
+  last_active_at,
   socials,
   join_reason,
   participation_style,
@@ -177,6 +212,28 @@ create policy "Users can delete own connections"
 
 revoke all on table public.feed_connections from anon, authenticated;
 grant select, insert, delete on table public.feed_connections to authenticated;
+
+-- -----------------------------
+-- connection_requests: RLS
+-- -----------------------------
+alter table public.connection_requests enable row level security;
+
+create policy connection_requests_requester
+  on public.connection_requests for all
+  using (auth.uid() = requester_id)
+  with check (auth.uid() = requester_id);
+
+create policy connection_requests_recipient_select
+  on public.connection_requests for select
+  using (auth.uid() = recipient_id);
+
+create policy connection_requests_recipient_update
+  on public.connection_requests for update
+  using (auth.uid() = recipient_id)
+  with check (auth.uid() = recipient_id);
+
+revoke all on table public.connection_requests from anon;
+grant select, insert, update on table public.connection_requests to authenticated;
 
 -- -----------------------------
 -- feed_items: RLS

@@ -42,7 +42,10 @@ async function parseJsonResponse<T>(
   if (trimmed.toLowerCase().startsWith('<!')) {
     const urlHint = requestUrl ? ` Request URL: ${requestUrl}.` : '';
     throw new Error(
-      `Feeds API returned HTML instead of JSON.${urlHint} Set VITE_API_URL to your API origin only (e.g. https://api.wrdlnkdn.com) — no trailing /api. Redeploy after changing the env so the build picks it up. If VITE_API_URL is already set, ensure the API server is running and returns JSON for /api/feeds.`,
+      `Feeds API returned HTML instead of JSON.${urlHint} Set VITE_API_URL to your ` +
+        `API origin only (e.g. https://api.wrdlnkdn.com) — no trailing /api. Redeploy ` +
+        `after changing the env so the build picks it up. If VITE_API_URL is already set, ` +
+        `ensure the API server is running and returns JSON for /api/feeds.`,
     );
   }
   if (trimmed === '') {

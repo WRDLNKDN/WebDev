@@ -12,10 +12,11 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
-import { toMessage } from '../../lib/errors';
+import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import { POLICY_VERSION } from '../../types/signup';
+import { updateLastActive } from '../../lib/updateLastActive';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 function mapSupabaseProvider(user: {
@@ -52,9 +53,7 @@ export const AuthCallback = () => {
         if (oauthError) {
           const lower = oauthError.toLowerCase();
           if (lower.includes('provider') && lower.includes('not enabled')) {
-            throw new Error(
-              'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env, then run: supabase stop && supabase start. See supabase/README.md.',
-            );
+            throw new Error(MICROSOFT_SIGNIN_NOT_CONFIGURED);
           }
           throw new Error(
             `Sign-in failed: ${oauthError}. Try again or use a different sign-in method.`,
@@ -76,6 +75,7 @@ export const AuthCallback = () => {
         }
 
         const user = data.session.user;
+        void updateLastActive(supabase, user.id);
 
         if (!cancelled) {
           // --- LOGIC BRANCH: SIGNUP VS DIRECT ENTRY ---

@@ -121,6 +121,9 @@ export const EditProfileDialog = ({
     status_message: '',
     bio: '',
     skills: '',
+    industry: '',
+    location: '',
+    profile_visibility: 'members_only' as 'members_only' | 'connections_only',
   });
 
   const [busy, setBusy] = useState(false);
@@ -136,6 +139,7 @@ export const EditProfileDialog = ({
     if (open && profile) {
       const creds = (profile.nerd_creds as Record<string, unknown>) || {};
 
+      const prof = profile as unknown as Record<string, unknown>;
       setFormData({
         handle: safeStr(profile.handle),
         pronouns: safeStr(profile.pronouns),
@@ -148,6 +152,11 @@ export const EditProfileDialog = ({
               ? creds.skills
               : '',
         ),
+        industry: safeStr(prof.industry),
+        location: safeStr(prof.location),
+        profile_visibility: (prof.profile_visibility === 'connections_only'
+          ? 'connections_only'
+          : 'members_only') as 'members_only' | 'connections_only',
       });
       setUploadedAvatarUrl(null);
     }
@@ -199,6 +208,9 @@ export const EditProfileDialog = ({
       await onUpdate({
         handle: formData.handle,
         pronouns: formData.pronouns,
+        industry: formData.industry || null,
+        location: formData.location || null,
+        profile_visibility: formData.profile_visibility,
         nerd_creds: {
           status_message: formData.status_message,
           bio: formData.bio,
@@ -433,6 +445,122 @@ export const EditProfileDialog = ({
                   <MenuItem value="Other">Other</MenuItem>
                 </Select>
               </FormControl>
+            </Box>
+
+            {/* Industry */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                INDUSTRY
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Industry or field"
+                value={formData.industry}
+                onChange={handleChange('industry')}
+                disabled={busy}
+                variant="filled"
+                sx={INPUT_STYLES}
+                helperText="Shown in Directory. E.g. Tech, Healthcare, Education."
+              />
+            </Box>
+
+            {/* Location */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                LOCATION
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="City, State"
+                value={formData.location}
+                onChange={handleChange('location')}
+                disabled={busy}
+                variant="filled"
+                sx={INPUT_STYLES}
+                helperText="Shown in Directory. E.g. San Francisco, CA."
+              />
+            </Box>
+
+            {/* Profile visibility (Directory) */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                WHO SEES ME IN DIRECTORY
+              </Typography>
+              <FormControl
+                fullWidth
+                variant="filled"
+                disabled={busy}
+                sx={INPUT_STYLES}
+              >
+                <Select
+                  value={formData.profile_visibility}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      profile_visibility: e.target.value as
+                        | 'members_only'
+                        | 'connections_only',
+                    }))
+                  }
+                  sx={{
+                    '& .MuiSelect-select': { padding: INPUT_PADDING },
+                    '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: INPUT_BG,
+                        color: 'white',
+                        border: `1px solid ${BORDER_COLOR}`,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="members_only">
+                    All signed-in members
+                  </MenuItem>
+                  <MenuItem value="connections_only">
+                    Only my connections
+                  </MenuItem>
+                </Select>
+              </FormControl>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  mt: 0.5,
+                  color: 'rgba(255,255,255,0.5)',
+                }}
+              >
+                Controls who can find you in the Directory.
+              </Typography>
             </Box>
 
             {/* Status */}

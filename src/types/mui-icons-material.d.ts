@@ -17,3 +17,8 @@ declare module '@mui/icons-material/TouchApp';
 declare module '@mui/icons-material/Search';
 declare module '@mui/icons-material/Send';
 declare module '@mui/icons-material/AttachFile';
+declare module '@mui/icons-material/SportsEsports';
+declare module '@mui/icons-material/Store';
+declare module '@mui/icons-material/Dashboard';
+declare module '@mui/icons-material/Feed';
+declare module '@mui/icons-material/Menu';

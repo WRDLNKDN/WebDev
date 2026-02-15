@@ -36,7 +36,7 @@ export const CompactAddCard = ({
       }
       sx={{
         ...(isNeutral ? DASHED_CARD_NEUTRAL : CANDY_HAZARD),
-        minHeight: 100,
+        minHeight: { xs: 80, md: 100 },
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
@@ -46,7 +46,7 @@ export const CompactAddCard = ({
       }}
     >
       {isNeutral ? (
-        <AddIcon sx={{ fontSize: 40, mb: 1, color: 'white' }} />
+        <AddIcon sx={{ fontSize: { xs: 28, md: 40 }, mb: 1, color: 'white' }} />
       ) : (
         <AddCircleOutlineIcon sx={{ fontSize: 36, mb: 1 }} />
       )}
@@ -54,7 +54,10 @@ export const CompactAddCard = ({
         variant="subtitle2"
         fontWeight={700}
         letterSpacing={0.5}
-        sx={isNeutral ? { color: 'white' } : undefined}
+        sx={{
+          ...(isNeutral ? { color: 'white' } : {}),
+          fontSize: { xs: '0.7rem', md: 'inherit' },
+        }}
       >
         {isNeutral ? label : `+ ${label}`}
       </Typography>

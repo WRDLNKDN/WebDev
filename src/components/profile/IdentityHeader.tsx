@@ -44,20 +44,20 @@ export const IdentityHeader = ({
   <Paper
     elevation={0}
     sx={{
-      p: 4,
-      borderRadius: 4,
+      p: { xs: 2, md: 4 },
+      borderRadius: { xs: 2, md: 4 },
       bgcolor: CARD_BG,
       backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255,255,255,0.12)',
       boxShadow: BANNER_GLOW,
-      mb: 4,
+      mb: { xs: 3, md: 4 },
       position: 'relative',
     }}
   >
     <Stack
-      direction="row"
+      direction={{ xs: 'column', sm: 'row' }}
       justifyContent="space-between"
-      alignItems="center"
+      alignItems={{ xs: 'stretch', sm: 'center' }}
       flexWrap="wrap"
       gap={2}
       sx={{ mb: 2 }}
@@ -68,12 +68,20 @@ export const IdentityHeader = ({
           letterSpacing: 2,
           color: 'text.secondary',
           fontWeight: 600,
+          fontSize: { xs: '0.7rem', md: 'inherit' },
         }}
       >
         PROFILE IDENTITY BANNER
       </Typography>
       {actions && (
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          sx={{
+            width: { xs: '100%', sm: 'auto' },
+            '& .MuiButton-root': { minWidth: { xs: '100%', sm: 'auto' } },
+          }}
+        >
           {actions}
         </Stack>
       )}
@@ -81,7 +89,7 @@ export const IdentityHeader = ({
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      spacing={4}
+      spacing={{ xs: 3, md: 4 }}
       alignItems={{ xs: 'center', md: 'flex-start' }}
       sx={{ textAlign: { xs: 'center', md: 'left' } }}
     >
@@ -90,8 +98,8 @@ export const IdentityHeader = ({
           src={avatarUrl}
           alt={displayName}
           sx={{
-            width: 120,
-            height: 120,
+            width: { xs: 88, md: 120 },
+            height: { xs: 88, md: 120 },
             border: '4px solid rgba(255,255,255,0.1)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           }}
@@ -122,7 +130,12 @@ export const IdentityHeader = ({
       >
         <Typography
           variant="h4"
-          sx={{ fontWeight: 700, mb: 0.5, letterSpacing: -0.5 }}
+          sx={{
+            fontWeight: 700,
+            mb: 0.5,
+            letterSpacing: -0.5,
+            fontSize: { xs: '1.5rem', md: '2.125rem' },
+          }}
         >
           {displayName}
         </Typography>

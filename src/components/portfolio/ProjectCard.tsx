@@ -32,8 +32,8 @@ export const ProjectCard = ({
         ...CANDY_BLUEY, // Spread first to ensure brand base
         width: '100%',
         maxWidth: 360,
-        minHeight: 400,
-        height: 400,
+        minHeight: { xs: 320, md: 400 },
+        height: { xs: 320, md: 400 },
         borderRadius: 3,
         scrollSnapAlign: 'start',
         display: 'flex',
@@ -65,7 +65,7 @@ export const ProjectCard = ({
       )}
       <Box
         sx={{
-          height: 200,
+          height: { xs: 140, md: 200 },
           bgcolor: 'rgba(0,0,0,0.5)',
           position: 'relative',
           overflow: 'hidden',
@@ -93,7 +93,14 @@ export const ProjectCard = ({
         )}
       </Box>
 
-      <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          p: { xs: 2, md: 3 },
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <Typography
           component={RouterLink}
           to={`/projects/${project.id}`}

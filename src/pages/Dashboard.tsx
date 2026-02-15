@@ -8,7 +8,6 @@ import {
   Grid,
   Paper,
   Snackbar,
-  Stack,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -28,7 +27,7 @@ import {
 import { SettingsDialog } from '../components/profile/SettingsDialog';
 import { EditLinksDialog } from '../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
-import { WeirdlingCarousel } from '../components/profile/WeirdlingCarousel';
+import { WeirdlingBannerSlot } from '../components/profile/WeirdlingBannerSlot';
 import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
@@ -133,11 +132,11 @@ export const Dashboard = () => {
     <Box
       sx={{
         flex: 1,
-        pt: 4,
-        pb: 8,
+        pt: { xs: 2, md: 4 },
+        pb: { xs: 'calc(32px + env(safe-area-inset-bottom))', md: 8 },
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* 1. PROFILE IDENTITY BANNER */}
         <IdentityHeader
           displayName={displayName}
@@ -172,6 +171,23 @@ export const Dashboard = () => {
               onSkillsClick={() => setIsEditOpen(true)}
             />
           }
+          slotBetweenContentAndActions={
+            weirdlings && weirdlings.length > 0 ? (
+              <WeirdlingBannerSlot
+                weirdlings={weirdlings}
+                onAddClick={() => setIsAddWeirdlingOpen(true)}
+                onRemove={async (id) => {
+                  try {
+                    await deleteWeirdling(id);
+                    const list = await getMyWeirdlings();
+                    setWeirdlings(list);
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
+            ) : undefined
+          }
           actions={
             <>
               <Button
@@ -191,23 +207,15 @@ export const Dashboard = () => {
               >
                 Settings
               </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setIsAddWeirdlingOpen(true)}
+                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              >
+                Add weirdling
+              </Button>
             </>
           }
-        />
-
-        {/* WEIRDLINGS SECTION (showcase + add) */}
-        <WeirdlingCarousel
-          weirdlings={weirdlings ?? []}
-          onAddClick={() => setIsAddWeirdlingOpen(true)}
-          onRemove={async (id) => {
-            try {
-              await deleteWeirdling(id);
-              const list = await getMyWeirdlings();
-              setWeirdlings(list);
-            } catch (e) {
-              setSnack(toMessage(e));
-            }
-          }}
         />
 
         {/* 2. PORTFOLIO */}
@@ -215,7 +223,7 @@ export const Dashboard = () => {
           elevation={0}
           sx={{
             ...GLASS_CARD,
-            p: 3,
+            p: { xs: 2, md: 3 },
           }}
         >
           <Typography
@@ -231,47 +239,43 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          <Stack
-            direction="row"
-            spacing={3}
-            sx={{ mb: 4 }}
-            flexWrap="wrap"
-            useFlexGap
-          >
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
+          <Grid container spacing={2} sx={{ mb: 4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <CompactAddCard
                 variant="neutral"
                 label="Add Resume"
                 accept=".pdf,.doc,.docx"
                 onFileSelect={handleResumeUpload}
               />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <CompactAddCard
                 variant="neutral"
                 label="Add Project"
                 onClick={() => setIsAddProjectOpen(true)}
               />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <CompactAddCard
                 variant="neutral"
                 label="Skills"
                 onClick={() => setIsEditOpen(true)}
               />
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <CompactAddCard
                 variant="neutral"
                 label="Links"
                 onClick={() => setIsLinksOpen(true)}
               />
-            </Box>
-          </Stack>
+            </Grid>
+          </Grid>
 
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 4 }} />
+          <Divider
+            sx={{ borderColor: 'rgba(255,255,255,0.12)', my: { xs: 3, md: 4 } }}
+          />
 
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 2, md: 4 }}>
             {profile?.resume_url && (
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <ResumeCard
@@ -355,6 +359,7 @@ export const Dashboard = () => {
         onClose={() => setSnack(null)}
         message={snack}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: { xs: 'env(safe-area-inset-bottom)', md: 0 } }}
       />
     </Box>
   );

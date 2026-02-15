@@ -15,3 +15,5 @@ declare module '@mui/icons-material/VolumeOff';
 declare module '@mui/icons-material/VolumeUp';
 declare module '@mui/icons-material/TouchApp';
 declare module '@mui/icons-material/Search';
+declare module '@mui/icons-material/Send';
+declare module '@mui/icons-material/AttachFile';

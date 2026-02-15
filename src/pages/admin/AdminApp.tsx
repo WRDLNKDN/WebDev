@@ -11,6 +11,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '../../lib/supabaseClient';
 import { AdminModerationPage } from './AdminModerationPage';
+import { Link as RouterLink } from 'react-router-dom';
 import { AdminGate } from './AdminGate';
 import type { ProfileStatus } from '../../types/types';
 
@@ -163,9 +164,19 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
               mb: 3,
             }}
           >
-            <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>
-              Admin Moderation
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>
+                Admin Moderation
+              </Typography>
+              <Button
+                component={RouterLink}
+                to="/admin/chat-reports"
+                size="small"
+                sx={{ color: 'white' }}
+              >
+                Chat Reports
+              </Button>
+            </Box>
 
             {session && (
               <Button

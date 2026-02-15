@@ -1,8 +1,14 @@
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
+import {
+  MessengerProvider,
+  useMessenger,
+} from '../../context/MessengerContext';
+import { ChatPopover } from '../chat/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
-import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { MessengerOverlay } from './MessengerOverlay';
+import { Navbar } from './Navbar';
 
 const PAGE_BG = {
   backgroundImage: 'url("/assets/background.png")',
@@ -11,7 +17,9 @@ const PAGE_BG = {
   backgroundAttachment: 'fixed',
 };
 
-export const Layout = () => {
+const LayoutContent = () => {
+  const messenger = useMessenger();
+
   return (
     <>
       <Navbar />
@@ -29,6 +37,21 @@ export const Layout = () => {
         </ErrorBoundary>
         <Footer />
       </Box>
+      <MessengerOverlay />
+      {messenger?.popoverRoomId && (
+        <ChatPopover
+          roomId={messenger.popoverRoomId}
+          onClose={messenger.closePopover}
+        />
+      )}
     </>
+  );
+};
+
+export const Layout = () => {
+  return (
+    <MessengerProvider>
+      <LayoutContent />
+    </MessengerProvider>
   );
 };

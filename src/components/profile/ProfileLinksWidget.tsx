@@ -68,7 +68,7 @@ export const ProfileLinksWidget = ({ socials }: ProfileLinksWidgetProps) => {
                     },
                   }}
                 >
-                  {/* The FontAwesome Translator */}
+                  {/* Platform icon (MUI) */}
                   <LinkIcon
                     platform={link.platform}
                     sx={{ mr: 1.5, fontSize: '1.1rem', width: 20 }}

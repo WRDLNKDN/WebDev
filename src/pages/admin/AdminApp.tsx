@@ -143,12 +143,22 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
           <Box
             sx={{
               display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: { xs: 'stretch', sm: 'center' },
+              gap: 2,
               mb: 3,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
               <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>
                 Admin Moderation
               </Typography>

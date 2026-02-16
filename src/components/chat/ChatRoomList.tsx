@@ -40,8 +40,9 @@ export const ChatRoomList = ({
   return (
     <Box
       sx={{
-        width: 280,
-        borderRight: '1px solid rgba(255,255,255,0.1)',
+        width: { xs: '100%', md: 280 },
+        minWidth: 0,
+        borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
         display: 'flex',
         flexDirection: 'column',
       }}

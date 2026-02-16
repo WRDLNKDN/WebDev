@@ -56,9 +56,9 @@ export const IdentityHeader = ({
   >
     {actions && (
       <Stack
-        direction="row"
-        justifyContent="flex-end"
-        alignItems="center"
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
         flexWrap="wrap"
         gap={2}
         sx={{ mb: 2 }}

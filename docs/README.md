@@ -11,6 +11,8 @@ Central index for WRDLNKDN WebDev documentation.
   source of truth for Home, Feed, Join, Profile, Dashboard.
 - [Auth & password requirements](./auth-requirements.md) — User and admin
   authentication; password/OAuth and admin access rules.
+- [OAuth sign-in display name](./auth-oauth-display-name.md) — How to show
+  wrdlnkdn.com instead of Supabase domain on Google sign-in.
 - [Platform NFRs](./architecture/platform-nfrs.md) — Non-functional requirements
   (operational, scalability, security).
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and

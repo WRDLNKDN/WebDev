@@ -879,7 +879,7 @@ export const Feed = () => {
             sx={{ maxWidth: 560 }}
           >
             Where ideas, updates, and voices from the community come together.
-            Discover people by how they show up.
+            Discover members by how they show up.
           </Typography>
         </Box>
 
@@ -894,6 +894,7 @@ export const Feed = () => {
                 position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
+                maxWidth: { md: 280 },
                 minWidth: { md: 220 },
               }}
             >
@@ -952,7 +953,7 @@ export const Feed = () => {
                       <ForumIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Forums"
+                      primary="Groups"
                       primaryTypographyProps={{ variant: 'body2' }}
                     />
                   </ListItemButton>
@@ -1159,7 +1160,7 @@ export const Feed = () => {
                   variant="contained"
                   sx={{ textTransform: 'none', borderRadius: 2 }}
                 >
-                  Discover People
+                  Discover Members
                 </Button>
                 <Typography
                   variant="caption"
@@ -1218,6 +1219,7 @@ export const Feed = () => {
                 position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
+                maxWidth: { md: 280 },
                 minWidth: { md: 220 },
               }}
             >
@@ -1234,7 +1236,7 @@ export const Feed = () => {
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Affiliated partners and monetization links. Coming soon.
+                Community Partners Coming Soon!
               </Typography>
             </Paper>
           </Grid>

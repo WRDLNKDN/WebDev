@@ -412,7 +412,7 @@ export const Directory = () => {
               variant="contained"
               sx={{ mt: 2 }}
             >
-              Join the Guild
+              Join the Community
             </Button>
           </Paper>
         ) : (

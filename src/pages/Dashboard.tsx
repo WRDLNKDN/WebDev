@@ -411,6 +411,9 @@ export const Dashboard = () => {
         onClose={() => setIsEditOpen(false)}
         profile={profile}
         hasWeirdling={Boolean(weirdlings?.length)}
+        avatarFallback={
+          session?.user?.user_metadata?.avatar_url as string | undefined
+        }
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
       />

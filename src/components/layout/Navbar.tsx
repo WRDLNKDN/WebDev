@@ -362,7 +362,7 @@ export const Navbar = () => {
                         aria-hidden
                       />
                       <InputBase
-                        placeholder="Search for people"
+                        placeholder="Search for members"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() =>
@@ -370,7 +370,7 @@ export const Navbar = () => {
                           setSearchOpen(true)
                         }
                         inputProps={{
-                          'aria-label': 'Search for people',
+                          'aria-label': 'Search for members',
                           'aria-expanded': searchOpen,
                         }}
                         fullWidth
@@ -584,7 +584,7 @@ export const Navbar = () => {
                   )}
 
                   <Button
-                    sx={{ color: 'text.secondary' }}
+                    sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
                     onClick={() => void signOut()}
                     disabled={busy}
                   >
@@ -630,7 +630,7 @@ export const Navbar = () => {
               ) : (
                 <Button
                   size="small"
-                  sx={{ color: 'text.secondary' }}
+                  sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
                   onClick={() => void signOut()}
                   disabled={busy}
                 >

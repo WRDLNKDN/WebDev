@@ -4,6 +4,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
+  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -53,6 +54,22 @@ const GLASS_MODAL = {
 const INPUT_HEIGHT = 32;
 const INPUT_PADDING = '4px 12px';
 
+const INDUSTRY_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Education',
+  'Finance',
+  'Marketing',
+  'Design',
+  'Engineering',
+  'Consulting',
+  'Media',
+  'Nonprofit',
+  'Retail',
+  'Manufacturing',
+  'Other',
+];
+
 const INPUT_STYLES = {
   '& .MuiFilledInput-root': {
     bgcolor: INPUT_BG,
@@ -92,6 +109,8 @@ type EditProfileDialogProps = {
   onClose: () => void;
   profile: DashboardProfile | null;
   hasWeirdling?: boolean;
+  /** Fallback avatar URL (e.g. from OAuth provider) when profile has none */
+  avatarFallback?: string | null;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
@@ -108,6 +127,7 @@ export const EditProfileDialog = ({
   onClose,
   profile,
   hasWeirdling: _hasWeirdling = false,
+  avatarFallback,
   onUpdate,
   onUpload,
 }: EditProfileDialogProps) => {
@@ -118,7 +138,6 @@ export const EditProfileDialog = ({
   const [formData, setFormData] = useState({
     handle: '',
     pronouns: '',
-    status_message: '',
     bio: '',
     skills: '',
     industry: '',
@@ -143,7 +162,6 @@ export const EditProfileDialog = ({
       setFormData({
         handle: safeStr(profile.handle),
         pronouns: safeStr(profile.pronouns),
-        status_message: safeStr(creds.status_message),
         bio: safeStr(creds.bio),
         skills: safeStr(
           Array.isArray(creds.skills)
@@ -212,7 +230,6 @@ export const EditProfileDialog = ({
         location: formData.location || null,
         profile_visibility: formData.profile_visibility,
         nerd_creds: {
-          status_message: formData.status_message,
           bio: formData.bio,
           skills: skillsArr.length ? skillsArr : undefined,
         },
@@ -262,7 +279,8 @@ export const EditProfileDialog = ({
     }
   };
 
-  const currentAvatar = uploadedAvatarUrl || profile?.avatar || null;
+  const currentAvatar =
+    uploadedAvatarUrl || profile?.avatar || avatarFallback || null;
   const previewURL = `http://localhost:5173/profile/${formData.handle}`;
 
   return (
@@ -461,15 +479,38 @@ export const EditProfileDialog = ({
               >
                 INDUSTRY
               </Typography>
-              <TextField
-                fullWidth
-                placeholder="Industry or field"
-                value={formData.industry}
-                onChange={handleChange('industry')}
+              <Autocomplete
+                multiple
+                freeSolo
+                options={INDUSTRY_OPTIONS}
+                value={formData.industry
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean)}
+                onChange={(_, newValue: string[]) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    industry: newValue.join(', '),
+                  }));
+                }}
                 disabled={busy}
-                variant="filled"
-                sx={INPUT_STYLES}
-                helperText="Shown in Directory. E.g. Tech, Healthcare, Education."
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="filled"
+                    placeholder="Add industry or field"
+                    sx={INPUT_STYLES}
+                    helperText="Shown in Directory. E.g. Tech, Healthcare, Education."
+                  />
+                )}
+                sx={{
+                  '& .MuiAutocomplete-tag': {
+                    bgcolor: INPUT_BG,
+                    border: `1px solid ${BORDER_COLOR}`,
+                    color: 'white',
+                  },
+                  '& .MuiAutocomplete-input': { color: 'white' },
+                }}
               />
             </Box>
 
@@ -561,31 +602,6 @@ export const EditProfileDialog = ({
               >
                 Controls who can find you in the Directory.
               </Typography>
-            </Box>
-
-            {/* Status */}
-            <Box>
-              <Typography
-                variant="overline"
-                sx={{
-                  letterSpacing: 2,
-                  fontWeight: 'bold',
-                  color: PURPLE_ACCENT,
-                  display: 'block',
-                  mb: 0.5,
-                }}
-              >
-                STATUS
-              </Typography>
-              <TextField
-                fullWidth
-                placeholder="Message"
-                value={formData.status_message}
-                onChange={handleChange('status_message')}
-                disabled={busy}
-                variant="filled"
-                sx={INPUT_STYLES}
-              />
             </Box>
 
             {/* Skills */}

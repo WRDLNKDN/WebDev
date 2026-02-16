@@ -1,7 +1,7 @@
 import { Box, Container, Paper, Typography } from '@mui/material';
 
 /**
- * Forums page – browse, sort, create forums (stub for MVP).
+ * Groups page (route: /forums) – browse, sort, create groups (stub for MVP).
  */
 export const ForumsPage = () => (
   <Box sx={{ py: 6 }}>
@@ -16,7 +16,7 @@ export const ForumsPage = () => (
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-          Forums
+          Groups
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Coming soon.

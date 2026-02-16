@@ -53,10 +53,7 @@ export const AdminDashboard = () => (
     <Grid container spacing={2}>
       {SECTIONS.map((section) => (
         <Grid
-          item
-          xs={12}
-          sm={6}
-          md={4}
+          size={{ xs: 12, sm: 6, md: 4 }}
           key={section.to}
           sx={{ minHeight: 180 }}
         >

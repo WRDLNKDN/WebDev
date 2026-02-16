@@ -457,7 +457,7 @@ export const AdminAdvertisersPage = () => {
               />
               <Button
                 variant={form.active ? 'contained' : 'outlined'}
-                color={form.active ? 'success' : 'default'}
+                color={form.active ? 'success' : 'inherit'}
                 onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
               >
                 {form.active ? 'Active' : 'Inactive'}

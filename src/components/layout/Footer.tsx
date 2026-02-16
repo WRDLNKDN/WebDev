@@ -2,11 +2,9 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ChatIcon from '@mui/icons-material/Chat';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import DescriptionIcon from '@mui/icons-material/Description';
 import EmailIcon from '@mui/icons-material/Email';
 import EventIcon from '@mui/icons-material/Event';
 import FacebookIcon from '@mui/icons-material/Facebook';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ForumIcon from '@mui/icons-material/Forum';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -17,7 +15,6 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import SecurityIcon from '@mui/icons-material/Security';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import YouTubeIcon from '@mui/icons-material/YouTube';
@@ -186,39 +183,17 @@ export const Footer = () => {
 
   const legalLinks: FooterLink[] = [
     {
-      title: 'Legal',
-      links: [
-        {
-          label: 'Legal (Canonical Index)',
-          href: LEGAL_WIKI.legal,
-          external: true,
-        },
-        { label: 'Terms of Service', href: '/terms', external: false },
-        { label: 'Privacy Policy', href: '/privacy', external: false },
-        {
-          label: 'Community Guidelines',
-          href: '/guidelines',
-          external: false,
-        },
-      ],
-    },
-    {
-      label: 'Privacy Policy',
-      href: LEGAL_WIKI.privacy,
-      external: true,
-      Icon: SecurityIcon,
-    },
-    {
-      label: 'Community Guidelines',
-      href: LEGAL_WIKI.guidelines,
-      external: true,
-      Icon: FormatListBulletedIcon,
-    },
-    {
       label: 'Legal (Canonical Index)',
       href: LEGAL_WIKI.legal,
       external: true,
       Icon: MenuBookIcon,
+    },
+    { label: 'Terms of Service', href: '/terms', external: false },
+    { label: 'Privacy Policy', href: '/privacy', external: false },
+    {
+      label: 'Community Guidelines',
+      href: '/guidelines',
+      external: false,
     },
   ];
 
@@ -264,8 +239,8 @@ export const Footer = () => {
           Icon: CampaignIcon,
         },
         {
-          label: 'info@wrdlnkdn.com',
-          href: 'mailto:info@wrdlnkdn.com',
+          label: 'Games',
+          href: 'https://phuzzle.vercel.app/',
           external: true,
           Icon: SportsEsportsIcon,
         },

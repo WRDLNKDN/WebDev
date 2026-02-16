@@ -170,11 +170,13 @@ export function useProfile() {
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('AUTH_FAILURE: No active session');
 
-      // Preserve existing keys (Deep Merge)
+      // Preserve existing keys (Deep Merge); status_message removed from UI
       const currentCreds =
         (profile?.nerd_creds as Record<string, unknown>) || {};
       const newCreds = (updates.nerd_creds as Record<string, unknown>) || {};
-      const mergedNerdCreds = { ...currentCreds, ...newCreds };
+      const merged = { ...currentCreds, ...newCreds };
+      delete merged.status_message;
+      const mergedNerdCreds = merged;
 
       // Strip nerd_creds to prevent double-mapping in the payload
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -195,21 +197,32 @@ export function useProfile() {
         .eq('id', session.user.id);
 
       if (updateError) {
+        const code = (updateError as { code?: string }).code;
+        const msg = String(
+          (updateError as { message?: string }).message || '',
+        ).toLowerCase();
         const is409 =
-          (updateError as { code?: string }).code === '409' ||
-          String((updateError as { message?: string }).message || '').includes(
-            '409',
-          ) ||
-          String((updateError as { message?: string }).message || '')
-            .toLowerCase()
-            .includes('conflict');
+          code === '409' || msg.includes('409') || msg.includes('conflict');
         if (is409) {
           await fetchData();
           throw new Error(
             'Profile was updated elsewhere. Please try saving again.',
           );
         }
-        throw updateError;
+        if (msg.includes('rls') || msg.includes('row-level security')) {
+          throw new Error(
+            "You don't have permission to update your profile. Try signing in again.",
+          );
+        }
+        if (msg.includes('duplicate') || msg.includes('unique')) {
+          throw new Error(
+            'That handle may already be taken. Try a different one.',
+          );
+        }
+        throw new Error(
+          (updateError as { message?: string }).message ||
+            'Could not save profile. Please try again.',
+        );
       }
 
       // Optimistic State Sync

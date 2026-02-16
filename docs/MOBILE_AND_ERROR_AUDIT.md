@@ -70,8 +70,13 @@ Audit of main screens and error handling across the frontend.
 - [x] ChatPage: hide room list when in conversation; hide content when no room
 - [x] ChatRoomList: responsive width (100% xs, 280 md)
 - [x] ChatPage container: reduce margin on xs
-- [ ] Dashboard actions: wrap on very narrow (low priority)
-- [ ] AdminApp header: responsive nav (low priority)
+- [x] Dashboard actions: wrap on very narrow (IdentityHeader useFlexGap,
+      minWidth: 0)
+- [x] AdminApp header: responsive nav (flexWrap, minWidth: 0, reduced px on xs)
+- [x] LandingPage: Profile grid (PortfolioFrame column on xs, responsive
+      padding)
+- [x] Signup: wizard card padding, step content overflow (responsive buttons,
+      overflow handling)
 
 ### Errors (implemented)
 

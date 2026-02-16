@@ -41,8 +41,8 @@ export const SocialProof = () => {
               Highlighted members
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              People who show up: contributors, volunteers, and members building
-              the network with intent and participation.
+              Members who show up: contributors, volunteers, and members
+              building the network with intent and participation.
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>

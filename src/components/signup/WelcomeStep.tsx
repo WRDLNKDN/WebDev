@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import {
   signupPaper,
   welcomeStepDescription,
@@ -18,8 +11,15 @@ export const WelcomeStep = () => {
   const { goToStep, markComplete } = useSignup();
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={0} sx={signupPaper}>
+    <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          ...signupPaper,
+          maxWidth: 480,
+          mx: 'auto',
+        }}
+      >
         <Stack spacing={3}>
           <Box>
             <Typography variant="h5" sx={welcomeStepTitle}>
@@ -47,6 +47,6 @@ export const WelcomeStep = () => {
           </Button>
         </Stack>
       </Paper>
-    </Container>
+    </Box>
   );
 };

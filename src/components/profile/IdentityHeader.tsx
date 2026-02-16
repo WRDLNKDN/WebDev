@@ -60,8 +60,12 @@ export const IdentityHeader = ({
         justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
         alignItems={{ xs: 'stretch', sm: 'center' }}
         flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 2 }}
+        useFlexGap
+        spacing={2}
+        sx={{
+          mb: 2,
+          '& .MuiButton-root': { minWidth: 0 },
+        }}
       >
         {actions}
       </Stack>
@@ -190,39 +194,56 @@ interface IdentityBadgesProps {
   onSkillsClick?: () => void;
 }
 
-/** Badge row: Builder Tags, Skills — clickable when callbacks provided; MUI icons */
+/** Badge row: Builder Tags, Skills, Edit Profile — Edit Profile is the main CTA */
 export const IdentityBadges = ({
   onTagsClick,
   onSkillsClick,
-}: IdentityBadgesProps) => (
-  <>
-    <Chip
-      size="small"
-      icon={<LocalOfferIcon sx={{ fontSize: 16 }} />}
-      label="Builder Tags"
-      onClick={onTagsClick}
-      clickable={Boolean(onTagsClick)}
-      sx={{
-        bgcolor: 'rgba(255,193,7,0.15)',
-        color: 'text.primary',
-        border: '1px solid rgba(255,193,7,0.35)',
-        cursor: onTagsClick ? 'pointer' : 'default',
-        '& .MuiChip-icon': { color: 'inherit' },
-      }}
-    />
-    <Chip
-      size="small"
-      icon={<PsychologyIcon sx={{ fontSize: 16 }} />}
-      label="Skills"
-      onClick={onSkillsClick}
-      clickable={Boolean(onSkillsClick)}
-      sx={{
-        bgcolor: 'rgba(236,64,122,0.15)',
-        color: 'text.primary',
-        border: '1px solid rgba(236,64,122,0.35)',
-        cursor: onSkillsClick ? 'pointer' : 'default',
-        '& .MuiChip-icon': { color: 'inherit' },
-      }}
-    />
-  </>
-);
+}: IdentityBadgesProps) => {
+  const onEdit = onTagsClick ?? onSkillsClick;
+  return (
+    <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
+      <Chip
+        size="small"
+        icon={<LocalOfferIcon sx={{ fontSize: 16 }} />}
+        label="Builder Tags"
+        onClick={onTagsClick}
+        clickable={Boolean(onTagsClick)}
+        sx={{
+          bgcolor: 'rgba(255,193,7,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(255,193,7,0.35)',
+          cursor: onTagsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      <Chip
+        size="small"
+        icon={<PsychologyIcon sx={{ fontSize: 16 }} />}
+        label="Skills"
+        onClick={onSkillsClick}
+        clickable={Boolean(onSkillsClick)}
+        sx={{
+          bgcolor: 'rgba(236,64,122,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(236,64,122,0.35)',
+          cursor: onSkillsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      {onEdit && (
+        <Chip
+          size="small"
+          label="Edit Profile"
+          onClick={onEdit}
+          clickable
+          sx={{
+            bgcolor: 'rgba(66,165,245,0.15)',
+            color: 'primary.light',
+            border: '1px solid rgba(66,165,245,0.4)',
+            cursor: 'pointer',
+          }}
+        />
+      )}
+    </Stack>
+  );
+};

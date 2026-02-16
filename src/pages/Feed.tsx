@@ -163,6 +163,7 @@ const LinkPreviewCard = ({
         variant="outlined"
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           overflow: 'hidden',
           borderRadius: 1.5,
           borderColor: 'divider',
@@ -175,9 +176,9 @@ const LinkPreviewCard = ({
             src={preview.image}
             alt=""
             sx={{
-              width: 120,
-              minWidth: 120,
-              height: 120,
+              width: { xs: '100%', sm: 120 },
+              minWidth: { sm: 120 },
+              height: { xs: 140, sm: 120 },
               objectFit: 'cover',
               bgcolor: 'action.hover',
             }}
@@ -187,8 +188,11 @@ const LinkPreviewCard = ({
           <Typography
             variant="subtitle2"
             fontWeight={600}
-            sx={{ color: 'text.primary' }}
-            noWrap
+            sx={{
+              color: 'text.primary',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}
           >
             {preview.title || linkPreviewDomain(preview.url)}
           </Typography>
@@ -196,8 +200,11 @@ const LinkPreviewCard = ({
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mt: 0.25 }}
-              noWrap
+              sx={{
+                mt: 0.25,
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
             >
               {preview.description}
             </Typography>
@@ -234,6 +241,32 @@ type FeedCardProps = {
   isLinkPreviewDismissed: boolean;
   onDismissLinkPreview: () => void;
 };
+
+/**
+ * Minimum renderable post criteria: exclude feed items with no displayable
+ * content (avoids blank cards with only header + action buttons).
+ */
+function hasRenderableContent(item: FeedItem): boolean {
+  const snapshot =
+    item.kind === 'repost' && item.payload?.snapshot
+      ? (item.payload.snapshot as { body?: string; url?: string })
+      : null;
+  const body =
+    (snapshot?.body as string) ||
+    (item.payload?.body as string) ||
+    (item.payload?.text as string) ||
+    '';
+  if (typeof body === 'string' && body.trim().length > 0) return true;
+  if (item.kind === 'external_link' && item.payload?.url) return true;
+  const linkPreview = item.payload?.link_preview;
+  if (
+    linkPreview &&
+    typeof linkPreview === 'object' &&
+    (linkPreview as { url?: string }).url
+  )
+    return true;
+  return false;
+}
 
 const ShareDialog = ({
   item,
@@ -360,9 +393,13 @@ const FeedCard = ({
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, mb: 2 }}>
+    <Card variant="outlined" sx={{ borderRadius: 2, mb: 2, minWidth: 0 }}>
       <CardContent sx={{ pt: 2, pb: 1, '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" spacing={2} alignItems="flex-start">
+        <Stack
+          direction="row"
+          spacing={{ xs: 1, sm: 2 }}
+          alignItems="flex-start"
+        >
           <Avatar
             src={(item.actor?.avatar as string) ?? undefined}
             sx={{ width: 48, height: 48 }}
@@ -414,7 +451,13 @@ const FeedCard = ({
               <Typography
                 variant="body1"
                 component="span"
-                sx={{ mt: 0.5, whiteSpace: 'pre-wrap', display: 'block' }}
+                sx={{
+                  mt: 0.5,
+                  whiteSpace: 'pre-wrap',
+                  display: 'block',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
+                }}
               >
                 {linkifyBody(body)}
               </Typography>
@@ -440,7 +483,12 @@ const FeedCard = ({
             <Stack
               direction="row"
               spacing={1}
-              sx={{ mt: 1.5, flexWrap: 'nowrap', alignItems: 'center' }}
+              sx={{
+                mt: 1.5,
+                flexWrap: 'wrap',
+                gap: 0.5,
+                alignItems: 'center',
+              }}
             >
               <Button
                 size="small"
@@ -624,19 +672,19 @@ export const Feed = () => {
   type SortOption = 'recent' | 'oldest' | 'most_liked';
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const sortedItems = useMemo(() => {
-    if (sortBy === 'recent') return items;
+    let list = items;
     if (sortBy === 'oldest')
-      return [...items].sort(
+      list = [...items].sort(
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
-    if (sortBy === 'most_liked')
-      return [...items].sort(
+    else if (sortBy === 'most_liked')
+      list = [...items].sort(
         (a, b) =>
           (b.like_count ?? 0) - (a.like_count ?? 0) ||
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-    return items;
+    return list.filter(hasRenderableContent);
   }, [items, sortBy]);
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
@@ -879,13 +927,16 @@ export const Feed = () => {
             sx={{ maxWidth: 560 }}
           >
             Where ideas, updates, and voices from the community come together.
-            Discover people by how they show up.
+            Discover members by how they show up.
           </Typography>
         </Box>
 
         <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
           {/* LEFT SIDEBAR: Explore card with grouped nav */}
-          <Grid size={{ xs: 12, md: 3 }} sx={{ minWidth: 0 }}>
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{ minWidth: 0, order: { xs: 2, md: 1 } }}
+          >
             <Paper
               variant="outlined"
               sx={{
@@ -894,6 +945,7 @@ export const Feed = () => {
                 position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
+                maxWidth: { md: 280 },
                 minWidth: { md: 220 },
               }}
             >
@@ -952,7 +1004,7 @@ export const Feed = () => {
                       <ForumIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Forums"
+                      primary="Groups"
                       primaryTypographyProps={{ variant: 'body2' }}
                     />
                   </ListItemButton>
@@ -1065,7 +1117,7 @@ export const Feed = () => {
           </Grid>
 
           {/* CENTER: Feed content with header row */}
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, md: 6 }} sx={{ order: { xs: 1, md: 2 } }}>
             {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
             <Paper
               variant="outlined"
@@ -1088,6 +1140,7 @@ export const Feed = () => {
                   direction="row"
                   alignItems="center"
                   spacing={2}
+                  flexWrap="wrap"
                   sx={{
                     width: { xs: '100%', sm: 'auto' },
                     justifyContent: { xs: 'flex-start', sm: 'flex-end' },
@@ -1159,7 +1212,7 @@ export const Feed = () => {
                   variant="contained"
                   sx={{ textTransform: 'none', borderRadius: 2 }}
                 >
-                  Discover People
+                  Discover Members
                 </Button>
                 <Typography
                   variant="caption"
@@ -1209,7 +1262,10 @@ export const Feed = () => {
           </Grid>
 
           {/* RIGHT RAIL: Community Partners */}
-          <Grid size={{ xs: 12, md: 3 }} sx={{ minWidth: 0 }}>
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{ minWidth: 0, order: { xs: 3, md: 3 } }}
+          >
             <Paper
               variant="outlined"
               sx={{
@@ -1218,6 +1274,7 @@ export const Feed = () => {
                 position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
+                maxWidth: { md: 280 },
                 minWidth: { md: 220 },
               }}
             >
@@ -1234,7 +1291,7 @@ export const Feed = () => {
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Affiliated partners and monetization links. Coming soon.
+                Community Partners Coming Soon!
               </Typography>
             </Paper>
           </Grid>

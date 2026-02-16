@@ -5,7 +5,7 @@
 insert into public.admin_allowlist (email)
 values
   ('limeman@gmail.com'),
-  ('wrdlnkdn@gmail.com'),
+  ('info@wrdlnkdn.com'),
   ('aprillordrake@gmail.com'),
   ('jameshood118@gmail.com'),
   ('piorana@gmail.com'),

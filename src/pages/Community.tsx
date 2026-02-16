@@ -65,7 +65,7 @@ export const Community = () => {
           <Typography variant="body1" paragraph>
             We welcome contributors to code, docs, and design. Our repos are on
             GitHub. To volunteer for events or outreach, email
-            wrdlnkdn@gmail.com.
+            info@wrdlnkdn.com.
           </Typography>
 
           <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 1 }}>
@@ -93,7 +93,7 @@ export const Community = () => {
           <Typography variant="body1" paragraph>
             Our Discord server is where the community chats and shares projects.
             Invite links are shared via the site and newsletter when active.
-            Email wrdlnkdn@gmail.com for an invite.
+            Email info@wrdlnkdn.com for an invite.
           </Typography>
 
           <Typography

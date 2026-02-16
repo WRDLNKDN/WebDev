@@ -118,7 +118,7 @@ profile routes (IA), Directory, footer, and Dashboard.
        (opens in new tab).
 
 - [ ] **Email**  
-       “<wrdlnkdn@gmail.com>” opens default mail client (mailto).
+       “<info@wrdlnkdn.com>” opens default mail client (mailto).
 
 ---
 

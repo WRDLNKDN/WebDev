@@ -23,3 +23,6 @@ declare module '@mui/icons-material/Forum';
 declare module '@mui/icons-material/BookmarkBorder';
 declare module '@mui/icons-material/Campaign';
 declare module '@mui/icons-material/HelpOutline';
+declare module '@mui/icons-material/Security';
+declare module '@mui/icons-material/ShoppingBag';
+declare module '@mui/icons-material/YouTube';

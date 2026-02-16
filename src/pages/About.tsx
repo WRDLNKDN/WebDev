@@ -63,11 +63,11 @@ export const About = () => {
           <Typography variant="body1" paragraph>
             For general inquiries, partnerships, or feedback, reach us at{' '}
             <Link
-              href="mailto:wrdlnkdn@gmail.com"
+              href="mailto:info@wrdlnkdn.com"
               target="_blank"
               rel="noopener noreferrer"
             >
-              wrdlnkdn@gmail.com
+              info@wrdlnkdn.com
             </Link>
             . For community guidelines and legal notices, see our{' '}
             <Link component={RouterLink} to="/guidelines">

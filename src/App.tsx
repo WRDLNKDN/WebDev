@@ -102,6 +102,12 @@ const HelpPage = lazy(() =>
   import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })),
 );
 
+const CommunityPartnersPage = lazy(() =>
+  import('./pages/CommunityPartnersPage').then((m) => ({
+    default: m.CommunityPartnersPage,
+  })),
+);
+
 // The Professional 404 Page (Standard Error)
 const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
@@ -233,6 +239,10 @@ const App = () => {
               <Route path="/advertise" element={<AdvertisePage />} />
               <Route path="/games" element={<DivergencePage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route
+                path="/community-partners"
+                element={<CommunityPartnersPage />}
+              />
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />

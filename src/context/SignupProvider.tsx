@@ -122,7 +122,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   /** Contact email shown when we can't fix the issue (database/schema/config). */
-  const SUPPORT_EMAIL = 'wrdlnkdn@gmail.com';
+  const SUPPORT_EMAIL = 'info@wrdlnkdn.com';
 
   /**
    * Map Supabase/backend errors to user-facing messages. Never show raw technical

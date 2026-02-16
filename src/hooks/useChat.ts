@@ -48,7 +48,7 @@ export function useChat(roomId: string | null) {
       .single();
 
     if (roomErr || !roomData) {
-      setError(roomErr?.message ?? 'Room not found');
+      setError('This chat could not be found. It may have been deleted.');
       setRoom(null);
       return;
     }
@@ -89,7 +89,7 @@ export function useChat(roomId: string | null) {
       .order('created_at', { ascending: true });
 
     if (msgErr) {
-      setError(msgErr.message);
+      setError('Messages could not be loaded. Please try again.');
       setMessages([]);
       return;
     }
@@ -288,7 +288,7 @@ export function useChat(roomId: string | null) {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) {
-        setError('Not authenticated');
+        setError('You need to sign in to send messages.');
         return;
       }
       if (!roomId) return;
@@ -333,8 +333,8 @@ export function useChat(roomId: string | null) {
           }
           await fetchMessages(roomId);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to send');
+      } catch {
+        setError('Your message could not be sent. Please try again.');
       } finally {
         setSending(false);
       }
@@ -349,7 +349,7 @@ export function useChat(roomId: string | null) {
         .update({ content, edited_at: new Date().toISOString() })
         .eq('id', messageId);
 
-      if (err) setError(err.message);
+      if (err) setError('Could not update message. Please try again.');
     },
     [],
   );
@@ -364,7 +364,7 @@ export function useChat(roomId: string | null) {
       })
       .eq('id', messageId);
 
-    if (err) setError(err.message);
+    if (err) setError('Could not delete message. Please try again.');
   }, []);
 
   const markAsRead = useCallback(

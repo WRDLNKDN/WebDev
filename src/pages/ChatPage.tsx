@@ -159,23 +159,34 @@ export const ChatPage = () => {
           flex: 1,
           minHeight: 0,
           ...GLASS_CARD,
-          m: 2,
+          m: { xs: 1, sm: 2 },
           overflow: 'hidden',
         }}
       >
-        <ChatRoomList
-          rooms={rooms}
-          loading={roomsLoading}
-          currentUserId={uid}
-          onStartDm={() => setStartDmOpen(true)}
-          onCreateGroup={() => setCreateGroupOpen(true)}
-          onRemoveChat={handleRemoveChat}
-        />
+        <Box
+          sx={{
+            display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
+            width: { xs: '100%', md: 280 },
+            minWidth: { xs: 0, md: 280 },
+            flexShrink: 0,
+            borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
+            flexDirection: 'column',
+          }}
+        >
+          <ChatRoomList
+            rooms={rooms}
+            loading={roomsLoading}
+            currentUserId={uid}
+            onStartDm={() => setStartDmOpen(true)}
+            onCreateGroup={() => setCreateGroupOpen(true)}
+            onRemoveChat={handleRemoveChat}
+          />
+        </Box>
 
         <Box
           sx={{
             flex: 1,
-            display: 'flex',
+            display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
             flexDirection: 'column',
             minWidth: 0,
           }}

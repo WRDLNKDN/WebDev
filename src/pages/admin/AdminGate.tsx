@@ -53,7 +53,7 @@ export const AdminGate = ({ children }: Props) => {
         };
 
         if (rpcError) {
-          setError('Failed to verify admin access');
+          setError("You don't have permission to view this page.");
           setIsAdmin(false);
           return;
         }

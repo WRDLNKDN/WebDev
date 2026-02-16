@@ -60,8 +60,8 @@ export const ReportDialog = ({
       onClose();
       setCategory('other');
       setFreeText('');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to submit report');
+    } catch {
+      setError('Your report could not be submitted. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -51,8 +51,7 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   },
   {
     pattern: /duplicate key|unique constraint|already exists/i,
-    friendly:
-      'A project with that title or URL may already exist. Try a different title or URL.',
+    friendly: 'That already exists. Try a different value.',
   },
 ];
 

@@ -891,10 +891,10 @@ export const Feed = () => {
               sx={{
                 borderRadius: 2,
                 overflow: 'hidden',
-                position: 'sticky',
+                position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
-                minWidth: 220,
+                minWidth: { md: 220 },
               }}
             >
               <Box
@@ -1066,7 +1066,7 @@ export const Feed = () => {
 
           {/* CENTER: Feed content with header row */}
           <Grid size={{ xs: 12, md: 6 }}>
-            {/* Feed header: title + Post + Sort */}
+            {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
             <Paper
               variant="outlined"
               sx={{
@@ -1076,16 +1076,23 @@ export const Feed = () => {
               }}
             >
               <Stack
-                direction="row"
-                alignItems="center"
+                direction={{ xs: 'column', sm: 'row' }}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
                 justifyContent="space-between"
-                flexWrap="wrap"
                 gap={2}
               >
                 <Typography variant="h6" fontWeight={600}>
                   Feed
                 </Typography>
-                <Stack direction="row" alignItems="center" spacing={2}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={2}
+                  sx={{
+                    width: { xs: '100%', sm: 'auto' },
+                    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+                  }}
+                >
                   <Button
                     variant="contained"
                     onClick={() => setComposerOpen(true)}
@@ -1208,10 +1215,10 @@ export const Feed = () => {
               sx={{
                 borderRadius: 2,
                 p: 2,
-                position: 'sticky',
+                position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
-                minWidth: 220,
+                minWidth: { md: 220 },
               }}
             >
               <Box

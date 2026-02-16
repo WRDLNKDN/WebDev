@@ -79,7 +79,7 @@ export const MessageInput = ({
       ) {
         const f = pendingFiles[i];
         if (f.size > CHAT_MAX_FILE_BYTES) {
-          setError(`File ${f.name} exceeds 6MB`);
+          setError('This file is too large. Maximum size is 6MB.');
           setUploading(false);
           return;
         }
@@ -89,7 +89,9 @@ export const MessageInput = ({
             mime as (typeof CHAT_ALLOWED_MIME)[number],
           )
         ) {
-          setError(`File type ${mime} not allowed`);
+          setError(
+            'This file type is not supported. Please choose an image or document.',
+          );
           setUploading(false);
           return;
         }
@@ -101,7 +103,7 @@ export const MessageInput = ({
           .upload(path, blob, { contentType: mime });
 
         if (uploadErr) {
-          setError(uploadErr.message);
+          setError('File upload failed. Please try again.');
           setUploading(false);
           return;
         }
@@ -131,7 +133,9 @@ export const MessageInput = ({
     });
 
     if (valid.length < files.length) {
-      setError('Some files exceed 6MB or are not allowed');
+      setError(
+        'Some files are too large or not supported. Max 6MB, images or documents only.',
+      );
     }
     setPendingFiles((prev) =>
       [...prev, ...valid].slice(0, CHAT_MAX_ATTACHMENTS_PER_MESSAGE),

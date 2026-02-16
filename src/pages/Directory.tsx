@@ -107,7 +107,16 @@ export const Directory = () => {
         }
         setHasMore(more);
       } catch (e: unknown) {
-        setError(toMessage(e));
+        const msg = toMessage(e);
+        const isSearchContext = q.trim().length > 0;
+        const isGenericError =
+          msg.includes('Something went wrong') ||
+          msg.includes('try again in a moment');
+        setError(
+          isSearchContext && isGenericError
+            ? `No member found with that name. Please try a different search or try again.`
+            : msg,
+        );
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -243,11 +252,8 @@ export const Directory = () => {
           </Typography>
 
           <Stack spacing={2}>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={2}
-              flexWrap="wrap"
-            >
+            {/* Search + Sort: row on md+, column on mobile (consistent structure) */}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
                 fullWidth
                 placeholder="Search by name, tagline, industry, location, skills..."
@@ -265,8 +271,9 @@ export const Directory = () => {
                     '& fieldset': { border: '1px solid rgba(255,255,255,0.1)' },
                   },
                 }}
+                sx={{ flex: { md: 1 } }}
               />
-              <FormControl size="small" sx={{ minWidth: 140 }}>
+              <FormControl size="small" sx={{ minWidth: { md: 140 } }}>
                 <InputLabel>Sort</InputLabel>
                 <Select
                   value={sort}
@@ -282,8 +289,19 @@ export const Directory = () => {
               </FormControl>
             </Stack>
 
-            <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
+            {/* Filters: row on md+, stacked on mobile with full-width controls */}
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={{ xs: 1.5, md: 1 }}
+              flexWrap="wrap"
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              useFlexGap
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ alignSelf: { md: 'center' }, pt: { xs: 0.5, md: 0 } }}
+              >
                 Filters:
               </Typography>
               <TextField
@@ -291,16 +309,16 @@ export const Directory = () => {
                 placeholder="Industry"
                 value={industry}
                 onChange={(e) => updateUrl({ industry: e.target.value })}
-                sx={{ width: 120 }}
+                sx={{ width: { xs: '100%', md: 120 } }}
               />
               <TextField
                 size="small"
                 placeholder="Location"
                 value={location}
                 onChange={(e) => updateUrl({ location: e.target.value })}
-                sx={{ width: 140 }}
+                sx={{ width: { xs: '100%', md: 140 } }}
               />
-              <FormControl size="small" sx={{ minWidth: 160 }}>
+              <FormControl size="small" sx={{ width: { xs: '100%', md: 160 } }}>
                 <InputLabel>Connection</InputLabel>
                 <Select
                   value={connectionStatus}
@@ -330,6 +348,7 @@ export const Directory = () => {
                       skills: '',
                     })
                   }
+                  sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
                 >
                   Clear filters
                 </Button>
@@ -376,11 +395,15 @@ export const Directory = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-              No results
+              {q || industry || location || skills.length
+                ? 'No member found'
+                : 'No results'}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
               {q || industry || location || skills.length
-                ? 'Try adjusting your search or filters.'
+                ? q.trim()
+                  ? `No member found with that name or filters. Try a different search or adjust your filters.`
+                  : 'No members match your filters. Try adjusting them.'
                 : 'The directory is empty.'}
             </Typography>
             <Button

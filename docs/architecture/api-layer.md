@@ -1,5 +1,7 @@
 # API Layer: WRDLNKDN Frontend ⇄ Backend
 
+[← Docs index](../README.md)
+
 > Version: v1 (draft, implementation-ready)
 
 This document defines the API contracts between the **frontend (Vercel)** and

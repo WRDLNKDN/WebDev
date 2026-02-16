@@ -1,5 +1,7 @@
 # Markdownlint in this repo
 
+[← Docs index](../README.md)
+
 We use [markdownlint](https://github.com/DavidAnson/markdownlint) (via
 `markdownlint-cli`) to keep Markdown consistent. Config: `.markdownlint.json`.
 

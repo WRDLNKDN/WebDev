@@ -1,5 +1,7 @@
 # MVP Chat System Specification
 
+[← Docs index](../README.md)
+
 **Status:** Draft  
 **Stack:** Supabase (Postgres, Realtime, Storage, Auth) + WRDLNKDN
 

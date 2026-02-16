@@ -1,5 +1,7 @@
 # Directory API
 
+[← Docs index](./README.md)
+
 Member discovery surface for WRDLNKDN. Authenticated members can search, filter,
 and browse other members; manage connection requests; and open chats with
 connections. **Not** a resume database or popularity engine—privacy and
@@ -106,5 +108,13 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 - **Tables:** `connection_requests`, `profiles` (columns: industry, location,
   profile_visibility, last_active_at).
 - **RPC:** `get_directory_page` — search, filter, connection state, privacy.
-- **Migrations:** `supabase/migrations/20260121180000_tables.sql`,
-  `20260121180005_rls.sql`.
+- **Migrations:**
+  [`supabase/migrations/20260121180000_tables.sql`](../supabase/migrations/20260121180000_tables.sql),
+  [`20260121180005_rls.sql`](../supabase/migrations/20260121180005_rls.sql).
+
+## See also
+
+- [Docs index](./README.md)
+- [API Layer](./architecture/api-layer.md)
+- [Feeds API](./feeds-api.md)
+- [Supabase README](../supabase/README.md)

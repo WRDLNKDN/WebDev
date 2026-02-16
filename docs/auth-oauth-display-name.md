@@ -1,5 +1,7 @@
 # OAuth Sign-in Display Name Investigation
 
+[← Docs index](./README.md)
+
 ## Issue
 
 The Google OAuth sign-in screen may show the Supabase project domain (e.g.
@@ -21,7 +23,9 @@ The OAuth consent screen display name is controlled by:
 1. In **Google Cloud Console** → APIs & Services → OAuth consent screen:
 
    - Set "Application name" to "WRDLNKDN" or "wrdlnkdn.com"
-   - Add `wrdlnkdn.com` and `webdev-uat.vercel.app` to Authorized domains
+   - Add `wrdlnkdn.com` and
+     [webdev-uat.vercel.app](https://webdev-uat.vercel.app/) to Authorized
+     domains
 
 2. Ensure the OAuth client "Authorized redirect URIs" include both:
 
@@ -39,3 +43,8 @@ Supabase Auth uses `supabase.co` for the OAuth redirect. The "Sign in with
 Google" button cannot show a custom domain for the redirect target. The fix is
 to set the Google OAuth consent screen "Application name" so users see your
 brand, not the Supabase project ID.
+
+## See also
+
+- [Docs index](./README.md)
+- [UAT vs PROD deployment](./DEPLOYMENT_UAT_PROD.md)

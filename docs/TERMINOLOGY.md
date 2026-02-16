@@ -1,5 +1,7 @@
 # Terminology and Language Standards
 
+[← Docs index](./README.md)
+
 **Status:** In Review  
 **Applies To:** All product surfaces, documentation, EPICs, UX copy, and
 contributor submissions

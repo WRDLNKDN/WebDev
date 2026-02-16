@@ -39,6 +39,9 @@ const CONTACT_EMAIL = 'info@wrdlnkdn.com';
 
 const LEGAL_WIKI = {
   legal: 'https://github.com/WRDLNKDN/Agreements/wiki/Legal',
+  terms: '/terms',
+  privacy: '/privacy',
+  guidelines: '/guidelines',
 };
 
 const SOCIALS = [

@@ -208,7 +208,9 @@ export const Footer = () => {
             Icon: PersonAddIcon,
           },
         ]),
-    { label: 'Feed', href: '/feed', external: false, Icon: ChatIcon },
+    ...(signedIn
+      ? [{ label: 'Feed', href: '/feed', external: false, Icon: ChatIcon }]
+      : []),
     ...(signedIn
       ? [
           {

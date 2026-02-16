@@ -27,6 +27,48 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_advertisers: {
+        Row: {
+          id: string
+          company_name: string
+          title: string
+          description: string
+          url: string
+          logo_url: string | null
+          links: Json
+          active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_name: string
+          title: string
+          description: string
+          url: string
+          logo_url?: string | null
+          links?: Json
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_name?: string
+          title?: string
+          description?: string
+          url?: string
+          logo_url?: string | null
+          links?: Json
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feed_connections: {
         Row: {
           user_id: string

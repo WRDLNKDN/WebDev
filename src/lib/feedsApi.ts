@@ -151,6 +151,16 @@ export async function fetchFeeds(options?: {
   });
 
   if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(
+        "Feed API not found. Run 'npm run dev' to start all services (Vite, Supabase, and the API).",
+      );
+    }
+    if (res.status === 503) {
+      throw new Error(
+        "API server isn't running. Run 'npm run dev' or start it with 'npm run api'.",
+      );
+    }
     let body: { error?: string };
     try {
       body = await parseJsonResponse<{ error?: string }>(res, url);

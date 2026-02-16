@@ -58,8 +58,10 @@ import {
 } from '../lib/feedsApi';
 import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
+import { FeedAdCard, type FeedAdvertiser } from '../components/feed/FeedAdCard';
 
 const FEED_LIMIT = 20;
+const AD_EVERY_N_POSTS = 6;
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -266,6 +268,31 @@ function hasRenderableContent(item: FeedItem): boolean {
   )
     return true;
   return false;
+}
+
+export type FeedDisplayItem =
+  | { kind: 'post'; item: FeedItem }
+  | { kind: 'ad'; advertiser: FeedAdvertiser };
+
+function interleaveWithAds(
+  posts: FeedItem[],
+  advertisers: FeedAdvertiser[],
+  everyN: number,
+): FeedDisplayItem[] {
+  if (advertisers.length === 0) {
+    return posts.map((item) => ({ kind: 'post' as const, item }));
+  }
+  const result: FeedDisplayItem[] = [];
+  let adIndex = 0;
+  posts.forEach((item, i) => {
+    if (i > 0 && i % everyN === 0) {
+      const ad = advertisers[adIndex % advertisers.length];
+      result.push({ kind: 'ad', advertiser: ad });
+      adIndex += 1;
+    }
+    result.push({ kind: 'post', item });
+  });
+  return result;
 }
 
 const ShareDialog = ({
@@ -668,6 +695,7 @@ export const Feed = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<FeedSession | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
+  const [advertisers, setAdvertisers] = useState<FeedAdvertiser[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -689,6 +717,10 @@ export const Feed = () => {
       );
     return list.filter(hasRenderableContent);
   }, [items, sortBy]);
+  const displayItems = useMemo(
+    () => interleaveWithAds(sortedItems, advertisers, AD_EVERY_N_POSTS),
+    [sortedItems, advertisers],
+  );
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
@@ -814,6 +846,27 @@ export const Feed = () => {
     if (!session) return;
     void loadPage();
   }, [session, loadPage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAdvertisers = async () => {
+      const { data, error } = await supabase
+        .from('feed_advertisers')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
+
+      if (cancelled) return;
+      if (error) return; // Non-fatal: feed still works without ads
+      setAdvertisers((data ?? []) as FeedAdvertiser[]);
+    };
+
+    void fetchAdvertisers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
@@ -1288,23 +1341,32 @@ export const Feed = () => {
               </Paper>
             ) : (
               <>
-                {sortedItems.map((item) => (
-                  <FeedCard
-                    key={item.id}
-                    item={item}
-                    actions={feedCardActions}
-                    commentsExpanded={expandedCommentsPostId === item.id}
-                    comments={commentsByPostId[item.id] ?? []}
-                    commentsLoading={commentsLoadingPostId === item.id}
-                    onAddComment={handleAddComment}
-                    isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
-                      item.id,
-                    )}
-                    onDismissLinkPreview={() =>
-                      handleDismissLinkPreview(item.id)
-                    }
-                  />
-                ))}
+                {displayItems.map((entry) =>
+                  entry.kind === 'post' ? (
+                    <FeedCard
+                      key={entry.item.id}
+                      item={entry.item}
+                      actions={feedCardActions}
+                      commentsExpanded={
+                        expandedCommentsPostId === entry.item.id
+                      }
+                      comments={commentsByPostId[entry.item.id] ?? []}
+                      commentsLoading={commentsLoadingPostId === entry.item.id}
+                      onAddComment={handleAddComment}
+                      isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
+                        entry.item.id,
+                      )}
+                      onDismissLinkPreview={() =>
+                        handleDismissLinkPreview(entry.item.id)
+                      }
+                    />
+                  ) : (
+                    <FeedAdCard
+                      key={`ad-${entry.advertiser.id}`}
+                      advertiser={entry.advertiser}
+                    />
+                  ),
+                )}
                 {nextCursor && (
                   <Box
                     sx={{ display: 'flex', justifyContent: 'center', py: 2 }}

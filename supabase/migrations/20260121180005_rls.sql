@@ -598,3 +598,24 @@ create policy "Admins can read audit log"
 revoke all on table public.chat_audit_log from anon, authenticated;
 grant select on table public.chat_audit_log to authenticated;
 
+-- -----------------------------
+-- feed_advertisers: public read active; admin full access
+-- -----------------------------
+alter table public.feed_advertisers enable row level security;
+
+drop policy if exists feed_advertisers_public_read on public.feed_advertisers;
+drop policy if exists feed_advertisers_admin_all on public.feed_advertisers;
+
+create policy feed_advertisers_public_read
+  on public.feed_advertisers for select
+  using (active = true);
+
+create policy feed_advertisers_admin_all
+  on public.feed_advertisers for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+revoke all on table public.feed_advertisers from anon, authenticated;
+grant select on table public.feed_advertisers to authenticated;
+grant select, insert, update, delete on table public.feed_advertisers to authenticated;
+

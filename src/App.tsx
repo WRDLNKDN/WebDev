@@ -131,6 +131,10 @@ const Terms = lazy(() =>
   import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
 );
 
+const Privacy = lazy(() =>
+  import('./pages/legal/Privacy').then((m) => ({ default: m.Privacy })),
+);
+
 // 4. Admin Ecosystem
 const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
@@ -250,6 +254,7 @@ const App = () => {
               {/* --- Legal --- */}
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
 
               {/* --- Administration --- */}
               <Route path="/admin" element={<AdminApp />} />

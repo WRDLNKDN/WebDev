@@ -4,12 +4,6 @@ import { Link as RouterLink } from 'react-router-dom';
 
 const LEGAL_WIKI = {
   legal: 'https://github.com/WRDLNKDN/Agreements/wiki/Legal',
-  terms:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Terms-of-Service-(Public-Notice)',
-  privacy:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Privacy-Policy-(Public-Notice)',
-  guidelines:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Community-Guidelines',
 };
 
 const FOOTER_LINK = {
@@ -95,12 +89,12 @@ export const Footer = () => {
           href: LEGAL_WIKI.legal,
           external: true,
         },
-        { label: 'Terms of Service', href: LEGAL_WIKI.terms, external: true },
-        { label: 'Privacy Policy', href: LEGAL_WIKI.privacy, external: true },
+        { label: 'Terms of Service', href: '/terms', external: false },
+        { label: 'Privacy Policy', href: '/privacy', external: false },
         {
           label: 'Community Guidelines',
-          href: LEGAL_WIKI.guidelines,
-          external: true,
+          href: '/guidelines',
+          external: false,
         },
       ],
     },
@@ -113,8 +107,8 @@ export const Footer = () => {
           external: true,
         },
         {
-          label: 'wrdlnkdn@gmail.com',
-          href: 'mailto:wrdlnkdn@gmail.com',
+          label: 'info@wrdlnkdn.com',
+          href: 'mailto:info@wrdlnkdn.com',
           external: true,
         },
       ],

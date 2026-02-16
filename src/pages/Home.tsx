@@ -104,10 +104,33 @@ export const Home = () => {
   return (
     <>
       <Helmet>
-        <title>WRDLNKDN | Connection in motion</title>
+        <title>Business, but weirder. | WRDLNKDN</title>
         <meta
           name="description"
-          content="A professional network built on values. Powered by participation."
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <link rel="canonical" href="https://wrdlnkdn.com" />
+        <meta property="og:url" content="https://wrdlnkdn.com" />
+        <meta property="og:title" content="Business, but weirder." />
+        <meta
+          property="og:description"
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://wrdlnkdn.com/og-image.png" />
+        <meta
+          property="og:image:alt"
+          content="WRDLNKDN – Business, but weirder."
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Business, but weirder." />
+        <meta
+          name="twitter:description"
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <meta
+          name="twitter:image"
+          content="https://wrdlnkdn.com/og-image.png"
         />
       </Helmet>
 

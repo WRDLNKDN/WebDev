@@ -1,5 +1,7 @@
 # Feeds API
 
+[← Docs index](./README.md)
+
 MVP activity stream for WRDLNKDN: a user-curated, link-aware feed from people
 you're connected to (and yourself). **Not** a LinkedIn mirror—external URLs are
 metadata only; no scraping or third-party data ingestion.
@@ -124,8 +126,14 @@ Notes:
 
 ## Usage
 
-- Frontend: use `src/lib/feedsApi.ts`
+- Frontend: use [`src/lib/feedsApi.ts`](../src/lib/feedsApi.ts)
   `fetchFeeds({ limit?, cursor?, accessToken? })`, `createFeedPost`, and
   `createFeedExternalLink`.
 - Backend: GET/POST `/api/feeds` are implemented in `backend/server.ts`; GET
   calls Supabase RPC `get_feed_page`, POST inserts into `feed_items`.
+
+## See also
+
+- [Docs index](./README.md)
+- [API Layer](./architecture/api-layer.md)
+- [Directory API](./directory.md)

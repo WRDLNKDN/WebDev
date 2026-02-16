@@ -44,44 +44,36 @@ export const IdentityHeader = ({
   <Paper
     elevation={0}
     sx={{
-      p: 4,
+      p: { xs: 2, md: 4 },
       borderRadius: 4,
       bgcolor: CARD_BG,
       backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255,255,255,0.12)',
       boxShadow: BANNER_GLOW,
-      mb: 4,
+      mb: { xs: 3, md: 4 },
       position: 'relative',
     }}
   >
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      flexWrap="wrap"
-      gap={2}
-      sx={{ mb: 2 }}
-    >
-      <Typography
-        variant="overline"
+    {actions && (
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        flexWrap="wrap"
+        useFlexGap
+        spacing={2}
         sx={{
-          letterSpacing: 2,
-          color: 'text.secondary',
-          fontWeight: 600,
+          mb: 2,
+          '& .MuiButton-root': { minWidth: 0 },
         }}
       >
-        PROFILE IDENTITY BANNER
-      </Typography>
-      {actions && (
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          {actions}
-        </Stack>
-      )}
-    </Stack>
+        {actions}
+      </Stack>
+    )}
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      spacing={4}
+      spacing={{ xs: 3, md: 4 }}
       alignItems={{ xs: 'center', md: 'flex-start' }}
       sx={{ textAlign: { xs: 'center', md: 'left' } }}
     >
@@ -90,8 +82,8 @@ export const IdentityHeader = ({
           src={avatarUrl}
           alt={displayName}
           sx={{
-            width: 120,
-            height: 120,
+            width: { xs: 88, md: 120 },
+            height: { xs: 88, md: 120 },
             border: '4px solid rgba(255,255,255,0.1)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           }}
@@ -122,7 +114,12 @@ export const IdentityHeader = ({
       >
         <Typography
           variant="h4"
-          sx={{ fontWeight: 700, mb: 0.5, letterSpacing: -0.5 }}
+          sx={{
+            fontWeight: 700,
+            mb: 0.5,
+            letterSpacing: -0.5,
+            fontSize: { xs: '1.5rem', md: '2.125rem' },
+          }}
         >
           {displayName}
         </Typography>
@@ -197,39 +194,56 @@ interface IdentityBadgesProps {
   onSkillsClick?: () => void;
 }
 
-/** Badge row: Builder Tags, Skills — clickable when callbacks provided; MUI icons */
+/** Badge row: Builder Tags, Skills, Edit Profile — Edit Profile is the main CTA */
 export const IdentityBadges = ({
   onTagsClick,
   onSkillsClick,
-}: IdentityBadgesProps) => (
-  <>
-    <Chip
-      size="small"
-      icon={<LocalOfferIcon sx={{ fontSize: 16 }} />}
-      label="Builder Tags"
-      onClick={onTagsClick}
-      clickable={Boolean(onTagsClick)}
-      sx={{
-        bgcolor: 'rgba(255,193,7,0.15)',
-        color: 'text.primary',
-        border: '1px solid rgba(255,193,7,0.35)',
-        cursor: onTagsClick ? 'pointer' : 'default',
-        '& .MuiChip-icon': { color: 'inherit' },
-      }}
-    />
-    <Chip
-      size="small"
-      icon={<PsychologyIcon sx={{ fontSize: 16 }} />}
-      label="Skills"
-      onClick={onSkillsClick}
-      clickable={Boolean(onSkillsClick)}
-      sx={{
-        bgcolor: 'rgba(236,64,122,0.15)',
-        color: 'text.primary',
-        border: '1px solid rgba(236,64,122,0.35)',
-        cursor: onSkillsClick ? 'pointer' : 'default',
-        '& .MuiChip-icon': { color: 'inherit' },
-      }}
-    />
-  </>
-);
+}: IdentityBadgesProps) => {
+  const onEdit = onTagsClick ?? onSkillsClick;
+  return (
+    <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
+      <Chip
+        size="small"
+        icon={<LocalOfferIcon sx={{ fontSize: 16 }} />}
+        label="Builder Tags"
+        onClick={onTagsClick}
+        clickable={Boolean(onTagsClick)}
+        sx={{
+          bgcolor: 'rgba(255,193,7,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(255,193,7,0.35)',
+          cursor: onTagsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      <Chip
+        size="small"
+        icon={<PsychologyIcon sx={{ fontSize: 16 }} />}
+        label="Skills"
+        onClick={onSkillsClick}
+        clickable={Boolean(onSkillsClick)}
+        sx={{
+          bgcolor: 'rgba(236,64,122,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(236,64,122,0.35)',
+          cursor: onSkillsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      {onEdit && (
+        <Chip
+          size="small"
+          label="Edit Profile"
+          onClick={onEdit}
+          clickable
+          sx={{
+            bgcolor: 'rgba(66,165,245,0.15)',
+            color: 'primary.light',
+            border: '1px solid rgba(66,165,245,0.4)',
+            cursor: 'pointer',
+          }}
+        />
+      )}
+    </Stack>
+  );
+};

@@ -1,5 +1,7 @@
 # Information Architecture (IA)
 
+[← Docs index](../README.md)
+
 **Single source of truth** for WRDLNKDN MVP page names, routes, access rules,
 and navigation. Use this doc for design, engineering, and onboarding.
 

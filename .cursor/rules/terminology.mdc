@@ -1,0 +1,31 @@
+---
+description: WRDLNKDN canonical terminology for UI, docs, and UX copy
+alwaysApply: true
+---
+
+# Terminology Standards
+
+Use canonical vocabulary from `docs/TERMINOLOGY.md`. Key rules:
+
+## Use These Terms
+
+- **Member** — not "User" or "Contact"
+- **Profile** — identity page
+- **Connection** — relationship between Members (not "Link" for people)
+- **Link** — external URL on a Profile only
+- **Avatar** — display image (profile photo, Weirdling, etc.)
+- **Weirdling** — identity creature; type of Avatar
+- **Feed** — primary content surface
+- **Directory** — discover Members
+- **Post** — create content in Feed
+- **Comment**, **React**, **Message**, **Chat** — interaction terms
+
+## Disallowed
+
+- User, Contact, Unfriend, Guild
+- "Link" for Member relationships (use Connection)
+- Zip codes or full street addresses (Location: City, State)
+
+## Governance
+
+No terminology drift. New terms require review and addition to `docs/TERMINOLOGY.md` before use.

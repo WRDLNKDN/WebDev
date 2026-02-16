@@ -47,24 +47,28 @@ export function useProfile() {
         const handle = baseHandle;
         let attempts = 0;
         while (attempts < 10) {
-          const { data: inserted, error: insertErr } = await supabase
+          const payload = {
+            id: session.user.id,
+            email,
+            handle: attempts === 0 ? handle : `${handle}${attempts}`,
+            display_name:
+              session.user.user_metadata?.full_name ?? email.split('@')[0],
+            status: 'pending',
+          };
+          const { data: upserted, error: upsertErr } = await supabase
             .from('profiles')
-            .insert({
-              id: session.user.id,
-              email,
-              handle: attempts === 0 ? handle : `${handle}${attempts}`,
-              display_name:
-                session.user.user_metadata?.full_name ?? email.split('@')[0],
-              status: 'pending',
+            .upsert(payload, {
+              onConflict: 'id',
+              ignoreDuplicates: true,
             })
             .select('*')
-            .single();
-          if (!insertErr && inserted) {
-            profileData = inserted as unknown as DashboardProfile;
+            .maybeSingle();
+          if (!upsertErr && upserted) {
+            profileData = upserted as unknown as DashboardProfile;
             break;
           }
-          if (insertErr?.code === '23505') {
-            // Race: another request may have created the profile (id conflict). Refetch.
+          if (upsertErr?.code === '23505') {
+            // Handle conflict: another request created it. Refetch.
             const { data: existing } = await supabase
               .from('profiles')
               .select('*')
@@ -77,7 +81,18 @@ export function useProfile() {
             attempts += 1;
             continue;
           }
-          break;
+          if (upsertErr) break;
+          // ignoreDuplicates: refetch in case row was created by another request
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (existing) {
+            profileData = existing as unknown as DashboardProfile;
+            break;
+          }
+          attempts += 1;
         }
         if (!profileData) {
           setLoading(false);
@@ -155,45 +170,59 @@ export function useProfile() {
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('AUTH_FAILURE: No active session');
 
-      // Preserve existing keys (Deep Merge)
+      // Preserve existing keys (Deep Merge); status_message removed from UI
       const currentCreds =
         (profile?.nerd_creds as Record<string, unknown>) || {};
       const newCreds = (updates.nerd_creds as Record<string, unknown>) || {};
-      const mergedNerdCreds = { ...currentCreds, ...newCreds };
+      const merged = { ...currentCreds, ...newCreds };
+      delete merged.status_message;
+      const mergedNerdCreds = merged;
 
       // Strip nerd_creds to prevent double-mapping in the payload
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { nerd_creds: _, ...topLevelUpdates } = updates;
 
-      // Only send columns we're allowed to update; include nerd_creds only when we're updating it (so links-only update doesn't overwrite nerd_creds)
+      // Only send columns we're allowed to update; include nerd_creds only when
+      // we're updating it (so links-only update doesn't overwrite nerd_creds)
       const payload: Record<string, unknown> = { ...topLevelUpdates };
       if (updates.nerd_creds !== undefined) {
         payload.nerd_creds = mergedNerdCreds as unknown as Json;
       }
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)
-      // Casting to 'any' here acts as a bridge while the schema synchronizes
+      // Cast to Record for .update() — Supabase types may lag behind schema changes
       const { error: updateError } = await supabase
         .from('profiles')
         .update(payload as Record<string, unknown>)
         .eq('id', session.user.id);
 
       if (updateError) {
+        const code = (updateError as { code?: string }).code;
+        const msg = String(
+          (updateError as { message?: string }).message || '',
+        ).toLowerCase();
         const is409 =
-          (updateError as { code?: string }).code === '409' ||
-          String((updateError as { message?: string }).message || '').includes(
-            '409',
-          ) ||
-          String((updateError as { message?: string }).message || '')
-            .toLowerCase()
-            .includes('conflict');
+          code === '409' || msg.includes('409') || msg.includes('conflict');
         if (is409) {
           await fetchData();
           throw new Error(
             'Profile was updated elsewhere. Please try saving again.',
           );
         }
-        throw updateError;
+        if (msg.includes('rls') || msg.includes('row-level security')) {
+          throw new Error(
+            "You don't have permission to update your profile. Try signing in again.",
+          );
+        }
+        if (msg.includes('duplicate') || msg.includes('unique')) {
+          throw new Error(
+            'That handle may already be taken. Try a different one.',
+          );
+        }
+        throw new Error(
+          (updateError as { message?: string }).message ||
+            'Could not save profile. Please try again.',
+        );
       }
 
       // Optimistic State Sync
@@ -229,19 +258,17 @@ export function useProfile() {
       email.split('@')[0]?.toLowerCase().replace(/\W/g, '') || 'user';
     for (let attempts = 0; attempts < 10; attempts++) {
       const handle = attempts === 0 ? baseHandle : `${baseHandle}${attempts}`;
-      const { data: inserted, error: insertErr } = await supabase
-        .from('profiles')
-        .insert({
+      const { error: upsertErr } = await supabase.from('profiles').upsert(
+        {
           id: userId,
           email,
           handle,
           display_name: displayName,
           status: 'pending',
-        })
-        .select('id')
-        .maybeSingle();
-      if (!insertErr && inserted) return;
-      if (insertErr?.code === '23505') {
+        },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+      if (!upsertErr) {
         const { data: refetched } = await supabase
           .from('profiles')
           .select('id')
@@ -249,7 +276,15 @@ export function useProfile() {
           .maybeSingle();
         if (refetched) return;
       }
-      if (insertErr?.code !== '23505') break;
+      if (upsertErr?.code === '23505') {
+        const { data: refetched } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+        if (refetched) return;
+      }
+      if (upsertErr && upsertErr.code !== '23505') break;
     }
     throw new Error('Could not create profile. Please try again.');
   };

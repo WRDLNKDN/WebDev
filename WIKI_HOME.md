@@ -92,7 +92,7 @@ Details:
 ## 🗣️ Need Something?
 
 - Open an **[Issue](../../issues)** or **[Pull Request](../../pulls)**
-- Or email: <wrdlnkdn@gmail.com>
+- Or email: <info@wrdlnkdn.com>
 
 ---
 

@@ -1,133 +1,281 @@
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import ChatIcon from '@mui/icons-material/Chat';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import EmailIcon from '@mui/icons-material/Email';
+import EventIcon from '@mui/icons-material/Event';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import ForumIcon from '@mui/icons-material/Forum';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import GroupsIcon from '@mui/icons-material/Groups';
+import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import HelpIcon from '@mui/icons-material/Help';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Box, Container, Grid, Link, Stack, Typography } from '@mui/material';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import YouTubeIcon from '@mui/icons-material/YouTube';
+import {
+  Box,
+  Container,
+  Grid,
+  IconButton,
+  Link,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
+import type { Session } from '@supabase/supabase-js';
+
+const CONTACT_EMAIL = 'info@wrdlnkdn.com';
 
 const LEGAL_WIKI = {
   legal: 'https://github.com/WRDLNKDN/Agreements/wiki/Legal',
-  terms:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Terms-of-Service-(Public-Notice)',
-  privacy:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Privacy-Policy-(Public-Notice)',
-  guidelines:
-    'https://github.com/WRDLNKDN/Agreements/wiki/Community-Guidelines',
+  terms: '/terms',
+  privacy: '/privacy',
+  guidelines: '/guidelines',
 };
 
-const FOOTER_LINK = {
-  sx: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: '0.875rem',
-    '&:hover': { color: 'primary.light', textDecoration: 'underline' },
-    '&:focus-visible': {
-      outline: '2px solid',
-      outlineColor: 'primary.main',
-      outlineOffset: 2,
-    },
+const SOCIALS = [
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/company/wrdlnkdn',
+    Icon: LinkedInIcon,
   },
+  {
+    label: 'YouTube',
+    href: 'https://www.youtube.com/@WRDLNKDN',
+    Icon: YouTubeIcon,
+  },
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/wrdlnkdn/',
+    Icon: InstagramIcon,
+  },
+  {
+    label: 'Facebook',
+    href: 'https://www.facebook.com/wrdlnkdn',
+    Icon: FacebookIcon,
+  },
+  {
+    label: 'Discord',
+    href: 'https://discord.gg/wrdlnkdn',
+    Icon: ForumIcon,
+  },
+  { label: 'GitHub', href: 'https://github.com/WRDLNKDN', Icon: GitHubIcon },
+];
+
+const FOOTER_LINK_SX = {
+  color: 'rgba(255,255,255,0.85)',
+  fontSize: '0.875rem',
+  '&:hover': { color: 'primary.light', textDecoration: 'underline' },
+  '&:focus-visible': {
+    outline: '2px solid',
+    outlineColor: 'primary.main',
+    outlineOffset: 2,
+  },
+} as const;
+
+type IconComponent = React.ComponentType<{ sx?: object }>;
+
+type FooterLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+  Icon?: IconComponent;
 };
 
-const Column = ({
-  title,
-  links,
-}: {
-  title: string;
-  links: { label: string; href: string; external?: boolean }[];
-}) => {
-  return (
-    <Stack spacing={1.5} component="nav" aria-label={title}>
-      <Typography
-        component="h2"
-        variant="subtitle2"
-        fontWeight={700}
-        color="rgba(255,255,255,0.95)"
-        sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
-      >
-        {title}
-      </Typography>
-      {links.map(({ label, href, external }) => {
-        const isMailto = href.startsWith('mailto:');
-        return external ? (
-          <Link
-            key={label}
-            href={href}
-            {...(!isMailto && {
-              target: '_blank',
-              rel: 'noopener noreferrer',
-            })}
-            underline="hover"
-            variant="body2"
-            {...FOOTER_LINK}
-          >
-            {label}
-            {!isMailto && (
-              <OpenInNewIcon
-                sx={{ fontSize: 14, ml: 0.25, verticalAlign: 'middle' }}
-                aria-hidden
-              />
-            )}
-          </Link>
-        ) : (
-          <Link
-            key={label}
-            component={RouterLink}
-            to={href}
-            underline="hover"
-            variant="body2"
-            {...FOOTER_LINK}
-          >
-            {label}
-          </Link>
-        );
-      })}
-    </Stack>
-  );
-};
+const Column = ({ title, links }: { title: string; links: FooterLink[] }) => (
+  <Stack spacing={1.5} component="nav" aria-label={title}>
+    <Typography
+      component="h2"
+      variant="subtitle2"
+      fontWeight={700}
+      color="rgba(255,255,255,0.95)"
+      sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
+    >
+      {title}
+    </Typography>
+    {links.map(({ label, href, external, Icon }) => {
+      const isMailto = href.startsWith('mailto:');
+      const iconSx = {
+        fontSize: 18,
+        mr: 1,
+        verticalAlign: 'middle',
+        opacity: 0.9,
+      };
+      const content = (
+        <>
+          {Icon && <Icon sx={iconSx} aria-hidden />}
+          {label}
+          {external && !isMailto && (
+            <OpenInNewIcon
+              sx={{ fontSize: 14, ml: 0.25, verticalAlign: 'middle' }}
+              aria-hidden
+            />
+          )}
+        </>
+      );
+      return external ? (
+        <Link
+          key={label}
+          href={href}
+          {...(!isMailto && {
+            target: '_blank',
+            rel: 'noopener noreferrer',
+          })}
+          underline="hover"
+          variant="body2"
+          sx={{
+            ...FOOTER_LINK_SX,
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+        >
+          {content}
+        </Link>
+      ) : (
+        <Link
+          key={label}
+          component={RouterLink}
+          to={href}
+          underline="hover"
+          variant="body2"
+          sx={{
+            ...FOOTER_LINK_SX,
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+        >
+          {content}
+        </Link>
+      );
+    })}
+  </Stack>
+);
+
+/** Store link from env or fallback. */
+const storeUrl =
+  (import.meta.env.VITE_STORE_URL as string | undefined) ||
+  'https://wrdlnkdn.com/store-1';
 
 export const Footer = () => {
-  const year = new Date().getFullYear();
+  const [session, setSession] = useState<Session | null>(null);
 
-  /** Legal (wiki), Contact (Agreements #contact + mailto), in-app links. */
+  useEffect(() => {
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session ?? null);
+    };
+    void init();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => void init());
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signedIn = !!session?.user;
+
+  const legalLinks: FooterLink[] = [
+    {
+      label: 'Legal (Canonical Index)',
+      href: LEGAL_WIKI.legal,
+      external: true,
+      Icon: MenuBookIcon,
+    },
+    { label: 'Terms of Service', href: '/terms', external: false },
+    { label: 'Privacy Policy', href: '/privacy', external: false },
+    {
+      label: 'Community Guidelines',
+      href: '/guidelines',
+      external: false,
+    },
+  ];
+
+  const communityLinks: FooterLink[] = [
+    ...(signedIn
+      ? []
+      : [
+          {
+            label: 'Join',
+            href: '/join',
+            external: false,
+            Icon: PersonAddIcon,
+          },
+        ]),
+    ...(signedIn
+      ? [{ label: 'Feed', href: '/feed', external: false, Icon: ChatIcon }]
+      : []),
+    ...(signedIn
+      ? [
+          {
+            label: 'Dashboard',
+            href: '/dashboard',
+            external: false,
+            Icon: DashboardIcon,
+          },
+        ]
+      : []),
+    {
+      label: 'Store',
+      href: storeUrl,
+      external: true,
+      Icon: ShoppingBagIcon,
+    },
+  ].filter(Boolean) as FooterLink[];
+
+  const exploreLinks: FooterLink[] = signedIn
+    ? [
+        { label: 'Events', href: '/events', external: false, Icon: EventIcon },
+        { label: 'Groups', href: '/forums', external: false, Icon: GroupsIcon },
+        { label: 'Saved', href: '/saved', external: false, Icon: BookmarkIcon },
+        {
+          label: 'Advertise',
+          href: '/advertise',
+          external: false,
+          Icon: CampaignIcon,
+        },
+        {
+          label: 'Games',
+          href: 'https://phuzzle.vercel.app/',
+          external: true,
+          Icon: SportsEsportsIcon,
+        },
+        { label: 'Help', href: '/help', external: false, Icon: HelpIcon },
+      ]
+    : [];
+
+  const partnersLinks: FooterLink[] = [
+    {
+      label: 'Community Partners',
+      href: '/community-partners',
+      external: false,
+      Icon: GroupWorkIcon,
+    },
+  ];
+
+  const contactLinks: FooterLink[] = [
+    {
+      label: CONTACT_EMAIL,
+      href: `mailto:${CONTACT_EMAIL}`,
+      external: true,
+      Icon: EmailIcon,
+    },
+  ];
+
   const columns = [
-    {
-      title: 'Legal',
-      links: [
-        {
-          label: 'Legal (Canonical Index)',
-          href: LEGAL_WIKI.legal,
-          external: true,
-        },
-        { label: 'Terms of Service', href: LEGAL_WIKI.terms, external: true },
-        { label: 'Privacy Policy', href: LEGAL_WIKI.privacy, external: true },
-        {
-          label: 'Community Guidelines',
-          href: LEGAL_WIKI.guidelines,
-          external: true,
-        },
-      ],
-    },
-    {
-      title: 'Contact',
-      links: [
-        {
-          label: 'Contact',
-          href: 'https://github.com/WRDLNKDN/Agreements?tab=readme-ov-file#contact',
-          external: true,
-        },
-        {
-          label: 'wrdlnkdn@gmail.com',
-          href: 'mailto:wrdlnkdn@gmail.com',
-          external: true,
-        },
-      ],
-    },
-    {
-      title: 'Links',
-      links: [
-        { label: 'Home', href: '/', external: false },
-        { label: 'Join', href: '/join', external: false },
-        { label: 'Feed', href: '/feed', external: false },
-        { label: 'Guidelines', href: '/guidelines', external: false },
-      ],
-    },
+    { title: 'Legal', links: legalLinks },
+    { title: 'Community', links: communityLinks },
+    ...(exploreLinks.length > 0
+      ? [{ title: 'Explore', links: exploreLinks }]
+      : []),
+    { title: 'Community Partners', links: partnersLinks },
+    { title: 'Contact', links: contactLinks },
   ];
 
   return (
@@ -159,6 +307,40 @@ export const Footer = () => {
               <Column title={col.title} links={col.links} />
             </Grid>
           ))}
+
+          {/* Socials: icon row */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Stack spacing={1.5} component="nav" aria-label="Social links">
+              <Typography
+                component="h2"
+                variant="subtitle2"
+                fontWeight={700}
+                color="rgba(255,255,255,0.95)"
+                sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
+              >
+                Social
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {SOCIALS.map(({ label, href, Icon }) => (
+                  <IconButton
+                    key={label}
+                    component="a"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    size="small"
+                    sx={{
+                      color: 'rgba(255,255,255,0.85)',
+                      '&:hover': { color: 'primary.light' },
+                    }}
+                  >
+                    <Icon sx={{ fontSize: 22 }} />
+                  </IconButton>
+                ))}
+              </Stack>
+            </Stack>
+          </Grid>
         </Grid>
 
         <Stack
@@ -190,12 +372,9 @@ export const Footer = () => {
               />
             </Link>
             <Typography variant="body2" color="rgba(255,255,255,0.8)">
-              © {year} WRDLNKDN. Business, but weirder.
+              © 2026 WRDLNKDN. Drake Svc LLC DBA WRDLNKDN.
             </Typography>
           </Stack>
-          <Typography variant="body2" color="rgba(255,255,255,0.8)">
-            Drake Svc LLC DBA WRDLNKDN
-          </Typography>
         </Stack>
       </Container>
     </Box>

@@ -4,11 +4,17 @@ Central index for WRDLNKDN WebDev documentation.
 
 ## Docs
 
+- [Terminology and Language Standards](./TERMINOLOGY.md) — Canonical vocabulary
+  for UI, docs, EPICs, and UX copy. No drift without approval.
 - [Information architecture](./architecture/information-architecture.md) —
   Canonical routes, navigation labels, public vs authenticated access; single
   source of truth for Home, Feed, Join, Profile, Dashboard.
 - [Auth & password requirements](./auth-requirements.md) — User and admin
   authentication; password/OAuth and admin access rules.
+- [OAuth sign-in display name](./auth-oauth-display-name.md) — How to show
+  wrdlnkdn.com instead of Supabase domain on Google sign-in.
+- [UAT vs PROD deployment](./DEPLOYMENT_UAT_PROD.md) — Supabase project IDs; fix
+  UAT showing PROD URL on sign-in.
 - [Platform NFRs](./architecture/platform-nfrs.md) — Non-functional requirements
   (operational, scalability, security).
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and
@@ -24,6 +30,12 @@ Central index for WRDLNKDN WebDev documentation.
 - [Epic: Home Dashboard](./architecture/epic-home-dashboard.md) —
   Profile-centric landing experience; identity, portfolio, status, friends (MVP
   scope).
+- [Directory API](./directory.md) — Member discovery, search, filters,
+  connection actions (authenticated only).
+- [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.
+- [Chat MVP spec](./chat/MVP_CHAT_SPEC.md) — 1:1 and group messaging.
+- [Mobile & error audit](./MOBILE_AND_ERROR_AUDIT.md) — Layout responsiveness
+  and error message improvements.
 - [Guide: Weirdling Architecture](./architecture/weirdling-architecture-guide.md)
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling

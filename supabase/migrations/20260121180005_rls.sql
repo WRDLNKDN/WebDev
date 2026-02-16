@@ -15,6 +15,31 @@ begin
 end $$;
 
 -- -----------------------------
+-- Optional: add directory columns to profiles if missing (idempotent for existing DBs)
+-- -----------------------------
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'industry') then
+    alter table public.profiles add column industry text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'location') then
+    alter table public.profiles add column location text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_visibility') then
+    alter table public.profiles add column profile_visibility text not null default 'members_only'
+      check (profile_visibility in ('members_only', 'connections_only'));
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_active_at') then
+    alter table public.profiles add column last_active_at timestamptz default now();
+  end if;
+end $$;
+
+-- Directory indexes (idempotent; tables.sql creates on fresh reset)
+create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
+create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+
+-- -----------------------------
 -- admin_allowlist: privileges (no RLS)
 -- -----------------------------
 revoke all on table public.admin_allowlist from anon, authenticated;
@@ -30,6 +55,12 @@ grant execute on function public.is_admin() to authenticated;
 -- -----------------------------
 revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
 grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
+
+-- -----------------------------
+-- get_directory_page(): execute grant
+-- -----------------------------
+revoke all on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) from public;
+grant execute on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) to authenticated, service_role;
 
 -- -----------------------------
 -- profiles: RLS
@@ -83,6 +114,10 @@ grant update (
   geek_creds,
   nerd_creds,
   pronouns,
+  industry,
+  location,
+  profile_visibility,
+  last_active_at,
   socials,
   join_reason,
   participation_style,
@@ -179,6 +214,28 @@ revoke all on table public.feed_connections from anon, authenticated;
 grant select, insert, delete on table public.feed_connections to authenticated;
 
 -- -----------------------------
+-- connection_requests: RLS
+-- -----------------------------
+alter table public.connection_requests enable row level security;
+
+create policy connection_requests_requester
+  on public.connection_requests for all
+  using (auth.uid() = requester_id)
+  with check (auth.uid() = requester_id);
+
+create policy connection_requests_recipient_select
+  on public.connection_requests for select
+  using (auth.uid() = recipient_id);
+
+create policy connection_requests_recipient_update
+  on public.connection_requests for update
+  using (auth.uid() = recipient_id)
+  with check (auth.uid() = recipient_id);
+
+revoke all on table public.connection_requests from anon;
+grant select, insert, update on table public.connection_requests to authenticated;
+
+-- -----------------------------
 -- feed_items: RLS
 -- -----------------------------
 alter table public.feed_items enable row level security;
@@ -248,4 +305,296 @@ create policy "Public read resumes"
   on storage.objects for select
   to public
   using (bucket_id = 'resumes');
+
+-- -----------------------------
+-- chat_rooms: RLS
+-- -----------------------------
+alter table public.chat_rooms enable row level security;
+
+create policy "Users can read rooms they are members of"
+  on public.chat_rooms for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.chat_room_members crm
+      where crm.room_id = chat_rooms.id and crm.user_id = auth.uid() and crm.left_at is null
+    )
+  );
+
+create policy "Authenticated can create rooms"
+  on public.chat_rooms for insert
+  to authenticated
+  with check (auth.uid() = created_by);
+
+create policy "Admins can update room name (groups)"
+  on public.chat_rooms for update
+  to authenticated
+  using (
+    exists (
+      select 1 from public.chat_room_members crm
+      where crm.room_id = chat_rooms.id and crm.user_id = auth.uid()
+        and crm.role = 'admin' and crm.left_at is null
+    )
+  )
+  with check (true);
+
+-- -----------------------------
+-- chat_room_members: RLS
+-- -----------------------------
+alter table public.chat_room_members enable row level security;
+
+create policy "Members can read room membership"
+  on public.chat_room_members for select
+  to authenticated
+  using (public.chat_is_room_member(chat_room_members.room_id));
+
+create policy "Admins can insert members (invite)"
+  on public.chat_room_members for insert
+  to authenticated
+  with check (public.chat_is_room_admin(chat_room_members.room_id));
+
+create policy "Creators can insert self as first member"
+  on public.chat_room_members for insert
+  to authenticated
+  with check (
+    auth.uid() = user_id
+    and exists (select 1 from public.chat_rooms r where r.id = room_id and r.created_by = auth.uid())
+  );
+
+create policy "Admins can update members (transfer, remove)"
+  on public.chat_room_members for update
+  to authenticated
+  using (public.chat_is_room_admin(chat_room_members.room_id));
+
+create policy "Users can leave (set left_at)"
+  on public.chat_room_members for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+revoke all on table public.chat_rooms from anon, authenticated;
+grant select, insert on table public.chat_rooms to authenticated;
+grant update on table public.chat_rooms to authenticated;
+
+revoke all on table public.chat_room_members from anon, authenticated;
+grant select, insert, update on table public.chat_room_members to authenticated;
+
+-- -----------------------------
+-- chat_blocks: RLS
+-- -----------------------------
+alter table public.chat_blocks enable row level security;
+
+create policy "Users can manage own blocks"
+  on public.chat_blocks for all
+  to authenticated
+  using (auth.uid() = blocker_id)
+  with check (auth.uid() = blocker_id);
+
+revoke all on table public.chat_blocks from anon, authenticated;
+grant select, insert, delete on table public.chat_blocks to authenticated;
+
+-- -----------------------------
+-- chat_suspensions: RLS (admin only)
+-- -----------------------------
+alter table public.chat_suspensions enable row level security;
+
+create policy "Moderators can manage chat suspensions"
+  on public.chat_suspensions for all
+  to authenticated
+  using (public.is_chat_moderator())
+  with check (public.is_chat_moderator());
+
+create policy "Users can read own suspension"
+  on public.chat_suspensions for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+revoke all on table public.chat_suspensions from anon, authenticated;
+grant select on table public.chat_suspensions to authenticated;
+grant insert, update, delete on table public.chat_suspensions to authenticated;
+
+-- -----------------------------
+-- chat_messages: RLS
+-- -----------------------------
+alter table public.chat_messages enable row level security;
+
+create policy "Members can read room messages"
+  on public.chat_messages for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.chat_room_members crm
+      where crm.room_id = chat_messages.room_id and crm.user_id = auth.uid() and crm.left_at is null
+    )
+  );
+
+create policy "Members can insert messages"
+  on public.chat_messages for insert
+  to authenticated
+  with check (
+    auth.uid() = sender_id
+    and not exists (select 1 from public.chat_suspensions cs where cs.user_id = auth.uid())
+    and coalesce((select p.status from public.profiles p where p.id = auth.uid()), 'pending') != 'disabled'
+    and public.chat_can_message_in_room(chat_messages.room_id, auth.uid())
+  );
+
+create policy "Senders can update own messages (edit, soft delete)"
+  on public.chat_messages for update
+  to authenticated
+  using (auth.uid() = sender_id)
+  with check (auth.uid() = sender_id);
+
+create policy "Admins can delete messages (moderation)"
+  on public.chat_messages for update
+  to authenticated
+  using (public.is_admin());
+
+revoke all on table public.chat_messages from anon, authenticated;
+grant select, insert on table public.chat_messages to authenticated;
+grant update on table public.chat_messages to authenticated;
+
+-- -----------------------------
+-- chat_message_reactions: RLS
+-- -----------------------------
+alter table public.chat_message_reactions enable row level security;
+
+create policy "Members can manage reactions in own rooms"
+  on public.chat_message_reactions for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.chat_messages cm
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where cm.id = chat_message_reactions.message_id
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.chat_messages cm
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where cm.id = chat_message_reactions.message_id
+    )
+  );
+
+revoke all on table public.chat_message_reactions from anon, authenticated;
+grant select, insert, delete on table public.chat_message_reactions to authenticated;
+
+-- -----------------------------
+-- chat_message_attachments: RLS
+-- -----------------------------
+alter table public.chat_message_attachments enable row level security;
+
+create policy "Members can read attachments in rooms"
+  on public.chat_message_attachments for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.chat_messages cm
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where cm.id = chat_message_attachments.message_id
+    )
+  );
+
+create policy "Members can insert attachments for own messages"
+  on public.chat_message_attachments for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from public.chat_messages cm
+      where cm.id = chat_message_attachments.message_id and cm.sender_id = auth.uid()
+    )
+  );
+
+revoke all on table public.chat_message_attachments from anon, authenticated;
+grant select, insert on table public.chat_message_attachments to authenticated;
+
+-- -----------------------------
+-- chat_read_receipts: RLS
+-- -----------------------------
+alter table public.chat_read_receipts enable row level security;
+
+create policy "Members can manage receipts in rooms"
+  on public.chat_read_receipts for all
+  to authenticated
+  using (
+    auth.uid() = user_id
+    or exists (
+      select 1 from public.chat_messages cm
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where cm.id = chat_read_receipts.message_id
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.chat_messages cm
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where cm.id = chat_read_receipts.message_id
+    )
+  );
+
+revoke all on table public.chat_read_receipts from anon, authenticated;
+grant select, insert, update on table public.chat_read_receipts to authenticated;
+
+-- -----------------------------
+-- chat_reports: RLS
+-- -----------------------------
+alter table public.chat_reports enable row level security;
+
+create policy "Users can insert reports"
+  on public.chat_reports for insert
+  to authenticated
+  with check (auth.uid() = reporter_id);
+
+create policy "Admins can read all reports"
+  on public.chat_reports for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can update report status"
+  on public.chat_reports for update
+  to authenticated
+  using (public.is_admin());
+
+revoke all on table public.chat_reports from anon, authenticated;
+grant select, insert on table public.chat_reports to authenticated;
+grant update on table public.chat_reports to authenticated;
+
+-- -----------------------------
+-- storage.objects: chat-attachments bucket
+-- -----------------------------
+drop policy if exists "Authenticated can upload chat-attachments" on storage.objects;
+create policy "Authenticated can upload chat-attachments"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'chat-attachments');
+
+drop policy if exists "Members can read chat-attachments" on storage.objects;
+create policy "Members can read chat-attachments"
+  on storage.objects for select
+  to authenticated
+  using (bucket_id = 'chat-attachments');
+
+-- -----------------------------
+-- chat_audit_log: RLS (admin read only)
+-- -----------------------------
+alter table public.chat_audit_log enable row level security;
+
+-- chat_moderators: admin only
+alter table public.chat_moderators enable row level security;
+create policy "Admins can manage chat_moderators"
+  on public.chat_moderators for all
+  to authenticated using (public.is_admin()) with check (public.is_admin());
+revoke all on table public.chat_moderators from anon, authenticated;
+grant select, insert, delete on table public.chat_moderators to authenticated;
+
+-- -----------------------------
+create policy "Admins can read audit log"
+  on public.chat_audit_log for select
+  to authenticated
+  using (public.is_admin());
+
+revoke all on table public.chat_audit_log from anon, authenticated;
+grant select on table public.chat_audit_log to authenticated;
 

@@ -12,6 +12,7 @@ import type { Session } from '@supabase/supabase-js';
 import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
 import { AdminModerationPage } from './AdminModerationPage';
+import { Link as RouterLink } from 'react-router-dom';
 import { AdminGate } from './AdminGate';
 import type { ProfileStatus } from '../../types/types';
 
@@ -24,7 +25,7 @@ const BG_SX = {
   position: 'relative',
   display: 'flex',
   flexDirection: 'column',
-  px: 2,
+  px: { xs: 1.5, sm: 2 },
   py: 6,
   overflow: 'hidden',
 };
@@ -142,14 +143,37 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
           <Box
             sx={{
               display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: { xs: 'stretch', sm: 'center' },
+              gap: 2,
               mb: 3,
+              minWidth: 0,
             }}
           >
-            <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>
-              Admin Moderation
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 2,
+                minWidth: 0,
+                flex: { xs: '1 1 100%', sm: '0 1 auto' },
+              }}
+            >
+              <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>
+                Admin Moderation
+              </Typography>
+              <Button
+                component={RouterLink}
+                to="/admin/chat-reports"
+                size="small"
+                sx={{ color: 'white' }}
+              >
+                Chat Reports
+              </Button>
+            </Box>
 
             {session && (
               <Button

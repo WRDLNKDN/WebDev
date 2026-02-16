@@ -1,11 +1,17 @@
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import EventIcon from '@mui/icons-material/Event';
+import ForumIcon from '@mui/icons-material/Forum';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
-import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Avatar,
   Box,
@@ -25,6 +31,8 @@ import {
   List,
   ListItem,
   ListItemAvatar,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
   MenuItem,
   Paper,
@@ -52,32 +60,6 @@ import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
 
 const FEED_LIMIT = 20;
-
-export type ConnectionProfile = {
-  id: string;
-  handle: string;
-  display_name: string | null;
-  avatar: string | null;
-  linkedinUrl: string | null;
-};
-
-function parseLinkedInFromSocials(socials: unknown): string | null {
-  if (!Array.isArray(socials)) return null;
-  const link = socials.find(
-    (s) =>
-      s &&
-      typeof s === 'object' &&
-      'platform' in s &&
-      'url' in s &&
-      'isVisible' in s &&
-      String((s as { platform: unknown }).platform).toLowerCase() ===
-        'linkedin' &&
-      (s as { isVisible: unknown }).isVisible === true,
-  );
-  return link && typeof (link as { url: unknown }).url === 'string'
-    ? ((link as { url: string }).url as string)
-    : null;
-}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -181,6 +163,7 @@ const LinkPreviewCard = ({
         variant="outlined"
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           overflow: 'hidden',
           borderRadius: 1.5,
           borderColor: 'divider',
@@ -193,9 +176,9 @@ const LinkPreviewCard = ({
             src={preview.image}
             alt=""
             sx={{
-              width: 120,
-              minWidth: 120,
-              height: 120,
+              width: { xs: '100%', sm: 120 },
+              minWidth: { sm: 120 },
+              height: { xs: 140, sm: 120 },
               objectFit: 'cover',
               bgcolor: 'action.hover',
             }}
@@ -205,8 +188,11 @@ const LinkPreviewCard = ({
           <Typography
             variant="subtitle2"
             fontWeight={600}
-            sx={{ color: 'text.primary' }}
-            noWrap
+            sx={{
+              color: 'text.primary',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}
           >
             {preview.title || linkPreviewDomain(preview.url)}
           </Typography>
@@ -214,8 +200,11 @@ const LinkPreviewCard = ({
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mt: 0.25 }}
-              noWrap
+              sx={{
+                mt: 0.25,
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
             >
               {preview.description}
             </Typography>
@@ -252,6 +241,32 @@ type FeedCardProps = {
   isLinkPreviewDismissed: boolean;
   onDismissLinkPreview: () => void;
 };
+
+/**
+ * Minimum renderable post criteria: exclude feed items with no displayable
+ * content (avoids blank cards with only header + action buttons).
+ */
+function hasRenderableContent(item: FeedItem): boolean {
+  const snapshot =
+    item.kind === 'repost' && item.payload?.snapshot
+      ? (item.payload.snapshot as { body?: string; url?: string })
+      : null;
+  const body =
+    (snapshot?.body as string) ||
+    (item.payload?.body as string) ||
+    (item.payload?.text as string) ||
+    '';
+  if (typeof body === 'string' && body.trim().length > 0) return true;
+  if (item.kind === 'external_link' && item.payload?.url) return true;
+  const linkPreview = item.payload?.link_preview;
+  if (
+    linkPreview &&
+    typeof linkPreview === 'object' &&
+    (linkPreview as { url?: string }).url
+  )
+    return true;
+  return false;
+}
 
 const ShareDialog = ({
   item,
@@ -378,9 +393,13 @@ const FeedCard = ({
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, mb: 2 }}>
+    <Card variant="outlined" sx={{ borderRadius: 2, mb: 2, minWidth: 0 }}>
       <CardContent sx={{ pt: 2, pb: 1, '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" spacing={2} alignItems="flex-start">
+        <Stack
+          direction="row"
+          spacing={{ xs: 1, sm: 2 }}
+          alignItems="flex-start"
+        >
           <Avatar
             src={(item.actor?.avatar as string) ?? undefined}
             sx={{ width: 48, height: 48 }}
@@ -432,7 +451,13 @@ const FeedCard = ({
               <Typography
                 variant="body1"
                 component="span"
-                sx={{ mt: 0.5, whiteSpace: 'pre-wrap', display: 'block' }}
+                sx={{
+                  mt: 0.5,
+                  whiteSpace: 'pre-wrap',
+                  display: 'block',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
+                }}
               >
                 {linkifyBody(body)}
               </Typography>
@@ -458,7 +483,12 @@ const FeedCard = ({
             <Stack
               direction="row"
               spacing={1}
-              sx={{ mt: 1.5, flexWrap: 'nowrap', alignItems: 'center' }}
+              sx={{
+                mt: 1.5,
+                flexWrap: 'wrap',
+                gap: 0.5,
+                alignItems: 'center',
+              }}
             >
               <Button
                 size="small"
@@ -628,12 +658,15 @@ const FeedCard = ({
   );
 };
 
+type FeedSession = {
+  user: { id: string };
+  access_token: string;
+  user_metadata?: { avatar_url?: string; full_name?: string };
+};
+
 export const Feed = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<{
-    user: { id: string };
-    user_metadata?: { avatar_url?: string; full_name?: string };
-  } | null>(null);
+  const [session, setSession] = useState<FeedSession | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -642,24 +675,23 @@ export const Feed = () => {
   type SortOption = 'recent' | 'oldest' | 'most_liked';
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const sortedItems = useMemo(() => {
-    if (sortBy === 'recent') return items;
+    let list = items;
     if (sortBy === 'oldest')
-      return [...items].sort(
+      list = [...items].sort(
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
-    if (sortBy === 'most_liked')
-      return [...items].sort(
+    else if (sortBy === 'most_liked')
+      list = [...items].sort(
         (a, b) =>
           (b.like_count ?? 0) - (a.like_count ?? 0) ||
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-    return items;
+    return list.filter(hasRenderableContent);
   }, [items, sortBy]);
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
-  const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
     string | null
   >(null);
@@ -690,13 +722,17 @@ export const Feed = () => {
       const raw = error instanceof Error ? error.message : String(error ?? '');
       const lower = raw.toLowerCase();
 
-      if (lower.includes('unauthorized') || lower.includes('not signed in')) {
+      if (
+        lower.includes('unauthorized') ||
+        lower.includes('not signed in') ||
+        lower.includes('sign in')
+      ) {
         try {
           await supabase.auth.signOut();
         } catch {
           // ignore sign-out failures here
         }
-        navigate('/signin', { replace: true });
+        navigate('/join', { replace: true });
       } else {
         setSnack(toMessage(error) || fallback);
       }
@@ -706,32 +742,58 @@ export const Feed = () => {
 
   useEffect(() => {
     let cancelled = false;
+
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (!data.session) {
-        navigate('/signin', { replace: true });
+      if (!data.session?.access_token) {
+        setSession(null);
         return;
       }
-      setSession(
-        data.session as unknown as {
-          user: { id: string };
-          user_metadata?: { avatar_url?: string; full_name?: string };
-        },
-      );
+      setSession({
+        user: { id: data.session.user.id },
+        access_token: data.session.access_token,
+        user_metadata: data.session.user
+          .user_metadata as FeedSession['user_metadata'],
+      });
     };
+
     void init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+      if (cancelled) return;
+      if (!newSession?.access_token) {
+        setSession(null);
+        navigate('/join', { replace: true });
+        return;
+      }
+      setSession({
+        user: { id: newSession.user.id },
+        access_token: newSession.access_token,
+        user_metadata: newSession.user
+          .user_metadata as FeedSession['user_metadata'],
+      });
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
   const loadPage = useCallback(
     async (cursor?: string, append = false) => {
+      if (!session?.access_token) return;
       try {
         if (append) setLoadingMore(true);
         else setLoading(true);
-        const res = await fetchFeeds({ limit: FEED_LIMIT, cursor });
+        const res = await fetchFeeds({
+          limit: FEED_LIMIT,
+          cursor,
+          accessToken: session.access_token,
+        });
         if (append) {
           setItems((prev) => [...prev, ...res.data]);
         } else {
@@ -745,7 +807,7 @@ export const Feed = () => {
         setLoadingMore(false);
       }
     },
-    [handleAuthError],
+    [handleAuthError, session?.access_token],
   );
 
   useEffect(() => {
@@ -753,51 +815,15 @@ export const Feed = () => {
     void loadPage();
   }, [session, loadPage]);
 
-  const loadConnections = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const { data: connRows, error: connErr } = await supabase
-        .from('feed_connections')
-        .select('connected_user_id')
-        .eq('user_id', session.user.id);
-      if (connErr || !connRows?.length) {
-        setConnections([]);
-        return;
-      }
-      const ids = connRows.map((r) => r.connected_user_id);
-      const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, handle, display_name, avatar, socials')
-        .in('id', ids)
-        .eq('status', 'approved');
-      if (profErr || !profiles?.length) {
-        setConnections([]);
-        return;
-      }
-      const list: ConnectionProfile[] = profiles.map((p) => ({
-        id: p.id,
-        handle: p.handle,
-        display_name: p.display_name ?? null,
-        avatar: p.avatar ?? null,
-        linkedinUrl: parseLinkedInFromSocials(p.socials),
-      }));
-      setConnections(list);
-    } catch {
-      setConnections([]);
-    }
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    if (!session) return;
-    void loadConnections();
-  }, [session, loadConnections]);
-
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
-    if (!text || posting) return;
+    if (!text || posting || !session?.access_token) return;
     try {
       setPosting(true);
-      await createFeedPost({ body: text });
+      await createFeedPost({
+        body: text,
+        accessToken: session.access_token,
+      });
       setComposerValue('');
       setComposerOpen(false);
       await loadPage();
@@ -810,8 +836,9 @@ export const Feed = () => {
 
   const handleLike = useCallback(
     async (postId: string) => {
+      if (!session?.access_token) return;
       try {
-        await likePost({ postId });
+        await likePost({ postId, accessToken: session.access_token });
       } catch (e) {
         await handleAuthError(e, 'Failed to like');
         const item = items.find((i) => i.id === postId);
@@ -822,13 +849,14 @@ export const Feed = () => {
           });
       }
     },
-    [handleAuthError, items, updateItem],
+    [handleAuthError, items, updateItem, session?.access_token],
   );
 
   const handleUnlike = useCallback(
     async (postId: string) => {
+      if (!session?.access_token) return;
       try {
-        await unlikePost({ postId });
+        await unlikePost({ postId, accessToken: session.access_token });
       } catch (e) {
         await handleAuthError(e, 'Failed to unlike');
         const item = items.find((i) => i.id === postId);
@@ -839,23 +867,27 @@ export const Feed = () => {
           });
       }
     },
-    [handleAuthError, items, updateItem],
+    [handleAuthError, items, updateItem, session?.access_token],
   );
 
   const handleRepost = useCallback(
     async (item: FeedItem) => {
+      if (!session?.access_token) return;
       const originalId =
         (item.kind === 'repost' && (item.payload?.original_id as string)) ||
         item.id;
       try {
-        await repostPost({ originalId });
+        await repostPost({
+          originalId,
+          accessToken: session.access_token,
+        });
         setSnack('Reposted');
         await loadPage();
       } catch (e) {
         await handleAuthError(e, 'Failed to repost');
       }
     },
-    [handleAuthError, loadPage],
+    [handleAuthError, loadPage, session?.access_token],
   );
 
   const handleSend = useCallback((item: FeedItem) => {
@@ -870,8 +902,12 @@ export const Feed = () => {
       }
       setExpandedCommentsPostId(postId);
       setCommentsLoadingPostId(postId);
+      if (!session?.access_token) return;
       try {
-        const { data } = await fetchComments({ postId });
+        const { data } = await fetchComments({
+          postId,
+          accessToken: session.access_token,
+        });
         setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
       } catch (e) {
         await handleAuthError(e, 'Failed to load comments');
@@ -879,14 +915,25 @@ export const Feed = () => {
         setCommentsLoadingPostId(null);
       }
     },
-    [expandedCommentsPostId, handleAuthError],
+    [expandedCommentsPostId, handleAuthError, session?.access_token],
   );
 
-  const handleAddComment = useCallback(async (postId: string, body: string) => {
-    await addComment({ postId, body });
-    const { data } = await fetchComments({ postId });
-    setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
-  }, []);
+  const handleAddComment = useCallback(
+    async (postId: string, body: string) => {
+      if (!session?.access_token) return;
+      await addComment({
+        postId,
+        body,
+        accessToken: session.access_token,
+      });
+      const { data } = await fetchComments({
+        postId,
+        accessToken: session.access_token,
+      });
+      setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+    },
+    [session?.access_token],
+  );
 
   const handleCopyLink = useCallback(async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -937,141 +984,262 @@ export const Feed = () => {
             sx={{ maxWidth: 560 }}
           >
             Where ideas, updates, and voices from the community come together.
-            Discover people by what they show up.
+            Discover members by how they show up.
           </Typography>
         </Box>
 
-        <Grid container spacing={2}>
-          {/* Left column: Start a post trigger + connections sidebar */}
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Card
+        <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
+          {/* LEFT SIDEBAR: Explore — hidden on mobile, 3-col on desktop */}
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{
+              minWidth: 0,
+              order: { xs: 2, md: 1 },
+              display: { xs: 'none', md: 'block' },
+            }}
+          >
+            <Paper
               variant="outlined"
-              component="button"
-              type="button"
-              onClick={() => setComposerOpen(true)}
               sx={{
                 borderRadius: 2,
-                mb: 2,
-                position: 'sticky',
+                overflow: 'hidden',
+                position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
-                cursor: 'pointer',
-                textAlign: 'left',
-                bgcolor: 'background.paper',
-                '&:hover': { bgcolor: 'action.hover' },
+                maxWidth: { md: 280 },
+                minWidth: { md: 220 },
               }}
             >
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Explore
+                </Typography>
+              </Box>
+              <List dense disablePadding sx={{ py: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Community
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/events"
                     sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.25rem',
-                      flexShrink: 0,
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
                     }}
                   >
-                    2
-                  </Box>
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ flex: 1 }}
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <EventIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Events"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/forums"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
                   >
-                    Start a post
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <ForumIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Groups"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Your stuff
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/saved"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <BookmarkBorderIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Saved"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Platform
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/advertise"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <CampaignIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Advertise"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component="a"
+                    href="https://phuzzle.vercel.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <SportsEsportsIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Games"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                >
+                  Support
+                </Typography>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/help"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <HelpOutlineIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Help"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Paper>
+          </Grid>
 
-            {/* Your connections: tips (wireframe bullet list) */}
+          {/* CENTER: Feed content — full width on mobile, 6 cols on desktop */}
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
+          >
+            {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
             <Paper
               variant="outlined"
               sx={{
                 borderRadius: 2,
                 mb: 2,
                 p: 2,
-                position: 'sticky',
-                top: 320,
               }}
             >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Your connections
-              </Typography>
-              <List
-                dense
-                disablePadding
-                sx={{ listStyleType: 'disc', pl: 2.5 }}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                justifyContent="space-between"
+                gap={2}
               >
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
+                <Typography variant="h6" fontWeight={600}>
+                  Feed
+                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={2}
+                  flexWrap="wrap"
+                  sx={{
+                    width: { xs: '100%', sm: 'auto' },
+                    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+                  }}
                 >
-                  <ListItemText
-                    primary="Connect with others from the profile to set on them"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="LinkedIn link in your profile"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="Share work mottos"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem
-                  disablePadding
-                  sx={{ display: 'list-item', py: 0.25 }}
-                >
-                  <ListItemText
-                    primary="Mutual contributions"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-              </List>
+                  <Button
+                    variant="contained"
+                    onClick={() => setComposerOpen(true)}
+                    sx={{
+                      borderRadius: '9999px',
+                      px: 2.5,
+                      py: 1,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Post
+                  </Button>
+                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <Select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      displayEmpty
+                      sx={{ fontSize: '0.875rem' }}
+                    >
+                      <MenuItem value="recent">Sort by: Recent</MenuItem>
+                      <MenuItem value="oldest">Sort by: Oldest</MenuItem>
+                      <MenuItem value="most_liked">
+                        Sort by: Most liked
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
+              </Stack>
             </Paper>
-          </Grid>
-
-          {/* Center column: feed list */}
-          <Grid size={{ xs: 12, sm: 5 }}>
-            {/* Sort */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mb: 2 }}
-            >
-              <FormControl size="small" sx={{ minWidth: 180 }}>
-                <Select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  displayEmpty
-                  sx={{ fontSize: '0.875rem' }}
-                >
-                  <MenuItem value="recent">Sort by: Recent</MenuItem>
-                  <MenuItem value="oldest">Sort by: Oldest</MenuItem>
-                  <MenuItem value="most_liked">Sort by: Most liked</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
 
             {/* Feed list */}
             {loading ? (
@@ -1079,38 +1247,45 @@ export const Feed = () => {
                 <CircularProgress aria-label="Loading feed" />
               </Box>
             ) : items.length === 0 ? (
-              <Stack
-                spacing={2}
-                alignItems="center"
-                justifyContent="center"
-                sx={{ py: 8, px: 2 }}
+              <Paper
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                }}
               >
                 <Typography
                   variant="h6"
                   fontWeight={600}
                   color="text.primary"
-                  textAlign="center"
+                  gutterBottom
                 >
                   Nothing here yet.
                 </Typography>
                 <Typography
-                  variant="body1"
+                  variant="body2"
                   color="text.secondary"
-                  textAlign="center"
-                  sx={{ maxWidth: 400 }}
+                  sx={{ mb: 2 }}
                 >
-                  Fill your feed by connecting with Weirdlings.
+                  Connect with Weirdlings to fill your feed.
                 </Typography>
                 <Button
                   component={RouterLink}
                   to="/directory"
                   variant="contained"
-                  size="large"
                   sx={{ textTransform: 'none', borderRadius: 2 }}
                 >
-                  Discover People
+                  Discover Members
                 </Button>
-              </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mt: 2 }}
+                >
+                  Try searching for people or exploring events.
+                </Typography>
+              </Paper>
             ) : (
               <>
                 {sortedItems.map((item) => (
@@ -1150,104 +1325,42 @@ export const Feed = () => {
             )}
           </Grid>
 
-          {/* Right column: WRDLNKDN News + Your Connections */}
-          <Grid size={{ xs: 12, sm: 3 }}>
+          {/* RIGHT RAIL: Community Partners — hidden on mobile, 3-col on desktop */}
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{
+              minWidth: 0,
+              order: { xs: 3, md: 3 },
+              display: { xs: 'none', md: 'block' },
+            }}
+          >
             <Paper
               variant="outlined"
               sx={{
                 borderRadius: 2,
-                mb: 2,
                 p: 2,
-                position: 'sticky',
+                position: { xs: 'static', md: 'sticky' },
                 top: 88,
+                width: '100%',
+                maxWidth: { md: 280 },
+                minWidth: { md: 220 },
               }}
             >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                WRDLNKDN News
+              <Box
+                sx={{
+                  pb: 1.5,
+                  mb: 1,
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Community Partners
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Community Partners Coming Soon!
               </Typography>
-              <Stack spacing={1.5}>
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    New: Weirdling Feed (MVP)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Share text posts and curated links with your Weirdling
-                    network.
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    Profiles review pipeline
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Approved profiles appear in feeds and the community.
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-
-            <Paper
-              variant="outlined"
-              sx={{
-                borderRadius: 2,
-                mb: 2,
-                p: 2,
-                position: 'sticky',
-                top: 320,
-              }}
-            >
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Your Connections
-              </Typography>
-              <Stack spacing={1}>
-                {connections.map((c) => (
-                  <Stack
-                    key={c.id}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1.5}
-                    sx={{ py: 0.5 }}
-                  >
-                    <Avatar
-                      src={c.avatar ?? undefined}
-                      sx={{ width: 36, height: 36 }}
-                      component={RouterLink}
-                      to={`/profile/${c.handle}`}
-                    >
-                      {(c.display_name || c.handle || '?')
-                        .charAt(0)
-                        .toUpperCase()}
-                    </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        component={RouterLink}
-                        to={`/profile/${c.handle}`}
-                        variant="body2"
-                        fontWeight={600}
-                        sx={{
-                          display: 'block',
-                          color: 'text.primary',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {c.display_name || c.handle}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {c.linkedinUrl ? 'LinkedIn' : 'Weirdling'}
-                      </Typography>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      component={RouterLink}
-                      to={`/profile/${c.handle}`}
-                      aria-label={`View ${c.display_name || c.handle}`}
-                    >
-                      <OpenInNewIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Stack>
-                ))}
-              </Stack>
             </Paper>
           </Grid>
         </Grid>

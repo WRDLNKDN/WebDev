@@ -14,6 +14,7 @@ import { SignupProvider } from './context/SignupProvider';
 import { useKonamiCode } from './hooks/useKonamiCode';
 
 // LAYOUT & UTILS
+import { RequireAuth } from './components/auth/RequireAuth';
 import { Layout } from './components/layout/Layout';
 import { supabase } from './lib/supabaseClient';
 
@@ -28,6 +29,14 @@ const LandingPage = lazy(() =>
 
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
+);
+
+const ChatRedirect = lazy(() =>
+  import('./pages/ChatRedirect').then((m) => ({ default: m.ChatRedirect })),
+);
+
+const ChatPopupPage = lazy(() =>
+  import('./pages/ChatPopupPage').then((m) => ({ default: m.ChatPopupPage })),
 );
 
 const Feed = lazy(() =>
@@ -64,10 +73,6 @@ const WeirdlingCreate = lazy(() =>
   })),
 );
 
-const ProjectPage = lazy(() =>
-  import('./pages/ProjectPage').then((m) => ({ default: m.ProjectPage })),
-);
-
 const BumperPage = lazy(() =>
   import('./pages/BumperPage').then((m) => ({ default: m.BumperPage })),
 );
@@ -76,6 +81,32 @@ const BumperPage = lazy(() =>
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
   import('./pages/DivergencePage').then((m) => ({ default: m.DivergencePage })),
+);
+
+const EventsPage = lazy(() =>
+  import('./pages/EventsPage').then((m) => ({ default: m.EventsPage })),
+);
+
+const ForumsPage = lazy(() =>
+  import('./pages/ForumsPage').then((m) => ({ default: m.ForumsPage })),
+);
+
+const SavedPage = lazy(() =>
+  import('./pages/SavedPage').then((m) => ({ default: m.SavedPage })),
+);
+
+const AdvertisePage = lazy(() =>
+  import('./pages/AdvertisePage').then((m) => ({ default: m.AdvertisePage })),
+);
+
+const HelpPage = lazy(() =>
+  import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })),
+);
+
+const CommunityPartnersPage = lazy(() =>
+  import('./pages/CommunityPartnersPage').then((m) => ({
+    default: m.CommunityPartnersPage,
+  })),
 );
 
 // The Professional 404 Page (Standard Error)
@@ -107,6 +138,10 @@ const Terms = lazy(() =>
   import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
 );
 
+const Privacy = lazy(() =>
+  import('./pages/legal/Privacy').then((m) => ({ default: m.Privacy })),
+);
+
 // 4. Admin Ecosystem
 const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
@@ -127,6 +162,12 @@ const ApprovedProfiles = lazy(() =>
 const ProfileReview = lazy(() =>
   import('./pages/admin/ProfileReview').then((m) => ({
     default: m.ProfileReview,
+  })),
+);
+
+const AdminChatReports = lazy(() =>
+  import('./pages/admin/AdminChatReports').then((m) => ({
+    default: m.AdminChatReports,
   })),
 );
 
@@ -182,6 +223,9 @@ const App = () => {
             {/* Bumper: full-screen, no nav/footer (for recording) */}
             <Route path="/bumper" element={<BumperPage />} />
 
+            {/* Popout chat: standalone window (LinkedIn-style) */}
+            <Route path="/chat-popup/:roomId" element={<ChatPopupPage />} />
+
             <Route element={<Layout />}>
               {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
               <Route path="/" element={<Home />} />
@@ -189,15 +233,33 @@ const App = () => {
               <Route path="/u/:handle" element={<RedirectUToProfile />} />
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />
-              <Route path="/feed" element={<Feed />} />
+              <Route
+                path="/feed"
+                element={
+                  <RequireAuth>
+                    <Feed />
+                  </RequireAuth>
+                }
+              />
               <Route path="/store" element={<Store />} />
               <Route path="/about" element={<About />} />
               <Route path="/community" element={<Community />} />
               <Route path="/platform" element={<Platform />} />
+              <Route path="/events" element={<EventsPage />} />
+              <Route path="/forums" element={<ForumsPage />} />
+              <Route path="/saved" element={<SavedPage />} />
+              <Route path="/advertise" element={<AdvertisePage />} />
+              <Route path="/games" element={<DivergencePage />} />
+              <Route path="/help" element={<HelpPage />} />
+              <Route
+                path="/community-partners"
+                element={<CommunityPartnersPage />}
+              />
 
               {/* --- Authenticated User Zone --- */}
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/projects/:id" element={<ProjectPage />} />
+              <Route path="/chat" element={<ChatRedirect />} />
+              <Route path="/chat/:roomId" element={<ChatRedirect />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />
 
               {/* --- Authentication --- */}
@@ -210,12 +272,17 @@ const App = () => {
               {/* --- Legal --- */}
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
 
               {/* --- Administration --- */}
               <Route path="/admin" element={<AdminApp />} />
               <Route path="/admin/pending" element={<PendingProfiles />} />
               <Route path="/admin/approved" element={<ApprovedProfiles />} />
               <Route path="/admin/review/:id" element={<ProfileReview />} />
+              <Route
+                path="/admin/chat-reports"
+                element={<AdminChatReports />}
+              />
 
               {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
 

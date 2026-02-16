@@ -1,5 +1,7 @@
 # Platform Non-Functional Requirements (NFRs)
 
+[← Docs index](../README.md)
+
 ## Purpose
 
 This document defines the operational, scalability, and portability constraints

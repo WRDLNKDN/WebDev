@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
-import { toMessage } from '../../lib/errors';
+import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
 import { signInWithOAuth } from '../../lib/signInWithOAuth';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
@@ -168,12 +168,11 @@ export const IdentityStep = () => {
       const providerLabel = provider === 'google' ? 'Google' : 'Microsoft';
 
       if (msg.includes('provider') && msg.includes('not enabled')) {
-        setError(
-          'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and SUPABASE_AZURE_CLIENT_SECRET to your .env file, then run: supabase stop && supabase start. See supabase/README.md for details.',
-        );
+        setError(MICROSOFT_SIGNIN_NOT_CONFIGURED);
       } else if (msg.includes('network') || msg.includes('timeout')) {
         setError(
-          `${providerLabel} sign-in is having trouble connecting. Please check your connection and try again, or choose a different provider.`,
+          `${providerLabel} sign-in is having trouble connecting. Please check ` +
+            `your connection and try again, or choose a different provider.`,
         );
       } else {
         setError(toMessage(err));
@@ -204,10 +203,16 @@ export const IdentityStep = () => {
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
       <Paper
         elevation={0}
-        sx={{ ...signupPaper, bgcolor: 'transparent', border: 'none' }}
+        sx={{
+          ...signupPaper,
+          bgcolor: 'transparent',
+          border: 'none',
+          maxWidth: 560,
+          mx: 'auto',
+        }}
       >
         <Stack spacing={3}>
           <Box>

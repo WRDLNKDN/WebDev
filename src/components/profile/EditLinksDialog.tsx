@@ -21,6 +21,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
 import { toMessage } from '../../lib/errors';
+import {
+  detectPlatformFromUrl,
+  getShortLinkLabel,
+} from '../../lib/linkPlatform';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
@@ -69,10 +73,14 @@ export const EditLinksDialog = ({
   const handleAddLink = () => {
     if (!newUrl.trim()) return;
 
+    // Detect platform from URL domain so each link gets correct icon/label
+    const detectedPlatform = detectPlatformFromUrl(newUrl.trim());
     const platform =
       newCategory === 'Custom'
         ? 'Custom'
-        : newPlatform || availablePlatforms[0]?.value || 'Custom';
+        : detectedPlatform !== 'Custom'
+          ? detectedPlatform
+          : newPlatform || 'Custom';
     const newLinkItem: SocialLink = {
       id: uuidv4(),
       category: newCategory,
@@ -261,10 +269,10 @@ export const EditLinksDialog = ({
                   spacing={2}
                   sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}
                 >
-                  <LinkIcon platform={link.platform} />
+                  <LinkIcon platform={detectPlatformFromUrl(link.url)} />
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="body2" fontWeight={600} noWrap>
-                      {link.label || link.platform}
+                      {getShortLinkLabel(link.url)}
                     </Typography>
                     <Typography
                       variant="caption"

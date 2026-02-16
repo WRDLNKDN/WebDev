@@ -1,3 +1,0 @@
--- Placeholder migration
--- This version exists on the remote database but was missing locally.
--- No-op.

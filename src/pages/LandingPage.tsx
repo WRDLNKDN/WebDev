@@ -116,7 +116,7 @@ export const LandingPage = () => {
       setIsFollowing(true);
     } catch (e) {
       console.error('Follow failed:', e);
-      setSnack(toMessage(e));
+      setSnack('Could not connect. Please try again.');
     } finally {
       setConnectionLoading(false);
     }
@@ -209,7 +209,13 @@ export const LandingPage = () => {
     !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
 
   const connectActions = showConnect ? (
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={2}
+      alignItems="center"
+      flexWrap="wrap"
+      useFlexGap
+    >
       {isFollowing ? (
         <>
           <Button
@@ -250,8 +256,15 @@ export const LandingPage = () => {
         <meta name="description" content={safeStr(profile.display_name)} />
       </Helmet>
 
-      <Box component="main" sx={{ position: 'relative', py: 8 }}>
-        <Container maxWidth="lg">
+      <Box
+        component="main"
+        sx={{
+          position: 'relative',
+          py: { xs: 4, md: 8 },
+          px: { xs: 2, md: 3 },
+        }}
+      >
+        <Container maxWidth="lg" disableGutters>
           {/* 1. IDENTITY HEADER (Full Width) */}
           <IdentityHeader
             displayName={safeStr(profile.display_name)}
@@ -280,16 +293,15 @@ export const LandingPage = () => {
           />
 
           {/* 2. THE GRID LAYOUT */}
-          {/* Note: 'container' prop is preserved for spacing context */}
-          <Grid container spacing={4} sx={{ mt: 2 }}>
+          <Grid container spacing={{ xs: 3, md: 4 }} sx={{ mt: 2 }}>
             {/* LEFT COLUMN: The "Widget" Sector */}
             {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 4 }}' */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
               <Paper
                 elevation={0}
                 sx={{
                   ...GLASS_CARD,
-                  p: 3,
+                  p: { xs: 2, md: 3 },
                   mb: 4,
                   position: { md: 'sticky' },
                   top: { md: 24 },
@@ -301,7 +313,7 @@ export const LandingPage = () => {
 
             {/* RIGHT COLUMN: The "Main Content" Sector */}
             {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 8 }}' */}
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid size={{ xs: 12, md: 8 }} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio Frame">
                 <ResumeCard url={profile.resume_url} />
 

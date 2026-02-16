@@ -25,8 +25,8 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
         // Instance-specific overrides
         width: '100%',
         maxWidth: 360,
-        minHeight: 400,
-        height: 400,
+        minHeight: { xs: 280, md: 400 },
+        height: { xs: 280, md: 400 },
         borderRadius: 3,
         scrollSnapAlign: 'start',
         position: 'relative',
@@ -34,8 +34,15 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
     >
       {hasResume ? (
         <>
-          <CheckCircleOutlineIcon sx={{ fontSize: 60, mb: 2 }} />
-          <Typography variant="h6" fontWeight={800} letterSpacing={1}>
+          <CheckCircleOutlineIcon
+            sx={{ fontSize: { xs: 48, md: 60 }, mb: 2 }}
+          />
+          <Typography
+            variant="h6"
+            fontWeight={800}
+            letterSpacing={1}
+            sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}
+          >
             RESUME.PDF
           </Typography>
           <Button
@@ -50,8 +57,13 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
         </>
       ) : (
         <>
-          <UploadFileIcon sx={{ fontSize: 60, mb: 2 }} />
-          <Typography variant="h6" fontWeight={800} letterSpacing={1}>
+          <UploadFileIcon sx={{ fontSize: { xs: 48, md: 60 }, mb: 2 }} />
+          <Typography
+            variant="h6"
+            fontWeight={800}
+            letterSpacing={1}
+            sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}
+          >
             UPLOAD RESUME
           </Typography>
         </>

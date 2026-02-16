@@ -3,6 +3,15 @@
  * or technical errors to end users.
  */
 
+/**
+ * Shown when Microsoft/Azure OAuth is not configured (provider not enabled).
+ * Used by SignIn, AuthCallback, and IdentityStep.
+ */
+export const MICROSOFT_SIGNIN_NOT_CONFIGURED =
+  'Microsoft sign-in is not configured. Add SUPABASE_AZURE_CLIENT_ID and ' +
+  'SUPABASE_AZURE_CLIENT_SECRET to your .env, then run: supabase stop && supabase start. ' +
+  'See supabase/README.md for details.';
+
 /** Max length for treating server message as user-friendly (long messages are often stack traces or technical). */
 const FRIENDLY_MESSAGE_MAX_LEN = 120;
 
@@ -42,8 +51,7 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   },
   {
     pattern: /duplicate key|unique constraint|already exists/i,
-    friendly:
-      'A project with that title or URL may already exist. Try a different title or URL.',
+    friendly: 'That already exists. Try a different value.',
   },
 ];
 

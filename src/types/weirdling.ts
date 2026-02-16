@@ -3,7 +3,10 @@
  * Final schema should match MVP models in Drive when reviewed.
  */
 
-/** Number of Weirdling image assets in public/assets/og_weirdlings (weirdling_1.png … weirdling_N.png). Single source of truth. */
+/**
+ * Number of Weirdling image assets in public/assets/og_weirdlings
+ * (weirdling_1.png … weirdling_N.png). Single source of truth.
+ */
 export const WEIRDLING_ASSET_COUNT = 6;
 
 /** When includeImage is true: pick from preset grid or let backend pick one (by handle + roleVibe). */

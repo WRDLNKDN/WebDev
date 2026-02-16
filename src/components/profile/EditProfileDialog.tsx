@@ -4,18 +4,18 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
+  Autocomplete,
   Avatar,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
-  Grid, // CORRECT: Standard Grid import for MUI v7
+  FormControl,
   IconButton,
-  Popover,
+  MenuItem,
+  Select,
   Snackbar,
   Stack,
   TextField,
@@ -26,58 +26,81 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { toMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabaseClient';
-import type { DashboardProfile, NerdCreds } from '../../types/profile'; // Adjusted import path for subfolder
+import type { DashboardProfile, NerdCreds } from '../../types/profile';
 
-// Common status emojis for picker (no extra dependency)
-const STATUS_EMOJI_OPTIONS = [
-  '💬',
-  '🚀',
-  '✨',
-  '🔥',
-  '💡',
-  '🎯',
-  '⚡',
-  '🌟',
-  '🛠️',
-  '📚',
-  '🎨',
-  '🧠',
-  '❤️',
-  '👍',
-  '🌱',
-  '☕',
-  '🎵',
-  '📷',
-  '🔧',
-  '🌈',
+// Brand colors matching the screenshot
+const GRADIENT_START = '#00C4CC'; // Blue-teal
+const GRADIENT_END = '#FF22C9'; // Pink-purple
+const AVATAR_GRADIENT = `linear-gradient(135deg, ${GRADIENT_START} 0%, ${GRADIENT_END} 100%)`;
+const PURPLE_ACCENT = '#B366FF'; // Purple for headings
+const DARK_BG = '#1a1a1f'; // Dark background
+const INPUT_BG = '#28282d'; // Input background
+const BORDER_COLOR = 'rgba(255,255,255,0.08)';
+
+const GLASS_MODAL = {
+  bgcolor: DARK_BG,
+  backdropFilter: 'blur(20px)',
+  border: `1px solid ${BORDER_COLOR}`,
+  color: 'white',
+  borderRadius: 3,
+  position: 'relative',
+  overflow: 'visible',
+  boxShadow: '0 24px 48px rgba(0,0,0,0.9)',
+  maxWidth: '540px',
+  width: '100%',
+};
+
+/** Consistent single-line input: 32px height, same padding on mobile & desktop */
+const INPUT_HEIGHT = 32;
+const INPUT_PADDING = '4px 12px';
+
+const INDUSTRY_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Education',
+  'Finance',
+  'Marketing',
+  'Design',
+  'Engineering',
+  'Consulting',
+  'Media',
+  'Nonprofit',
+  'Retail',
+  'Manufacturing',
+  'Other',
 ];
 
-// 90s VIBE ASSETS
-const SOLO_GRADIENT =
-  'linear-gradient(90deg, #00C4CC 0%, #7D2AE8 50%, #FF22C9 100%)';
-// NEW STYLE (Paste this)
-const GLASS_MODAL = {
-  bgcolor: '#141414', // Solid dark background for better contrast
-  backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))', // Subtle top-down shine
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  color: 'white',
-  borderRadius: 3, // Ensure nice curves (MUI default is usually 1 or 2)
-  position: 'relative',
-  overflow: 'hidden', // Ensures the gradient stripe follows the curve
-  boxShadow: '0 20px 40px rgba(0,0,0,0.8)', // Deeper shadow for pop
-
-  // The "Jazz Stripe" Pseudo-element
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '4px', // Thickness of the stripe
-    background: SOLO_GRADIENT,
-    zIndex: 1,
+const INPUT_STYLES = {
+  '& .MuiFilledInput-root': {
+    bgcolor: INPUT_BG,
+    borderRadius: '8px',
+    border: `1px solid ${BORDER_COLOR}`,
+    paddingTop: 0,
+    paddingBottom: 0,
+    minHeight: INPUT_HEIGHT,
+    '&:hover': {
+      bgcolor: 'rgba(50, 50, 55, 0.9)',
+      borderColor: 'rgba(255,255,255,0.12)',
+    },
+    '&.Mui-focused': {
+      bgcolor: 'rgba(50, 50, 55, 0.95)',
+      borderColor: PURPLE_ACCENT,
+    },
+    '&:before, &:after': { display: 'none' },
+  },
+  '& .MuiFilledInput-input': { padding: INPUT_PADDING },
+  '& .MuiInputLabel-root': {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '0.9rem',
+  },
+  '& .MuiInputBase-input': {
+    color: 'white',
+    fontSize: '0.95rem',
+  },
+  '& .MuiFormHelperText-root': {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.75rem',
+    mt: 0.5,
   },
 };
 
@@ -86,14 +109,14 @@ type EditProfileDialogProps = {
   onClose: () => void;
   profile: DashboardProfile | null;
   hasWeirdling?: boolean;
+  /** Fallback avatar URL (e.g. from OAuth provider) when profile has none */
+  avatarFallback?: string | null;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
   onUpload: (file: File) => Promise<string | undefined>;
 };
 
-// HELPER: The "Type Safety Valve"
-// This kills "Type '{}' is not assignable to string" forever.
 const safeStr = (val: unknown, fallback: string = ''): string => {
   if (typeof val === 'string') return val;
   return fallback;
@@ -103,7 +126,8 @@ export const EditProfileDialog = ({
   open,
   onClose,
   profile,
-  hasWeirdling = false,
+  hasWeirdling: _hasWeirdling = false,
+  avatarFallback,
   onUpdate,
   onUpload,
 }: EditProfileDialogProps) => {
@@ -111,15 +135,14 @@ export const EditProfileDialog = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Local State
   const [formData, setFormData] = useState({
     handle: '',
     pronouns: '',
-    status_emoji: '',
-    status_message: '',
     bio: '',
     skills: '',
-    use_weirdling_avatar: false,
+    industry: '',
+    location: '',
+    profile_visibility: 'members_only' as 'members_only' | 'connections_only',
   });
 
   const [busy, setBusy] = useState(false);
@@ -130,21 +153,15 @@ export const EditProfileDialog = ({
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
     null,
   );
-  const [emojiPickerAnchor, setEmojiPickerAnchor] =
-    useState<HTMLElement | null>(null);
 
-  // Sync state when profile opens; clear local avatar when profile or dialog changes
   useEffect(() => {
     if (open && profile) {
-      // We cast to any/Record to access properties, but we use safeStr to validate the output
       const creds = (profile.nerd_creds as Record<string, unknown>) || {};
-      const p = profile as unknown as { use_weirdling_avatar?: boolean };
 
+      const prof = profile as unknown as Record<string, unknown>;
       setFormData({
         handle: safeStr(profile.handle),
         pronouns: safeStr(profile.pronouns),
-        status_emoji: safeStr(creds.status_emoji, '💬'),
-        status_message: safeStr(creds.status_message),
         bio: safeStr(creds.bio),
         skills: safeStr(
           Array.isArray(creds.skills)
@@ -153,7 +170,11 @@ export const EditProfileDialog = ({
               ? creds.skills
               : '',
         ),
-        use_weirdling_avatar: Boolean(p.use_weirdling_avatar),
+        industry: safeStr(prof.industry),
+        location: safeStr(prof.location),
+        profile_visibility: (prof.profile_visibility === 'connections_only'
+          ? 'connections_only'
+          : 'members_only') as 'members_only' | 'connections_only',
       });
       setUploadedAvatarUrl(null);
     }
@@ -171,7 +192,6 @@ export const EditProfileDialog = ({
     }
     if (!profile) return;
 
-    // Don't flag as "taken" if it's the one you already have
     if (val === profile.handle) {
       setHandleAvailable(true);
       return;
@@ -192,7 +212,6 @@ export const EditProfileDialog = ({
   };
 
   const handleSave = async () => {
-    // GUARD: Don't allow save if handle is taken or currently being checked
     if (handleAvailable === false || checkingHandle) {
       return;
     }
@@ -203,25 +222,22 @@ export const EditProfileDialog = ({
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+
       await onUpdate({
         handle: formData.handle,
         pronouns: formData.pronouns,
-        use_weirdling_avatar: formData.use_weirdling_avatar,
+        industry: formData.industry || null,
+        location: formData.location || null,
+        profile_visibility: formData.profile_visibility,
         nerd_creds: {
-          status_emoji: formData.status_emoji,
-          status_message: formData.status_message,
           bio: formData.bio,
           skills: skillsArr.length ? skillsArr : undefined,
         },
       });
 
-      // TRIGGER TOAST: The "Crunch" happens here
-      setToastMessage(
-        'SYSTEM_PATCH_APPLIED: The Human OS is now synchronized.',
-      );
+      setToastMessage('Profile updated successfully!');
       setShowToast(true);
 
-      // DELAYED EXIT: Give them 1.2s of "Success" dopamine before closing
       setTimeout(() => {
         onClose();
       }, 1200);
@@ -233,16 +249,24 @@ export const EditProfileDialog = ({
       setBusy(false);
     }
   };
+
+  const MAX_AVATAR_BYTES = 6 * 1024 * 1024;
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_AVATAR_BYTES) {
+      setToastMessage('File too large. Max 6MB.');
+      setShowToast(true);
+      e.target.value = '';
+      return;
+    }
     try {
       setBusy(true);
-      setToastMessage('');
       const url = await onUpload(file);
       if (url) {
         setUploadedAvatarUrl(url);
-        setToastMessage('Photo updated.');
+        setToastMessage('Avatar updated.');
         setShowToast(true);
       }
     } catch (error) {
@@ -255,6 +279,10 @@ export const EditProfileDialog = ({
     }
   };
 
+  const currentAvatar =
+    uploadedAvatarUrl || profile?.avatar || avatarFallback || null;
+  const previewURL = `http://localhost:5173/profile/${formData.handle}`;
+
   return (
     <Dialog
       open={open}
@@ -262,387 +290,442 @@ export const EditProfileDialog = ({
       fullScreen={fullScreen}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: GLASS_MODAL }}
+      PaperProps={{
+        sx: GLASS_MODAL,
+      }}
     >
+      {/* Title Bar */}
       <DialogTitle
-        sx={{ borderBottom: '1px solid rgba(255,255,255,0.1)', p: 3 }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pb: 2,
+          borderBottom: `1px solid ${BORDER_COLOR}`,
+        }}
       >
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            background: AVATAR_GRADIENT,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: 1,
-            }}
-          >
-            EDIT{' '}
-            <Box
-              component="span"
-              sx={{
-                background: SOLO_GRADIENT,
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
-            >
-              SIGNAL
-            </Box>
-          </Typography>
-          <IconButton onClick={onClose} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </Stack>
+          EDIT <span style={{ color: PURPLE_ACCENT }}>PROFILE</span>
+        </Typography>
+        <IconButton
+          onClick={onClose}
+          disabled={busy}
+          sx={{
+            color: 'rgba(255,255,255,0.6)',
+            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: { xs: 2, md: 4 } }}>
-        {!profile ? (
-          <Stack
-            alignItems="center"
-            justifyContent="center"
-            spacing={2}
-            sx={{ py: 6 }}
-          >
-            <CircularProgress sx={{ color: 'white' }} />
-            <Typography color="text.secondary">Loading profile…</Typography>
-          </Stack>
+      <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
+        {busy && !uploadedAvatarUrl ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress sx={{ color: PURPLE_ACCENT }} />
+          </Box>
         ) : (
-          <>
-            {/* CORRECT GRID V7 SYNTAX: Use 'size' prop */}
-            <Grid container spacing={4} sx={{ mt: 0 }}>
-              {/* AVATAR COLUMN */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Stack alignItems="center" spacing={2}>
-                  <Box sx={{ position: 'relative' }}>
-                    <Avatar
-                      src={uploadedAvatarUrl || profile.avatar || undefined}
-                      sx={{
-                        width: 150,
-                        height: 150,
-                        border: '4px solid transparent',
-                        background: `linear-gradient(#1a1a1a, #1a1a1a) padding-box, ${SOLO_GRADIENT} border-box`,
-                      }}
-                    />
-                    <IconButton
-                      onClick={() => fileInputRef.current?.click()}
-                      sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        bgcolor: '#00C4CC',
-                        color: 'black',
-                        '&:hover': { bgcolor: '#FF22C9' },
-                      }}
-                    >
-                      <CameraIcon />
-                    </IconButton>
-                    <input
-                      type="file"
-                      hidden
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ opacity: 0.7, fontFamily: 'monospace' }}
-                  >
-                    UPLOAD_VISUAL.exe
-                  </Typography>
-                  {hasWeirdling && (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={formData.use_weirdling_avatar}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              use_weirdling_avatar: e.target.checked,
-                            }))
-                          }
-                          disabled={busy}
-                          sx={{
-                            color: 'white',
-                            '&.Mui-checked': { color: 'primary.main' },
-                          }}
-                        />
-                      }
-                      label={
-                        <Typography variant="body2" sx={{ color: 'white' }}>
-                          Use my Weirdling as my profile picture
-                        </Typography>
-                      }
-                    />
-                  )}
-                </Stack>
-              </Grid>
+          <Stack spacing={2}>
+            {/* Avatar Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ position: 'relative' }}>
+                <Avatar
+                  src={currentAvatar || undefined}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    background: currentAvatar ? 'transparent' : AVATAR_GRADIENT,
+                    border: `3px solid transparent`,
+                    backgroundImage: AVATAR_GRADIENT,
+                    backgroundOrigin: 'border-box',
+                    backgroundClip: 'padding-box, border-box',
+                  }}
+                />
+                <IconButton
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={busy}
+                  sx={{
+                    position: 'absolute',
+                    bottom: -4,
+                    right: -4,
+                    bgcolor: GRADIENT_START,
+                    color: 'white',
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: GRADIENT_END,
+                    },
+                  }}
+                >
+                  <CameraIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
+              </Box>
+            </Box>
 
-              {/* FORM COLUMN */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Stack spacing={3}>
-                  <Box>
-                    <Typography
-                      variant="overline"
-                      color="primary"
-                      sx={{ letterSpacing: 2, fontWeight: 'bold' }}
-                    >
-                      Core Identity
-                    </Typography>
+            {/* Handle */}
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'rgba(255,255,255,0.6)',
+                  display: 'block',
+                  mb: 0.5,
+                  fontWeight: 500,
+                }}
+              >
+                Handle
+              </Typography>
+              <TextField
+                fullWidth
+                value={formData.handle}
+                disabled={busy || checkingHandle}
+                variant="filled"
+                placeholder="anickclark"
+                sx={INPUT_STYLES}
+                helperText={
+                  formData.handle && previewURL
+                    ? previewURL
+                    : 'Your unique profile URL'
+                }
+                error={handleAvailable === false}
+                onChange={(e) => {
+                  const val = e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9-]/g, '');
+                  setFormData((prev) => ({ ...prev, handle: val }));
+                  checkHandle(val);
+                }}
+              />
+            </Box>
 
-                    <Grid container spacing={2}>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField
-                          fullWidth
-                          label="Handle (Vanity URL)"
-                          value={formData.handle}
-                          disabled={busy}
-                          variant="filled"
-                          error={handleAvailable === false}
-                          helperText={
-                            handleAvailable === false
-                              ? 'ACCESS_DENIED: Handle already in use.'
-                              : checkingHandle
-                                ? 'AUDITING...'
-                                : 'Your public link: /profile/' +
-                                  (formData.handle || 'handle') // canonical route per IA
-                          }
-                          onChange={(e) => {
-                            const val = e.target.value
-                              .toLowerCase()
-                              .replace(/[^a-z0-9-]/g, '');
-                            setFormData((prev) => ({ ...prev, handle: val }));
-                            checkHandle(val);
-                          }}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                          fullWidth
-                          label="Pronouns"
-                          value={formData.pronouns}
-                          onChange={handleChange('pronouns')}
-                          disabled={busy}
-                          variant="filled"
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
+            {/* Pronouns */}
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'rgba(255,255,255,0.6)',
+                  display: 'block',
+                  mb: 0.5,
+                  fontWeight: 500,
+                }}
+              >
+                Pronouns
+              </Typography>
+              <FormControl
+                fullWidth
+                variant="filled"
+                disabled={busy}
+                sx={INPUT_STYLES}
+              >
+                <Select
+                  value={formData.pronouns || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      pronouns: e.target.value,
+                    }))
+                  }
+                  displayEmpty
+                  sx={{
+                    '& .MuiSelect-select': { padding: INPUT_PADDING },
+                    '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: INPUT_BG,
+                        color: 'white',
+                        border: `1px solid ${BORDER_COLOR}`,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="">Select pronouns</MenuItem>
+                  <MenuItem value="She/Her">She/Her</MenuItem>
+                  <MenuItem value="He/Him">He/Him</MenuItem>
+                  <MenuItem value="They/Them">They/Them</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
-                  <Box>
-                    <Typography
-                      variant="overline"
-                      color="secondary"
-                      sx={{ letterSpacing: 2, fontWeight: 'bold' }}
-                    >
-                      Status
-                    </Typography>
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
-                      <Box
-                        component="button"
-                        type="button"
-                        onClick={(e) =>
-                          !busy && setEmojiPickerAnchor(e.currentTarget)
-                        }
-                        disabled={busy}
-                        aria-label="Choose status emoji"
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.75rem',
-                          border: '1px solid rgba(255,255,255,0.3)',
-                          borderRadius: 1,
-                          bgcolor: 'rgba(255,255,255,0.06)',
-                          color: 'inherit',
-                          cursor: busy ? 'default' : 'pointer',
-                          '&:hover': busy
-                            ? {}
-                            : { bgcolor: 'rgba(255,255,255,0.12)' },
-                          '&:focus-visible': {
-                            outline: '2px solid',
-                            outlineColor: 'primary.main',
-                            outlineOffset: 2,
-                          },
-                        }}
-                      >
-                        {formData.status_emoji || '😀'}
-                      </Box>
-                      <Popover
-                        open={Boolean(emojiPickerAnchor)}
-                        anchorEl={emojiPickerAnchor}
-                        onClose={() => setEmojiPickerAnchor(null)}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'left',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'left',
-                        }}
-                        PaperProps={{
-                          sx: {
-                            p: 1.5,
-                            bgcolor: 'background.paper',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            maxHeight: 280,
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(5, 1fr)',
-                            gap: 0.5,
-                          }}
-                        >
-                          {STATUS_EMOJI_OPTIONS.map((emoji) => (
-                            <IconButton
-                              key={emoji}
-                              size="small"
-                              onClick={() => {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  status_emoji: emoji,
-                                }));
-                                setEmojiPickerAnchor(null);
-                              }}
-                              sx={{
-                                fontSize: '1.5rem',
-                                '&:hover': { bgcolor: 'action.hover' },
-                              }}
-                              aria-label={`Select ${emoji}`}
-                            >
-                              {emoji}
-                            </IconButton>
-                          ))}
-                        </Box>
-                      </Popover>
-                      <TextField
-                        fullWidth
-                        label="Message"
-                        value={formData.status_message}
-                        onChange={handleChange('status_message')}
-                        disabled={busy}
-                        variant="filled"
-                      />
-                    </Stack>
-                  </Box>
+            {/* Industry */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                INDUSTRY
+              </Typography>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={INDUSTRY_OPTIONS}
+                value={formData.industry
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean)}
+                onChange={(_, newValue: string[]) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    industry: newValue.join(', '),
+                  }));
+                }}
+                disabled={busy}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="filled"
+                    placeholder="Add industry or field"
+                    sx={INPUT_STYLES}
+                    helperText="Shown in Directory. E.g. Tech, Healthcare, Education."
+                  />
+                )}
+                sx={{
+                  '& .MuiAutocomplete-tag': {
+                    bgcolor: INPUT_BG,
+                    border: `1px solid ${BORDER_COLOR}`,
+                    color: 'white',
+                  },
+                  '& .MuiAutocomplete-input': { color: 'white' },
+                }}
+              />
+            </Box>
 
-                  <Box>
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        letterSpacing: 2,
-                        fontWeight: 'bold',
-                        color: '#00C4CC',
-                      }}
-                    >
-                      Skills
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      label="Skills (comma-separated)"
-                      placeholder="e.g. React, TypeScript, Systems thinking"
-                      value={formData.skills}
-                      onChange={handleChange('skills')}
-                      disabled={busy}
-                      variant="filled"
-                      helperText="List skills or tags for your profile."
-                      sx={{ mb: 2 }}
-                    />
-                  </Box>
+            {/* Location */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                LOCATION
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="City, State"
+                value={formData.location}
+                onChange={handleChange('location')}
+                disabled={busy}
+                variant="filled"
+                sx={INPUT_STYLES}
+                helperText="Shown in Directory. E.g. San Francisco, CA."
+              />
+            </Box>
 
-                  <Box>
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        letterSpacing: 2,
-                        fontWeight: 'bold',
-                        color: '#00C4CC',
-                      }}
-                    >
-                      Bio
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      label="Bio"
-                      value={formData.bio}
-                      onChange={handleChange('bio')}
-                      disabled={busy}
-                      variant="filled"
-                    />
-                  </Box>
-                </Stack>
-              </Grid>
-            </Grid>
+            {/* Profile visibility (Directory) */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                WHO SEES ME IN DIRECTORY
+              </Typography>
+              <FormControl
+                fullWidth
+                variant="filled"
+                disabled={busy}
+                sx={INPUT_STYLES}
+              >
+                <Select
+                  value={formData.profile_visibility}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      profile_visibility: e.target.value as
+                        | 'members_only'
+                        | 'connections_only',
+                    }))
+                  }
+                  sx={{
+                    '& .MuiSelect-select': { padding: INPUT_PADDING },
+                    '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: INPUT_BG,
+                        color: 'white',
+                        border: `1px solid ${BORDER_COLOR}`,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="members_only">
+                    All signed-in members
+                  </MenuItem>
+                  <MenuItem value="connections_only">
+                    Only my connections
+                  </MenuItem>
+                </Select>
+              </FormControl>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  mt: 0.5,
+                  color: 'rgba(255,255,255,0.5)',
+                }}
+              >
+                Controls who can find you in the Directory.
+              </Typography>
+            </Box>
 
+            {/* Skills */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                SKILLS
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Skills (comma-separated)"
+                value={formData.skills}
+                onChange={handleChange('skills')}
+                disabled={busy}
+                variant="filled"
+                sx={INPUT_STYLES}
+                helperText="List skills or tags for your profile."
+              />
+            </Box>
+
+            {/* Bio */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                BIO
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                maxRows={6}
+                placeholder="Bio"
+                value={formData.bio}
+                onChange={handleChange('bio')}
+                disabled={busy}
+                variant="filled"
+                sx={{
+                  ...INPUT_STYLES,
+                  '& .MuiFilledInput-root': {
+                    minHeight: 'auto',
+                    alignItems: 'flex-start',
+                    paddingTop: '8px',
+                  },
+                  '& .MuiFilledInput-input': {
+                    padding: INPUT_PADDING,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Action Buttons */}
             <Stack
               direction="row"
-              justifyContent="flex-end"
               spacing={2}
-              sx={{ mt: 4 }}
+              justifyContent="flex-end"
+              sx={{ pt: 2 }}
             >
               <Button
                 onClick={onClose}
                 disabled={busy}
-                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
-                variant="outlined"
+                sx={{
+                  color: 'rgba(255,255,255,0.7)',
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                  },
+                }}
               >
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 onClick={handleSave}
-                disabled={busy || handleAvailable === false || checkingHandle} // Added guards here
-                startIcon={<SaveIcon />}
-                sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
+                disabled={busy || handleAvailable === false || checkingHandle}
+                startIcon={busy ? <CircularProgress size={16} /> : <SaveIcon />}
+                sx={{
+                  bgcolor: PURPLE_ACCENT,
+                  color: 'white',
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  px: 3,
+                  '&:hover': {
+                    bgcolor: GRADIENT_END,
+                  },
+                }}
               >
-                {checkingHandle ? 'AUDITING...' : 'Save Changes'}
+                {checkingHandle ? 'Checking...' : 'Save Changes'}
               </Button>
             </Stack>
-          </>
+          </Stack>
         )}
       </DialogContent>
-      {/* WRAP YOUR BOX IN THIS SNACKBAR
-          This is what actually 'uses' the showToast variable
-      */}
+
       <Snackbar
         open={showToast}
         autoHideDuration={4000}
         onClose={() => setShowToast(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ mb: 2 }} // Lift it slightly off the bottom
       >
         <Box
           sx={{
-            // A subtle "Golden Grahams / Toasted" color palette
             background: 'linear-gradient(135deg, #2c1e12 0%, #1a1a1a 100%)',
-            border: '1px solid',
-            borderColor: toastMessage.includes('FAILURE')
-              ? '#ff22c9'
-              : '#d4af37', // Gold for success
+            border: '1px solid #d4af37',
             color: '#f5f5f5',
-            p: '12px 24px',
-            borderRadius: '4px', // Harder edges feel more "system"
+            p: 2,
+            borderRadius: 1,
             boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)',
-            fontFamily: '"Share Tech Mono", monospace',
-            letterSpacing: '0.5px',
-            display: 'flex',
-            alignItems: 'center',
-            '&::after': {
-              content: '"_"',
-              animation: 'blink 1s step-end infinite',
-            },
-            '@keyframes blink': {
-              '50%': { opacity: 0 },
-            },
           }}
         >
           {toastMessage}

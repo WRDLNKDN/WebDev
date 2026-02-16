@@ -1,5 +1,5 @@
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +22,15 @@ export const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const prefersReducedMotion = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    [],
+  );
+  const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
+    prefersReducedMotion ? 'dimmed' : 'playing',
+  );
 
   // AUTH: IF session exists → redirect to /feed. ELSE stop loading and show Hero (GuestView).
   useEffect(() => {
@@ -104,10 +113,33 @@ export const Home = () => {
   return (
     <>
       <Helmet>
-        <title>WRDLNKDN | Connection in motion</title>
+        <title>Business, but weirder. | WRDLNKDN</title>
         <meta
           name="description"
-          content="A professional network built on values. Powered by participation."
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <link rel="canonical" href="https://wrdlnkdn.com" />
+        <meta property="og:url" content="https://wrdlnkdn.com" />
+        <meta property="og:title" content="Business, but weirder." />
+        <meta
+          property="og:description"
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://wrdlnkdn.com/og-image.png" />
+        <meta
+          property="og:image:alt"
+          content="WRDLNKDN – Business, but weirder."
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Business, but weirder." />
+        <meta
+          name="twitter:description"
+          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
+        />
+        <meta
+          name="twitter:image"
+          content="https://wrdlnkdn.com/og-image.png"
         />
       </Helmet>
 
@@ -122,14 +154,16 @@ export const Home = () => {
           overflow: 'hidden',
         }}
       >
-        {/* Hero video: prefer hero-green-pinky.mp4; IF load fails (e.g. file missing), ELSE fallback to hero-bg.mp4 */}
+        {/* Hero video: play once, then fade to dim. Skip animation if prefers-reduced-motion. */}
         <Box
           component="video"
           autoPlay
           muted
-          loop
+          loop={false}
           playsInline
+          onEnded={() => setHeroPhase('dimmed')}
           onError={(e) => {
+            setHeroPhase('dimmed');
             const el = e.currentTarget;
             if (
               el.src?.includes('hero-green-pinky') &&
@@ -145,6 +179,11 @@ export const Home = () => {
             height: '100%',
             objectFit: 'cover',
             zIndex: 0,
+            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0.15 : 1,
+            transition:
+              heroPhase === 'dimmed' && !prefersReducedMotion
+                ? 'opacity 0.8s ease-out'
+                : 'none',
           }}
           src="/assets/video/hero-green-pinky.mp4"
         />
@@ -152,14 +191,23 @@ export const Home = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            bgcolor: 'rgba(5, 7, 15, 0.6)',
+            bgcolor:
+              heroPhase === 'dimmed'
+                ? 'rgba(5, 7, 15, 0.92)'
+                : 'rgba(5, 7, 15, 0.6)',
             zIndex: 1,
             pointerEvents: 'none',
+            transition: 'background-color 0.8s ease-out',
           }}
         />
         <Container
           maxWidth="lg"
-          sx={{ position: 'relative', zIndex: 2 }}
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            opacity: heroPhase === 'dimmed' ? 1 : 0,
+            transition: 'opacity 0.6s ease-in 0.3s',
+          }}
           data-testid="signed-out-landing"
         >
           <Grid

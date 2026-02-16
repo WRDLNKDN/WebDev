@@ -20,7 +20,7 @@ _When generating code, architecture, or technical documentation._
 
 - **Framework:** React 19.2 (TSX)
 - **Routing:** React Router DOM v7 (Latest standards)
-- **UI Library:** Material UI (MUI) v7.3.5 & FontAwesome
+- **UI Library:** Material UI (MUI) v7.3.5 (icons from @mui/icons-material)
 - **Backend:** Express v5 + Supabase (Auth/DB/Realtime)
 - **Runtime:** Node + `tsx` (for backend/scripts)
 - **Testing:** Vitest (Unit/RLS) + Playwright (E2E)

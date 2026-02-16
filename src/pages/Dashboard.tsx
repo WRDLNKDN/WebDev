@@ -1,10 +1,10 @@
+import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
   Button,
   Container,
-  Divider,
   Grid,
   Paper,
   Snackbar,
@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../components/portfolio/AddProjectDialog';
-import { CompactAddCard } from '../components/portfolio/CompactAddCard';
 import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../components/profile/EditProfileDialog';
@@ -28,7 +27,7 @@ import {
 import { SettingsDialog } from '../components/profile/SettingsDialog';
 import { EditLinksDialog } from '../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
-import { WeirdlingCarousel } from '../components/profile/WeirdlingCarousel';
+import { WeirdlingBannerSlot } from '../components/profile/WeirdlingBannerSlot';
 import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
@@ -50,7 +49,6 @@ export const Dashboard = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
-
   const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
     undefined,
   );
@@ -99,15 +97,8 @@ export const Dashboard = () => {
   const rawName =
     profile?.display_name || session.user.user_metadata?.full_name;
   const displayName = safeStr(rawName, 'Verified Generalist');
-  const profileUseWeirdlingAvatar = Boolean(
-    (profile as { use_weirdling_avatar?: boolean } | null)
-      ?.use_weirdling_avatar,
-  );
-  const firstWeirdling = weirdlings?.[0];
   const avatarUrl = safeStr(
-    profileUseWeirdlingAvatar && firstWeirdling?.avatarUrl
-      ? firstWeirdling.avatarUrl
-      : profile?.avatar || session.user.user_metadata?.avatar_url,
+    profile?.avatar || session.user.user_metadata?.avatar_url,
   );
 
   const safeNerdCreds =
@@ -133,22 +124,17 @@ export const Dashboard = () => {
     <Box
       sx={{
         flex: 1,
-        pt: 4,
-        pb: 8,
+        pt: { xs: 2, md: 4 },
+        pb: { xs: 'calc(32px + env(safe-area-inset-bottom))', md: 8 },
       }}
     >
-      <Container maxWidth="lg">
-        {/* 1. PROFILE IDENTITY BANNER */}
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <IdentityHeader
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           avatarUrl={avatarUrl}
-          slotUnderAvatarLabel={
-            (profile?.socials ?? []).some((s) => s.isVisible)
-              ? 'Links'
-              : undefined
-          }
+          slotUnderAvatarLabel={undefined}
           slotUnderAvatar={
             <ProfileLinksWidget
               socials={profile?.socials ?? []}
@@ -172,6 +158,23 @@ export const Dashboard = () => {
               onSkillsClick={() => setIsEditOpen(true)}
             />
           }
+          slotBetweenContentAndActions={
+            weirdlings && weirdlings.length > 0 ? (
+              <WeirdlingBannerSlot
+                weirdlings={weirdlings}
+                onAddClick={() => setIsAddWeirdlingOpen(true)}
+                onRemove={async (id: string) => {
+                  try {
+                    await deleteWeirdling(id);
+                    const list = await getMyWeirdlings();
+                    setWeirdlings(list);
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
+            ) : undefined
+          }
           actions={
             <>
               <Button
@@ -179,7 +182,10 @@ export const Dashboard = () => {
                 startIcon={<EditIcon />}
                 onClick={() => setIsEditOpen(true)}
                 disabled={loading}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                }}
               >
                 Edit Profile
               </Button>
@@ -187,35 +193,30 @@ export const Dashboard = () => {
                 variant="outlined"
                 startIcon={<SettingsIcon />}
                 onClick={() => setIsSettingsOpen(true)}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                }}
               >
                 Settings
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setIsAddWeirdlingOpen(true)}
+                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              >
+                Add weirdling
               </Button>
             </>
           }
         />
 
-        {/* WEIRDLINGS SECTION (showcase + add) */}
-        <WeirdlingCarousel
-          weirdlings={weirdlings ?? []}
-          onAddClick={() => setIsAddWeirdlingOpen(true)}
-          onRemove={async (id) => {
-            try {
-              await deleteWeirdling(id);
-              const list = await getMyWeirdlings();
-              setWeirdlings(list);
-            } catch (e) {
-              setSnack(toMessage(e));
-            }
-          }}
-        />
-
-        {/* 2. PORTFOLIO */}
+        {/* PORTFOLIO: Action buttons + content cards */}
         <Paper
           elevation={0}
           sx={{
             ...GLASS_CARD,
-            p: 3,
+            p: { xs: 2, md: 3 },
           }}
         >
           <Typography
@@ -231,47 +232,140 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
+          {/* Action buttons: responsive grid on mobile */}
           <Stack
             direction="row"
-            spacing={3}
-            sx={{ mb: 4 }}
             flexWrap="wrap"
             useFlexGap
+            spacing={2}
+            sx={{ mb: 4 }}
           >
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Resume"
+            <Box
+              component="label"
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Add Resume
+              </Typography>
+              <input
+                type="file"
+                hidden
                 accept=".pdf,.doc,.docx"
-                onFileSelect={handleResumeUpload}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleResumeUpload(f);
+                }}
               />
             </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Add Project"
-                onClick={() => setIsAddProjectOpen(true)}
-              />
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsAddProjectOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Add Project
+              </Typography>
             </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Skills"
-                onClick={() => setIsEditOpen(true)}
-              />
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Skills
+              </Typography>
             </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160, maxWidth: 280 }}>
-              <CompactAddCard
-                variant="neutral"
-                label="Links"
-                onClick={() => setIsLinksOpen(true)}
-              />
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsLinksOpen(true)}
+              sx={{
+                flex: { xs: '1 1 45%', md: 1 },
+                minWidth: { xs: 120, md: 0 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                color: 'white',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                '&:hover': {
+                  bgcolor: 'rgba(60, 60, 65, 0.95)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Links
+              </Typography>
             </Box>
           </Stack>
 
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)', my: 4 }} />
-
-          <Grid container spacing={4}>
+          {/* Content cards: Resume + Projects */}
+          <Grid container spacing={{ xs: 2, md: 4 }}>
             {profile?.resume_url && (
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <ResumeCard
@@ -317,6 +411,9 @@ export const Dashboard = () => {
         onClose={() => setIsEditOpen(false)}
         profile={profile}
         hasWeirdling={Boolean(weirdlings?.length)}
+        avatarFallback={
+          session?.user?.user_metadata?.avatar_url as string | undefined
+        }
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
       />
@@ -355,6 +452,7 @@ export const Dashboard = () => {
         onClose={() => setSnack(null)}
         message={snack}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: { xs: 'env(safe-area-inset-bottom)', md: 0 } }}
       />
     </Box>
   );

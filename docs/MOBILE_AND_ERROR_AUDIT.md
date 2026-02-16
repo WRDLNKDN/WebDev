@@ -2,6 +2,8 @@
 
 Audit of main screens and error handling across the frontend.
 
+[← Docs index](./README.md)
+
 ## 1. Mobile Layout Issues
 
 ### Critical
@@ -85,3 +87,10 @@ Audit of main screens and error handling across the frontend.
 - [x] LandingPage follow
 - [x] AdminGate
 - [x] errors.ts duplicate key
+
+## See also
+
+- [Docs index](./README.md)
+- [Feed](./feeds-api.md) — activity stream
+- [Chat MVP spec](./chat/MVP_CHAT_SPEC.md)
+- [Directory API](./directory.md)

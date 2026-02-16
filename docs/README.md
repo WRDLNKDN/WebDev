@@ -32,6 +32,10 @@ Central index for WRDLNKDN WebDev documentation.
   scope).
 - [Directory API](./directory.md) — Member discovery, search, filters,
   connection actions (authenticated only).
+- [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.
+- [Chat MVP spec](./chat/MVP_CHAT_SPEC.md) — 1:1 and group messaging.
+- [Mobile & error audit](./MOBILE_AND_ERROR_AUDIT.md) — Layout responsiveness
+  and error message improvements.
 - [Guide: Weirdling Architecture](./architecture/weirdling-architecture-guide.md)
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling

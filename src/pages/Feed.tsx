@@ -932,10 +932,14 @@ export const Feed = () => {
         </Box>
 
         <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
-          {/* LEFT SIDEBAR: Explore card with grouped nav */}
+          {/* LEFT SIDEBAR: Explore — hidden on mobile, 3-col on desktop */}
           <Grid
             size={{ xs: 12, md: 3 }}
-            sx={{ minWidth: 0, order: { xs: 2, md: 1 } }}
+            sx={{
+              minWidth: 0,
+              order: { xs: 2, md: 1 },
+              display: { xs: 'none', md: 'block' },
+            }}
           >
             <Paper
               variant="outlined"
@@ -1116,8 +1120,11 @@ export const Feed = () => {
             </Paper>
           </Grid>
 
-          {/* CENTER: Feed content with header row */}
-          <Grid size={{ xs: 12, md: 6 }} sx={{ order: { xs: 1, md: 2 } }}>
+          {/* CENTER: Feed content — full width on mobile, 6 cols on desktop */}
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
+          >
             {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
             <Paper
               variant="outlined"
@@ -1261,10 +1268,14 @@ export const Feed = () => {
             )}
           </Grid>
 
-          {/* RIGHT RAIL: Community Partners */}
+          {/* RIGHT RAIL: Community Partners — hidden on mobile, 3-col on desktop */}
           <Grid
             size={{ xs: 12, md: 3 }}
-            sx={{ minWidth: 0, order: { xs: 3, md: 3 } }}
+            sx={{
+              minWidth: 0,
+              order: { xs: 3, md: 3 },
+              display: { xs: 'none', md: 'block' },
+            }}
           >
             <Paper
               variant="outlined"

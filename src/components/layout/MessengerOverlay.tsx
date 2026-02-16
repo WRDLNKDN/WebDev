@@ -146,7 +146,7 @@ export const MessengerOverlay = () => {
           sx={{
             position: 'fixed',
             right: 0,
-            top: mobile ? 64 : 80,
+            top: mobile ? 88 : 80,
             zIndex: 1200,
             bgcolor: 'background.paper',
             border: '1px solid rgba(255,255,255,0.12)',

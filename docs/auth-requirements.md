@@ -4,6 +4,8 @@ This document defines **user** and **admin** authentication requirements for the
 WRDLNKDN platform. It is the source of truth for auth behavior and access
 control.
 
+[← Docs index](./README.md)
+
 ---
 
 ## 1. User Authentication

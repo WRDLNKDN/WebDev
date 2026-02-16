@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy-uat:
-    name: Vercel UAT (Preview)
+    name: Vercel UAT (Production)
     runs-on: ubuntu-latest
     environment: uat
 
@@ -26,9 +26,10 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
-      # baked into build output
+      # baked into build output — UAT domain (webdev-uat.vercel.app) gets this build
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
+      VITE_APP_ENV: uat
 
     steps:
       - name: Checkout
@@ -57,17 +58,17 @@ jobs:
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json
 
-      - name: Pull (preview)
+      - name: Pull (production)
         run:
-          npx --yes vercel@latest pull --yes --environment=preview --token
+          npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
 
-      - name: Build (preview)
-        run: npx --yes vercel@latest build --token "$VERCEL_TOKEN"
+      - name: Build (UAT → webdev-uat.vercel.app)
+        run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
 
-      - name: Deploy (preview)
+      - name: Deploy (production)
         run:
-          npx --yes vercel@latest deploy --prebuilt --yes --token
+          npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"
 
   deploy-prod:

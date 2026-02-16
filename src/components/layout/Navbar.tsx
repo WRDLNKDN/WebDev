@@ -1,8 +1,14 @@
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import EventIcon from '@mui/icons-material/Event';
+import ForumIcon from '@mui/icons-material/Forum';
 import GoogleIcon from '@mui/icons-material/Google';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import MenuIcon from '@mui/icons-material/Menu';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {
   AppBar,
   Box,
@@ -11,8 +17,11 @@ import {
   Drawer,
   IconButton,
   InputBase,
+  List,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Menu,
   MenuItem,
   Paper,
@@ -686,8 +695,8 @@ export const Navbar = () => {
           },
         }}
       >
-        <Box sx={{ p: 2, pt: 3 }}>
-          <Stack component="nav" spacing={0}>
+        <Box sx={{ py: 2, overflow: 'auto' }}>
+          <Stack component="nav" spacing={0} sx={{ px: 1 }}>
             <Button
               component="a"
               href={storeUrl}
@@ -742,9 +751,7 @@ export const Navbar = () => {
                 <Button
                   component={RouterLink}
                   to="/directory"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                  }}
+                  onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: 'white',
@@ -754,24 +761,209 @@ export const Navbar = () => {
                 >
                   Directory
                 </Button>
-                {isAdmin && (
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'warning.main',
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Admin
-                  </Button>
-                )}
               </>
             )}
           </Stack>
+
+          {/* Explore: sub-menus (matches Feed sidebar) */}
+          {session && (
+            <List dense disablePadding sx={{ py: 0 }}>
+              <ListSubheader
+                component="div"
+                sx={{
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  letterSpacing: 1,
+                  pt: 2,
+                  pb: 0.5,
+                  px: 2,
+                }}
+              >
+                Explore
+              </ListSubheader>
+              <ListSubheader
+                component="div"
+                sx={{
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  py: 0.5,
+                  px: 2,
+                }}
+              >
+                Community
+              </ListSubheader>
+              <ListItemButton
+                component={RouterLink}
+                to="/events"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <EventIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Events"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+              <ListItemButton
+                component={RouterLink}
+                to="/forums"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <ForumIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Groups"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+              <ListSubheader
+                component="div"
+                sx={{
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  py: 0.5,
+                  px: 2,
+                  pt: 1.5,
+                }}
+              >
+                Your stuff
+              </ListSubheader>
+              <ListItemButton
+                component={RouterLink}
+                to="/saved"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <BookmarkBorderIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Saved"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+              <ListSubheader
+                component="div"
+                sx={{
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  py: 0.5,
+                  px: 2,
+                  pt: 1.5,
+                }}
+              >
+                Platform
+              </ListSubheader>
+              <ListItemButton
+                component={RouterLink}
+                to="/advertise"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <CampaignIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Advertise"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+              <ListItemButton
+                component="a"
+                href="https://phuzzle.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <SportsEsportsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Games"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+              <ListSubheader
+                component="div"
+                sx={{
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  py: 0.5,
+                  px: 2,
+                  pt: 1.5,
+                }}
+              >
+                Support
+              </ListSubheader>
+              <ListItemButton
+                component={RouterLink}
+                to="/help"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ minHeight: 40, py: 0.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <HelpOutlineIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Help"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+            </List>
+          )}
+
+          {session && (
+            <Box sx={{ pt: 2, px: 2 }}>
+              {isAdmin && (
+                <Button
+                  component={RouterLink}
+                  to="/admin"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'warning.main',
+                    textTransform: 'none',
+                    py: 1,
+                    px: 1,
+                  }}
+                >
+                  Admin
+                </Button>
+              )}
+              <Button
+                sx={{
+                  justifyContent: 'flex-start',
+                  color: 'text.secondary',
+                  textTransform: 'none',
+                  py: 1,
+                  px: 1,
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  void signOut();
+                }}
+                disabled={busy}
+              >
+                Sign Out
+              </Button>
+            </Box>
+          )}
         </Box>
       </Drawer>
       <Snackbar

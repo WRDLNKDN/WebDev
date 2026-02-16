@@ -39,6 +39,7 @@ import {
 } from './adminApi';
 import { toMessage } from '../../lib/errors';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
+import { useAdminSession } from './AdminSessionContext';
 
 const formatStatus = (status: string) => {
   switch (status) {
@@ -54,7 +55,6 @@ const formatStatus = (status: string) => {
 };
 
 type Props = {
-  token: string;
   initialStatus?: ProfileStatus | 'all';
 };
 
@@ -66,10 +66,9 @@ type ConfirmState = null | {
   action: (opts: { hardDeleteAuthUsers: boolean }) => Promise<void>;
 };
 
-export const AdminModerationPage = ({
-  token,
-  initialStatus = 'pending',
-}: Props) => {
+export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
+  const session = useAdminSession();
+  const token = session?.access_token ?? '';
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);

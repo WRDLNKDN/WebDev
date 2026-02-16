@@ -15,6 +15,10 @@ export const MICROSOFT_SIGNIN_NOT_CONFIGURED =
 /** Max length for treating server message as user-friendly (long messages are often stack traces or technical). */
 const FRIENDLY_MESSAGE_MAX_LEN = 120;
 
+/** Fallback when no useful error info is available. */
+const FALLBACK_MESSAGE =
+  'An unexpected error occurred. Try refreshing the page, or contact support if it persists.';
+
 /** Technical phrases we never show to users; map to friendly fallbacks. */
 const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   {
@@ -25,7 +29,7 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   { pattern: /forbidden/i, friendly: "You don't have permission to do that." },
   {
     pattern: /internal server error/i,
-    friendly: 'Something went wrong on our end. Please try again in a moment.',
+    friendly: 'Our server hit an error. Please try again in a moment.',
   },
   {
     pattern: /bad gateway|gateway timeout|service unavailable/i,
@@ -43,15 +47,43 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   },
   {
     pattern: /failed to fetch|network error|load failed/i,
-    friendly: 'Connection problem. Please check your network and try again.',
+    friendly: 'Connection problem. Check your network and try again.',
   },
   {
     pattern: /new row violates row-level security|rls policy/i,
-    friendly: "You don't have permission to add that. Try signing in again.",
+    friendly: "You don't have permission to do that. Try signing in again.",
   },
   {
     pattern: /duplicate key|unique constraint|already exists/i,
     friendly: 'That already exists. Try a different value.',
+  },
+  {
+    pattern: /relation ["'].*["'] does not exist|relation .* does not exist/i,
+    friendly:
+      'Database table not found. Run migrations (e.g. supabase db reset) or contact your administrator.',
+  },
+  {
+    pattern: /permission denied for (table|relation)/i,
+    friendly:
+      "You don't have permission to access that. Sign in again or check with an administrator.",
+  },
+  {
+    pattern: /jwt expired|session expired/i,
+    friendly: 'Your session has expired. Please sign in again.',
+  },
+  {
+    pattern: /invalid jwt|jwt malformed/i,
+    friendly: 'Your session is invalid. Please sign in again.',
+  },
+  {
+    pattern: /null value in column .* violates not-null/i,
+    friendly:
+      'A required field is missing. Please fill in all required fields.',
+  },
+  {
+    pattern: /foreign key constraint|violates foreign key/i,
+    friendly:
+      "That can't be saved because it references something that doesn't exist.",
   },
 ];
 
@@ -77,9 +109,9 @@ export function messageForStatus(status: number): string {
     case 500:
     case 502:
     case 503:
-      return 'Something went wrong on our end. Please try again in a moment.';
+      return 'Our server hit an error. Please try again in a moment.';
     default:
-      return 'Something went wrong. Please try again.';
+      return FALLBACK_MESSAGE;
   }
 }
 
@@ -103,16 +135,35 @@ export function messageFromApiResponse(
 }
 
 /**
+ * Extracts a candidate message from various error shapes (Error, { message }, { error: { message } }).
+ */
+function extractMessage(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === 'string' && e.trim()) return e.trim();
+  if (e && typeof e === 'object') {
+    const obj = e as Record<string, unknown>;
+    if (typeof obj.message === 'string' && obj.message.trim())
+      return obj.message.trim();
+    if (obj.error && typeof obj.error === 'object') {
+      const err = obj.error as Record<string, unknown>;
+      if (typeof err.message === 'string' && err.message.trim())
+        return err.message.trim();
+    }
+  }
+  return '';
+}
+
+/**
  * Converts any thrown value to a user-friendly message. Replaces technical phrases
  * (e.g. "Method Not Allowed") with friendly copy.
  */
 export function toMessage(e: unknown): string {
-  const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
-  const str = raw || 'Something went wrong. Please try again.';
+  const raw = extractMessage(e);
+  const str = raw || FALLBACK_MESSAGE;
   const lower = str.toLowerCase();
   for (const { pattern, friendly } of TECHNICAL_PHRASES) {
     if (pattern.test(lower)) return friendly;
   }
-  if (str.length > FRIENDLY_MESSAGE_MAX_LEN) return messageForStatus(0);
+  if (str.length > FRIENDLY_MESSAGE_MAX_LEN) return FALLBACK_MESSAGE;
   return str;
 }

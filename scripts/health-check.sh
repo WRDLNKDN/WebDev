@@ -17,7 +17,10 @@ wait_for_url() {
   # We also fixed the '-output' typo to '--output'.
   until curl --output /dev/null --silent --head --fail "$url"; do
     if [ $count -eq $timeout ]; then
-      echo -e "\n🛑 [SYSTEM FAULT]: $name failed to respond. Activation Energy too high!"
+      echo -e "\n🛑 [SYSTEM FAULT]: $name failed to respond."
+      if [ "$name" = "API Server" ]; then
+        echo "   Ensure .env has SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (run: npx supabase status)."
+      fi
       exit 1
     fi
     printf '.'
@@ -32,6 +35,9 @@ wait_for_url "http://localhost:54323" "Supabase Studio"
 
 # 2. Logic Layer Check: Vite
 wait_for_url "http://localhost:5173" "Vite Frontend"
+
+# 3. API Layer Check: Backend (feed, admin, etc.)
+wait_for_url "http://localhost:3001/api/health" "API Server"
 
 echo "----------------------------------------------------------------"
 echo "🚀 [HEALTH CHECK COMPLETE]: Launching the cockpit..."

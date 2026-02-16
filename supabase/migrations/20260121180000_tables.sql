@@ -46,6 +46,7 @@ drop table if exists public.weirdlings cascade;
 drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.admin_allowlist cascade;
+drop table if exists public.feed_advertisers cascade;
 
 -- -----------------------------
 -- Admin allowlist (NO RLS; grants in rls.sql)
@@ -339,6 +340,56 @@ comment on table public.connection_requests is
 create trigger trg_connection_requests_updated_at
   before update on public.connection_requests
   for each row execute function public.set_updated_at();
+
+-- -----------------------------
+-- feed_advertisers: Ads shown every 6th post in Feed. Admin-managed.
+-- -----------------------------
+create table public.feed_advertisers (
+  id uuid primary key default gen_random_uuid(),
+  company_name text not null,
+  title text not null,
+  description text not null,
+  url text not null,
+  logo_url text,
+  links jsonb default '[]'::jsonb,
+  active boolean not null default true,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_feed_advertisers_active_order
+  on public.feed_advertisers(active, sort_order)
+  where active = true;
+
+create trigger trg_feed_advertisers_updated_at
+  before update on public.feed_advertisers
+  for each row execute function public.set_updated_at();
+
+comment on table public.feed_advertisers is
+  'Advertisers displayed in Feed every 6th post. Admin CRUD.';
+
+-- Seed Nettica VPN (idempotent: only if empty)
+insert into public.feed_advertisers (
+  company_name, title, description, url, logo_url, links, active, sort_order
+)
+select
+  'NETTICA CORPORATION',
+  'Welcome to Nettica VPN',
+  'We provide fast, secure connections using the latest VPN software. Secure Relay and Tunnel VPN services powered by WireGuard technology.',
+  'https://www.nettica.com',
+  null,
+  '[
+    {"label":"Downloads","url":"https://www.nettica.com"},
+    {"label":"Nettica VPN Performance","url":"https://www.nettica.com"},
+    {"label":"API","url":"https://www.nettica.com"},
+    {"label":"Getting Started","url":"https://www.nettica.com"},
+    {"label":"Launch a Cloud Instance","url":"https://www.nettica.com"},
+    {"label":"Enterprise","url":"https://www.nettica.com"}
+  ]'::jsonb,
+  true,
+  0
+where not exists (select 1 from public.feed_advertisers limit 1);
 
 -- -----------------------------
 -- Feed items

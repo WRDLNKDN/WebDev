@@ -48,7 +48,7 @@ serve(async (req) => {
     //     'Content-Type': 'application/json',
     //   },
     //   body: JSON.stringify({
-    //     from: 'chat@wrdlnkdn.com',
+    //     from: 'info@wrdlnkdn.com',
     //     to: MODERATOR_EMAIL,
     //     subject: `[WRDLNKDN] New chat report: ${category}`,
     //     text: `Report ID: ${reportId}. Check admin panel.`,

@@ -3,6 +3,7 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import EventIcon from '@mui/icons-material/Event';
 import ForumIcon from '@mui/icons-material/Forum';
 import GoogleIcon from '@mui/icons-material/Google';
+import GavelIcon from '@mui/icons-material/Gavel';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import MenuIcon from '@mui/icons-material/Menu';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
@@ -926,6 +927,67 @@ export const Navbar = () => {
               </ListItemButton>
             </List>
           )}
+
+          {/* Legal (always visible in drawer for all users) */}
+          <List dense disablePadding sx={{ py: 0 }}>
+            <ListSubheader
+              component="div"
+              sx={{
+                bgcolor: 'transparent',
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                py: 0.5,
+                px: 2,
+                pt: 2,
+                pb: 0.5,
+              }}
+            >
+              Legal
+            </ListSubheader>
+            <ListItemButton
+              component={RouterLink}
+              to="/terms"
+              onClick={() => setDrawerOpen(false)}
+              sx={{ minHeight: 40, py: 0.5 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <GavelIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Terms of Service"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+            <ListItemButton
+              component={RouterLink}
+              to="/privacy"
+              onClick={() => setDrawerOpen(false)}
+              sx={{ minHeight: 40, py: 0.5 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <GavelIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Privacy Policy"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+            <ListItemButton
+              component={RouterLink}
+              to="/guidelines"
+              onClick={() => setDrawerOpen(false)}
+              sx={{ minHeight: 40, py: 0.5 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <GavelIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Community Guidelines"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          </List>
 
           {session && (
             <Box sx={{ pt: 2, px: 2 }}>

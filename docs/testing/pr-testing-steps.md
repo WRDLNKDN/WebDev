@@ -120,6 +120,11 @@ profile routes (IA), Directory, footer, and Dashboard.
 - [ ] **Email**  
        “<info@wrdlnkdn.com>” opens default mail client (mailto).
 
+- [ ] **Legal links**  
+       Terms of Service, Privacy Policy, Community Guidelines link to in-app
+      pages (`/terms`, `/privacy`, `/guidelines`). Legal (Canonical Index) opens
+      GitHub wiki.
+
 ---
 
 ## 7. Join flow (Intent)

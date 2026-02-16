@@ -658,12 +658,15 @@ const FeedCard = ({
   );
 };
 
+type FeedSession = {
+  user: { id: string };
+  access_token: string;
+  user_metadata?: { avatar_url?: string; full_name?: string };
+};
+
 export const Feed = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<{
-    user: { id: string };
-    user_metadata?: { avatar_url?: string; full_name?: string };
-  } | null>(null);
+  const [session, setSession] = useState<FeedSession | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -719,13 +722,17 @@ export const Feed = () => {
       const raw = error instanceof Error ? error.message : String(error ?? '');
       const lower = raw.toLowerCase();
 
-      if (lower.includes('unauthorized') || lower.includes('not signed in')) {
+      if (
+        lower.includes('unauthorized') ||
+        lower.includes('not signed in') ||
+        lower.includes('sign in')
+      ) {
         try {
           await supabase.auth.signOut();
         } catch {
           // ignore sign-out failures here
         }
-        navigate('/signin', { replace: true });
+        navigate('/join', { replace: true });
       } else {
         setSnack(toMessage(error) || fallback);
       }
@@ -735,32 +742,58 @@ export const Feed = () => {
 
   useEffect(() => {
     let cancelled = false;
+
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (!data.session) {
-        navigate('/signin', { replace: true });
+      if (!data.session?.access_token) {
+        setSession(null);
         return;
       }
-      setSession(
-        data.session as unknown as {
-          user: { id: string };
-          user_metadata?: { avatar_url?: string; full_name?: string };
-        },
-      );
+      setSession({
+        user: { id: data.session.user.id },
+        access_token: data.session.access_token,
+        user_metadata: data.session.user
+          .user_metadata as FeedSession['user_metadata'],
+      });
     };
+
     void init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+      if (cancelled) return;
+      if (!newSession?.access_token) {
+        setSession(null);
+        navigate('/join', { replace: true });
+        return;
+      }
+      setSession({
+        user: { id: newSession.user.id },
+        access_token: newSession.access_token,
+        user_metadata: newSession.user
+          .user_metadata as FeedSession['user_metadata'],
+      });
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
   const loadPage = useCallback(
     async (cursor?: string, append = false) => {
+      if (!session?.access_token) return;
       try {
         if (append) setLoadingMore(true);
         else setLoading(true);
-        const res = await fetchFeeds({ limit: FEED_LIMIT, cursor });
+        const res = await fetchFeeds({
+          limit: FEED_LIMIT,
+          cursor,
+          accessToken: session.access_token,
+        });
         if (append) {
           setItems((prev) => [...prev, ...res.data]);
         } else {
@@ -774,7 +807,7 @@ export const Feed = () => {
         setLoadingMore(false);
       }
     },
-    [handleAuthError],
+    [handleAuthError, session?.access_token],
   );
 
   useEffect(() => {
@@ -784,10 +817,13 @@ export const Feed = () => {
 
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
-    if (!text || posting) return;
+    if (!text || posting || !session?.access_token) return;
     try {
       setPosting(true);
-      await createFeedPost({ body: text });
+      await createFeedPost({
+        body: text,
+        accessToken: session.access_token,
+      });
       setComposerValue('');
       setComposerOpen(false);
       await loadPage();
@@ -800,8 +836,9 @@ export const Feed = () => {
 
   const handleLike = useCallback(
     async (postId: string) => {
+      if (!session?.access_token) return;
       try {
-        await likePost({ postId });
+        await likePost({ postId, accessToken: session.access_token });
       } catch (e) {
         await handleAuthError(e, 'Failed to like');
         const item = items.find((i) => i.id === postId);
@@ -812,13 +849,14 @@ export const Feed = () => {
           });
       }
     },
-    [handleAuthError, items, updateItem],
+    [handleAuthError, items, updateItem, session?.access_token],
   );
 
   const handleUnlike = useCallback(
     async (postId: string) => {
+      if (!session?.access_token) return;
       try {
-        await unlikePost({ postId });
+        await unlikePost({ postId, accessToken: session.access_token });
       } catch (e) {
         await handleAuthError(e, 'Failed to unlike');
         const item = items.find((i) => i.id === postId);
@@ -829,23 +867,27 @@ export const Feed = () => {
           });
       }
     },
-    [handleAuthError, items, updateItem],
+    [handleAuthError, items, updateItem, session?.access_token],
   );
 
   const handleRepost = useCallback(
     async (item: FeedItem) => {
+      if (!session?.access_token) return;
       const originalId =
         (item.kind === 'repost' && (item.payload?.original_id as string)) ||
         item.id;
       try {
-        await repostPost({ originalId });
+        await repostPost({
+          originalId,
+          accessToken: session.access_token,
+        });
         setSnack('Reposted');
         await loadPage();
       } catch (e) {
         await handleAuthError(e, 'Failed to repost');
       }
     },
-    [handleAuthError, loadPage],
+    [handleAuthError, loadPage, session?.access_token],
   );
 
   const handleSend = useCallback((item: FeedItem) => {
@@ -860,8 +902,12 @@ export const Feed = () => {
       }
       setExpandedCommentsPostId(postId);
       setCommentsLoadingPostId(postId);
+      if (!session?.access_token) return;
       try {
-        const { data } = await fetchComments({ postId });
+        const { data } = await fetchComments({
+          postId,
+          accessToken: session.access_token,
+        });
         setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
       } catch (e) {
         await handleAuthError(e, 'Failed to load comments');
@@ -869,14 +915,25 @@ export const Feed = () => {
         setCommentsLoadingPostId(null);
       }
     },
-    [expandedCommentsPostId, handleAuthError],
+    [expandedCommentsPostId, handleAuthError, session?.access_token],
   );
 
-  const handleAddComment = useCallback(async (postId: string, body: string) => {
-    await addComment({ postId, body });
-    const { data } = await fetchComments({ postId });
-    setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
-  }, []);
+  const handleAddComment = useCallback(
+    async (postId: string, body: string) => {
+      if (!session?.access_token) return;
+      await addComment({
+        postId,
+        body,
+        accessToken: session.access_token,
+      });
+      const { data } = await fetchComments({
+        postId,
+        accessToken: session.access_token,
+      });
+      setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+    },
+    [session?.access_token],
+  );
 
   const handleCopyLink = useCallback(async (url: string) => {
     await navigator.clipboard.writeText(url);

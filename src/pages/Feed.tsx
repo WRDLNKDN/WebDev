@@ -1041,10 +1041,17 @@ export const Feed = () => {
           </Typography>
         </Box>
 
-        <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
-          {/* LEFT SIDEBAR: Explore — hidden on mobile, 3-col on desktop */}
+        <Grid
+          container
+          spacing={2}
+          sx={{
+            alignItems: 'flex-start',
+            transition: 'all 0.25s ease-in-out',
+          }}
+        >
+          {/* LEFT SIDEBAR: Explore — hidden on mobile; md: 2-col with Feed; lg: 3-col with Feed + Partners */}
           <Grid
-            size={{ xs: 12, md: 3 }}
+            size={{ xs: 12, md: 2, lg: 2 }}
             sx={{
               minWidth: 0,
               order: { xs: 2, md: 1 },
@@ -1059,8 +1066,8 @@ export const Feed = () => {
                 position: { xs: 'static', md: 'sticky' },
                 top: 88,
                 width: '100%',
-                maxWidth: { md: 280 },
-                minWidth: { md: 220 },
+                maxWidth: { md: 190, lg: 190 },
+                minWidth: { md: 145, lg: 145 },
               }}
             >
               <Box
@@ -1230,9 +1237,9 @@ export const Feed = () => {
             </Paper>
           </Grid>
 
-          {/* CENTER: Feed content — full width on mobile, 6 cols on desktop */}
+          {/* CENTER: Feed — full width xs; md: Explore+Feed; lg: 3-col */}
           <Grid
-            size={{ xs: 12, md: 6 }}
+            size={{ xs: 12, md: 10, lg: 7 }}
             sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
           >
             {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
@@ -1387,13 +1394,13 @@ export const Feed = () => {
             )}
           </Grid>
 
-          {/* RIGHT RAIL: Community Partners — hidden on mobile, 3-col on desktop */}
+          {/* RIGHT RAIL: Community Partners — hidden until lg (hides before Explore at md) */}
           <Grid
-            size={{ xs: 12, md: 3 }}
+            size={{ xs: 12, md: 12, lg: 3 }}
             sx={{
               minWidth: 0,
               order: { xs: 3, md: 3 },
-              display: { xs: 'none', md: 'block' },
+              display: { xs: 'none', md: 'none', lg: 'block' },
             }}
           >
             <Paper
@@ -1401,11 +1408,11 @@ export const Feed = () => {
               sx={{
                 borderRadius: 2,
                 p: 2,
-                position: { xs: 'static', md: 'sticky' },
+                position: { xs: 'static', lg: 'sticky' },
                 top: 88,
                 width: '100%',
-                maxWidth: { md: 280 },
-                minWidth: { md: 220 },
+                maxWidth: { lg: 280 },
+                minWidth: { lg: 220 },
               }}
             >
               <Box

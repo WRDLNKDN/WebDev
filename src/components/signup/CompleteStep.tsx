@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hasBumperBeenShown } from '../../lib/bumperSession';
@@ -40,8 +33,15 @@ export const CompleteStep = () => {
   }, [goToFeedOrBumper]);
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={0} sx={signupPaper}>
+    <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          ...signupPaper,
+          maxWidth: 480,
+          mx: 'auto',
+        }}
+      >
         <Stack spacing={3} sx={completeStepStack}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h4" sx={completeStepTitle}>
@@ -64,6 +64,6 @@ export const CompleteStep = () => {
           </Button>
         </Stack>
       </Paper>
-    </Container>
+    </Box>
   );
 };

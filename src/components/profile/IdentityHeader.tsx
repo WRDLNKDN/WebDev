@@ -60,8 +60,12 @@ export const IdentityHeader = ({
         justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
         alignItems={{ xs: 'stretch', sm: 'center' }}
         flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 2 }}
+        useFlexGap
+        spacing={2}
+        sx={{
+          mb: 2,
+          '& .MuiButton-root': { minWidth: 0 },
+        }}
       >
         {actions}
       </Stack>

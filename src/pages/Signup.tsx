@@ -28,7 +28,7 @@ const BG_SX = {
   position: 'relative' as const,
   display: 'grid',
   placeItems: 'center',
-  px: 2,
+  px: { xs: 1.5, sm: 2 },
   py: 6,
   overflow: 'hidden',
 };
@@ -42,8 +42,10 @@ const CARD_SX = {
   bgcolor: 'rgba(16, 18, 24, 0.70)',
   backdropFilter: 'blur(12px)',
   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
-  p: { xs: 3, sm: 4 },
+  p: { xs: 2, sm: 3, md: 5 },
   color: '#fff',
+  minWidth: 0,
+  overflow: 'hidden',
 };
 
 export const Signup = () => {
@@ -122,13 +124,12 @@ export const Signup = () => {
         }
         sx={{
           ...CARD_SX,
-          p: { xs: 3, md: 5 },
           zIndex: 1,
           transition: 'max-width 0.4s ease',
         }}
       >
         {isFlowActive && (
-          <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 3, width: '100%', minWidth: 0 }}>
             <SignupProgress
               currentStep={state.currentStep}
               completedSteps={state.completedSteps}

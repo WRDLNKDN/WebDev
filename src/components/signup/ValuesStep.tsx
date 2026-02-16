@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Container,
   FormControlLabel,
   FormGroup,
   Paper,
@@ -70,8 +69,20 @@ export const ValuesStep = () => {
   };
 
   return (
-    <Container maxWidth="md">
-      <Paper elevation={0} sx={signupPaper}>
+    <Box sx={{ width: '100%', minWidth: 0 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          ...signupPaper,
+          maxWidth: 640,
+          mx: 'auto',
+          overflow: 'hidden',
+          '& .MuiFormControlLabel-root': {
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+          },
+        }}
+      >
         <Stack spacing={4}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
@@ -153,7 +164,11 @@ export const ValuesStep = () => {
             />
           </Box>
 
-          <Stack direction="row" spacing={2} sx={valuesStepButtonRow}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={valuesStepButtonRow}
+          >
             <Button
               variant="outlined"
               onClick={handleBack}
@@ -184,6 +199,6 @@ export const ValuesStep = () => {
           </Stack>
         </Stack>
       </Paper>
-    </Container>
+    </Box>
   );
 };

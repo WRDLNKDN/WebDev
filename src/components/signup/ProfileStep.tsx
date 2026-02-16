@@ -84,7 +84,18 @@ const ProfileStep = () => {
   };
 
   return (
-    <Stack spacing={4} sx={profileStep}>
+    <Stack
+      spacing={4}
+      sx={{
+        ...profileStep,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+        '& .MuiFormControl-root, .MuiAutocomplete-root': {
+          minWidth: 0,
+        },
+      }}
+    >
       <Box>
         <Typography variant="h4" sx={profileStepTitle}>
           Create your public profile
@@ -123,7 +134,11 @@ const ProfileStep = () => {
         </Typography>
       </Box>
 
-      <Stack direction="row" spacing={2} sx={profileStepButtonRow}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={profileStepButtonRow}
+      >
         <Button
           variant="outlined"
           onClick={handleBack}

@@ -25,7 +25,7 @@ const BG_SX = {
   position: 'relative',
   display: 'flex',
   flexDirection: 'column',
-  px: 2,
+  px: { xs: 1.5, sm: 2 },
   py: 6,
   overflow: 'hidden',
 };
@@ -149,6 +149,7 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
               alignItems: { xs: 'stretch', sm: 'center' },
               gap: 2,
               mb: 3,
+              minWidth: 0,
             }}
           >
             <Box
@@ -157,6 +158,8 @@ export const AdminApp = ({ initialStatus = 'pending' }: Props) => {
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 gap: 2,
+                minWidth: 0,
+                flex: { xs: '1 1 100%', sm: '0 1 auto' },
               }}
             >
               <Typography component="h1" variant="h4" sx={{ fontWeight: 900 }}>

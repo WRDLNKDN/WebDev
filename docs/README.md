@@ -13,6 +13,8 @@ Central index for WRDLNKDN WebDev documentation.
   authentication; password/OAuth and admin access rules.
 - [OAuth sign-in display name](./auth-oauth-display-name.md) — How to show
   wrdlnkdn.com instead of Supabase domain on Google sign-in.
+- [UAT vs PROD deployment](./DEPLOYMENT_UAT_PROD.md) — Supabase project IDs; fix
+  UAT showing PROD URL on sign-in.
 - [Platform NFRs](./architecture/platform-nfrs.md) — Non-functional requirements
   (operational, scalability, security).
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and

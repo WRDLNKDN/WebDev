@@ -11,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 import {
   profileStep,
@@ -27,7 +27,10 @@ import {
 } from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
 
+const BUMPER_FROM_JOIN = '/bumper?from=join&next=/feed';
+
 const ProfileStep = () => {
+  const navigate = useNavigate();
   const {
     state,
     setProfile,
@@ -37,6 +40,7 @@ const ProfileStep = () => {
     submitting,
     submitError,
     clearSubmitError,
+    resetSignup,
   } = useSignup();
 
   const [displayName, setDisplayName] = useState(
@@ -78,7 +82,8 @@ const ProfileStep = () => {
     try {
       await submitRegistration(profileData);
       completeStep('profile');
-      goToStep('complete');
+      resetSignup();
+      navigate(BUMPER_FROM_JOIN, { replace: true });
     } catch {
       // submitError is shown below
     }
@@ -220,7 +225,7 @@ const ProfileStep = () => {
           }
           sx={profileStepSubmitButton}
         >
-          {submitting ? 'Submitting…' : 'Submit profile for review'}
+          {submitting ? 'Submitting…' : 'Submit'}
         </Button>
       </Stack>
     </Stack>

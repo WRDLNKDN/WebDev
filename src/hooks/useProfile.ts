@@ -53,7 +53,7 @@ export function useProfile() {
             handle: attempts === 0 ? handle : `${handle}${attempts}`,
             display_name:
               session.user.user_metadata?.full_name ?? email.split('@')[0],
-            status: 'pending',
+            status: 'approved',
           };
           const { data: upserted, error: upsertErr } = await supabase
             .from('profiles')
@@ -264,7 +264,7 @@ export function useProfile() {
           email,
           handle,
           display_name: displayName,
-          status: 'pending',
+          status: 'approved',
         },
         { onConflict: 'id', ignoreDuplicates: true },
       );

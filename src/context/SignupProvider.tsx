@@ -367,6 +367,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
                 : null,
               marketing_source: profile.marketingOptIn ? 'signup' : null,
               policy_version: state.identity.policyVersion || null,
+              status: 'approved',
             } as never)
             .eq('id', state.identity.userId);
 
@@ -408,7 +409,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
               marketing_source: profile.marketingOptIn ? 'signup' : null,
               additional_context:
                 state.values.additionalContext?.trim() || null,
-              status: 'pending',
+              status: 'approved',
               policy_version: state.identity.policyVersion || null,
             } as never);
 

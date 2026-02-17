@@ -95,10 +95,20 @@ export const ValuesStep = () => {
 
           <Box>
             <Typography variant="h6" sx={valuesStepSectionTitle}>
-              What brings you here?
+              What brings you here?{' '}
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 500,
+                  color: 'error.main',
+                  fontSize: '0.85em',
+                }}
+              >
+                (Required)
+              </Typography>
             </Typography>
             <Typography variant="body2" sx={valuesStepSectionSubtext}>
-              Select all that apply.
+              Select at least one.
             </Typography>
 
             <FormGroup>
@@ -121,10 +131,20 @@ export const ValuesStep = () => {
 
           <Box>
             <Typography variant="h6" sx={valuesStepSectionTitle}>
-              How will you participate?
+              How will you participate?{' '}
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 500,
+                  color: 'error.main',
+                  fontSize: '0.85em',
+                }}
+              >
+                (Required)
+              </Typography>
             </Typography>
             <Typography variant="body2" sx={valuesStepSectionSubtext}>
-              Select all that apply.
+              Select at least one.
             </Typography>
 
             <FormGroup>

@@ -1,35 +1,26 @@
-import GoogleIcon from '@mui/icons-material/Google';
-import MicrosoftIcon from '@mui/icons-material/Microsoft';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import type { OAuthProvider } from '../../lib/signInWithOAuth';
 
 interface GuestViewProps {
-  busy: boolean;
-  onAuth: (provider: OAuthProvider) => Promise<void>;
-  /** When true, only render sign-in buttons (for hero backdrop layout). */
+  /** @deprecated OAuth removed; kept for backward compat, ignored */
+  busy?: boolean;
+  /** @deprecated OAuth removed; kept for backward compat, ignored */
+  onAuth?: (provider: 'google' | 'azure') => Promise<void>;
+  /** When true, only render buttons (for hero backdrop layout). */
   buttonsOnly?: boolean;
-  /** When true, use high-contrast opaque styles for OAuth CTAs (hero). */
+  /** When true, use high-contrast opaque styles for CTAs (hero). */
   highContrast?: boolean;
 }
 
 /**
- * Hero guest block: IF buttonsOnly → just Join (Google/Microsoft) + Explore Feed;
- * ELSE → "Connection in motion." + subtext + same buttons (centered).
+ * Hero guest block: Join our Community (→ /join) + Explore Feed.
+ * OAuth is done in the Join wizard, not on Home.
  */
 export const GuestView = ({
-  busy,
-  onAuth,
   buttonsOnly = false,
   highContrast = false,
 }: GuestViewProps) => {
-  const googleSx = highContrast
+  const joinSx = highContrast
     ? {
         borderRadius: 20,
         height: 56,
@@ -56,36 +47,6 @@ export const GuestView = ({
         '&:hover': {
           borderColor: 'primary.main',
           bgcolor: 'rgba(66, 165, 245, 0.08)',
-        },
-      };
-
-  const microsoftSx = highContrast
-    ? {
-        borderRadius: 20,
-        height: 56,
-        fontSize: '1rem',
-        textTransform: 'none' as const,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.7)',
-        color: '#fff',
-        bgcolor: 'rgba(255,255,255,0.08)',
-        '&:hover': {
-          borderWidth: 2,
-          borderColor: 'rgba(255,255,255,0.9)',
-          bgcolor: 'rgba(255,255,255,0.18)',
-        },
-      }
-    : {
-        borderRadius: 20,
-        height: 56,
-        fontSize: '1rem',
-        textTransform: 'none',
-        borderColor: 'rgba(255,255,255,0.35)',
-        color: 'white',
-        bgcolor: 'rgba(255,255,255,0.04)',
-        '&:hover': {
-          borderColor: 'rgba(255,255,255,0.6)',
-          bgcolor: 'rgba(255,255,255,0.08)',
         },
       };
 
@@ -121,34 +82,18 @@ export const GuestView = ({
 
   const buttons = (
     <Stack spacing={2} sx={{ pt: buttonsOnly ? 0 : 2 }}>
-      {/* Primary: Google */}
+      {/* Primary: Join our Community → /join */}
       <Button
+        component={RouterLink}
+        to="/join"
         variant="outlined"
         size="large"
         fullWidth
-        startIcon={
-          busy ? <CircularProgress size={20} color="inherit" /> : <GoogleIcon />
-        }
-        onClick={() => void onAuth('google')}
-        disabled={busy}
-        sx={googleSx}
+        sx={joinSx}
       >
-        {busy ? 'Connecting...' : 'Continue with Google'}
+        Join our Community
       </Button>
-
-      {/* Secondary: Microsoft */}
-      <Button
-        variant="outlined"
-        size="large"
-        fullWidth
-        startIcon={<MicrosoftIcon />}
-        onClick={() => void onAuth('azure')}
-        disabled={busy}
-        sx={microsoftSx}
-      >
-        Sign in with Microsoft
-      </Button>
-      {/* Explore Feed: clearly a button */}
+      {/* Explore Feed */}
       <Button
         component={RouterLink}
         to="/feed"
@@ -199,21 +144,14 @@ export const GuestView = ({
         </Typography>
       </Box>
 
-      {/* Primary CTA: Join */}
+      {/* Primary CTA: Join our Community */}
       <Stack spacing={2} sx={{ pt: 2, alignItems: 'stretch' }}>
         <Button
+          component={RouterLink}
+          to="/join"
           variant="outlined"
           size="large"
           fullWidth
-          startIcon={
-            busy ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <GoogleIcon />
-            )
-          }
-          onClick={() => void onAuth('google')}
-          disabled={busy}
           sx={{
             borderRadius: 20,
             height: 56,
@@ -228,34 +166,9 @@ export const GuestView = ({
             },
           }}
         >
-          {busy ? 'Connecting...' : 'Continue with Google'}
+          Join our Community
         </Button>
 
-        {/* Secondary: Microsoft */}
-        <Button
-          variant="outlined"
-          size="large"
-          fullWidth
-          startIcon={<MicrosoftIcon />}
-          onClick={() => void onAuth('azure')}
-          disabled={busy}
-          sx={{
-            borderRadius: 20,
-            height: 56,
-            fontSize: '1rem',
-            textTransform: 'none',
-            borderColor: 'rgba(255,255,255,0.35)',
-            color: 'white',
-            bgcolor: 'rgba(255,255,255,0.04)',
-            '&:hover': {
-              borderColor: 'rgba(255,255,255,0.6)',
-              bgcolor: 'rgba(255,255,255,0.08)',
-            },
-          }}
-        >
-          Sign in with Microsoft
-        </Button>
-        {/* Explore Feed: clearly a button */}
         <Button
           component={RouterLink}
           to="/feed"

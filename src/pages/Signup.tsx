@@ -90,6 +90,18 @@ export const Signup = () => {
             }
 
             reconcileWithExistingProfile(session, profile);
+          } else {
+            // Session exists but no profile (new user or timing/RLS). Avoid showing Identity again —
+            // set identity from session and advance to Values so they don't loop to "Sign in".
+            const minimalProfile = {
+              display_name: null,
+              tagline: null,
+              join_reason: [] as string[],
+              participation_style: [] as string[],
+              additional_context: null,
+              policy_version: null,
+            };
+            reconcileWithExistingProfile(session, minimalProfile);
           }
         }
       } catch (e: unknown) {

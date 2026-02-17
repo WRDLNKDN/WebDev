@@ -9,13 +9,14 @@
 - **PROD:** [wrdlnkdn.vercel.app](https://wrdlnkdn.vercel.app/) →
   `rpcaazmxymymqdejevtb.supabase.co`
 
-## Problem: UAT Sign-in Shows PROD Supabase
+## Problem: UAT Sign-in or Refresh Shows PROD Supabase
 
 If the Google "Choose an account" dialog shows
-`rpcaazmxymymqdejevtb.supabase.co` when signing in on webdev-uat.vercel.app, UAT
-is using the wrong Supabase.
+`rpcaazmxymymqdejevtb.supabase.co` when signing in on webdev-uat.vercel.app, or
+a red banner appears on page load/refresh saying **"UAT — WRONG Supabase: using
+PROD"**, the deployed build has the PROD Supabase URL baked in.
 
-A red banner will show on webdev-uat.vercel.app when this is detected.
+The banner is correct — fix the deployment configuration below.
 
 ## Root cause
 
@@ -24,10 +25,11 @@ that reaches it can come from:
 
 1. **Vercel auto-deploy** (Git push) — uses env vars from Vercel Dashboard
 2. **GitHub Actions** — uses `SUPABASE_UAT_URL` / `SUPABASE_UAT_ANON_KEY`
-   secrets
+   secrets (from the `uat` environment)
 
-If Vercel auto-deploys first with wrong env vars, the Production domain gets the
-wrong build.
+If Vercel auto-deploys first with wrong or unset env vars, the Production domain
+gets the wrong build. On refresh, users see the red "UAT — WRONG Supabase"
+banner.
 
 ## Fix 1: GitHub Actions (recommended)
 
@@ -53,6 +55,20 @@ If the UAT project is deployed by Vercel's native Git integration:
    - **VITE_SUPABASE_ANON_KEY** = UAT anon key
    - **VITE_APP_ENV** = `uat`
 3. Redeploy (Deployments → ⋮ → Redeploy)
+
+## Fix 3: Disable Vercel Git deploys (prevents wrong-build race)
+
+If UAT is deployed by both Vercel Git integration and GitHub Actions, a race can
+occur and the wrong build may reach webdev-uat.vercel.app. To ensure only the
+workflow deploys UAT:
+
+1. **Vercel** → UAT project → Settings → Git
+2. Either:
+   - **Disconnect** the Git repository, or
+   - Set **Ignored Build Step** to `exit 1` so Vercel never builds from Git
+     (GitHub Actions will remain the sole deployment path)
+3. Confirm UAT env vars in Fix 2 are correct, then redeploy from the workflow
+   (push to main or re-run the workflow)
 
 ## Verification
 

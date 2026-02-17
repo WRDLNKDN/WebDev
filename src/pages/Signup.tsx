@@ -51,7 +51,7 @@ const CARD_SX = {
 
 export const Signup = () => {
   const navigate = useNavigate();
-  const { state, resetSignup } = useSignup();
+  const { state, resetSignup, reconcileWithExistingProfile } = useSignup();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,16 +66,30 @@ export const Signup = () => {
         const session: Session | null = data?.session ?? null;
 
         if (session && !cancelled) {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileErr } = await supabase
             .from('profiles')
-            .select('id')
+            .select(
+              'display_name, tagline, join_reason, participation_style, additional_context, policy_version, marketing_opt_in, marketing_source',
+            )
             .eq('id', session.user.id)
             .maybeSingle();
 
+          if (profileErr) throw profileErr;
+
           if (profile) {
-            resetSignup();
-            navigate('/feed', { replace: true });
-            return;
+            const hasPolicyVersion = Boolean(profile.policy_version);
+            const hasValues =
+              (profile.join_reason?.length ?? 0) > 0 &&
+              (profile.participation_style?.length ?? 0) > 0;
+            const hasDisplayName = Boolean(profile.display_name?.trim());
+
+            if (hasPolicyVersion && hasValues && hasDisplayName) {
+              resetSignup();
+              navigate('/feed', { replace: true });
+              return;
+            }
+
+            reconcileWithExistingProfile(session, profile);
           }
         }
       } catch (e: unknown) {
@@ -89,7 +103,7 @@ export const Signup = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, resetSignup]);
+  }, [navigate, resetSignup, reconcileWithExistingProfile]);
 
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {

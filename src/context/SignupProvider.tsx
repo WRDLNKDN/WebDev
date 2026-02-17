@@ -7,6 +7,7 @@ import type {
   SignupStep,
   ValuesData,
 } from '../types/signup';
+import { POLICY_VERSION } from '../types/signup';
 import { SignupContext, type SignupContextValue } from './SignupContext';
 
 const STEPS: SignupStep[] = [
@@ -120,6 +121,91 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
     setSubmitError(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
+
+  type ExistingProfile = {
+    display_name: string | null;
+    tagline: string | null;
+    join_reason: string[] | null;
+    participation_style: string[] | null;
+    additional_context: string | null;
+    policy_version: string | null;
+    marketing_opt_in?: boolean;
+    marketing_source?: string | null;
+  };
+
+  const reconcileWithExistingProfile = useCallback(
+    (
+      session: {
+        user: {
+          id: string;
+          email?: string;
+          identities?: { provider?: string }[];
+          app_metadata?: { provider?: string };
+        };
+      },
+      profile: ExistingProfile,
+    ) => {
+      const provider =
+        session.user.identities?.[0]?.provider ??
+        session.user.app_metadata?.provider ??
+        'google';
+      const identityProvider = provider === 'azure' ? 'microsoft' : 'google';
+
+      const identity: IdentityData = {
+        provider: identityProvider,
+        userId: session.user.id,
+        email: session.user.email ?? '',
+        termsAccepted: true,
+        guidelinesAccepted: true,
+        policyVersion: profile.policy_version ?? POLICY_VERSION,
+        timestamp: new Date().toISOString(),
+      };
+
+      const values: ValuesData = {
+        joinReason: profile.join_reason ?? [],
+        participationStyle: profile.participation_style ?? [],
+        additionalContext: profile.additional_context ?? undefined,
+      };
+
+      const profileData: ProfileData = {
+        displayName: profile.display_name ?? undefined,
+        tagline: profile.tagline ?? undefined,
+        marketingOptIn: Boolean(profile.marketing_opt_in),
+      };
+
+      const completedSteps: SignupStep[] = ['identity'];
+      if (
+        (profile.join_reason?.length ?? 0) > 0 &&
+        (profile.participation_style?.length ?? 0) > 0
+      ) {
+        completedSteps.push('values');
+      }
+      if (profile.display_name?.trim()) completedSteps.push('profile');
+
+      let currentStep: SignupStep = 'welcome';
+      if (
+        (profile.join_reason?.length ?? 0) === 0 ||
+        (profile.participation_style?.length ?? 0) === 0
+      ) {
+        currentStep = 'values';
+      } else if (!(profile.display_name?.trim() ?? '')) {
+        currentStep = 'profile';
+      } else {
+        currentStep = 'complete';
+      }
+
+      console.log('🔄 Reconciling partial profile → step:', currentStep);
+
+      setState({
+        currentStep,
+        completedSteps: ['welcome', ...completedSteps],
+        identity,
+        values,
+        profile: profileData,
+      });
+    },
+    [],
+  );
 
   /** Contact email shown when we can't fix the issue (database/schema/config). */
   const SUPPORT_EMAIL = 'info@wrdlnkdn.com';
@@ -257,17 +343,42 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
 
         console.log('📝 Creating profile in database...');
 
-        // Check if user already has a profile (avoids generic 23505 and gives clear message)
+        // Check if user already has a profile: UPDATE to fill gaps, else INSERT
         const { data: existing } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, handle')
           .eq('id', state.identity.userId)
           .maybeSingle();
 
         if (existing) {
-          throw new Error(
-            'You already have a profile. Go to Feed or Directory to get started.',
-          );
+          // Partial/incomplete profile: UPDATE with signup data
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              display_name: profile.displayName.trim(),
+              tagline: profile.tagline?.trim() || null,
+              join_reason: state.values.joinReason || [],
+              participation_style: state.values.participationStyle || [],
+              additional_context:
+                state.values.additionalContext?.trim() || null,
+              marketing_opt_in: Boolean(profile.marketingOptIn),
+              marketing_opt_in_timestamp: profile.marketingOptIn
+                ? new Date().toISOString()
+                : null,
+              marketing_source: profile.marketingOptIn ? 'signup' : null,
+              policy_version: state.identity.policyVersion || null,
+              status: 'approved',
+            } as never)
+            .eq('id', state.identity.userId);
+
+          if (updateError) {
+            console.error('❌ Profile update error:', updateError);
+            throw new Error(toFriendlyMessage(updateError));
+          }
+          console.log('✅ Profile updated successfully (reconciliation)');
+          setState((s) => ({ ...s, currentStep: 'complete' }));
+          markComplete('complete');
+          return;
         }
 
         const baseHandle =
@@ -298,7 +409,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
               marketing_source: profile.marketingOptIn ? 'signup' : null,
               additional_context:
                 state.values.additionalContext?.trim() || null,
-              status: 'pending',
+              status: 'approved',
               policy_version: state.identity.policyVersion || null,
             } as never);
 
@@ -376,6 +487,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       submitRegistration,
 
       resetSignup,
+      reconcileWithExistingProfile,
 
       next,
       back,
@@ -392,6 +504,7 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       clearSubmitError,
       submitRegistration,
       resetSignup,
+      reconcileWithExistingProfile,
       next,
       back,
     ],

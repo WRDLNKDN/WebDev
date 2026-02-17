@@ -6,7 +6,7 @@
 import './bumperKeyframes.css';
 
 import { Box, Stack, Typography } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
 
@@ -26,6 +26,14 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
   const [typed, setTyped] = useState('');
   const [popVisible, setPopVisible] = useState(!autoPlay);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hasStartedRef = useRef(false);
+
+  const handleCanPlayThrough = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !autoPlay || hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    video.play().catch(() => {});
+  }, [autoPlay]);
 
   useEffect(() => {
     if (!autoPlay) return;
@@ -64,16 +72,16 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
         backgroundColor: '#000',
       }}
     >
-      {/* Optional: video hidden behind black for audio-only; uncomment and lower zIndex to show */}
+      {/* Voiceover video: audio-only (hidden). Playback starts only when canplaythrough to avoid clipping "Business". */}
       <Box
         component="video"
         ref={videoRef}
         src={CONCEPT_BUMPER_VIDEO}
-        autoPlay
+        preload="auto"
         muted={false}
         loop
         playsInline
-        onLoadedMetadata={(e) => e.currentTarget.play().catch(() => {})}
+        onCanPlayThrough={handleCanPlayThrough}
         sx={{
           position: 'absolute',
           inset: 0,

@@ -70,6 +70,7 @@ export const Navbar = () => {
     path === '/dashboard' || path.startsWith('/dashboard/');
 
   const [session, setSession] = useState<Session | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
@@ -94,14 +95,20 @@ export const Navbar = () => {
 
     const init = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
+      if (!cancelled) {
+        setSession(data.session ?? null);
+        setSessionLoaded(true);
+      }
     };
 
     void init();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
-        if (!cancelled) setSession(newSession ?? null);
+        if (!cancelled) {
+          setSession(newSession ?? null);
+          setSessionLoaded(true);
+        }
       },
     );
 
@@ -538,7 +545,7 @@ export const Navbar = () => {
           {/* Desktop auth: hidden on mobile (shown in drawer) */}
           {!isMobile && (
             <Stack direction="row" spacing={2} alignItems="center">
-              {!session ? (
+              {!sessionLoaded ? null : !session ? (
                 <>
                   {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
                   <Button
@@ -608,7 +615,7 @@ export const Navbar = () => {
           {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
           {isMobile && (
             <Stack direction="row" spacing={1} alignItems="center">
-              {!session ? (
+              {!sessionLoaded ? null : !session ? (
                 <>
                   <Button
                     component={RouterLink}

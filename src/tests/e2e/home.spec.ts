@@ -17,14 +17,12 @@ test.describe('Home Page - High-Integrity Audit', () => {
     // We still confirm the landing container is there to ensure the page loaded
     await expect(page.getByTestId('signed-out-landing')).toBeVisible();
 
-    // WIDEN THE APERTURE: Search the whole 'page', not just the 'landing' div.
-    // Drop the strict period matching just in case of weird whitespace rendering.
-    await expect(
-      page.getByRole('heading', { name: /Business, but weirder/i }),
-    ).toBeVisible();
+    await expect(landing.getByText(/WRDLNKDN/i)).toBeVisible();
+
+    await expect(landing.getByText(/Business, but weirder/i)).toBeVisible();
 
     await expect(
-      page.getByText(
+      landing.getByText(
         /A professional networking space where you don't have to pretend/i,
       ),
     ).toBeVisible();

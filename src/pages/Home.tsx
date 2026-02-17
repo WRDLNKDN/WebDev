@@ -1,3 +1,4 @@
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import {
   Alert,
   Box,
@@ -17,6 +18,7 @@ import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
 import { toMessage } from '../lib/errors';
+import { isProfileOnboarded } from '../lib/profileOnboarding';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
@@ -89,11 +91,11 @@ export const Home = () => {
     return () => clearTimeout(id);
   }, [heroPhase, prefersReducedMotion]);
 
-  // AUTH: IF session exists → redirect to /feed. ELSE stop loading and show Hero (GuestView).
+  // AUTH: IF session + onboarded profile → /feed. IF session but not onboarded → /join. ELSE show Hero.
   useEffect(() => {
     let mounted = true;
 
-    const checkSession = async () => {
+    const checkSessionAndProfile = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
 
@@ -101,7 +103,21 @@ export const Home = () => {
           if (error) console.warn('Session check warning:', error.message);
 
           if (data.session) {
-            navigate('/feed', { replace: true });
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select(
+                'display_name, join_reason, participation_style, policy_version',
+              )
+              .eq('id', data.session.user.id)
+              .maybeSingle();
+
+            if (mounted) {
+              if (isProfileOnboarded(profile)) {
+                navigate('/feed', { replace: true });
+              } else {
+                navigate('/join', { replace: true });
+              }
+            }
             return;
           }
 
@@ -116,12 +132,12 @@ export const Home = () => {
       }
     };
 
-    void checkSession();
+    void checkSessionAndProfile();
 
     // 2. Listen for realtime auth changes (e.g. login in another tab)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted && session) {
-        navigate('/feed', { replace: true });
+        void checkSessionAndProfile();
       }
     });
 
@@ -391,17 +407,27 @@ export const Home = () => {
               </Stack>
               {voiceoverPlaying && !prefersReducedMotion && (
                 <Button
+                  variant="outlined"
                   onClick={stopVoiceover}
                   size="small"
+                  startIcon={<VolumeOffIcon fontSize="small" />}
                   sx={{
                     mt: 1.5,
-                    color: 'rgba(255,255,255,0.7)',
-                    fontSize: '0.85rem',
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1,
+                    color: 'rgba(255,255,255,0.9)',
+                    borderColor: 'rgba(255,255,255,0.5)',
+                    fontSize: '0.9rem',
                     textTransform: 'none',
-                    '&:hover': { color: 'primary.light' },
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.9)',
+                      bgcolor: 'rgba(255,255,255,0.08)',
+                    },
                   }}
                 >
-                  Stop
+                  Stop audio
                 </Button>
               )}
               {voiceoverBlocked && !prefersReducedMotion && (

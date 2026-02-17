@@ -6,7 +6,11 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
+import { initRefreshCapture } from './lib/refreshCapture';
 import theme from './theme/theme';
+
+// Capture refresh for debugging odd behavior on reload
+initRefreshCapture();
 
 // --- SYSTEM FIREWALL ---
 import { ErrorBoundary } from './components/layout/ErrorBoundary';

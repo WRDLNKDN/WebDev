@@ -166,7 +166,7 @@ serve(async (req: Request) => {
     const names = [slot1, `Osgood`, `[FERAL] ${cleanPersona}`];
 
     // 3. THE AI GATEWAY (Mocking active)
-    const USE_MOCK = true;
+    const USE_MOCK = true; // false = replicate, true = mock
     let prediction;
 
     if (USE_MOCK) {

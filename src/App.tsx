@@ -14,7 +14,7 @@ import { SignupProvider } from './context/SignupProvider';
 import { useKonamiCode } from './hooks/useKonamiCode';
 
 // LAYOUT & UTILS
-import { RequireAuth } from './components/auth/RequireAuth';
+import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
 import { supabase } from './lib/supabaseClient';
 
@@ -260,9 +260,9 @@ const App = () => {
               <Route
                 path="/feed"
                 element={
-                  <RequireAuth>
+                  <RequireOnboarded>
                     <Feed />
-                  </RequireAuth>
+                  </RequireOnboarded>
                 }
               />
               <Route path="/store" element={<Store />} />

@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
+import { isProfileOnboarded } from '../../lib/profileOnboarding';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import { POLICY_VERSION } from '../../types/signup';
@@ -99,7 +100,38 @@ export const AuthCallback = () => {
             await new Promise((r) => setTimeout(r, 200));
             navigate('/join', { replace: true });
           } else {
-            // Standard sync for dashboard, directory, or admin
+            // Destinations that require onboarding: check profile before sending
+            const needsOnboarding =
+              next === '/feed' ||
+              next === '/dashboard' ||
+              next === '/' ||
+              next === '/home';
+            if (needsOnboarding) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select(
+                  'display_name, join_reason, participation_style, policy_version',
+                )
+                .eq('id', user.id)
+                .maybeSingle();
+              if (cancelled) return;
+              if (!isProfileOnboarded(profile)) {
+                const provider = mapSupabaseProvider(user);
+                setIdentity({
+                  provider,
+                  userId: user.id,
+                  email: user.email || '',
+                  termsAccepted: true,
+                  guidelinesAccepted: true,
+                  policyVersion: POLICY_VERSION,
+                  timestamp: new Date().toISOString(),
+                });
+                goToStep('values');
+                await new Promise((r) => setTimeout(r, 200));
+                navigate('/join', { replace: true });
+                return;
+              }
+            }
             navigate(next, { replace: true });
           }
         }

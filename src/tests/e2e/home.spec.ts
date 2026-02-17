@@ -16,10 +16,14 @@ test.describe('Home Page - High-Integrity Audit', () => {
   test('should render the brand and primary messaging', async ({ page }) => {
     const landing = page.getByTestId('signed-out-landing');
 
-    await expect(landing.getByText(/Connection in motion\./i)).toBeVisible();
+    await expect(landing.getByText(/WRDLNKDN/i)).toBeVisible();
+
+    await expect(landing.getByText(/Business, but weirder/i)).toBeVisible();
 
     await expect(
-      landing.getByText(/A professional network built on values/i),
+      landing.getByText(
+        /A professional networking space where you don't have to pretend/i,
+      ),
     ).toBeVisible();
 
     await expect(

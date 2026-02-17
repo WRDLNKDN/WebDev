@@ -335,6 +335,14 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         if (!state.identity) throw new Error('Missing identity step data.');
         if (!state.values) throw new Error('Missing values step data.');
+        if (!state.values.joinReason?.length)
+          throw new Error(
+            'What brings you here? is required. Please select at least one.',
+          );
+        if (!state.values.participationStyle?.length)
+          throw new Error(
+            'How will you participate? is required. Please select at least one.',
+          );
 
         const profile = profileData || state.profile;
         if (!profile) throw new Error('Missing profile step data.');

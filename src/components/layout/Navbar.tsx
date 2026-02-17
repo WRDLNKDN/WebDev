@@ -548,45 +548,44 @@ export const Navbar = () => {
               {!sessionLoaded ? null : !session ? (
                 <>
                   {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
-                  <Button
+                  <Box
                     component={RouterLink}
                     to="/join"
                     sx={{
                       color: 'text.secondary',
+                      textDecoration: 'none',
                       '&:hover': { color: 'white' },
                       ...(isJoinActive && {
                         color: 'white',
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        fontWeight: 600,
                       }),
                     }}
                   >
                     Join
-                  </Button>
-
-                  {/* Sign In: Pill Button */}
-                  <Button
-                    variant="outlined"
+                  </Box>
+                  <Box
+                    component="button"
+                    type="button"
                     onClick={(e) => setSignInAnchor(e.currentTarget)}
                     disabled={busy}
                     sx={{
-                      borderRadius: 20,
-                      px: 3,
-                      borderColor: 'rgba(255,255,255,0.4)',
-                      color: 'white',
-                      '&:hover': {
-                        borderColor: 'white',
-                        bgcolor: 'rgba(255,255,255,0.05)',
-                      },
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: busy ? 'default' : 'pointer',
+                      color: 'text.secondary',
+                      font: 'inherit',
+                      '&:hover': busy ? {} : { color: 'white' },
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1,
                     }}
-                    endIcon={
-                      busy ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : undefined
-                    }
                   >
+                    {busy ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : null}
                     Sign in
-                  </Button>
+                  </Box>
                 </>
               ) : (
                 <>
@@ -617,32 +616,42 @@ export const Navbar = () => {
             <Stack direction="row" spacing={1} alignItems="center">
               {!sessionLoaded ? null : !session ? (
                 <>
-                  <Button
+                  <Box
                     component={RouterLink}
                     to="/join"
-                    size="small"
-                    sx={{ color: 'text.secondary' }}
+                    sx={{
+                      color: 'text.secondary',
+                      textDecoration: 'none',
+                      fontSize: '0.875rem',
+                      '&:hover': { color: 'white' },
+                    }}
                   >
                     Join
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
+                  </Box>
+                  <Box
+                    component="button"
+                    type="button"
                     onClick={(e) => setSignInAnchor(e.currentTarget)}
                     disabled={busy}
                     sx={{
-                      borderRadius: 20,
-                      px: 2,
-                      borderColor: 'rgba(255,255,255,0.4)',
-                      color: 'white',
-                      '&:hover': {
-                        borderColor: 'white',
-                        bgcolor: 'rgba(255,255,255,0.05)',
-                      },
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: busy ? 'default' : 'pointer',
+                      color: 'text.secondary',
+                      font: 'inherit',
+                      fontSize: '0.875rem',
+                      '&:hover': busy ? {} : { color: 'white' },
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1,
                     }}
                   >
+                    {busy ? (
+                      <CircularProgress size={14} color="inherit" />
+                    ) : null}
                     Sign in
-                  </Button>
+                  </Box>
                 </>
               ) : (
                 <Button

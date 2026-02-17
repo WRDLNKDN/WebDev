@@ -2,8 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 #
 # Migrations: keep exactly two files — one for tables (DDL), one for RLS (policies + grants).
-# If you get "502: An invalid response from the upstream server" after "Restarting containers...",
-# run: supabase stop && SUPABASE_DB_ONLY=true supabase db reset && supabase start
+# If you get 502/500 after "Restarting containers...": npm run supabase:reset uses SUPABASE_DB_ONLY to avoid it.
 
 project_id = "WebDev"
 

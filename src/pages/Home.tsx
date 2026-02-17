@@ -1,5 +1,13 @@
-import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,6 +39,44 @@ export const Home = () => {
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
+  const [contentVisible, setContentVisible] = useState(prefersReducedMotion);
+  const voiceoverRef = useRef<HTMLVideoElement | null>(null);
+  const voiceoverStartedRef = useRef(false);
+  const [voiceoverBlocked, setVoiceoverBlocked] = useState(false);
+
+  const handleVoiceoverCanPlayThrough = useCallback(() => {
+    const video = voiceoverRef.current;
+    if (!video || prefersReducedMotion || voiceoverStartedRef.current) return;
+    voiceoverStartedRef.current = true;
+    // Start muted (autoplay allowed), then unmute once playing so audio autoplays
+    video.muted = true;
+    video
+      .play()
+      .then(() => {
+        video.muted = false;
+      })
+      .catch(() => setVoiceoverBlocked(true));
+  }, [prefersReducedMotion]);
+
+  const playVoiceover = useCallback(() => {
+    const video = voiceoverRef.current;
+    if (!video || prefersReducedMotion) return;
+    setVoiceoverBlocked(false);
+    voiceoverStartedRef.current = true;
+    video.currentTime = 0;
+    video.play().catch(() => setVoiceoverBlocked(true));
+  }, [prefersReducedMotion]);
+
+  // Hero content: with reduced motion, show immediately. Else fade in after background dims.
+  useEffect(() => {
+    if (prefersReducedMotion && heroPhase === 'dimmed') {
+      setContentVisible(true);
+      return;
+    }
+    if (heroPhase !== 'dimmed') return;
+    const id = setTimeout(() => setContentVisible(true), 600);
+    return () => clearTimeout(id);
+  }, [heroPhase, prefersReducedMotion]);
 
   // AUTH: IF session exists → redirect to /feed. ELSE stop loading and show Hero (GuestView).
   useEffect(() => {
@@ -151,50 +197,88 @@ export const Home = () => {
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           overflow: 'hidden',
         }}
       >
-        {/* Hero video: play once, then fade to dim. Skip animation if prefers-reduced-motion. */}
-        <Box
-          component="video"
-          autoPlay
-          muted
-          loop={false}
-          playsInline
-          onEnded={() => setHeroPhase('dimmed')}
-          onError={(e) => {
-            setHeroPhase('dimmed');
-            const el = e.currentTarget;
-            if (
-              el.src?.includes('hero-green-pinky') &&
-              !el.src.includes('hero-bg')
-            ) {
-              el.src = '/assets/video/hero-bg.mp4';
-            }
-          }}
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            zIndex: 0,
-            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0.15 : 1,
-            transition:
-              heroPhase === 'dimmed' && !prefersReducedMotion
-                ? 'opacity 1s ease-out'
-                : 'none',
-          }}
-          src="/assets/video/hero-green-pinky.mp4"
-        />
+        {/* Static dim background when prefers-reduced-motion (no animation) */}
+        {prefersReducedMotion && (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 0,
+              background:
+                'radial-gradient(ellipse 80% 80% at 50% 50%, rgba(20,30,50,0.4) 0%, rgba(5,7,15,1) 100%)',
+            }}
+          />
+        )}
+        {/* Hero video: play once, then fade to dim. Skip entirely if prefers-reduced-motion. */}
+        {!prefersReducedMotion && (
+          <Box
+            component="video"
+            autoPlay
+            muted
+            loop={false}
+            playsInline
+            onEnded={() => setHeroPhase('dimmed')}
+            onError={(e) => {
+              setHeroPhase('dimmed');
+              const el = e.currentTarget;
+              if (
+                el.src?.includes('hero-green-pinky') &&
+                !el.src.includes('hero-bg')
+              ) {
+                el.src = '/assets/video/hero-bg.mp4';
+              }
+            }}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+              opacity: heroPhase === 'dimmed' ? 0.12 : 1,
+              transition:
+                heroPhase === 'dimmed' ? 'opacity 1s ease-out' : 'none',
+            }}
+            src="/assets/video/hero-green-pinky.mp4"
+          />
+        )}
+        {/* Voiceover: "Business, but weirder." Plays once when ready. Hidden; audio only. Skips if prefers-reduced-motion. */}
+        {!prefersReducedMotion && (
+          <Box
+            component="video"
+            ref={voiceoverRef}
+            src="/assets/video/concept-bumper.mp4"
+            preload="auto"
+            muted
+            loop={false}
+            playsInline
+            onCanPlayThrough={handleVoiceoverCanPlayThrough}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              opacity: 0,
+              pointerEvents: 'none',
+              zIndex: 0,
+              objectFit: 'cover',
+            }}
+            aria-hidden
+          />
+        )}
+        {/* Overlay: lighter during animation, darker when dimmed. For reduced-motion, always dim. */}
         <Box
           sx={{
             position: 'absolute',
             inset: 0,
             bgcolor:
-              heroPhase === 'dimmed'
-                ? 'rgba(5, 7, 15, 0.92)'
-                : 'rgba(5, 7, 15, 0.6)',
+              heroPhase === 'dimmed' || prefersReducedMotion
+                ? 'rgba(5, 7, 15, 0.94)'
+                : 'rgba(5, 7, 15, 0.55)',
             zIndex: 1,
             pointerEvents: 'none',
             transition: 'background-color 1s ease-out',
@@ -202,11 +286,17 @@ export const Home = () => {
         />
         <Container
           maxWidth="lg"
+          aria-hidden={!contentVisible}
           sx={{
             position: 'relative',
             zIndex: 2,
-            opacity: heroPhase === 'dimmed' ? 1 : 0,
-            transition: 'opacity 1s ease-in',
+            minHeight: 320,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            opacity: contentVisible ? 1 : 0,
+            transition: 'opacity 0.8s ease-in',
           }}
           data-testid="signed-out-landing"
         >
@@ -217,26 +307,7 @@ export const Home = () => {
             justifyContent="center"
             sx={{ textAlign: 'center' }}
           >
-            <Grid
-              size={{ xs: 12 }}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              {error && (
-                <Alert
-                  severity="error"
-                  onClose={() => setError(null)}
-                  sx={{ mb: 2 }}
-                >
-                  {error}
-                </Alert>
-              )}
-              <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
-            </Grid>
-
+            {/* Hero text first: primary focal point */}
             <Grid
               size={{ xs: 12 }}
               sx={{
@@ -304,6 +375,47 @@ export const Home = () => {
                   For people who build, create, and think differently.
                 </Typography>
               </Stack>
+              {voiceoverBlocked && !prefersReducedMotion && (
+                <Button
+                  onClick={playVoiceover}
+                  size="small"
+                  sx={{
+                    mt: 1.5,
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    '&:hover': { color: 'primary.light' },
+                  }}
+                >
+                  Play with sound
+                </Button>
+              )}
+            </Grid>
+
+            {/* OAuth CTAs: highest contrast, fully opaque */}
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              {error && (
+                <Alert
+                  severity="error"
+                  onClose={() => setError(null)}
+                  sx={{ mb: 2 }}
+                >
+                  {error}
+                </Alert>
+              )}
+              <GuestView
+                busy={busy}
+                onAuth={handleAuth}
+                buttonsOnly
+                highContrast
+              />
             </Grid>
           </Grid>
         </Container>

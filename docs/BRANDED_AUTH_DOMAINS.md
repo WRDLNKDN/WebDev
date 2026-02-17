@@ -44,7 +44,7 @@ OAuth flows.
 3. Note the CNAME target
 4. Complete verification
 
-> **Note:**
+> **Note:** >
 > [Supabase custom domain docs](https://supabase.com/docs/guides/platform/custom-domains)
 
 ---

@@ -1,5 +1,7 @@
 # Personalized Weirdling Generator (AI API Backend, MVP Models)
 
+[← Docs index](../README.md)
+
 **Type:** Epic (can be split into backend + frontend stories)
 
 **MVP data models (source of truth):**  

@@ -1,5 +1,7 @@
 # Feed “Post” and “Link” buttons
 
+[← Docs index](../README.md)
+
 When the Feed page exists, the **Start a post** area has two actions:
 
 ## Intended behavior

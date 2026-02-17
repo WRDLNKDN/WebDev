@@ -1,5 +1,7 @@
 # WRDLNKDN Backend
 
+[← Docs index](../docs/README.md)
+
 Express API for feeds, admin, Weirdling, and health. Same code runs locally and
 on Vercel.
 

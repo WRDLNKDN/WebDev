@@ -1,5 +1,7 @@
 # Home Dashboard (Profile-Centric Landing Experience)
 
+[← Docs index](../README.md)
+
 **Type:** Epic  
 **Scope:** MVP  
 **Parent:** Core Product Experience

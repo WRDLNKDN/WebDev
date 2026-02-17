@@ -78,6 +78,23 @@ After deploying, sign in on UAT. The Google dialog should show:
 
 `to continue to lgxwseyzoefxggxijatp.supabase.co`
 
+## Troubleshooting: Login redirects to Join/Signup
+
+If signing in on UAT sends you to the Join wizard instead of Feed:
+
+1. **Redirect URL** — UAT Supabase must have  
+   `https://webdev-uat.vercel.app/auth/callback` in  
+   **Authentication** → **URL Configuration** → **Redirect URLs**. If missing,
+   OAuth may fail or redirect incorrectly.
+
+2. **Profile exists** — You only go to Feed if you have a profile with
+   `display_name`. First-time sign-ins on UAT have no profile and correctly go
+   to Join. If you completed Join on UAT before, you should reach Feed.
+
+3. **AuthCallback retry** — The app retries the profile fetch once after 600ms
+   to handle post-OAuth timing. Check the browser console for
+   `AuthCallback: profile fetch error` if issues persist.
+
 ## See also
 
 - [Docs index](./README.md)

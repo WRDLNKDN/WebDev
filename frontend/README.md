@@ -1,5 +1,7 @@
 # WRDLNKDN Frontend
 
+[← Docs index](../docs/README.md)
+
 This folder contains the frontend UI for the WRDLNKDN project, designed for
 integration with a GoDaddy website.
 

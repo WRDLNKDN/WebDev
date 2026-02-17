@@ -15,6 +15,10 @@ Central index for WRDLNKDN WebDev documentation.
   wrdlnkdn.com instead of Supabase domain on Google sign-in.
 - [UAT vs PROD deployment](./DEPLOYMENT_UAT_PROD.md) — Supabase project IDs; fix
   UAT showing PROD URL on sign-in.
+- [Branded auth domains](./BRANDED_AUTH_DOMAINS.md) — Replace `*.supabase.co`
+  with branded WRDLNKDN auth domains (auth-uat.wrdlnkdn.com, auth.wrdlnkdn.com).
+- [Sign-in loop analysis](./SIGNIN_LOOP_ANALYSIS.md) — Analysis of post-Join
+  sign-in loop and implemented safeguards.
 - [Platform NFRs](./architecture/platform-nfrs.md) — Non-functional requirements
   (operational, scalability, security).
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and
@@ -34,16 +38,32 @@ Central index for WRDLNKDN WebDev documentation.
   connection actions (authenticated only).
 - [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.
 - [Chat MVP spec](./chat/MVP_CHAT_SPEC.md) — 1:1 and group messaging.
+- [Chat report email setup](./chat/REPORT_EMAIL_SETUP.md) — Email notifications
+  for chat reports.
+- [Chat NFR: Storage & backup](./chat/NFR_STORAGE_BACKUP.md) — Supabase storage
+  and backup requirements.
+- [Chat NFR: Monitoring](./chat/NFR_MONITORING.md) — Observability for chat.
 - [Mobile & error audit](./MOBILE_AND_ERROR_AUDIT.md) — Layout responsiveness
   and error message improvements.
 - [Guide: Weirdling Architecture](./architecture/weirdling-architecture-guide.md)
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling
   instructions.
+- [Feed post buttons](./development/feed-post-buttons.md) — Post and Link button
+  behavior in the Feed composer.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
   everything; pre-commit and commands.
+- [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
+  testing.
 
 ## See also
 
 - [Project README](../README.md) — Overview, stack, getting started.
 - [Supabase README](../supabase/README.md) — Schema, migrations, OAuth setup.
+- [Contributing](../CONTRIBUTING.md) — How to contribute.
+- [Integration](../INTEGRATION.md) — Integration notes.
+- [Backend README](../backend/README.md) — API server and backend setup.
+- [Frontend README](../frontend/README.md) — Frontend structure.
+- [Voiceover assets](../public/assets/voiceover/README.md) — Bumper voiceover
+  and video.
+- [Video assets](../public/assets/video/README.md) — Hero and bumper videos.

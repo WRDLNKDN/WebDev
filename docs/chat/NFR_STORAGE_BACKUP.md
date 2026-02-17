@@ -1,5 +1,7 @@
 # NFR: Storage & Backup for Chat (Supabase)
 
+[← Docs index](../README.md)
+
 ## Storage
 
 - **Chat attachments:** Supabase Storage bucket `chat-attachments`

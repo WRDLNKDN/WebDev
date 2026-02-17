@@ -1,5 +1,7 @@
 # INSTRUCTIONS FOR COPILOT
 
+[← Docs index](../README.md)
+
 You are an expert React 19 + TypeScript developer. You are assisting a senior
 engineer who values "Environment Optimization"—clean, system-verified code.
 

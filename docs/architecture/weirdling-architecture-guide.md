@@ -1,5 +1,7 @@
 # Contributing to the Weirdling Architecture
 
+[← Docs index](../README.md)
+
 > “Oh, look! A new Architect approaching the bench! Do try not to break the
 > reality engine, dear boy. It’s delicate.” — Uncle Entity
 

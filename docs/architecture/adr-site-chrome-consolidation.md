@@ -1,5 +1,7 @@
 # ADR: Consolidate Site Chrome into Vercel
 
+[← Docs index](../README.md)
+
 **Status:** Accepted  
 **Date:** 2026-02
 

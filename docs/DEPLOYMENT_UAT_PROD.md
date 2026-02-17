@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # UAT vs PROD Deployment & Supabase
 
 [← Docs index](./README.md)
@@ -79,4 +81,8 @@ After deploying, sign in on UAT. The Google dialog should show:
 ## See also
 
 - [Docs index](./README.md)
+- [Branded auth domains](./BRANDED_AUTH_DOMAINS.md) — Replace `*.supabase.co`
+  with `auth-uat.wrdlnkdn.com` / `auth.wrdlnkdn.com`
 - [OAuth display name](./auth-oauth-display-name.md) — Google consent screen
+
+<!-- markdownlint-enable MD013 -->

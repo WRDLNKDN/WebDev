@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+import { supabase } from '../../lib/supabaseClient';
 import { useSignup } from '../../context/useSignup';
 import {
   signupPaper,
@@ -57,17 +58,12 @@ export const ValuesStep = () => {
     goToStep('profile');
   };
 
-  const handleStartOver = () => {
-    const valuesData: ValuesData = {
-      joinReason: joinReasons,
-      participationStyle: participationStyles,
-      additionalContext: additionalContext.trim() || undefined,
-    };
-
-    setValues(valuesData);
+  const handleStartOver = async () => {
+    await supabase.auth.signOut();
     resetSignup();
-    goToStep('welcome');
-    window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    });
   };
 
   return (
@@ -193,7 +189,7 @@ export const ValuesStep = () => {
           >
             <Button
               variant="outlined"
-              onClick={handleStartOver}
+              onClick={() => void handleStartOver()}
               sx={{
                 borderWidth: 1.5,
                 borderColor: 'rgba(255,255,255,0.6)',

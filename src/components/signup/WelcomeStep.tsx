@@ -31,8 +31,7 @@ export const WelcomeStep = () => {
           </Box>
 
           <Typography variant="body2" sx={welcomeStepDescription}>
-            You&apos;ve already told us how you want to show up. We review
-            submissions to protect the culture and the humans in it.
+            Share your intent and create your profile to join the community.
           </Typography>
 
           <Button

@@ -2,14 +2,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 // ----------------------------------------------------------------------------
-// 🧬 CONFIGURATION: THE DNA VAULT
+// 🧬 CONFIGURATION: THE DNA VAULT (BRANCH SWAPPING)
 // ----------------------------------------------------------------------------
-// Pointing to the raw JSON/Markdown files in the WRDLNKDN organization repo
-// const GITHUB_RAW_BASE =
-//   'https://raw.githubusercontent.com/WRDLNKDN/WebDev/main/src/components/avatar';
 
+// [PRODUCTION] - The Main Branch
+// const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/WRDLNKDN/WebDev/main/src/components/avatar';
+
+// [DEVELOPMENT] - The MVP Feature Branch
 const GITHUB_RAW_BASE =
-  'https://raw.githubusercontent.com/WRDLNKDN/WebDev/tree/feat/MVPAvatarSystem/src/components/avatar';
+  'https://raw.githubusercontent.com/WRDLNKDN/WebDev/feat/MVPAvatarSystem/src/components/avatar';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,13 +19,13 @@ const corsHeaders = {
 };
 
 // ----------------------------------------------------------------------------
-// 🧠 HELPER: THE SYNAPSE (FETCH PROTOCOL)
+// 🧠 HELPER: THE SYNAPSE (DYNAMIC FETCH PROTOCOL)
 // ----------------------------------------------------------------------------
-async function fetchHiveMind() {
+async function fetchHiveMind(instructionFile: string) {
   try {
     const [manifestRes, instructionsRes] = await Promise.all([
       fetch(`${GITHUB_RAW_BASE}/prompt/manifest.json`),
-      fetch(`${GITHUB_RAW_BASE}/prompt/instructions.md`),
+      fetch(`${GITHUB_RAW_BASE}/prompt/${instructionFile}`),
     ]);
 
     if (!manifestRes.ok || !instructionsRes.ok) {
@@ -39,7 +40,6 @@ async function fetchHiveMind() {
     return { manifest, instructions };
   } catch (error) {
     console.error('Critical System Failure fetching DNA:', error);
-    // Fallback if GitHub is down or repo is private without a token
     return {
       manifest: null,
       instructions:
@@ -56,64 +56,84 @@ interface WeirdlingInputs {
   persona?: string;
   interests?: string[];
   userName?: string;
-  preset?: string; // e.g., "the_osgoodling"
+  preset?: string;
 }
 
 // ----------------------------------------------------------------------------
-// 🥣 THE WEIRDLING SOUP REGISTRY (Async)
+// 🥣 THE WEIRDLING SOUP REGISTRY (DUAL-CORE)
 // ----------------------------------------------------------------------------
 const WEIRDLING_RECIPES: Record<
   string,
   (inputs: WeirdlingInputs) => Promise<string>
 > = {
+  // RECIPE 1: The Streamlined Protocol
+  voxel_simple: async (inputs: WeirdlingInputs) => {
+    const { manifest, instructions } = await fetchHiveMind(
+      'instructions_simple.md',
+    );
+    return buildPrompt(inputs, manifest, instructions);
+  },
+
+  // RECIPE 2: The High-Entropy Protocol
+  voxel_complex: async (inputs: WeirdlingInputs) => {
+    const { manifest, instructions } = await fetchHiveMind(
+      'instructions_complex.md',
+    );
+    return buildPrompt(inputs, manifest, instructions);
+  },
+
+  // LEGACY FALLBACK
   voxel_v1: async (inputs: WeirdlingInputs) => {
-    // 1. Fetch the Brain from GitHub
-    const { manifest, instructions } = await fetchHiveMind();
-
-    // 2. The Logic Construction
-    let visualDNA = '';
-
-    // Check if the user requested a specific preset (Visual SNP)
-    if (inputs.preset && manifest?.presets?.[inputs.preset]) {
-      const dnaSequence =
-        manifest.presets[inputs.preset].hash_sequence.join(', ');
-      visualDNA = `Base DNA Sequence: ${dnaSequence}. `;
-    }
-
-    // 3. Build the Prompt
-    let prompt = `Create a 3D voxel character. `;
-
-    // Inject the specific Visual SNP if it exists
-    if (visualDNA) {
-      prompt += `STRICTLY FOLLOW THIS DNA: ${visualDNA} `;
-    }
-
-    // Apply User Overrides (Feral Variables)
-    prompt += `Primary color: ${inputs.primaryColor || 'green'}. `;
-
-    if (inputs.heldObject && inputs.heldObject.toLowerCase() !== 'none') {
-      prompt += `Holding: ${inputs.heldObject}. `;
-    }
-    if (inputs.hairStyle && inputs.hairStyle.toLowerCase() !== 'none') {
-      prompt += `Hair: ${inputs.hairStyle} (${inputs.hairColor}). `;
-    }
-
-    const persona = inputs.persona || 'box';
-    prompt += `Character Base: ${persona}. `;
-
-    if (inputs.interests?.length) {
-      prompt += `Visual traits reflecting: ${inputs.interests.join(', ')}. `;
-    }
-
-    // 4. Inject the Global "Human OS" Instructions
-    prompt += `\n\nSTYLE GUIDE (STRICT ADHERENCE): \n${instructions}`;
-
-    const systemPrompt =
-      'Positive Tags: 3D voxel art, pixel art, isometric view, clean background. Negative Constraints: NO photorealism, NO human skin texture, NO blurring, NO round edges.';
-
-    return `${prompt} ${systemPrompt}`;
+    const { manifest, instructions } = await fetchHiveMind(
+      'instructions_simple.md',
+    );
+    return buildPrompt(inputs, manifest, instructions);
   },
 };
+
+// --- PROMPT COMPILER ---
+function buildPrompt(
+  inputs: WeirdlingInputs,
+  manifest: any,
+  instructions: string,
+) {
+  let visualDNA = '';
+
+  // 1. Check for Visual SNPs (Blind Protocol)
+  if (inputs.preset && manifest?.presets?.[inputs.preset]) {
+    const dnaSequence =
+      manifest.presets[inputs.preset].hash_sequence.join(', ');
+    visualDNA = `Base DNA Sequence: ${dnaSequence}. `;
+  }
+
+  // 2. Construct the Core Prompt
+  let prompt = `Create a 3D voxel character. `;
+  if (visualDNA) prompt += `STRICTLY FOLLOW THIS DNA: ${visualDNA} `;
+
+  prompt += `Primary color: ${inputs.primaryColor || 'green'}. `;
+
+  if (inputs.heldObject && inputs.heldObject.toLowerCase() !== 'none') {
+    prompt += `Holding: ${inputs.heldObject}. `;
+  }
+  if (inputs.hairStyle && inputs.hairStyle.toLowerCase() !== 'none') {
+    prompt += `Hair: ${inputs.hairStyle} (${inputs.hairColor}). `;
+  }
+
+  const persona = inputs.persona || 'box';
+  prompt += `Character Base: ${persona}. `;
+
+  if (inputs.interests?.length) {
+    prompt += `Visual traits reflecting: ${inputs.interests.join(', ')}. `;
+  }
+
+  // 3. Inject the External Intelligence
+  prompt += `\n\nSTYLE GUIDE (STRICT ADHERENCE): \n${instructions}`;
+
+  const systemPrompt =
+    'Positive Tags: 3D voxel art, pixel art, isometric view. Negative Constraints: NO photorealism, NO human skin texture.';
+
+  return `${prompt} ${systemPrompt}`;
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -125,7 +145,8 @@ serve(async (req: Request) => {
     const { persona, userName, recipeId } = payload;
 
     // 1. SELECT RECIPE & AWAIT EXECUTION
-    const id = recipeId && WEIRDLING_RECIPES[recipeId] ? recipeId : 'voxel_v1';
+    const id =
+      recipeId && WEIRDLING_RECIPES[recipeId] ? recipeId : 'voxel_simple';
     const finalPrompt = await WEIRDLING_RECIPES[id](payload);
 
     // 2. THE NAMING ENGINE
@@ -185,7 +206,6 @@ serve(async (req: Request) => {
         prediction,
         names,
         active_recipe: id,
-        // DEBUG: Spitting back a snippet to prove the GitHub fetch worked
         debug_prompt_snippet: finalPrompt.substring(0, 150) + '...',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

@@ -1,45 +1,67 @@
 {
   "protocol": "WRDLNKDN_DNA_VAULT",
-  "version": "1.0.0",
+  "version": "1.1.0_blind_protocol",
   "basePath": "/src/components/avatar/og_weirdlings/",
   "presets": {
     "the_sparkle": {
       "file": "1.png",
       "hash_sequence": [
-        "pink briefcase",
-        "rainbow hair",
-        "heart glasses",
-        "star antennae"
+        "matte pink plastic briefcase chassis",
+        "flowing rainbow hair texture",
+        "translucent red heart-shaped sunglasses",
+        "yellow plastic star-shaped antennae"
       ]
     },
     "the_tinkerer": {
       "file": "2.png",
-      "hash_sequence": ["blue briefcase", "orange mohawk", "toolbelt", "flask"]
+      "hash_sequence": [
+        "cobalt blue metallic chassis with scratch textures",
+        "rigid bright orange mohawk",
+        "brown leather utility belt",
+        "holding a silver metallic flask toy"
+      ]
     },
     "the_mewnicorn": {
       "file": "3.png",
-      "hash_sequence": ["cream cat-box", "unicorn horn", "rainbow tail", "mug"]
+      "hash_sequence": [
+        "cream-colored chassis with soft furry texture",
+        "white spiral unicorn horn on top center",
+        "bushy rainbow tail extending from rear",
+        "holding a white ceramic coffee mug"
+      ]
     },
     "the_arcane": {
       "file": "4.png",
-      "hash_sequence": ["grey furry block", "wizard hat", "staff"]
+      "hash_sequence": [
+        "dark grey coarse stone texture chassis",
+        "pointed blue wizard hat with star patterns",
+        "holding a wooden staff topped with a glowing blue orb"
+      ]
     },
     "the_cyber_link": {
       "file": "5.png",
-      "hash_sequence": ["chrome box", "silver box", "screen face", "laser gun"]
+      "hash_sequence": [
+        "highly reflective chrome and silver metallic chassis",
+        "glowing digital screen face with pixelated eyes",
+        "holding a neon green laser blaster toy"
+      ]
     },
     "the_original": {
       "file": "6.png",
-      "hash_sequence": ["green box", "antennae", "purple feet"]
+      "hash_sequence": [
+        "standard green plastic chassis",
+        "two vertical black stick antennae with glowing cubes",
+        "heavy purple plastic toy block feet"
+      ]
     },
     "the_osgoodling": {
       "file": "7.png",
       "hash_sequence": [
-        "green and pink gradient",
-        "majestic beard",
-        "gold shades",
+        "green and pink gradient plastic chassis",
+        "majestic textured grey beard",
+        "gold shutter shade glasses",
         "rainbow exhaust trail",
-        "feral"
+        "feral glitch status anomaly"
       ]
     }
   }

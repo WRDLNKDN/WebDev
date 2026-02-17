@@ -89,6 +89,8 @@ export type FeedItemActor = {
   avatar: string | null;
 };
 
+export type ReactionType = 'like' | 'love' | 'inspiration' | 'care';
+
 export type FeedItem = {
   id: string;
   user_id: string;
@@ -98,8 +100,13 @@ export type FeedItem = {
   created_at: string;
   actor: FeedItemActor;
   like_count?: number;
-  viewer_liked?: boolean;
+  love_count?: number;
+  inspiration_count?: number;
+  care_count?: number;
+  viewer_reaction?: ReactionType | null;
   comment_count?: number;
+  /** @deprecated Use viewer_reaction instead */
+  viewer_liked?: boolean;
 };
 
 export type FeedsResponse = {
@@ -131,6 +138,24 @@ async function postFeed(
     const msg = typeof payload.error === 'string' ? payload.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
+}
+
+export type FeedViewPreference = 'anyone' | 'connections';
+
+export async function updateFeedViewPreference(params: {
+  feedViewPreference: FeedViewPreference;
+  accessToken?: string | null;
+}): Promise<void> {
+  const { supabase } = await import('./supabaseClient');
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ feed_view_preference: params.feedViewPreference })
+    .eq('id', session.user.id);
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchFeeds(options?: {
@@ -196,27 +221,40 @@ export async function createFeedExternalLink(params: {
   await postFeed(body, params.accessToken ?? null);
 }
 
-export async function likePost(params: {
+export async function setReaction(params: {
   postId: string;
+  type: ReactionType;
   accessToken?: string | null;
 }): Promise<void> {
-  const { postId } = params;
+  const { postId, type } = params;
   if (!postId.trim()) throw new Error('Post id is required');
   await postFeed(
-    { kind: 'reaction', parent_id: postId, type: 'like' },
+    { kind: 'reaction', parent_id: postId, type },
     params.accessToken ?? null,
   );
 }
 
-export async function unlikePost(params: {
+/** @deprecated Use setReaction with type 'like' instead */
+export async function likePost(params: {
+  postId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  await setReaction({
+    postId: params.postId,
+    type: 'like',
+    accessToken: params.accessToken,
+  });
+}
+
+export async function removeReaction(params: {
   postId: string;
   accessToken?: string | null;
 }): Promise<void> {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
   const headers = await getAuthHeaders(params.accessToken);
-  const unlikeUrl = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/reaction?type=like`;
-  const res = await fetch(unlikeUrl, {
+  const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/reaction`;
+  const res = await fetch(url, {
     method: 'DELETE',
     headers,
     credentials: API_BASE ? 'omit' : 'include',
@@ -224,7 +262,7 @@ export async function unlikePost(params: {
   if (!res.ok && res.status !== 204) {
     let body: { error?: string };
     try {
-      body = await parseJsonResponse<{ error?: string }>(res, unlikeUrl);
+      body = await parseJsonResponse<{ error?: string }>(res, url);
     } catch (e) {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
       body = { error: undefined };
@@ -232,6 +270,14 @@ export async function unlikePost(params: {
     const msg = typeof body.error === 'string' ? body.error : undefined;
     throw new Error(messageFromApiResponse(res.status, msg));
   }
+}
+
+/** @deprecated Use removeReaction instead */
+export async function unlikePost(params: {
+  postId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  await removeReaction(params);
 }
 
 export type FeedComment = {

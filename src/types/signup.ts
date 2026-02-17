@@ -31,6 +31,7 @@ export type ProfileData = {
   displayName?: string;
   tagline?: string;
   avatar?: string;
+  marketingOptIn?: boolean;
 };
 
 export type SignupState = {

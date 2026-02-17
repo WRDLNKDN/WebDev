@@ -32,12 +32,90 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_active_at') then
     alter table public.profiles add column last_active_at timestamptz default now();
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'feed_view_preference') then
+    alter table public.profiles add column feed_view_preference text not null default 'anyone' check (feed_view_preference in ('anyone', 'connections'));
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in') then
+    alter table public.profiles add column marketing_opt_in boolean not null default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in_timestamp') then
+    alter table public.profiles add column marketing_opt_in_timestamp timestamptz;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in_ip') then
+    alter table public.profiles add column marketing_opt_in_ip text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_source') then
+    alter table public.profiles add column marketing_source text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_product_updates') then
+    alter table public.profiles add column marketing_product_updates boolean not null default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_events') then
+    alter table public.profiles add column marketing_events boolean not null default false;
+  end if;
 end $$;
 
--- Directory indexes (idempotent; tables.sql creates on fresh reset)
+-- Directory indexes (idempotent)
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
 create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
 create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+
+-- Reaction index + get_feed_page 5-param (idempotent; for fresh DB tables already has them; for existing DB this upgrades)
+create unique index if not exists idx_feed_items_reaction_user_post
+  on public.feed_items (parent_id, user_id)
+  where kind = 'reaction'
+    and payload->>'type' in ('like', 'love', 'inspiration', 'care');
+
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int) cascade;
+create or replace function public.get_feed_page(
+  p_viewer_id uuid,
+  p_cursor_created_at timestamptz default null,
+  p_cursor_id uuid default null,
+  p_limit int default 21,
+  p_feed_view text default 'anyone'
+)
+returns table (
+  id uuid, user_id uuid, kind text, payload jsonb, parent_id uuid, created_at timestamptz,
+  actor_handle text, actor_display_name text, actor_avatar text,
+  like_count bigint, love_count bigint, inspiration_count bigint, care_count bigint,
+  viewer_reaction text, comment_count bigint
+)
+language plpgsql stable security definer set search_path = public, pg_catalog
+as $$
+declare actor_ids uuid[]; use_connections boolean;
+begin
+  use_connections := coalesce(nullif(trim(lower(p_feed_view)), ''), 'anyone') = 'connections';
+  if use_connections then
+    select array_agg(fc.connected_user_id) into actor_ids from public.feed_connections fc where fc.user_id = p_viewer_id;
+    actor_ids := coalesce(actor_ids, '{}') || p_viewer_id;
+  else actor_ids := null; end if;
+  return query
+  select fi.id, fi.user_id, fi.kind, fi.payload, fi.parent_id, fi.created_at,
+    p.handle::text, p.display_name::text,
+    (case when p.use_weirdling_avatar and w.avatar_url is not null then w.avatar_url else p.avatar end)::text,
+    coalesce(stats.like_cnt,0)::bigint, coalesce(stats.love_cnt,0)::bigint,
+    coalesce(stats.inspiration_cnt,0)::bigint, coalesce(stats.care_cnt,0)::bigint,
+    stats.viewer_reaction, coalesce(stats.comment_cnt,0)::bigint
+  from public.feed_items fi
+  left join public.profiles p on p.id = fi.user_id
+  left join public.weirdlings w on w.user_id = fi.user_id and w.is_active = true
+  left join lateral (
+    select
+      count(*) filter (where r.payload->>'type'='like') as like_cnt,
+      count(*) filter (where r.payload->>'type'='love') as love_cnt,
+      count(*) filter (where r.payload->>'type'='inspiration') as inspiration_cnt,
+      count(*) filter (where r.payload->>'type'='care') as care_cnt,
+      count(*) filter (where r.payload->>'type'='comment') as comment_cnt,
+      (select r2.payload->>'type' from public.feed_items r2 where r2.parent_id=fi.id and r2.kind='reaction'
+        and r2.payload->>'type' in ('like','love','inspiration','care') and r2.user_id=p_viewer_id limit 1) as viewer_reaction
+    from public.feed_items r where r.parent_id = fi.id and r.kind = 'reaction'
+  ) stats on true
+  where p.status='approved'
+    and (use_connections and fi.user_id = any(actor_ids) or not use_connections)
+    and (p_cursor_created_at is null or (fi.created_at,fi.id) < (p_cursor_created_at,p_cursor_id))
+  order by fi.created_at desc, fi.id desc limit least(p_limit,51);
+end; $$;
+
 
 -- -----------------------------
 -- admin_allowlist: privileges (no RLS)
@@ -51,10 +129,15 @@ revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
 
 -- -----------------------------
--- get_feed_page(): execute grant
+-- get_feed_page(): execute grant (5-param)
 -- -----------------------------
-revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
-grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
+do $$
+begin
+  revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int) from public;
+exception when undefined_function then null;
+end $$;
+revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int, text) from public;
+grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int, text) to authenticated, service_role;
 
 -- -----------------------------
 -- get_directory_page(): execute grant

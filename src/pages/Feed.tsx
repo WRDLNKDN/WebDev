@@ -9,8 +9,13 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import {
   Avatar,
@@ -40,6 +45,8 @@ import {
   Snackbar,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import type { ReactNode } from 'react';
@@ -50,11 +57,14 @@ import {
   createFeedPost,
   fetchComments,
   fetchFeeds,
-  likePost,
+  removeReaction,
   repostPost,
-  unlikePost,
+  setReaction,
+  updateFeedViewPreference,
   type FeedComment,
   type FeedItem,
+  type FeedViewPreference,
+  type ReactionType,
 } from '../lib/feedsApi';
 import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
@@ -226,8 +236,8 @@ const LinkPreviewCard = ({
 
 type FeedCardActions = {
   updateItem: (id: string, patch: Partial<FeedItem>) => void;
-  onLike: (postId: string) => void;
-  onUnlike: (postId: string) => void;
+  onReaction: (postId: string, type: ReactionType) => void;
+  onRemoveReaction: (postId: string) => void;
   onRepost: (item: FeedItem) => void;
   onSend: (item: FeedItem) => void;
   onCommentToggle: (postId: string) => void;
@@ -385,21 +395,45 @@ const FeedCard = ({
     | LinkPreviewPayload
     | undefined;
   const likeCount = item.like_count ?? 0;
-  const viewerLiked = item.viewer_liked ?? false;
+  const loveCount = item.love_count ?? 0;
+  const inspirationCount = item.inspiration_count ?? 0;
+  const careCount = item.care_count ?? 0;
+  const totalReactions = likeCount + loveCount + inspirationCount + careCount;
+  const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
 
-  const handleLike = () => {
-    if (viewerLiked) {
-      actions.onUnlike(item.id);
+  const handleReaction = (type: ReactionType) => {
+    if (viewerReaction === type) {
+      actions.onRemoveReaction(item.id);
       actions.updateItem(item.id, {
-        viewer_liked: false,
-        like_count: Math.max(0, likeCount - 1),
+        viewer_reaction: null,
+        like_count: type === 'like' ? Math.max(0, likeCount - 1) : likeCount,
+        love_count: type === 'love' ? Math.max(0, loveCount - 1) : loveCount,
+        inspiration_count:
+          type === 'inspiration'
+            ? Math.max(0, inspirationCount - 1)
+            : inspirationCount,
+        care_count: type === 'care' ? Math.max(0, careCount - 1) : careCount,
       });
     } else {
-      actions.onLike(item.id);
+      actions.onReaction(item.id, type);
+      const prevType = viewerReaction;
       actions.updateItem(item.id, {
-        viewer_liked: true,
-        like_count: likeCount + 1,
+        viewer_reaction: type,
+        like_count:
+          (type === 'like' ? 1 : 0) +
+          (prevType === 'like' ? likeCount - 1 : likeCount),
+        love_count:
+          (type === 'love' ? 1 : 0) +
+          (prevType === 'love' ? loveCount - 1 : loveCount),
+        inspiration_count:
+          (type === 'inspiration' ? 1 : 0) +
+          (prevType === 'inspiration'
+            ? inspirationCount - 1
+            : inspirationCount),
+        care_count:
+          (type === 'care' ? 1 : 0) +
+          (prevType === 'care' ? careCount - 1 : careCount),
       });
     }
   };
@@ -520,26 +554,91 @@ const FeedCard = ({
               <Button
                 size="small"
                 startIcon={
-                  viewerLiked ? (
+                  viewerReaction === 'like' ? (
                     <ThumbUpIcon sx={{ color: 'primary.main' }} />
                   ) : (
                     <ThumbUpOutlinedIcon />
                   )
                 }
-                onClick={handleLike}
+                onClick={() => handleReaction('like')}
                 sx={{
                   textTransform: 'none',
-                  color: viewerLiked ? 'primary.main' : 'text.secondary',
+                  color:
+                    viewerReaction === 'like'
+                      ? 'primary.main'
+                      : 'text.secondary',
                   minWidth: 0,
                 }}
               >
                 Like
-                {likeCount > 0 && (
-                  <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
-                    {likeCount}
-                  </Typography>
-                )}
               </Button>
+              <Button
+                size="small"
+                startIcon={
+                  viewerReaction === 'love' ? (
+                    <FavoriteIcon sx={{ color: 'error.main' }} />
+                  ) : (
+                    <FavoriteBorderIcon />
+                  )
+                }
+                onClick={() => handleReaction('love')}
+                sx={{
+                  textTransform: 'none',
+                  color:
+                    viewerReaction === 'love' ? 'error.main' : 'text.secondary',
+                  minWidth: 0,
+                }}
+              >
+                Love
+              </Button>
+              <Button
+                size="small"
+                startIcon={
+                  viewerReaction === 'inspiration' ? (
+                    <LightbulbIcon sx={{ color: 'warning.main' }} />
+                  ) : (
+                    <LightbulbOutlinedIcon />
+                  )
+                }
+                onClick={() => handleReaction('inspiration')}
+                sx={{
+                  textTransform: 'none',
+                  color:
+                    viewerReaction === 'inspiration'
+                      ? 'warning.main'
+                      : 'text.secondary',
+                  minWidth: 0,
+                }}
+              >
+                Inspiration
+              </Button>
+              <Button
+                size="small"
+                startIcon={<VolunteerActivismOutlinedIcon />}
+                onClick={() => handleReaction('care')}
+                aria-label={
+                  viewerReaction === 'care' ? 'Remove Care reaction' : 'Care'
+                }
+                sx={{
+                  textTransform: 'none',
+                  color:
+                    viewerReaction === 'care'
+                      ? 'success.main'
+                      : 'text.secondary',
+                  minWidth: 0,
+                }}
+              >
+                Care
+              </Button>
+              {totalReactions > 0 && (
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  {totalReactions}
+                </Typography>
+              )}
               <Button
                 size="small"
                 startIcon={<ChatBubbleOutlineOutlinedIcon />}
@@ -709,12 +808,18 @@ export const Feed = () => {
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
-    else if (sortBy === 'most_liked')
+    else if (sortBy === 'most_liked') {
+      const total = (x: FeedItem) =>
+        (x.like_count ?? 0) +
+        (x.love_count ?? 0) +
+        (x.inspiration_count ?? 0) +
+        (x.care_count ?? 0);
       list = [...items].sort(
         (a, b) =>
-          (b.like_count ?? 0) - (a.like_count ?? 0) ||
+          total(b) - total(a) ||
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
+    }
     return list.filter(hasRenderableContent);
   }, [items, sortBy]);
   const displayItems = useMemo(
@@ -738,6 +843,8 @@ export const Feed = () => {
   const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
     Set<string>
   >(new Set());
+  const [feedViewPreference, setFeedViewPreference] =
+    useState<FeedViewPreference>('anyone');
 
   const handleDismissLinkPreview = useCallback((postId: string) => {
     setDismissedLinkPreviewIds((prev) => new Set(prev).add(postId));
@@ -847,6 +954,27 @@ export const Feed = () => {
     void loadPage();
   }, [session, loadPage]);
 
+  // Fetch feed_view_preference from profile when session loads
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    let cancelled = false;
+    const fetchPref = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('feed_view_preference')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const v = (data as { feed_view_preference?: string } | null)
+        ?.feed_view_preference;
+      setFeedViewPreference(v === 'connections' ? 'connections' : 'anyone');
+    };
+    void fetchPref();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -887,40 +1015,30 @@ export const Feed = () => {
     }
   };
 
-  const handleLike = useCallback(
-    async (postId: string) => {
+  const handleReaction = useCallback(
+    async (postId: string, type: ReactionType) => {
       if (!session?.access_token) return;
       try {
-        await likePost({ postId, accessToken: session.access_token });
+        await setReaction({ postId, type, accessToken: session.access_token });
       } catch (e) {
-        await handleAuthError(e, 'Failed to like');
-        const item = items.find((i) => i.id === postId);
-        if (item)
-          updateItem(postId, {
-            viewer_liked: false,
-            like_count: Math.max(0, (item.like_count ?? 0) - 1),
-          });
+        await handleAuthError(e, 'Failed to react');
+        void loadPage();
       }
     },
-    [handleAuthError, items, updateItem, session?.access_token],
+    [handleAuthError, loadPage, session?.access_token],
   );
 
-  const handleUnlike = useCallback(
+  const handleRemoveReaction = useCallback(
     async (postId: string) => {
       if (!session?.access_token) return;
       try {
-        await unlikePost({ postId, accessToken: session.access_token });
+        await removeReaction({ postId, accessToken: session.access_token });
       } catch (e) {
-        await handleAuthError(e, 'Failed to unlike');
-        const item = items.find((i) => i.id === postId);
-        if (item)
-          updateItem(postId, {
-            viewer_liked: true,
-            like_count: (item.like_count ?? 0) + 1,
-          });
+        await handleAuthError(e, 'Failed to remove reaction');
+        void loadPage();
       }
     },
-    [handleAuthError, items, updateItem, session?.access_token],
+    [handleAuthError, loadPage, session?.access_token],
   );
 
   const handleRepost = useCallback(
@@ -993,10 +1111,31 @@ export const Feed = () => {
     setSnack('Link copied');
   }, []);
 
+  const handleFeedViewChange = useCallback(
+    async (
+      _ev: React.MouseEvent<HTMLElement>,
+      newValue: FeedViewPreference | null,
+    ) => {
+      if (newValue === null || newValue === feedViewPreference) return;
+      if (!session?.access_token) return;
+      try {
+        await updateFeedViewPreference({
+          feedViewPreference: newValue,
+          accessToken: session.access_token,
+        });
+        setFeedViewPreference(newValue);
+        await loadPage();
+      } catch (e) {
+        await handleAuthError(e, 'Could not update feed view');
+      }
+    },
+    [feedViewPreference, handleAuthError, loadPage, session?.access_token],
+  );
+
   const feedCardActions: FeedCardActions = {
     updateItem,
-    onLike: (postId) => void handleLike(postId),
-    onUnlike: (postId) => void handleUnlike(postId),
+    onReaction: (postId, type) => void handleReaction(postId, type),
+    onRemoveReaction: (postId) => void handleRemoveReaction(postId),
     onRepost: handleRepost,
     onSend: handleSend,
     onCommentToggle: (postId) => void handleCommentToggle(postId),
@@ -1242,7 +1381,7 @@ export const Feed = () => {
             size={{ xs: 12, md: 10, lg: 7 }}
             sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
           >
-            {/* Feed header: title + Post + Sort — same layout on mobile as desktop */}
+            {/* Feed header: title + view toggle + Post + Sort */}
             <Paper
               variant="outlined"
               sx={{
@@ -1257,9 +1396,38 @@ export const Feed = () => {
                 justifyContent="space-between"
                 gap={2}
               >
-                <Typography variant="h6" fontWeight={600}>
-                  Feed
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Typography variant="h6" fontWeight={600}>
+                    Feed
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={feedViewPreference}
+                    exclusive
+                    onChange={handleFeedViewChange}
+                    size="small"
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        textTransform: 'none',
+                        fontSize: '0.8rem',
+                        py: 0.5,
+                        px: 1.5,
+                      },
+                    }}
+                  >
+                    <ToggleButton
+                      value="anyone"
+                      aria-label="Show posts from everyone"
+                    >
+                      Anyone
+                    </ToggleButton>
+                    <ToggleButton
+                      value="connections"
+                      aria-label="Show posts from connections only"
+                    >
+                      Connections
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Stack>
                 <Stack
                   direction="row"
                   alignItems="center"

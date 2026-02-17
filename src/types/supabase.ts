@@ -369,6 +369,13 @@ export type Database = {
           industry: string | null
           location: string | null
           profile_visibility: string
+          feed_view_preference: string
+          marketing_opt_in: boolean
+          marketing_opt_in_timestamp: string | null
+          marketing_opt_in_ip: string | null
+          marketing_source: string | null
+          marketing_product_updates: boolean
+          marketing_events: boolean
           last_active_at: string | null
           status: string
           socials: Json | null
@@ -396,6 +403,13 @@ export type Database = {
           industry?: string | null
           location?: string | null
           profile_visibility?: string
+          feed_view_preference?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_timestamp?: string | null
+          marketing_opt_in_ip?: string | null
+          marketing_source?: string | null
+          marketing_product_updates?: boolean
+          marketing_events?: boolean
           last_active_at?: string | null
           status?: string
           use_weirdling_avatar?: boolean
@@ -423,6 +437,13 @@ export type Database = {
           industry?: string | null
           location?: string | null
           profile_visibility?: string
+          feed_view_preference?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_timestamp?: string | null
+          marketing_opt_in_ip?: string | null
+          marketing_source?: string | null
+          marketing_product_updates?: boolean
+          marketing_events?: boolean
           last_active_at?: string | null
           status?: string
           socials?: Json | null

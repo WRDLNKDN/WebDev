@@ -20,9 +20,9 @@ export const CompleteStep = () => {
   const goToFeedOrBumper = useCallback(() => {
     resetSignup();
     if (hasBumperBeenShown()) {
-      navigate('/feed');
+      navigate('/feed', { replace: true });
     } else {
-      navigate(BUMPER_FROM_JOIN);
+      navigate(BUMPER_FROM_JOIN, { replace: true });
     }
   }, [navigate, resetSignup]);
 

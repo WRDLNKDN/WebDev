@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 import type { Session } from '@supabase/supabase-js';
 
@@ -49,42 +50,46 @@ const CARD_SX = {
 };
 
 export const Signup = () => {
-  const { state } = useSignup();
+  const navigate = useNavigate();
+  const { state, resetSignup } = useSignup();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    const verifySession = async () => {
+    const init = async () => {
       try {
         setError(null);
-        setChecking(true);
-
         const { data, error: sessErr } = await supabase.auth.getSession();
         if (sessErr) throw sessErr;
-
-        // Type integrity: use typed session so IdP/session shape is not bypassed
         const session: Session | null = data?.session ?? null;
+
         if (session && !cancelled) {
-          // Already authenticated; wizard will show current step from context
-        }
-        if (!cancelled) {
-          setChecking(false);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profile) {
+            resetSignup();
+            navigate('/feed', { replace: true });
+            return;
+          }
         }
       } catch (e: unknown) {
-        if (!cancelled) {
-          setError(toMessage(e));
-          setChecking(false);
-        }
+        if (!cancelled) setError(toMessage(e));
+      } finally {
+        if (!cancelled) setChecking(false);
       }
     };
 
-    void verifySession();
+    void init();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate, resetSignup]);
 
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {

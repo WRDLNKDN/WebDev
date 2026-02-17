@@ -5,6 +5,7 @@
 -- Drop functions first (no table refs)
 -- -----------------------------
 drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int) cascade;
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int, text) cascade;
 drop function if exists public.set_updated_at() cascade;
 drop function if exists public.profiles_block_status_change() cascade;
 drop function if exists public.is_admin() cascade;
@@ -109,6 +110,14 @@ create table public.profiles (
   location text,
   profile_visibility text not null default 'members_only'
     check (profile_visibility in ('members_only', 'connections_only')),
+  feed_view_preference text not null default 'anyone'
+    check (feed_view_preference in ('anyone', 'connections')),
+  marketing_opt_in boolean not null default false,
+  marketing_opt_in_timestamp timestamptz,
+  marketing_opt_in_ip text,
+  marketing_source text,
+  marketing_product_updates boolean not null default false,
+  marketing_events boolean not null default false,
   last_active_at timestamptz default now(),
 
   join_reason text[],
@@ -135,6 +144,20 @@ comment on column public.profiles.policy_version is
   'Version of Terms and Community Guidelines accepted at registration (e.g. v2026.02)';
 comment on column public.profiles.resume_url is
   'Public URL of the user resume (e.g. from storage bucket resumes)';
+comment on column public.profiles.feed_view_preference is
+  'Feed visibility: anyone = all approved members; connections = self + followees only.';
+comment on column public.profiles.marketing_opt_in is
+  'Main email marketing consent; must be explicit opt-in.';
+comment on column public.profiles.marketing_opt_in_timestamp is
+  'When user opted in (audit trail).';
+comment on column public.profiles.marketing_opt_in_ip is
+  'IP at opt-in (audit; optional).';
+comment on column public.profiles.marketing_source is
+  'Where user opted in (e.g. signup, settings).';
+comment on column public.profiles.marketing_product_updates is
+  'Receive product/feature updates.';
+comment on column public.profiles.marketing_events is
+  'Receive event/community notifications.';
 
 create unique index idx_profiles_handle_lower_unique
   on public.profiles (lower(handle));
@@ -414,19 +437,25 @@ create index idx_feed_items_created_at on public.feed_items(created_at desc);
 create index idx_feed_items_kind on public.feed_items(kind);
 create index idx_feed_items_parent_id on public.feed_items(parent_id) where parent_id is not null;
 
+create unique index idx_feed_items_reaction_user_post
+  on public.feed_items (parent_id, user_id)
+  where kind = 'reaction'
+    and payload->>'type' in ('like', 'love', 'inspiration', 'care');
+
 comment on table public.feed_items is
   'Unified activity stream: WRDLNKDN-native posts, profile updates, user-submitted external links (opaque), reposts, reactions.';
 comment on column public.feed_items.payload is
   'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
 
 -- -----------------------------
--- get_feed_page (cursor-based pagination; used by backend API; includes engagement counts)
+-- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts)
 -- -----------------------------
 create or replace function public.get_feed_page(
   p_viewer_id uuid,
   p_cursor_created_at timestamptz default null,
   p_cursor_id uuid default null,
-  p_limit int default 21
+  p_limit int default 21,
+  p_feed_view text default 'anyone'
 )
 returns table (
   id uuid,
@@ -439,7 +468,10 @@ returns table (
   actor_display_name text,
   actor_avatar text,
   like_count bigint,
-  viewer_liked boolean,
+  love_count bigint,
+  inspiration_count bigint,
+  care_count bigint,
+  viewer_reaction text,
   comment_count bigint
 )
 language plpgsql
@@ -449,13 +481,19 @@ set search_path = public, pg_catalog
 as $$
 declare
   actor_ids uuid[];
+  use_connections boolean;
 begin
-  select array_agg(fc.connected_user_id)
-  into actor_ids
-  from public.feed_connections fc
-  where fc.user_id = p_viewer_id;
+  use_connections := coalesce(nullif(trim(lower(p_feed_view)), ''), 'anyone') = 'connections';
 
-  actor_ids := coalesce(actor_ids, '{}') || p_viewer_id;
+  if use_connections then
+    select array_agg(fc.connected_user_id)
+    into actor_ids
+    from public.feed_connections fc
+    where fc.user_id = p_viewer_id;
+    actor_ids := coalesce(actor_ids, '{}') || p_viewer_id;
+  else
+    actor_ids := null;
+  end if;
 
   return query
   select
@@ -472,7 +510,10 @@ begin
       else p.avatar
     end)::text as actor_avatar,
     coalesce(stats.like_cnt, 0::bigint),
-    coalesce(stats.viewer_liked, false),
+    coalesce(stats.love_cnt, 0::bigint),
+    coalesce(stats.inspiration_cnt, 0::bigint),
+    coalesce(stats.care_cnt, 0::bigint),
+    stats.viewer_reaction,
     coalesce(stats.comment_cnt, 0::bigint)
   from public.feed_items fi
   left join public.profiles p on p.id = fi.user_id
@@ -480,16 +521,27 @@ begin
   left join lateral (
     select
       count(*) filter (where r.payload->>'type' = 'like') as like_cnt,
+      count(*) filter (where r.payload->>'type' = 'love') as love_cnt,
+      count(*) filter (where r.payload->>'type' = 'inspiration') as inspiration_cnt,
+      count(*) filter (where r.payload->>'type' = 'care') as care_cnt,
       count(*) filter (where r.payload->>'type' = 'comment') as comment_cnt,
-      exists (
-        select 1 from public.feed_items r2
+      (
+        select r2.payload->>'type'
+        from public.feed_items r2
         where r2.parent_id = fi.id and r2.kind = 'reaction'
-          and r2.payload->>'type' = 'like' and r2.user_id = p_viewer_id
-      ) as viewer_liked
+          and r2.payload->>'type' in ('like','love','inspiration','care')
+          and r2.user_id = p_viewer_id
+        limit 1
+      ) as viewer_reaction
     from public.feed_items r
     where r.parent_id = fi.id and r.kind = 'reaction'
   ) stats on true
-  where fi.user_id = any(actor_ids)
+  where
+    p.status = 'approved'
+    and (
+      use_connections and fi.user_id = any(actor_ids)
+      or not use_connections
+    )
     and (
       p_cursor_created_at is null
       or (fi.created_at, fi.id) < (p_cursor_created_at, p_cursor_id)
@@ -499,8 +551,8 @@ begin
 end;
 $$;
 
-comment on function public.get_feed_page(uuid, timestamptz, uuid, int) is
-  'Returns feed items for viewer (self + followees) with cursor and engagement counts.';
+comment on function public.get_feed_page(uuid, timestamptz, uuid, int, text) is
+  'Returns feed items with reaction counts (like, love, inspiration, care) and viewer_reaction.';
 
 -- -----------------------------
 -- get_directory_page (Directory: paginated, searchable, filterable, connection-aware)

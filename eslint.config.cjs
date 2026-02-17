@@ -24,6 +24,7 @@ module.exports = [
   // 1. GLOBAL IGNORES (Environment Optimization)
   {
     ignores: [
+      'supabase/functions/**',
       'src/types/supabase.ts', // Ignore machine-generated code
       '**/dist/**',
       '**/node_modules/**',

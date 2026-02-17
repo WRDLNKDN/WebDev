@@ -1,5 +1,6 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EventIcon from '@mui/icons-material/Event';
@@ -9,9 +10,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
+import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import {
   Avatar,
   Box,
@@ -42,9 +42,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { toMessage } from '../lib/errors';
 import {
   addComment,
   createFeedPost,
@@ -56,8 +58,9 @@ import {
   type FeedComment,
   type FeedItem,
 } from '../lib/feedsApi';
-import { toMessage } from '../lib/errors';
 import { supabase } from '../lib/supabaseClient';
+// INJECT THE GENERATOR
+import WeirdlingGenerator from '../components/avatar/WeirdlingGenerator';
 
 const FEED_LIMIT = 20;
 
@@ -658,15 +661,9 @@ const FeedCard = ({
   );
 };
 
-type FeedSession = {
-  user: { id: string };
-  access_token: string;
-  user_metadata?: { avatar_url?: string; full_name?: string };
-};
-
 export const Feed = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<FeedSession | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -706,6 +703,9 @@ export const Feed = () => {
   const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
     Set<string>
   >(new Set());
+
+  // WRDLNKDN MODAL STATE
+  const [generatorOpen, setGeneratorOpen] = useState(false);
 
   const handleDismissLinkPreview = useCallback((postId: string) => {
     setDismissedLinkPreviewIds((prev) => new Set(prev).add(postId));
@@ -750,12 +750,7 @@ export const Feed = () => {
         setSession(null);
         return;
       }
-      setSession({
-        user: { id: data.session.user.id },
-        access_token: data.session.access_token,
-        user_metadata: data.session.user
-          .user_metadata as FeedSession['user_metadata'],
-      });
+      setSession(data.session);
     };
 
     void init();
@@ -769,12 +764,7 @@ export const Feed = () => {
         navigate('/join', { replace: true });
         return;
       }
-      setSession({
-        user: { id: newSession.user.id },
-        access_token: newSession.access_token,
-        user_metadata: newSession.user
-          .user_metadata as FeedSession['user_metadata'],
-      });
+      setSession(newSession);
     });
 
     return () => {
@@ -1361,6 +1351,43 @@ export const Feed = () => {
               <Typography variant="body2" color="text.secondary">
                 Community Partners Coming Soon!
               </Typography>
+
+              {/* PROJECT WRDLNKDN INJECTION */}
+              <Box
+                sx={{
+                  mt: 3,
+                  pt: 2,
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  sx={{ mb: 1, color: 'primary.light' }}
+                >
+                  Project WRDLNKDN
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Establish your visual identity in the human OS.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  fullWidth
+                  onClick={() => setGeneratorOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  Initialize Weirdling
+                </Button>
+              </Box>
             </Paper>
           </Grid>
         </Grid>
@@ -1427,6 +1454,47 @@ export const Feed = () => {
             {posting ? 'Posting…' : 'Post'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* THE WEIRDLING GENERATOR MODAL */}
+      <Dialog
+        open={generatorOpen}
+        onClose={() => setGeneratorOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 3,
+            border: '1px solid rgba(255,255,255,0.1)',
+            backgroundImage: 'none',
+            position: 'relative',
+          },
+        }}
+      >
+        <DialogContent sx={{ p: { xs: 2, sm: 4 } }}>
+          {/* Close Button Top Right */}
+          <IconButton
+            onClick={() => setGeneratorOpen(false)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: 'text.secondary',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          <WeirdlingGenerator
+            session={session}
+            onWeirdlingGenerated={() => {
+              setGeneratorOpen(false);
+              setSnack('Identity Secured. Welcome to the grid.');
+              void loadPage();
+            }}
+          />
+        </DialogContent>
       </Dialog>
 
       <ShareDialog

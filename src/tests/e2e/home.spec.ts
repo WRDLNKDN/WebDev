@@ -14,8 +14,8 @@ test.describe('Home Page - High-Integrity Audit', () => {
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
-    // We still confirm the landing container is there to ensure the page loaded
-    await expect(page.getByTestId('signed-out-landing')).toBeVisible();
+    const landing = page.getByTestId('signed-out-landing');
+    await expect(landing).toBeVisible();
 
     await expect(landing.getByText(/WRDLNKDN/i)).toBeVisible();
 

@@ -34,6 +34,8 @@ const oauthButtonSx = {
   fontWeight: 600,
   py: 1.5,
   px: 2,
+  minWidth: 200,
+  whiteSpace: 'nowrap',
   borderWidth: 2,
   borderColor: 'rgba(255,255,255,0.5)',
   color: '#fff',
@@ -303,7 +305,7 @@ export const IdentityStep = () => {
             >
               {loadingProvider === 'google'
                 ? 'Signing in…'
-                : 'Continue with Google'}
+                : 'Sign in with Google'}
             </Button>
             <Button
               variant="outlined"
@@ -322,7 +324,7 @@ export const IdentityStep = () => {
             >
               {loadingProvider === 'azure'
                 ? 'Signing in…'
-                : 'Continue with Microsoft'}
+                : 'Sign in with Microsoft'}
             </Button>
           </Stack>
 

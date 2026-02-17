@@ -28,7 +28,7 @@ import {
 } from '../../types/signup';
 
 export const ValuesStep = () => {
-  const { state, setValues, goToStep, completeStep } = useSignup();
+  const { state, setValues, goToStep, completeStep, resetSignup } = useSignup();
 
   const [joinReasons, setJoinReasons] = useState<string[]>(
     state.values?.joinReason || [],
@@ -57,7 +57,7 @@ export const ValuesStep = () => {
     goToStep('profile');
   };
 
-  const handleBack = () => {
+  const handleStartOver = () => {
     const valuesData: ValuesData = {
       joinReason: joinReasons,
       participationStyle: participationStyles,
@@ -65,7 +65,9 @@ export const ValuesStep = () => {
     };
 
     setValues(valuesData);
-    goToStep('identity');
+    resetSignup();
+    goToStep('welcome');
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -191,7 +193,7 @@ export const ValuesStep = () => {
           >
             <Button
               variant="outlined"
-              onClick={handleBack}
+              onClick={handleStartOver}
               sx={{
                 borderWidth: 1.5,
                 borderColor: 'rgba(255,255,255,0.6)',
@@ -206,7 +208,7 @@ export const ValuesStep = () => {
                 },
               }}
             >
-              Back
+              Start over
             </Button>
             <Button
               variant="contained"

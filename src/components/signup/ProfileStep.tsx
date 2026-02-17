@@ -182,8 +182,7 @@ const ProfileStep = () => {
 
       <Box sx={profileStepTipBox}>
         <Typography variant="body2" sx={profileStepTipText}>
-          Profiles are reviewed to protect the integrity of the community.
-          We&apos;ll notify you when yours is live.
+          Your profile will be visible to the community once you submit.
         </Typography>
       </Box>
 

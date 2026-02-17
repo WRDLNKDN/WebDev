@@ -48,9 +48,7 @@ export const CompleteStep = () => {
               You&apos;re in
             </Typography>
             <Typography variant="body2" sx={completeStepSubtext}>
-              Your signup request has been submitted. We&apos;ll review it soon.
-              In the meantime, you can explore your dashboard and the feed
-              without needing to do anything else.
+              You&apos;re all set. Explore your dashboard and the feed.
             </Typography>
           </Box>
 

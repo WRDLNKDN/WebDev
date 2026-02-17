@@ -12,7 +12,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import type {
   ChatReport,
@@ -154,9 +153,6 @@ export const ChatReportsPage = () => {
       <Typography variant="h5" sx={{ mb: 2 }}>
         Chat Reports
       </Typography>
-      <Button component={RouterLink} to="/admin" sx={{ mb: 2 }}>
-        ← Back to Admin
-      </Button>
       <TableContainer>
         <Table size="small">
           <TableHead>

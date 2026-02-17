@@ -182,7 +182,7 @@ export const Home = () => {
             opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0.15 : 1,
             transition:
               heroPhase === 'dimmed' && !prefersReducedMotion
-                ? 'opacity 0.8s ease-out'
+                ? 'opacity 1s ease-out'
                 : 'none',
           }}
           src="/assets/video/hero-green-pinky.mp4"
@@ -197,7 +197,7 @@ export const Home = () => {
                 : 'rgba(5, 7, 15, 0.6)',
             zIndex: 1,
             pointerEvents: 'none',
-            transition: 'background-color 0.8s ease-out',
+            transition: 'background-color 1s ease-out',
           }}
         />
         <Container
@@ -206,7 +206,7 @@ export const Home = () => {
             position: 'relative',
             zIndex: 2,
             opacity: heroPhase === 'dimmed' ? 1 : 0,
-            transition: 'opacity 0.6s ease-in 0.3s',
+            transition: 'opacity 1s ease-in',
           }}
           data-testid="signed-out-landing"
         >
@@ -234,7 +234,7 @@ export const Home = () => {
                   {error}
                 </Alert>
               )}
-              <GuestView busy={busy} onAuth={handleAuth} />
+              <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
             </Grid>
 
             <Grid
@@ -290,8 +290,18 @@ export const Home = () => {
                     lineHeight: 1.5,
                   }}
                 >
-                  Showcase your professional identity. Build your weird
-                  community.
+                  A professional networking space where you don&apos;t have to
+                  pretend.
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'rgba(255,255,255,0.8)',
+                    fontWeight: 400,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  For people who build, create, and think differently.
                 </Typography>
               </Stack>
             </Grid>

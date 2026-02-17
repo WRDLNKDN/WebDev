@@ -129,13 +129,16 @@ export const GuestView = ({
             fontSize: { xs: '2.5rem', md: '3.75rem' },
           }}
         >
-          Connection in motion.
+          Business, but weirder.
         </Typography>
         <Typography
           variant="h5"
           sx={{ color: 'text.secondary', fontWeight: 400 }}
         >
-          A professional network built on values. Powered by participation.
+          A professional networking space where you don&apos;t have to pretend.
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1 }}>
+          For people who build, create, and think differently.
         </Typography>
       </Box>
 

@@ -26,6 +26,10 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
 
+      # Supabase (for migrations)
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
+
       # baked into build output — UAT domain (webdev-uat.vercel.app) gets this build
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_UAT_ANON_KEY }}
@@ -34,6 +38,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push Supabase migrations (UAT)
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --include-all --include-seed
 
       - name: Verify secrets (UAT)
         run: |
@@ -86,6 +100,10 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
 
+      # Supabase (for migrations)
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+
       # baked into build output
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PROD_ANON_KEY }}
@@ -93,6 +111,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push Supabase migrations (PROD)
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --include-all --include-seed
 
       - name: Verify secrets (PROD)
         run: |

@@ -11,6 +11,8 @@ describe('toMessage', () => {
   });
 
   it('handles unknown', () => {
-    expect(toMessage({})).toBe('Something went wrong. Please try again.');
+    expect(toMessage({})).toBe(
+      'An unexpected error occurred. Try refreshing the page, or contact support if it persists.',
+    );
   });
 });

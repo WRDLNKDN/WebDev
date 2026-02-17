@@ -20,6 +20,7 @@ import { AddProjectDialog } from '../components/portfolio/AddProjectDialog';
 import { ProjectCard } from '../components/portfolio/ProjectCard';
 import { ResumeCard } from '../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../components/profile/EditProfileDialog';
+import { EmailPreferencesDialog } from '../components/profile/EmailPreferencesDialog';
 import {
   IdentityBadges,
   IdentityHeader,
@@ -48,6 +49,7 @@ export const Dashboard = () => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
+  const [isEmailPrefsOpen, setIsEmailPrefsOpen] = useState(false);
   const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
   const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
     undefined,
@@ -438,6 +440,15 @@ export const Dashboard = () => {
           setIsSettingsOpen(false);
           setIsLinksOpen(true);
         }}
+        onEmailPreferences={() => {
+          setIsSettingsOpen(false);
+          setIsEmailPrefsOpen(true);
+        }}
+      />
+
+      <EmailPreferencesDialog
+        open={isEmailPrefsOpen}
+        onClose={() => setIsEmailPrefsOpen(false)}
       />
 
       <AddProjectDialog

@@ -109,6 +109,12 @@ const CommunityPartnersPage = lazy(() =>
   })),
 );
 
+const UnsubscribePage = lazy(() =>
+  import('./pages/UnsubscribePage').then((m) => ({
+    default: m.UnsubscribePage,
+  })),
+);
+
 // The Professional 404 Page (Standard Error)
 const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
@@ -165,9 +171,27 @@ const ProfileReview = lazy(() =>
   })),
 );
 
-const AdminChatReports = lazy(() =>
-  import('./pages/admin/AdminChatReports').then((m) => ({
-    default: m.AdminChatReports,
+const AdminDashboard = lazy(() =>
+  import('./pages/admin/AdminDashboard').then((m) => ({
+    default: m.AdminDashboard,
+  })),
+);
+
+const AdminModerationPage = lazy(() =>
+  import('./pages/admin/AdminModerationPage').then((m) => ({
+    default: m.AdminModerationPage,
+  })),
+);
+
+const ChatReportsPage = lazy(() =>
+  import('./pages/admin/ChatReportsPage').then((m) => ({
+    default: m.ChatReportsPage,
+  })),
+);
+
+const AdminAdvertisersPage = lazy(() =>
+  import('./pages/admin/AdminAdvertisersPage').then((m) => ({
+    default: m.AdminAdvertisersPage,
   })),
 );
 
@@ -273,16 +297,21 @@ const App = () => {
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
               {/* --- Administration --- */}
-              <Route path="/admin" element={<AdminApp />} />
+              <Route path="/admin" element={<AdminApp />}>
+                <Route index element={<AdminDashboard />} />
+                <Route
+                  path="moderation"
+                  element={<AdminModerationPage initialStatus="pending" />}
+                />
+                <Route path="chat-reports" element={<ChatReportsPage />} />
+                <Route path="advertisers" element={<AdminAdvertisersPage />} />
+              </Route>
               <Route path="/admin/pending" element={<PendingProfiles />} />
               <Route path="/admin/approved" element={<ApprovedProfiles />} />
               <Route path="/admin/review/:id" element={<ProfileReview />} />
-              <Route
-                path="/admin/chat-reports"
-                element={<AdminChatReports />}
-              />
 
               {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
 

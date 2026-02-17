@@ -680,11 +680,24 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const { data: prefRow } = await adminSupabase
+      .from('profiles')
+      .select('feed_view_preference')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const feedView =
+      (prefRow as { feed_view_preference?: string } | null)
+        ?.feed_view_preference === 'connections'
+        ? 'connections'
+        : 'anyone';
+
     const { data: rows, error } = await adminSupabase.rpc('get_feed_page', {
       p_viewer_id: userId,
       p_cursor_created_at: cursorCreatedAt,
       p_cursor_id: cursorId,
       p_limit: limit + 1,
+      p_feed_view: feedView,
     });
 
     if (error) {
@@ -730,7 +743,10 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         actor_display_name?: string | null;
         actor_avatar?: string | null;
         like_count?: number | string | null;
-        viewer_liked?: boolean | null;
+        love_count?: number | string | null;
+        inspiration_count?: number | string | null;
+        care_count?: number | string | null;
+        viewer_reaction?: string | null;
         comment_count?: number | string | null;
       }) => ({
         id: row.id,
@@ -745,7 +761,10 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
           avatar: row.actor_avatar ?? null,
         },
         like_count: Number(row.like_count ?? 0),
-        viewer_liked: Boolean(row.viewer_liked),
+        love_count: Number(row.love_count ?? 0),
+        inspiration_count: Number(row.inspiration_count ?? 0),
+        care_count: Number(row.care_count ?? 0),
+        viewer_reaction: row.viewer_reaction ?? null,
         comment_count: Number(row.comment_count ?? 0),
       }),
     );
@@ -821,10 +840,13 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       typeof body.parent_id === 'string' ? body.parent_id.trim() : null;
     const type =
       typeof body.type === 'string' ? body.type.trim().toLowerCase() : '';
-    if (!parentId || (type !== 'like' && type !== 'comment')) {
-      return res
-        .status(400)
-        .json({ error: 'parent_id and type (like|comment) required' });
+    const emojiTypes = ['like', 'love', 'inspiration', 'care'];
+    const isEmoji = emojiTypes.includes(type);
+    if (!parentId || (type !== 'comment' && !isEmoji)) {
+      return res.status(400).json({
+        error:
+          'parent_id and type (like|love|inspiration|care|comment) required',
+      });
     }
     const payload: Record<string, string> = { type };
     if (type === 'comment') {
@@ -835,6 +857,16 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
           .json({ error: 'Comment body required', field: 'body' });
       }
       payload.body = commentBody;
+    }
+    if (isEmoji) {
+      await adminSupabase
+        .from('feed_items')
+        .delete()
+        .eq('parent_id', parentId)
+        .eq('user_id', userId)
+        .or(
+          'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
+        );
     }
     const { error } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
@@ -918,7 +950,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   return res.status(201).json({ ok: true });
 });
 
-// DELETE /api/feeds/items/:postId/reaction — remove viewer's like on a post
+// DELETE /api/feeds/items/:postId/reaction — remove viewer's emoji reaction on a post
 app.delete(
   '/api/feeds/items/:postId/reaction',
   requireAuth,
@@ -927,24 +959,17 @@ app.delete(
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const postIdRaw = req.params.postId;
     const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
-    const type = (req.query.type as string)?.toLowerCase() || 'like';
-    if (!postId || type !== 'like') {
-      return res.status(400).json({ error: 'Invalid post id or type' });
-    }
-    const { data: rows, error } = await adminSupabase
+    if (!postId) return res.status(400).json({ error: 'Invalid post id' });
+    const { error } = await adminSupabase
       .from('feed_items')
-      .select('id')
+      .delete()
       .eq('kind', 'reaction')
       .eq('parent_id', postId)
       .eq('user_id', userId)
-      .eq('payload->>type', 'like');
+      .or(
+        'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
+      );
     if (error) return res.status(500).json({ error: error.message });
-    if (!rows?.length) return res.status(204).send();
-    const { error: delErr } = await adminSupabase
-      .from('feed_items')
-      .delete()
-      .eq('id', rows[0].id);
-    if (delErr) return res.status(500).json({ error: delErr.message });
     return res.status(204).send();
   },
 );

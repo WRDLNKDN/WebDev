@@ -109,6 +109,12 @@ const CommunityPartnersPage = lazy(() =>
   })),
 );
 
+const UnsubscribePage = lazy(() =>
+  import('./pages/UnsubscribePage').then((m) => ({
+    default: m.UnsubscribePage,
+  })),
+);
+
 // The Professional 404 Page (Standard Error)
 const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
@@ -291,6 +297,7 @@ const App = () => {
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
               {/* --- Administration --- */}
               <Route path="/admin" element={<AdminApp />}>

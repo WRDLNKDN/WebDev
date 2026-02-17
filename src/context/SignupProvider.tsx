@@ -291,6 +291,11 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
               tagline: profile.tagline?.trim() || null,
               join_reason: state.values.joinReason || [],
               participation_style: state.values.participationStyle || [],
+              marketing_opt_in: Boolean(profile.marketingOptIn),
+              marketing_opt_in_timestamp: profile.marketingOptIn
+                ? new Date().toISOString()
+                : null,
+              marketing_source: profile.marketingOptIn ? 'signup' : null,
               additional_context:
                 state.values.additionalContext?.trim() || null,
               status: 'pending',
@@ -305,6 +310,18 @@ export const SignupProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           if (insertError.code === '23505') {
+            // Duplicate profile (id) — treat as success (idempotent retry)
+            if (
+              insertError.message?.includes('profiles_pkey') ||
+              insertError.details?.includes('id') ||
+              (insertError.message?.toLowerCase().includes('duplicate') &&
+                insertError.message?.toLowerCase().includes('key'))
+            ) {
+              console.log('✅ Profile already exists (idempotent)');
+              setState((s) => ({ ...s, currentStep: 'complete' }));
+              markComplete('complete');
+              return;
+            }
             const friendly = toFriendlyMessage(insertError);
             if (friendly.includes('already have a profile')) {
               throw new Error(friendly);

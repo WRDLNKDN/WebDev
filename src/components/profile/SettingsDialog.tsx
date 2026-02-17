@@ -1,5 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
+import EmailIcon from '@mui/icons-material/Email';
 import LinkIcon from '@mui/icons-material/Link';
 import {
   Dialog,
@@ -26,6 +27,7 @@ export type SettingsDialogProps = {
   onClose: () => void;
   onEditProfile: () => void;
   onManageLinks: () => void;
+  onEmailPreferences?: () => void;
 };
 
 export const SettingsDialog = ({
@@ -33,6 +35,7 @@ export const SettingsDialog = ({
   onClose,
   onEditProfile,
   onManageLinks,
+  onEmailPreferences,
 }: SettingsDialogProps) => {
   const handleEditProfile = () => {
     onEditProfile();
@@ -41,6 +44,11 @@ export const SettingsDialog = ({
 
   const handleManageLinks = () => {
     onManageLinks();
+    onClose();
+  };
+
+  const handleEmailPreferences = () => {
+    onEmailPreferences?.();
     onClose();
   };
 
@@ -80,7 +88,10 @@ export const SettingsDialog = ({
               secondary="Handle, tagline, bio, avatar"
             />
           </ListItemButton>
-          <ListItemButton onClick={handleManageLinks} sx={{ py: 2 }}>
+          <ListItemButton
+            onClick={handleManageLinks}
+            sx={{ py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <LinkIcon sx={{ color: 'primary.main' }} />
             </ListItemIcon>
@@ -89,6 +100,17 @@ export const SettingsDialog = ({
               secondary="Social and professional links"
             />
           </ListItemButton>
+          {onEmailPreferences && (
+            <ListItemButton onClick={handleEmailPreferences} sx={{ py: 2 }}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <EmailIcon sx={{ color: 'primary.main' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Email preferences"
+                secondary="Marketing, product updates, events"
+              />
+            </ListItemButton>
+          )}
         </List>
       </DialogContent>
     </Dialog>

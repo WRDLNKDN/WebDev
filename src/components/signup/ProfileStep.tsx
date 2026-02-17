@@ -2,12 +2,16 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
+  FormControlLabel,
+  Link,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import {
   profileStep,
@@ -38,6 +42,9 @@ const ProfileStep = () => {
   const [displayName, setDisplayName] = useState(
     state.profile?.displayName ?? '',
   );
+  const [marketingOptIn, setMarketingOptIn] = useState(
+    state.profile?.marketingOptIn ?? false,
+  );
 
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -63,6 +70,7 @@ const ProfileStep = () => {
 
     const profileData = {
       displayName: displayName.trim(),
+      marketingOptIn,
     };
 
     setProfile(profileData);
@@ -79,6 +87,7 @@ const ProfileStep = () => {
   const handleBack = () => {
     setProfile({
       displayName: displayName.trim(),
+      marketingOptIn,
     });
     goToStep('values');
   };
@@ -125,6 +134,45 @@ const ProfileStep = () => {
         required
         error={!displayName.trim() && displayName.length > 0}
         sx={profileStepTextField}
+      />
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            color="primary"
+          />
+        }
+        label={
+          <Typography variant="body2" sx={profileStepTipText}>
+            I agree to receive occasional emails from WRDLNKDN (product updates,
+            events, community news). I can unsubscribe anytime. See{' '}
+            <Link
+              component={RouterLink}
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="primary"
+              underline="hover"
+            >
+              Privacy
+            </Link>{' '}
+            and{' '}
+            <Link
+              component={RouterLink}
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="primary"
+              underline="hover"
+            >
+              Terms
+            </Link>
+            .
+          </Typography>
+        }
+        sx={{ alignItems: 'flex-start', mt: 1 }}
       />
 
       <Box sx={profileStepTipBox}>

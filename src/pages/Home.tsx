@@ -1,11 +1,14 @@
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import {
   Alert,
   Box,
   Button,
   Container,
   Grid,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,7 +27,11 @@ import { supabase } from '../lib/supabaseClient';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
- * IF user has session → redirect to /feed. ELSE show guest hero + CTAs.
+ * Sequence:
+ *  1. Hero video plays fully — no content visible, no sound
+ *  2. Video ends → content fades in + sound plays automatically
+ *  3. User can mute/unmute at any time once sound has started
+ *  4. If autoplay is blocked, "Play with sound" button is shown
  */
 export const Home = () => {
   const navigate = useNavigate();
@@ -32,76 +39,98 @@ export const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     [],
   );
-  const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
-    prefersReducedMotion ? 'dimmed' : 'playing',
+
+  // 'video' = hero video is playing, content is hidden
+  // 'content' = video ended, content fades in + sound starts
+  const [phase, setPhase] = useState<'video' | 'content'>(() =>
+    prefersReducedMotion ? 'content' : 'video',
   );
-  const [contentVisible, setContentVisible] = useState(prefersReducedMotion);
-  const VOLUME = 0.5; // Lower volume (0–1) for the voiceover
+
+  const VOLUME = 0.5;
   const voiceoverRef = useRef<HTMLVideoElement | null>(null);
   const voiceoverStartedRef = useRef(false);
-  const [voiceoverBlocked, setVoiceoverBlocked] = useState(false);
-  const [voiceoverPlaying, setVoiceoverPlaying] = useState(false);
 
-  const handleVoiceoverCanPlayThrough = useCallback(() => {
+  const [soundBlocked, setSoundBlocked] = useState(false);
+  const [soundStarted, setSoundStarted] = useState(false); // true while audio is actively playing
+  const [soundMuted, setSoundMuted] = useState(false);
+
+  // Video ends → transition to content phase
+  const handleVideoEnded = useCallback(() => {
+    setPhase('content');
+  }, []);
+
+  // When phase becomes 'content', auto-play the voiceover
+  useEffect(() => {
+    if (phase !== 'content' || prefersReducedMotion) return;
     const video = voiceoverRef.current;
-    if (!video || prefersReducedMotion || voiceoverStartedRef.current) return;
+    if (!video || voiceoverStartedRef.current) return;
+
     voiceoverStartedRef.current = true;
-    // Start muted (autoplay allowed), then unmute once playing so audio autoplays
+
+    // Start muted (browsers allow this), then unmute once playing
     video.muted = true;
     video.volume = VOLUME;
+
     video
       .play()
       .then(() => {
+        // Now that it's playing, unmute to get audio
         video.muted = false;
+        setSoundStarted(true);
+        setSoundBlocked(false);
       })
-      .catch(() => setVoiceoverBlocked(true));
-  }, [prefersReducedMotion]);
+      .catch(() => {
+        // Autoplay fully blocked — show manual button
+        setSoundBlocked(true);
+      });
+  }, [phase, prefersReducedMotion]);
 
-  const playVoiceover = useCallback(() => {
-    const video = voiceoverRef.current;
-    if (!video || prefersReducedMotion) return;
-    setVoiceoverBlocked(false);
-    voiceoverStartedRef.current = true;
-    video.volume = VOLUME;
-    video.currentTime = 0;
-    video.play().catch(() => setVoiceoverBlocked(true));
-  }, [prefersReducedMotion]);
-
-  const stopVoiceover = useCallback(() => {
+  const playSound = useCallback(() => {
     const video = voiceoverRef.current;
     if (!video) return;
-    video.pause();
-    setVoiceoverPlaying(false);
+    setSoundBlocked(false);
+    video.volume = VOLUME;
+    video.muted = false;
+    video.currentTime = 0;
+    video
+      .play()
+      .then(() => {
+        setSoundStarted(true);
+        setSoundMuted(false);
+        setSoundBlocked(false);
+      })
+      .catch(() => setSoundBlocked(true));
   }, []);
 
-  // Hero content: with reduced motion, show immediately. Else fade in after background dims.
-  useEffect(() => {
-    if (prefersReducedMotion && heroPhase === 'dimmed') {
-      setContentVisible(true);
-      return;
+  const toggleMute = useCallback(() => {
+    const video = voiceoverRef.current;
+    if (!video) return;
+    if (soundMuted) {
+      video.muted = false;
+      video.volume = VOLUME;
+      setSoundMuted(false);
+    } else {
+      video.muted = true;
+      setSoundMuted(true);
     }
-    if (heroPhase !== 'dimmed') return;
-    const id = setTimeout(() => setContentVisible(true), 600);
-    return () => clearTimeout(id);
-  }, [heroPhase, prefersReducedMotion]);
+  }, [soundMuted]);
 
-  // AUTH: IF session + onboarded profile → /feed. IF session but not onboarded → /join. ELSE show Hero.
+  // Auth check — redirect if already signed in
   useEffect(() => {
     let mounted = true;
 
     const checkSessionAndProfile = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-
         if (mounted) {
           if (error) console.warn('Session check warning:', error.message);
-
           if (data.session) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -120,7 +149,6 @@ export const Home = () => {
             }
             return;
           }
-
           setIsLoading(false);
         }
       } catch (err) {
@@ -134,18 +162,12 @@ export const Home = () => {
 
     void checkSessionAndProfile();
 
-    // 2. Listen for realtime auth changes (e.g. login in another tab)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted && session) {
-        void checkSessionAndProfile();
-      }
+      if (mounted && session) void checkSessionAndProfile();
     });
 
-    // 3. Fail-safe timeout
     const safetyTimer = setTimeout(() => {
-      if (mounted && isLoading) {
-        setIsLoading(false);
-      }
+      if (mounted && isLoading) setIsLoading(false);
     }, 1500);
 
     return () => {
@@ -159,29 +181,21 @@ export const Home = () => {
     setBusy(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/feed',
-      )}`;
-
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/feed')}`;
       const { data, error: signInError } = await signInWithOAuth(provider, {
         redirectTo,
       });
-
       if (signInError) throw signInError;
-      if (data?.url) {
-        window.location.href = data.url;
-      }
+      if (data?.url) window.location.href = data.url;
     } catch (e: unknown) {
       setError(toMessage(e));
       setBusy(false);
     }
   };
 
-  // --- RENDER ---
+  if (isLoading) return <HomeSkeleton />;
 
-  if (isLoading) {
-    return <HomeSkeleton />;
-  }
+  const contentVisible = phase === 'content' || prefersReducedMotion;
 
   return (
     <>
@@ -216,7 +230,6 @@ export const Home = () => {
         />
       </Helmet>
 
-      {/* Hero: video background + value prop + CTAs */}
       <Box
         component="main"
         sx={{
@@ -228,7 +241,7 @@ export const Home = () => {
           overflow: 'hidden',
         }}
       >
-        {/* Static dim background when prefers-reduced-motion (no animation) */}
+        {/* Reduced motion: static background only */}
         {prefersReducedMotion && (
           <Box
             sx={{
@@ -240,7 +253,8 @@ export const Home = () => {
             }}
           />
         )}
-        {/* Hero video: play once, then fade to dim. Skip entirely if prefers-reduced-motion. */}
+
+        {/* Hero video — muted, plays once at full opacity, then fades */}
         {!prefersReducedMotion && (
           <Box
             component="video"
@@ -248,9 +262,9 @@ export const Home = () => {
             muted
             loop={false}
             playsInline
-            onEnded={() => setHeroPhase('dimmed')}
+            onEnded={handleVideoEnded}
             onError={(e) => {
-              setHeroPhase('dimmed');
+              handleVideoEnded();
               const el = e.currentTarget;
               if (
                 el.src?.includes('hero-green-pinky') &&
@@ -266,54 +280,54 @@ export const Home = () => {
               height: '100%',
               objectFit: 'cover',
               zIndex: 0,
-              opacity: heroPhase === 'dimmed' ? 0.12 : 1,
+              opacity: phase === 'video' ? 1 : 0.12,
               transition:
-                heroPhase === 'dimmed' ? 'opacity 1s ease-out' : 'none',
+                phase === 'content' ? 'opacity 1.2s ease-out' : 'none',
             }}
             src="/assets/video/hero-green-pinky.mp4"
           />
         )}
-        {/* Voiceover: "Business, but weirder." Plays once when ready. Hidden; audio only. Skips if prefers-reduced-motion. */}
+
+        {/* Voiceover audio — invisible, triggered after video ends */}
         {!prefersReducedMotion && (
           <Box
             component="video"
             ref={voiceoverRef}
             src="/assets/video/concept-bumper.mp4"
             preload="auto"
-            muted
             loop={false}
             playsInline
-            onCanPlayThrough={handleVoiceoverCanPlayThrough}
-            onPlay={() => setVoiceoverPlaying(true)}
-            onEnded={() => setVoiceoverPlaying(false)}
-            onPause={() => setVoiceoverPlaying(false)}
+            onEnded={() => setSoundStarted(false)}
             sx={{
               position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
+              width: 1,
+              height: 1,
               opacity: 0,
               pointerEvents: 'none',
-              zIndex: 0,
-              objectFit: 'cover',
+              zIndex: -1,
             }}
             aria-hidden
           />
         )}
-        {/* Overlay: lighter during animation, darker when dimmed. For reduced-motion, always dim. */}
+
+        {/* Overlay: transparent during video, dark after */}
         <Box
           sx={{
             position: 'absolute',
             inset: 0,
-            bgcolor:
-              heroPhase === 'dimmed' || prefersReducedMotion
-                ? 'rgba(5, 7, 15, 0.94)'
-                : 'rgba(5, 7, 15, 0.55)',
             zIndex: 1,
             pointerEvents: 'none',
-            transition: 'background-color 1s ease-out',
+            bgcolor:
+              phase === 'video'
+                ? 'rgba(5, 7, 15, 0)'
+                : prefersReducedMotion
+                  ? 'rgba(5, 7, 15, 0.94)'
+                  : 'rgba(5, 7, 15, 0.88)',
+            transition: 'background-color 1.2s ease-out',
           }}
         />
+
+        {/* Content — invisible during video, fades in after */}
         <Container
           maxWidth="lg"
           aria-hidden={!contentVisible}
@@ -326,6 +340,7 @@ export const Home = () => {
             justifyContent: 'center',
             width: '100%',
             opacity: contentVisible ? 1 : 0,
+            pointerEvents: contentVisible ? 'auto' : 'none',
             transition: 'opacity 0.8s ease-in',
           }}
           data-testid="signed-out-landing"
@@ -337,7 +352,7 @@ export const Home = () => {
             justifyContent="center"
             sx={{ textAlign: 'center' }}
           >
-            {/* Hero text first: primary focal point */}
+            {/* Hero text */}
             <Grid
               size={{ xs: 12 }}
               sx={{
@@ -346,7 +361,6 @@ export const Home = () => {
                 alignItems: 'center',
               }}
             >
-              {/* Primary wordmark */}
               <Typography
                 component="h1"
                 variant="h1"
@@ -362,7 +376,6 @@ export const Home = () => {
                 WRDLNKDN
               </Typography>
 
-              {/* Tagline stack: pronunciation, Business but weirder, long tagline */}
               <Stack spacing={0.5} sx={{ maxWidth: 420, alignItems: 'center' }}>
                 <Typography
                   variant="subtitle2"
@@ -376,10 +389,7 @@ export const Home = () => {
                 </Typography>
                 <Typography
                   variant="h5"
-                  sx={{
-                    color: 'primary.light',
-                    fontWeight: 600,
-                  }}
+                  sx={{ color: 'primary.light', fontWeight: 600 }}
                 >
                   Business, but weirder
                 </Typography>
@@ -405,41 +415,62 @@ export const Home = () => {
                   For people who build, create, and think differently.
                 </Typography>
               </Stack>
-              {voiceoverPlaying && !prefersReducedMotion && (
+
+              {/* Mute / Unmute toggle — only shown while sound is actively playing */}
+              {!prefersReducedMotion && soundStarted && (
+                <Tooltip title={soundMuted ? 'Unmute audio' : 'Mute audio'}>
+                  <IconButton
+                    onClick={toggleMute}
+                    size="small"
+                    aria-label={soundMuted ? 'Unmute audio' : 'Mute audio'}
+                    sx={{
+                      mt: 2,
+                      color: 'rgba(255,255,255,0.7)',
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      borderRadius: 2,
+                      px: 1.5,
+                      py: 0.75,
+                      gap: 0.75,
+                      display: 'flex',
+                      alignItems: 'center',
+                      '&:hover': {
+                        bgcolor: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.5)',
+                      },
+                    }}
+                  >
+                    {soundMuted ? (
+                      <VolumeOffIcon fontSize="small" />
+                    ) : (
+                      <VolumeUpIcon fontSize="small" />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                      {soundMuted ? 'Unmute' : 'Mute'}
+                    </Typography>
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {/* Autoplay blocked — manual play button */}
+              {!prefersReducedMotion && soundBlocked && (
                 <Button
-                  variant="outlined"
-                  onClick={stopVoiceover}
+                  onClick={playSound}
                   size="small"
-                  startIcon={<VolumeOffIcon fontSize="small" />}
+                  startIcon={<VolumeUpIcon fontSize="small" />}
                   sx={{
-                    mt: 1.5,
+                    mt: 2,
+                    color: 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(255,255,255,0.3)',
                     borderRadius: 2,
                     px: 2,
-                    py: 1,
-                    color: 'rgba(255,255,255,0.9)',
-                    borderColor: 'rgba(255,255,255,0.5)',
-                    fontSize: '0.9rem',
                     textTransform: 'none',
-                    fontWeight: 600,
-                    '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.9)',
-                      bgcolor: 'rgba(255,255,255,0.08)',
-                    },
-                  }}
-                >
-                  Stop audio
-                </Button>
-              )}
-              {voiceoverBlocked && !prefersReducedMotion && (
-                <Button
-                  onClick={playVoiceover}
-                  size="small"
-                  sx={{
-                    mt: 1.5,
-                    color: 'rgba(255,255,255,0.7)',
                     fontSize: '0.85rem',
-                    textTransform: 'none',
-                    '&:hover': { color: 'primary.light' },
+                    '&:hover': {
+                      color: 'primary.light',
+                      borderColor: 'primary.light',
+                      bgcolor: 'rgba(255,255,255,0.05)',
+                    },
                   }}
                 >
                   Play with sound
@@ -447,7 +478,7 @@ export const Home = () => {
               )}
             </Grid>
 
-            {/* OAuth CTAs: highest contrast, fully opaque */}
+            {/* OAuth CTAs */}
             <Grid
               size={{ xs: 12 }}
               sx={{
@@ -476,13 +507,8 @@ export const Home = () => {
         </Container>
       </Box>
 
-      {/* What Makes This Different */}
       <WhatMakesDifferent />
-
-      {/* How It Works */}
       <HowItWorks />
-
-      {/* Social Proof */}
       <SocialProof />
     </>
   );

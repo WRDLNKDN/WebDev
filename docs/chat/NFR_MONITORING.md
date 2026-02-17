@@ -1,5 +1,7 @@
 # NFR: Monitoring & Observability for Chat
 
+[← Docs index](../README.md)
+
 ## Supabase Dashboard
 
 - **Database:** Metrics → connections, CPU, storage growth

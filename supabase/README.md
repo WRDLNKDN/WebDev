@@ -1,5 +1,7 @@
 # Supabase SQL
 
+[← Docs index](../docs/README.md)
+
 This folder contains Supabase schema, security (RLS), and dev seed SQL.
 
 ## Structure

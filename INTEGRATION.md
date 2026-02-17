@@ -1,5 +1,7 @@
 # GoDaddy and Vercel Integration Instructions
 
+[← Docs index](./docs/README.md)
+
 ## Frontend (GoDaddy)
 
 1. Build your frontend (HTML/CSS/JS) in the `frontend` folder.

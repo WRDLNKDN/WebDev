@@ -1,5 +1,7 @@
 # Chat Report Email Notifications
 
+[← Docs index](../README.md)
+
 Moderators receive email when a user submits a report.
 
 ## Setup

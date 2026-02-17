@@ -1,5 +1,7 @@
 # Contributing Guide
 
+[← Docs index](./docs/README.md)
+
 See our Contributors Onboarding wiki for comprehensive information on how to get
 involved! <https://github.com/WRDLNKDN/WebDev/wiki/Contributor-Onboarding>
 

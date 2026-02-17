@@ -107,13 +107,28 @@ export const AuthCallback = () => {
               next === '/' ||
               next === '/home';
             if (needsOnboarding) {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select(
-                  'display_name, join_reason, participation_style, policy_version',
-                )
-                .eq('id', user.id)
-                .maybeSingle();
+              // Fetch profile; retry once after short delay (helps with post-OAuth timing on UAT)
+              const fetchProfile = async () => {
+                const { data, error } = await supabase
+                  .from('profiles')
+                  .select(
+                    'display_name, join_reason, participation_style, policy_version',
+                  )
+                  .eq('id', user.id)
+                  .maybeSingle();
+                if (error) {
+                  console.warn('AuthCallback: profile fetch error', error);
+                  return { data: null, error };
+                }
+                return { data, error: null };
+              };
+
+              let { data: profile } = await fetchProfile();
+              if (!profile) {
+                await new Promise((r) => setTimeout(r, 600));
+                if (cancelled) return;
+                ({ data: profile } = await fetchProfile());
+              }
               if (cancelled) return;
               if (!isProfileOnboarded(profile)) {
                 const provider = mapSupabaseProvider(user);

@@ -1,5 +1,7 @@
 # PR testing steps
 
+[← Docs index](../README.md)
+
 Use this checklist when testing the branch before merge. Covers Feed, search,
 profile routes (IA), Directory, footer, and Dashboard.
 

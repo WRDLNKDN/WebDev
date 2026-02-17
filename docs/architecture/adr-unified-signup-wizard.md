@@ -1,5 +1,7 @@
 # ADR: Unified Signup Wizard Transition
 
+[← Docs index](../README.md)
+
 **Status:** Accepted
 
 **Date:** 2026-02

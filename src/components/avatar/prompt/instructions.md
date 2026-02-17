@@ -47,14 +47,17 @@ _Append these Negative Constraints to the API call to prevent style drift:_
 
 ## 5. REFERENCE LIBRARY (PRESETS)
 
-_Use these exact visual cues if a user references the 6 Presets:_
+Use these exact visual cues if a user references the 6 Presets (plus the Feral
+Anomaly):
 
-- **The Sparkle:** Pink briefcase, rainbow hair, heart glasses, star antennae.
-- **The Tinkerer:** Blue briefcase, orange mohawk, toolbelt, flask.
-- **The Mewnicorn:** Cream cat-box, unicorn horn, rainbow tail, mug.
-- **The Arcane:** Grey furry block, wizard hat, staff.
-- **The Cyber-Link:** Chrome/Silver box, screen face, laser gun.
-- **The Original:** Green box, antennae, purple feet.
+- The Sparkle: Pink briefcase, rainbow hair, heart glasses, star antennae.
+- The Tinkerer: Blue briefcase, orange mohawk, toolbelt, flask.
+- The Mewnicorn: Cream cat-box, unicorn horn, rainbow tail, mug.
+- The Arcane: Grey furry block, wizard hat, staff.
+- The Cyber-Link: Chrome/Silver box, screen face, laser gun.
+- The Original: Green box, antennae, purple feet. The Osgoodling: Green and pink
+  gradient box, majestic beard, gold shades, rainbow exhaust trail, feral status
+  bit.
 
 ## 6. ERROR HANDLING
 

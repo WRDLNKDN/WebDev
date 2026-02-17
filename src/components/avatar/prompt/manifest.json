@@ -1,0 +1,46 @@
+{
+  "protocol": "WRDLNKDN_DNA_VAULT",
+  "version": "1.0.0",
+  "basePath": "/src/components/avatar/og_weirdlings/",
+  "presets": {
+    "the_sparkle": {
+      "file": "1.png",
+      "hash_sequence": [
+        "pink briefcase",
+        "rainbow hair",
+        "heart glasses",
+        "star antennae"
+      ]
+    },
+    "the_tinkerer": {
+      "file": "2.png",
+      "hash_sequence": ["blue briefcase", "orange mohawk", "toolbelt", "flask"]
+    },
+    "the_mewnicorn": {
+      "file": "3.png",
+      "hash_sequence": ["cream cat-box", "unicorn horn", "rainbow tail", "mug"]
+    },
+    "the_arcane": {
+      "file": "4.png",
+      "hash_sequence": ["grey furry block", "wizard hat", "staff"]
+    },
+    "the_cyber_link": {
+      "file": "5.png",
+      "hash_sequence": ["chrome box", "silver box", "screen face", "laser gun"]
+    },
+    "the_original": {
+      "file": "6.png",
+      "hash_sequence": ["green box", "antennae", "purple feet"]
+    },
+    "the_osgoodling": {
+      "file": "7.png",
+      "hash_sequence": [
+        "green and pink gradient",
+        "majestic beard",
+        "gold shades",
+        "rainbow exhaust trail",
+        "feral"
+      ]
+    }
+  }
+}

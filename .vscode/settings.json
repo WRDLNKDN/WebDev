@@ -28,11 +28,20 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
 
-  // --- SECTION 4: AI CONTEXT & ACCESSIBILITY ---
-  "github.copilot.editor.enableAutoCompletions": true,
-  "axe.showA11yIssuesInEditor": true,
+  // --- SECTION 4: EDGE FUNCTIONS (DENO ISOLATION) ---
+  "deno.enable": true,
+  "deno.unstable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.importMap": "supabase/functions/import_map.json",
+  "deno.suggest.imports.hosts": {
+    "https://deno.land": true
+  }, // <--- FIXED: Added missing comma
 
-  // --- SECTION 5: SYSTEM INTEGRITY (CLEANLINESS) ---
+  // --- SECTION 5: AI CONTEXT & ACCESSIBILITY ---
+  "github.copilot.editor.enableAutoCompletions": true,
+  "axe.showA11yIssuesInEditor": true, // <--- FIXED: Added missing comma
+
+  // --- SECTION 6: SYSTEM INTEGRITY (CLEANLINESS) ---
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.eol": "\n",
@@ -46,5 +55,5 @@
   },
   "editor.wordWrap": "wordWrapColumn",
   "editor.wrappingIndent": "same",
-  "editor.wordWrapColumn": 60
+  "editor.wordWrapColumn": 80
 }

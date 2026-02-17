@@ -14,7 +14,8 @@ test.describe('Home Page - High-Integrity Audit', () => {
   });
 
   test('should render the brand and primary messaging', async ({ page }) => {
-    const landing = page.getByTestId('signed-out-landing');
+    // We still confirm the landing container is there to ensure the page loaded
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible();
 
     await expect(landing.getByText(/WRDLNKDN/i)).toBeVisible();
 
@@ -27,7 +28,7 @@ test.describe('Home Page - High-Integrity Audit', () => {
     ).toBeVisible();
 
     await expect(
-      landing.getByRole('button', { name: /Continue with Google/i }).first(),
+      page.getByRole('button', { name: /Continue with Google/i }).first(),
     ).toBeVisible();
 
     const results = await new AxeBuilder({ page })

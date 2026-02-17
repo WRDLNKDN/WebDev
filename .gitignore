@@ -14,6 +14,9 @@ lerna-debug.log*
 *.sw?
 *.zip
 
+# OS Ghost Metadata / Alternate Data Streams
+*:Zone.Identifier
+
 # --- Tooling Caches ---
 .eslintcache
 

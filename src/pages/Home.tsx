@@ -40,9 +40,11 @@ export const Home = () => {
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
   const [contentVisible, setContentVisible] = useState(prefersReducedMotion);
+  const VOLUME = 0.5; // Lower volume (0–1) for the voiceover
   const voiceoverRef = useRef<HTMLVideoElement | null>(null);
   const voiceoverStartedRef = useRef(false);
   const [voiceoverBlocked, setVoiceoverBlocked] = useState(false);
+  const [voiceoverPlaying, setVoiceoverPlaying] = useState(false);
 
   const handleVoiceoverCanPlayThrough = useCallback(() => {
     const video = voiceoverRef.current;
@@ -50,6 +52,7 @@ export const Home = () => {
     voiceoverStartedRef.current = true;
     // Start muted (autoplay allowed), then unmute once playing so audio autoplays
     video.muted = true;
+    video.volume = VOLUME;
     video
       .play()
       .then(() => {
@@ -63,9 +66,17 @@ export const Home = () => {
     if (!video || prefersReducedMotion) return;
     setVoiceoverBlocked(false);
     voiceoverStartedRef.current = true;
+    video.volume = VOLUME;
     video.currentTime = 0;
     video.play().catch(() => setVoiceoverBlocked(true));
   }, [prefersReducedMotion]);
+
+  const stopVoiceover = useCallback(() => {
+    const video = voiceoverRef.current;
+    if (!video) return;
+    video.pause();
+    setVoiceoverPlaying(false);
+  }, []);
 
   // Hero content: with reduced motion, show immediately. Else fade in after background dims.
   useEffect(() => {
@@ -257,6 +268,9 @@ export const Home = () => {
             loop={false}
             playsInline
             onCanPlayThrough={handleVoiceoverCanPlayThrough}
+            onPlay={() => setVoiceoverPlaying(true)}
+            onEnded={() => setVoiceoverPlaying(false)}
+            onPause={() => setVoiceoverPlaying(false)}
             sx={{
               position: 'absolute',
               inset: 0,
@@ -375,6 +389,21 @@ export const Home = () => {
                   For people who build, create, and think differently.
                 </Typography>
               </Stack>
+              {voiceoverPlaying && !prefersReducedMotion && (
+                <Button
+                  onClick={stopVoiceover}
+                  size="small"
+                  sx={{
+                    mt: 1.5,
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    '&:hover': { color: 'primary.light' },
+                  }}
+                >
+                  Stop
+                </Button>
+              )}
               {voiceoverBlocked && !prefersReducedMotion && (
                 <Button
                   onClick={playVoiceover}

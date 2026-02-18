@@ -493,7 +493,7 @@ export function useProfile() {
       if (!session?.user) throw new Error('No user');
 
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
-      if (!RESUME_ALLOWED.includes(ext)) {
+      if (!(RESUME_ALLOWED as readonly string[]).includes(ext)) {
         throw new Error(
           'Resume must be a PDF or Word document (.pdf or .docx only)',
         );

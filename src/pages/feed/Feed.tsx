@@ -48,7 +48,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { toMessage } from '../lib/utils/errors';
+import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
   createFeedPost,
@@ -62,8 +62,8 @@ import {
   type FeedItem,
   type FeedViewPreference,
   type ReactionType,
-} from '../lib/api/feedsApi';
-import { supabase } from '../lib/auth/supabaseClient';
+} from '../../lib/api/feedsApi';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -71,8 +71,11 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 
-import WeirdlingGenerator from '../components/avatar/WeirdlingGenerator';
-import { FeedAdCard, type FeedAdvertiser } from '../components/feed/FeedAdCard';
+import WeirdlingGenerator from '../../components/avatar/WeirdlingGenerator';
+import {
+  FeedAdCard,
+  type FeedAdvertiser,
+} from '../../components/feed/FeedAdCard';
 
 const FEED_LIMIT = 20;
 const AD_EVERY_N_POSTS = 6;
@@ -861,11 +864,16 @@ export const Feed = () => {
       const raw = error instanceof Error ? error.message : String(error ?? '');
       const lower = raw.toLowerCase();
 
-      if (
-        lower.includes('unauthorized') ||
-        lower.includes('not signed in') ||
-        lower.includes('sign in')
-      ) {
+      // Only redirect to /join if this is a REAL Supabase auth error
+      // Not just any 401 from browser/infrastructure requests
+      const isSupabaseAuthError =
+        (lower.includes('jwt') && lower.includes('expired')) ||
+        lower.includes('refresh token') ||
+        lower.includes('invalid claim') ||
+        (lower.includes('not signed in') && lower.includes('supabase'));
+
+      if (isSupabaseAuthError) {
+        console.warn('🔴 Feed: Supabase auth error, signing out:', raw);
         try {
           await supabase.auth.signOut();
         } catch {
@@ -873,6 +881,8 @@ export const Feed = () => {
         }
         navigate('/join', { replace: true });
       } else {
+        // Just show error, don't redirect
+        console.warn('⚠️ Feed: API error (not redirecting):', raw);
         setSnack(toMessage(error) || fallback);
       }
     },

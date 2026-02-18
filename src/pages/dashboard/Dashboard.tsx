@@ -16,30 +16,30 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
-import { AddProjectDialog } from '../components/portfolio/AddProjectDialog';
-import { ProjectCard } from '../components/portfolio/ProjectCard';
-import { ResumeCard } from '../components/portfolio/ResumeCard';
-import { EditProfileDialog } from '../components/profile/EditProfileDialog';
-import { EmailPreferencesDialog } from '../components/profile/EmailPreferencesDialog';
+import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
+import { ProjectCard } from '../../components/portfolio/ProjectCard';
+import { ResumeCard } from '../../components/portfolio/ResumeCard';
+import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
+import { EmailPreferencesDialog } from '../../components/profile/EmailPreferencesDialog';
 import {
   IdentityBadges,
   IdentityHeader,
-} from '../components/profile/IdentityHeader';
-import { SettingsDialog } from '../components/profile/SettingsDialog';
-import { EditLinksDialog } from '../components/profile/EditLinksDialog';
-import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
-import { WeirdlingBannerSlot } from '../components/profile/WeirdlingBannerSlot';
-import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDialog';
+} from '../../components/profile/IdentityHeader';
+import { SettingsDialog } from '../../components/profile/SettingsDialog';
+import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
+import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
+import { WeirdlingBannerSlot } from '../../components/profile/WeirdlingBannerSlot';
+import { WeirdlingCreateDialog } from '../../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
-import { useProfile } from '../hooks/useProfile';
-import { toMessage } from '../lib/utils/errors';
-import { deleteWeirdling, getMyWeirdlings } from '../lib/api/weirdlingApi';
-import { supabase } from '../lib/auth/supabaseClient';
-import { GLASS_CARD } from '../theme/candyStyles';
-import type { Weirdling } from '../types/weirdling';
-import type { NerdCreds } from '../types/profile';
-import { safeStr } from '../utils/stringUtils';
+import { useProfile } from '../../hooks/useProfile';
+import { toMessage } from '../../lib/utils/errors';
+import { deleteWeirdling, getMyWeirdlings } from '../../lib/api/weirdlingApi';
+import { supabase } from '../../lib/auth/supabaseClient';
+import { GLASS_CARD } from '../../theme/candyStyles';
+import type { Weirdling } from '../../types/weirdling';
+import type { NerdCreds } from '../../types/profile';
+import { safeStr } from '../../utils/stringUtils';
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);

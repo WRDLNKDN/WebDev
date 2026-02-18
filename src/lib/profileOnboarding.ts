@@ -2,8 +2,10 @@
  * Profile onboarding: shared logic for "has user completed signup?"
  * Used by RequireOnboarded, Home, and AuthCallback to avoid Feed flicker.
  *
- * Lenient check: display_name is sufficient. Legacy users and those who completed
- * an older signup flow may not have policy_version or join_reason/participation_style.
+ * RESILIENT CHECK: Handles cases where UPDATE partially fails on UAT.
+ * If a user has join_reason or participation_style but no display_name,
+ * they clearly completed signup but the UPDATE didn't fully persist —
+ * we count them as onboarded to avoid infinite /join loops.
  */
 
 export type ProfileOnboardingCheck = {
@@ -13,10 +15,26 @@ export type ProfileOnboardingCheck = {
   policy_version?: string | null;
 };
 
-/** True if profile has completed setup (has display_name). */
+/**
+ * True if profile has completed setup.
+ *
+ * Primary check: display_name exists.
+ * Fallback check: if display_name is missing but they have values data,
+ * they did complete signup (UPDATE just failed) - count as onboarded.
+ */
 export function isProfileOnboarded(
   profile: ProfileOnboardingCheck | null | undefined,
 ): boolean {
   if (!profile) return false;
-  return Boolean(profile.display_name?.trim());
+
+  // Happy path: display_name exists
+  if (profile.display_name?.trim()) return true;
+
+  // Fallback: display_name missing, but they have values data?
+  // This means signup UPDATE partially failed — don't loop them
+  const hasValues =
+    (profile.join_reason?.length ?? 0) > 0 ||
+    (profile.participation_style?.length ?? 0) > 0;
+
+  return hasValues;
 }

@@ -24,6 +24,14 @@ export const RequireOnboarded = ({
     validated?.profileValidated &&
     isProfileOnboarded(validated.profileValidated);
 
+  // Sync: AuthCallback passed profile in location.state — allow through without fetch
+  const validated = location.state as
+    | { profileValidated?: ProfileOnboardingCheck }
+    | undefined;
+  const hasValidatedFromState =
+    validated?.profileValidated &&
+    isProfileOnboarded(validated.profileValidated);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -93,6 +101,11 @@ export const RequireOnboarded = ({
         if (cancelled) return;
         ({ profile, error } = await fetchProfile());
         console.log('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
+      }
+      if (!profile) {
+        await new Promise((r) => setTimeout(r, 800));
+        if (cancelled) return;
+        profile = await fetchProfile();
       }
 
       if (cancelled) return;

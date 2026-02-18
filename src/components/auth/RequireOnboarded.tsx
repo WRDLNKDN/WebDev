@@ -8,6 +8,11 @@ import { supabase } from '../../lib/supabaseClient';
 
 type State = 'loading' | 'redirect' | 'allowed';
 
+/**
+ * Route guard: requires auth AND completed profile (onboarding).
+ * Redirects to /join when not signed in or profile incomplete.
+ * When coming from AuthCallback with profileValidated in state, trust it to avoid feed→join flicker.
+ */
 export const RequireOnboarded = ({
   children,
 }: {
@@ -15,14 +20,6 @@ export const RequireOnboarded = ({
 }) => {
   const location = useLocation();
   const [state, setState] = useState<State>('loading');
-  const [debugInfo, setDebugInfo] = useState<string>('');
-
-  const validated = location.state as
-    | { profileValidated?: ProfileOnboardingCheck }
-    | undefined;
-  const hasValidatedFromState =
-    validated?.profileValidated &&
-    isProfileOnboarded(validated.profileValidated);
 
   // Sync: AuthCallback passed profile in location.state — allow through without fetch
   const validated = location.state as
@@ -36,7 +33,7 @@ export const RequireOnboarded = ({
     let cancelled = false;
 
     const check = async () => {
-      // Retry getSession
+      // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
       let { data } = await supabase.auth.getSession();
       if (!data.session) {
         await new Promise((r) => setTimeout(r, 400));
@@ -57,9 +54,9 @@ export const RequireOnboarded = ({
       }
 
       const userId = data.session.user.id;
-      console.log('🔵 RequireOnboarded: Session found, userId =', userId);
+      console.log('🔵 RequireOnboarded: Session found for user', userId);
 
-      // Check sessionStorage cache
+      // sessionStorage fallback (Vercel: location.state can be lost during navigation)
       const cached = getProfileValidated(userId);
       if (cached && isProfileOnboarded(cached)) {
         console.log('✅ RequireOnboarded: Using cached profile');
@@ -77,60 +74,55 @@ export const RequireOnboarded = ({
           .maybeSingle();
 
         if (error) {
-          console.error('❌ RequireOnboarded: Profile fetch error', error);
+          console.error('❌ RequireOnboarded: Profile fetch error:', error);
         }
 
         return { profile, error };
       };
 
-      // Try 1
-      let { profile, error } = await fetchProfile();
+      let result = await fetchProfile();
+      let profile = result.profile;
+      let error = result.error;
+
       console.log('🔍 RequireOnboarded: Fetch attempt 1', { profile, error });
 
-      // Try 2
-      if (!profile && !cancelled) {
+      if (!profile) {
         await new Promise((r) => setTimeout(r, 600));
         if (cancelled) return;
-        ({ profile, error } = await fetchProfile());
+        result = await fetchProfile();
+        profile = result.profile;
+        error = result.error;
         console.log('🔍 RequireOnboarded: Fetch attempt 2', { profile, error });
-      }
-
-      // Try 3
-      if (!profile && !cancelled) {
-        await new Promise((r) => setTimeout(r, 800));
-        if (cancelled) return;
-        ({ profile, error } = await fetchProfile());
-        console.log('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
       }
       if (!profile) {
         await new Promise((r) => setTimeout(r, 800));
         if (cancelled) return;
-        profile = await fetchProfile();
+        result = await fetchProfile();
+        profile = result.profile;
+        error = result.error;
+        console.log('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
       }
 
       if (cancelled) return;
 
-      // CRITICAL FIX: If we have an RLS error, allow through
-      // (user likely has a profile but RLS is misconfigured)
+      // CRITICAL: If RLS is blocking, allow through anyway
       if (error && error.code === 'PGRST116') {
         console.warn(
-          '⚠️ RequireOnboarded: RLS blocking profile read - allowing through',
+          '⚠️ RequireOnboarded: RLS blocking read - allowing through',
         );
         setState('allowed');
         return;
       }
 
-      // If still no profile after 3 tries, redirect to /join
       if (!profile) {
         console.log(
-          '🔴 RequireOnboarded: No profile found after 3 attempts, redirecting to /join',
+          '🔴 RequireOnboarded: No profile after 3 attempts, redirecting to /join',
         );
-        setDebugInfo(`No profile found (error: ${error?.message || 'none'})`);
         setState('redirect');
         return;
       }
 
-      console.log('🔍 RequireOnboarded: Profile check', {
+      console.log('🔍 RequireOnboarded: Profile data', {
         displayName: profile.display_name,
         joinReason: profile.join_reason,
         participationStyle: profile.participation_style,
@@ -138,14 +130,12 @@ export const RequireOnboarded = ({
       });
 
       if (!isProfileOnboarded(profile)) {
-        console.log(
-          '🔴 RequireOnboarded: Profile not onboarded, redirecting to /join',
-        );
+        console.log('🔴 RequireOnboarded: Profile not onboarded');
         setState('redirect');
         return;
       }
 
-      console.log('✅ RequireOnboarded: Profile onboarded, allowing through');
+      console.log('✅ RequireOnboarded: Profile valid, allowing through');
       setState('allowed');
     };
 
@@ -170,19 +160,12 @@ export const RequireOnboarded = ({
       <Box
         sx={{
           display: 'flex',
-          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '40vh',
-          gap: 2,
         }}
       >
         <CircularProgress aria-label="Checking authentication and profile" />
-        {debugInfo && (
-          <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-            {debugInfo}
-          </Box>
-        )}
       </Box>
     );
   }

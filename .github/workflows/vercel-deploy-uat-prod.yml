@@ -55,8 +55,8 @@ jobs:
             echo "::error::SUPABASE_UAT_URL is set to PROD Supabase! UAT must use lgxwseyzoefxggxijatp.supabase.co"
             exit 1
           fi
-          if ! echo "$VITE_SUPABASE_URL" | grep -q "lgxwseyzoefxggxijatp"; then
-            echo "::warning::SUPABASE_UAT_URL does not appear to be UAT Supabase (lgxwseyzoefxggxijatp). Current: ${VITE_SUPABASE_URL%%/*}"
+          if ! echo "$VITE_SUPABASE_URL" | grep -qE "(lgxwseyzoefxggxijatp|auth-uat\.wrdlnkdn\.com)"; then
+            echo "::warning::SUPABASE_UAT_URL does not appear to be UAT (lgxwseyzoefxggxijatp or auth-uat.wrdlnkdn.com). Current: ${VITE_SUPABASE_URL%%/*}"
           fi
 
       - name: Setup Supabase CLI
@@ -79,6 +79,9 @@ jobs:
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
+
+      - name: Clean build output and caches
+        run: rm -rf dist node_modules/.vite
 
       - name: Build (UAT → webdev-uat.vercel.app)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
@@ -147,6 +150,9 @@ jobs:
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
+
+      - name: Clean build output and caches
+        run: rm -rf dist node_modules/.vite
 
       - name: Build (production)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"

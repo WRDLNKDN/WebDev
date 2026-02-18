@@ -93,6 +93,12 @@ const BumperPage = lazy(() =>
   })),
 );
 
+const ProjectPage = lazy(() =>
+  import('./pages/profile/ProjectPage').then((m) => ({
+    default: m.ProjectPage,
+  })),
+);
+
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
@@ -282,6 +288,7 @@ const App = () => {
               {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
               <Route path="/" element={<Home />} />
               <Route path="/profile/:handle" element={<LandingPage />} />
+              <Route path="/projects/:id" element={<ProjectPage />} />
               <Route path="/u/:handle" element={<RedirectUToProfile />} />
               <Route path="/home" element={<Home />} />
               <Route path="/directory" element={<Directory />} />

@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
@@ -44,6 +44,8 @@ import { safeStr } from '../../utils/stringUtils';
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { openEditDialog?: boolean } | undefined;
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -66,6 +68,14 @@ export const Dashboard = () => {
     };
     void init();
   }, [navigate]);
+
+  // Open Edit Profile when navigated from own profile with state
+  useEffect(() => {
+    if (state?.openEditDialog) {
+      setIsEditOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [state?.openEditDialog, navigate, location.pathname]);
 
   useEffect(() => {
     if (!session) return;

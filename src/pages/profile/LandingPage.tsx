@@ -11,9 +11,10 @@ import {
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonIcon from '@mui/icons-material/Person';
+import EditIcon from '@mui/icons-material/Edit';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams } from 'react-router-dom';
+import { Link as RouterLink, useParams } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 
 // MODULAR COMPONENTS
@@ -207,8 +208,23 @@ export const LandingPage = () => {
   if (!profile) return <NotFoundPage />;
 
   const creds = profile.nerd_creds as Record<string, unknown>;
+  const isOwner = !!viewer && viewer.id === profile.id;
   const showConnect =
     !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
+
+  const ownerActions = isOwner ? (
+    <Button
+      component={RouterLink}
+      to="/dashboard"
+      state={{ openEditDialog: true }}
+      variant="outlined"
+      startIcon={<EditIcon />}
+      size="medium"
+      sx={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white' }}
+    >
+      Edit profile
+    </Button>
+  ) : null;
 
   const connectActions = showConnect ? (
     <Stack
@@ -281,7 +297,12 @@ export const LandingPage = () => {
                 onSkillsClick={() => setTagsSkillsDialogOpen(true)}
               />
             }
-            actions={connectActions}
+            actions={
+              <>
+                {ownerActions}
+                {connectActions}
+              </>
+            }
           />
           <ViewTagsSkillsDialog
             open={tagsSkillsDialogOpen}

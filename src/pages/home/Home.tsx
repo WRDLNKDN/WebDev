@@ -4,17 +4,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
-import { GuestView } from '../components/home/GuestView';
-import { HomeSkeleton } from '../components/home/HomeSkeleton';
-import { HowItWorks } from '../components/home/HowItWorks';
-import { SocialProof } from '../components/home/SocialProof';
-import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
-import { toMessage } from '../lib/utils/errors';
+import { GuestView } from '../../components/home/GuestView';
+import { HomeSkeleton } from '../../components/home/HomeSkeleton';
+import { HowItWorks } from '../../components/home/HowItWorks';
+import { SocialProof } from '../../components/home/SocialProof';
+import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
+import { toMessage } from '../../lib/utils/errors';
 import {
   signInWithOAuth,
   type OAuthProvider,
-} from '../lib/auth/signInWithOAuth';
-import { supabase } from '../lib/auth/supabaseClient';
+} from '../../lib/auth/signInWithOAuth';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).

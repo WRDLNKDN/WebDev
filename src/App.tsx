@@ -24,11 +24,15 @@ import { supabase } from './lib/auth/supabaseClient';
 
 // 1. Core Pages
 const LandingPage = lazy(() =>
-  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+  import('./pages/profile/LandingPage').then((m) => ({
+    default: m.LandingPage,
+  })),
 );
 
 const Dashboard = lazy(() =>
-  import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
+  import('./pages/dashboard/Dashboard').then((m) => ({
+    default: m.Dashboard,
+  })),
 );
 
 const ChatRedirect = lazy(() =>
@@ -44,11 +48,11 @@ const ChatPopupPage = lazy(() =>
 );
 
 const Feed = lazy(() =>
-  import('./pages/Feed').then((m) => ({ default: m.Feed })),
+  import('./pages/feed/Feed').then((m) => ({ default: m.Feed })),
 );
 
 const Home = lazy(() =>
-  import('./pages/Home').then((m) => ({ default: m.Home })),
+  import('./pages/home/Home').then((m) => ({ default: m.Home })),
 );
 
 const Store = lazy(() =>
@@ -56,7 +60,7 @@ const Store = lazy(() =>
 );
 
 const About = lazy(() =>
-  import('./pages/About').then((m) => ({ default: m.About })),
+  import('./pages/marketing/About').then((m) => ({ default: m.About })),
 );
 
 const Community = lazy(() =>
@@ -66,7 +70,9 @@ const Community = lazy(() =>
 );
 
 const Platform = lazy(() =>
-  import('./pages/Platform').then((m) => ({ default: m.Platform })),
+  import('./pages/marketing/Platform').then((m) => ({
+    default: m.Platform,
+  })),
 );
 
 const Directory = lazy(() =>
@@ -154,7 +160,7 @@ const AuthCallback = lazy(() =>
 );
 
 const Signup = lazy(() =>
-  import('./pages/Signup').then((m) => ({ default: m.Signup })),
+  import('./pages/auth/Signup').then((m) => ({ default: m.Signup })),
 );
 
 // 3. Legal Pages

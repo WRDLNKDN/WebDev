@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD060 -->
+
 # Information Architecture (IA)
 
 [← Docs index](../README.md)
@@ -99,7 +101,20 @@ People) and is not shown in the nav; the nav label is **Feed** (links to
 
 ---
 
+## Authenticated User Routing
+
+| Scenario                        | Route                                                           |
+| ------------------------------- | --------------------------------------------------------------- |
+| Auth user visits `/`            | Redirect to `/feed`                                             |
+| Owner on own `/profile/:handle` | Read-only; no redirect                                          |
+| Owner wants to edit profile     | `/dashboard` (Edit Profile dialog)                              |
+| Dashboard sub-routes (future)   | `/dashboard/settings`, `/activity`, `/notifications`, `/intent` |
+
+---
+
 ## Related docs
 
+- [Spike: Profile vs Dashboard IA](./spike-profile-dashboard-ia.md) — canonical
+  model (Option B).
 - [Platform NFRs](./platform-nfrs.md) — constraints for Feed, Join, workflows.
 - [Auth requirements](../auth-requirements.md) — registration and Join flow.

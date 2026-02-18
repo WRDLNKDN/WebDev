@@ -136,7 +136,7 @@ export const AuthCallback = () => {
                 ({ data: profile } = await fetchProfile());
               }
               if (cancelled) return;
-              if (!isProfileOnboarded(profile)) {
+              if (!profile || !isProfileOnboarded(profile)) {
                 const provider = mapSupabaseProvider(user);
                 setIdentity({
                   provider,

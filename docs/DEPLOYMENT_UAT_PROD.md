@@ -78,6 +78,25 @@ After deploying, sign in on UAT. The Google dialog should show:
 
 `to continue to lgxwseyzoefxggxijatp.supabase.co`
 
+## Backend env (required for Feed, API)
+
+The `/api/*` serverless functions (feeds, directory, etc.) validate JWTs using
+**SUPABASE_URL** and **SUPABASE_SERVICE_ROLE_KEY**. These must match the
+Supabase project your frontend uses.
+
+**Vercel** → UAT project → Settings → Environment Variables — add:
+
+| Variable                    | UAT value                                                     |
+| --------------------------- | ------------------------------------------------------------- |
+| `SUPABASE_URL`              | `https://lgxwseyzoefxggxijatp.supabase.co`                    |
+| `SUPABASE_SERVICE_ROLE_KEY` | UAT service_role key from Supabase Dashboard → Settings → API |
+
+Get the service_role key: Supabase Dashboard → Project Settings → API →
+**service_role** (secret). **Never** expose this in frontend code.
+
+If these are missing or point to PROD, `/api/feeds` returns 401 Unauthorized
+even when logged in (the JWT was issued by a different project).
+
 ## Troubleshooting: Login redirects to Join / "Acts like you don't have an account"
 
 If signing in on UAT sends you to the Join wizard instead of Feed, or it "acts
@@ -108,6 +127,24 @@ sign-ins on UAT have no profile and correctly go to Join.
 The app retries the profile fetch once after 600ms to handle post-OAuth timing.
 Check the browser console for `AuthCallback: profile fetch error` if issues
 persist.
+
+## Troubleshooting: Feed returns 401 / API Unauthorized
+
+If you are logged in but `/api/feeds` (or other `/api/*`) returns 401:
+
+1. **Confirm backend env vars**  
+   Vercel UAT project must have `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+   set (see "Backend env" above). If these are missing or point to PROD
+   Supabase, the backend cannot validate your UAT JWT.
+
+2. **Redeploy**  
+   After adding or changing env vars, trigger a redeploy (e.g. push a commit or
+   use Vercel → Deployments → Redeploy).
+
+3. **Network tab**  
+   Requests should include `Authorization: Bearer <JWT>`. The JWT was issued by
+   the Supabase project in `VITE_SUPABASE_URL`; the backend must use that same
+   project for `SUPABASE_URL`.
 
 ## Verifying Supabase / RLS
 

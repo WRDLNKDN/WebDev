@@ -2,6 +2,8 @@ import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { isProfileOnboarded } from '../../lib/profileOnboarding';
+import type { ProfileOnboardingCheck } from '../../lib/profileOnboarding';
+import { getProfileValidated } from '../../lib/profileValidatedCache';
 import { supabase } from '../../lib/supabaseClient';
 
 type State = 'loading' | 'redirect' | 'allowed';
@@ -9,7 +11,7 @@ type State = 'loading' | 'redirect' | 'allowed';
 /**
  * Route guard: requires auth AND completed profile (onboarding).
  * Redirects to /join when not signed in or profile incomplete.
- * Prevents Feed flicker for new users.
+ * When coming from AuthCallback with profileValidated in state, trust it to avoid feed→join flicker.
  */
 export const RequireOnboarded = ({
   children,
@@ -18,6 +20,14 @@ export const RequireOnboarded = ({
 }) => {
   const location = useLocation();
   const [state, setState] = useState<State>('loading');
+
+  // Sync: AuthCallback passed profile in location.state — allow through without fetch
+  const validated = location.state as
+    | { profileValidated?: ProfileOnboardingCheck }
+    | undefined;
+  const hasValidatedFromState =
+    validated?.profileValidated &&
+    isProfileOnboarded(validated.profileValidated);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +42,14 @@ export const RequireOnboarded = ({
       }
 
       const userId = data.session.user.id;
+
+      // sessionStorage fallback (Vercel: location.state can be lost during navigation)
+      const cached = getProfileValidated(userId);
+      if (cached && isProfileOnboarded(cached)) {
+        setState('allowed');
+        return;
+      }
+
       const fetchProfile = async () => {
         const { data: profile } = await supabase
           .from('profiles')
@@ -76,6 +94,10 @@ export const RequireOnboarded = ({
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  if (hasValidatedFromState) {
+    return <>{children}</>;
+  }
 
   if (state === 'loading') {
     return (

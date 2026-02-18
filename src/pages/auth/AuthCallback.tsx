@@ -14,6 +14,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
 import { isProfileOnboarded } from '../../lib/profileOnboarding';
+import { setProfileValidated } from '../../lib/profileValidatedCache';
 import { supabase } from '../../lib/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import { POLICY_VERSION } from '../../types/signup';
@@ -151,6 +152,14 @@ export const AuthCallback = () => {
                 navigate('/join', { replace: true });
                 return;
               }
+              // Pass validated profile so RequireOnboarded skips redundant fetch.
+              // Also cache in sessionStorage (survives Vercel navigation quirks where state can be lost).
+              setProfileValidated(user.id, profile);
+              navigate(next, {
+                replace: true,
+                state: { profileValidated: profile },
+              });
+              return;
             }
             navigate(next, { replace: true });
           }

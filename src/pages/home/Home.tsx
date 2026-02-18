@@ -1,6 +1,6 @@
 // src/pages/Home.tsx
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,10 +10,6 @@ import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 import { toMessage } from '../../lib/utils/errors';
-import {
-  signInWithOAuth,
-  type OAuthProvider,
-} from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
@@ -25,7 +21,6 @@ export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const prefersReducedMotion = useMemo(
@@ -96,30 +91,18 @@ export const Home = () => {
     };
   }, [navigate, isLoading]);
 
-  const handleAuth = async (provider: OAuthProvider) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/feed',
-      )}`;
-
-      const { data, error: signInError } = await signInWithOAuth(provider, {
-        redirectTo,
-      });
-
-      if (signInError) throw signInError;
-      if (data?.url) window.location.href = data.url;
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
-
   const handleVideoEnded = () => {
     if (!prefersReducedMotion) setHeroPhase('dimmed');
     setShowContent(true);
   };
+
+  // 1.35x playback reduces time-to-dialog; respect prefers-reduced-motion
+  const setPlaybackRate = useCallback(() => {
+    const el = videoRef.current;
+    if (el && !prefersReducedMotion) {
+      el.playbackRate = 1.35;
+    }
+  }, [prefersReducedMotion]);
 
   const handleVideoError = () => {
     // IMPORTANT:
@@ -203,6 +186,8 @@ export const Home = () => {
           muted
           loop={false}
           playsInline
+          onLoadedMetadata={setPlaybackRate}
+          onCanPlay={setPlaybackRate}
           onEnded={handleVideoEnded}
           onError={handleVideoError}
           sx={{
@@ -269,7 +254,7 @@ export const Home = () => {
                   {error}
                 </Alert>
               )}
-              <GuestView busy={busy} onAuth={handleAuth} buttonsOnly />
+              <GuestView buttonsOnly />
             </Grid>
 
             <Grid

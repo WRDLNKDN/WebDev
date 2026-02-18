@@ -1,9 +1,11 @@
+// src/pages/Home.tsx
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../components/home/GuestView';
+import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
@@ -11,13 +13,17 @@ import { toMessage } from '../lib/errors';
 import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
 import { supabase } from '../lib/supabaseClient';
 
+/**
+ * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
+ * If user has session, redirect to /feed. Else show guest hero and CTAs.
+ */
 export const Home = () => {
   const navigate = useNavigate();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showContent, setShowContent] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -26,70 +32,79 @@ export const Home = () => {
     [],
   );
 
-  // Auth check — runs once, never remounts video
+  const PRIMARY_VIDEO_SRC = '/assets/video/hero-green-pinky.mp4';
+  const FALLBACK_VIDEO_SRC = '/assets/video/hero-bg.mp4';
+
+  const [videoSrc, setVideoSrc] = useState(PRIMARY_VIDEO_SRC);
+
+  // Show text only after the video finishes (or immediately if reduced motion).
+  const [showContent, setShowContent] = useState<boolean>(
+    prefersReducedMotion ? true : false,
+  );
+
+  const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
+    prefersReducedMotion ? 'dimmed' : 'playing',
+  );
+
+  // AUTH: if session exists, redirect to /feed. Else stop loading and show Hero.
   useEffect(() => {
     let mounted = true;
 
     const checkSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error: sessionError } = await supabase.auth.getSession();
+
         if (!mounted) return;
+
+        if (sessionError)
+          console.warn('Session check warning:', sessionError.message);
+
         if (data.session) {
           navigate('/feed', { replace: true });
+          return;
         }
+
+        setIsLoading(false);
       } catch (err) {
         console.error('Session check failed:', err);
+        if (mounted) {
+          setError(toMessage(err));
+          setIsLoading(false);
+        }
       }
     };
 
     void checkSession();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted && session) navigate('/feed', { replace: true });
+      if (mounted && session) {
+        navigate('/feed', { replace: true });
+      }
     });
+
+    const safetyTimer = setTimeout(() => {
+      if (mounted && isLoading) setIsLoading(false);
+    }, 1500);
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       sub.subscription.unsubscribe();
     };
-  }, [navigate]);
-
-  // Video setup — runs once after mount
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setShowContent(true);
-      return;
-    }
-
-    const video = videoRef.current;
-    if (!video) {
-      setShowContent(true);
-      return;
-    }
-
-    const onEnded = () => setShowContent(true);
-    const onError = () => setShowContent(true);
-
-    video.addEventListener('ended', onEnded);
-    video.addEventListener('error', onError);
-
-    // Attempt play
-    video.play().catch(() => setShowContent(true));
-
-    return () => {
-      video.removeEventListener('ended', onEnded);
-      video.removeEventListener('error', onError);
-    };
-  }, [prefersReducedMotion]);
+  }, [navigate, isLoading]);
 
   const handleAuth = async (provider: OAuthProvider) => {
     setBusy(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/feed')}`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+        '/feed',
+      )}`;
+
       const { data, error: signInError } = await signInWithOAuth(provider, {
         redirectTo,
       });
+
       if (signInError) throw signInError;
       if (data?.url) window.location.href = data.url;
     } catch (e: unknown) {
@@ -97,6 +112,43 @@ export const Home = () => {
       setBusy(false);
     }
   };
+
+  const handleVideoEnded = () => {
+    if (!prefersReducedMotion) setHeroPhase('dimmed');
+    setShowContent(true);
+  };
+
+  const handleVideoError = () => {
+    // IMPORTANT:
+    // Do NOT show the content on error.
+    // Swap to fallback video and still wait for onEnded.
+    if (videoSrc !== FALLBACK_VIDEO_SRC) {
+      setVideoSrc(FALLBACK_VIDEO_SRC);
+
+      // Try to restart playback with the new source.
+      requestAnimationFrame(() => {
+        const el = videoRef.current;
+        if (!el) return;
+        try {
+          el.load();
+          void el.play();
+        } catch {
+          // If play fails, we still do not reveal content yet.
+          // Let the user see the background overlay and the page will remain usable.
+        }
+      });
+
+      return;
+    }
+
+    // If even the fallback video errors, reveal content so the page is not stuck.
+    setHeroPhase('dimmed');
+    setShowContent(true);
+  };
+
+  if (isLoading) {
+    return <HomeSkeleton />;
+  }
 
   return (
     <>
@@ -117,7 +169,7 @@ export const Home = () => {
         <meta property="og:image" content="https://wrdlnkdn.com/og-image.png" />
         <meta
           property="og:image:alt"
-          content="WRDLNKDN – Business, but weirder."
+          content="WRDLNKDN - Business, but weirder."
         />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Business, but weirder." />
@@ -139,53 +191,54 @@ export const Home = () => {
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
-          bgcolor: '#000',
         }}
       >
-        {/* Video — plain native element, ref-controlled, never conditionally rendered */}
-        <video
+        <Box
+          component="video"
           ref={videoRef}
+          autoPlay
           muted
+          loop={false}
           playsInline
-          style={{
+          onEnded={handleVideoEnded}
+          onError={handleVideoError}
+          sx={{
             position: 'absolute',
-            top: 0,
-            left: 0,
+            inset: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             zIndex: 0,
-            pointerEvents: 'none',
-            display: showContent ? 'none' : 'block',
+            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0.15 : 1,
+            transition:
+              heroPhase === 'dimmed' && !prefersReducedMotion
+                ? 'opacity 1s ease-out'
+                : 'none',
           }}
-        >
-          <source src="/assets/video/hero-bg.mp4" type="video/mp4" />
-        </video>
+          src={videoSrc}
+        />
 
-        {/* Dark bg — shown once video ends */}
-        {showContent && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: 'rgba(5, 7, 15, 0.92)',
-              zIndex: 1,
-            }}
-          />
-        )}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            bgcolor:
+              heroPhase === 'dimmed'
+                ? 'rgba(5, 7, 15, 0.92)'
+                : 'rgba(5, 7, 15, 0.6)',
+            zIndex: 1,
+            pointerEvents: 'none',
+            transition: 'background-color 1s ease-out',
+          }}
+        />
 
-        {/* Content — fades in after video ends */}
         <Container
           maxWidth="lg"
           sx={{
             position: 'relative',
             zIndex: 2,
             opacity: showContent ? 1 : 0,
-            pointerEvents: showContent ? 'auto' : 'none',
-            transition: showContent ? 'opacity 0.9s ease-in' : 'none',
+            transition: showContent ? 'opacity 250ms ease-in' : 'none',
           }}
           data-testid="signed-out-landing"
         >
@@ -252,7 +305,10 @@ export const Home = () => {
                 </Typography>
                 <Typography
                   variant="h5"
-                  sx={{ color: 'primary.light', fontWeight: 600 }}
+                  sx={{
+                    color: 'primary.light',
+                    fontWeight: 600,
+                  }}
                 >
                   Business, but weirder
                 </Typography>

@@ -111,6 +111,7 @@ jobs:
       # baked into build output
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PROD_ANON_KEY }}
+      VITE_APP_ENV: production
 
     steps:
       - name: Checkout

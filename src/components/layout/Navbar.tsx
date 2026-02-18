@@ -284,7 +284,12 @@ export const Navbar = () => {
       setSession(null);
 
       await supabase.auth.signOut();
-      localStorage.removeItem('sb-wrdlnkdn-auth');
+      // Clear all env-prefixed auth keys (uat-, prod-, dev-)
+      [
+        'uat-sb-wrdlnkdn-auth',
+        'prod-sb-wrdlnkdn-auth',
+        'dev-sb-wrdlnkdn-auth',
+      ].forEach((k) => localStorage.removeItem(k));
     } catch (error) {
       console.error(error);
       setSnack(toMessage(error));

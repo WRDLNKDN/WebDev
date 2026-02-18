@@ -17,35 +17,35 @@ import { useParams } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 
 // MODULAR COMPONENTS
-import { LandingPageSkeleton } from '../components/layout/LandingPageSkeleton';
-import { PortfolioFrame } from '../components/portfolio/PortfolioFrame';
-import { ProjectCard } from '../components/portfolio/ProjectCard';
-import { ResumeCard } from '../components/portfolio/ResumeCard';
+import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
+import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
+import { ProjectCard } from '../../components/portfolio/ProjectCard';
+import { ResumeCard } from '../../components/portfolio/ResumeCard';
 import {
   IdentityBadges,
   IdentityHeader,
-} from '../components/profile/IdentityHeader';
-import { ViewTagsSkillsDialog } from '../components/profile/ViewTagsSkillsDialog';
+} from '../../components/profile/IdentityHeader';
+import { ViewTagsSkillsDialog } from '../../components/profile/ViewTagsSkillsDialog';
 
 // --- NEW WIDGET SECTOR ---
-import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
+import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
-import { NotFoundPage } from './misc/NotFoundPage';
+import { NotFoundPage } from '../misc/NotFoundPage';
 
 const DivergencePage = lazy(() =>
-  import('./misc/DivergencePage').then((m) => ({
+  import('../misc/DivergencePage').then((m) => ({
     default: m.DivergencePage,
   })),
 );
 
 // LOGIC & TYPES
-import { toMessage } from '../lib/utils/errors';
-import { supabase } from '../lib/auth/supabaseClient';
-import { GLASS_CARD } from '../theme/candyStyles';
-import type { PortfolioItem } from '../types/portfolio';
-import type { DashboardProfile, NerdCreds } from '../types/profile';
-import { safeStr } from '../utils/stringUtils';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
+import { GLASS_CARD } from '../../theme/candyStyles';
+import type { PortfolioItem } from '../../types/portfolio';
+import type { DashboardProfile, NerdCreds } from '../../types/profile';
+import { safeStr } from '../../utils/stringUtils';
 
 export const LandingPage = () => {
   const { handle } = useParams<{ handle: string }>();

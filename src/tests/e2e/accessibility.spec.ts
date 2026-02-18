@@ -11,7 +11,7 @@ test('Global Accessibility Audit', async ({ page }) => {
   });
 
   await expect(
-    page.getByRole('link', { name: /Join our Community/i }).first(),
+    page.getByRole('link', { name: /Join Us/i }).first(),
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page })

@@ -80,9 +80,29 @@ export const GuestView = ({
         },
       };
 
+  // Hero (buttonsOnly): single primary CTA — OAuth selection happens on /join
+  if (buttonsOnly) {
+    return (
+      <Stack
+        spacing={4}
+        sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
+      >
+        <Button
+          component={RouterLink}
+          to="/join"
+          variant="outlined"
+          size="large"
+          fullWidth
+          sx={joinSx}
+        >
+          Join Us
+        </Button>
+      </Stack>
+    );
+  }
+
   const buttons = (
-    <Stack spacing={2} sx={{ pt: buttonsOnly ? 0 : 2 }}>
-      {/* Primary: Join our Community → /join */}
+    <Stack spacing={2} sx={{ pt: 2 }}>
       <Button
         component={RouterLink}
         to="/join"
@@ -93,7 +113,6 @@ export const GuestView = ({
       >
         Join our Community
       </Button>
-      {/* Explore Feed */}
       <Button
         component={RouterLink}
         to="/feed"
@@ -106,17 +125,6 @@ export const GuestView = ({
       </Button>
     </Stack>
   );
-
-  if (buttonsOnly) {
-    return (
-      <Stack
-        spacing={4}
-        sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
-      >
-        {buttons}
-      </Stack>
-    );
-  }
 
   return (
     <Stack spacing={4} sx={{ maxWidth: 520, mx: 'auto', textAlign: 'center' }}>
@@ -143,55 +151,7 @@ export const GuestView = ({
           For people who build, create, and think differently.
         </Typography>
       </Box>
-
-      {/* Primary CTA: Join our Community */}
-      <Stack spacing={2} sx={{ pt: 2, alignItems: 'stretch' }}>
-        <Button
-          component={RouterLink}
-          to="/join"
-          variant="outlined"
-          size="large"
-          fullWidth
-          sx={{
-            borderRadius: 20,
-            height: 56,
-            fontSize: '1.1rem',
-            textTransform: 'none',
-            borderColor: 'rgba(255,255,255,0.4)',
-            color: 'white',
-            bgcolor: 'rgba(255,255,255,0.02)',
-            '&:hover': {
-              borderColor: 'primary.main',
-              bgcolor: 'rgba(66, 165, 245, 0.08)',
-            },
-          }}
-        >
-          Join our Community
-        </Button>
-
-        <Button
-          component={RouterLink}
-          to="/feed"
-          variant="outlined"
-          size="large"
-          fullWidth
-          sx={{
-            borderRadius: 20,
-            height: 56,
-            fontSize: '1rem',
-            textTransform: 'none',
-            borderColor: 'rgba(255,255,255,0.3)',
-            color: 'rgba(255,255,255,0.9)',
-            bgcolor: 'transparent',
-            '&:hover': {
-              borderColor: 'rgba(255,255,255,0.6)',
-              bgcolor: 'rgba(255,255,255,0.06)',
-            },
-          }}
-        >
-          Explore Feed
-        </Button>
-      </Stack>
+      {buttons}
     </Stack>
   );
 };

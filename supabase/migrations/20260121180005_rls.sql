@@ -720,3 +720,73 @@ revoke all on table public.feed_advertisers from anon, authenticated;
 grant select on table public.feed_advertisers to authenticated;
 grant select, insert, update, delete on table public.feed_advertisers to authenticated;
 
+-- -----------------------------
+-- content_submissions, playlists, playlist_items, audit_log
+-- -----------------------------
+alter table public.content_submissions enable row level security;
+alter table public.playlists enable row level security;
+alter table public.playlist_items enable row level security;
+alter table public.audit_log enable row level security;
+
+create policy content_submissions_insert_own
+  on public.content_submissions for insert to authenticated
+  with check (auth.uid() = submitted_by);
+
+create policy content_submissions_select_own
+  on public.content_submissions for select to authenticated
+  using (auth.uid() = submitted_by);
+
+create policy content_submissions_admin_all
+  on public.content_submissions for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy playlists_select_public
+  on public.playlists for select to anon
+  using (is_public = true);
+
+create policy playlists_select_authenticated
+  on public.playlists for select to authenticated
+  using (true);
+
+create policy playlists_admin_all
+  on public.playlists for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy playlist_items_select_public
+  on public.playlist_items for select to anon
+  using (
+    exists (
+      select 1 from public.playlists p
+      where p.id = playlist_id and p.is_public = true
+    )
+  );
+
+create policy playlist_items_select_authenticated
+  on public.playlist_items for select to authenticated
+  using (true);
+
+create policy playlist_items_admin_all
+  on public.playlist_items for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy audit_log_select_admin
+  on public.audit_log for select to authenticated
+  using (public.is_admin());
+
+create policy content_submissions_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'content-submissions'
+    and (string_to_array(name, '/'))[2] = auth.uid()::text
+  );
+
+create policy content_submissions_storage_select
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'content-submissions'
+    and (string_to_array(name, '/'))[2] = auth.uid()::text
+  );
+

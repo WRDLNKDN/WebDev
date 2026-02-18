@@ -147,7 +147,7 @@ export const SignIn = () => {
                   to="/join"
                   sx={{ color: 'primary.main', textDecoration: 'underline' }}
                 >
-                  Sign up
+                  Join
                 </Typography>
               </Typography>
             </Box>

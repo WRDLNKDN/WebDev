@@ -50,7 +50,9 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Push migrations + seed (UAT)
-        run: supabase db push --linked --include-all --include-seed
+        run:
+          supabase db push --linked --include-all --include-seed --yes -p "${{
+          secrets.SUPABASE_UAT_DB_PASSWORD }}"
 
   deploy-prod:
     name: Supabase PROD (migrations + seed, approval gated)
@@ -89,4 +91,6 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Push migrations + seed (PROD)
-        run: supabase db push --linked --include-all --include-seed
+        run:
+          supabase db push --linked --include-all --include-seed --yes -p "${{
+          secrets.SUPABASE_PROD_DB_PASSWORD }}"

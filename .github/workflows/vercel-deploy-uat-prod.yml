@@ -67,7 +67,7 @@ jobs:
       - name: Push Supabase migrations (UAT)
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push --linked --include-all --include-seed
+          supabase db push --linked --include-all --include-seed --yes -p "${{ secrets.SUPABASE_UAT_DB_PASSWORD }}"
 
       - name: Link Vercel project (UAT)
         run: |
@@ -135,7 +135,7 @@ jobs:
       - name: Push Supabase migrations (PROD)
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push --linked --include-all --include-seed
+          supabase db push --linked --include-all --include-seed --yes -p "${{ secrets.SUPABASE_PROD_DB_PASSWORD }}"
 
       - name: Link Vercel project (PROD)
         run: |

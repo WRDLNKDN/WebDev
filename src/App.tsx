@@ -93,6 +93,24 @@ const BumperPage = lazy(() =>
   })),
 );
 
+const ContentSubmitPage = lazy(() =>
+  import('./pages/content/ContentSubmitPage').then((m) => ({
+    default: m.ContentSubmitPage,
+  })),
+);
+
+const PlaylistsPage = lazy(() =>
+  import('./pages/content/PlaylistsPage').then((m) => ({
+    default: m.PlaylistsPage,
+  })),
+);
+
+const PlaylistDetailPage = lazy(() =>
+  import('./pages/content/PlaylistDetailPage').then((m) => ({
+    default: m.PlaylistDetailPage,
+  })),
+);
+
 const ProjectPage = lazy(() =>
   import('./pages/profile/ProjectPage').then((m) => ({
     default: m.ProjectPage,
@@ -214,6 +232,12 @@ const AdminDashboard = lazy(() =>
 const AdminModerationPage = lazy(() =>
   import('./pages/admin/AdminModerationPage').then((m) => ({
     default: m.AdminModerationPage,
+  })),
+);
+
+const AdminContentModerationPage = lazy(() =>
+  import('./pages/admin/AdminContentModerationPage').then((m) => ({
+    default: m.AdminContentModerationPage,
   })),
 );
 
@@ -354,6 +378,16 @@ const App = () => {
               <Route path="/chat" element={<ChatRedirect />} />
               <Route path="/chat/:roomId" element={<ChatRedirect />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />
+              <Route
+                path="/submit"
+                element={
+                  <RequireOnboarded>
+                    <ContentSubmitPage />
+                  </RequireOnboarded>
+                }
+              />
+              <Route path="/playlists" element={<PlaylistsPage />} />
+              <Route path="/playlists/:slug" element={<PlaylistDetailPage />} />
 
               {/* --- Authentication --- */}
               <Route path="/login" element={<SignIn />} />
@@ -374,6 +408,10 @@ const App = () => {
                 <Route
                   path="moderation"
                   element={<AdminModerationPage initialStatus="pending" />}
+                />
+                <Route
+                  path="content"
+                  element={<AdminContentModerationPage />}
                 />
                 <Route path="chat-reports" element={<ChatReportsPage />} />
                 <Route path="advertisers" element={<AdminAdvertisersPage />} />

@@ -3,6 +3,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import PeopleIcon from '@mui/icons-material/People';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
   Box,
   Button,
@@ -52,6 +53,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Profile Moderation',
     to: '/admin/moderation',
     icon: <PeopleIcon />,
+  },
+  {
+    label: 'Content Moderation',
+    to: '/admin/content',
+    icon: <VideoLibraryIcon />,
   },
   {
     label: 'Chat Reports',

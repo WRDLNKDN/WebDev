@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 -->
+<!-- markdownlint-disable MD013 MD060 -->
 
 # UAT vs PROD Deployment & Supabase
 
@@ -228,6 +228,57 @@ columns, or RLS are missing:
 5. **GitHub Actions**  
    Verify `SUPABASE_UAT_DB_PASSWORD` / `SUPABASE_PROD_DB_PASSWORD` are set.  
    Workflow logs: Actions → select the run → "Push migrations" step.
+
+## GitHub Actions: Supabase migration secrets
+
+Migrations run in two workflows:
+
+- **vercel-deploy-uat-prod** — on every push to `main` (runs migrations before
+  deploy)
+- **supabase-deploy-uat-prod** — only when `supabase/migrations/**`,
+  `supabase/seed/**`, or `supabase/config.toml` change
+
+### Required secrets (per environment)
+
+| Secret                      | Where to add              | Value                                    |
+| --------------------------- | ------------------------- | ---------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN`     | Repo secrets or both envs | Supabase Dashboard → Account → New token |
+| `SUPABASE_UAT_PROJECT_REF`  | Environment `uat`         | `lgxwseyzoefxggxijatp`                   |
+| `SUPABASE_UAT_DB_PASSWORD`  | Environment `uat`         | UAT Postgres password                    |
+| `SUPABASE_PROD_PROJECT_REF` | Environment `production`  | `rpcaazmxymymqdejevtb`                   |
+| `SUPABASE_PROD_DB_PASSWORD` | Environment `production`  | PROD Postgres password                   |
+
+**Environments:** GitHub → Repo → Settings → Environments → `uat` / `production`
+→  
+Add as **Environment secrets** (not repository secrets) so UAT and PROD use
+the  
+correct project refs and passwords.
+
+### Manual trigger (migrations only)
+
+To run migrations without a full deploy:
+
+1. **Actions** → **Supabase Deploy UAT then PROD**
+2. **Run workflow** → choose branch (e.g. `main`)
+3. Optionally check **Also deploy production** (requires approval)
+
+### Fallback: apply migrations manually
+
+If the GitHub Action keeps failing, apply SQL directly:
+
+1. **Supabase Dashboard** → your project (UAT or PROD) → **SQL Editor**
+2. Run in this order:
+   - `supabase/migrations/20260121180000_tables.sql`
+   - `supabase/migrations/20260121180005_rls.sql`
+
+### Common failures
+
+| Symptom                            | Fix                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| "Missing SUPABASE_ACCESS_TOKEN"    | Create token at supabase.com/dashboard/account/tokens; add to secrets |
+| "Missing SUPABASE_UAT_DB_PASSWORD" | Add DB password to `uat` environment secrets                          |
+| "relation already exists"          | Migration already applied; or run `supabase migration repair` + push  |
+| "permission denied" / auth failure | Verify `SUPABASE_ACCESS_TOKEN` is valid and has project access        |
 
 ## See also
 

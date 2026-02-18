@@ -67,18 +67,26 @@ the DB-only reset flow above.
 are normal on a fresh or reset DB: the migration drops objects before creating
 them, and "skipping" just means there was nothing to drop.
 
-### Hosted / SQL Editor
+### Hosted / SQL Editor (manual fallback)
 
 Copy/paste scripts into the Supabase SQL Editor in order:
 
 1. `migrations/20260121180000_tables.sql` — all tables, functions, triggers
-   (including avatars bucket)
+   (including avatars, content-submissions bucket, content_submissions,
+   playlists, playlist_items, audit_log)
 2. `migrations/20260121180005_rls.sql` — all RLS policies and privileges
-   (including avatars storage policies)
 
 Optional (dev only):
 
 - `seed/seed.sql`
+
+**CI:** GitHub Actions runs migrations on push to main. See
+[docs/DEPLOYMENT_UAT_PROD.md](../docs/DEPLOYMENT_UAT_PROD.md) for secrets and
+troubleshooting.
+
+**Note:** If your DB already had the former 20260214 migrations applied, run
+`supabase migration repair 20260214180000 --status reverted` and
+`supabase migration repair 20260214180005 --status reverted` before pushing.
 
 ## Microsoft (Azure) OAuth Setup
 

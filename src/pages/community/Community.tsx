@@ -42,7 +42,7 @@ export const Community = () => {
               Join the Community
             </Typography>
             <Typography variant="body2" paragraph sx={{ mb: 0 }}>
-              Create a profile and join the directory. Sign up to get your
+              Create a profile and join the directory. Join to get your
               Weirdling and connect with others.
             </Typography>
             <Button
@@ -51,7 +51,42 @@ export const Community = () => {
               variant="contained"
               size="small"
             >
-              Sign up
+              Join
+            </Button>
+          </Stack>
+
+          <Stack spacing={2} sx={{ mt: 4 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Submit content
+            </Typography>
+            <Typography variant="body2" paragraph sx={{ mb: 0 }}>
+              Have a talk or video worth sharing? Submit YouTube links or upload
+              raw video for consideration on the WRDLNKDN channel.
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/submit"
+              variant="outlined"
+              size="small"
+            >
+              Submit content
+            </Button>
+          </Stack>
+
+          <Stack spacing={2} sx={{ mt: 4 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Browse playlists
+            </Typography>
+            <Typography variant="body2" paragraph sx={{ mb: 0 }}>
+              Curated community picks and featured content.
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/playlists"
+              variant="outlined"
+              size="small"
+            >
+              Playlists
             </Button>
           </Stack>
 

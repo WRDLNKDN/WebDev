@@ -26,17 +26,25 @@ Central index for WRDLNKDN WebDev documentation.
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and
   response envelope.
 - [ADR: Unified signup wizard](./architecture/adr-unified-signup-wizard.md) —
-  Decision record for the Join flow (signup wizard implementation).
+  Decision record for the Join flow (onboarding wizard implementation).
 - [ADR: Site chrome consolidation](./architecture/adr-site-chrome-consolidation.md)
   — Vercel as source of truth for header, footer, hero, and navigation.
 - [Epic: Ecommerce and Storefront](./architecture/epic-ecommerce-storefront.md)
   — Embed-first Ecwid storefront (MVP scope and acceptance).
 - [Epic: Personalized Weirdling Generator](./architecture/epic-weirdling-generator.md)
   — AI API backend, wizard UX, MVP model conformance.
+- [Epic: Home](./architecture/epic-home.md) — Pre-signin public brand surface at
+  `/`; single Join Us CTA, hero animation, no OAuth on Home.
+- [Epic: Join](./architecture/epic-join.md) — Authentication and onboarding at
+  `/join`; OAuth entry, profile provisioning, partial-state reconciliation.
 - [Epic: Feed](./architecture/epic-feed.md) — Content and activity surface at
   `/feed`; post rendering, reactions, visibility rules.
 - [Epic: Directory](./architecture/epic-directory.md) — Member discovery at
   `/directory`; search, filters, profile navigation.
+- [Epic: API Layer](./architecture/epic-api-layer.md) — Frontend–backend secure
+  communication; auth, content submission, moderation (implemented vs planned).
+- [Epic: IA Baseline](./architecture/epic-ia-baseline.md) — Core information
+  architecture; canonical routes, surfaces, navigation labels.
 - [Epic: Home Dashboard](./architecture/epic-home-dashboard.md) —
   Profile-centric landing experience; identity, portfolio, status, friends (MVP
   scope).

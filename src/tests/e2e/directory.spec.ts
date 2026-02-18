@@ -10,23 +10,19 @@ test.describe('Directory Page', () => {
     await expect(page).toHaveURL(/\/join/, { timeout: 10000 });
   });
 
-  test('directory page loads without error when authenticated', async ({
+  test('directory does not crash; unauthenticated redirects to join', async ({
     page,
   }) => {
-    // Requires auth; use storageState if fixtures provide authenticated session
+    // No auth fixture: RequireOnboarded redirects to /join
     await page.goto('/directory');
 
     await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-    // If redirected to join, we're unauthenticated (expected)
-    // If on directory, directory-page should be visible
-    const url = page.url();
-    if (url.includes('/join')) {
-      await expect(page.getByText(/join/i)).toBeVisible({ timeout: 5000 });
-    } else {
-      await expect(page.getByTestId('directory-page')).toBeVisible({
-        timeout: 10000,
-      });
-    }
+    // Wait for redirect (RequireOnboarded async check can take a few seconds)
+    await expect(page).toHaveURL(/\/join/, { timeout: 15000 });
+
+    await expect(page.getByRole('link', { name: 'Join' }).first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 });

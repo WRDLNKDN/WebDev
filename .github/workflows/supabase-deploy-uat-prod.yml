@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/**'
-      - 'supabase/seed.sql'
+      - 'supabase/seed/**'
       - 'supabase/config.toml'
   workflow_dispatch:
     inputs:
@@ -28,6 +28,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_UAT_DB_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -38,6 +39,7 @@ jobs:
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
           [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
+          [ -n "${SUPABASE_DB_PASSWORD:-}" ] || (echo "::error::Missing SUPABASE_UAT_DB_PASSWORD (required for db push)" && exit 1)
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -48,7 +50,7 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Push migrations + seed (UAT)
-        run: supabase db push --include-all --include-seed
+        run: supabase db push --linked --include-all --include-seed
 
   deploy-prod:
     name: Supabase PROD (migrations + seed, approval gated)
@@ -65,6 +67,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -75,6 +78,7 @@ jobs:
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
           [ -n "${SUPABASE_PROJECT_REF:-}" ]  || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
+          [ -n "${SUPABASE_DB_PASSWORD:-}" ] || (echo "::error::Missing SUPABASE_PROD_DB_PASSWORD (required for db push)" && exit 1)
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -85,4 +89,4 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Push migrations + seed (PROD)
-        run: supabase db push --include-all --include-seed
+        run: supabase db push --linked --include-all --include-seed

@@ -5,6 +5,8 @@ import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
 
+const RESUME_ALLOWED = ['.pdf', '.docx'] as const;
+
 export function useProfile() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
@@ -489,6 +491,13 @@ export function useProfile() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user');
+
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
+      if (!RESUME_ALLOWED.includes(ext)) {
+        throw new Error(
+          'Resume must be a PDF or Word document (.pdf or .docx only)',
+        );
+      }
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}/resume.${fileExt}`;

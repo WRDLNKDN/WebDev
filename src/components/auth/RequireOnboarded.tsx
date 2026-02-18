@@ -49,6 +49,11 @@ export const RequireOnboarded = ({
         if (cancelled) return;
         profile = await fetchProfile();
       }
+      if (!profile) {
+        await new Promise((r) => setTimeout(r, 800));
+        if (cancelled) return;
+        profile = await fetchProfile();
+      }
 
       if (cancelled) return;
 

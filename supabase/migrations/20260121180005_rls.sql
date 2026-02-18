@@ -1,5 +1,18 @@
 -- supabase/migrations/20260121180005_rls.sql
 -- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
+--
+-- HOW TO FORCE RLS RECONFIGURE (when db push says "up to date" but schema is wrong):
+--
+-- OPTION A: Run manually in Supabase Dashboard → SQL Editor
+-- 1. Open project (UAT: lgxwseyzoefxggxijatp, PROD: rpcaazmxymymqdejevtb)
+-- 2. SQL Editor → New query
+-- 3. Run 20260121180000_tables.sql first (if tables are missing)
+-- 4. Paste this ENTIRE file and Run
+--
+-- OPTION B: CLI repair + push (re-applies this migration)
+--   supabase link --project-ref lgxwseyzoefxggxijatp
+--   supabase migration repair 20260121180005 --status reverted
+--   supabase db push --linked --include-all --include-seed
 
 -- -----------------------------
 -- Optional: add use_weirdling_avatar if missing (idempotent for existing DBs)
@@ -363,27 +376,32 @@ create policy "Public read avatars"
   using (bucket_id = 'avatars');
 
 -- project-images: authenticated upload, public read
+drop policy if exists "Authenticated can upload project-images" on storage.objects;
 create policy "Authenticated can upload project-images"
   on storage.objects for insert
   to authenticated
   with check (bucket_id = 'project-images');
 
+drop policy if exists "Public read project-images" on storage.objects;
 create policy "Public read project-images"
   on storage.objects for select
   to public
   using (bucket_id = 'project-images');
 
 -- resumes: authenticated upload (own path), public read
+drop policy if exists "Authenticated can upload resumes" on storage.objects;
 create policy "Authenticated can upload resumes"
   on storage.objects for insert
   to authenticated
   with check (bucket_id = 'resumes');
 
+drop policy if exists "Authenticated can update resumes" on storage.objects;
 create policy "Authenticated can update resumes"
   on storage.objects for update
   to authenticated
   using (bucket_id = 'resumes');
 
+drop policy if exists "Public read resumes" on storage.objects;
 create policy "Public read resumes"
   on storage.objects for select
   to public

@@ -157,6 +157,41 @@ supabase link --project-ref lgxwseyzoefxggxijatp
 supabase migration list --linked
 ```
 
+### "Up to date" but schema is wrong
+
+If `migration list --linked` says "Remote database is up to date" but tables,
+columns, or RLS are missing:
+
+1. **Confirm you're linked to the right project**  
+   UAT: `lgxwseyzoefxggxijatp`, PROD: `rpcaazmxymymqdejevtb`.
+
+2. **Compare schema to migrations:**
+
+   ```bash
+   supabase db diff --linked
+   ```
+
+   If it reports changes, the remote schema does not match the migrations.
+
+3. **Repair migration history, then push again** (only if safe to re-run):
+
+   ```bash
+   # Mark the last migration as reverted (so db push will re-apply it)
+   supabase migration repair 20260121180005 --status reverted
+
+   # Re-push
+   supabase db push --linked --include-all --include-seed
+   ```
+
+4. **Or apply SQL manually**  
+   Copy `supabase/migrations/*.sql` (and
+   `supabase/scripts/apply-to-supabase.sql` for one-off fixes) into **Supabase
+   Dashboard → SQL Editor** and run against the correct project.
+
+5. **GitHub Actions**  
+   Verify `SUPABASE_UAT_DB_PASSWORD` / `SUPABASE_PROD_DB_PASSWORD` are set.  
+   Workflow logs: Actions → select the run → "Push migrations" step.
+
 ## See also
 
 - [Docs index](./README.md)

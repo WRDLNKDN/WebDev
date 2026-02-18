@@ -33,7 +33,18 @@ export const RequireOnboarded = ({
     let cancelled = false;
 
     const check = async () => {
-      const { data } = await supabase.auth.getSession();
+      // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
+      let { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (cancelled) return;
+        ({ data } = await supabase.auth.getSession());
+      }
+      if (!data.session) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (cancelled) return;
+        ({ data } = await supabase.auth.getSession());
+      }
       if (cancelled) return;
 
       if (!data.session) {

@@ -5,8 +5,6 @@ import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
 
-const RESUME_ALLOWED = ['.pdf', '.docx'] as const;
-
 export function useProfile() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
@@ -493,7 +491,7 @@ export function useProfile() {
       if (!session?.user) throw new Error('No user');
 
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
-      if (!(RESUME_ALLOWED as readonly string[]).includes(ext)) {
+      if (ext !== '.pdf' && ext !== '.docx') {
         throw new Error(
           'Resume must be a PDF or Word document (.pdf or .docx only)',
         );

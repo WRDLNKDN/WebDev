@@ -90,18 +90,27 @@ export const Navbar = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
+  // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
+  // retry getSession when null to avoid "stuck on Sign in" after returning from OAuth.
   useEffect(() => {
     let cancelled = false;
 
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) {
-        setSession(data.session ?? null);
-        setSessionLoaded(true);
+    const refreshSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled) {
+          setSession(data.session ?? null);
+          setSessionLoaded(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setSession(null);
+          setSessionLoaded(true);
+        }
       }
     };
 
-    void init();
+    void refreshSession();
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_evt, newSession) => {
@@ -112,11 +121,39 @@ export const Navbar = () => {
       },
     );
 
+    // Retries when null: catches OAuth callback race where session recovery completes
+    // before our listener was attached (SIGNED_IN fires, we miss it). UAT can be slow.
+    const retries = [600, 1200];
+    const timers = retries.map((delay) =>
+      setTimeout(async () => {
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled && data.session) {
+          setSession(data.session);
+          setSessionLoaded(true);
+        }
+      }, delay),
+    );
+
     return () => {
       cancelled = true;
+      timers.forEach(clearTimeout);
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  // Re-fetch session when navigating away from /auth/callback (AuthCallback just established it)
+  const prevPathRef = useRef(path);
+  useEffect(() => {
+    if (prevPathRef.current === '/auth/callback' && path !== '/auth/callback') {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session) {
+          setSession(data.session);
+          setSessionLoaded(true);
+        }
+      });
+    }
+    prevPathRef.current = path;
+  }, [path]);
 
   // Admin: IF session exists, check is_admin RPC; ELSE not admin
   useEffect(() => {
@@ -221,7 +258,12 @@ export const Navbar = () => {
       const { data, error } = await signInWithOAuth(provider, { redirectTo });
 
       if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        setBusy(false);
+        setSnack('Sign-in could not be completed. Please try again.');
+      }
     } catch (err) {
       console.error(err);
       setSnack(toMessage(err));
@@ -233,13 +275,17 @@ export const Navbar = () => {
     setBusy(true);
 
     try {
+      // Navigate away from protected routes first so RequireOnboarded
+      // doesn't redirect to /join when it sees SIGNED_OUT
+      navigate('/');
+      setSession(null);
+
       await supabase.auth.signOut();
       localStorage.removeItem('sb-wrdlnkdn-auth');
-      setSession(null);
-      navigate('/');
     } catch (error) {
       console.error(error);
       setSnack(toMessage(error));
+    } finally {
       setBusy(false);
     }
   };
@@ -545,7 +591,9 @@ export const Navbar = () => {
           {/* Desktop auth: hidden on mobile (shown in drawer) */}
           {!isMobile && (
             <Stack direction="row" spacing={2} alignItems="center">
-              {!sessionLoaded ? null : !session ? (
+              {path === '/auth/callback' ? null : !sessionLoaded ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
+                <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
+              ) : !session ? (
                 <>
                   {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
                   <Box
@@ -614,7 +662,9 @@ export const Navbar = () => {
           {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
           {isMobile && (
             <Stack direction="row" spacing={1} alignItems="center">
-              {!sessionLoaded ? null : !session ? (
+              {path === '/auth/callback' ? null : !sessionLoaded ? (
+                <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
+              ) : !session ? (
                 <>
                   <Box
                     component={RouterLink}
@@ -676,6 +726,7 @@ export const Navbar = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{ sx: { minWidth: 220, mt: 1, borderRadius: 2 } }}
+        disableScrollLock
       >
         <MenuItem
           onClick={() => void handleSignIn('google')}

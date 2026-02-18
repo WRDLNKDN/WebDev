@@ -281,7 +281,14 @@ const App = () => {
               />
 
               {/* --- Authenticated User Zone --- */}
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireOnboarded>
+                    <Dashboard />
+                  </RequireOnboarded>
+                }
+              />
               <Route path="/chat" element={<ChatRedirect />} />
               <Route path="/chat/:roomId" element={<ChatRedirect />} />
               <Route path="/weirdling/create" element={<WeirdlingCreate />} />

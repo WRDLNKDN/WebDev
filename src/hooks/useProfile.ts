@@ -490,6 +490,13 @@ export function useProfile() {
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user');
 
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
+      if (ext !== '.pdf' && ext !== '.docx') {
+        throw new Error(
+          'Resume must be a PDF or Word document (.pdf or .docx only)',
+        );
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}/resume.${fileExt}`;
 

@@ -270,7 +270,7 @@ export const Dashboard = () => {
               <input
                 type="file"
                 hidden
-                accept=".pdf,.doc,.docx"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) handleResumeUpload(f);

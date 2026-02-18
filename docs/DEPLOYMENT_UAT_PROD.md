@@ -78,22 +78,84 @@ After deploying, sign in on UAT. The Google dialog should show:
 
 `to continue to lgxwseyzoefxggxijatp.supabase.co`
 
-## Troubleshooting: Login redirects to Join/Signup
+## Troubleshooting: Login redirects to Join / "Acts like you don't have an account"
 
-If signing in on UAT sends you to the Join wizard instead of Feed:
+If signing in on UAT sends you to the Join wizard instead of Feed, or it "acts
+like you don't have an account":
 
-1. **Redirect URL** — UAT Supabase must have  
-   `https://webdev-uat.vercel.app/auth/callback` in  
-   **Authentication** → **URL Configuration** → **Redirect URLs**. If missing,
-   OAuth may fail or redirect incorrectly.
+### 1. Check the banner (most likely cause)
 
-2. **Profile exists** — You only go to Feed if you have a profile with
-   `display_name`. First-time sign-ins on UAT have no profile and correctly go
-   to Join. If you completed Join on UAT before, you should reach Feed.
+- **RED banner:** "UAT — WRONG Supabase: using PROD"  
+  UAT is pointing at the PROD Supabase project. Your auth session is for PROD,
+  but your profile was created on UAT (or vice versa). Profile fetch returns
+  null → app sends you to Join.
+- **Fix:** Apply Fix 1 or Fix 2 above so UAT uses
+  `https://lgxwseyzoefxggxijatp.supabase.co`.
+- **YELLOW banner:** "UAT — This is a test environment" — config is correct.
 
-3. **AuthCallback retry** — The app retries the profile fetch once after 600ms
-   to handle post-OAuth timing. Check the browser console for
-   `AuthCallback: profile fetch error` if issues persist.
+### 2. Redirect URL
+
+UAT Supabase must have `https://webdev-uat.vercel.app/auth/callback` in  
+**Authentication** → **URL Configuration** → **Redirect URLs**.
+
+### 3. Profile exists
+
+You only go to Feed if you have a profile with `display_name`. First-time
+sign-ins on UAT have no profile and correctly go to Join.
+
+### 4. AuthCallback retry
+
+The app retries the profile fetch once after 600ms to handle post-OAuth timing.
+Check the browser console for `AuthCallback: profile fetch error` if issues
+persist.
+
+## Verifying Supabase / RLS
+
+### Check which Supabase project the build uses
+
+- **Banner:** Red = wrong (PROD). Yellow = correct (UAT).
+- **Network tab:** When signing in, auth requests should go to
+  `lgxwseyzoefxggxijatp.supabase.co`, not `rpcaazmxymymqdejevtb.supabase.co`.
+
+### SQL: Verify profile exists (Supabase Dashboard → SQL Editor)
+
+Run against the **UAT** Supabase project (lgxwseyzoefxggxijatp):
+
+```sql
+-- Replace YOUR_EMAIL with the email you sign in with
+select p.id, p.email, p.display_name, p.status
+from public.profiles p
+join auth.users u on u.id = p.id
+where lower(u.email) = lower('YOUR_EMAIL');
+```
+
+- If no rows: you have no profile on UAT — complete Join.
+- If `status = 'pending'` and `display_name` is null: profile is incomplete —
+  finish Join.
+- If `status = 'approved'` and `display_name` set: you should reach Feed; if
+  not, check redirect URL and banner.
+
+### SQL: Verify RLS allows own profile read
+
+```sql
+-- Policies that let a user read their own profile
+select polname, polcmd, polqual::text
+from pg_policies
+where tablename = 'profiles'
+  and schemaname = 'public';
+```
+
+You should see `profiles_user_read_own` with `auth.uid() = id`.
+
+### Supabase CLI (linked to UAT project)
+
+```bash
+# Link to UAT (need SUPABASE_ACCESS_TOKEN and DB password)
+supabase link --project-ref lgxwseyzoefxggxijatp
+
+# Check which migrations are applied to remote UAT DB
+supabase migration list --linked
+```
 
 ## See also
 

@@ -65,8 +65,8 @@ export const AuthCallback = () => {
         console.log('🔵 AuthCallback: next parameter =', next);
         console.log('🔵 AuthCallback: Full URL =', window.location.href);
 
-        // Give Supabase time to process hash/query
-        await new Promise((r) => setTimeout(r, 200));
+        // Give Supabase time to process hash/query (UAT can be slower)
+        await new Promise((r) => setTimeout(r, 400));
 
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
@@ -126,6 +126,11 @@ export const AuthCallback = () => {
               let { data: profile } = await fetchProfile();
               if (!profile) {
                 await new Promise((r) => setTimeout(r, 600));
+                if (cancelled) return;
+                ({ data: profile } = await fetchProfile());
+              }
+              if (!profile) {
+                await new Promise((r) => setTimeout(r, 800));
                 if (cancelled) return;
                 ({ data: profile } = await fetchProfile());
               }

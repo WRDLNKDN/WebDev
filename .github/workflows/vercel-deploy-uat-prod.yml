@@ -29,6 +29,7 @@ jobs:
       # Supabase (for migrations)
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_UAT_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_UAT_DB_PASSWORD }}
 
       # baked into build output — UAT domain (webdev-uat.vercel.app) gets this build
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_UAT_URL }}
@@ -39,19 +40,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Push Supabase migrations (UAT)
-        run: |
-          supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push --include-all --include-seed
-
       - name: Verify secrets (UAT)
         run: |
           set -e
+          [ -n "${SUPABASE_DB_PASSWORD:-}" ] || (echo "::error::Missing SUPABASE_UAT_DB_PASSWORD (required for db push)" && exit 1)
           [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
           [ -n "${VERCEL_ORG_ID:-}" ] || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
           [ -n "${VERCEL_PROJECT_ID:-}" ] || (echo "::error::Missing VERCEL_PROJECT_ID_UAT" && exit 1)
@@ -66,6 +58,16 @@ jobs:
           if ! echo "$VITE_SUPABASE_URL" | grep -q "lgxwseyzoefxggxijatp"; then
             echo "::warning::SUPABASE_UAT_URL does not appear to be UAT Supabase (lgxwseyzoefxggxijatp). Current: ${VITE_SUPABASE_URL%%/*}"
           fi
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push Supabase migrations (UAT)
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --linked --include-all --include-seed
 
       - name: Link Vercel project (UAT)
         run: |
@@ -104,6 +106,7 @@ jobs:
       # Supabase (for migrations)
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
 
       # baked into build output
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
@@ -113,6 +116,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify secrets (PROD)
+        run: |
+          set -e
+          [ -n "${SUPABASE_DB_PASSWORD:-}" ] || (echo "::error::Missing SUPABASE_PROD_DB_PASSWORD (required for db push)" && exit 1)
+          [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
+          [ -n "${VERCEL_ORG_ID:-}" ] || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
+          [ -n "${VERCEL_PROJECT_ID:-}" ] || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
+          [ -n "${VITE_SUPABASE_URL:-}" ] || (echo "::error::Missing SUPABASE_PROD_URL" && exit 1)
+          [ -n "${VITE_SUPABASE_ANON_KEY:-}" ] || (echo "::error::Missing SUPABASE_PROD_ANON_KEY" && exit 1)
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -121,16 +134,7 @@ jobs:
       - name: Push Supabase migrations (PROD)
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push --include-all --include-seed
-
-      - name: Verify secrets (PROD)
-        run: |
-          set -e
-          [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
-          [ -n "${VERCEL_ORG_ID:-}" ] || (echo "::error::Missing VERCEL_ORG_ID" && exit 1)
-          [ -n "${VERCEL_PROJECT_ID:-}" ] || (echo "::error::Missing VERCEL_PROJECT_ID_PROD" && exit 1)
-          [ -n "${VITE_SUPABASE_URL:-}" ] || (echo "::error::Missing SUPABASE_PROD_URL" && exit 1)
-          [ -n "${VITE_SUPABASE_ANON_KEY:-}" ] || (echo "::error::Missing SUPABASE_PROD_ANON_KEY" && exit 1)
+          supabase db push --linked --include-all --include-seed
 
       - name: Link Vercel project (PROD)
         run: |

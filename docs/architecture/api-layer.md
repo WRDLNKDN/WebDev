@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD060 -->
+
 # API Layer: WRDLNKDN Frontend ⇄ Backend
 
 [← Docs index](../README.md)
@@ -8,7 +10,30 @@ This document defines the API contracts between the **frontend (Vercel)** and
 the **backend (Supabase + Node/Express)**. It is the source of truth for
 frontend–backend integration and for RLS / role configuration in Supabase.
 
-All endpoints use a **JSON response envelope**:
+---
+
+## Implemented APIs (MVP)
+
+The following APIs are **implemented and deployed**:
+
+| Surface            | Endpoints                                               | Auth                       | Doc                             |
+| ------------------ | ------------------------------------------------------- | -------------------------- | ------------------------------- |
+| **Feeds**          | GET/POST `/api/feeds`, reactions, comments              | Bearer JWT                 | [feeds-api.md](../feeds-api.md) |
+| **Directory**      | GET `/api/directory`, connect/accept/decline/disconnect | Bearer JWT                 | [directory.md](../directory.md) |
+| **Admin profiles** | GET/POST profiles (approve, reject, disable, delete)    | Bearer JWT / x-admin-token | backend README                  |
+| **Weirdling**      | generate, regenerate, save, me, delete                  | Bearer JWT                 | weirdling architecture          |
+
+**Auth:** All authenticated endpoints expect `Authorization: Bearer <token>`
+(Supabase JWT). RLS and `requireAuth`/`requireAdmin` enforce privileges.
+
+**Response envelope:** Feeds and Directory use `{ data, nextCursor? }` /
+`{ error }`; admin APIs use a similar JSON shape. See Response Envelope below.
+
+---
+
+## Response Envelope (Target Contract)
+
+All new endpoints should use this **JSON response envelope**:
 
 ```jsonc
 {
@@ -30,12 +55,14 @@ On error:
 }
 ```
 
-The existing profile admin APIs keep their current shape; new endpoints should
-follow this envelope.
-
 ---
 
-## 1. Auth & Profile APIs
+## Planned APIs (Future / Community Content)
+
+The following sections describe **planned** contracts for community-driven video
+submissions, playlists, and moderation. They are not yet implemented.
+
+### 1. Auth & Profile APIs
 
 ### 1.1 `GET /api/me`
 
@@ -63,7 +90,7 @@ follow this envelope.
 
 ---
 
-## 2. Public Playlist & Content APIs
+### 2. Public Playlist & Content APIs
 
 All public content is **approved + published** and safe for unauthenticated
 consumption. These endpoints are consumable from the frontend or from static
@@ -133,7 +160,7 @@ pages.
 
 ---
 
-## 3. Content Submission APIs
+### 3. Content Submission APIs
 
 These are used by authenticated community members to submit content.  
 Supabase RLS ensures users can only see and modify their own submissions.
@@ -207,7 +234,7 @@ The frontend uploads directly to `uploadUrl` and then calls
 
 ---
 
-## 4. Moderation & Publishing APIs (Admin)
+### 4. Moderation & Publishing APIs (Admin)
 
 All moderation endpoints require admin/creator‑ops roles and are enforced via
 `requireAdmin` middleware + RLS on Supabase tables. All actions are logged to an
@@ -293,7 +320,7 @@ Backend uses a service‑role Supabase client to:
 
 ---
 
-## 5. Admin Management APIs
+### 5. Admin Management APIs
 
 ### 5.1 `GET /api/admin/audit`
 
@@ -323,18 +350,16 @@ Backend uses a service‑role Supabase client to:
 
 ---
 
-## 6. Implementation Notes
+## Implementation Notes
 
 - **Auth:** All authenticated endpoints expect a Supabase JWT via
   `Authorization: Bearer <token>`.
-- **RLS:** Tables `content_submissions`, `playlists`, `playlist_items`,
-  `audit_log` must have RLS policies matching the above contracts.
-- **Service role:** All `/api/admin/*` routes use the existing `adminSupabase`
-  client (service role key) in `backend/server.ts`.
-- **Observability:** Admin routes record events in `audit_log` with:
-  `actor_email`, `action`, `target_type`, `target_id`, and a `meta` JSONB
-  payload.
+- **RLS:** Implemented APIs use RLS on `feed_items`, `feed_connections`,
+  `profiles`, `portfolio_items`, etc. Planned APIs will require RLS on
+  `content_submissions`, `playlists`, `playlist_items`, `audit_log`.
+- **Service role:** Admin routes use `adminSupabase` (service role key).
+- **Observability:** Admin profile actions are logged; planned content
+  moderation will use `audit_log`.
 
-This file is the contract; backend route handlers and frontend API clients
-(`adminApi.ts` and new `contentApi.ts`) should be implemented to match this
-shape.
+**Definition of done (Epic #137):** Core API endpoints implemented and deployed;
+frontend integrated; no production secrets exposed; decisions documented.

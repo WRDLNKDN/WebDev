@@ -1,4 +1,6 @@
-# Home Dashboard (Profile-Centric Landing Experience)
+<!-- markdownlint-disable MD013 MD060 -->
+
+# Epic: Home Dashboard (Profile-Centric Landing Experience) #103
 
 [← Docs index](../README.md)
 
@@ -7,8 +9,9 @@
 **Parent:** Core Product Experience
 
 The Home Dashboard defines the default landing experience for authenticated
-users. When signed in, users land on their own profile page, which serves as
-both a personal dashboard and a public-facing professional presence.
+users. When signed in, users land on their own profile page (or Feed per IA),
+which serves as both a personal dashboard and a public-facing professional
+presence.
 
 The Home Dashboard is profile-first, expressive, and creator-oriented. It
 emphasizes identity, portfolio, and connection over feeds or passive
@@ -37,7 +40,9 @@ coherent professional presence to others.
 
 ### 3.1 Profile Landing
 
-- Authenticated users land on their own profile page when accessing the site
+- If Profile is designated as canonical post-auth surface by IA governance,
+  users land on their own profile page. (Current IA: authenticated users land on
+  `/feed`; Dashboard at `/dashboard` is the private control surface.)
 - The profile page is editable by the owner and viewable by others (permissions
   handled separately)
 
@@ -46,7 +51,7 @@ coherent professional presence to others.
 Users can edit:
 
 - Display name
-- Title (short professional descriptor, similar to LinkedIn)
+- Title (short professional descriptor, tagline — similar to LinkedIn)
 - Bio (short-form, editable)
 - Links (external links, multiple allowed)
 
@@ -87,23 +92,24 @@ Users can:
 
 Portfolio represents the user's professional and creative body of work.
 
-### 3.5 Friends & Connections
+### 3.5 Connections
 
 Users can:
 
-- View their friends or connections
-- Add friends
-- Remove friends
+- View their connections
+- Add connections (via Directory Connect, profile Connect)
+- Remove connections (Disconnect)
 
-The profile displays a Friends section with basic visibility into connections.
+The profile displays a Connections section with basic visibility into
+connections.
 
-**Friend suggestions** are shown based on:
+**Connection suggestions** are shown based on:
 
 - Portfolio metadata
 - Shared interests or themes
 - Overlapping content or participation signals
 
-Friend suggestions must feel contextual, not algorithmically aggressive.
+Connection suggestions must feel contextual, not algorithmically aggressive.
 
 ---
 
@@ -138,28 +144,34 @@ Friend suggestions must feel contextual, not algorithmically aggressive.
 
 ## 7. Current implementation status
 
-- **Profile landing** — Done. Auth redirects to `/dashboard` when
-  `next=/dashboard` (e.g. from Login). Unauthenticated users hitting
-  `/dashboard` are sent home.
+- **Profile landing** — Done. Auth redirects to `/feed` when visiting `/`.
+  Dashboard at `/dashboard` is the private control surface. Profile at
+  `/profile/:handle` is public identity.
 - **Profile identity** — Done. Edit Profile (display name, handle, tagline,
   pronouns, bio, status emoji/message, avatar). Manage links (multiple external
   links). Save via Edit Profile / Edit Links dialogs.
 - **Status & expression** — Partial. Status emoji + message ("How I'm feeling")
   in `nerd_creds`; shown in IdentityHeader. **Profile music:** not implemented.
 - **Portfolio** — Partial. View portfolio, add items (Add Project), resume
-  upload. **Reorder / remove items:** not implemented. Requires
-  `portfolio_items` table and UI.
-- **Friends & connections** — Not done. No Friends section, add/remove friends,
-  or friend suggestions.
+  upload, delete items. **Reorder items:** not implemented (no drag-and-drop).
+- **Connections** — Partial. Add/remove via Directory (Connect, Accept, Decline,
+  Disconnect) and profile (Connect/Unfollow). No dedicated Connections section
+  on profile. No connection suggestions.
 
-**Summary:** The epic is **partially** solved. Profile-first landing, identity,
-links, status message, and portfolio (view + add) are in place. To fully satisfy
-the epic MVP: add profile music (optional), portfolio reorder/remove, and
-Friends & connections.
+**Summary:** The epic is **partially** solved. Identity, links, status message,
+portfolio (view + add + delete), and connection actions are in place. Gaps:
+profile music (optional), portfolio reorder, dedicated Connections section,
+connection suggestions.
 
 ---
 
-## 8. How to test
+## 8. Related Epics
+
+- [Epic: Directory](./epic-directory.md) (#256) — member discovery; add/remove
+  connections via Connect flow
+- [Epic: Feed](./epic-feed.md) (#313) — content surface (distinct from profile)
+
+## 9. How to test
 
 ### Prerequisites
 
@@ -168,7 +180,7 @@ Friends & connections.
 - `.env` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (and backend env if
   testing API)
 
-### 1. Start the app
+### 2. Start the app
 
 ```bash
 npm install
@@ -178,7 +190,7 @@ npm run dev
 This runs Vite (frontend), Supabase local, and the API. Frontend is usually
 `http://localhost:5173`.
 
-### 2. Sign in and land on Dashboard
+### 3. Sign in and land on Dashboard
 
 1. Open `http://localhost:5173`.
 2. Sign in (e.g. **Login** or **Sign in** with Google/Microsoft). Use
@@ -187,7 +199,7 @@ This runs Vite (frontend), Supabase local, and the API. Frontend is usually
    are sent to `/` instead, use the nav to go to **Dashboard** or open
    `http://localhost:5173/dashboard` while signed in.
 
-### 3. Profile identity
+### 4. Profile identity
 
 1. On Dashboard, click **Edit Profile**. Change display name, handle, tagline,
    bio, status emoji, status message. Save.
@@ -195,7 +207,7 @@ This runs Vite (frontend), Supabase local, and the API. Frontend is usually
 3. Click **Settings** → **Manage links**. Add/edit/remove links. Save. Confirm
    the Links section shows your links.
 
-### 4. Portfolio
+### 5. Portfolio
 
 1. On Dashboard, in the Portfolio area click **Add Project** (or the add card).
    Fill title, description, URL, optional image and tech stack. Submit.
@@ -203,14 +215,15 @@ This runs Vite (frontend), Supabase local, and the API. Frontend is usually
 3. **Resume:** Use the resume card to upload a resume if the feature is present;
    confirm it appears.
 
-### 5. Status & expression
+### 6. Status & expression
 
 1. In **Edit Profile**, set **Status emoji** and **Status message** (e.g. "How
    I'm feeling"). Save.
 2. Confirm the status appears near the profile header (IdentityHeader).
 
-### 6. Gaps (not testable yet)
+### 7. Gaps (not testable yet)
 
 - **Profile music:** No UI or storage.
-- **Portfolio reorder/remove:** No drag-and-drop or delete on project cards.
-- **Friends & connections:** No Friends section or suggestions.
+- **Portfolio reorder:** No drag-and-drop reorder (delete is implemented).
+- **Connections section:** No dedicated Connections list on profile.
+- **Connection suggestions:** Not implemented.

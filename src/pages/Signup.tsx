@@ -23,6 +23,7 @@ import { ValuesStep } from '../components/signup/ValuesStep';
 import { WelcomeStep } from '../components/signup/WelcomeStep';
 
 import { toMessage } from '../lib/errors';
+import { setProfileValidated } from '../lib/profileValidatedCache';
 
 const BG_SX = {
   minHeight: '100vh',
@@ -61,9 +62,23 @@ export const Signup = () => {
     const init = async () => {
       try {
         setError(null);
-        const { data, error: sessErr } = await supabase.auth.getSession();
+        // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
+        let { data, error: sessErr } = await supabase.auth.getSession();
         if (sessErr) throw sessErr;
-        const session: Session | null = data?.session ?? null;
+        let session: Session | null = data?.session ?? null;
+        if (!session) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (cancelled) return;
+          ({ data, error: sessErr } = await supabase.auth.getSession());
+          if (sessErr) throw sessErr;
+          session = data?.session ?? null;
+        }
+        if (!session) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (cancelled) return;
+          ({ data } = await supabase.auth.getSession());
+          session = data?.session ?? null;
+        }
 
         if (session && !cancelled) {
           const { data: profile, error: profileErr } = await supabase
@@ -85,7 +100,12 @@ export const Signup = () => {
 
             if (hasPolicyVersion && hasValues && hasDisplayName) {
               resetSignup();
-              navigate('/feed', { replace: true });
+              // Cache validated profile so RequireOnboarded doesn't re-fetch (avoids race/loop)
+              setProfileValidated(session.user.id, profile);
+              navigate('/feed', {
+                replace: true,
+                state: { profileValidated: profile },
+              });
               return;
             }
 

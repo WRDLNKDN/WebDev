@@ -15,8 +15,11 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
-import { signInWithOAuth } from '../../lib/signInWithOAuth';
+import {
+  toMessage,
+  MICROSOFT_SIGNIN_NOT_CONFIGURED,
+} from '../../lib/utils/errors';
+import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 
 export const SignIn = () => {
   const [loading, setLoading] = useState(false);

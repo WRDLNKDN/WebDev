@@ -25,8 +25,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { toMessage } from '../../lib/errors';
-import { supabase } from '../../lib/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
 
 // Brand colors matching the screenshot

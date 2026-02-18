@@ -20,7 +20,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { toMessage } from '../../lib/errors';
+import { toMessage } from '../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
 
 // REUSING THE VIBE

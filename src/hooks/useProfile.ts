@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { toMessage } from '../lib/errors';
-import { supabase } from '../lib/supabaseClient';
+import { toMessage } from '../lib/utils/errors';
+import { supabase } from '../lib/auth/supabaseClient';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';

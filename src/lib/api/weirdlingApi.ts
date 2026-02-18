@@ -2,17 +2,17 @@
  * Weirdling API client — calls backend /api/weirdling (proxied in dev).
  */
 
-import { messageFromApiResponse } from './errors';
+import { messageFromApiResponse } from '../utils/errors';
 import type {
   WeirdlingPreview,
   WeirdlingWizardInputs,
   Weirdling,
-} from '../types/weirdling';
+} from '../../types/weirdling';
 
 const API_BASE = '/api/weirdling';
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const { supabase } = await import('./supabaseClient');
+  const { supabase } = await import('../auth/supabaseClient');
   const {
     data: { session },
   } = await supabase.auth.getSession();

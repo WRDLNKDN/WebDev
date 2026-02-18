@@ -27,7 +27,7 @@ import { CreateGroupDialog } from '../chat/CreateGroupDialog';
 import { StartDmDialog } from '../chat/StartDmDialog';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import { GLASS_CARD } from '../../theme/candyStyles';
 

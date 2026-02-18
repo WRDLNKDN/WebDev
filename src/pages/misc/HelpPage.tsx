@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 const CONTACT_EMAIL = 'info@wrdlnkdn.com';
 const PROFILE_BASE = 'https://wrdlnkdn.com/profile/';

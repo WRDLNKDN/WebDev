@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { useSignup } from '../context/useSignup';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/auth/supabaseClient';
 
 import { CompleteStep } from '../components/signup/CompleteStep';
 import { IdentityStep } from '../components/signup/IdentityStep';
@@ -22,8 +22,8 @@ import { SignupProgress } from '../components/signup/SignupProgress';
 import { ValuesStep } from '../components/signup/ValuesStep';
 import { WelcomeStep } from '../components/signup/WelcomeStep';
 
-import { toMessage } from '../lib/errors';
-import { setProfileValidated } from '../lib/profileValidatedCache';
+import { toMessage } from '../lib/utils/errors';
+import { setProfileValidated } from '../lib/profile/profileValidatedCache';
 
 const BG_SX = {
   minHeight: '100vh',

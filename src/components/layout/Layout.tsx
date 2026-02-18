@@ -5,8 +5,8 @@ import {
   MessengerProvider,
   useMessenger,
 } from '../../context/MessengerContext';
-import { updateLastActive } from '../../lib/updateLastActive';
-import { supabase } from '../../lib/supabaseClient';
+import { updateLastActive } from '../../lib/utils/updateLastActive';
+import { supabase } from '../../lib/auth/supabaseClient';
 import { ChatPopover } from '../chat/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Footer } from './Footer';

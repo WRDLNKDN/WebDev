@@ -1,5 +1,5 @@
 // src/lib/signupStorage.ts
-import type { SignupState } from '../types/signup';
+import type { SignupState } from '../../types/signup';
 
 const KEY = 'wrdlnkdn-signup';
 

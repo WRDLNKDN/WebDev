@@ -1,7 +1,7 @@
 import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Route guard: redirects to /join when user is not signed in.

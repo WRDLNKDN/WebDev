@@ -1,7 +1,7 @@
 import { Box, Button, Container, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * One-click unsubscribe page.

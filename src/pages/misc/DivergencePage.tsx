@@ -1,7 +1,7 @@
 import { Box, Button, Container, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { WeirdlingRunner } from '../components/games/WeirdlingRunner';
-import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
+import { WeirdlingRunner } from '../../components/games/WeirdlingRunner';
+import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 export const DivergencePage = () => {
   const navigate = useNavigate();

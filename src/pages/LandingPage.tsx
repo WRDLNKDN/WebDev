@@ -31,15 +31,17 @@ import { ViewTagsSkillsDialog } from '../components/profile/ViewTagsSkillsDialog
 import { ProfileLinksWidget } from '../components/profile/ProfileLinksWidget';
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
-import { NotFoundPage } from './NotFoundPage';
+import { NotFoundPage } from './misc/NotFoundPage';
 
 const DivergencePage = lazy(() =>
-  import('./DivergencePage').then((m) => ({ default: m.DivergencePage })),
+  import('./misc/DivergencePage').then((m) => ({
+    default: m.DivergencePage,
+  })),
 );
 
 // LOGIC & TYPES
-import { toMessage } from '../lib/errors';
-import { supabase } from '../lib/supabaseClient';
+import { toMessage } from '../lib/utils/errors';
+import { supabase } from '../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../theme/candyStyles';
 import type { PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../types/profile';

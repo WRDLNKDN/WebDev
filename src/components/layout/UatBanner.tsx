@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { isUat } from '../../lib/env';
+import { isUat } from '../../lib/utils/env';
 
 const PROD_SUPABASE_REF = 'rpcaazmxymymqdejevtb';
 

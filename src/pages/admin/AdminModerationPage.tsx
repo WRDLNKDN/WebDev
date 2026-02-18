@@ -37,7 +37,7 @@ import {
   fetchProfiles,
   rejectProfiles,
 } from './adminApi';
-import { toMessage } from '../../lib/errors';
+import { toMessage } from '../../lib/utils/errors';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 import { useAdminSession } from './AdminSessionContext';
 

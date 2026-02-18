@@ -3,7 +3,7 @@
  * Calls /api/directory (list) and /api/directory/{connect,accept,decline,disconnect} (actions).
  */
 
-import { messageFromApiResponse } from './errors';
+import { messageFromApiResponse } from '../utils/errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type DirectorySort = 'recently_active' | 'alphabetical' | 'newest';

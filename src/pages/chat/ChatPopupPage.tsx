@@ -2,15 +2,15 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useParams } from 'react-router-dom';
-import { ChatRoomHeader } from '../components/chat/ChatRoomHeader';
-import { MessageInput } from '../components/chat/MessageInput';
-import { MessageList } from '../components/chat/MessageList';
-import { BlockConfirmDialog } from '../components/chat/BlockConfirmDialog';
-import { GroupActionsDialog } from '../components/chat/GroupActionsDialog';
-import { ReportDialog } from '../components/chat/ReportDialog';
-import { useChat, useReportMessage } from '../hooks/useChat';
-import { useChatPresence } from '../hooks/useChatPresence';
-import { supabase } from '../lib/supabaseClient';
+import { ChatRoomHeader } from '../../components/chat/ChatRoomHeader';
+import { MessageInput } from '../../components/chat/MessageInput';
+import { MessageList } from '../../components/chat/MessageList';
+import { BlockConfirmDialog } from '../../components/chat/BlockConfirmDialog';
+import { GroupActionsDialog } from '../../components/chat/GroupActionsDialog';
+import { ReportDialog } from '../../components/chat/ReportDialog';
+import { useChat, useReportMessage } from '../../hooks/useChat';
+import { useChatPresence } from '../../hooks/useChatPresence';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Standalone popout chat window (LinkedIn-style).

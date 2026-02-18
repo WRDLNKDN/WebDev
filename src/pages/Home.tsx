@@ -9,9 +9,12 @@ import { HomeSkeleton } from '../components/home/HomeSkeleton';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { SocialProof } from '../components/home/SocialProof';
 import { WhatMakesDifferent } from '../components/home/WhatMakesDifferent';
-import { toMessage } from '../lib/errors';
-import { signInWithOAuth, type OAuthProvider } from '../lib/signInWithOAuth';
-import { supabase } from '../lib/supabaseClient';
+import { toMessage } from '../lib/utils/errors';
+import {
+  signInWithOAuth,
+  type OAuthProvider,
+} from '../lib/auth/signInWithOAuth';
+import { supabase } from '../lib/auth/supabaseClient';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).

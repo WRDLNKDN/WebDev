@@ -98,7 +98,7 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 
 - **API client:** `src/lib/directoryApi.ts` — `fetchDirectory`,
   `connectRequest`, `acceptRequest`, `declineRequest`, `disconnect`.
-- **Page:** `src/pages/Directory.tsx` — list view, search, filters
+- **Page:** `src/pages/community/Directory.tsx` — list view, search, filters
   (URL-persisted), sort, pagination, connection actions.
 - **Row:** `src/components/directory/DirectoryRow.tsx` — displays member and
   actions per connection state.

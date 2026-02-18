@@ -9,8 +9,8 @@
 import { Helmet } from 'react-helmet-async';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Bumper } from '../components/bumper/Bumper';
-import { setBumperShown } from '../lib/bumperSession';
+import { Bumper } from '../../components/bumper/Bumper';
+import { setBumperShown } from '../../lib/utils/bumperSession';
 
 /** How long to show the bumper after Join before redirect (ms). */
 const POST_JOIN_BUMPER_MS = 6000;

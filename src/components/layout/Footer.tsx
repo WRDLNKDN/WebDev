@@ -29,7 +29,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
 const CONTACT_EMAIL = 'info@wrdlnkdn.com';

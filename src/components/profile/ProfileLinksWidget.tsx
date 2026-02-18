@@ -4,7 +4,7 @@ import { CATEGORY_ORDER } from '../../constants/platforms';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
-} from '../../lib/linkPlatform';
+} from '../../lib/utils/linkPlatform';
 import type { SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 

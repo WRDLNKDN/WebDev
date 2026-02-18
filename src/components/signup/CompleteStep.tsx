@@ -1,7 +1,7 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { hasBumperBeenShown } from '../../lib/bumperSession';
+import { hasBumperBeenShown } from '../../lib/utils/bumperSession';
 import {
   completeStepStack,
   completeStepSubtext,

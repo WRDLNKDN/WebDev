@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import { useSignup } from '../../context/useSignup';
 import {
   signupPaper,

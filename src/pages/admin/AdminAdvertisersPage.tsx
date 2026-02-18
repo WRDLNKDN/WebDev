@@ -23,8 +23,8 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
-import { toMessage } from '../../lib/errors';
-import { supabase } from '../../lib/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 type AdvertiserRow = FeedAdvertiser & {
   created_at: string;

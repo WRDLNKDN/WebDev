@@ -12,13 +12,16 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
-import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
-import { isProfileOnboarded } from '../../lib/profileOnboarding';
-import { setProfileValidated } from '../../lib/profileValidatedCache';
-import { supabase } from '../../lib/supabaseClient';
+import {
+  toMessage,
+  MICROSOFT_SIGNIN_NOT_CONFIGURED,
+} from '../../lib/utils/errors';
+import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import { POLICY_VERSION } from '../../types/signup';
-import { updateLastActive } from '../../lib/updateLastActive';
+import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 function mapSupabaseProvider(user: {
@@ -66,12 +69,16 @@ export const AuthCallback = () => {
         console.log('🔵 AuthCallback: next parameter =', next);
         console.log('🔵 AuthCallback: Full URL =', window.location.href);
 
-        // Give Supabase time to process hash/query (UAT can be slower)
-        await new Promise((r) => setTimeout(r, 400));
+        // Give Supabase time to exchange code and establish session (UAT/slow networks)
+        await new Promise((r) => setTimeout(r, 600));
 
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        let { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
-
+        if (!data.session) {
+          await new Promise((r) => setTimeout(r, 400));
+          ({ data, error: sessionError } = await supabase.auth.getSession());
+          if (sessionError) throw sessionError;
+        }
         if (!data.session) {
           throw new Error('No session found after OAuth handshake.');
         }
@@ -126,16 +133,30 @@ export const AuthCallback = () => {
 
               let { data: profile } = await fetchProfile();
               if (!profile) {
-                await new Promise((r) => setTimeout(r, 600));
-                if (cancelled) return;
-                ({ data: profile } = await fetchProfile());
-              }
-              if (!profile) {
                 await new Promise((r) => setTimeout(r, 800));
                 if (cancelled) return;
                 ({ data: profile } = await fetchProfile());
               }
+              if (!profile) {
+                await new Promise((r) => setTimeout(r, 1000));
+                if (cancelled) return;
+                ({ data: profile } = await fetchProfile());
+              }
               if (cancelled) return;
+
+              if (profile) {
+                console.log(
+                  '🔵 AuthCallback: profile fetched',
+                  !!profile.display_name,
+                  !!profile.join_reason?.length,
+                  !!profile.participation_style?.length,
+                );
+              } else {
+                console.warn(
+                  '🔵 AuthCallback: profile fetch returned null after retries → sending to /join',
+                );
+              }
+
               if (!profile || !isProfileOnboarded(profile)) {
                 const provider = mapSupabaseProvider(user);
                 setIdentity({

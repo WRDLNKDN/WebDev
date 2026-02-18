@@ -48,7 +48,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { toMessage } from '../lib/errors';
+import { toMessage } from '../lib/utils/errors';
 import {
   addComment,
   createFeedPost,
@@ -62,8 +62,8 @@ import {
   type FeedItem,
   type FeedViewPreference,
   type ReactionType,
-} from '../lib/feedsApi';
-import { supabase } from '../lib/supabaseClient';
+} from '../lib/api/feedsApi';
+import { supabase } from '../lib/auth/supabaseClient';
 
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -896,14 +896,21 @@ export const Feed = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+    } = supabase.auth.onAuthStateChange((evt, newSession) => {
       if (cancelled) return;
-      if (!newSession?.access_token) {
+
+      // Only redirect on explicit sign-out, not on token refresh/errors
+      if (evt === 'SIGNED_OUT') {
         setSession(null);
         navigate('/join', { replace: true });
         return;
       }
-      setSession(newSession);
+
+      // Update session if we have one
+      if (newSession) {
+        setSession(newSession);
+      }
+      // If no session but not signed out, do nothing (token refresh in progress)
     });
 
     return () => {

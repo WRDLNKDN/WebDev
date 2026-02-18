@@ -1,6 +1,6 @@
 // src/pages/admin/adminApi.ts
 
-import { messageFromApiResponse } from '../../lib/errors';
+import { messageFromApiResponse } from '../../lib/utils/errors';
 import type { ProfileRow, ProfileStatus } from '../../types/types';
 
 // Re-export types so other components importing from adminApi don't explode

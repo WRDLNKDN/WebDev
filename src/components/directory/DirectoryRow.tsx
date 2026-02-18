@@ -11,7 +11,10 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import type { DirectoryMember, ConnectionState } from '../../lib/directoryApi';
+import type {
+  DirectoryMember,
+  ConnectionState,
+} from '../../lib/api/directoryApi';
 import { CARD_BG } from '../../theme/candyStyles';
 
 interface DirectoryRowProps {

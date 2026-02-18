@@ -1,5 +1,5 @@
 import { Button } from '@mui/material';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/auth/supabaseClient';
 
 export const LoginButton = () => {
   const signInWithGoogle = async () => {

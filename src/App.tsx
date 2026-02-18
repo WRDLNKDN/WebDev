@@ -291,7 +291,14 @@ const App = () => {
               <Route path="/projects/:id" element={<ProjectPage />} />
               <Route path="/u/:handle" element={<RedirectUToProfile />} />
               <Route path="/home" element={<Home />} />
-              <Route path="/directory" element={<Directory />} />
+              <Route
+                path="/directory"
+                element={
+                  <RequireOnboarded>
+                    <Directory />
+                  </RequireOnboarded>
+                }
+              />
               <Route
                 path="/feed"
                 element={
@@ -323,6 +330,26 @@ const App = () => {
                     <Dashboard />
                   </RequireOnboarded>
                 }
+              />
+              <Route
+                path="/dashboard/profile"
+                element={<Navigate to="/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard/activity"
+                element={<Navigate to="/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard/intent"
+                element={<Navigate to="/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard/notifications"
+                element={<Navigate to="/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard/settings"
+                element={<Navigate to="/dashboard" replace />}
               />
               <Route path="/chat" element={<ChatRedirect />} />
               <Route path="/chat/:roomId" element={<ChatRedirect />} />

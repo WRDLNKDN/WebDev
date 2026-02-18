@@ -7,6 +7,9 @@
 **Single source of truth** for WRDLNKDN MVP page names, routes, access rules,
 and navigation. Use this doc for design, engineering, and onboarding.
 
+**Baseline:** See [IA Baseline](./ia-baseline.md) for the canonical
+architectural contract. All future IA amendments must reference that baseline.
+
 ---
 
 ## Canonical IA (ASCII Directory)
@@ -22,23 +25,19 @@ and navigation. Use this doc for design, engineering, and onboarding.
 ├── feed                    Authenticated
 │   └── route: /feed
 │
-├── profile                 Public (or Authenticated only, if required)
-│   ├── route: /profile/:handle
-│   └── examples:
-│       ├── /profile/april
-│       └── /profile/greenling42
+├── directory               Authenticated
+│   └── route: /directory
+│
+├── profile                 Public
+│   └── route: /profile/:handle
 │
 └── dashboard               Authenticated
     ├── route: /dashboard
-    ├── sections:
-    │   ├── /dashboard/profile      Edit my profile
-    │   ├── /dashboard/activity     My posts and engagement
-    │   ├── /dashboard/intent       My intent and participation settings
-    │   ├── /dashboard/notifications Mentions, DMs, invites
-    │   └── /dashboard/settings     Account and privacy
-    └── note:
-        Dashboard is the user's private control surface.
-        Profile is the user's public identity surface.
+    ├── /dashboard/profile
+    ├── /dashboard/activity
+    ├── /dashboard/intent
+    ├── /dashboard/notifications
+    └── /dashboard/settings
 ```
 
 ---
@@ -50,6 +49,7 @@ and navigation. Use this doc for design, engineering, and onboarding.
 | Home      | Public        | `/`                  |
 | Join      | Public        | `/join`              |
 | Feed      | Authenticated | `/feed`              |
+| Directory | Authenticated | `/directory`         |
 | Profile   | Public\*      | `/profile/:handle`   |
 | Dashboard | Authenticated | `/dashboard` and sub |
 
@@ -62,17 +62,20 @@ and navigation. Use this doc for design, engineering, and onboarding.
 ### Primary navigation labels
 
 - **Home** — always (links to `/`)
-- **Feed** — when logged in (links to `/feed`)
+- **Feed** — when logged in (links to `/feed`) — content and activity stream
+- **Directory** — when logged in (links to `/directory`) — member discovery
 - **Join** — when logged out (links to `/join`)
-- **Dashboard** — when logged in (links to `/dashboard`)
+- **Dashboard** — when logged in (links to `/dashboard`) — private control
+  surface
 - **Store** — if present (out of scope for this IA unless already live)
 
-When logged out, show **Join**; when logged in, show **Dashboard** in the same
-slot. Do not use "Directory" or "Signup" as nav labels.
+Legacy terms prohibited: **Signup** (use Join). Do not conflate Feed with
+Directory: Feed = activity stream, Directory = people discovery.
 
 ### Active state behavior
 
 - On `/feed` → **Feed** is highlighted.
+- On `/directory` → **Directory** is highlighted.
 - On `/join` → **Join** is highlighted.
 - On `/dashboard` or `/dashboard/*` → **Dashboard** is highlighted.
 
@@ -81,14 +84,10 @@ slot. Do not use "Directory" or "Signup" as nav labels.
 ## Route and UI naming
 
 - **Route and UI names must match** the canonical names above.
-- **Do not use legacy terms** in IA, routes, or nav:
-  - Use **Feed**, not "Directory".
-  - Use **Join**, not "Signup".
+- **Legacy terms prohibited:** Use **Join** (not Signup). Feed and Directory are
+  distinct: **Feed** = activity stream, **Directory** = member discovery.
 
 Legacy routes redirect: `/signup` → `/join`, `/u/:handle` → `/profile/:handle`.
-The route `/directory` is used for people discovery (navbar search, Discover
-People) and is not shown in the nav; the nav label is **Feed** (links to
-`/feed`).
 
 ---
 
@@ -114,7 +113,8 @@ People) and is not shown in the nav; the nav label is **Feed** (links to
 
 ## Related docs
 
-- [Spike: Profile vs Dashboard IA](./spike-profile-dashboard-ia.md) — canonical
+- [IA Baseline](./ia-baseline.md) — canonical architectural contract.
+- [Spike: Profile vs Dashboard IA](./spike-profile-dashboard-ia.md) — render
   model (Option B).
 - [Platform NFRs](./platform-nfrs.md) — constraints for Feed, Join, workflows.
 - [Auth requirements](../auth-requirements.md) — registration and Join flow.

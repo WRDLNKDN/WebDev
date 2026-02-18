@@ -6,9 +6,11 @@ Central index for WRDLNKDN WebDev documentation.
 
 - [Terminology and Language Standards](./TERMINOLOGY.md) — Canonical vocabulary
   for UI, docs, EPICs, and UX copy. No drift without approval.
+- [IA Baseline](./architecture/ia-baseline.md) — Canonical architectural
+  contract for routes, surfaces, and navigation (Phase 1).
 - [Information architecture](./architecture/information-architecture.md) —
   Canonical routes, navigation labels, public vs authenticated access; single
-  source of truth for Home, Feed, Join, Profile, Dashboard.
+  source of truth for Home, Feed, Directory, Join, Profile, Dashboard.
 - [Auth & password requirements](./auth-requirements.md) — User and admin
   authentication; password/OAuth and admin access rules.
 - [OAuth sign-in display name](./auth-oauth-display-name.md) — How to show

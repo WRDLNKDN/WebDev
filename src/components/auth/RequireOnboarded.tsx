@@ -20,22 +20,6 @@ export const RequireOnboarded = ({
 }) => {
   const location = useLocation();
   const [state, setState] = useState<State>('loading');
-  const [debugInfo, setDebugInfo] = useState<string>('');
-
-  const validated = location.state as
-    | { profileValidated?: ProfileOnboardingCheck }
-    | undefined;
-  const hasValidatedFromState =
-    validated?.profileValidated &&
-    isProfileOnboarded(validated.profileValidated);
-
-  // Sync: AuthCallback passed profile in location.state — allow through without fetch
-  const validated = location.state as
-    | { profileValidated?: ProfileOnboardingCheck }
-    | undefined;
-  const hasValidatedFromState =
-    validated?.profileValidated &&
-    isProfileOnboarded(validated.profileValidated);
 
   // Sync: AuthCallback passed profile in location.state — allow through without fetch
   const validated = location.state as
@@ -176,19 +160,12 @@ export const RequireOnboarded = ({
       <Box
         sx={{
           display: 'flex',
-          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '40vh',
-          gap: 2,
         }}
       >
         <CircularProgress aria-label="Checking authentication and profile" />
-        {debugInfo && (
-          <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-            {debugInfo}
-          </Box>
-        )}
       </Box>
     );
   }

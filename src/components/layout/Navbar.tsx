@@ -36,9 +36,12 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
-import { toMessage } from '../../lib/errors';
-import { signInWithOAuth, type OAuthProvider } from '../../lib/signInWithOAuth';
-import { supabase } from '../../lib/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
+import {
+  signInWithOAuth,
+  type OAuthProvider,
+} from '../../lib/auth/signInWithOAuth';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback

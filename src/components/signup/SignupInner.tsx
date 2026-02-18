@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 import { signupMain, signupProgressWrapper } from '../../theme/signupStyles';
 import { CompleteStep } from './CompleteStep';

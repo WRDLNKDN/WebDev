@@ -33,9 +33,9 @@ import { WeirdlingCreateDialog } from '../components/profile/WeirdlingCreateDial
 
 // LOGIC & TYPES
 import { useProfile } from '../hooks/useProfile';
-import { toMessage } from '../lib/errors';
-import { deleteWeirdling, getMyWeirdlings } from '../lib/weirdlingApi';
-import { supabase } from '../lib/supabaseClient';
+import { toMessage } from '../lib/utils/errors';
+import { deleteWeirdling, getMyWeirdlings } from '../lib/api/weirdlingApi';
+import { supabase } from '../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../theme/candyStyles';
 import type { Weirdling } from '../types/weirdling';
 import type { NerdCreds } from '../types/profile';

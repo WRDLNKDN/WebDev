@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/auth/supabaseClient';
 import type {
   IdentityData,
   ProfileData,

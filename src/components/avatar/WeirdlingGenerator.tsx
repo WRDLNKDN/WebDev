@@ -23,7 +23,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useRef, useState } from 'react';
 
 // PATH FIX: We go up two levels to find the client in src/
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 // --- TYPES ---
 interface WeirdlingGeneratorProps {

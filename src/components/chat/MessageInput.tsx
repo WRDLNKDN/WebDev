@@ -2,7 +2,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import SendIcon from '@mui/icons-material/Send';
 import { Box, IconButton, TextField } from '@mui/material';
 import { useRef, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import {
   CHAT_ALLOWED_MIME,
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,

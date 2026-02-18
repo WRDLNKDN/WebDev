@@ -23,21 +23,21 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
-import { DirectoryRow } from '../components/directory/DirectoryRow';
+import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type {
   ConnectionState,
   DirectoryMember,
   DirectorySort,
-} from '../lib/directoryApi';
+} from '../../lib/api/directoryApi';
 import {
   acceptRequest,
   connectRequest,
   declineRequest,
   disconnect,
   fetchDirectory,
-} from '../lib/directoryApi';
-import { toMessage } from '../lib/errors';
-import { supabase } from '../lib/supabaseClient';
+} from '../../lib/api/directoryApi';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const PAGE_SIZE = 25;

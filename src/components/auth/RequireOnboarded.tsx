@@ -1,10 +1,10 @@
 import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { isProfileOnboarded } from '../../lib/profileOnboarding';
-import type { ProfileOnboardingCheck } from '../../lib/profileOnboarding';
-import { getProfileValidated } from '../../lib/profileValidatedCache';
-import { supabase } from '../../lib/supabaseClient';
+import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import type { ProfileOnboardingCheck } from '../../lib/profile/profileOnboarding';
+import { getProfileValidated } from '../../lib/profile/profileValidatedCache';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 type State = 'loading' | 'redirect' | 'allowed';
 

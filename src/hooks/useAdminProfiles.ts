@@ -1,7 +1,7 @@
 // src/hooks/useAdminProfiles.ts
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toMessage } from '../lib/errors';
+import { toMessage } from '../lib/utils/errors';
 import type { ProfileRow, ProfileStatus } from '../pages/admin/adminApi';
 import { fetchProfiles } from '../pages/admin/adminApi';
 

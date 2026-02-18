@@ -9,9 +9,9 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toMessage } from '../lib/errors';
-import { supabase } from '../lib/supabaseClient';
-import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
+import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 export const Login = () => {
   const navigate = useNavigate();

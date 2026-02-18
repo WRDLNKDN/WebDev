@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { GLASS_CARD, SIGNUP_BG } from '../theme/candyStyles';
+import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
 export const NotFoundPage = () => {
   const navigate = useNavigate();

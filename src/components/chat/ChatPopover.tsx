@@ -10,7 +10,7 @@ import { GroupActionsDialog } from './GroupActionsDialog';
 import { ReportDialog } from './ReportDialog';
 import { useChat, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const POPOVER_WIDTH = 420;

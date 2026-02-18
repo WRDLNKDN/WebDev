@@ -20,11 +20,11 @@ import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
-import { toMessage } from '../../lib/errors';
+import { toMessage } from '../../lib/utils/errors';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
-} from '../../lib/linkPlatform';
+} from '../../lib/utils/linkPlatform';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 

@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { AddProjectDialog } from '../components/portfolio/AddProjectDialog';
 import { useProfile } from '../hooks/useProfile';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/auth/supabaseClient';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 
 function isExternalUrl(url: string): boolean {

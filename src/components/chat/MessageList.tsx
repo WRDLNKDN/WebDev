@@ -1,7 +1,7 @@
 import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import React, { useRef, useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { MessageWithExtras } from '../../hooks/useChat';
 import type { ChatRoomType } from '../../types/chat';
 import { GLASS_CARD } from '../../theme/candyStyles';

@@ -12,13 +12,13 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { toMessage } from '../../lib/errors';
-import { supabase } from '../../lib/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
+import { supabase } from '../../lib/auth/supabaseClient';
 import {
   generateWeirdling,
   saveWeirdlingByJobId,
   saveWeirdlingPreview,
-} from '../../lib/weirdlingApi';
+} from '../../lib/api/weirdlingApi';
 import { createAvatar } from '@dicebear/core';
 import { bottts } from '@dicebear/collection';
 import type {

@@ -16,7 +16,7 @@
  */
 
 import sjson from 'secure-json-parse';
-import { messageFromApiResponse } from './errors';
+import { messageFromApiResponse } from '../utils/errors';
 
 /**
  * Base URL for API requests (origin only; do not include /api).
@@ -68,7 +68,7 @@ async function getAuthHeaders(
 ): Promise<HeadersInit> {
   let token = accessToken;
   if (token == null) {
-    const { supabase } = await import('./supabaseClient');
+    const { supabase } = await import('../auth/supabaseClient');
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -146,7 +146,7 @@ export async function updateFeedViewPreference(params: {
   feedViewPreference: FeedViewPreference;
   accessToken?: string | null;
 }): Promise<void> {
-  const { supabase } = await import('./supabaseClient');
+  const { supabase } = await import('../auth/supabaseClient');
   const {
     data: { session },
   } = await supabase.auth.getSession();

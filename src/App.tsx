@@ -16,7 +16,7 @@ import { useKonamiCode } from './hooks/useKonamiCode';
 // LAYOUT & UTILS
 import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
-import { supabase } from './lib/supabaseClient';
+import { supabase } from './lib/auth/supabaseClient';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
@@ -32,11 +32,15 @@ const Dashboard = lazy(() =>
 );
 
 const ChatRedirect = lazy(() =>
-  import('./pages/ChatRedirect').then((m) => ({ default: m.ChatRedirect })),
+  import('./pages/chat/ChatRedirect').then((m) => ({
+    default: m.ChatRedirect,
+  })),
 );
 
 const ChatPopupPage = lazy(() =>
-  import('./pages/ChatPopupPage').then((m) => ({ default: m.ChatPopupPage })),
+  import('./pages/chat/ChatPopupPage').then((m) => ({
+    default: m.ChatPopupPage,
+  })),
 );
 
 const Feed = lazy(() =>
@@ -48,7 +52,7 @@ const Home = lazy(() =>
 );
 
 const Store = lazy(() =>
-  import('./pages/Store').then((m) => ({ default: m.Store })),
+  import('./pages/marketing/Store').then((m) => ({ default: m.Store })),
 );
 
 const About = lazy(() =>
@@ -56,7 +60,9 @@ const About = lazy(() =>
 );
 
 const Community = lazy(() =>
-  import('./pages/Community').then((m) => ({ default: m.Community })),
+  import('./pages/community/Community').then((m) => ({
+    default: m.Community,
+  })),
 );
 
 const Platform = lazy(() =>
@@ -64,7 +70,9 @@ const Platform = lazy(() =>
 );
 
 const Directory = lazy(() =>
-  import('./pages/Directory').then((m) => ({ default: m.Directory })),
+  import('./pages/community/Directory').then((m) => ({
+    default: m.Directory,
+  })),
 );
 
 const WeirdlingCreate = lazy(() =>
@@ -74,50 +82,64 @@ const WeirdlingCreate = lazy(() =>
 );
 
 const BumperPage = lazy(() =>
-  import('./pages/BumperPage').then((m) => ({ default: m.BumperPage })),
+  import('./pages/misc/BumperPage').then((m) => ({
+    default: m.BumperPage,
+  })),
 );
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(() =>
-  import('./pages/DivergencePage').then((m) => ({ default: m.DivergencePage })),
+  import('./pages/misc/DivergencePage').then((m) => ({
+    default: m.DivergencePage,
+  })),
 );
 
 const EventsPage = lazy(() =>
-  import('./pages/EventsPage').then((m) => ({ default: m.EventsPage })),
+  import('./pages/community/EventsPage').then((m) => ({
+    default: m.EventsPage,
+  })),
 );
 
 const ForumsPage = lazy(() =>
-  import('./pages/ForumsPage').then((m) => ({ default: m.ForumsPage })),
+  import('./pages/community/ForumsPage').then((m) => ({
+    default: m.ForumsPage,
+  })),
 );
 
 const SavedPage = lazy(() =>
-  import('./pages/SavedPage').then((m) => ({ default: m.SavedPage })),
+  import('./pages/community/SavedPage').then((m) => ({
+    default: m.SavedPage,
+  })),
 );
 
 const AdvertisePage = lazy(() =>
-  import('./pages/AdvertisePage').then((m) => ({ default: m.AdvertisePage })),
+  import('./pages/marketing/AdvertisePage').then((m) => ({
+    default: m.AdvertisePage,
+  })),
 );
 
 const HelpPage = lazy(() =>
-  import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })),
+  import('./pages/misc/HelpPage').then((m) => ({ default: m.HelpPage })),
 );
 
 const CommunityPartnersPage = lazy(() =>
-  import('./pages/CommunityPartnersPage').then((m) => ({
+  import('./pages/community/CommunityPartnersPage').then((m) => ({
     default: m.CommunityPartnersPage,
   })),
 );
 
 const UnsubscribePage = lazy(() =>
-  import('./pages/UnsubscribePage').then((m) => ({
+  import('./pages/misc/UnsubscribePage').then((m) => ({
     default: m.UnsubscribePage,
   })),
 );
 
 // The Professional 404 Page (Standard Error)
 const NotFoundPage = lazy(() =>
-  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+  import('./pages/misc/NotFoundPage').then((m) => ({
+    default: m.NotFoundPage,
+  })),
 );
 
 // 2. Auth Pages

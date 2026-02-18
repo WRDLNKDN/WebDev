@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useMessenger } from '../context/MessengerContext';
-import { useChatRooms } from '../hooks/useChat';
+import { useMessenger } from '../../context/MessengerContext';
+import { useChatRooms } from '../../hooks/useChat';
 
 /**
  * Redirects /chat and /chat/:roomId to Feed and opens the messenger overlay.

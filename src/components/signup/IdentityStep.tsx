@@ -14,9 +14,12 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
-import { toMessage, MICROSOFT_SIGNIN_NOT_CONFIGURED } from '../../lib/errors';
-import { signInWithOAuth } from '../../lib/signInWithOAuth';
-import { supabase } from '../../lib/supabaseClient';
+import {
+  toMessage,
+  MICROSOFT_SIGNIN_NOT_CONFIGURED,
+} from '../../lib/utils/errors';
+import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
+import { supabase } from '../../lib/auth/supabaseClient';
 import type { IdentityProvider } from '../../types/signup';
 import {
   identityStepChecking,

@@ -31,13 +31,24 @@ export const RequireOnboarded = ({
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select(
-          'display_name, join_reason, participation_style, policy_version',
-        )
-        .eq('id', data.session.user.id)
-        .maybeSingle();
+      const userId = data.session.user.id;
+      const fetchProfile = async () => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select(
+            'display_name, join_reason, participation_style, policy_version',
+          )
+          .eq('id', userId)
+          .maybeSingle();
+        return profile;
+      };
+
+      let profile = await fetchProfile();
+      if (!profile) {
+        await new Promise((r) => setTimeout(r, 600));
+        if (cancelled) return;
+        profile = await fetchProfile();
+      }
 
       if (cancelled) return;
 

@@ -69,6 +69,8 @@ export const Navbar = () => {
   const path = location.pathname;
   const isFeedActive = path === '/feed';
   const isJoinActive = path === '/join';
+  const isDirectoryActive =
+    path === '/directory' || path.startsWith('/directory');
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
 
@@ -379,6 +381,19 @@ export const Navbar = () => {
                     }}
                   >
                     Feed
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/directory"
+                    sx={{
+                      color: 'white',
+                      ...(isDirectoryActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Directory
                   </Button>
                   <Button
                     component={RouterLink}
@@ -833,6 +848,10 @@ export const Navbar = () => {
                     color: 'white',
                     textTransform: 'none',
                     py: 1.5,
+                    ...(isDirectoryActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
                   }}
                 >
                   Directory

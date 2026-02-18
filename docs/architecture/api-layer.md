@@ -16,12 +16,18 @@ frontend–backend integration and for RLS / role configuration in Supabase.
 
 The following APIs are **implemented and deployed**:
 
-| Surface            | Endpoints                                               | Auth                       | Doc                             |
-| ------------------ | ------------------------------------------------------- | -------------------------- | ------------------------------- |
-| **Feeds**          | GET/POST `/api/feeds`, reactions, comments              | Bearer JWT                 | [feeds-api.md](../feeds-api.md) |
-| **Directory**      | GET `/api/directory`, connect/accept/decline/disconnect | Bearer JWT                 | [directory.md](../directory.md) |
-| **Admin profiles** | GET/POST profiles (approve, reject, disable, delete)    | Bearer JWT / x-admin-token | backend README                  |
-| **Weirdling**      | generate, regenerate, save, me, delete                  | Bearer JWT                 | weirdling architecture          |
+| Surface              | Endpoints                                                                       | Auth                       | Doc                             |
+| -------------------- | ------------------------------------------------------------------------------- | -------------------------- | ------------------------------- |
+| **Feeds**            | GET/POST `/api/feeds`, reactions, comments                                      | Bearer JWT                 | [feeds-api.md](../feeds-api.md) |
+| **Directory**        | GET `/api/directory`, connect/accept/decline/disconnect                         | Bearer JWT                 | [directory.md](../directory.md) |
+| **Admin profiles**   | GET/POST profiles (approve, reject, disable, delete)                            | Bearer JWT / x-admin-token | backend README                  |
+| **Weirdling**        | generate, regenerate, save, me, delete                                          | Bearer JWT                 | weirdling architecture          |
+| **Auth/me**          | GET `/api/me` — lightweight profile bootstrap                                   | Bearer JWT                 | § 1.1 below                     |
+| **Content**          | POST `/api/content/submissions`, POST `/api/content/uploads/url`                | Bearer JWT                 | § 3 below                       |
+| **Public playlists** | GET `/api/public/playlists`, GET `/api/public/playlists/:slug/items`            | None                       | § 2 below                       |
+| **Admin content**    | GET `/api/admin/content/submissions`, approve, reject, request-changes, publish | requireAdmin               | § 4 below                       |
+| **Admin playlists**  | GET/POST `/api/admin/playlists`                                                 | requireAdmin               | —                               |
+| **Audit**            | GET `/api/admin/audit`                                                          | requireAdmin               | § 5 below                       |
 
 **Auth:** All authenticated endpoints expect `Authorization: Bearer <token>`
 (Supabase JWT). RLS and `requireAuth`/`requireAdmin` enforce privileges.

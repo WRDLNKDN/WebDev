@@ -48,6 +48,10 @@ drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.admin_allowlist cascade;
 drop table if exists public.feed_advertisers cascade;
+drop table if exists public.playlist_items cascade;
+drop table if exists public.playlists cascade;
+drop table if exists public.content_submissions cascade;
+drop table if exists public.audit_log cascade;
 
 -- -----------------------------
 -- Admin allowlist (NO RLS; grants in rls.sql)
@@ -1285,4 +1289,120 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- -----------------------------
+-- Content: submissions, playlists, audit_log (community video workflow)
+-- -----------------------------
+create table if not exists public.content_submissions (
+  id uuid primary key default gen_random_uuid(),
+  submitted_by uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  type text not null check (type in ('youtube', 'upload')),
+  youtube_url text,
+  storage_path text,
+  tags text[] default '{}',
+  notes_for_moderators text,
+  status text not null default 'pending'
+    check (status in ('pending', 'approved', 'rejected', 'changes_requested', 'published')),
+  moderation_notes text,
+  moderated_by uuid references auth.users(id) on delete set null,
+  moderated_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint content_submissions_youtube_url_required
+    check (type != 'youtube' or youtube_url is not null and trim(youtube_url) != ''),
+  constraint content_submissions_storage_path_when_upload
+    check (type != 'upload' or storage_path is not null and trim(storage_path) != '')
+);
+
+create index idx_content_submissions_submitted_by on public.content_submissions(submitted_by);
+create index idx_content_submissions_status on public.content_submissions(status);
+create index idx_content_submissions_created_at on public.content_submissions(created_at desc);
+
+comment on table public.content_submissions is
+  'Community video submissions: YouTube links or uploaded files. Status: pending → approved/rejected/changes_requested → published.';
+
+create trigger trg_content_submissions_updated_at
+before update on public.content_submissions
+for each row
+execute function public.set_updated_at();
+
+create table if not exists public.playlists (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  description text,
+  thumbnail_url text,
+  is_public boolean not null default false,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_playlists_slug on public.playlists(slug);
+create index idx_playlists_is_public on public.playlists(is_public) where is_public = true;
+
+comment on table public.playlists is
+  'Curated playlists for WRDLNKDN YouTube channel. Admin-only management.';
+
+insert into public.playlists (slug, title, description, is_public)
+values (
+  'wrdlnkdn-weekly',
+  'WRDLNKDN Weekly',
+  'Curated community picks.',
+  true
+)
+on conflict (slug) do nothing;
+
+create trigger trg_playlists_updated_at
+before update on public.playlists
+for each row
+execute function public.set_updated_at();
+
+create table if not exists public.playlist_items (
+  id uuid primary key default gen_random_uuid(),
+  playlist_id uuid not null references public.playlists(id) on delete cascade,
+  submission_id uuid not null references public.content_submissions(id) on delete cascade,
+  sort_order int not null default 0,
+  published_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index idx_playlist_items_playlist_id on public.playlist_items(playlist_id);
+create unique index idx_playlist_items_playlist_submission
+  on public.playlist_items(playlist_id, submission_id);
+
+comment on table public.playlist_items is
+  'Published items within a playlist. Links to content_submissions.';
+
+create table if not exists public.audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_email text,
+  actor_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  target_type text,
+  target_id uuid,
+  meta jsonb default '{}',
+  created_at timestamptz not null default now()
+);
+
+create index idx_audit_log_created_at on public.audit_log(created_at desc);
+create index idx_audit_log_actor_id on public.audit_log(actor_id);
+create index idx_audit_log_target on public.audit_log(target_type, target_id);
+
+comment on table public.audit_log is
+  'Audit trail for privileged operations: content approval, rejection, publishing, etc.';
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'content-submissions',
+  'content-submissions',
+  false,
+  536870912,
+  array['video/mp4', 'video/webm', 'video/quicktime']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 

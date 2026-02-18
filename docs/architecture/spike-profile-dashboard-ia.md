@@ -20,7 +20,7 @@ routing, navigation, and future work.
 | `/u/:handle`       | RedirectUToProfile → `/profile/:handle` | Public           |
 | `/dashboard`       | Dashboard                               | RequireOnboarded |
 | `/feed`            | Feed                                    | RequireOnboarded |
-| `/join`            | Signup                                  | Public           |
+| `/join`            | Join                                    | Public           |
 
 **Note:** There is **no** `/dashboard/*` sub-routes. Only `/dashboard` exists.
 

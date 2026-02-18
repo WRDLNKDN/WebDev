@@ -8,7 +8,7 @@ const steps = [
   {
     icon: TouchAppIcon,
     title: 'Join',
-    body: 'Sign up with Google or Microsoft. No lengthy forms—just get in.',
+    body: 'Join with Google or Microsoft. No lengthy forms—just get in.',
   },
   {
     icon: PsychologyIcon,

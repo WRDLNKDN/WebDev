@@ -71,7 +71,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-type AdminRequest = Request & { adminEmail?: string };
+type AdminRequest = Request & { adminEmail?: string; adminUserId?: string };
 type AuthRequest = Request & { userId?: string };
 
 type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
@@ -131,6 +131,7 @@ const requireAdmin = async (
       }
 
       req.adminEmail = email;
+      req.adminUserId = data.user.id;
       return next();
     }
 
@@ -1259,6 +1260,796 @@ app.post(
       .eq('user_id', targetId)
       .eq('connected_user_id', userId);
     return res.json({ ok: true });
+  },
+);
+
+// --- Auth & profile: GET /api/me ---
+app.get('/api/me', requireAuth, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  if (!userId)
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const { data: user } = await adminSupabase.auth.getUser(pickBearer(req));
+  if (!user?.user)
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const { data: profile } = await adminSupabase
+    .from('profiles')
+    .select('handle, display_name')
+    .eq('id', userId)
+    .maybeSingle();
+
+  const { data: allowRow } = await adminSupabase
+    .from('admin_allowlist')
+    .select('email')
+    .ilike('email', user.user.email ?? '')
+    .maybeSingle();
+
+  const isAdmin = !!allowRow?.email;
+
+  return res.json({
+    ok: true,
+    data: {
+      id: user.user.id,
+      email: user.user.email,
+      handle: (profile as { handle?: string } | null)?.handle ?? null,
+      displayName:
+        (profile as { display_name?: string } | null)?.display_name ?? null,
+      roles: isAdmin ? ['admin'] : ['user'],
+      isAdmin,
+    },
+    error: null,
+    meta: {},
+  });
+});
+
+// --- Content submission APIs (community video workflow) ---
+
+// POST /api/content/submissions — create submission (YouTube or upload)
+app.post(
+  '/api/content/submissions',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId)
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+    const body = req.body as Record<string, unknown>;
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const description =
+      typeof body.description === 'string' ? body.description.trim() : null;
+    const type = body.type === 'upload' ? 'upload' : 'youtube';
+    const youtubeUrl =
+      type === 'youtube' && typeof body.youtubeUrl === 'string'
+        ? body.youtubeUrl.trim() || null
+        : null;
+    const storagePath =
+      type === 'upload' && typeof body.storagePath === 'string'
+        ? body.storagePath.trim() || null
+        : null;
+    const tags = Array.isArray(body.tags)
+      ? (body.tags as unknown[]).map(String).filter(Boolean)
+      : [];
+    const notesForModerators =
+      typeof body.notesForModerators === 'string'
+        ? body.notesForModerators.trim() || null
+        : null;
+
+    if (!title)
+      return res.status(400).json({ ok: false, error: 'Missing title' });
+    if (type === 'youtube' && !youtubeUrl)
+      return res
+        .status(400)
+        .json({ ok: false, error: 'YouTube URL required for type youtube' });
+    if (type === 'upload' && !storagePath)
+      return res
+        .status(400)
+        .json({ ok: false, error: 'Storage path required for type upload' });
+
+    const { data, error } = await adminSupabase
+      .from('content_submissions')
+      .insert({
+        submitted_by: userId,
+        title,
+        description,
+        type,
+        youtube_url: youtubeUrl,
+        storage_path: storagePath,
+        tags,
+        notes_for_moderators: notesForModerators,
+        status: 'pending',
+      })
+      .select('id, status, created_at')
+      .single();
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    return res.status(201).json({
+      ok: true,
+      data: {
+        id: data.id,
+        status: data.status,
+        createdAt: data.created_at,
+      },
+      error: null,
+      meta: {},
+    });
+  },
+);
+
+// POST /api/content/uploads/url — get signed upload URL
+app.post(
+  '/api/content/uploads/url',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId)
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+    const body = req.body as Record<string, unknown>;
+    const filename =
+      typeof body.filename === 'string' ? body.filename.trim() : '';
+
+    if (!filename)
+      return res.status(400).json({ ok: false, error: 'Missing filename' });
+
+    const ext = filename.includes('.')
+      ? filename.slice(filename.lastIndexOf('.'))
+      : '.mp4';
+    const storagePath = `submissions/${userId}/${crypto.randomUUID()}${ext}`;
+
+    const { data: signed, error } = await adminSupabase.storage
+      .from('content-submissions')
+      .createSignedUploadUrl(storagePath);
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    return res.json({
+      ok: true,
+      data: {
+        uploadUrl: signed.signedUrl,
+        storagePath,
+      },
+      error: null,
+      meta: { expiresInSeconds: 900 },
+    });
+  },
+);
+
+// --- Public playlist APIs (no auth) ---
+
+// GET /api/public/playlists
+app.get('/api/public/playlists', async (_req: Request, res: Response) => {
+  const limit = Math.min(100, Math.max(1, Number(_req.query.limit) || 20));
+  const offset = Math.max(0, Number(_req.query.offset) || 0);
+
+  const { data: playlists, error } = await adminSupabase
+    .from('playlists')
+    .select('id, slug, title, description, thumbnail_url, updated_at')
+    .eq('is_public', true)
+    .order('updated_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) return res.status(500).json({ ok: false, error: error.message });
+
+  const { count } = await adminSupabase
+    .from('playlists')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_public', true);
+
+  const data = (playlists ?? []).map(
+    (p: {
+      id: string;
+      slug: string;
+      title: string;
+      description: string | null;
+      thumbnail_url: string | null;
+      updated_at: string;
+    }) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      thumbnailUrl: p.thumbnail_url,
+      updatedAt: p.updated_at,
+    }),
+  );
+
+  const itemCounts = await Promise.all(
+    (playlists ?? []).map(async (p: { id: string }) => {
+      const { count: c } = await adminSupabase
+        .from('playlist_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('playlist_id', p.id);
+      return c ?? 0;
+    }),
+  );
+
+  const enriched = data.map((p: Record<string, unknown>, i: number) => ({
+    ...p,
+    itemCount: itemCounts[i] ?? 0,
+  }));
+
+  return res.json({
+    ok: true,
+    data: enriched,
+    error: null,
+    meta: { total: count ?? 0, limit, offset },
+  });
+});
+
+// GET /api/public/playlists/:slug/items
+app.get(
+  '/api/public/playlists/:slug/items',
+  async (req: Request, res: Response) => {
+    const slug = req.params.slug;
+    if (!slug)
+      return res.status(400).json({ ok: false, error: 'Missing slug' });
+
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+
+    const { data: playlist, error: plErr } = await adminSupabase
+      .from('playlists')
+      .select('id')
+      .eq('slug', slug)
+      .eq('is_public', true)
+      .maybeSingle();
+
+    if (plErr || !playlist)
+      return res.status(404).json({ ok: false, error: 'Playlist not found' });
+
+    const { data: items, error } = await adminSupabase
+      .from('playlist_items')
+      .select(
+        `
+      id,
+      submission_id,
+      published_at,
+      content_submissions (
+        title,
+        type,
+        youtube_url,
+        storage_path,
+        submitted_by
+      )
+    `,
+      )
+      .eq('playlist_id', (playlist as { id: string }).id)
+      .order('sort_order')
+      .order('published_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    const { count } = await adminSupabase
+      .from('playlist_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('playlist_id', (playlist as { id: string }).id);
+
+    const subs = (items ?? []).map(
+      (
+        i: {
+          content_submissions: {
+            title: string;
+            type: string;
+            youtube_url: string | null;
+            storage_path: string | null;
+            submitted_by: string;
+          } | null;
+        } & { id: string; published_at: string },
+      ) => i.content_submissions,
+    );
+    const subIds = [
+      ...new Set(
+        (subs ?? [])
+          .filter(Boolean)
+          .map((s: { submitted_by: string }) => s.submitted_by),
+      ),
+    ] as string[];
+
+    const { data: profiles } =
+      subIds.length > 0
+        ? await adminSupabase
+            .from('profiles')
+            .select('id, handle, display_name')
+            .in('id', subIds)
+        : { data: [] };
+
+    const profileMap = new Map(
+      (profiles ?? []).map(
+        (p: {
+          id: string;
+          handle: string | null;
+          display_name: string | null;
+        }) => [p.id, { handle: p.handle, displayName: p.display_name }],
+      ),
+    );
+
+    const data = (items ?? []).map(
+      (i: {
+        id: string;
+        published_at: string;
+        content_submissions: {
+          title: string;
+          type: string;
+          youtube_url: string | null;
+          storage_path: string | null;
+          submitted_by: string;
+        } | null;
+      }) => {
+        const sub = i.content_submissions;
+        const prof = sub ? profileMap.get(sub.submitted_by) : null;
+        return {
+          id: i.id,
+          title: sub?.title ?? '',
+          submittedBy: prof
+            ? { handle: prof.handle, displayName: prof.displayName }
+            : { handle: null, displayName: null },
+          type: sub?.type ?? 'youtube',
+          youtubeUrl: sub?.youtube_url ?? null,
+          storagePath: sub?.storage_path ?? null,
+          publishedAt: i.published_at,
+        };
+      },
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      error: null,
+      meta: { total: count ?? 0, limit, offset },
+    });
+  },
+);
+
+// --- Admin content moderation APIs ---
+
+const insertAuditLog = async (
+  actorEmail: string | undefined,
+  actorId: string | undefined,
+  action: string,
+  targetType: string,
+  targetId: string | undefined,
+  meta: Record<string, unknown>,
+) => {
+  await adminSupabase.from('audit_log').insert({
+    actor_email: actorEmail,
+    actor_id: actorId ?? null,
+    action,
+    target_type: targetType,
+    target_id: targetId ?? null,
+    meta,
+  });
+};
+
+// GET /api/admin/content/submissions
+app.get(
+  '/api/admin/content/submissions',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const status =
+      typeof req.query.status === 'string'
+        ? req.query.status.trim() || null
+        : null;
+    const q =
+      typeof req.query.q === 'string' ? req.query.q.trim() || null : null;
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const sort = req.query.sort === 'updated_at' ? 'updated_at' : 'created_at';
+    const order = req.query.order === 'desc' ? 'desc' : 'asc';
+
+    let query = adminSupabase.from('content_submissions').select(
+      `
+        id,
+        title,
+        type,
+        status,
+        created_at,
+        submitted_by
+      `,
+      { count: 'exact' },
+    );
+
+    if (status && status !== 'all') query = query.eq('status', status);
+    if (q) query = query.ilike('title', `%${q}%`);
+
+    query = query.order(sort, { ascending: order === 'asc' });
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: rows, error, count } = await query;
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    const subIds = [
+      ...new Set(
+        (rows ?? []).map((r: { submitted_by: string }) => r.submitted_by),
+      ),
+    ];
+    const { data: profiles } =
+      subIds.length > 0
+        ? await adminSupabase
+            .from('profiles')
+            .select('id, handle, display_name')
+            .in('id', subIds)
+        : { data: [] };
+
+    const profileMap = new Map(
+      (profiles ?? []).map(
+        (p: {
+          id: string;
+          handle: string | null;
+          display_name: string | null;
+        }) => [p.id, { handle: p.handle, displayName: p.display_name }],
+      ),
+    );
+
+    const data = (rows ?? []).map(
+      (r: {
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        created_at: string;
+        submitted_by: string;
+      }) => {
+        const prof = profileMap.get(r.submitted_by);
+        return {
+          id: r.id,
+          title: r.title,
+          submittedBy: {
+            id: r.submitted_by,
+            handle: prof?.handle ?? null,
+            displayName: prof?.displayName ?? null,
+          },
+          type: r.type,
+          status: r.status,
+          submittedAt: r.created_at,
+        };
+      },
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      error: null,
+      meta: { total: count ?? 0, limit, offset },
+    });
+  },
+);
+
+// POST /api/admin/content/:id/approve
+app.post(
+  '/api/admin/content/:id/approve',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const id = req.params.id;
+    const userId = req.adminUserId;
+    const email = req.adminEmail;
+    const notes =
+      typeof (req.body as { notes?: string }).notes === 'string'
+        ? (req.body as { notes: string }).notes.trim() || null
+        : null;
+
+    const { data: row, error } = await adminSupabase
+      .from('content_submissions')
+      .update({
+        status: 'approved',
+        moderation_notes: notes,
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id, status')
+      .single();
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+
+    await insertAuditLog(
+      email,
+      userId,
+      'CONTENT_APPROVED',
+      'content_submission',
+      id,
+      {
+        notes,
+        statusFrom: 'pending',
+        statusTo: 'approved',
+      },
+    );
+
+    return res.json({ ok: true, data: { id: row.id, status: row.status } });
+  },
+);
+
+// POST /api/admin/content/:id/reject
+app.post(
+  '/api/admin/content/:id/reject',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const id = req.params.id;
+    const userId = req.adminUserId;
+    const email = req.adminEmail;
+    const reason =
+      typeof (req.body as { reason?: string }).reason === 'string'
+        ? (req.body as { reason: string }).reason.trim() || null
+        : null;
+
+    const { data: row, error } = await adminSupabase
+      .from('content_submissions')
+      .update({
+        status: 'rejected',
+        moderation_notes: reason,
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id, status')
+      .single();
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+
+    await insertAuditLog(
+      email,
+      userId,
+      'CONTENT_REJECTED',
+      'content_submission',
+      id,
+      {
+        reason,
+        statusTo: 'rejected',
+      },
+    );
+
+    return res.json({ ok: true, data: { id: row.id, status: row.status } });
+  },
+);
+
+// POST /api/admin/content/:id/request-changes
+app.post(
+  '/api/admin/content/:id/request-changes',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const id = req.params.id;
+    const userId = req.adminUserId;
+    const email = req.adminEmail;
+    const notes =
+      typeof (req.body as { notes?: string }).notes === 'string'
+        ? (req.body as { notes: string }).notes.trim() || null
+        : null;
+
+    const { data: row, error } = await adminSupabase
+      .from('content_submissions')
+      .update({
+        status: 'changes_requested',
+        moderation_notes: notes,
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id, status')
+      .single();
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+
+    await insertAuditLog(
+      email,
+      userId,
+      'CONTENT_REQUEST_CHANGES',
+      'content_submission',
+      id,
+      {
+        notes,
+        statusTo: 'changes_requested',
+      },
+    );
+
+    return res.json({ ok: true, data: { id: row.id, status: row.status } });
+  },
+);
+
+// POST /api/admin/content/:id/publish
+app.post(
+  '/api/admin/content/:id/publish',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const id = req.params.id;
+    const userId = req.adminUserId;
+    const email = req.adminEmail;
+    const playlistId =
+      typeof (req.body as { playlistId?: string }).playlistId === 'string'
+        ? (req.body as { playlistId: string }).playlistId.trim() || null
+        : null;
+    const publishAt =
+      typeof (req.body as { publishAt?: string }).publishAt === 'string'
+        ? (req.body as { publishAt: string }).publishAt.trim() || null
+        : null;
+
+    if (!playlistId)
+      return res.status(400).json({ ok: false, error: 'Missing playlistId' });
+
+    const { data: subRow } = await adminSupabase
+      .from('content_submissions')
+      .select('id, status')
+      .eq('id', id)
+      .single();
+
+    if (!subRow || (subRow as { status: string }).status !== 'approved')
+      return res.status(400).json({
+        ok: false,
+        error: 'Submission must be approved before publishing',
+      });
+
+    const { data: plRow } = await adminSupabase
+      .from('playlists')
+      .select('id')
+      .eq('id', playlistId)
+      .maybeSingle();
+
+    if (!plRow)
+      return res.status(404).json({ ok: false, error: 'Playlist not found' });
+
+    const { data: maxOrder } = await adminSupabase
+      .from('playlist_items')
+      .select('sort_order')
+      .eq('playlist_id', playlistId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const sortOrder =
+      ((maxOrder as { sort_order?: number })?.sort_order ?? -1) + 1;
+
+    const { error: insertErr } = await adminSupabase
+      .from('playlist_items')
+      .insert({
+        playlist_id: playlistId,
+        submission_id: id,
+        sort_order: sortOrder,
+        published_at: publishAt || new Date().toISOString(),
+      });
+
+    if (insertErr) {
+      if (insertErr.code === '23505')
+        return res
+          .status(409)
+          .json({ ok: false, error: 'Already in playlist' });
+      return res.status(500).json({ ok: false, error: insertErr.message });
+    }
+
+    await adminSupabase
+      .from('content_submissions')
+      .update({ status: 'published', updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    await insertAuditLog(
+      email,
+      userId,
+      'CONTENT_PUBLISHED',
+      'content_submission',
+      id,
+      {
+        playlistId,
+        publishAt: publishAt || new Date().toISOString(),
+      },
+    );
+
+    return res.json({ ok: true, data: { id } });
+  },
+);
+
+// GET /api/admin/playlists — list all playlists (for publish dropdown)
+app.get(
+  '/api/admin/playlists',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const { data, error } = await adminSupabase
+      .from('playlists')
+      .select('id, slug, title, is_public')
+      .order('title');
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    return res.json({ ok: true, data: data ?? [], error: null, meta: {} });
+  },
+);
+
+// POST /api/admin/playlists — create playlist (admin only)
+app.post(
+  '/api/admin/playlists',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const body = req.body as Record<string, unknown>;
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const slug =
+      typeof body.slug === 'string'
+        ? body.slug.trim().toLowerCase().replace(/\s+/g, '-')
+        : '';
+    const description =
+      typeof body.description === 'string'
+        ? body.description.trim() || null
+        : null;
+    const isPublic = body.isPublic === true;
+
+    if (!title)
+      return res.status(400).json({ ok: false, error: 'Missing title' });
+
+    const finalSlug =
+      slug ||
+      title
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
+    const { data, error } = await adminSupabase
+      .from('playlists')
+      .insert({
+        slug: finalSlug,
+        title,
+        description,
+        is_public: isPublic,
+      })
+      .select('id, slug, title')
+      .single();
+
+    if (error) {
+      if (error.code === '23505')
+        return res
+          .status(409)
+          .json({ ok: false, error: 'Slug already exists' });
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+
+    return res.status(201).json({ ok: true, data, error: null, meta: {} });
+  },
+);
+
+// GET /api/admin/audit
+app.get(
+  '/api/admin/audit',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+
+    const {
+      data: rows,
+      error,
+      count,
+    } = await adminSupabase
+      .from('audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    const data = (rows ?? []).map(
+      (r: {
+        id: string;
+        actor_email: string | null;
+        action: string;
+        target_type: string | null;
+        target_id: string | null;
+        meta: unknown;
+        created_at: string;
+      }) => ({
+        id: r.id,
+        actorEmail: r.actor_email,
+        action: r.action,
+        targetType: r.target_type,
+        targetId: r.target_id,
+        meta: r.meta,
+        createdAt: r.created_at,
+      }),
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      error: null,
+      meta: { total: count ?? 0, limit, offset },
+    });
   },
 );
 

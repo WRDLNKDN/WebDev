@@ -1175,6 +1175,21 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
       : null;
   if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
 
+  const { data: suspension } = await adminSupabase
+    .from('chat_suspensions')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (suspension) return sendApiError(res, 403, 'Account suspended');
+
+  const { data: profile } = await adminSupabase
+    .from('profiles')
+    .select('status')
+    .eq('id', userId)
+    .maybeSingle();
+  if (profile && (profile as { status: string }).status === 'disabled')
+    return sendApiError(res, 403, 'Account disabled');
+
   const { error } = await adminSupabase.from('connection_requests').insert({
     requester_id: userId,
     recipient_id: targetId,

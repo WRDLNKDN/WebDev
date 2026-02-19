@@ -396,6 +396,111 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          id: string
+          host_id: string
+          title: string
+          description: string | null
+          start_at: string
+          end_at: string | null
+          location: string | null
+          location_type: string | null
+          link_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          host_id: string
+          title: string
+          description?: string | null
+          start_at: string
+          end_at?: string | null
+          location?: string | null
+          location_type?: string | null
+          link_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          host_id?: string
+          title?: string
+          description?: string | null
+          start_at?: string
+          end_at?: string | null
+          location?: string | null
+          location_type?: string | null
+          link_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          id: string
+          event_id: string
+          user_id: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          user_id: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          user_id?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          recipient_id: string
+          actor_id: string | null
+          type: string
+          reference_id: string | null
+          reference_type: string | null
+          payload: Json
+          created_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          recipient_id: string
+          actor_id?: string | null
+          type: string
+          reference_id?: string | null
+          reference_type?: string | null
+          payload?: Json
+          created_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          id?: string
+          recipient_id?: string
+          actor_id?: string | null
+          type?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          payload?: Json
+          created_at?: string
+          read_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

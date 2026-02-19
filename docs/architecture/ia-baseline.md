@@ -32,6 +32,10 @@ neutral regarding Profile vs Dashboard rendering mode.
 ├── directory               Authenticated
 │   └── route: /directory
 │
+├── events                  Authenticated
+│   ├── route: /events
+│   └── /events/:id
+│
 ├── profile                 Public
 │   └── route: /profile/:handle
 │
@@ -48,14 +52,16 @@ neutral regarding Profile vs Dashboard rendering mode.
 
 ## Surface Responsibilities
 
-| Surface       | Responsibility                                                         |
-| ------------- | ---------------------------------------------------------------------- |
-| **Home**      | Public brand and intent surface.                                       |
-| **Join**      | Authentication and onboarding entry surface.                           |
-| **Feed**      | Content and activity stream surface.                                   |
-| **Directory** | Searchable, filterable member discovery surface.                       |
-| **Profile**   | Public identity surface.                                               |
-| **Dashboard** | Private control surface (may resolve to profile owner mode per SPIKE). |
+| Surface           | Responsibility                                                          |
+| ----------------- | ----------------------------------------------------------------------- |
+| **Home**          | Public brand and intent surface.                                        |
+| **Join**          | Authentication and onboarding entry surface.                            |
+| **Feed**          | Content and activity stream surface.                                    |
+| **Directory**     | Searchable, filterable member discovery surface.                        |
+| **Events**        | Community gatherings, RSVPs, scheduled interaction. Distinct from Feed. |
+| **Profile**       | Public identity surface.                                                |
+| **Dashboard**     | Private control surface (may resolve to profile owner mode per SPIKE).  |
+| **Notifications** | Private control surface; in-app activity signals. Distinct from Feed.   |
 
 ---
 
@@ -66,9 +72,12 @@ neutral regarding Profile vs Dashboard rendering mode.
 - **Home** — links to `/`
 - **Feed** — when logged in, links to `/feed`
 - **Directory** — when logged in, links to `/directory`
+- **Events** — when logged in, links to `/events`
 - **Join** — when signed out, links to `/join`
 - **Dashboard** — when logged in, links to `/dashboard` (if distinct surface)
 - **Profile** — direct link to identity surface when applicable
+- **Notifications** — when logged in, links to `/dashboard/notifications` (badge
+  in nav)
 
 ### Legacy terms prohibited
 
@@ -83,6 +92,7 @@ Active state must reflect canonical route:
 
 - On `/feed` → Feed highlighted
 - On `/directory` → Directory highlighted
+- On `/events` or `/events/:id` → Events highlighted
 - On `/dashboard` or `/dashboard/*` → Dashboard highlighted
 - On `/join` → Join highlighted
 
@@ -100,7 +110,8 @@ Active state must reflect canonical route:
 
 - Feed
 - Directory
-- Dashboard
+- Events
+- Dashboard (includes Notifications at /dashboard/notifications)
 - Chat (if enabled)
 
 Protected routes must redirect deterministically to `/join` if unauthenticated.

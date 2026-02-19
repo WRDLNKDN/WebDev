@@ -1609,18 +1609,23 @@ app.get(
       .select('*', { count: 'exact', head: true })
       .eq('playlist_id', (playlist as { id: string }).id);
 
+    type SubRow = {
+      title: string;
+      type: string;
+      youtube_url: string | null;
+      storage_path: string | null;
+      submitted_by: string;
+    };
     const subs = (items ?? []).map(
       (
-        i: {
-          content_submissions: {
-            title: string;
-            type: string;
-            youtube_url: string | null;
-            storage_path: string | null;
-            submitted_by: string;
-          } | null;
-        } & { id: string; published_at: string },
-      ) => i.content_submissions,
+        i: { content_submissions: SubRow | SubRow[] | null } & {
+          id: string;
+          published_at: string;
+        },
+      ) =>
+        Array.isArray(i.content_submissions)
+          ? i.content_submissions[0]
+          : i.content_submissions,
     );
     const subIds = [
       ...new Set(
@@ -1649,18 +1654,15 @@ app.get(
     );
 
     const data = (items ?? []).map(
-      (i: {
-        id: string;
-        published_at: string;
-        content_submissions: {
-          title: string;
-          type: string;
-          youtube_url: string | null;
-          storage_path: string | null;
-          submitted_by: string;
-        } | null;
-      }) => {
-        const sub = i.content_submissions;
+      (
+        i: { content_submissions: SubRow | SubRow[] | null } & {
+          id: string;
+          published_at: string;
+        },
+      ) => {
+        const sub = Array.isArray(i.content_submissions)
+          ? i.content_submissions[0]
+          : i.content_submissions;
         const prof = sub ? profileMap.get(sub.submitted_by) : null;
         return {
           id: i.id,
@@ -1805,7 +1807,8 @@ app.post(
   '/api/admin/content/:id/approve',
   requireAdmin,
   async (req: AdminRequest, res: Response) => {
-    const id = req.params.id;
+    const id =
+      (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? '';
     const userId = req.adminUserId;
     const email = req.adminEmail;
     const notes =
@@ -1849,7 +1852,8 @@ app.post(
   '/api/admin/content/:id/reject',
   requireAdmin,
   async (req: AdminRequest, res: Response) => {
-    const id = req.params.id;
+    const id =
+      (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? '';
     const userId = req.adminUserId;
     const email = req.adminEmail;
     const reason =
@@ -1892,7 +1896,8 @@ app.post(
   '/api/admin/content/:id/request-changes',
   requireAdmin,
   async (req: AdminRequest, res: Response) => {
-    const id = req.params.id;
+    const id =
+      (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? '';
     const userId = req.adminUserId;
     const email = req.adminEmail;
     const notes =
@@ -1935,7 +1940,8 @@ app.post(
   '/api/admin/content/:id/publish',
   requireAdmin,
   async (req: AdminRequest, res: Response) => {
-    const id = req.params.id;
+    const id =
+      (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? '';
     const userId = req.adminUserId;
     const email = req.adminEmail;
     const playlistId =

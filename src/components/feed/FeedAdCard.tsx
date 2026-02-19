@@ -19,6 +19,7 @@ export type FeedAdvertiser = {
   description: string;
   url: string;
   logo_url: string | null;
+  image_url?: string | null;
   links: unknown;
   active: boolean;
   sort_order: number;
@@ -50,6 +51,21 @@ export const FeedAdCard = ({ advertiser }: Props) => {
       component="article"
       aria-label={`Sponsored: ${advertiser.title}`}
     >
+      {advertiser.image_url && (
+        <Box
+          component="img"
+          src={advertiser.image_url}
+          alt=""
+          sx={{
+            width: '100%',
+            height: 'auto',
+            maxHeight: 200,
+            objectFit: 'cover',
+            borderTopLeftRadius: 8,
+            borderTopRightRadius: 8,
+          }}
+        />
+      )}
       <CardContent sx={{ pt: 2, pb: 2, '&:last-child': { pb: 2 } }}>
         <Stack
           direction="row"

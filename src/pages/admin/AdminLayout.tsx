@@ -1,6 +1,5 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LogoutIcon from '@mui/icons-material/Logout';
-import PeopleIcon from '@mui/icons-material/People';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
@@ -49,11 +48,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/admin', icon: <DashboardIcon /> },
-  {
-    label: 'Profile Moderation',
-    to: '/admin/moderation',
-    icon: <PeopleIcon />,
-  },
   {
     label: 'Content Moderation',
     to: '/admin/content',

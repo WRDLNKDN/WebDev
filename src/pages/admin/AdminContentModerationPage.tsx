@@ -1,5 +1,6 @@
 // src/pages/admin/AdminContentModerationPage.tsx
 
+import VideoLibraryOutlinedIcon from '@mui/icons-material/VideoLibraryOutlined';
 import {
   Alert,
   Box,
@@ -13,11 +14,13 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Stack,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -63,6 +66,7 @@ export const AdminContentModerationPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('pending');
   const [q, setQ] = useState('');
+  const [appliedQ, setAppliedQ] = useState('');
   const [offset, setOffset] = useState(0);
   const limit = 25;
   const [total, setTotal] = useState(0);
@@ -86,7 +90,7 @@ export const AdminContentModerationPage = () => {
     try {
       const { data, meta } = await fetchAdminContentSubmissions(token, {
         status: status === 'all' ? undefined : status,
-        q: q.trim() || undefined,
+        q: appliedQ.trim() || undefined,
         limit,
         offset,
       });
@@ -97,8 +101,7 @@ export const AdminContentModerationPage = () => {
     } finally {
       setLoading(false);
     }
-    // q omitted: Search button triggers load manually (including q would fetch on every keystroke)
-  }, [token, status, offset]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, status, appliedQ, offset]);
 
   useEffect(() => {
     void load();
@@ -175,9 +178,14 @@ export const AdminContentModerationPage = () => {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Content Moderation
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+          Content Moderation
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.85 }}>
+          Review video submissions, approve or reject, and publish to playlists.
+        </Typography>
+      </Box>
 
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
@@ -185,137 +193,210 @@ export const AdminContentModerationPage = () => {
         </Alert>
       )}
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={status}
-            label="Status"
-            onChange={(e) => {
-              setStatus(e.target.value);
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          borderColor: 'rgba(255,255,255,0.08)',
+          bgcolor: 'rgba(255,255,255,0.02)',
+        }}
+      >
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems={{ sm: 'center' }}
+          flexWrap="wrap"
+        >
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={status}
+              label="Status"
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setOffset(0);
+              }}
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <MenuItem key={o.value} value={o.value}>
+                  {o.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            size="small"
+            placeholder="Search title…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) =>
+              e.key === 'Enter' && (setAppliedQ(q), setOffset(0))
+            }
+            sx={{ minWidth: 200, flex: 1 }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => {
+              setAppliedQ(q);
               setOffset(0);
             }}
+            disabled={loading}
+            sx={{ minWidth: 100 }}
           >
-            {STATUS_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value}>
-                {o.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          size="small"
-          placeholder="Search title…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && load()}
-          sx={{ minWidth: 200 }}
-        />
-        <Button variant="outlined" onClick={load} disabled={loading}>
-          Search
-        </Button>
-      </Stack>
+            {loading ? <CircularProgress size={22} /> : 'Search'}
+          </Button>
+        </Stack>
+      </Paper>
 
       {loading ? (
-        <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
           <CircularProgress />
         </Box>
       ) : rows.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 4 }}>
-          No submissions found.
-        </Typography>
+        <Paper
+          variant="outlined"
+          sx={{
+            py: 8,
+            px: 3,
+            textAlign: 'center',
+            borderColor: 'rgba(255,255,255,0.08)',
+            bgcolor: 'rgba(255,255,255,0.02)',
+          }}
+        >
+          <VideoLibraryOutlinedIcon
+            sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5, mb: 2 }}
+          />
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+            No submissions found
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ maxWidth: 360, mx: 'auto' }}
+          >
+            Community submissions will appear here. Try selecting
+            &quot;All&quot; in the status filter, or check back when new content
+            is submitted.
+          </Typography>
+        </Paper>
       ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Submitted by</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Submitted</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.title}</TableCell>
-                <TableCell>
-                  {row.submittedBy.displayName ??
-                    row.submittedBy.handle ??
-                    row.submittedBy.id}
-                </TableCell>
-                <TableCell>{row.type}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={row.status}
-                    size="small"
-                    color={statusColor[row.status] ?? 'default'}
-                  />
-                </TableCell>
-                <TableCell>
-                  {new Date(row.submittedAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell align="right">
-                  {row.status === 'pending' && (
-                    <>
-                      <Button
-                        size="small"
-                        color="success"
-                        onClick={() => handleApprove(row)}
-                        disabled={!!actionBusy}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="small"
-                        onClick={() => setRejectDialog(row)}
-                        disabled={!!actionBusy}
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        size="small"
-                        onClick={() => handleRequestChanges(row)}
-                        disabled={!!actionBusy}
-                      >
-                        Request changes
-                      </Button>
-                    </>
-                  )}
-                  {row.status === 'approved' && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={() => openPublishDialog(row)}
-                      disabled={!!actionBusy}
-                    >
-                      Publish
-                    </Button>
-                  )}
-                </TableCell>
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{
+            borderColor: 'rgba(255,255,255,0.12)',
+            '& .MuiTableRow-root:hover': { bgcolor: 'rgba(255,255,255,0.03)' },
+          }}
+        >
+          <Table
+            size="small"
+            sx={{ '& td, & th': { borderColor: 'rgba(255,255,255,0.08)' } }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Submitted by</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Submitted</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.title}</TableCell>
+                  <TableCell>
+                    {row.submittedBy.displayName ??
+                      row.submittedBy.handle ??
+                      row.submittedBy.id}
+                  </TableCell>
+                  <TableCell>{row.type}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={row.status}
+                      size="small"
+                      color={statusColor[row.status] ?? 'default'}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {new Date(row.submittedAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell align="right">
+                    {row.status === 'pending' && (
+                      <>
+                        <Button
+                          size="small"
+                          color="success"
+                          onClick={() => handleApprove(row)}
+                          disabled={!!actionBusy}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => setRejectDialog(row)}
+                          disabled={!!actionBusy}
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => handleRequestChanges(row)}
+                          disabled={!!actionBusy}
+                        >
+                          Request changes
+                        </Button>
+                      </>
+                    )}
+                    {row.status === 'approved' && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => openPublishDialog(row)}
+                        disabled={!!actionBusy}
+                      >
+                        Publish
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {total > limit && (
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-          <Button
-            size="small"
-            disabled={offset === 0}
-            onClick={() => setOffset(Math.max(0, offset - limit))}
-          >
-            Previous
-          </Button>
-          <Button
-            size="small"
-            disabled={offset + limit >= total}
-            onClick={() => setOffset(offset + limit)}
-          >
-            Next
-          </Button>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mt: 3 }}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Typography variant="body2" color="text.secondary">
+            {offset + 1}–{Math.min(offset + limit, total)} of {total}
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+            >
+              Previous
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={offset + limit >= total}
+              onClick={() => setOffset(offset + limit)}
+            >
+              Next
+            </Button>
+          </Stack>
         </Stack>
       )}
 

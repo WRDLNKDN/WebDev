@@ -1,5 +1,4 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
-import PeopleIcon from '@mui/icons-material/People';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -20,13 +19,6 @@ type SectionCard = {
 };
 
 const SECTIONS: SectionCard[] = [
-  {
-    title: 'Profile Moderation',
-    description:
-      'Review pending registrations, approve or reject profiles, and manage member status.',
-    to: '/admin/moderation',
-    icon: <PeopleIcon sx={{ fontSize: 40 }} />,
-  },
   {
     title: 'Content Moderation',
     description:

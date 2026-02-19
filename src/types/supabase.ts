@@ -35,6 +35,7 @@ export type Database = {
           description: string
           url: string
           logo_url: string | null
+          image_url: string | null
           links: Json
           active: boolean
           sort_order: number
@@ -48,6 +49,7 @@ export type Database = {
           description: string
           url: string
           logo_url?: string | null
+          image_url?: string | null
           links?: Json
           active?: boolean
           sort_order?: number
@@ -61,6 +63,7 @@ export type Database = {
           description?: string
           url?: string
           logo_url?: string | null
+          image_url?: string | null
           links?: Json
           active?: boolean
           sort_order?: number

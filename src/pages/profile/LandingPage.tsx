@@ -41,6 +41,7 @@ const DivergencePage = lazy(() =>
 );
 
 // LOGIC & TYPES
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
@@ -59,6 +60,10 @@ export const LandingPage = () => {
   const [followCheckDone, setFollowCheckDone] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
   const [tagsSkillsDialogOpen, setTagsSkillsDialogOpen] = useState(false);
+  const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
+    null,
+  );
+  const { avatarUrl: currentUserAvatarUrl } = useCurrentUserAvatar();
 
   // Easter Egg Check
   const isSecretHandle =
@@ -170,6 +175,10 @@ export const LandingPage = () => {
             : ({} as NerdCreds);
 
         setProfile({ ...verifiedProfile, nerd_creds: safeNerdCreds });
+
+        // For own profile, useCurrentUserAvatar provides resolved avatar.
+        // For others, profile.avatar only (weirdlings RLS blocks client read).
+        setResolvedAvatarUrl(verifiedProfile.avatar ?? null);
 
         const { data: projectsData, error: projectsError } = await supabase
           .from('portfolio_items')
@@ -288,7 +297,11 @@ export const LandingPage = () => {
             displayName={safeStr(profile.display_name)}
             tagline={profile.tagline ?? undefined}
             bio={safeStr(creds.bio)}
-            avatarUrl={safeStr(profile.avatar)}
+            avatarUrl={
+              viewer?.id === profile.id
+                ? (currentUserAvatarUrl ?? resolvedAvatarUrl ?? profile.avatar)
+                : (resolvedAvatarUrl ?? profile.avatar ?? undefined)
+            }
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
             badges={

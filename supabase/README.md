@@ -84,9 +84,11 @@ Optional (dev only):
 [docs/DEPLOYMENT_UAT_PROD.md](../docs/DEPLOYMENT_UAT_PROD.md) for secrets and
 troubleshooting.
 
-**Note:** If your DB already had the former 20260214 migrations applied, run
-`supabase migration repair 20260214180000 --status reverted` and
-`supabase migration repair 20260214180005 --status reverted` before pushing.
+**Note:** If you see
+`duplicate key violates unique constraint schema_migrations_pkey` for
+`20260214140000`, run
+`supabase migration repair 20260214140000 --status reverted` then push again.
+(That migration was consolidated into the two files above.)
 
 ## Microsoft (Azure) OAuth Setup
 

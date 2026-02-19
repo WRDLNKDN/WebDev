@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom';
 
 // HOOKS & CONTEXT
+import { AvatarProvider } from './context/AvatarContext';
 import { SignupProvider } from './context/SignupProvider';
 import { useKonamiCode } from './hooks/useKonamiCode';
 
@@ -276,145 +277,156 @@ const App = () => {
       <AuthBoot />
 
       <SignupProvider>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            {/* Bumper: full-screen, no nav/footer (for recording) */}
-            <Route path="/bumper" element={<BumperPage />} />
+        <AvatarProvider>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              {/* Bumper: full-screen, no nav/footer (for recording) */}
+              <Route path="/bumper" element={<BumperPage />} />
 
-            {/* Popout chat: standalone window (LinkedIn-style) */}
-            <Route path="/chat-popup/:roomId" element={<ChatPopupPage />} />
+              {/* Popout chat: standalone window (LinkedIn-style) */}
+              <Route path="/chat-popup/:roomId" element={<ChatPopupPage />} />
 
-            <Route element={<Layout />}>
-              {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
-              <Route path="/" element={<Home />} />
-              <Route path="/profile/:handle" element={<LandingPage />} />
-              <Route path="/projects/:id" element={<ProjectPage />} />
-              <Route path="/u/:handle" element={<RedirectUToProfile />} />
-              <Route path="/home" element={<Home />} />
-              <Route
-                path="/directory"
-                element={
-                  <RequireOnboarded>
-                    <Directory />
-                  </RequireOnboarded>
-                }
-              />
-              <Route
-                path="/feed"
-                element={
-                  <RequireOnboarded>
-                    <Feed />
-                  </RequireOnboarded>
-                }
-              />
-              <Route path="/store" element={<Store />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/community" element={<Community />} />
-              <Route path="/platform" element={<Platform />} />
-              <Route path="/events" element={<EventsPage />} />
-              <Route path="/forums" element={<ForumsPage />} />
-              <Route path="/saved" element={<SavedPage />} />
-              <Route path="/advertise" element={<AdvertisePage />} />
-              <Route path="/games" element={<DivergencePage />} />
-              <Route path="/help" element={<HelpPage />} />
-              <Route
-                path="/community-partners"
-                element={<CommunityPartnersPage />}
-              />
-
-              {/* --- Authenticated User Zone --- */}
-              <Route
-                path="/dashboard"
-                element={
-                  <RequireOnboarded>
-                    <Dashboard />
-                  </RequireOnboarded>
-                }
-              />
-              <Route
-                path="/dashboard/profile"
-                element={<Navigate to="/dashboard" replace />}
-              />
-              <Route
-                path="/dashboard/activity"
-                element={<Navigate to="/dashboard" replace />}
-              />
-              <Route
-                path="/dashboard/intent"
-                element={<Navigate to="/dashboard" replace />}
-              />
-              <Route
-                path="/dashboard/notifications"
-                element={<Navigate to="/dashboard" replace />}
-              />
-              <Route
-                path="/dashboard/settings"
-                element={<Navigate to="/dashboard" replace />}
-              />
-              <Route path="/chat" element={<ChatRedirect />} />
-              <Route path="/chat/:roomId" element={<ChatRedirect />} />
-              <Route path="/weirdling/create" element={<WeirdlingCreate />} />
-              <Route
-                path="/submit"
-                element={
-                  <RequireOnboarded>
-                    <ContentSubmitPage />
-                  </RequireOnboarded>
-                }
-              />
-              <Route path="/playlists" element={<PlaylistsPage />} />
-              <Route path="/playlists/:slug" element={<PlaylistDetailPage />} />
-
-              {/* --- Authentication --- */}
-              <Route path="/login" element={<SignIn />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/join" element={<Signup />} />
-              <Route path="/signup" element={<Navigate to="/join" replace />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-
-              {/* --- Legal --- */}
-              <Route path="/guidelines" element={<Guidelines />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/unsubscribe" element={<UnsubscribePage />} />
-
-              {/* --- Administration --- */}
-              <Route path="/admin" element={<AdminApp />}>
-                <Route index element={<AdminDashboard />} />
+              <Route element={<Layout />}>
+                {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
+                <Route path="/" element={<Home />} />
+                <Route path="/profile/:handle" element={<LandingPage />} />
+                <Route path="/projects/:id" element={<ProjectPage />} />
+                <Route path="/u/:handle" element={<RedirectUToProfile />} />
+                <Route path="/home" element={<Home />} />
                 <Route
-                  path="moderation"
+                  path="/directory"
+                  element={
+                    <RequireOnboarded>
+                      <Directory />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/feed"
+                  element={
+                    <RequireOnboarded>
+                      <Feed />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route path="/store" element={<Store />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/platform" element={<Platform />} />
+                <Route path="/events" element={<EventsPage />} />
+                <Route path="/forums" element={<ForumsPage />} />
+                <Route path="/saved" element={<SavedPage />} />
+                <Route path="/advertise" element={<AdvertisePage />} />
+                <Route path="/games" element={<DivergencePage />} />
+                <Route path="/help" element={<HelpPage />} />
+                <Route
+                  path="/community-partners"
+                  element={<CommunityPartnersPage />}
+                />
+
+                {/* --- Authenticated User Zone --- */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <RequireOnboarded>
+                      <Dashboard />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/dashboard/profile"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/activity"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/intent"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/notifications"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/settings"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route path="/chat" element={<ChatRedirect />} />
+                <Route path="/chat/:roomId" element={<ChatRedirect />} />
+                <Route path="/weirdling/create" element={<WeirdlingCreate />} />
+                <Route
+                  path="/submit"
+                  element={
+                    <RequireOnboarded>
+                      <ContentSubmitPage />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route path="/playlists" element={<PlaylistsPage />} />
+                <Route
+                  path="/playlists/:slug"
+                  element={<PlaylistDetailPage />}
+                />
+
+                {/* --- Authentication --- */}
+                <Route path="/login" element={<SignIn />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/join" element={<Signup />} />
+                <Route
+                  path="/signup"
+                  element={<Navigate to="/join" replace />}
+                />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+
+                {/* --- Legal --- */}
+                <Route path="/guidelines" element={<Guidelines />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                {/* --- Administration --- */}
+                <Route path="/admin" element={<AdminApp />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route
+                    path="moderation"
+                    element={<Navigate to="/admin" replace />}
+                  />
+                  <Route
+                    path="content"
+                    element={<AdminContentModerationPage />}
+                  />
+                  <Route path="chat-reports" element={<ChatReportsPage />} />
+                  <Route
+                    path="advertisers"
+                    element={<AdminAdvertisersPage />}
+                  />
+                </Route>
+                <Route
+                  path="/admin/pending"
                   element={<Navigate to="/admin" replace />}
                 />
                 <Route
-                  path="content"
-                  element={<AdminContentModerationPage />}
+                  path="/admin/approved"
+                  element={<Navigate to="/admin" replace />}
                 />
-                <Route path="chat-reports" element={<ChatReportsPage />} />
-                <Route path="advertisers" element={<AdminAdvertisersPage />} />
+                <Route
+                  path="/admin/review/:id"
+                  element={<Navigate to="/admin" replace />}
+                />
+
+                {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
+
+                {/* 1. The Game (Konami Code Target) */}
+                <Route path="/divergence" element={<DivergencePage />} />
+
+                {/* 2. The Professional 404 (Catch-All) */}
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
-              <Route
-                path="/admin/pending"
-                element={<Navigate to="/admin" replace />}
-              />
-              <Route
-                path="/admin/approved"
-                element={<Navigate to="/admin" replace />}
-              />
-              <Route
-                path="/admin/review/:id"
-                element={<Navigate to="/admin" replace />}
-              />
-
-              {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
-
-              {/* 1. The Game (Konami Code Target) */}
-              <Route path="/divergence" element={<DivergencePage />} />
-
-              {/* 2. The Professional 404 (Catch-All) */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
-        </Suspense>
+            </Routes>
+          </Suspense>
+        </AvatarProvider>
       </SignupProvider>
     </>
   );

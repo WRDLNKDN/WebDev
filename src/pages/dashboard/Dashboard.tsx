@@ -32,6 +32,7 @@ import { WeirdlingBannerSlot } from '../../components/profile/WeirdlingBannerSlo
 import { WeirdlingCreateDialog } from '../../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
 import { toMessage } from '../../lib/utils/errors';
 import { deleteWeirdling, getMyWeirdlings } from '../../lib/api/weirdlingApi';
@@ -102,6 +103,9 @@ export const Dashboard = () => {
     uploadResume,
   } = useProfile();
 
+  const { avatarUrl: ctxAvatarUrl, refresh: refreshAvatar } =
+    useCurrentUserAvatar();
+
   const [snack, setSnack] = useState<string | null>(null);
 
   if (!session) return null;
@@ -109,9 +113,9 @@ export const Dashboard = () => {
   const rawName =
     profile?.display_name || session.user.user_metadata?.full_name;
   const displayName = safeStr(rawName, 'Verified Generalist');
-  const avatarUrl = safeStr(
-    profile?.avatar || session.user.user_metadata?.avatar_url,
-  );
+  const avatarUrl =
+    ctxAvatarUrl ??
+    safeStr(profile?.avatar || session.user.user_metadata?.avatar_url);
 
   const safeNerdCreds =
     profile?.nerd_creds && typeof profile.nerd_creds === 'object'
@@ -416,11 +420,15 @@ export const Dashboard = () => {
           } catch {
             setWeirdlings([]);
           }
+          void refreshAvatar();
         }}
       />
       <EditProfileDialog
         open={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
+        onClose={() => {
+          setIsEditOpen(false);
+          void refreshAvatar();
+        }}
         profile={profile}
         hasWeirdling={Boolean(weirdlings?.length)}
         avatarFallback={

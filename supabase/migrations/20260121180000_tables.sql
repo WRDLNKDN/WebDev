@@ -101,7 +101,7 @@ create table public.profiles (
   avatar text,
   tagline text,
 
-  status text not null default 'pending'
+  status text not null default 'approved'
     check (status in ('pending', 'approved', 'rejected', 'disabled')),
 
   reviewed_at timestamptz,
@@ -378,6 +378,7 @@ create table public.feed_advertisers (
   description text not null,
   url text not null,
   logo_url text,
+  image_url text,
   links jsonb default '[]'::jsonb,
   active boolean not null default true,
   sort_order int not null default 0,
@@ -393,6 +394,8 @@ create trigger trg_feed_advertisers_updated_at
   before update on public.feed_advertisers
   for each row execute function public.set_updated_at();
 
+comment on column public.feed_advertisers.image_url is
+  'Public URL of ad banner image (1200x400 recommended). Stored in feed-ad-images bucket.';
 comment on table public.feed_advertisers is
   'Advertisers displayed in Feed every 6th post. Admin CRUD.';
 
@@ -1264,6 +1267,20 @@ values (
   true,
   5242880,
   array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- feed-ad-images (ad banner images 1200x400)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'feed-ad-images',
+  'feed-ad-images',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png']
 )
 on conflict (id) do update set
   public = excluded.public,

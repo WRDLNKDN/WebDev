@@ -13,11 +13,10 @@ import { Footer } from './Footer';
 import { UatBanner } from './UatBanner';
 import { MessengerOverlay } from './MessengerOverlay';
 import { Navbar } from './Navbar';
+import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const PAGE_BG = {
-  backgroundImage: 'url("/assets/background.png")',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
+  ...PAGE_BACKGROUND,
   backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
 

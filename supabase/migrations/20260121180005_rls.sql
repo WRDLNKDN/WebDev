@@ -1,6 +1,10 @@
 -- supabase/migrations/20260121180005_rls.sql
 -- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
 --
+-- If you see "duplicate key violates unique constraint schema_migrations_pkey" for 20260214140000:
+--   supabase migration repair 20260214140000 --status reverted
+-- Then run db push again. (20260214140000 was consolidated into these two files.)
+--
 -- HOW TO FORCE RLS RECONFIGURE (when db push says "up to date" but schema is wrong):
 --
 -- OPTION A: Run manually in Supabase Dashboard → SQL Editor
@@ -15,6 +19,21 @@
 --   supabase db push --linked --include-all --include-seed
 
 -- -----------------------------
+-- Optional: feed_advertisers.image_url (idempotent for existing DBs)
+-- -----------------------------
+alter table public.feed_advertisers add column if not exists image_url text;
+
+-- Optional: feed-ad-images bucket (idempotent for existing DBs)
+-- -----------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('feed-ad-images', 'feed-ad-images', true, 5242880, array['image/jpeg', 'image/png'])
+on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- Optional: profiles status default + backfill (remove moderation)
+-- -----------------------------
+update public.profiles set status = 'approved' where status = 'pending';
+alter table public.profiles alter column status set default 'approved';
+
 -- Optional: add use_weirdling_avatar if missing (idempotent for existing DBs)
 -- -----------------------------
 do $$
@@ -374,6 +393,17 @@ create policy "Public read avatars"
   on storage.objects for select
   to public
   using (bucket_id = 'avatars');
+
+-- feed-ad-images: authenticated upload, public read
+drop policy if exists "Public read feed-ad-images" on storage.objects;
+create policy "Public read feed-ad-images"
+  on storage.objects for select to public
+  using (bucket_id = 'feed-ad-images');
+
+drop policy if exists "Authenticated can upload feed-ad-images" on storage.objects;
+create policy "Authenticated can upload feed-ad-images"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'feed-ad-images');
 
 -- project-images: authenticated upload, public read
 drop policy if exists "Authenticated can upload project-images" on storage.objects;

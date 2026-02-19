@@ -149,7 +149,10 @@ export const ChatPage = () => {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundImage: 'url("/assets/background.png")',
+        backgroundImage: {
+          xs: 'url("/assets/background-mobile.png")',
+          md: 'url("/assets/background-desktop.png")',
+        },
         backgroundSize: 'cover',
       }}
     >

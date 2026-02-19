@@ -88,7 +88,7 @@ export const NotificationsPage = () => {
     }
     setSession(sess);
 
-    const { data: list, error } = await supabase
+    const { data: listRaw, error } = await supabase
       .from('notifications')
       .select(
         `id, recipient_id, actor_id, type, reference_id, reference_type, payload, created_at, read_at`,
@@ -101,12 +101,11 @@ export const NotificationsPage = () => {
       setLoading(false);
       return;
     }
+    const list = (listRaw ?? []) as NotificationRow[];
 
     const actorIds = [
       ...new Set(
-        (list ?? [])
-          .map((r) => r.actor_id)
-          .filter((id): id is string => id != null),
+        list.map((r) => r.actor_id).filter((id): id is string => id != null),
       ),
     ];
 
@@ -139,7 +138,7 @@ export const NotificationsPage = () => {
 
     const feedRefs = [
       ...new Set(
-        (list ?? [])
+        list
           .filter(
             (x) => x.reference_type === 'feed_item' && x.reference_id != null,
           )
@@ -148,7 +147,7 @@ export const NotificationsPage = () => {
     ];
     const eventRefs = [
       ...new Set(
-        (list ?? [])
+        list
           .filter(
             (x) =>
               (x.type === 'event_rsvp' || x.reference_type === 'event') &&
@@ -159,7 +158,7 @@ export const NotificationsPage = () => {
     ];
     const roomIds = [
       ...new Set(
-        (list ?? [])
+        list
           .filter(
             (x) =>
               x.type === 'chat_message' &&
@@ -186,7 +185,7 @@ export const NotificationsPage = () => {
         .from('events')
         .select('id')
         .in('id', eventRefs);
-      eventExists = new Set((evRows ?? []).map((x) => x.id));
+      eventExists = new Set((evRows ?? []).map((x: { id: string }) => x.id));
     }
     if (roomIds.length > 0) {
       const { data: roomRows } = await supabase
@@ -196,7 +195,7 @@ export const NotificationsPage = () => {
       roomExists = new Set((roomRows ?? []).map((x) => x.id));
     }
 
-    const refExists = (r: (typeof list)[0]): boolean => {
+    const refExists = (r: NotificationRow): boolean => {
       if (r.reference_type === 'feed_item' && r.reference_id)
         return feedExists.has(r.reference_id);
       if (
@@ -213,7 +212,7 @@ export const NotificationsPage = () => {
       return true;
     };
 
-    const enriched: NotificationRow[] = (list ?? []).map((r) => {
+    const enriched: NotificationRow[] = list.map((r) => {
       const a = r.actor_id ? actors[r.actor_id] : null;
       return {
         ...r,

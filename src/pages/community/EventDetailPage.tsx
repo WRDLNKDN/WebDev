@@ -71,13 +71,13 @@ export const EventDetailPage = () => {
       const viewerId = sessionData.session.user.id;
       const { data: asBlocker } = await supabase
         .from('chat_blocks')
-        .select('id')
+        .select('blocker_id')
         .eq('blocker_id', viewerId)
         .eq('blocked_user_id', ev.host_id)
         .maybeSingle();
       const { data: asBlocked } = await supabase
         .from('chat_blocks')
-        .select('id')
+        .select('blocker_id')
         .eq('blocker_id', ev.host_id)
         .eq('blocked_user_id', viewerId)
         .maybeSingle();
@@ -106,9 +106,13 @@ export const EventDetailPage = () => {
       .select('status')
       .eq('event_id', id);
 
-    const yes = rsvps?.filter((r) => r.status === 'yes').length ?? 0;
-    const no = rsvps?.filter((r) => r.status === 'no').length ?? 0;
-    const maybe = rsvps?.filter((r) => r.status === 'maybe').length ?? 0;
+    const yes =
+      rsvps?.filter((r: { status: string }) => r.status === 'yes').length ?? 0;
+    const no =
+      rsvps?.filter((r: { status: string }) => r.status === 'no').length ?? 0;
+    const maybe =
+      rsvps?.filter((r: { status: string }) => r.status === 'maybe').length ??
+      0;
     setRsvpCounts({ yes, no, maybe });
 
     if (sessionData.session?.user?.id) {

@@ -32,6 +32,7 @@ import { WeirdlingBannerSlot } from '../../components/profile/WeirdlingBannerSlo
 import { WeirdlingCreateDialog } from '../../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
 import { toMessage } from '../../lib/utils/errors';
 import { deleteWeirdling, getMyWeirdlings } from '../../lib/api/weirdlingApi';
@@ -101,6 +102,9 @@ export const Dashboard = () => {
     deleteProject,
     uploadResume,
   } = useProfile();
+
+  const { avatarUrl: ctxAvatarUrl, refresh: refreshAvatar } =
+    useCurrentUserAvatar();
 
   const [snack, setSnack] = useState<string | null>(null);
 
@@ -419,6 +423,7 @@ export const Dashboard = () => {
           } catch {
             setWeirdlings([]);
           }
+          void refreshAvatar();
         }}
       />
       <EditProfileDialog

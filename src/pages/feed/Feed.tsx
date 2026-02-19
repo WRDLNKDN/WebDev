@@ -13,7 +13,6 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -74,6 +73,7 @@ import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 
+import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import WeirdlingGenerator from '../../components/avatar/WeirdlingGenerator';
 import {
   FeedAdCard,
@@ -511,14 +511,13 @@ const FeedCard = ({
           spacing={{ xs: 1, sm: 2 }}
           alignItems="flex-start"
         >
-          <Avatar
+          <ProfileAvatar
             src={(item.actor?.avatar as string) ?? undefined}
-            sx={{ width: 48, height: 48 }}
+            alt={displayName || '?'}
+            size="small"
             component={handle ? RouterLink : 'div'}
             to={handle ? `/profile/${handle}` : undefined}
-          >
-            {(displayName || '?').charAt(0).toUpperCase()}
-          </Avatar>
+          />
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Stack
               direction="row"
@@ -764,15 +763,14 @@ const FeedCard = ({
                           disablePadding
                           sx={{ py: 0.5 }}
                         >
-                          <ListItemAvatar sx={{ minWidth: 36 }}>
-                            <Avatar
+                          <ListItemAvatar sx={{ minWidth: 48 }}>
+                            <ProfileAvatar
                               src={c.actor?.avatar ?? undefined}
-                              sx={{ width: 28, height: 28 }}
-                            >
-                              {(c.actor?.display_name || c.actor?.handle || '?')
-                                .charAt(0)
-                                .toUpperCase()}
-                            </Avatar>
+                              alt={
+                                c.actor?.display_name || c.actor?.handle || '?'
+                              }
+                              size="small"
+                            />
                           </ListItemAvatar>
                           <ListItemText
                             primary={

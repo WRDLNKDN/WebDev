@@ -1263,6 +1263,47 @@ app.post(
   },
 );
 
+// --- Auth & profile: GET /api/me/avatar ---
+app.get(
+  '/api/me/avatar',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId)
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('avatar, use_weirdling_avatar')
+      .eq('id', userId)
+      .maybeSingle();
+
+    let avatarUrl: string | null = null;
+    const p = profile as {
+      avatar?: string;
+      use_weirdling_avatar?: boolean;
+    } | null;
+    if (p?.use_weirdling_avatar) {
+      const { data: w } = await adminSupabase
+        .from('weirdlings')
+        .select('avatar_url')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      avatarUrl = (w as { avatar_url?: string } | null)?.avatar_url ?? null;
+    }
+    if (!avatarUrl && p?.avatar) avatarUrl = p.avatar;
+
+    return res.json({
+      ok: true,
+      data: { avatarUrl: avatarUrl ?? null },
+      error: null,
+      meta: {},
+    });
+  },
+);
+
 // --- Auth & profile: GET /api/me ---
 app.get('/api/me', requireAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.userId;

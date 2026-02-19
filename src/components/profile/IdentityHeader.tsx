@@ -1,13 +1,14 @@
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PsychologyIcon from '@mui/icons-material/Psychology';
-import { Avatar, Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import React from 'react';
 
 interface IdentityHeaderProps {
   displayName: string;
   tagline?: string;
   bio: string;
-  avatarUrl: string;
+  avatarUrl?: string | null;
   statusEmoji?: string;
   statusMessage?: string;
   /** Optional label above slot (e.g. "WEIRDLINGS") */
@@ -78,12 +79,11 @@ export const IdentityHeader = ({
       sx={{ textAlign: { xs: 'center', md: 'left' } }}
     >
       <Stack alignItems="center" spacing={1.5} sx={{ flexShrink: 0 }}>
-        <Avatar
-          src={avatarUrl}
+        <ProfileAvatar
+          src={avatarUrl || undefined}
           alt={displayName}
+          size="header"
           sx={{
-            width: { xs: 88, md: 120 },
-            height: { xs: 88, md: 120 },
             border: '4px solid rgba(255,255,255,0.1)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           }}

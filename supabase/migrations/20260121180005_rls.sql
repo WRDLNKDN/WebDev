@@ -787,6 +787,67 @@ grant select on table public.feed_advertisers to authenticated;
 grant select, insert, update, delete on table public.feed_advertisers to authenticated;
 
 -- -----------------------------
+-- notifications: recipient only
+-- -----------------------------
+alter table public.notifications enable row level security;
+
+create policy notifications_recipient_select
+  on public.notifications for select to authenticated
+  using (auth.uid() = recipient_id);
+
+create policy notifications_recipient_update
+  on public.notifications for update to authenticated
+  using (auth.uid() = recipient_id)
+  with check (auth.uid() = recipient_id);
+
+revoke all on table public.notifications from anon, authenticated;
+grant select, update on table public.notifications to authenticated;
+
+-- -----------------------------
+-- events: authenticated read; host/create/update own
+-- -----------------------------
+alter table public.events enable row level security;
+
+create policy events_select
+  on public.events for select to authenticated using (true);
+
+create policy events_insert_own
+  on public.events for insert to authenticated
+  with check (auth.uid() = host_id);
+
+create policy events_update_own
+  on public.events for update to authenticated
+  using (auth.uid() = host_id)
+  with check (auth.uid() = host_id);
+
+revoke all on table public.events from anon, authenticated;
+grant select, insert, update on table public.events to authenticated;
+
+-- -----------------------------
+-- event_rsvps: members manage own
+-- -----------------------------
+alter table public.event_rsvps enable row level security;
+
+create policy event_rsvps_select
+  on public.event_rsvps for select to authenticated using (true);
+
+create policy event_rsvps_insert_own
+  on public.event_rsvps for insert to authenticated
+  with check (auth.uid() = user_id);
+
+create policy event_rsvps_update_own
+  on public.event_rsvps for update to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy event_rsvps_delete_own
+  on public.event_rsvps for delete to authenticated
+  using (auth.uid() = user_id);
+
+revoke all on table public.event_rsvps from anon, authenticated;
+grant select, insert, update, delete on table public.event_rsvps to authenticated;
+
+-- -----------------------------
 -- content_submissions, playlists, playlist_items, audit_log
 -- -----------------------------
 alter table public.content_submissions enable row level security;

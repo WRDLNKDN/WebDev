@@ -27,6 +27,12 @@ drop function if exists public.chat_audit_on_message() cascade;
 drop function if exists public.chat_room_summaries(uuid[], uuid) cascade;
 drop function if exists public.chat_prune_audit_log() cascade;
 drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) cascade;
+drop function if exists public.notifications_on_feed_reaction() cascade;
+drop function if exists public.notifications_on_connection_request() cascade;
+drop function if exists public.notifications_on_chat_message() cascade;
+drop function if exists public.notifications_on_event_rsvp() cascade;
+drop function if exists public.notifications_on_mention() cascade;
+drop function if exists public.event_rsvps_block_suspended() cascade;
 
 -- -----------------------------
 -- Drop tables (reverse dependency order)
@@ -53,6 +59,9 @@ drop table if exists public.admin_allowlist cascade;
 drop table if exists public.feed_advertisers cascade;
 drop table if exists public.playlist_items cascade;
 drop table if exists public.playlists cascade;
+drop table if exists public.event_rsvps cascade;
+drop table if exists public.events cascade;
+drop table if exists public.notifications cascade;
 drop table if exists public.content_submissions cascade;
 drop table if exists public.audit_log cascade;
 
@@ -1580,4 +1589,442 @@ revoke all on function public.chat_prune_audit_log() from public;
 grant execute on function public.chat_prune_audit_log() to service_role;
 
 comment on function public.chat_prune_audit_log is 'Prune chat_audit_log older than 90 days. Call from Edge Function or pg_cron.';
+
+-- -----------------------------
+-- Notifications (in-app activity signals)
+-- -----------------------------
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  type text not null check (type in (
+    'reaction',
+    'comment',
+    'mention',
+    'chat_message',
+    'connection_request',
+    'event_rsvp'
+  )),
+  reference_id uuid,
+  reference_type text,
+  payload jsonb default '{}',
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+create index idx_notifications_recipient_created
+  on public.notifications(recipient_id, created_at desc);
+create index idx_notifications_recipient_unread
+  on public.notifications(recipient_id, read_at)
+  where read_at is null;
+
+comment on table public.notifications is
+  'In-app activity signals: reactions, comments, mentions, chat, connections.';
+
+create or replace function public.notifications_on_feed_reaction()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_parent_user_id uuid;
+  v_parent_id uuid;
+  v_reaction_type text;
+  v_is_comment boolean;
+begin
+  if new.kind != 'reaction' or new.parent_id is null then
+    return new;
+  end if;
+
+  v_reaction_type := new.payload->>'type';
+  v_is_comment := v_reaction_type = 'comment';
+
+  if not v_is_comment and v_reaction_type not in ('like', 'love', 'inspiration', 'care') then
+    return new;
+  end if;
+
+  select fi.user_id, fi.id into v_parent_user_id, v_parent_id
+  from public.feed_items fi
+  where fi.id = new.parent_id;
+
+  if v_parent_user_id is null or v_parent_user_id = new.user_id then
+    return new;
+  end if;
+
+  -- Respect blocking rules
+  if exists (
+    select 1 from public.chat_blocks cb
+    where (cb.blocker_id = v_parent_user_id and cb.blocked_user_id = new.user_id)
+       or (cb.blocker_id = new.user_id and cb.blocked_user_id = v_parent_user_id)
+  ) then
+    return new;
+  end if;
+
+  -- No duplicate: one per (recipient, actor, type, reference)
+  if exists (
+    select 1 from public.notifications n
+    where n.recipient_id = v_parent_user_id
+      and n.actor_id = new.user_id
+      and n.type = case when v_is_comment then 'comment' else 'reaction' end
+      and n.reference_id = v_parent_id
+      and n.created_at > now() - interval '1 minute'
+  ) then
+    return new;
+  end if;
+
+  insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+  values (
+    v_parent_user_id,
+    new.user_id,
+    case when v_is_comment then 'comment' else 'reaction' end,
+    v_parent_id,
+    'feed_item',
+    jsonb_build_object(
+      'parent_id', new.parent_id,
+      'reaction_type', v_reaction_type,
+      'reaction_id', new.id
+    )
+  );
+
+  return new;
+end;
+$$;
+
+create trigger trg_notifications_on_feed_reaction
+  after insert on public.feed_items
+  for each row
+  execute function public.notifications_on_feed_reaction();
+
+-- -----------------------------
+-- notifications_on_connection_request: notify recipient of pending request
+-- -----------------------------
+create or replace function public.notifications_on_connection_request()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  if new.status != 'pending' then
+    return new;
+  end if;
+  if new.requester_id = new.recipient_id then
+    return new;
+  end if;
+
+  if exists (select 1 from public.chat_suspensions where user_id = new.requester_id) then
+    return new;
+  end if;
+  if exists (
+    select 1 from public.profiles
+    where id = new.requester_id and status = 'disabled'
+  ) then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.chat_blocks cb
+    where (cb.blocker_id = new.recipient_id and cb.blocked_user_id = new.requester_id)
+       or (cb.blocker_id = new.requester_id and cb.blocked_user_id = new.recipient_id)
+  ) then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.notifications n
+    where n.recipient_id = new.recipient_id
+      and n.actor_id = new.requester_id
+      and n.type = 'connection_request'
+      and n.reference_id = new.id
+  ) then
+    return new;
+  end if;
+
+  insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+  values (
+    new.recipient_id,
+    new.requester_id,
+    'connection_request',
+    new.id,
+    'connection_request',
+    jsonb_build_object('request_id', new.id)
+  );
+
+  return new;
+end;
+$$;
+
+create trigger trg_notifications_on_connection_request
+  after insert on public.connection_requests
+  for each row
+  execute function public.notifications_on_connection_request();
+
+-- -----------------------------
+-- notifications_on_chat_message: notify other room members (not sender)
+-- -----------------------------
+create or replace function public.notifications_on_chat_message()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  r record;
+begin
+  if new.sender_id is null or new.is_system_message or new.is_deleted then
+    return new;
+  end if;
+
+  for r in
+    select crm.user_id
+    from public.chat_room_members crm
+    where crm.room_id = new.room_id
+      and crm.left_at is null
+      and crm.user_id != new.sender_id
+      and crm.user_id is not null
+  loop
+    if exists (
+      select 1 from public.chat_blocks cb
+      where (cb.blocker_id = r.user_id and cb.blocked_user_id = new.sender_id)
+         or (cb.blocker_id = new.sender_id and cb.blocked_user_id = r.user_id)
+    ) then
+      continue;
+    end if;
+
+    insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+    values (
+      r.user_id,
+      new.sender_id,
+      'chat_message',
+      new.id,
+      'chat_message',
+      jsonb_build_object('room_id', new.room_id, 'message_id', new.id)
+    );
+  end loop;
+
+  return new;
+end;
+$$;
+
+create trigger trg_notifications_on_chat_message
+  after insert on public.chat_messages
+  for each row
+  execute function public.notifications_on_chat_message();
+
+-- -----------------------------
+-- notifications_on_event_rsvp: notify event host when someone RSVPs
+-- -----------------------------
+create or replace function public.notifications_on_event_rsvp()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_host_id uuid;
+begin
+  select host_id into v_host_id from public.events where id = new.event_id;
+  if v_host_id is null or v_host_id = new.user_id then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.chat_blocks cb
+    where (cb.blocker_id = v_host_id and cb.blocked_user_id = new.user_id)
+       or (cb.blocker_id = new.user_id and cb.blocked_user_id = v_host_id)
+  ) then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.notifications n
+    where n.recipient_id = v_host_id
+      and n.actor_id = new.user_id
+      and n.type = 'event_rsvp'
+      and n.reference_id = new.event_id
+      and n.created_at > now() - interval '1 minute'
+  ) then
+    return new;
+  end if;
+
+  insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+  values (
+    v_host_id,
+    new.user_id,
+    'event_rsvp',
+    new.event_id,
+    'event',
+    jsonb_build_object('event_id', new.event_id, 'status', new.status)
+  );
+
+  return new;
+end;
+$$;
+
+create trigger trg_notifications_on_event_rsvp
+  after insert on public.event_rsvps
+  for each row
+  execute function public.notifications_on_event_rsvp();
+
+-- -----------------------------
+-- notifications_on_mention: parse @handle in post/comment body
+-- -----------------------------
+create or replace function public.notifications_on_mention()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_body text;
+  v_ref_id uuid;
+  v_matched text;
+  v_mentioned_id uuid;
+begin
+  if new.kind = 'post' then
+    v_body := new.payload->>'body';
+    v_ref_id := new.id;
+  elsif new.kind = 'reaction' and (new.payload->>'type') = 'comment' then
+    v_body := new.payload->>'body';
+    v_ref_id := coalesce(new.parent_id, new.id);
+  else
+    return new;
+  end if;
+
+  if v_body is null or trim(v_body) = '' then
+    return new;
+  end if;
+
+  for v_matched in
+    select distinct lower(match[1])
+    from regexp_matches(v_body, '@([a-zA-Z0-9_]+)', 'g') as match
+  loop
+    select id into v_mentioned_id
+    from public.profiles
+    where lower(handle) = v_matched
+      and id != new.user_id
+      and status = 'approved'
+    limit 1;
+
+    if v_mentioned_id is not null then
+      if exists (
+        select 1 from public.chat_blocks cb
+        where (cb.blocker_id = v_mentioned_id and cb.blocked_user_id = new.user_id)
+           or (cb.blocker_id = new.user_id and cb.blocked_user_id = v_mentioned_id)
+      ) then
+        continue;
+      end if;
+
+      if exists (
+        select 1 from public.notifications n
+        where n.recipient_id = v_mentioned_id
+          and n.actor_id = new.user_id
+          and n.type = 'mention'
+          and n.reference_id = v_ref_id
+          and n.created_at > now() - interval '1 minute'
+      ) then
+        continue;
+      end if;
+
+      insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+      values (
+        v_mentioned_id,
+        new.user_id,
+        'mention',
+        v_ref_id,
+        'feed_item',
+        jsonb_build_object('handle', v_matched)
+      );
+    end if;
+  end loop;
+
+  return new;
+end;
+$$;
+
+create trigger trg_notifications_on_mention
+  after insert on public.feed_items
+  for each row
+  execute function public.notifications_on_mention();
+
+-- -----------------------------
+-- Events (community gatherings)
+-- -----------------------------
+create table public.events (
+  id uuid primary key default gen_random_uuid(),
+  host_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  start_at timestamptz not null,
+  end_at timestamptz,
+  location text,
+  location_type text check (location_type in ('virtual', 'physical')),
+  link_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_events_start_at on public.events(start_at);
+create index idx_events_host_id on public.events(host_id);
+
+create trigger trg_events_updated_at
+  before update on public.events
+  for each row execute function public.set_updated_at();
+
+comment on table public.events is 'Community gatherings: AMAs, meetups, virtual sessions.';
+
+create table public.event_rsvps (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'yes' check (status in ('yes', 'no', 'maybe')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (event_id, user_id)
+);
+
+create index idx_event_rsvps_event_id on public.event_rsvps(event_id);
+create index idx_event_rsvps_user_id on public.event_rsvps(user_id);
+
+create trigger trg_event_rsvps_updated_at
+  before update on public.event_rsvps
+  for each row execute function public.set_updated_at();
+
+create or replace function public.event_rsvps_block_suspended()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  if exists (select 1 from public.chat_suspensions where user_id = new.user_id) then
+    raise exception 'Suspended users cannot RSVP';
+  end if;
+  if exists (
+    select 1 from public.profiles where id = new.user_id and status = 'disabled'
+  ) then
+    raise exception 'Account disabled';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_event_rsvps_block_suspended
+  before insert on public.event_rsvps
+  for each row execute function public.event_rsvps_block_suspended();
+
+comment on table public.event_rsvps is 'RSVP state: yes, no, maybe.';
+
+-- Enable Realtime for notifications (unread badge updates). Idempotent.
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notifications'
+  ) then
+    alter publication supabase_realtime add table public.notifications;
+  end if;
+end $$;
 

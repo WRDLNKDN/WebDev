@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
@@ -13,7 +14,7 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
@@ -250,6 +251,29 @@ export const Dashboard = () => {
           >
             PORTFOLIO
           </Typography>
+
+          {/* Quick links: Notifications, Settings */}
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            useFlexGap
+            spacing={2}
+            sx={{ mb: 3 }}
+          >
+            <Button
+              component={RouterLink}
+              to="/dashboard/notifications"
+              startIcon={<NotificationsIcon />}
+              sx={{
+                textTransform: 'none',
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: 'white',
+              }}
+              variant="outlined"
+            >
+              Notifications
+            </Button>
+          </Stack>
 
           {/* Action buttons: responsive grid on mobile */}
           <Stack

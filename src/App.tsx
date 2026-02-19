@@ -126,6 +126,16 @@ const EventsPage = lazy(async () => {
   return { default: m.EventsPage };
 });
 
+const EventDetailPage = lazy(async () => {
+  const m = await import('./pages/community/EventDetailPage');
+  return { default: m.EventDetailPage };
+});
+
+const NotificationsPage = lazy(async () => {
+  const m = await import('./pages/dashboard/NotificationsPage');
+  return { default: m.NotificationsPage };
+});
+
 const ForumsPage = lazy(async () => {
   const m = await import('./pages/community/ForumsPage');
   return { default: m.ForumsPage };
@@ -310,7 +320,22 @@ const App = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/community" element={<Community />} />
                 <Route path="/platform" element={<Platform />} />
-                <Route path="/events" element={<EventsPage />} />
+                <Route
+                  path="/events"
+                  element={
+                    <RequireOnboarded>
+                      <EventsPage />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/events/:id"
+                  element={
+                    <RequireOnboarded>
+                      <EventDetailPage />
+                    </RequireOnboarded>
+                  }
+                />
                 <Route path="/forums" element={<ForumsPage />} />
                 <Route path="/saved" element={<SavedPage />} />
                 <Route path="/advertise" element={<AdvertisePage />} />
@@ -344,7 +369,11 @@ const App = () => {
                 />
                 <Route
                   path="/dashboard/notifications"
-                  element={<Navigate to="/dashboard" replace />}
+                  element={
+                    <RequireOnboarded>
+                      <NotificationsPage />
+                    </RequireOnboarded>
+                  }
                 />
                 <Route
                   path="/dashboard/settings"

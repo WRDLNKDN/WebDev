@@ -28,6 +28,10 @@ architectural contract. All future IA amendments must reference that baseline.
 ├── directory               Authenticated
 │   └── route: /directory
 │
+├── events                  Authenticated
+│   ├── route: /events
+│   └── /events/:id
+│
 ├── profile                 Public
 │   └── route: /profile/:handle
 │
@@ -64,9 +68,12 @@ architectural contract. All future IA amendments must reference that baseline.
 - **Home** — always (links to `/`)
 - **Feed** — when logged in (links to `/feed`) — content and activity stream
 - **Directory** — when logged in (links to `/directory`) — member discovery
+- **Events** — when logged in (links to `/events`) — community gatherings
 - **Join** — when logged out (links to `/join`)
 - **Dashboard** — when logged in (links to `/dashboard`) — private control
   surface
+- **Notifications** — when logged in (links to `/dashboard/notifications`) —
+  badge in nav
 - **Store** — if present (out of scope for this IA unless already live)
 
 Legacy terms prohibited: **Signup** (use Join). Do not conflate Feed with
@@ -76,6 +83,7 @@ Directory: Feed = activity stream, Directory = people discovery.
 
 - On `/feed` → **Feed** is highlighted.
 - On `/directory` → **Directory** is highlighted.
+- On `/events` or `/events/:id` → **Events** is highlighted.
 - On `/join` → **Join** is highlighted.
 - On `/dashboard` or `/dashboard/*` → **Dashboard** is highlighted.
 

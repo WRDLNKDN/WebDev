@@ -52,7 +52,12 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
+import { shouldLoadMoreForDeepLink } from '../../lib/feed/deepLink';
 import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
@@ -313,7 +318,7 @@ function interleaveWithAds(
   const result: FeedDisplayItem[] = [];
   let adIndex = 0;
   posts.forEach((item, i) => {
-    if (i > 0 && i % everyN === 0) {
+    if ((i + 1) % everyN === 0) {
       const ad = advertisers[adIndex % advertisers.length];
       result.push({ kind: 'ad', advertiser: ad });
       adIndex += 1;
@@ -895,6 +900,8 @@ const FeedCard = ({
 
 export const Feed = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const postParam = searchParams.get('post');
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [advertisers, setAdvertisers] = useState<FeedAdvertiser[]>([]);
@@ -1350,6 +1357,62 @@ export const Feed = () => {
     onDelete: (postId) => void handleDelete(postId),
   };
 
+  const postParamProcessed = useRef<string | null>(null);
+  const postParamLoadAttempts = useRef(0);
+  const MAX_DEEPLINK_LOAD_ATTEMPTS = 3;
+
+  useEffect(() => {
+    if (!postParam || loading) return;
+    if (postParamProcessed.current !== postParam) {
+      postParamLoadAttempts.current = 0;
+    }
+    if (postParamProcessed.current === postParam) return;
+    const found = items.some((i) => i.id === postParam);
+    if (found) {
+      postParamProcessed.current = postParam;
+      postParamLoadAttempts.current = 0;
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`post-${postParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (expandedCommentsPostId !== postParam) {
+            void handleCommentToggle(postParam);
+          }
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('post');
+              return next;
+            },
+            { replace: true },
+          );
+        }
+      });
+      return;
+    }
+    if (
+      shouldLoadMoreForDeepLink(
+        items,
+        postParam,
+        Boolean(nextCursor),
+        postParamLoadAttempts.current,
+        MAX_DEEPLINK_LOAD_ATTEMPTS,
+      )
+    ) {
+      postParamLoadAttempts.current += 1;
+      void loadPage(nextCursor, true);
+    }
+  }, [
+    postParam,
+    items,
+    loading,
+    nextCursor,
+    expandedCommentsPostId,
+    handleCommentToggle,
+    setSearchParams,
+    loadPage,
+  ]);
+
   return (
     <Box sx={{ position: 'relative', flex: 1, width: '100%' }}>
       <Box
@@ -1766,24 +1829,31 @@ export const Feed = () => {
               <>
                 {displayItems.map((entry) =>
                   entry.kind === 'post' ? (
-                    <FeedCard
+                    <Box
                       key={entry.item.id}
-                      item={entry.item}
-                      actions={feedCardActions}
-                      isOwner={session?.user?.id === entry.item.user_id}
-                      commentsExpanded={
-                        expandedCommentsPostId === entry.item.id
-                      }
-                      comments={commentsByPostId[entry.item.id] ?? []}
-                      commentsLoading={commentsLoadingPostId === entry.item.id}
-                      onAddComment={handleAddComment}
-                      isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
-                        entry.item.id,
-                      )}
-                      onDismissLinkPreview={() =>
-                        handleDismissLinkPreview(entry.item.id)
-                      }
-                    />
+                      id={`post-${entry.item.id}`}
+                      component="section"
+                    >
+                      <FeedCard
+                        item={entry.item}
+                        actions={feedCardActions}
+                        isOwner={session?.user?.id === entry.item.user_id}
+                        commentsExpanded={
+                          expandedCommentsPostId === entry.item.id
+                        }
+                        comments={commentsByPostId[entry.item.id] ?? []}
+                        commentsLoading={
+                          commentsLoadingPostId === entry.item.id
+                        }
+                        onAddComment={handleAddComment}
+                        isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
+                          entry.item.id,
+                        )}
+                        onDismissLinkPreview={() =>
+                          handleDismissLinkPreview(entry.item.id)
+                        }
+                      />
+                    </Box>
                   ) : (
                     <FeedAdCard
                       key={`ad-${entry.advertiser.id}`}

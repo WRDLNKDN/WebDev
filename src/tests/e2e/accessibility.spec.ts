@@ -21,3 +21,14 @@ test('Global Accessibility Audit', async ({ page }) => {
 
   expect(results.violations).toEqual([]);
 });
+
+test('Notifications route accessibility', async ({ page }) => {
+  await page.goto('/dashboard/notifications');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
+  const results = await new AxeBuilder({ page })
+    .include('#root')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(results.violations).toEqual([]);
+});

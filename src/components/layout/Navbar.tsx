@@ -1,6 +1,7 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import EventIcon from '@mui/icons-material/Event';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import ForumIcon from '@mui/icons-material/Forum';
 import GoogleIcon from '@mui/icons-material/Google';
 import GavelIcon from '@mui/icons-material/Gavel';
@@ -12,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {
   AppBar,
+  Badge,
   Box,
   Button,
   CircularProgress,
@@ -38,6 +40,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { toMessage } from '../../lib/utils/errors';
 import {
   signInWithOAuth,
@@ -96,6 +99,8 @@ export const Navbar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { avatarUrl } = useCurrentUserAvatar();
+  const notificationsUnread = useNotificationsUnread();
+  const isEventsActive = path === '/events' || path.startsWith('/events/');
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -399,6 +404,39 @@ export const Navbar = () => {
                   >
                     Directory
                   </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/events"
+                    sx={{
+                      color: 'white',
+                      ...(isEventsActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Events
+                  </Button>
+                  <IconButton
+                    component={RouterLink}
+                    to="/dashboard/notifications"
+                    aria-label={
+                      notificationsUnread > 0
+                        ? `${notificationsUnread} unread notifications`
+                        : 'Notifications'
+                    }
+                    sx={{
+                      color: 'white',
+                      ...(path === '/dashboard/notifications' && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    <Badge badgeContent={notificationsUnread} color="error">
+                      <NotificationsIcon />
+                    </Badge>
+                  </IconButton>
                   <Button
                     component={RouterLink}
                     to="/dashboard"

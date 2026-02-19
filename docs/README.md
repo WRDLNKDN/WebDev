@@ -41,6 +41,10 @@ Central index for WRDLNKDN WebDev documentation.
   `/feed`; post rendering, reactions, visibility rules.
 - [Epic: Directory](./architecture/epic-directory.md) — Member discovery at
   `/directory`; search, filters, profile navigation.
+- [Epic: Notifications](./architecture/epic-notifications.md) — In-app activity
+  signals at `/dashboard/notifications`; reactions, comments, mentions, chat.
+- [Epic: Events](./architecture/epic-events.md) — Community gatherings at
+  `/events`; create, RSVP, deterministic ordering.
 - [Epic: API Layer](./architecture/epic-api-layer.md) — Frontend–backend secure
   communication; auth, content submission, moderation (implemented vs planned).
 - [Epic: IA Baseline](./architecture/epic-ia-baseline.md) — Core information

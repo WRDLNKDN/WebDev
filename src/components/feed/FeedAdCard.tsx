@@ -56,6 +56,8 @@ export const FeedAdCard = ({ advertiser }: Props) => {
           component="img"
           src={advertiser.image_url}
           alt=""
+          loading="eager"
+          referrerPolicy="no-referrer"
           sx={{
             width: '100%',
             height: 'auto',

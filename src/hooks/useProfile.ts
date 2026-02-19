@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { toMessage } from '../lib/utils/errors';
 import { supabase } from '../lib/auth/supabaseClient';
+import { processAvatarForUpload } from '../lib/utils/avatarResize';
+import { toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
@@ -462,11 +463,16 @@ export function useProfile() {
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user');
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+      const { blob } = await processAvatarForUpload(file);
+
+      const ext =
+        blob.type === 'image/png'
+          ? 'png'
+          : (file.name.split('.').pop() ?? 'jpg');
+      const fileName = `${session.user.id}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file);
+        .upload(fileName, blob, { contentType: blob.type });
       if (error) throw error;
       const {
         data: { publicUrl },

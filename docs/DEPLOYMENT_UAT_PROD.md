@@ -231,12 +231,9 @@ columns, or RLS are missing:
 
 ## GitHub Actions: Supabase migration secrets
 
-Migrations run in two workflows:
-
-- **vercel-deploy-uat-prod** — on every push to `main` (runs migrations before
-  deploy)
-- **supabase-deploy-uat-prod** — only when `supabase/migrations/**`,
-  `supabase/seed/**`, or `supabase/config.toml` change
+Migrations run in **vercel-deploy-uat-prod** on every push to `main` (before
+deploy). Developers can also push migrations manually via the Supabase CLI (see
+below).
 
 ### Required secrets (per environment)
 
@@ -256,20 +253,44 @@ correct project refs and passwords.
 
 ### Manual trigger (migrations only)
 
-To run migrations without a full deploy:
+To run migrations without a full deploy: use the Supabase CLI commands below, or
+re-run **vercel-deploy-uat-prod** and approve the PROD step if needed.
 
-1. **Actions** → **Supabase Deploy UAT then PROD**
-2. **Run workflow** → choose branch (e.g. `main`)
-3. Optionally check **Also deploy production** (requires approval)
+### Push migrations via Supabase CLI (manual)
 
-### Fallback: apply migrations manually
+Use these when CI isn’t running migrations or you need to fix schema drift.
+Requires `SUPABASE_ACCESS_TOKEN` in env or `supabase login`. For remote push,
+set `SUPABASE_DB_PASSWORD` (or pass `-p` when prompted).
 
-If the GitHub Action keeps failing, apply SQL directly:
+#### UAT
+
+```bash
+supabase link --project-ref lgxwseyzoefxggxijatp
+supabase migration repair 20260121180000 --status reverted   # only if "up to date" but schema is wrong
+supabase db push --linked --include-all --include-seed -p "$SUPABASE_DB_PASSWORD"
+```
+
+#### PROD
+
+```bash
+supabase link --project-ref rpcaazmxymymqdejevtb
+supabase migration repair 20260121180000 --status reverted   # only if "up to date" but schema is wrong
+supabase db push --linked --include-all --include-seed -p "$SUPABASE_DB_PASSWORD"
+```
+
+Repair + push re-applies the tables migration, RLS migration (including storage
+buckets and policies), and seed data from `supabase/seed/seed.sql`.
+
+### Fallback: apply migrations via SQL Editor
+
+If the CLI keeps failing, apply SQL directly:
 
 1. **Supabase Dashboard** → your project (UAT or PROD) → **SQL Editor**
 2. Run in this order:
    - `supabase/migrations/20260121180000_tables.sql`
    - `supabase/migrations/20260121180005_rls.sql`
+3. (Optional) Run `supabase/seed/seed.sql` for admin allowlist and other seed
+   data
 
 ### Common failures
 

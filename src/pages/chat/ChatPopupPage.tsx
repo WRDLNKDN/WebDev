@@ -116,7 +116,7 @@ export const ChatPopupPage = () => {
           bgcolor: 'background.default',
         }}
       >
-        <Typography color="text.secondary">
+        <Typography color="text.secondary" component="p">
           Sign in to view this conversation
         </Typography>
       </Box>
@@ -159,10 +159,26 @@ export const ChatPopupPage = () => {
           }
         />
 
-        {error && (
-          <Typography color="error" variant="body2" sx={{ px: 2, py: 1 }}>
-            {error}
-          </Typography>
+        {error && !loading && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 3,
+              textAlign: 'center',
+            }}
+          >
+            <Typography color="error" variant="body1" fontWeight={500}>
+              {error}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              You may not have access to this conversation, or it may have been
+              deleted.
+            </Typography>
+          </Box>
         )}
 
         {loading ? (
@@ -176,7 +192,7 @@ export const ChatPopupPage = () => {
           >
             <CircularProgress />
           </Box>
-        ) : (
+        ) : error ? null : (
           <MessageList
             messages={messages}
             currentUserId={uid}
@@ -191,12 +207,14 @@ export const ChatPopupPage = () => {
           />
         )}
 
-        <MessageInput
-          onSend={sendMessage}
-          onTyping={startTyping}
-          onStopTyping={stopTyping}
-          disabled={sending || loading}
-        />
+        {!error && (
+          <MessageInput
+            onSend={sendMessage}
+            onTyping={startTyping}
+            onStopTyping={stopTyping}
+            disabled={sending || loading}
+          />
+        )}
       </Box>
 
       <BlockConfirmDialog

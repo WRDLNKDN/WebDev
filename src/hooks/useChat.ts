@@ -19,6 +19,12 @@ export type ChatRoomWithMembers = ChatRoom & {
       } | null;
     }
   >;
+  /** Last message preview for room list (truncated content or "Message deleted") */
+  last_message_preview?: string | null;
+  /** When the last message was sent */
+  last_message_at?: string | null;
+  /** Unread message count for current user */
+  unread_count?: number;
 };
 
 export type MessageWithExtras = ChatMessage & {
@@ -40,7 +46,7 @@ export function useChat(roomId: string | null) {
   const [sending, setSending] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const fetchRoom = useCallback(async (id: string) => {
+  const fetchRoom = useCallback(async (id: string): Promise<boolean> => {
     const { data: roomData, error: roomErr } = await supabase
       .from('chat_rooms')
       .select('*')
@@ -48,9 +54,10 @@ export function useChat(roomId: string | null) {
       .single();
 
     if (roomErr || !roomData) {
-      setError('This chat could not be found. It may have been deleted.');
+      setError('This chat could not be found. You may not have access.');
       setRoom(null);
-      return;
+      setMessages([]);
+      return false;
     }
 
     const { data: membersData } = await supabase
@@ -72,6 +79,7 @@ export function useChat(roomId: string | null) {
       ]),
     );
 
+    setError(null);
     setRoom({
       ...(roomData as ChatRoom),
       members: (membersData ?? []).map((m) => ({
@@ -79,6 +87,7 @@ export function useChat(roomId: string | null) {
         profile: profileMap.get(m.user_id) ?? null,
       })) as ChatRoomWithMembers['members'],
     });
+    return true;
   }, []);
 
   const fetchMessages = useCallback(async (id: string) => {
@@ -191,8 +200,12 @@ export function useChat(roomId: string | null) {
     setError(null);
 
     void (async () => {
-      await fetchRoom(roomId);
+      const ok = await fetchRoom(roomId);
       if (cancelled) return;
+      if (!ok) {
+        setLoading(false);
+        return;
+      }
       await fetchMessages(roomId);
       if (cancelled) return;
       setLoading(false);
@@ -627,6 +640,54 @@ export function useChatRooms() {
           ...m,
           profile: profileMap.get(m.user_id) ?? null,
         })) as ChatRoomWithMembers['members'],
+      });
+    }
+
+    // Fetch last message + unread count per room
+    if (withMembers.length > 0) {
+      const { data: summaries } = await supabase.rpc('chat_room_summaries', {
+        p_room_ids: withMembers.map((rm) => rm.id),
+        p_user_id: session.user.id,
+      });
+
+      type SummaryRow = {
+        room_id: string;
+        last_content: string | null;
+        last_created_at: string;
+        last_is_deleted: boolean;
+        unread_count: number;
+      };
+      const rows = (summaries ?? []) as SummaryRow[];
+      const summaryMap = new Map(
+        rows.map((s) => [
+          s.room_id,
+          {
+            last_content: s.last_content,
+            last_created_at: s.last_created_at,
+            last_is_deleted: s.last_is_deleted,
+            unread_count: Number(s.unread_count ?? 0),
+          },
+        ]),
+      );
+
+      const preview = (
+        content: string | null,
+        isDeleted: boolean,
+        maxLen = 45,
+      ) => {
+        if (isDeleted) return 'Message deleted';
+        if (!content?.trim()) return '—';
+        const t = content.trim();
+        return t.length <= maxLen ? t : t.slice(0, maxLen) + '…';
+      };
+
+      withMembers.forEach((rm) => {
+        const s = summaryMap.get(rm.id);
+        if (s) {
+          rm.last_message_preview = preview(s.last_content, s.last_is_deleted);
+          rm.last_message_at = s.last_created_at;
+          rm.unread_count = s.unread_count;
+        }
       });
     }
 

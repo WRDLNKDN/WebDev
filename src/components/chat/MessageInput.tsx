@@ -79,7 +79,7 @@ export const MessageInput = ({
       ) {
         const f = pendingFiles[i];
         if (f.size > CHAT_MAX_FILE_BYTES) {
-          setError('This file is too large. Maximum size is 6MB.');
+          setError('File too large. Maximum size is 6MB per file.');
           setUploading(false);
           return;
         }
@@ -134,7 +134,7 @@ export const MessageInput = ({
 
     if (valid.length < files.length) {
       setError(
-        'Some files are too large or not supported. Max 6MB, images or documents only.',
+        'Some files rejected: max 6MB per file, images (JPG/PNG/WebP/GIF) or documents (PDF/DOC/TXT) only.',
       );
     }
     setPendingFiles((prev) =>

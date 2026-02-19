@@ -34,6 +34,8 @@
     "supabase:start": "npx supabase@latest start",
     "supabase:stop": "npx supabase@latest stop",
     "supabase:reset": "npx supabase db reset",
+    "supabase:push-uat": "npx supabase@latest link --project-ref lgxwseyzoefxggxijatp && npx supabase@latest db push --linked --include-all --include-seed -p \"${SUPABASE_DB_PASSWORD}\"",
+    "supabase:push-prod": "npx supabase@latest link --project-ref rpcaazmxymymqdejevtb && npx supabase@latest db push --linked --include-all --include-seed -p \"${SUPABASE_DB_PASSWORD}\"",
     "supabase:gen-types": "npx supabase@latest gen types typescript --local | node scripts/gen-supabase-types.mjs",
     "--- BUILD & DEPLOY (Legacy Code Prevention) ---": "",
     "build": "tsc -b && vite build",

@@ -23,6 +23,8 @@ drop function if exists public.chat_on_suspension() cascade;
 drop function if exists public.chat_on_unsuspend() cascade;
 drop function if exists public.chat_rate_limit_check() cascade;
 drop function if exists public.chat_audit_on_message() cascade;
+drop function if exists public.chat_room_summaries(uuid[], uuid) cascade;
+drop function if exists public.chat_prune_audit_log() cascade;
 drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) cascade;
 
 -- -----------------------------
@@ -1473,4 +1475,83 @@ on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
+
+-- -----------------------------
+-- Chat room summaries (last message, unread count for room list)
+-- -----------------------------
+create or replace function public.chat_room_summaries(p_room_ids uuid[], p_user_id uuid)
+returns table (
+  room_id uuid,
+  last_content text,
+  last_created_at timestamptz,
+  last_is_deleted boolean,
+  unread_count bigint
+)
+language sql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+  with last_msgs as (
+    select distinct on (room_id)
+      room_id, content, created_at, is_deleted
+    from public.chat_messages
+    where room_id = any(p_room_ids)
+    order by room_id, created_at desc
+  ),
+  unread as (
+    select
+      cm.room_id,
+      count(*)::bigint as cnt
+    from public.chat_messages cm
+    left join public.chat_read_receipts crr
+      on cm.id = crr.message_id and crr.user_id = p_user_id
+    where cm.room_id = any(p_room_ids)
+      and cm.sender_id is not null
+      and cm.sender_id != p_user_id
+      and crr.message_id is null
+      and cm.is_deleted = false
+    group by cm.room_id
+  )
+  select
+    lm.room_id,
+    lm.content as last_content,
+    lm.created_at as last_created_at,
+    lm.is_deleted as last_is_deleted,
+    coalesce(u.cnt, 0) as unread_count
+  from last_msgs lm
+  left join unread u on u.room_id = lm.room_id;
+$$;
+
+revoke all on function public.chat_room_summaries(uuid[], uuid) from public;
+grant execute on function public.chat_room_summaries(uuid[], uuid) to authenticated, service_role;
+
+comment on function public.chat_room_summaries is 'Per-room last message and unread count for room list UI.';
+
+-- -----------------------------
+-- chat_audit_log 90-day prune (invoked by Edge Function or cron)
+-- -----------------------------
+create or replace function public.chat_prune_audit_log()
+returns integer
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  deleted_count integer;
+begin
+  with deleted as (
+    delete from public.chat_audit_log
+    where created_at < now() - interval '90 days'
+    returning 1
+  )
+  select count(*)::integer into deleted_count from deleted;
+  return deleted_count;
+end;
+$$;
+
+revoke all on function public.chat_prune_audit_log() from public;
+grant execute on function public.chat_prune_audit_log() to service_role;
+
+comment on function public.chat_prune_audit_log is 'Prune chat_audit_log older than 90 days. Call from Edge Function or pg_cron.';
 

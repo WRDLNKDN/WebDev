@@ -158,10 +158,29 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
           closeIcon
         />
 
-        {error && (
-          <Typography color="error" variant="body2" sx={{ px: 2, py: 1 }}>
-            {error}
-          </Typography>
+        {error && !loading && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 2,
+              textAlign: 'center',
+            }}
+          >
+            <Typography color="error" variant="body2" fontWeight={500}>
+              {error}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
+            >
+              This conversation may have been removed.
+            </Typography>
+          </Box>
         )}
 
         {loading ? (
@@ -175,7 +194,7 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
           >
             <CircularProgress />
           </Box>
-        ) : (
+        ) : error ? null : (
           <MessageList
             messages={messages}
             currentUserId={uid}
@@ -190,12 +209,14 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
           />
         )}
 
-        <MessageInput
-          onSend={sendMessage}
-          onTyping={startTyping}
-          onStopTyping={stopTyping}
-          disabled={sending || loading}
-        />
+        {!error && (
+          <MessageInput
+            onSend={sendMessage}
+            onTyping={startTyping}
+            onStopTyping={stopTyping}
+            disabled={sending || loading}
+          />
+        )}
       </Box>
 
       <BlockConfirmDialog

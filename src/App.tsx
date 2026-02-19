@@ -44,6 +44,11 @@ const ChatPopupPage = lazy(async () => {
   return { default: m.ChatPopupPage };
 });
 
+const ChatPage = lazy(async () => {
+  const m = await import('./pages/chat/ChatPage');
+  return { default: m.ChatPage };
+});
+
 const Feed = lazy(async () => {
   const m = await import('./pages/feed/Feed');
   return { default: m.Feed };
@@ -269,7 +274,14 @@ const App = () => {
               <Route path="/bumper" element={<BumperPage />} />
 
               {/* Popout chat: standalone window (LinkedIn-style) */}
-              <Route path="/chat-popup/:roomId" element={<ChatPopupPage />} />
+              <Route
+                path="/chat-popup/:roomId"
+                element={
+                  <RequireOnboarded>
+                    <ChatPopupPage />
+                  </RequireOnboarded>
+                }
+              />
 
               <Route element={<Layout />}>
                 {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
@@ -338,8 +350,38 @@ const App = () => {
                   path="/dashboard/settings"
                   element={<Navigate to="/dashboard" replace />}
                 />
-                <Route path="/chat" element={<ChatRedirect />} />
-                <Route path="/chat/:roomId" element={<ChatRedirect />} />
+                <Route
+                  path="/chat"
+                  element={
+                    <RequireOnboarded>
+                      <ChatRedirect />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/chat/:roomId"
+                  element={
+                    <RequireOnboarded>
+                      <ChatRedirect />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/chat-full"
+                  element={
+                    <RequireOnboarded>
+                      <ChatPage />
+                    </RequireOnboarded>
+                  }
+                />
+                <Route
+                  path="/chat-full/:roomId"
+                  element={
+                    <RequireOnboarded>
+                      <ChatPage />
+                    </RequireOnboarded>
+                  }
+                />
                 <Route path="/weirdling/create" element={<WeirdlingCreate />} />
                 <Route
                   path="/submit"

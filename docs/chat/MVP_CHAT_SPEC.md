@@ -5,8 +5,7 @@
 **Status:** Draft  
 **Stack:** Supabase (Postgres, Realtime, Storage, Auth) + WRDLNKDN
 
-Launch in-app chat for authenticated WRDLNKDN users using Supabase. No
-Matrix/Synapse.
+Launch in-app chat for authenticated WRDLNKDN users using Supabase.
 
 1:1 messaging is Connections-only. Anyone can create private invite-only group
 chats (max 100 members) with admin-controlled governance.
@@ -196,14 +195,14 @@ chats (max 100 members) with admin-controlled governance.
 
 ## Work Item Order
 
-| #   | Title                            | Status  |
-| --- | -------------------------------- | ------- |
-| 228 | Supabase Chat Schema & RLS       | Done    |
-| 229 | Core Messaging (1:1, Group)      | Pending |
-| 230 | Edit, Delete, Reactions          | Pending |
-| 231 | Attachments (6MB, EXIF, Storage) | Pending |
-| 232 | Presence, Typing, Receipts       | Pending |
-| 234 | NFR: Storage & Backup            | Pending |
-| 236 | Reporting & Moderation           | Pending |
-| 237 | NFR: Audit Logging               | Pending |
-| 238 | NFR: Monitoring                  | Pending |
+| #   | Title                            | Status |
+| --- | -------------------------------- | ------ |
+| 228 | Supabase Chat Schema & RLS       | Done   |
+| 229 | Core Messaging (1:1, Group)      | Done   |
+| 230 | Edit, Delete, Reactions          | Done   |
+| 231 | Attachments (6MB, EXIF, Storage) | Done   |
+| 232 | Presence, Typing, Receipts       | Done   |
+| 234 | NFR: Storage & Backup            | Done   |
+| 236 | Reporting & Moderation           | Done   |
+| 237 | NFR: Audit Logging               | Done   |
+| 238 | NFR: Monitoring                  | Done   |

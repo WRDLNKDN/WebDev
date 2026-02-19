@@ -231,10 +231,16 @@ columns, or RLS are missing:
 
 ## GitHub Actions: Supabase migrations
 
-**supabase-migrate-uat-prod** runs only when `supabase/migrations/**`,
-`supabase/seed/**`, or `supabase/config.toml` change (or on manual run). Uses
-plain `db push` — no repair. New migrations must be additive (ADD COLUMN, CREATE
-TABLE IF NOT EXISTS, etc.) — never DROP TABLE on live data.
+**supabase-migrate-uat-prod** runs when `supabase/migrations/**`,
+`supabase/seed/**`, `supabase/config.toml`, or the workflow file changes (or on
+manual run). Uses `db push` — applies only pending migrations and seed (no data
+wipe).
+
+Migrations are split into two files: `20260121180000_tables.sql` (tables,
+functions) and `20260121180005_rls.sql` (RLS policies, grants).
+
+**Data preservation:** `db push` runs only migrations not yet in
+`schema_migrations`. It does not reset or dump tables. Existing data stays.
 
 Developers can also push migrations manually via the Supabase CLI (see below).
 
@@ -266,24 +272,28 @@ Use these when CI isn’t running migrations or you need to fix schema drift.
 Requires `SUPABASE_ACCESS_TOKEN` in env or `supabase login`. For remote push,
 set `SUPABASE_DB_PASSWORD` (or pass `-p` when prompted).
 
-#### UAT
+#### UAT (no data wipe)
 
 ```bash
+export SUPABASE_DB_PASSWORD="your-uat-db-password"
+npm run supabase:push-uat
+# Or:
 supabase link --project-ref lgxwseyzoefxggxijatp
-supabase migration repair 20260121180000 --status reverted   # only if "up to date" but schema is wrong
 supabase db push --linked --include-all --include-seed -p "$SUPABASE_DB_PASSWORD"
 ```
 
-#### PROD
+#### PROD (no data wipe)
 
 ```bash
+export SUPABASE_DB_PASSWORD="your-prod-db-password"
+npm run supabase:push-prod
+# Or:
 supabase link --project-ref rpcaazmxymymqdejevtb
-supabase migration repair 20260121180000 --status reverted   # only if "up to date" but schema is wrong
 supabase db push --linked --include-all --include-seed -p "$SUPABASE_DB_PASSWORD"
 ```
 
-Repair + push re-applies the tables migration, RLS migration (including storage
-buckets and policies), and seed data from `supabase/seed/seed.sql`.
+**If "up to date" but schema wrong:** run
+`supabase migration repair 20260121180005 --status reverted` before push.
 
 ### Fallback: apply migrations via SQL Editor
 

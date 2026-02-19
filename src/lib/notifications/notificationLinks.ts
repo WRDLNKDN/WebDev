@@ -21,7 +21,13 @@ export type NotificationRowForLink = {
 export function getNotificationLink(row: NotificationRowForLink): string {
   const safe = row.reference_exists === false;
 
-  if (row.type === 'connection_request') return '/directory';
+  if (
+    row.type === 'connection_request' ||
+    row.type === 'connection_request_accepted' ||
+    row.type === 'connection_request_declined'
+  ) {
+    return '/directory';
+  }
 
   if (row.reference_type === 'feed_item' && row.reference_id && !safe) {
     return `/feed?post=${encodeURIComponent(row.reference_id)}`;

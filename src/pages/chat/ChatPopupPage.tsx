@@ -204,6 +204,7 @@ export const ChatPopupPage = () => {
             onReport={handleReport}
             onMessagesViewed={markAsRead}
             isAdmin={isAdmin}
+            compact
           />
         )}
 

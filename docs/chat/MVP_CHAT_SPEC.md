@@ -80,9 +80,10 @@ chats (max 100 members) with admin-controlled governance.
 
 - Max 6MB per file
 - Max 5 attachments per message
-- **Allowed:** jpg, jpeg, png, webp, pdf, doc, docx, txt
+- **Allowed:** jpg, jpeg, png, webp, gif, pdf, doc, docx, txt
 - **Disallowed:** Archives (zip, rar, 7z), executables and scripts
-- Server-side MIME validation required
+- Client-side validation required (size + MIME + extension fallback)
+- Server-side and DB-level MIME + size validation required
 - EXIF metadata stripped from images
 - Supabase Storage for media
 - No malware scanning in MVP (Phase 2)

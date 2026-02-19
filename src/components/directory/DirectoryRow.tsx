@@ -11,10 +11,8 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import type {
-  DirectoryMember,
-  ConnectionState,
-} from '../../lib/api/directoryApi';
+import type { DirectoryMember } from '../../lib/api/directoryApi';
+import { connectionStateLabel } from '../../lib/directory/connectionState';
 import { CARD_BG } from '../../theme/candyStyles';
 
 interface DirectoryRowProps {
@@ -26,13 +24,6 @@ interface DirectoryRowProps {
   onSkillClick: (skill: string) => void;
   busy?: boolean;
 }
-
-const connectionStateLabel: Record<ConnectionState, string> = {
-  not_connected: 'Not connected',
-  pending: 'Pending',
-  pending_received: 'Pending received',
-  connected: 'Connected',
-};
 
 export const DirectoryRow = ({
   member,

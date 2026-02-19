@@ -1,5 +1,6 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { useCallback, useState } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 interface GuestViewProps {
   /** @deprecated OAuth removed; kept for backward compat, ignored */
@@ -20,6 +21,19 @@ export const GuestView = ({
   buttonsOnly = false,
   highContrast = false,
 }: GuestViewProps) => {
+  const navigate = useNavigate();
+  const [joinLoading, setJoinLoading] = useState(false);
+  const goToJoin = useCallback(async () => {
+    setJoinLoading(true);
+    try {
+      await import('../../pages/auth/Signup');
+    } catch {
+      // Continue to Join even if preload fails.
+    } finally {
+      navigate('/join');
+    }
+  }, [navigate]);
+
   const joinSx = highContrast
     ? {
         borderRadius: 20,
@@ -88,14 +102,14 @@ export const GuestView = ({
         sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
       >
         <Button
-          component={RouterLink}
-          to="/join"
+          onClick={() => void goToJoin()}
           variant="outlined"
           size="large"
           fullWidth
+          disabled={joinLoading}
           sx={joinSx}
         >
-          Join Us
+          {joinLoading ? 'Opening Join…' : 'Join Us'}
         </Button>
       </Stack>
     );
@@ -104,14 +118,14 @@ export const GuestView = ({
   const buttons = (
     <Stack spacing={2} sx={{ pt: 2 }}>
       <Button
-        component={RouterLink}
-        to="/join"
+        onClick={() => void goToJoin()}
         variant="outlined"
         size="large"
         fullWidth
+        disabled={joinLoading}
         sx={joinSx}
       >
-        Join our Community
+        {joinLoading ? 'Opening Join…' : 'Join our Community'}
       </Button>
       <Button
         component={RouterLink}

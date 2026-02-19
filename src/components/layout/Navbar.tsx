@@ -13,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {
   AppBar,
+  Backdrop,
   Badge,
   Box,
   Button,
@@ -83,6 +84,7 @@ export const Navbar = () => {
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [signInLoading, setSignInLoading] = useState(false);
   const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
   /** Search: query string, dropdown matches from Supabase, open state, refs for Popper and debounce. */
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +98,7 @@ export const Navbar = () => {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { avatarUrl } = useCurrentUserAvatar();
@@ -262,6 +265,7 @@ export const Navbar = () => {
 
   const handleSignIn = async (provider: OAuthProvider) => {
     setSignInAnchor(null);
+    setSignInLoading(true);
     setBusy(true);
 
     try {
@@ -275,12 +279,14 @@ export const Navbar = () => {
       if (data?.url) {
         window.location.href = data.url;
       } else {
+        setSignInLoading(false);
         setBusy(false);
         setSnack('Sign-in could not be completed. Please try again.');
       }
     } catch (err) {
       console.error(err);
       setSnack(toMessage(err));
+      setSignInLoading(false);
       setBusy(false);
     }
   };
@@ -308,6 +314,24 @@ export const Navbar = () => {
       setBusy(false);
     }
   };
+
+  const openJoin = useCallback(async () => {
+    setJoinLoading(true);
+    try {
+      // Warm the Join chunk so members get instant feedback.
+      await import('../../pages/auth/Signup');
+    } catch {
+      // Navigation still proceeds even if preload fails.
+    } finally {
+      navigate('/join');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (path === '/join') {
+      setJoinLoading(false);
+    }
+  }, [path]);
 
   return (
     <>
@@ -662,9 +686,15 @@ export const Navbar = () => {
                 <>
                   {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
                   <Box
-                    component={RouterLink}
-                    to="/join"
+                    component="button"
+                    type="button"
+                    onClick={() => void openJoin()}
                     sx={{
+                      background: 'none',
+                      border: 0,
+                      p: 0,
+                      font: 'inherit',
+                      cursor: 'pointer',
                       color: 'text.secondary',
                       textDecoration: 'none',
                       '&:hover': { color: 'white' },
@@ -748,9 +778,15 @@ export const Navbar = () => {
               ) : !session ? (
                 <>
                   <Box
-                    component={RouterLink}
-                    to="/join"
+                    component="button"
+                    type="button"
+                    onClick={() => void openJoin()}
                     sx={{
+                      background: 'none',
+                      border: 0,
+                      p: 0,
+                      font: 'inherit',
+                      cursor: 'pointer',
                       color: 'text.secondary',
                       textDecoration: 'none',
                       fontSize: '0.875rem',
@@ -1206,6 +1242,20 @@ export const Navbar = () => {
         message={snack}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
+      <Backdrop
+        open={joinLoading || signInLoading}
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 2,
+          flexDirection: 'column',
+          gap: 1.25,
+        }}
+      >
+        <CircularProgress color="inherit" size={28} />
+        <Box sx={{ fontSize: 14, opacity: 0.9 }}>
+          {signInLoading ? 'Signing you in…' : 'Opening Join…'}
+        </Box>
+      </Backdrop>
     </>
   );
 };

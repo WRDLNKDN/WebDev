@@ -23,6 +23,18 @@ describe('getNotificationLink', () => {
     );
   });
 
+  it('returns /directory for connection_request_accepted', () => {
+    expect(
+      getNotificationLink(row({ type: 'connection_request_accepted' })),
+    ).toBe('/directory');
+  });
+
+  it('returns /directory for connection_request_declined', () => {
+    expect(
+      getNotificationLink(row({ type: 'connection_request_declined' })),
+    ).toBe('/directory');
+  });
+
   it('returns /feed?post=id for feed_item with reference_id', () => {
     expect(
       getNotificationLink(

@@ -47,6 +47,8 @@ Notifications provide signal, not dopamine loops.
 - `mention` — Someone mentioned you (@handle in post/comment)
 - `chat_message` — Someone sent you a message
 - `connection_request` — Someone wants to connect
+- `connection_request_accepted` — Your connection request was accepted
+- `connection_request_declined` — Your connection request was declined
 - `event_rsvp` — Someone RSVP'd to your event
 
 ### 3.2 Read / Unread State ✅
@@ -72,6 +74,14 @@ Notifications provide signal, not dopamine loops.
 - Blocked users do not generate notifications (chat_blocks)
 - Suspended users cannot send connection requests
 - Disabled accounts cannot send connection requests
+
+### 3.6 Connection Decision Actions ✅
+
+- Pending connection request notifications expose Approve/Decline actions
+  directly on the Notifications page.
+- Approve/Decline calls the Directory API (`/api/directory/accept`,
+  `/api/directory/decline`) and updates UI state in place.
+- Requesters receive an in-app outcome notification when accepted or declined.
 
 ---
 
@@ -105,6 +115,8 @@ Notifications provide signal, not dopamine loops.
 | Links route correctly                            | ✅     |
 | No broken links when source removed              | ✅     |
 | Blocking rules respected                         | ✅     |
+| Pending requests can be approved/declined inline | ✅     |
+| Requesters are notified of accept/decline        | ✅     |
 
 ---
 

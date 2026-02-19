@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import type { ProfileOnboardingCheck } from '../../lib/profile/profileOnboarding';
-import { getProfileValidated } from '../../lib/profile/profileValidatedCache';
+import {
+  getProfileValidated,
+  hasProfileOnboardedSticky,
+  setProfileValidated,
+} from '../../lib/profile/profileValidatedCache';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 type State = 'loading' | 'redirect' | 'allowed';
@@ -53,6 +57,16 @@ export const RequireOnboarded = ({
       if (cancelled || runId !== checkRunRef.current) return;
 
       if (!data.session) {
+        // Try one explicit refresh before redirecting. UAT can briefly return null
+        // sessions while token refresh is in-flight.
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (cancelled || runId !== checkRunRef.current) return;
+        if (refreshed.session) {
+          data = refreshed;
+        }
+      }
+
+      if (!data.session) {
         // If we've already validated access for this mounted route, do not
         // downgrade to redirect on a transient auth hydration miss.
         if (hasEverAllowedRef.current) {
@@ -69,6 +83,7 @@ export const RequireOnboarded = ({
 
       // sessionStorage fallback (Vercel: location.state can be lost during navigation)
       const cached = getProfileValidated(userId);
+      const hasStickyOnboarded = hasProfileOnboardedSticky(userId);
       if (cached && isProfileOnboarded(cached)) {
         console.log('✅ RequireOnboarded: Using cached profile');
         hasEverAllowedRef.current = true;
@@ -128,6 +143,12 @@ export const RequireOnboarded = ({
       }
 
       if (!profile) {
+        if (hasStickyOnboarded) {
+          // Known onboarded member + transient profile miss: keep route stable.
+          hasEverAllowedRef.current = true;
+          setState('allowed');
+          return;
+        }
         if (hasEverAllowedRef.current) {
           // Keep current authorized view if this is a transient profile read miss.
           setState('allowed');
@@ -154,6 +175,7 @@ export const RequireOnboarded = ({
       }
 
       console.log('✅ RequireOnboarded: Profile valid, allowing through');
+      setProfileValidated(userId, profile);
       hasEverAllowedRef.current = true;
       setState('allowed');
     };

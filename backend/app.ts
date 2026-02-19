@@ -1315,7 +1315,8 @@ app.get('/api/me', requireAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
   if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
-  const { data: user } = await adminSupabase.auth.getUser(pickBearer(req));
+  const bearer = pickBearer(req);
+  const { data: user } = await adminSupabase.auth.getUser(bearer ?? undefined);
   if (!user?.user) return sendApiError(res, 401, 'Unauthorized');
 
   const { data: profile } = await adminSupabase
@@ -1507,7 +1508,6 @@ app.post(
         error: null,
       });
     } catch (e) {
-      const msg = errorMessage(e, 'Upload failed');
       console.error('[advertisers/upload] Unhandled error:', e);
       return sendApiError(res, 500, 'Upload failed');
     }
@@ -1644,10 +1644,10 @@ app.get(
     const subIds = [
       ...new Set(
         (subs ?? [])
-          .filter(Boolean)
-          .map((s: { submitted_by: string }) => s.submitted_by),
+          .filter((s): s is SubRow => s != null)
+          .map((s) => s.submitted_by),
       ),
-    ] as string[];
+    ];
 
     const { data: profiles } =
       subIds.length > 0
@@ -2041,7 +2041,7 @@ app.post(
 app.get(
   '/api/admin/playlists',
   requireAdmin,
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     const { data, error } = await adminSupabase
       .from('playlists')
       .select('id, slug, title, is_public')

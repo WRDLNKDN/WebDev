@@ -8,7 +8,7 @@
  * - No raw Supabase/DB errors exposed
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('API error shape', () => {
   it('standardized error has status, message, code', () => {

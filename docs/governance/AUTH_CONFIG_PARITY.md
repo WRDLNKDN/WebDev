@@ -18,14 +18,14 @@
 
 **UAT (webdev-uat.vercel.app):**
 
-```
+```text
 https://webdev-uat.vercel.app/auth/callback
 https://webdev-uat.vercel.app
 ```
 
 **PROD (wrdlnkdn.vercel.app):**
 
-```
+```text
 https://wrdlnkdn.vercel.app/auth/callback
 https://wrdlnkdn.com/auth/callback  # if canonical domain differs
 https://wrdlnkdn.vercel.app
@@ -33,7 +33,7 @@ https://wrdlnkdn.vercel.app
 
 **Local:**
 
-```
+```text
 http://localhost:5173/auth/callback
 http://127.0.0.1:5173/auth/callback
 http://127.0.0.1:54321/auth/v1/callback  # Supabase local Auth

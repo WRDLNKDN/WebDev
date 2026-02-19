@@ -296,6 +296,7 @@ export const AdminAdvertisersPage = () => {
         >
           <TableHead>
             <TableRow>
+              <TableCell sx={{ width: 56 }}>Image</TableCell>
               <TableCell>Company</TableCell>
               <TableCell>Title</TableCell>
               <TableCell>URL</TableCell>
@@ -307,6 +308,39 @@ export const AdminAdvertisersPage = () => {
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.id}>
+                <TableCell sx={{ width: 56, py: 0.5 }}>
+                  {row.image_url ? (
+                    <Box
+                      component="img"
+                      src={row.image_url}
+                      alt=""
+                      sx={{
+                        width: 48,
+                        height: 32,
+                        objectFit: 'cover',
+                        borderRadius: 0.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 32,
+                        borderRadius: 0.5,
+                        bgcolor: 'action.hover',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.disabled">
+                        —
+                      </Typography>
+                    </Box>
+                  )}
+                </TableCell>
                 <TableCell>{row.company_name}</TableCell>
                 <TableCell>{row.title}</TableCell>
                 <TableCell>

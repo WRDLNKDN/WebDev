@@ -1,6 +1,11 @@
-# Supabase migrations — path-triggered, no repair, UAT then PROD.
-# Only runs when supabase files change. Does NOT use migration repair.
-# New migrations must be additive (ADD COLUMN, CREATE TABLE IF NOT EXISTS, etc.).
+# Supabase migrations: tables + RLS only. Pushes to UAT then PROD.
+#
+# Required secrets (repo or environment-scoped):
+#   SUPABASE_ACCESS_TOKEN      - Supabase dashboard → Account → Access Tokens
+#   SUPABASE_UAT_PROJECT_REF  - UAT project ref (e.g. lgxwseyzoefxggxijatp)
+#   SUPABASE_UAT_DB_PASSWORD  - UAT database password (env: uat)
+#   SUPABASE_PROD_PROJECT_REF - PROD project ref (e.g. rpcaazmxymymqdejevtb)
+#   SUPABASE_PROD_DB_PASSWORD - PROD database password (env: production)
 
 name: Supabase Migrate (UAT → PROD)
 
@@ -11,6 +16,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/seed/**'
       - 'supabase/config.toml'
+      - '.github/workflows/supabase-migrate-uat-prod.yml'
   workflow_dispatch:
     inputs:
       deploy_prod:
@@ -41,6 +47,7 @@ jobs:
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
           [ -n "${SUPABASE_PROJECT_REF:-}" ] || (echo "::error::Missing SUPABASE_UAT_PROJECT_REF" && exit 1)
+          [ -n "${{ secrets.SUPABASE_UAT_DB_PASSWORD }}" ] || (echo "::error::Missing SUPABASE_UAT_DB_PASSWORD in environment uat" && exit 1)
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -74,6 +81,7 @@ jobs:
           set -e
           [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] || (echo "::error::Missing SUPABASE_ACCESS_TOKEN" && exit 1)
           [ -n "${SUPABASE_PROJECT_REF:-}" ] || (echo "::error::Missing SUPABASE_PROD_PROJECT_REF" && exit 1)
+          [ -n "${{ secrets.SUPABASE_PROD_DB_PASSWORD }}" ] || (echo "::error::Missing SUPABASE_PROD_DB_PASSWORD in environment production" && exit 1)
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1

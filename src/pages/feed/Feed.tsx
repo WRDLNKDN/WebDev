@@ -5,6 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EventIcon from '@mui/icons-material/Event';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import MessageIcon from '@mui/icons-material/Message';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -1473,6 +1474,26 @@ export const Feed = () => {
                     </ListItemIcon>
                     <ListItemText
                       primary="Saved"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/chat-full"
+                    sx={{
+                      minHeight: 40,
+                      py: 0.5,
+                      borderRadius: 0,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <MessageIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Messages"
                       primaryTypographyProps={{ variant: 'body2' }}
                     />
                   </ListItemButton>

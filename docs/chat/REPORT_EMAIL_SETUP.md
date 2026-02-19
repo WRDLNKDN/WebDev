@@ -19,8 +19,10 @@ Moderators receive email when a user submits a report.
    - Set secrets: `MODERATOR_EMAIL`, optionally `RESEND_API_KEY`
 
 3. **Resend integration** (optional):
-   - Uncomment the fetch block in `notify-report/index.ts`
-   - Add `RESEND_API_KEY` to function secrets
+   - Add `RESEND_API_KEY` to function secrets:
+     `supabase secrets set RESEND_API_KEY=re_xxx`
+   - Add `MODERATOR_EMAIL`:
+     `supabase secrets set MODERATOR_EMAIL=moderators@example.com`
    - Verify sender domain in Resend dashboard
 
 ## Fallback

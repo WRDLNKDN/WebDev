@@ -39,23 +39,31 @@ serve(async (req) => {
 
     const reportId = payload.record?.id ?? 'unknown';
     const category = payload.record?.category ?? 'unknown';
+    const resendKey = Deno.env.get('RESEND_API_KEY');
 
-    // Resend example (uncomment when RESEND_API_KEY is set):
-    // const res = await fetch('https://api.resend.com/emails', {
-    //   method: 'POST',
-    //   headers: {
-    //     Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     from: 'info@wrdlnkdn.com',
-    //     to: MODERATOR_EMAIL,
-    //     subject: `[WRDLNKDN] New chat report: ${category}`,
-    //     text: `Report ID: ${reportId}. Check admin panel.`,
-    //   }),
-    // });
-
-    console.log(`Report ${reportId} (${category}) - notify ${MODERATOR_EMAIL}`);
+    if (resendKey) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Chat Reports <info@wrdlnkdn.com>',
+          to: [MODERATOR_EMAIL],
+          subject: `[WRDLNKDN] New chat report: ${category}`,
+          html: `<p>A new chat report has been submitted.</p><p><strong>Report ID:</strong> ${reportId}</p><p><strong>Category:</strong> ${category}</p><p>Check the <a href="https://webdev-uat.vercel.app/admin/chat-reports">admin panel</a> to review.</p>`,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('Resend failed:', err);
+      }
+    } else {
+      console.log(
+        `Report ${reportId} (${category}) - notify ${MODERATOR_EMAIL} (RESEND_API_KEY not set)`,
+      );
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },

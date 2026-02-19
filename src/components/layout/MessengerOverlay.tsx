@@ -15,6 +15,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Stack,
   TextField,
   Typography,
   useMediaQuery,
@@ -52,6 +53,13 @@ export const MessengerOverlay = () => {
     createGroup,
     fetchRooms,
   } = useChatRooms();
+
+  // Refetch rooms when overlay opens to refresh unread counts
+  useEffect(() => {
+    if (messenger?.overlayOpen && session?.user?.id) {
+      void fetchRooms();
+    }
+  }, [messenger?.overlayOpen, session?.user?.id, fetchRooms]);
 
   useEffect(() => {
     let cancelled = false;
@@ -339,16 +347,48 @@ export const MessengerOverlay = () => {
                           }}
                         >
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                              {getRoomLabel(r)}
-                            </Typography>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={0.5}
+                            >
+                              <Typography variant="body2" fontWeight={600}>
+                                {getRoomLabel(r)}
+                              </Typography>
+                              {(r.unread_count ?? 0) > 0 && (
+                                <Typography
+                                  component="span"
+                                  variant="caption"
+                                  sx={{
+                                    px: 0.75,
+                                    py: 0.125,
+                                    borderRadius: '50%',
+                                    bgcolor: 'primary.main',
+                                    color: 'primary.contrastText',
+                                    fontWeight: 700,
+                                    fontSize: '0.7rem',
+                                  }}
+                                >
+                                  {r.unread_count! > 99
+                                    ? '99+'
+                                    : r.unread_count}
+                                </Typography>
+                              )}
+                            </Stack>
                             <Typography
                               variant="caption"
                               color="text.secondary"
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
                             >
-                              {r.room_type === 'group'
-                                ? `${r.members?.length ?? 0} members`
-                                : '1:1'}
+                              {r.last_message_preview ??
+                                (r.room_type === 'group'
+                                  ? `${r.members?.length ?? 0} members`
+                                  : '1:1')}
                             </Typography>
                           </Box>
                           <IconButton

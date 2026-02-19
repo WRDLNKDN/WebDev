@@ -526,6 +526,20 @@ export type Database = {
         Args: { p_name: string; p_member_ids: string[] }
         Returns: string
       }
+      chat_room_summaries: {
+        Args: { p_room_ids: string[]; p_user_id: string }
+        Returns: {
+          room_id: string
+          last_content: string | null
+          last_created_at: string
+          last_is_deleted: boolean
+          unread_count: number
+        }[]
+      }
+      chat_prune_audit_log: {
+        Args: Record<string, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

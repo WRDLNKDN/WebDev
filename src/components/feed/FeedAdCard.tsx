@@ -47,26 +47,39 @@ export const FeedAdCard = ({ advertiser }: Props) => {
   return (
     <Card
       variant="outlined"
-      sx={{ borderRadius: 2, mb: 2, minWidth: 0 }}
+      sx={{ borderRadius: 2, mb: 2, minWidth: 0, overflow: 'hidden' }}
       component="article"
       aria-label={`Sponsored: ${advertiser.title}`}
     >
       {advertiser.image_url && (
         <Box
-          component="img"
-          src={advertiser.image_url}
-          alt=""
-          loading="eager"
-          referrerPolicy="no-referrer"
+          component="a"
+          href={advertiser.url}
+          target="_blank"
+          rel="noopener noreferrer"
           sx={{
+            display: 'block',
             width: '100%',
-            height: 'auto',
-            maxHeight: 200,
-            objectFit: 'cover',
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 8,
+            lineHeight: 0,
           }}
-        />
+        >
+          <Box
+            component="img"
+            src={advertiser.image_url}
+            alt={`${advertiser.company_name} – ${advertiser.title}`}
+            loading="eager"
+            referrerPolicy="no-referrer"
+            sx={{
+              width: '100%',
+              height: 'auto',
+              minHeight: 120,
+              maxHeight: 280,
+              objectFit: 'cover',
+              display: 'block',
+              bgcolor: 'action.hover',
+            }}
+          />
+        </Box>
       )}
       <CardContent sx={{ pt: 2, pb: 2, '&:last-child': { pb: 2 } }}>
         <Stack

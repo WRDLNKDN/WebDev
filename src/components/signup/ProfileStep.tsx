@@ -72,6 +72,11 @@ const ProfileStep = () => {
       return;
     }
 
+    if (!marketingOptIn) {
+      setLocalError('You must agree to receive emails to continue');
+      return;
+    }
+
     const profileData = {
       displayName: displayName.trim(),
       marketingOptIn,
@@ -142,11 +147,17 @@ const ProfileStep = () => {
       />
 
       <FormControlLabel
+        required
         control={
           <Checkbox
             checked={marketingOptIn}
-            onChange={(e) => setMarketingOptIn(e.target.checked)}
-            color="primary"
+            onChange={(e) => {
+              setMarketingOptIn(e.target.checked);
+              setLocalError(null);
+            }}
+            color={
+              localError?.toLowerCase().includes('agree') ? 'error' : 'primary'
+            }
           />
         }
         label={
@@ -216,7 +227,7 @@ const ProfileStep = () => {
         <Button
           variant="contained"
           onClick={() => void handleContinue()}
-          disabled={submitting || !displayName.trim()}
+          disabled={submitting || !displayName.trim() || !marketingOptIn}
           startIcon={
             submitting ? (
               <CircularProgress size={18} sx={{ color: '#ffffff' }} />

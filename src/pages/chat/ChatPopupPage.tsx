@@ -79,7 +79,10 @@ export const ChatPopupPage = () => {
 
   useEffect(() => {
     if (!session) return;
-    supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true));
+    void (async () => {
+      const { data } = await supabase.rpc('is_admin');
+      setIsAdmin(data === true);
+    })();
   }, [session]);
 
   const handleLeave = async () => {

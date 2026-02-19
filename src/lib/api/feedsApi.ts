@@ -202,11 +202,16 @@ export async function fetchFeeds(options?: {
 
 export async function createFeedPost(params: {
   body: string;
+  images?: string[];
+  scheduledAt?: string | null;
   accessToken?: string | null;
 }): Promise<void> {
   const text = params.body.trim();
   if (!text) throw new Error('Post body is required');
-  await postFeed({ kind: 'post', body: text }, params.accessToken ?? null);
+  const body: Record<string, unknown> = { kind: 'post', body: text };
+  if (params.images?.length) body.images = params.images;
+  if (params.scheduledAt) body.scheduled_at = params.scheduledAt;
+  await postFeed(body, params.accessToken ?? null);
 }
 
 export async function createFeedExternalLink(params: {
@@ -339,4 +344,23 @@ export async function repostPost(params: {
     { kind: 'repost', original_id: originalId },
     params.accessToken ?? null,
   );
+}
+
+export async function deleteFeedPost(params: {
+  postId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const { postId } = params;
+  if (!postId.trim()) throw new Error('Post id is required');
+  const { supabase } = await import('../auth/supabaseClient');
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('feed_items')
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', session.user.id);
+  if (error) throw new Error(error.message);
 }

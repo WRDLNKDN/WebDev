@@ -19,9 +19,10 @@ export const UnsubscribePage = () => {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
       if (mounted) setSignedIn(!!data.session);
-    });
+    })();
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (mounted) setSignedIn(!!session);
     });

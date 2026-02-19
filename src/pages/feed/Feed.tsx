@@ -4,6 +4,8 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EventIcon from '@mui/icons-material/Event';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -16,6 +18,7 @@ import {
   Box,
   Button,
   Card,
+  InputAdornment,
   CardContent,
   ClickAwayListener,
   CircularProgress,
@@ -53,6 +56,7 @@ import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
   createFeedPost,
+  deleteFeedPost,
   fetchComments,
   fetchFeeds,
   removeReaction,
@@ -74,6 +78,7 @@ import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import WeirdlingGenerator from '../../components/avatar/WeirdlingGenerator';
 import {
   FeedAdCard,
@@ -251,11 +256,13 @@ type FeedCardActions = {
   onRepost: (item: FeedItem) => void;
   onSend: (item: FeedItem) => void;
   onCommentToggle: (postId: string) => void;
+  onDelete: (postId: string) => void;
 };
 
 type FeedCardProps = {
   item: FeedItem;
   actions: FeedCardActions;
+  isOwner: boolean;
   commentsExpanded: boolean;
   comments: FeedComment[];
   commentsLoading: boolean;
@@ -407,6 +414,7 @@ const REACTION_OPTIONS: {
 const FeedCard = ({
   item,
   actions,
+  isOwner,
   commentsExpanded,
   comments,
   commentsLoading,
@@ -504,7 +512,26 @@ const FeedCard = ({
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, mb: 2, minWidth: 0 }}>
+    <Card
+      variant="outlined"
+      sx={{ borderRadius: 2, mb: 2, minWidth: 0, position: 'relative' }}
+    >
+      {isOwner && (
+        <IconButton
+          size="small"
+          onClick={() => actions.onDelete(item.id)}
+          aria-label="Delete post"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            color: 'text.secondary',
+            '&:hover': { color: 'error.main' },
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      )}
       <CardContent sx={{ pt: 2, pb: 1, '&:last-child': { pb: 2 } }}>
         <Stack
           direction="row"
@@ -578,6 +605,30 @@ const FeedCard = ({
                 onDismiss={onDismissLinkPreview}
               />
             )}
+            {Array.isArray(item.payload?.images) &&
+              (item.payload.images as string[]).length > 0 && (
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  sx={{ mt: 1.5 }}
+                  flexWrap="wrap"
+                >
+                  {(item.payload.images as string[]).map((imgUrl) => (
+                    <Box
+                      key={imgUrl}
+                      component="img"
+                      src={imgUrl}
+                      alt=""
+                      sx={{
+                        maxWidth: 280,
+                        maxHeight: 280,
+                        objectFit: 'cover',
+                        borderRadius: 1,
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
             {url && (
               <Typography
                 variant="body2"
@@ -850,7 +901,30 @@ export const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [composerValue, setComposerValue] = useState('');
+  const [composerImages, setComposerImages] = useState<string[]>([]);
+  const [composerScheduledAt, setComposerScheduledAt] = useState<string | null>(
+    null,
+  );
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [scheduleTime, setScheduleTime] = useState('09:30');
   type SortOption = 'recent' | 'oldest' | 'most_liked';
+
+  const SCHEDULE_TIMES = (() => {
+    const times: string[] = [];
+    for (let h = 6; h <= 22; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        times.push(
+          `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
+        );
+      }
+    }
+    return times;
+  })();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const sortedItems = useMemo(() => {
     let list = items;
@@ -898,6 +972,7 @@ export const Feed = () => {
   const [feedViewPreference, setFeedViewPreference] =
     useState<FeedViewPreference>('anyone');
   const [generatorOpen, setGeneratorOpen] = useState(false);
+  const { avatarUrl } = useCurrentUserAvatar();
 
   const handleDismissLinkPreview = useCallback((postId: string) => {
     setDismissedLinkPreviewIds((prev) => new Set(prev).add(postId));
@@ -1062,9 +1137,13 @@ export const Feed = () => {
       setPosting(true);
       await createFeedPost({
         body: text,
+        images: composerImages.length > 0 ? composerImages : undefined,
+        scheduledAt: composerScheduledAt || undefined,
         accessToken: session.access_token,
       });
       setComposerValue('');
+      setComposerImages([]);
+      setComposerScheduledAt(null);
       setComposerOpen(false);
       await loadPage();
     } catch (e) {
@@ -1072,6 +1151,35 @@ export const Feed = () => {
     } finally {
       setPosting(false);
     }
+  };
+
+  const handleAddPostImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !session?.user) return;
+    const valid = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ].includes(file.type);
+    if (!valid) {
+      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+      return;
+    }
+    try {
+      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${file.name.split('.').pop() ?? 'jpg'}`;
+      const { error } = await supabase.storage
+        .from('feed-post-images')
+        .upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('feed-post-images').getPublicUrl(path);
+      setComposerImages((prev) => [...prev, publicUrl]);
+    } catch (err) {
+      setSnack(toMessage(err));
+    }
+    e.target.value = '';
   };
 
   const handleReaction = useCallback(
@@ -1191,6 +1299,19 @@ export const Feed = () => {
     [feedViewPreference, handleAuthError, loadPage, session?.access_token],
   );
 
+  const handleDelete = useCallback(
+    async (postId: string) => {
+      if (!confirm('Delete this post? This cannot be undone.')) return;
+      try {
+        await deleteFeedPost({ postId, accessToken: session?.access_token });
+        setItems((prev) => prev.filter((i) => i.id !== postId));
+      } catch (e) {
+        await handleAuthError(e, 'Could not delete post');
+      }
+    },
+    [session?.access_token, handleAuthError],
+  );
+
   const feedCardActions: FeedCardActions = {
     updateItem,
     onReaction: (postId, type) => void handleReaction(postId, type),
@@ -1198,6 +1319,7 @@ export const Feed = () => {
     onRepost: handleRepost,
     onSend: handleSend,
     onCommentToggle: (postId) => void handleCommentToggle(postId),
+    onDelete: (postId) => void handleDelete(postId),
   };
 
   return (
@@ -1487,45 +1609,64 @@ export const Feed = () => {
                     </ToggleButton>
                   </ToggleButtonGroup>
                 </Stack>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={2}
-                  flexWrap="wrap"
-                  sx={{
-                    width: { xs: '100%', sm: 'auto' },
-                    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    onClick={() => setComposerOpen(true)}
-                    sx={{
-                      borderRadius: '9999px',
-                      px: 2.5,
-                      py: 1,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                    }}
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <Select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    displayEmpty
+                    sx={{ fontSize: '0.875rem' }}
                   >
-                    Post
-                  </Button>
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
-                    <Select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      displayEmpty
-                      sx={{ fontSize: '0.875rem' }}
-                    >
-                      <MenuItem value="recent">Sort by: Recent</MenuItem>
-                      <MenuItem value="oldest">Sort by: Oldest</MenuItem>
-                      <MenuItem value="most_liked">
-                        Sort by: Most liked
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
-                </Stack>
+                    <MenuItem value="recent">Sort by: Recent</MenuItem>
+                    <MenuItem value="oldest">Sort by: Oldest</MenuItem>
+                    <MenuItem value="most_liked">Sort by: Most liked</MenuItem>
+                  </Select>
+                </FormControl>
               </Stack>
+            </Paper>
+
+            {/* Start a post — LinkedIn-style composer trigger */}
+            <Paper
+              variant="outlined"
+              component="button"
+              type="button"
+              onClick={() => setComposerOpen(true)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                p: 2,
+                mb: 2,
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.12)',
+                bgcolor: 'rgba(36,38,41,0.6)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.2s, border-color 0.2s',
+                '&:hover': {
+                  bgcolor: 'rgba(50,52,55,0.8)',
+                  borderColor: 'rgba(255,255,255,0.18)',
+                },
+              }}
+            >
+              <ProfileAvatar
+                src={avatarUrl ?? undefined}
+                alt={session?.user?.user_metadata?.full_name ?? 'You'}
+                size="small"
+                sx={{ flexShrink: 0, mr: 2 }}
+              />
+              <Box
+                sx={{
+                  flex: 1,
+                  py: 1,
+                  px: 2,
+                  borderRadius: '9999px',
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                  color: 'text.secondary',
+                  fontSize: '0.95rem',
+                }}
+              >
+                Start a post
+              </Box>
             </Paper>
 
             {/* Feed list */}
@@ -1581,6 +1722,7 @@ export const Feed = () => {
                       key={entry.item.id}
                       item={entry.item}
                       actions={feedCardActions}
+                      isOwner={session?.user?.id === entry.item.user_id}
                       commentsExpanded={
                         expandedCommentsPostId === entry.item.id
                       }
@@ -1701,7 +1843,11 @@ export const Feed = () => {
 
       <Dialog
         open={composerOpen}
-        onClose={() => setComposerOpen(false)}
+        onClose={() => {
+          setComposerOpen(false);
+          setComposerImages([]);
+          setComposerScheduledAt(null);
+        }}
         maxWidth="sm"
         fullWidth
         PaperProps={{
@@ -1712,11 +1858,44 @@ export const Feed = () => {
           },
         }}
       >
-        <DialogTitle sx={{ pb: 0 }}>New post</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogTitle
+          sx={{
+            pb: 1,
+            pt: 2,
+            px: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <ProfileAvatar
+              src={avatarUrl ?? undefined}
+              alt={session?.user?.user_metadata?.full_name ?? 'You'}
+              size="small"
+            />
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {session?.user?.user_metadata?.full_name ?? 'You'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Post to Anyone
+              </Typography>
+            </Box>
+          </Stack>
+          <IconButton
+            onClick={() => setComposerOpen(false)}
+            aria-label="Close"
+            size="small"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, pb: 1 }}>
           <InputBase
             inputRef={composerRef}
-            placeholder="What do you want to share?"
+            placeholder="Share your thoughts..."
             value={composerValue}
             onChange={(e) => setComposerValue(e.target.value)}
             onKeyDown={(e) => {
@@ -1729,35 +1908,241 @@ export const Feed = () => {
             multiline
             minRows={4}
             sx={{
-              bgcolor: 'action.hover',
-              borderRadius: 2,
-              px: 2,
-              py: 1.5,
-              '&.Mui-focused': { bgcolor: 'action.selected' },
+              bgcolor: 'transparent',
+              px: 0,
+              py: 0,
+              fontSize: '1rem',
+              '&.Mui-focused': { outline: 'none' },
             }}
           />
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mt: 1 }}
+          {composerImages.length > 0 && (
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap">
+              {composerImages.map((url, i) => (
+                <Box key={url} sx={{ position: 'relative' }}>
+                  <Box
+                    component="img"
+                    src={url}
+                    alt=""
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setComposerImages((prev) =>
+                        prev.filter((_, j) => j !== i),
+                      )
+                    }
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      bgcolor: 'background.paper',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                    aria-label="Remove image"
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+            </Stack>
+          )}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(255,255,255,0.08)' }}
           >
-            You can include links in the text.
-          </Typography>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleAddPostImage}
+              style={{ display: 'none' }}
+              id="post-image-upload"
+            />
+            <IconButton
+              component="label"
+              htmlFor="post-image-upload"
+              size="small"
+              aria-label="Add image"
+              sx={{ color: 'text.secondary' }}
+            >
+              <ImageOutlinedIcon />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Schedule post"
+              sx={{ color: 'text.secondary' }}
+              onClick={() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 1);
+                setScheduleDate(d.toISOString().slice(0, 10));
+                setScheduleTime('09:30');
+                setScheduleDialogOpen(true);
+              }}
+            >
+              <ScheduleIcon />
+            </IconButton>
+            {composerScheduledAt && (
+              <Typography
+                variant="caption"
+                color="primary.main"
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              >
+                Scheduled: {new Date(composerScheduledAt).toLocaleString()}
+                <IconButton
+                  size="small"
+                  onClick={() => setComposerScheduledAt(null)}
+                  aria-label="Clear schedule"
+                  sx={{ p: 0 }}
+                >
+                  <CloseIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </Typography>
+            )}
+            <Box sx={{ flex: 1 }} />
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 0 }}>
-          <Button
-            onClick={() => setComposerOpen(false)}
-            sx={{ textTransform: 'none' }}
-          >
-            Cancel
-          </Button>
+        <DialogActions sx={{ px: 2, pb: 2, pt: 0 }}>
           <Button
             variant="contained"
             onClick={() => void handleSubmitPost()}
             disabled={posting || !composerValue.trim()}
-            sx={{ textTransform: 'none' }}
+            sx={{ textTransform: 'none', borderRadius: '9999px', px: 3 }}
           >
             {posting ? 'Posting…' : 'Post'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule post dialog */}
+      <Dialog
+        open={scheduleDialogOpen}
+        onClose={() => setScheduleDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            pb: 2,
+          }}
+        >
+          <Typography variant="h6" fontWeight={600}>
+            Schedule post
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => setScheduleDialogOpen(false)}
+            aria-label="Close"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          {scheduleDate && scheduleTime && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString(
+                'en-US',
+                {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  timeZoneName: 'short',
+                },
+              )}{' '}
+              based on your location
+            </Typography>
+          )}
+          <Stack spacing={2}>
+            <TextField
+              label="Date"
+              type="date"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                input: {
+                  sx: { color: 'text.primary' },
+                },
+              }}
+            />
+            <TextField
+              label="Time"
+              select
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <ScheduleIcon
+                      sx={{ fontSize: 20, color: 'text.secondary' }}
+                    />
+                  </InputAdornment>
+                ),
+              }}
+            >
+              {SCHEDULE_TIMES.map((t) => {
+                const [h, m] = t.split(':').map(Number);
+                const label =
+                  h === 0
+                    ? `12:${m.toString().padStart(2, '0')} AM`
+                    : h < 12
+                      ? `${h}:${m.toString().padStart(2, '0')} AM`
+                      : h === 12
+                        ? `12:${m.toString().padStart(2, '0')} PM`
+                        : `${h - 12}:${m.toString().padStart(2, '0')} PM`;
+                return (
+                  <MenuItem key={t} value={t}>
+                    {label}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => setScheduleDialogOpen(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const d = new Date(`${scheduleDate}T${scheduleTime}`);
+              if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
+                setComposerScheduledAt(d.toISOString());
+                setSnack(`Post scheduled for ${d.toLocaleString()}`);
+                setScheduleDialogOpen(false);
+              } else {
+                setSnack('Please choose a future date and time.');
+              }
+            }}
+            sx={{ textTransform: 'none' }}
+          >
+            Next
           </Button>
         </DialogActions>
       </Dialog>

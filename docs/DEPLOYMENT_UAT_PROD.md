@@ -229,11 +229,14 @@ columns, or RLS are missing:
    Verify `SUPABASE_UAT_DB_PASSWORD` / `SUPABASE_PROD_DB_PASSWORD` are set.  
    Workflow logs: Actions → select the run → "Push migrations" step.
 
-## GitHub Actions: Supabase migration secrets
+## GitHub Actions: Supabase migrations
 
-Migrations run in **vercel-deploy-uat-prod** on every push to `main` (before
-deploy). Developers can also push migrations manually via the Supabase CLI (see
-below).
+**supabase-migrate-uat-prod** runs only when `supabase/migrations/**`,
+`supabase/seed/**`, or `supabase/config.toml` change (or on manual run). Uses
+plain `db push` — no repair. New migrations must be additive (ADD COLUMN, CREATE
+TABLE IF NOT EXISTS, etc.) — never DROP TABLE on live data.
+
+Developers can also push migrations manually via the Supabase CLI (see below).
 
 ### Required secrets (per environment)
 
@@ -253,8 +256,9 @@ correct project refs and passwords.
 
 ### Manual trigger (migrations only)
 
-To run migrations without a full deploy: use the Supabase CLI commands below, or
-re-run **vercel-deploy-uat-prod** and approve the PROD step if needed.
+To run migrations without waiting for path changes: use the Supabase CLI
+commands below, or run **supabase-migrate-uat-prod** manually and check "Also
+migrate PROD" if needed.
 
 ### Push migrations via Supabase CLI (manual)
 

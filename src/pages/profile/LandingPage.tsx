@@ -34,11 +34,10 @@ import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget'
 // --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
 import { NotFoundPage } from '../misc/NotFoundPage';
 
-const DivergencePage = lazy(() =>
-  import('../misc/DivergencePage').then((m) => ({
-    default: m.DivergencePage,
-  })),
-);
+const DivergencePage = lazy(async () => {
+  const m = await import('../misc/DivergencePage');
+  return { default: m.DivergencePage };
+});
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';

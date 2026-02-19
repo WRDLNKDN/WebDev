@@ -118,9 +118,10 @@ export const ChatReportsPage = () => {
   const [isModerator, setIsModerator] = useState(false);
 
   useEffect(() => {
-    supabase.rpc('is_chat_moderator').then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.rpc('is_chat_moderator');
       setIsModerator(data === true);
-    });
+    })();
   }, []);
 
   const suspendUser = async (userId: string) => {

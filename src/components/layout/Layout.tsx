@@ -24,11 +24,12 @@ const LayoutContent = () => {
   const messenger = useMessenger();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
       if (data.session?.user?.id) {
-        void updateLastActive(supabase, data.session.user.id);
+        await updateLastActive(supabase, data.session.user.id);
       }
-    });
+    })();
   }, []);
 
   return (

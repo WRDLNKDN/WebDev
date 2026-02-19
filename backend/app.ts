@@ -1416,6 +1416,47 @@ app.post(
   },
 );
 
+// POST /api/admin/advertisers/upload-url — get signed URL for ad banner (admin only)
+app.post(
+  '/api/admin/advertisers/upload-url',
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    const body = (_req as Request & { body?: unknown }).body as
+      | { filename?: string }
+      | undefined;
+    const filename =
+      typeof body?.filename === 'string' ? body.filename.trim() : '';
+    const ext =
+      filename && filename.includes('.')
+        ? filename.slice(filename.lastIndexOf('.')).toLowerCase()
+        : '.jpg';
+    if (ext !== '.jpg' && ext !== '.jpeg' && ext !== '.png') {
+      return res.status(400).json({
+        ok: false,
+        error: 'Only JPG and PNG images are allowed.',
+      });
+    }
+    const storagePath = `ads/${crypto.randomUUID()}${ext}`;
+    const { data: signed, error } = await adminSupabase.storage
+      .from('feed-ad-images')
+      .createSignedUploadUrl(storagePath);
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    const { data: publicUrl } = adminSupabase.storage
+      .from('feed-ad-images')
+      .getPublicUrl(storagePath);
+    return res.json({
+      ok: true,
+      data: {
+        uploadUrl: signed.signedUrl,
+        storagePath,
+        publicUrl: publicUrl.publicUrl,
+      },
+      error: null,
+      meta: { expiresInSeconds: 900 },
+    });
+  },
+);
+
 // --- Public playlist APIs (no auth) ---
 
 // GET /api/public/playlists

@@ -1,6 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {
   Alert,
   Box,
@@ -13,6 +15,7 @@ import {
   DialogTitle,
   IconButton,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -21,8 +24,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
+import { getAdImageUploadUrl } from '../../lib/api/adminAdvertisersApi';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -39,6 +43,7 @@ type FormState = {
   description: string;
   url: string;
   logo_url: string;
+  image_url: string;
   links: LinkItem[];
   active: boolean;
   sort_order: number;
@@ -50,10 +55,13 @@ const emptyForm: FormState = {
   description: '',
   url: '',
   logo_url: '',
+  image_url: '',
   links: [],
   active: true,
   sort_order: 0,
 };
+
+const MAX_LINKS = 4;
 
 function parseLinks(raw: unknown): LinkItem[] {
   if (!Array.isArray(raw)) return [];
@@ -78,6 +86,7 @@ function formFromRow(row: AdvertiserRow | null): FormState {
     description: row.description,
     url: row.url,
     logo_url: row.logo_url ?? '',
+    image_url: (row as AdvertiserRow & { image_url?: string }).image_url ?? '',
     links,
     active: row.active,
     sort_order: row.sort_order,
@@ -92,6 +101,8 @@ export const AdminAdvertisersPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -134,6 +145,33 @@ export const AdminAdvertisersPage = () => {
     setForm(emptyForm);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const valid = ['image/jpeg', 'image/png'].includes(file.type);
+    if (!valid) {
+      setError('Only JPG and PNG images are allowed.');
+      return;
+    }
+    setUploadingImage(true);
+    setError(null);
+    try {
+      const { uploadUrl, publicUrl } = await getAdImageUploadUrl(file.name);
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!putRes.ok) throw new Error('Upload failed');
+      setForm((f) => ({ ...f, image_url: publicUrl }));
+    } catch (err) {
+      setError(toMessage(err));
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
   const handleSave = async () => {
     const links = form.links
       .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
@@ -147,6 +185,7 @@ export const AdminAdvertisersPage = () => {
         description: form.description.trim(),
         url: form.url.trim(),
         logo_url: form.logo_url.trim() || null,
+        image_url: form.image_url.trim() || null,
         links,
         active: form.active,
         sort_order: form.sort_order,
@@ -312,29 +351,118 @@ export const AdminAdvertisersPage = () => {
         </Table>
       )}
 
-      <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingId ? 'Edit Advertiser' : 'Add Advertiser'}
+      <Dialog
+        open={dialogOpen}
+        onClose={closeDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2, bgcolor: 'background.paper' },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Advertiser Ad Editor
+          <IconButton
+            size="small"
+            onClick={closeDialog}
+            aria-label="Close"
+            sx={{ ml: 1 }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
+        <DialogContent dividers>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            {/* Image Upload */}
+            <Box>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+              <Box
+                onClick={() => fileInputRef.current?.click()}
+                sx={{
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                  cursor: uploadingImage ? 'wait' : 'pointer',
+                  bgcolor: form.image_url ? 'action.hover' : 'transparent',
+                  '&:hover': !uploadingImage && {
+                    borderColor: 'primary.main',
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                {form.image_url ? (
+                  <Box>
+                    <Box
+                      component="img"
+                      src={form.image_url}
+                      alt="Ad banner"
+                      sx={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
+                        borderRadius: 1,
+                        mb: 1,
+                      }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Click to replace image
+                    </Typography>
+                  </Box>
+                ) : uploadingImage ? (
+                  <Stack alignItems="center" spacing={1}>
+                    <CircularProgress size={32} />
+                    <Typography variant="body2" color="text.secondary">
+                      Uploading…
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <>
+                    <CloudUploadIcon
+                      sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
+                    />
+                    <Typography variant="body1" fontWeight={500}>
+                      Upload Image
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      1200x400 recommended (JPG, PNG)
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Box>
+
+            {/* Basic Ad Details */}
             <TextField
-              label="Company Name"
+              label="Company"
               value={form.company_name}
               onChange={(e) =>
                 setForm((f) => ({ ...f, company_name: e.target.value }))
               }
               fullWidth
-              required
             />
             <TextField
-              label="Title"
+              label="Title *"
               value={form.title}
               onChange={(e) =>
                 setForm((f) => ({ ...f, title: e.target.value }))
               }
               fullWidth
               required
+              placeholder="e.g. Welcome to Nettica VPN"
             />
             <TextField
               label="Description"
@@ -344,11 +472,11 @@ export const AdminAdvertisersPage = () => {
               }
               fullWidth
               multiline
-              rows={2}
-              required
+              rows={4}
+              placeholder="Describe your product or service…"
             />
             <TextField
-              label="URL"
+              label="Main URL"
               value={form.url}
               onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
               fullWidth
@@ -362,25 +490,28 @@ export const AdminAdvertisersPage = () => {
                 setForm((f) => ({ ...f, logo_url: e.target.value }))
               }
               fullWidth
+              placeholder="https://…"
             />
+
+            {/* Call-To-Action Links */}
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Links (optional)
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                Call-To-Action Links
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: 'block', mb: 1 }}
+                sx={{ mb: 1, display: 'block' }}
               >
-                Add links shown at the bottom of the ad (e.g. Downloads, API).
+                Add up to 4 links (e.g. Downloads, API, Enterprise).
               </Typography>
               {form.links.map((link, i) => (
                 <Stack
                   key={i}
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction="row"
                   spacing={1}
                   sx={{ mb: 1 }}
-                  alignItems="flex-start"
+                  alignItems="center"
                 >
                   <TextField
                     label="Label"
@@ -395,7 +526,7 @@ export const AdminAdvertisersPage = () => {
                       }))
                     }
                     placeholder="e.g. Downloads"
-                    sx={{ flex: 1, minWidth: 120 }}
+                    sx={{ flex: 1, minWidth: 100 }}
                   />
                   <TextField
                     label="URL"
@@ -410,7 +541,7 @@ export const AdminAdvertisersPage = () => {
                         ),
                       }))
                     }
-                    placeholder="https://..."
+                    placeholder="https://…"
                     sx={{ flex: 2, minWidth: 140 }}
                   />
                   <IconButton
@@ -422,26 +553,29 @@ export const AdminAdvertisersPage = () => {
                       }))
                     }
                     aria-label="Remove link"
-                    color="error"
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Stack>
               ))}
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    links: [...f.links, { label: '', url: '' }],
-                  }))
-                }
-              >
-                Add link
-              </Button>
+              {form.links.length < MAX_LINKS && (
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      links: [...f.links, { label: '', url: '' }],
+                    }))
+                  }
+                >
+                  Add Another Link
+                </Button>
+              )}
             </Box>
-            <Stack direction="row" spacing={2} alignItems="center">
+
+            {/* Sort Order & Active */}
+            <Stack direction="row" spacing={3} alignItems="center">
               <TextField
                 label="Sort Order"
                 type="number"
@@ -453,19 +587,22 @@ export const AdminAdvertisersPage = () => {
                   }))
                 }
                 inputProps={{ min: 0 }}
-                sx={{ width: 120 }}
+                sx={{ width: 100 }}
               />
-              <Button
-                variant={form.active ? 'contained' : 'outlined'}
-                color={form.active ? 'success' : 'inherit'}
-                onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
-              >
-                {form.active ? 'Active' : 'Inactive'}
-              </Button>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Switch
+                  checked={form.active}
+                  onChange={(_, checked) =>
+                    setForm((f) => ({ ...f, active: checked }))
+                  }
+                  color="primary"
+                />
+                <Typography variant="body2">Active</Typography>
+              </Stack>
             </Stack>
           </Stack>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={closeDialog}>Cancel</Button>
           <Button
             variant="contained"
@@ -474,11 +611,10 @@ export const AdminAdvertisersPage = () => {
               saving ||
               !form.company_name.trim() ||
               !form.title.trim() ||
-              !form.description.trim() ||
               !form.url.trim()
             }
           >
-            {saving ? <CircularProgress size={20} /> : 'Save'}
+            {saving ? <CircularProgress size={20} /> : 'Save Ad'}
           </Button>
         </DialogActions>
       </Dialog>

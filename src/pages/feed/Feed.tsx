@@ -18,6 +18,7 @@ import {
   Button,
   Card,
   CardContent,
+  ClickAwayListener,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -36,6 +37,7 @@ import {
   ListItemText,
   MenuItem,
   Paper,
+  Popover,
   Select,
   Snackbar,
   Stack,
@@ -69,6 +71,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
+import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
 
 import WeirdlingGenerator from '../../components/avatar/WeirdlingGenerator';
@@ -364,6 +367,43 @@ const ShareDialog = ({
   );
 };
 
+const REACTION_OPTIONS: {
+  type: ReactionType;
+  label: string;
+  Icon: React.ComponentType<{ sx?: object }>;
+  IconOutlined: React.ComponentType<{ sx?: object }>;
+  color: string;
+}[] = [
+  {
+    type: 'like',
+    label: 'Like',
+    Icon: ThumbUpIcon,
+    IconOutlined: ThumbUpOutlinedIcon,
+    color: 'primary.main',
+  },
+  {
+    type: 'love',
+    label: 'Love',
+    Icon: FavoriteIcon,
+    IconOutlined: FavoriteBorderIcon,
+    color: 'error.main',
+  },
+  {
+    type: 'inspiration',
+    label: 'Insightful',
+    Icon: LightbulbIcon,
+    IconOutlined: LightbulbOutlinedIcon,
+    color: 'warning.main',
+  },
+  {
+    type: 'care',
+    label: 'Care',
+    Icon: VolunteerActivismIcon,
+    IconOutlined: VolunteerActivismOutlinedIcon,
+    color: 'success.main',
+  },
+];
+
 const FeedCard = ({
   item,
   actions,
@@ -376,6 +416,9 @@ const FeedCard = ({
 }: FeedCardProps) => {
   const [commentDraft, setCommentDraft] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const displayName =
     (item.actor?.display_name as string) || item.actor?.handle || 'Weirdling';
   const handle = (item.actor?.handle as string) || null;
@@ -558,94 +601,103 @@ const FeedCard = ({
                 alignItems: 'center',
               }}
             >
-              <Button
-                size="small"
-                startIcon={
-                  viewerReaction === 'like' ? (
-                    <ThumbUpIcon sx={{ color: 'primary.main' }} />
-                  ) : (
-                    <ThumbUpOutlinedIcon />
-                  )
-                }
-                onClick={() => handleReaction('like')}
-                sx={{
-                  textTransform: 'none',
-                  color:
-                    viewerReaction === 'like'
-                      ? 'primary.main'
-                      : 'text.secondary',
-                  minWidth: 0,
-                }}
-              >
-                Like
-              </Button>
-              <Button
-                size="small"
-                startIcon={
-                  viewerReaction === 'love' ? (
-                    <FavoriteIcon sx={{ color: 'error.main' }} />
-                  ) : (
-                    <FavoriteBorderIcon />
-                  )
-                }
-                onClick={() => handleReaction('love')}
-                sx={{
-                  textTransform: 'none',
-                  color:
-                    viewerReaction === 'love' ? 'error.main' : 'text.secondary',
-                  minWidth: 0,
-                }}
-              >
-                Love
-              </Button>
-              <Button
-                size="small"
-                startIcon={
-                  viewerReaction === 'inspiration' ? (
-                    <LightbulbIcon sx={{ color: 'warning.main' }} />
-                  ) : (
-                    <LightbulbOutlinedIcon />
-                  )
-                }
-                onClick={() => handleReaction('inspiration')}
-                sx={{
-                  textTransform: 'none',
-                  color:
-                    viewerReaction === 'inspiration'
-                      ? 'warning.main'
-                      : 'text.secondary',
-                  minWidth: 0,
-                }}
-              >
-                Inspiration
-              </Button>
-              <Button
-                size="small"
-                startIcon={<VolunteerActivismOutlinedIcon />}
-                onClick={() => handleReaction('care')}
-                aria-label={
-                  viewerReaction === 'care' ? 'Remove Care reaction' : 'Care'
-                }
-                sx={{
-                  textTransform: 'none',
-                  color:
-                    viewerReaction === 'care'
-                      ? 'success.main'
-                      : 'text.secondary',
-                  minWidth: 0,
-                }}
-              >
-                Care
-              </Button>
-              {totalReactions > 0 && (
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {totalReactions}
-                </Typography>
-              )}
+              <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
+                <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {(() => {
+                    const current =
+                      REACTION_OPTIONS.find((r) => r.type === viewerReaction) ??
+                      REACTION_OPTIONS[0];
+                    const CurrentIcon = viewerReaction
+                      ? current.Icon
+                      : current.IconOutlined;
+                    return (
+                      <Button
+                        size="small"
+                        startIcon={
+                          <CurrentIcon
+                            sx={{
+                              color: viewerReaction ? current.color : undefined,
+                            }}
+                          />
+                        }
+                        onClick={(e) => {
+                          setReactionAnchor((prev) =>
+                            prev ? null : (e.currentTarget as HTMLElement),
+                          );
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: viewerReaction
+                            ? current.color
+                            : 'text.secondary',
+                          minWidth: 0,
+                        }}
+                        aria-label={
+                          viewerReaction
+                            ? `${current.label} (click to remove)`
+                            : 'Like'
+                        }
+                        aria-haspopup="true"
+                        aria-expanded={Boolean(reactionAnchor)}
+                      >
+                        {viewerReaction ? current.label : 'Like'}
+                      </Button>
+                    );
+                  })()}
+                  <Popover
+                    open={Boolean(reactionAnchor)}
+                    anchorEl={reactionAnchor}
+                    onClose={() => setReactionAnchor(null)}
+                    anchorOrigin={{
+                      vertical: 'top',
+                      horizontal: 'left',
+                    }}
+                    transformOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: 2,
+                          p: 0.5,
+                        },
+                      },
+                    }}
+                  >
+                    <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
+                      {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
+                        <IconButton
+                          key={type}
+                          size="small"
+                          onClick={() => {
+                            handleReaction(type);
+                            setReactionAnchor(null);
+                          }}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': { color },
+                          }}
+                          aria-label={label}
+                        >
+                          <Icon sx={{ fontSize: 24 }} />
+                        </IconButton>
+                      ))}
+                    </Stack>
+                  </Popover>
+                  {totalReactions > 0 && (
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 0.25 }}
+                    >
+                      {totalReactions}
+                    </Typography>
+                  )}
+                </Box>
+              </ClickAwayListener>
               <Button
                 size="small"
                 startIcon={<ChatBubbleOutlineOutlinedIcon />}

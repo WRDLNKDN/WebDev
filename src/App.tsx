@@ -205,33 +205,9 @@ const AdminApp = lazy(() =>
   import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
 );
 
-const PendingProfiles = lazy(() =>
-  import('./pages/admin/PendingProfiles').then((m) => ({
-    default: m.PendingProfiles,
-  })),
-);
-
-const ApprovedProfiles = lazy(() =>
-  import('./pages/admin/ApprovedProfiles').then((m) => ({
-    default: m.ApprovedProfiles,
-  })),
-);
-
-const ProfileReview = lazy(() =>
-  import('./pages/admin/ProfileReview').then((m) => ({
-    default: m.ProfileReview,
-  })),
-);
-
 const AdminDashboard = lazy(() =>
   import('./pages/admin/AdminDashboard').then((m) => ({
     default: m.AdminDashboard,
-  })),
-);
-
-const AdminModerationPage = lazy(() =>
-  import('./pages/admin/AdminModerationPage').then((m) => ({
-    default: m.AdminModerationPage,
   })),
 );
 
@@ -407,7 +383,7 @@ const App = () => {
                 <Route index element={<AdminDashboard />} />
                 <Route
                   path="moderation"
-                  element={<AdminModerationPage initialStatus="pending" />}
+                  element={<Navigate to="/admin" replace />}
                 />
                 <Route
                   path="content"
@@ -416,9 +392,18 @@ const App = () => {
                 <Route path="chat-reports" element={<ChatReportsPage />} />
                 <Route path="advertisers" element={<AdminAdvertisersPage />} />
               </Route>
-              <Route path="/admin/pending" element={<PendingProfiles />} />
-              <Route path="/admin/approved" element={<ApprovedProfiles />} />
-              <Route path="/admin/review/:id" element={<ProfileReview />} />
+              <Route
+                path="/admin/pending"
+                element={<Navigate to="/admin" replace />}
+              />
+              <Route
+                path="/admin/approved"
+                element={<Navigate to="/admin" replace />}
+              />
+              <Route
+                path="/admin/review/:id"
+                element={<Navigate to="/admin" replace />}
+              />
 
               {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
 

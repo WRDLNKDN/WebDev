@@ -806,6 +806,7 @@ create policy audit_log_select_admin
   on public.audit_log for select to authenticated
   using (public.is_admin());
 
+drop policy if exists "content_submissions_storage_insert" on storage.objects;
 create policy content_submissions_storage_insert
   on storage.objects for insert to authenticated
   with check (
@@ -813,6 +814,7 @@ create policy content_submissions_storage_insert
     and (string_to_array(name, '/'))[2] = auth.uid()::text
   );
 
+drop policy if exists "content_submissions_storage_select" on storage.objects;
 create policy content_submissions_storage_select
   on storage.objects for select to authenticated
   using (

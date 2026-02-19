@@ -73,6 +73,13 @@ profile routes (IA), Directory, footer, and Dashboard.
 - [ ] **Directory card**  
        Click a card → go to `/profile/{handle}`.
 
+- [ ] **Authenticated stability (no flicker redirect)**  
+       While signed in, open `/directory` from nav, direct URL, and refresh. You
+      remain on `/directory` without flickering to `/join`.
+
+- [ ] **Signed-out redirect still works**  
+       While signed out, opening `/directory` redirects to `/join`.
+
 ---
 
 ## 4. Feed page
@@ -150,6 +157,7 @@ profile routes (IA), Directory, footer, and Dashboard.
 
 - [ ] **E2E (if run)**  
        Critical paths (e.g. sign-in, Feed, Directory) pass if you run E2E tests.
+      Preferred command: `npm run test:e2e`.
 
 ---
 

@@ -26,7 +26,6 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
-import { getAdImageUploadUrl } from '../../lib/api/adminAdvertisersApi';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -156,13 +155,15 @@ export const AdminAdvertisersPage = () => {
     setUploadingImage(true);
     setError(null);
     try {
-      const { uploadUrl, publicUrl } = await getAdImageUploadUrl(file.name);
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-      if (!putRes.ok) throw new Error('Upload failed');
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const path = `ads/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('feed-ad-images')
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadError) throw uploadError;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('feed-ad-images').getPublicUrl(path);
       setForm((f) => ({ ...f, image_url: publicUrl }));
     } catch (err) {
       setError(toMessage(err));

@@ -82,7 +82,7 @@ async function imageDimensions(file: File): Promise<[number, number]> {
   return [img.width, img.height];
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+async function loadImage(file: File): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(file);
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();

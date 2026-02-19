@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
+import { uploadAdImage } from '../../lib/api/adminAdvertisersApi';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -101,6 +102,7 @@ export const AdminAdvertisersPage = () => {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -142,6 +144,10 @@ export const AdminAdvertisersPage = () => {
     setDialogOpen(false);
     setEditingId(null);
     setForm(emptyForm);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,20 +158,19 @@ export const AdminAdvertisersPage = () => {
       setError('Only JPG and PNG images are allowed.');
       return;
     }
+    // Immediate preview while uploading
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
     setUploadingImage(true);
     setError(null);
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const path = `ads/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('feed-ad-images')
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (uploadError) throw uploadError;
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('feed-ad-images').getPublicUrl(path);
+      const publicUrl = await uploadAdImage(file);
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null);
       setForm((f) => ({ ...f, image_url: publicUrl }));
     } catch (err) {
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null);
       setError(toMessage(err));
     } finally {
       setUploadingImage(false);
@@ -399,7 +404,10 @@ export const AdminAdvertisersPage = () => {
                   p: 4,
                   textAlign: 'center',
                   cursor: uploadingImage ? 'wait' : 'pointer',
-                  bgcolor: form.image_url ? 'action.hover' : 'transparent',
+                  bgcolor:
+                    previewUrl || form.image_url
+                      ? 'action.hover'
+                      : 'transparent',
                   ...(!uploadingImage && {
                     '&:hover': {
                       borderColor: 'primary.main',
@@ -408,21 +416,22 @@ export const AdminAdvertisersPage = () => {
                   }),
                 }}
               >
-                {form.image_url ? (
+                {previewUrl || form.image_url ? (
                   <Box>
                     <Box
                       component="img"
-                      src={form.image_url}
+                      src={previewUrl ?? form.image_url ?? ''}
                       alt="Ad banner"
                       sx={{
                         maxWidth: '100%',
                         maxHeight: 200,
                         borderRadius: 1,
                         mb: 1,
+                        objectFit: 'contain',
                       }}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      Click to replace image
+                      {uploadingImage ? 'Uploading…' : 'Click to replace image'}
                     </Typography>
                   </Box>
                 ) : uploadingImage ? (

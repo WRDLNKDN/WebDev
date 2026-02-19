@@ -61,18 +61,18 @@ export const GroupActionsDialog = ({
 
     if (mode === 'invite') {
       const memberIds = new Set(currentMembers.map((m) => m.user_id));
-      supabase
-        .from('profiles')
-        .select('id, handle, display_name')
-        .eq('status', 'approved')
-        .limit(200)
-        .then(({ data }) => {
-          setAllProfiles(
-            (data ?? []).filter(
-              (p) => !memberIds.has(p.id),
-            ) as typeof allProfiles,
-          );
-        });
+      void (async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, handle, display_name')
+          .eq('status', 'approved')
+          .limit(200);
+        setAllProfiles(
+          (data ?? []).filter(
+            (p) => !memberIds.has(p.id),
+          ) as typeof allProfiles,
+        );
+      })();
     }
   }, [open, mode, roomName, currentMembers]);
 

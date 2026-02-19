@@ -1,6 +1,7 @@
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
+import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 import {
@@ -54,6 +55,11 @@ app.use(
 );
 
 app.use(express.json());
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB for ad images
+});
 
 // Vercel rewrites send /api/:path* to /api with path in query; restore req.url so routes match
 app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -719,15 +725,13 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     const hasMore = list.length > limit;
     const page = hasMore ? list.slice(0, limit) : list;
     const last = page[page.length - 1] as
-      | { created_at?: string; id?: string }
+      | { created_at?: string; scheduled_at?: string | null; id?: string }
       | undefined;
+    const sortAt = last?.scheduled_at ?? last?.created_at;
     const nextCursor =
-      hasMore && last?.created_at && last?.id
+      hasMore && sortAt && last?.id
         ? Buffer.from(
-            JSON.stringify({
-              created_at: last.created_at,
-              id: last.id,
-            }),
+            JSON.stringify({ created_at: sortAt, id: last.id }),
             'utf8',
           ).toString('base64')
         : undefined;
@@ -814,19 +818,37 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     const payload: {
       body: string;
       link_preview?: import('./linkPreview.js').LinkPreview;
-    } = {
-      body: text,
-    };
+      images?: string[];
+    } = { body: text };
     const firstUrl = getFirstUrl(text);
     if (firstUrl) {
       const linkPreview = await fetchLinkPreview(firstUrl);
       if (linkPreview) payload.link_preview = linkPreview;
+    }
+    const imagesRaw = body.images;
+    if (
+      Array.isArray(imagesRaw) &&
+      imagesRaw.length > 0 &&
+      imagesRaw.every((u): u is string => typeof u === 'string')
+    ) {
+      payload.images = imagesRaw.filter((u) => u.trim().length > 0);
+    }
+
+    const scheduledAtRaw =
+      typeof body.scheduled_at === 'string' ? body.scheduled_at.trim() : null;
+    let scheduledAt: string | null = null;
+    if (scheduledAtRaw) {
+      const d = new Date(scheduledAtRaw);
+      if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
+        scheduledAt = d.toISOString();
+      }
     }
 
     const { error } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
       kind: 'post',
       payload,
+      ...(scheduledAt && { scheduled_at: scheduledAt }),
     });
 
     if (error) {
@@ -1457,44 +1479,67 @@ app.post(
   },
 );
 
-// POST /api/admin/advertisers/upload-url — get signed URL for ad banner (admin only)
+// POST /api/admin/advertisers/upload — upload ad banner via backend (admin only)
+const uploadAdFile = upload.single('file');
 app.post(
-  '/api/admin/advertisers/upload-url',
+  '/api/admin/advertisers/upload',
   requireAdmin,
-  async (_req: Request, res: Response) => {
-    const body = (_req as Request & { body?: unknown }).body as
-      | { filename?: string }
-      | undefined;
-    const filename =
-      typeof body?.filename === 'string' ? body.filename.trim() : '';
-    const ext =
-      filename && filename.includes('.')
-        ? filename.slice(filename.lastIndexOf('.')).toLowerCase()
-        : '.jpg';
-    if (ext !== '.jpg' && ext !== '.jpeg' && ext !== '.png') {
-      return res.status(400).json({
-        ok: false,
-        error: 'Only JPG and PNG images are allowed.',
-      });
-    }
-    const storagePath = `ads/${crypto.randomUUID()}${ext}`;
-    const { data: signed, error } = await adminSupabase.storage
-      .from('feed-ad-images')
-      .createSignedUploadUrl(storagePath);
-    if (error) return res.status(500).json({ ok: false, error: error.message });
-    const { data: publicUrl } = adminSupabase.storage
-      .from('feed-ad-images')
-      .getPublicUrl(storagePath);
-    return res.json({
-      ok: true,
-      data: {
-        uploadUrl: signed.signedUrl,
-        storagePath,
-        publicUrl: publicUrl.publicUrl,
-      },
-      error: null,
-      meta: { expiresInSeconds: 900 },
+  (req: Request, res: Response, next: NextFunction) => {
+    uploadAdFile(req, res, (err: unknown) => {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === 'LIMIT_FILE_SIZE'
+      ) {
+        return res
+          .status(413)
+          .json({ ok: false, error: 'File too large. Max 15MB.' });
+      }
+      if (err) return next(err);
+      next();
     });
+  },
+  async (req: Request, res: Response) => {
+    try {
+      const file = (req as Request & { file?: Express.Multer.File }).file;
+      if (!file || !file.buffer) {
+        return res.status(400).json({
+          ok: false,
+          error: 'No file uploaded. Use multipart field "file".',
+        });
+      }
+      const valid = ['image/jpeg', 'image/png'].includes(file.mimetype);
+      if (!valid) {
+        return res
+          .status(400)
+          .json({ ok: false, error: 'Only JPG and PNG images are allowed.' });
+      }
+      const ext = file.mimetype === 'image/png' ? '.png' : '.jpg';
+      const storagePath = `ads/${crypto.randomUUID()}${ext}`;
+      const { error } = await adminSupabase.storage
+        .from('feed-ad-images')
+        .upload(storagePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+      if (error) {
+        console.error('[advertisers/upload] Supabase storage error:', error);
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+      const { data: publicUrl } = adminSupabase.storage
+        .from('feed-ad-images')
+        .getPublicUrl(storagePath);
+      return res.json({
+        ok: true,
+        data: { publicUrl: publicUrl.publicUrl },
+        error: null,
+      });
+    } catch (e) {
+      const msg = errorMessage(e, 'Upload failed');
+      console.error('[advertisers/upload] Unhandled error:', e);
+      return res.status(500).json({ ok: false, error: msg });
+    }
   },
 );
 

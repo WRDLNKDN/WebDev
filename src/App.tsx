@@ -24,211 +24,196 @@ import { supabase } from './lib/auth/supabaseClient';
  */
 
 // 1. Core Pages
-const LandingPage = lazy(() =>
-  import('./pages/profile/LandingPage').then((m) => ({
-    default: m.LandingPage,
-  })),
-);
+const LandingPage = lazy(async () => {
+  const m = await import('./pages/profile/LandingPage');
+  return { default: m.LandingPage };
+});
 
-const Dashboard = lazy(() =>
-  import('./pages/dashboard/Dashboard').then((m) => ({
-    default: m.Dashboard,
-  })),
-);
+const Dashboard = lazy(async () => {
+  const m = await import('./pages/dashboard/Dashboard');
+  return { default: m.Dashboard };
+});
 
-const ChatRedirect = lazy(() =>
-  import('./pages/chat/ChatRedirect').then((m) => ({
-    default: m.ChatRedirect,
-  })),
-);
+const ChatRedirect = lazy(async () => {
+  const m = await import('./pages/chat/ChatRedirect');
+  return { default: m.ChatRedirect };
+});
 
-const ChatPopupPage = lazy(() =>
-  import('./pages/chat/ChatPopupPage').then((m) => ({
-    default: m.ChatPopupPage,
-  })),
-);
+const ChatPopupPage = lazy(async () => {
+  const m = await import('./pages/chat/ChatPopupPage');
+  return { default: m.ChatPopupPage };
+});
 
-const Feed = lazy(() =>
-  import('./pages/feed/Feed').then((m) => ({ default: m.Feed })),
-);
+const Feed = lazy(async () => {
+  const m = await import('./pages/feed/Feed');
+  return { default: m.Feed };
+});
 
-const Home = lazy(() =>
-  import('./pages/home/Home').then((m) => ({ default: m.Home })),
-);
+const Home = lazy(async () => {
+  const m = await import('./pages/home/Home');
+  return { default: m.Home };
+});
 
-const Store = lazy(() =>
-  import('./pages/marketing/Store').then((m) => ({ default: m.Store })),
-);
+const Store = lazy(async () => {
+  const m = await import('./pages/marketing/Store');
+  return { default: m.Store };
+});
 
-const About = lazy(() =>
-  import('./pages/marketing/About').then((m) => ({ default: m.About })),
-);
+const About = lazy(async () => {
+  const m = await import('./pages/marketing/About');
+  return { default: m.About };
+});
 
-const Community = lazy(() =>
-  import('./pages/community/Community').then((m) => ({
-    default: m.Community,
-  })),
-);
+const Community = lazy(async () => {
+  const m = await import('./pages/community/Community');
+  return { default: m.Community };
+});
 
-const Platform = lazy(() =>
-  import('./pages/marketing/Platform').then((m) => ({
-    default: m.Platform,
-  })),
-);
+const Platform = lazy(async () => {
+  const m = await import('./pages/marketing/Platform');
+  return { default: m.Platform };
+});
 
-const Directory = lazy(() =>
-  import('./pages/community/Directory').then((m) => ({
-    default: m.Directory,
-  })),
-);
+const Directory = lazy(async () => {
+  const m = await import('./pages/community/Directory');
+  return { default: m.Directory };
+});
 
-const WeirdlingCreate = lazy(() =>
-  import('./pages/weirdling/WeirdlingCreate').then((m) => ({
-    default: m.WeirdlingCreate,
-  })),
-);
+const WeirdlingCreate = lazy(async () => {
+  const m = await import('./pages/weirdling/WeirdlingCreate');
+  return { default: m.WeirdlingCreate };
+});
 
-const BumperPage = lazy(() =>
-  import('./pages/misc/BumperPage').then((m) => ({
-    default: m.BumperPage,
-  })),
-);
+const BumperPage = lazy(async () => {
+  const m = await import('./pages/misc/BumperPage');
+  return { default: m.BumperPage };
+});
 
-const ContentSubmitPage = lazy(() =>
-  import('./pages/content/ContentSubmitPage').then((m) => ({
-    default: m.ContentSubmitPage,
-  })),
-);
+const ContentSubmitPage = lazy(async () => {
+  const m = await import('./pages/content/ContentSubmitPage');
+  return { default: m.ContentSubmitPage };
+});
 
-const PlaylistsPage = lazy(() =>
-  import('./pages/content/PlaylistsPage').then((m) => ({
-    default: m.PlaylistsPage,
-  })),
-);
+const PlaylistsPage = lazy(async () => {
+  const m = await import('./pages/content/PlaylistsPage');
+  return { default: m.PlaylistsPage };
+});
 
-const PlaylistDetailPage = lazy(() =>
-  import('./pages/content/PlaylistDetailPage').then((m) => ({
-    default: m.PlaylistDetailPage,
-  })),
-);
+const PlaylistDetailPage = lazy(async () => {
+  const m = await import('./pages/content/PlaylistDetailPage');
+  return { default: m.PlaylistDetailPage };
+});
 
-const ProjectPage = lazy(() =>
-  import('./pages/profile/ProjectPage').then((m) => ({
-    default: m.ProjectPage,
-  })),
-);
+const ProjectPage = lazy(async () => {
+  const m = await import('./pages/profile/ProjectPage');
+  return { default: m.ProjectPage };
+});
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
-const DivergencePage = lazy(() =>
-  import('./pages/misc/DivergencePage').then((m) => ({
-    default: m.DivergencePage,
-  })),
-);
+const DivergencePage = lazy(async () => {
+  const m = await import('./pages/misc/DivergencePage');
+  return { default: m.DivergencePage };
+});
 
-const EventsPage = lazy(() =>
-  import('./pages/community/EventsPage').then((m) => ({
-    default: m.EventsPage,
-  })),
-);
+const EventsPage = lazy(async () => {
+  const m = await import('./pages/community/EventsPage');
+  return { default: m.EventsPage };
+});
 
-const ForumsPage = lazy(() =>
-  import('./pages/community/ForumsPage').then((m) => ({
-    default: m.ForumsPage,
-  })),
-);
+const ForumsPage = lazy(async () => {
+  const m = await import('./pages/community/ForumsPage');
+  return { default: m.ForumsPage };
+});
 
-const SavedPage = lazy(() =>
-  import('./pages/community/SavedPage').then((m) => ({
-    default: m.SavedPage,
-  })),
-);
+const SavedPage = lazy(async () => {
+  const m = await import('./pages/community/SavedPage');
+  return { default: m.SavedPage };
+});
 
-const AdvertisePage = lazy(() =>
-  import('./pages/marketing/AdvertisePage').then((m) => ({
-    default: m.AdvertisePage,
-  })),
-);
+const AdvertisePage = lazy(async () => {
+  const m = await import('./pages/marketing/AdvertisePage');
+  return { default: m.AdvertisePage };
+});
 
-const HelpPage = lazy(() =>
-  import('./pages/misc/HelpPage').then((m) => ({ default: m.HelpPage })),
-);
+const HelpPage = lazy(async () => {
+  const m = await import('./pages/misc/HelpPage');
+  return { default: m.HelpPage };
+});
 
-const CommunityPartnersPage = lazy(() =>
-  import('./pages/community/CommunityPartnersPage').then((m) => ({
-    default: m.CommunityPartnersPage,
-  })),
-);
+const CommunityPartnersPage = lazy(async () => {
+  const m = await import('./pages/community/CommunityPartnersPage');
+  return { default: m.CommunityPartnersPage };
+});
 
-const UnsubscribePage = lazy(() =>
-  import('./pages/misc/UnsubscribePage').then((m) => ({
-    default: m.UnsubscribePage,
-  })),
-);
+const UnsubscribePage = lazy(async () => {
+  const m = await import('./pages/misc/UnsubscribePage');
+  return { default: m.UnsubscribePage };
+});
 
 // The Professional 404 Page (Standard Error)
-const NotFoundPage = lazy(() =>
-  import('./pages/misc/NotFoundPage').then((m) => ({
-    default: m.NotFoundPage,
-  })),
-);
+const NotFoundPage = lazy(async () => {
+  const m = await import('./pages/misc/NotFoundPage');
+  return { default: m.NotFoundPage };
+});
 
 // 2. Auth Pages
-const SignIn = lazy(() =>
-  import('./pages/auth/SignIn').then((m) => ({ default: m.SignIn })),
-);
+const SignIn = lazy(async () => {
+  const m = await import('./pages/auth/SignIn');
+  return { default: m.SignIn };
+});
 
-const AuthCallback = lazy(() =>
-  import('./pages/auth/AuthCallback').then((m) => ({
-    default: m.AuthCallback,
-  })),
-);
+const AuthCallback = lazy(async () => {
+  const m = await import('./pages/auth/AuthCallback');
+  return { default: m.AuthCallback };
+});
 
-const Signup = lazy(() =>
-  import('./pages/auth/Signup').then((m) => ({ default: m.Signup })),
-);
+const Signup = lazy(async () => {
+  const m = await import('./pages/auth/Signup');
+  return { default: m.Signup };
+});
 
 // 3. Legal Pages
-const Guidelines = lazy(() =>
-  import('./pages/legal/Guidelines').then((m) => ({ default: m.Guidelines })),
-);
+const Guidelines = lazy(async () => {
+  const m = await import('./pages/legal/Guidelines');
+  return { default: m.Guidelines };
+});
 
-const Terms = lazy(() =>
-  import('./pages/legal/Terms').then((m) => ({ default: m.Terms })),
-);
+const Terms = lazy(async () => {
+  const m = await import('./pages/legal/Terms');
+  return { default: m.Terms };
+});
 
-const Privacy = lazy(() =>
-  import('./pages/legal/Privacy').then((m) => ({ default: m.Privacy })),
-);
+const Privacy = lazy(async () => {
+  const m = await import('./pages/legal/Privacy');
+  return { default: m.Privacy };
+});
 
 // 4. Admin Ecosystem
-const AdminApp = lazy(() =>
-  import('./pages/admin/AdminApp').then((m) => ({ default: m.AdminApp })),
-);
+const AdminApp = lazy(async () => {
+  const m = await import('./pages/admin/AdminApp');
+  return { default: m.AdminApp };
+});
 
-const AdminDashboard = lazy(() =>
-  import('./pages/admin/AdminDashboard').then((m) => ({
-    default: m.AdminDashboard,
-  })),
-);
+const AdminDashboard = lazy(async () => {
+  const m = await import('./pages/admin/AdminDashboard');
+  return { default: m.AdminDashboard };
+});
 
-const AdminContentModerationPage = lazy(() =>
-  import('./pages/admin/AdminContentModerationPage').then((m) => ({
-    default: m.AdminContentModerationPage,
-  })),
-);
+const AdminContentModerationPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminContentModerationPage');
+  return { default: m.AdminContentModerationPage };
+});
 
-const ChatReportsPage = lazy(() =>
-  import('./pages/admin/ChatReportsPage').then((m) => ({
-    default: m.ChatReportsPage,
-  })),
-);
+const ChatReportsPage = lazy(async () => {
+  const m = await import('./pages/admin/ChatReportsPage');
+  return { default: m.ChatReportsPage };
+});
 
-const AdminAdvertisersPage = lazy(() =>
-  import('./pages/admin/AdminAdvertisersPage').then((m) => ({
-    default: m.AdminAdvertisersPage,
-  })),
-);
+const AdminAdvertisersPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminAdvertisersPage');
+  return { default: m.AdminAdvertisersPage };
+});
 
 // 5. System Components
 const Loading = () => (

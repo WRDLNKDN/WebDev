@@ -385,12 +385,12 @@ const AttachmentPreview = ({
 
   React.useEffect(() => {
     let cancelled = false;
-    supabase.storage
-      .from('chat-attachments')
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
-      });
+    void (async () => {
+      const { data } = await supabase.storage
+        .from('chat-attachments')
+        .createSignedUrl(path, 3600);
+      if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+    })();
     return () => {
       cancelled = true;
     };

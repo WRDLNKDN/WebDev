@@ -70,14 +70,15 @@ export const ChatPage = () => {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       if (!data.session) {
         navigate('/');
       } else {
         setSession(data.session);
       }
-    });
+    })();
     return () => {
       mounted = false;
     };
@@ -85,10 +86,10 @@ export const ChatPage = () => {
 
   useEffect(() => {
     if (!session) return;
-
-    supabase.rpc('is_admin').then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.rpc('is_admin');
       setIsAdmin(data === true);
-    });
+    })();
   }, [session]);
 
   const handleStartDm = async (userId: string) => {

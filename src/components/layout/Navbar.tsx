@@ -153,12 +153,13 @@ export const Navbar = () => {
   const prevPathRef = useRef(path);
   useEffect(() => {
     if (prevPathRef.current === '/auth/callback' && path !== '/auth/callback') {
-      void supabase.auth.getSession().then(({ data }) => {
+      void (async () => {
+        const { data } = await supabase.auth.getSession();
         if (data.session) {
           setSession(data.session);
           setSessionLoaded(true);
         }
-      });
+      })();
     }
     prevPathRef.current = path;
   }, [path]);

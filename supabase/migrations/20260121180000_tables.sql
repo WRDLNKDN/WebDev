@@ -436,7 +436,8 @@ create table public.feed_items (
   )),
   payload jsonb not null default '{}',
   parent_id uuid references public.feed_items(id) on delete set null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  scheduled_at timestamptz
 );
 
 create index idx_feed_items_user_id on public.feed_items(user_id);
@@ -453,9 +454,11 @@ comment on table public.feed_items is
   'Unified activity stream: WRDLNKDN-native posts, profile updates, user-submitted external links (opaque), reposts, reactions.';
 comment on column public.feed_items.payload is
   'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
+comment on column public.feed_items.scheduled_at is
+  'When set, post is hidden until this time. Null = publish immediately.';
 
 -- -----------------------------
--- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts)
+-- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts; scheduled posts)
 -- -----------------------------
 create or replace function public.get_feed_page(
   p_viewer_id uuid,
@@ -471,6 +474,7 @@ returns table (
   payload jsonb,
   parent_id uuid,
   created_at timestamptz,
+  scheduled_at timestamptz,
   actor_handle text,
   actor_display_name text,
   actor_avatar text,
@@ -510,6 +514,7 @@ begin
     fi.payload,
     fi.parent_id,
     fi.created_at,
+    fi.scheduled_at,
     p.handle::text as actor_handle,
     p.display_name as actor_display_name,
     (case
@@ -549,17 +554,21 @@ begin
       use_connections and fi.user_id = any(actor_ids)
       or not use_connections
     )
+    and (fi.scheduled_at is null or fi.scheduled_at <= now())
     and (
       p_cursor_created_at is null
-      or (fi.created_at, fi.id) < (p_cursor_created_at, p_cursor_id)
+      or (
+        coalesce(fi.scheduled_at, fi.created_at),
+        fi.id
+      ) < (p_cursor_created_at, p_cursor_id)
     )
-  order by fi.created_at desc, fi.id desc
+  order by coalesce(fi.scheduled_at, fi.created_at) desc, fi.id desc
   limit least(p_limit, 51);
 end;
 $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int, text) is
-  'Returns feed items with reaction counts (like, love, inspiration, care) and viewer_reaction.';
+  'Returns feed items with reaction counts, scheduled filtering. scheduled_at null or passed.';
 
 -- -----------------------------
 -- get_directory_page (Directory: paginated, searchable, filterable, connection-aware)
@@ -1301,14 +1310,28 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- feed-ad-images (ad banner images 1200x400)
+-- feed-ad-images (ad banner images 1200x400; 15MB limit; null = no MIME restriction)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'feed-ad-images',
   'feed-ad-images',
   true,
+  15728640,
+  null
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = null;
+
+-- feed-post-images (user post attachments)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'feed-post-images',
+  'feed-post-images',
+  true,
   5242880,
-  array['image/jpeg', 'image/png']
+  array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 )
 on conflict (id) do update set
   public = excluded.public,

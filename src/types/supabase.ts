@@ -90,6 +90,43 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_items: {
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          payload: Json
+          parent_id: string | null
+          created_at: string
+          scheduled_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          payload?: Json
+          parent_id?: string | null
+          created_at?: string
+          scheduled_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          kind?: string
+          payload?: Json
+          parent_id?: string | null
+          created_at?: string
+          scheduled_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_items_parent_id_fkey"
+            columns: ["parent_id"]
+            referencedRelation: "feed_items"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       portfolio_items: {
         Row: {
           id: string

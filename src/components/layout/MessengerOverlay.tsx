@@ -71,12 +71,14 @@ export const MessengerOverlay = () => {
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    supabase
-      .from('profiles')
-      .select('avatar')
-      .eq('id', session.user.id)
-      .maybeSingle()
-      .then(({ data }) => setAvatarUrl(data?.avatar ?? null));
+    void (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      setAvatarUrl(data?.avatar ?? null);
+    })();
   }, [session?.user?.id]);
 
   const handleStartDm = useCallback(

@@ -1,0 +1,16 @@
+---
+description: Supabase schema and migrations — two-file convention
+globs: supabase/migrations/**/*
+alwaysApply: false
+---
+
+# Supabase Migrations
+
+**Use only two migration files:**
+
+1. **`20260121180000_tables.sql`** — All tables, functions, triggers, indexes. Schema DDL.
+2. **`20260121180005_rls.sql`** — All RLS policies, grants, and idempotent alterations (add column if not exists, add constraint if not exists).
+
+**Never create new migration files.** Add changes to one of these two files:
+- Schema objects (tables, functions, triggers) → tables.sql
+- RLS, policies, grants, optional backfills, idempotent alter statements → rls.sql

@@ -62,7 +62,9 @@ export async function generateWeirdling(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
   return data as GenerateResult;
 }
@@ -83,7 +85,9 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }
 
@@ -105,7 +109,9 @@ export async function saveWeirdlingPreview(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }
 
@@ -157,6 +163,8 @@ export async function deleteWeirdling(id: string): Promise<void> {
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }

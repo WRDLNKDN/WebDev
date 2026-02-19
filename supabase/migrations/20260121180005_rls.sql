@@ -1,9 +1,9 @@
 -- supabase/migrations/20260121180005_rls.sql
 -- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
 --
--- If you see "duplicate key violates unique constraint schema_migrations_pkey" for 20260214140000:
---   supabase migration repair 20260214140000 --status reverted
--- Then run db push again. (20260214140000 was consolidated into these two files.)
+-- If you see "duplicate key" or migration repair needed for 20260214140000, 20260214160000, 20260214170000:
+--   supabase migration repair <id> --status reverted
+-- Then run db push again. (Those were consolidated into these two files only.)
 --
 -- HOW TO FORCE RLS RECONFIGURE (when db push says "up to date" but schema is wrong):
 --
@@ -97,6 +97,44 @@ create unique index if not exists idx_feed_items_reaction_user_post
   on public.feed_items (parent_id, user_id)
   where kind = 'reaction'
     and payload->>'type' in ('like', 'love', 'inspiration', 'care');
+
+-- -----------------------------
+-- Profile required fields (data integrity, idempotent)
+-- -----------------------------
+update public.profiles
+set display_name = coalesce(nullif(trim(display_name), ''), handle, 'User')
+where status = 'approved'
+  and (display_name is null or length(trim(display_name)) = 0);
+
+update public.profiles
+set handle = 'user_' || substr(replace(id::text, '-', ''), 1, 8)
+where length(trim(handle)) = 0;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_handle_not_blank' and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles add constraint profiles_handle_not_blank
+      check (length(trim(handle)) > 0);
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_approved_has_display_name' and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles add constraint profiles_approved_has_display_name
+      check (
+        status != 'approved'
+        or (display_name is not null and length(trim(display_name)) >= 1)
+      );
+  end if;
+end $$;
+
+comment on constraint profiles_handle_not_blank on public.profiles is
+  'Handle cannot be blank.';
+comment on constraint profiles_approved_has_display_name on public.profiles is
+  'Approved profiles must have non-empty display_name for directory.';
 
 -- -----------------------------
 -- admin_allowlist: RLS (admin only)

@@ -1,4 +1,7 @@
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Avatar,
   Box,
@@ -6,9 +9,14 @@ import {
   CardContent,
   IconButton,
   Link,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from '@mui/material';
+import { useState } from 'react';
 
 export type FeedAdvertiserLink = { label: string; url: string };
 
@@ -39,10 +47,14 @@ function parseLinks(raw: unknown): FeedAdvertiserLink[] {
     .filter((x) => x.label || x.url);
 }
 
-type Props = { advertiser: FeedAdvertiser };
+type Props = {
+  advertiser: FeedAdvertiser;
+  onDismiss?: () => void;
+};
 
-export const FeedAdCard = ({ advertiser }: Props) => {
+export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
   const links = parseLinks(advertiser.links);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   return (
     <Card
@@ -128,13 +140,61 @@ export const FeedAdCard = ({ advertiser }: Props) => {
                   {advertiser.url.replace(/^https?:\/\//, '')}
                 </Typography>
               </Box>
-              <IconButton
-                size="small"
-                sx={{ mt: -0.5, mr: -0.5 }}
-                aria-label="More options"
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
+              {onDismiss && (
+                <>
+                  <IconButton
+                    size="small"
+                    sx={{ mt: -0.5, mr: -0.5 }}
+                    aria-label="More options"
+                    aria-haspopup="true"
+                    aria-expanded={!!menuAnchor}
+                    onClick={(e) => setMenuAnchor(e.currentTarget)}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                  <Menu
+                    anchorEl={menuAnchor}
+                    open={!!menuAnchor}
+                    onClose={() => setMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        onDismiss();
+                        setMenuAnchor(null);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <BlockOutlinedIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Hide this ad</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        onDismiss();
+                        setMenuAnchor(null);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <ThumbDownOutlinedIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Not interested</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        onDismiss();
+                        setMenuAnchor(null);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Seen too often</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </>
+              )}
             </Stack>
             <Typography
               component="a"

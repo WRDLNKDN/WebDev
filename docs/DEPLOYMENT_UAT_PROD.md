@@ -269,10 +269,10 @@ migrate PROD" if needed.
 ### Push migrations via Supabase CLI (manual)
 
 Use these when CI isn’t running migrations or you need to fix schema drift.
-Requires `SUPABASE_ACCESS_TOKEN` in env or `supabase login`. For remote push,
-set `SUPABASE_DB_PASSWORD` (or pass `-p` when prompted).
+Requires `supabase login` or `SUPABASE_ACCESS_TOKEN`. Set `SUPABASE_DB_PASSWORD`
+or pass `-p` when prompted.
 
-#### UAT (no data wipe)
+#### UAT only
 
 ```bash
 export SUPABASE_DB_PASSWORD="your-uat-db-password"
@@ -282,7 +282,7 @@ supabase link --project-ref lgxwseyzoefxggxijatp
 supabase db push --linked --include-all --include-seed -p "$SUPABASE_DB_PASSWORD"
 ```
 
-#### PROD (no data wipe)
+#### PROD only
 
 ```bash
 export SUPABASE_DB_PASSWORD="your-prod-db-password"

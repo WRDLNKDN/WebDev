@@ -88,7 +88,11 @@ export const fetchProfiles = async (
       );
     }
     throw new Error(
-      messageFromApiResponse(res.status, rawMsg ?? (diagnostic || undefined)),
+      messageFromApiResponse(
+        res.status,
+        data.error ?? (diagnostic || undefined),
+        data.message,
+      ),
     );
   }
 
@@ -130,7 +134,11 @@ const updateStatus = async (
       data = {};
     }
     const msg = typeof data.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof (data as { message?: string }).message === 'string'
+        ? (data as { message: string }).message
+        : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 };
 
@@ -179,7 +187,11 @@ export const deleteProfiles = async (
       data = {};
     }
     const msg = typeof data.error === 'string' ? data.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    const bodyMsg =
+      typeof (data as { message?: string }).message === 'string'
+        ? (data as { message: string }).message
+        : undefined;
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 
   // If hardDeleteAuthUsers is true, also delete from auth.users

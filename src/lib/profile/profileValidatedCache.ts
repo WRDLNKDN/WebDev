@@ -7,6 +7,7 @@
 import type { ProfileOnboardingCheck } from './profileOnboarding';
 
 const KEY = 'wrdlnkdn_profile_validated';
+const ONBOARDED_KEY_PREFIX = 'wrdlnkdn_profile_onboarded';
 const TTL_MS = 15_000;
 
 type Stored = {
@@ -24,6 +25,9 @@ export function setProfileValidated(
       KEY,
       JSON.stringify({ profile, userId, ts: Date.now() } satisfies Stored),
     );
+    // Durable marker: if we've validated onboarding once, trust this user as
+    // onboarded during transient auth/profile hydration failures.
+    localStorage.setItem(`${ONBOARDED_KEY_PREFIX}:${userId}`, '1');
   } catch {
     // ignore (private mode, quota, etc.)
   }
@@ -42,5 +46,13 @@ export function getProfileValidated(
     return data.profile;
   } catch {
     return null;
+  }
+}
+
+export function hasProfileOnboardedSticky(userId: string): boolean {
+  try {
+    return localStorage.getItem(`${ONBOARDED_KEY_PREFIX}:${userId}`) === '1';
+  } catch {
+    return false;
   }
 }

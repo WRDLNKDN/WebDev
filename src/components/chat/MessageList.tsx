@@ -2,6 +2,11 @@ import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import React, { useRef, useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  fetchChatLinkPreview,
+  getFirstUrlFromText,
+  type ChatLinkPreview,
+} from '../../lib/chat/linkPreview';
 import type { MessageWithExtras } from '../../hooks/useChat';
 import type { ChatRoomType } from '../../types/chat';
 import { GLASS_CARD } from '../../theme/candyStyles';
@@ -17,9 +22,15 @@ type MessageListProps = {
   onReport?: (messageId: string) => void;
   onMessagesViewed?: (messageIds: string[]) => void;
   isAdmin?: boolean;
+  compact?: boolean;
 };
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+function formatMessageTime(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
 
 export const MessageList = ({
   messages,
@@ -32,6 +43,7 @@ export const MessageList = ({
   onReport,
   onMessagesViewed,
   isAdmin,
+  compact = false,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<{
@@ -40,6 +52,9 @@ export const MessageList = ({
   } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [linkPreviews, setLinkPreviews] = useState<
+    Record<string, ChatLinkPreview | null>
+  >({});
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,6 +72,29 @@ export const MessageList = ({
       }
     }
   }, [roomType, messages, currentUserId, onMessagesViewed]);
+
+  useEffect(() => {
+    const nextTargets = messages
+      .filter(
+        (m) => !m.is_deleted && typeof m.content === 'string' && m.content,
+      )
+      .map((m) => ({ id: m.id, url: getFirstUrlFromText(m.content ?? '') }))
+      .filter((x): x is { id: string; url: string } => Boolean(x.url))
+      .filter((x) => !(x.id in linkPreviews));
+
+    if (nextTargets.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const target of nextTargets) {
+        const preview = await fetchChatLinkPreview(target.url);
+        if (cancelled) return;
+        setLinkPreviews((prev) => ({ ...prev, [target.id]: preview }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, linkPreviews]);
 
   const handleMenuOpen = (
     e: React.MouseEvent<HTMLElement>,
@@ -99,8 +137,8 @@ export const MessageList = ({
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 1.5,
-        p: 2,
+        gap: compact ? 1 : 1.5,
+        p: compact ? 1.25 : 2,
       }}
     >
       {messages.map((msg) => {
@@ -168,6 +206,13 @@ export const MessageList = ({
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 0.5,
+                borderRadius: 2,
+                bgcolor: isOwn
+                  ? 'rgba(37, 99, 235, 0.34)'
+                  : 'rgba(17, 24, 39, 0.6)',
+                borderColor: isOwn
+                  ? 'rgba(147,197,253,0.55)'
+                  : 'rgba(255,255,255,0.12)',
               }}
             >
               {editingId === msg.id ? (
@@ -237,6 +282,7 @@ export const MessageList = ({
               )}
             </Box>
             {(msg.edited_at ||
+              msg.created_at ||
               (roomType === 'dm' &&
                 isOwn &&
                 otherUserId &&
@@ -246,13 +292,12 @@ export const MessageList = ({
                 color="text.secondary"
                 sx={{ mt: 0.25 }}
               >
-                {msg.edited_at && 'Edited'}
+                {formatMessageTime(msg.created_at)}
+                {msg.edited_at && ' · Edited'}
                 {roomType === 'dm' &&
                   isOwn &&
                   otherUserId &&
-                  msg.read_by?.includes(otherUserId) && (
-                    <>{msg.edited_at ? ' · ' : ''}Read</>
-                  )}
+                  msg.read_by?.includes(otherUserId) && <> · Read</>}
               </Typography>
             )}
             {msg.attachments && msg.attachments.length > 0 && (
@@ -272,6 +317,69 @@ export const MessageList = ({
                     />
                   ),
                 )}
+              </Box>
+            )}
+            {linkPreviews[msg.id] && (
+              <Box
+                component="a"
+                href={linkPreviews[msg.id]?.url ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  mt: 0.6,
+                  display: 'block',
+                  width: '100%',
+                  maxWidth: 340,
+                  textDecoration: 'none',
+                  borderRadius: 1.5,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  bgcolor: 'rgba(0,0,0,0.25)',
+                }}
+              >
+                {linkPreviews[msg.id]?.image && (
+                  <Box
+                    component="img"
+                    src={linkPreviews[msg.id]?.image}
+                    alt={linkPreviews[msg.id]?.title || 'Link preview'}
+                    sx={{
+                      width: '100%',
+                      height: 140,
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                )}
+                <Box sx={{ p: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mb: 0.25 }}
+                  >
+                    {linkPreviews[msg.id]?.siteName || 'Link'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ lineHeight: 1.3, mb: 0.25 }}
+                  >
+                    {linkPreviews[msg.id]?.title || linkPreviews[msg.id]?.url}
+                  </Typography>
+                  {linkPreviews[msg.id]?.description && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        display: '-webkit-box',
+                        overflow: 'hidden',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {linkPreviews[msg.id]?.description}
+                    </Typography>
+                  )}
+                </Box>
               </Box>
             )}
             {/* Reactions: compact pills under message, only show quick-add on hover */}
@@ -404,8 +512,8 @@ const AttachmentPreview = ({
       rel="noopener noreferrer"
       sx={{
         display: 'block',
-        maxWidth: 120,
-        maxHeight: 120,
+        maxWidth: 220,
+        maxHeight: 220,
         borderRadius: 1,
         overflow: 'hidden',
         border: '1px solid rgba(255,255,255,0.2)',
@@ -416,7 +524,13 @@ const AttachmentPreview = ({
           component="img"
           src={signedUrl}
           alt="Attachment"
-          sx={{ width: '100%', height: 'auto', display: 'block' }}
+          sx={{
+            width: '100%',
+            height: 'auto',
+            maxHeight: 220,
+            objectFit: 'cover',
+            display: 'block',
+          }}
         />
       ) : (
         <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', fontSize: 12 }}>

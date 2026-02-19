@@ -3,6 +3,7 @@
  */
 
 import { messageFromApiResponse } from '../utils/errors';
+import { authedFetch } from './authFetch';
 import type {
   WeirdlingPreview,
   WeirdlingWizardInputs,
@@ -10,20 +11,6 @@ import type {
 } from '../../types/weirdling';
 
 const API_BASE = '/api/weirdling';
-
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const { supabase } = await import('../auth/supabaseClient');
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Not signed in');
-  }
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session.access_token}`,
-  };
-}
 
 export type GenerateResult = {
   ok: boolean;
@@ -35,7 +22,6 @@ export async function generateWeirdling(
   inputs: WeirdlingWizardInputs,
   idempotencyKey?: string,
 ): Promise<GenerateResult> {
-  const headers = await getAuthHeaders();
   const body: Record<string, unknown> = {
     displayNameOrHandle: inputs.displayNameOrHandle,
     roleVibe: inputs.roleVibe,
@@ -47,12 +33,14 @@ export async function generateWeirdling(
   };
   if (idempotencyKey) body.idempotency_key = idempotencyKey;
 
-  const res = await fetch(`${API_BASE}/generate`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    credentials: 'include',
-  });
+  const res = await authedFetch(
+    `${API_BASE}/generate`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+    { includeJsonContentType: true, credentials: 'include' },
+  );
 
   let data: Record<string, unknown>;
   try {
@@ -70,13 +58,14 @@ export async function generateWeirdling(
 }
 
 export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/save`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ jobId }),
-    credentials: 'include',
-  });
+  const res = await authedFetch(
+    `${API_BASE}/save`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ jobId }),
+    },
+    { includeJsonContentType: true, credentials: 'include' },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -94,13 +83,14 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
 export async function saveWeirdlingPreview(
   preview: WeirdlingPreview,
 ): Promise<void> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/save`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(preview),
-    credentials: 'include',
-  });
+  const res = await authedFetch(
+    `${API_BASE}/save`,
+    {
+      method: 'POST',
+      body: JSON.stringify(preview),
+    },
+    { includeJsonContentType: true, credentials: 'include' },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -118,11 +108,11 @@ export async function saveWeirdlingPreview(
 /** Returns all active Weirdlings for the current user (newest first). */
 export async function getMyWeirdlings(): Promise<Weirdling[]> {
   try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/me`, {
-      headers,
-      credentials: 'include',
-    });
+    const res = await authedFetch(
+      `${API_BASE}/me`,
+      { method: 'GET' },
+      { includeJsonContentType: true, credentials: 'include' },
+    );
     let data: Record<string, unknown>;
     try {
       data = (await res.json()) as Record<string, unknown>;
@@ -149,12 +139,13 @@ export async function getMyWeirdling(): Promise<Weirdling | null> {
 }
 
 export async function deleteWeirdling(id: string): Promise<void> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/me/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers,
-    credentials: 'include',
-  });
+  const res = await authedFetch(
+    `${API_BASE}/me/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+    },
+    { includeJsonContentType: false, credentials: 'include' },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;

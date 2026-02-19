@@ -75,6 +75,17 @@ This surface is optimized for signal-based connection, not content consumption.
 - Click-through to `/profile/:handle` (or `/profile/:id` when no handle)
 - DirectoryRow and DirectoryCard link to profile
 
+### 3.6 Connection Approval Workflow ✅
+
+- Sending a connection creates a `pending` request that requires recipient
+  approval.
+- Directory state labels are explicit:
+  - `pending` → "Awaiting approval"
+  - `pending_received` → "Needs your approval"
+- Recipient can Accept or Decline from Directory and Notifications.
+- If both members send requests crossing in-flight, reverse pending requests are
+  auto-accepted to prevent duplicate limbo states.
+
 ---
 
 ## 4. Explicit Non-Goals (Verified)

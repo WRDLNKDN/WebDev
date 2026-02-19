@@ -17,6 +17,7 @@
 
 import sjson from 'secure-json-parse';
 import { messageFromApiResponse } from '../utils/errors';
+import { authedFetch } from './authFetch';
 
 /**
  * Base URL for API requests (origin only; do not include /api).
@@ -63,26 +64,6 @@ async function parseJsonResponse<T>(
   }
 }
 
-async function getAuthHeaders(
-  accessToken?: string | null,
-): Promise<HeadersInit> {
-  let token = accessToken;
-  if (token == null) {
-    const { supabase } = await import('../auth/supabaseClient');
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    token = session?.access_token ?? null;
-  }
-  if (!token) {
-    throw new Error('Not signed in');
-  }
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 export type FeedItemActor = {
   handle: string | null;
   display_name: string | null;
@@ -118,13 +99,18 @@ async function postFeed(
   body: Record<string, unknown>,
   accessToken?: string | null,
 ): Promise<void> {
-  const headers = await getAuthHeaders(accessToken);
-  const res = await fetch(`${API_BASE}/api/feeds`, {
-    method: 'POST',
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-    body: JSON.stringify(body),
-  });
+  const res = await authedFetch(
+    `${API_BASE}/api/feeds`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+    {
+      accessToken: accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
 
   const postUrl = `${API_BASE}/api/feeds`;
   if (!res.ok) {
@@ -173,11 +159,15 @@ export async function fetchFeeds(options?: {
   if (options?.cursor?.trim()) params.set('cursor', options.cursor.trim());
 
   const url = `${API_BASE}/api/feeds?${params.toString()}`;
-  const headers = await getAuthHeaders(options?.accessToken);
-  const res = await fetch(url, {
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-  });
+  const res = await authedFetch(
+    url,
+    { method: 'GET' },
+    {
+      accessToken: options?.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
 
   if (!res.ok) {
     if (res.status === 404) {
@@ -261,13 +251,18 @@ export async function removeReaction(params: {
 }): Promise<void> {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
-  const headers = await getAuthHeaders(params.accessToken);
   const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/reaction`;
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-  });
+  const res = await authedFetch(
+    url,
+    {
+      method: 'DELETE',
+    },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   if (!res.ok && res.status !== 204) {
     let body: { error?: string };
     try {
@@ -303,12 +298,16 @@ export async function fetchComments(params: {
 }): Promise<{ data: FeedComment[] }> {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
-  const headers = await getAuthHeaders(params.accessToken);
   const commentsUrl = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/comments`;
-  const res = await fetch(commentsUrl, {
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-  });
+  const res = await authedFetch(
+    commentsUrl,
+    { method: 'GET' },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   if (!res.ok) {
     let body: { error?: string };
     try {

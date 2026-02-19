@@ -10,9 +10,7 @@ test('Global Accessibility Audit', async ({ page }) => {
     timeout: 15000,
   });
 
-  await expect(
-    page.getByRole('link', { name: /Join Us/i }).first(),
-  ).toBeVisible();
+  await expect(page.getByRole('link', { name: /Join/i }).first()).toBeVisible();
 
   const results = await new AxeBuilder({ page })
     .include('#root')

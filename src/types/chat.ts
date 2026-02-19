@@ -92,6 +92,23 @@ export const CHAT_ALLOWED_MIME = [
   'text/plain',
 ] as const;
 
+export const CHAT_ALLOWED_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.txt',
+] as const;
+
+export const CHAT_ALLOWED_ACCEPT = [
+  ...CHAT_ALLOWED_MIME,
+  ...CHAT_ALLOWED_EXTENSIONS,
+].join(',');
+
 export const CHAT_MAX_FILE_BYTES = 6 * 1024 * 1024; // 6MB
 export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 5;
 export const CHAT_MAX_GROUP_MEMBERS = 100;

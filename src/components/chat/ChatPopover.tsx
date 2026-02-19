@@ -13,8 +13,8 @@ import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
-const POPOVER_WIDTH = 420;
-const POPOVER_HEIGHT = 660;
+const POPOVER_WIDTH = 460;
+const POPOVER_HEIGHT = 740;
 
 type ChatPopoverProps = {
   roomId: string;
@@ -121,6 +121,9 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
           flexDirection: 'column',
           overflow: 'hidden',
           boxSizing: 'border-box',
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.14)',
+          boxShadow: '0 12px 38px rgba(0,0,0,0.45)',
           animation: 'popoverIn 0.25s cubic-bezier(0.32, 0, 0.37, 1)',
           '@keyframes popoverIn': {
             from: {
@@ -206,6 +209,7 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
             onReport={handleReport}
             onMessagesViewed={markAsRead}
             isAdmin={isAdmin}
+            compact
           />
         )}
 

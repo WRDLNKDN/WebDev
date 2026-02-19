@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
 import type {
   ChatMessage,
   ChatMessageAttachment,
@@ -8,6 +9,7 @@ import type {
   ChatRoom,
   ChatRoomMember,
 } from '../types/chat';
+import { CHAT_MAX_FILE_BYTES } from '../types/chat';
 
 export type ChatRoomWithMembers = ChatRoom & {
   members: Array<
@@ -335,12 +337,27 @@ export function useChat(roomId: string | null) {
               .list(pathParts[0], { search: fileName });
 
             if (obj?.[0]) {
+              const mimeType =
+                obj[0].metadata?.mimetype ?? 'application/octet-stream';
+              const fileSize =
+                typeof obj[0].metadata?.size === 'number'
+                  ? obj[0].metadata.size
+                  : 0;
+              const normalizedMime = normalizeChatAttachmentMime({
+                name: fileName,
+                type: mimeType,
+              });
+              if (!normalizedMime) {
+                throw new Error('Unsupported attachment type');
+              }
+              if (fileSize > CHAT_MAX_FILE_BYTES) {
+                throw new Error('Attachment exceeds 6MB limit');
+              }
               await supabase.from('chat_message_attachments').insert({
                 message_id: msg.id,
                 storage_path: p,
-                mime_type:
-                  obj[0].metadata?.mimetype ?? 'application/octet-stream',
-                file_size: obj[0].metadata?.size ?? 0,
+                mime_type: normalizedMime,
+                file_size: fileSize,
               });
             }
           }

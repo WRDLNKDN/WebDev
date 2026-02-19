@@ -21,6 +21,10 @@ import {
   logDirectoryRateLimit,
   logDirectoryError,
 } from './directory/logger.js';
+import {
+  getConnectIntent,
+  getConnectionOutcomeNotificationType,
+} from './directory/connectionFlow.js';
 import { sendApiError } from './lib/apiError.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -1166,6 +1170,23 @@ app.get('/api/directory', async (req: AuthRequest, res: Response) => {
   return res.json({ data, hasMore });
 });
 
+// GET /api/link-preview?url=... — authenticated preview fetch for chat composer
+app.get(
+  '/api/link-preview',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+    const rawUrl =
+      typeof req.query.url === 'string' ? req.query.url.trim() : '';
+    if (!rawUrl) return sendApiError(res, 400, 'Missing url');
+
+    const preview = await fetchLinkPreview(rawUrl);
+    return res.json({ ok: true, data: preview });
+  },
+);
+
 // POST /api/directory/connect — send connection request
 app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
@@ -1189,6 +1210,46 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
     .maybeSingle();
   if (profile && (profile as { status: string }).status === 'disabled')
     return sendApiError(res, 403, 'Account disabled');
+
+  const { data: reversePending } = await adminSupabase
+    .from('connection_requests')
+    .select('id')
+    .eq('requester_id', targetId)
+    .eq('recipient_id', userId)
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  const intent = getConnectIntent(Boolean(reversePending));
+  if (intent === 'auto_accept_reverse_pending') {
+    const nowIso = new Date().toISOString();
+    await adminSupabase
+      .from('connection_requests')
+      .update({ status: 'accepted', updated_at: nowIso })
+      .or(
+        `and(requester_id.eq.${targetId},recipient_id.eq.${userId},status.eq.pending),and(requester_id.eq.${userId},recipient_id.eq.${targetId},status.eq.pending)`,
+      );
+
+    await adminSupabase.from('feed_connections').upsert(
+      [
+        { user_id: userId, connected_user_id: targetId },
+        { user_id: targetId, connected_user_id: userId },
+      ],
+      { onConflict: 'user_id,connected_user_id' },
+    );
+
+    if (reversePending?.id) {
+      await adminSupabase.from('notifications').insert({
+        recipient_id: targetId,
+        actor_id: userId,
+        type: getConnectionOutcomeNotificationType('accepted'),
+        reference_id: reversePending.id,
+        reference_type: 'connection_request',
+        payload: { request_id: reversePending.id, status: 'accepted' },
+      });
+    }
+
+    return res.status(200).json({ ok: true, autoAccepted: true });
+  }
 
   const { error } = await adminSupabase.from('connection_requests').insert({
     requester_id: userId,
@@ -1232,10 +1293,25 @@ app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {
     .update({ status: 'accepted', updated_at: new Date().toISOString() })
     .eq('id', (reqRow as { id: string }).id);
 
-  await adminSupabase.from('feed_connections').insert([
-    { user_id: userId, connected_user_id: targetId },
-    { user_id: targetId, connected_user_id: userId },
-  ]);
+  await adminSupabase.from('feed_connections').upsert(
+    [
+      { user_id: userId, connected_user_id: targetId },
+      { user_id: targetId, connected_user_id: userId },
+    ],
+    { onConflict: 'user_id,connected_user_id' },
+  );
+
+  await adminSupabase.from('notifications').insert({
+    recipient_id: targetId,
+    actor_id: userId,
+    type: getConnectionOutcomeNotificationType('accepted'),
+    reference_id: (reqRow as { id: string }).id,
+    reference_type: 'connection_request',
+    payload: {
+      request_id: (reqRow as { id: string }).id,
+      status: 'accepted',
+    },
+  });
 
   return res.json({ ok: true });
 });
@@ -1257,6 +1333,17 @@ app.post('/api/directory/decline', async (req: AuthRequest, res: Response) => {
     .eq('status', 'pending')
     .select('id');
   if (!data?.length) return sendApiError(res, 404, 'No pending request found');
+
+  const requestId = (data[0] as { id: string }).id;
+  await adminSupabase.from('notifications').insert({
+    recipient_id: targetId,
+    actor_id: userId,
+    type: getConnectionOutcomeNotificationType('declined'),
+    reference_id: requestId,
+    reference_type: 'connection_request',
+    payload: { request_id: requestId, status: 'declined' },
+  });
+
   return res.json({ ok: true });
 });
 

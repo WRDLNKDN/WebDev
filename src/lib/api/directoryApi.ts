@@ -5,6 +5,7 @@
 
 import { messageFromApiResponse } from '../utils/errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { authedFetch } from './authFetch';
 
 export type DirectorySort = 'recently_active' | 'alphabetical' | 'newest';
 export type ConnectionState =
@@ -44,24 +45,10 @@ export interface DirectoryResponse {
   hasMore: boolean;
 }
 
-async function getAuthHeaders(supabase: SupabaseClient): Promise<HeadersInit> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Not signed in');
-  }
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session.access_token}`,
-  };
-}
-
 export async function fetchDirectory(
   supabase: SupabaseClient,
   params: DirectoryParams,
 ): Promise<DirectoryResponse> {
-  const headers = await getAuthHeaders(supabase);
   const sp = new URLSearchParams();
   if (params.q) sp.set('q', params.q);
   if (params.industry) sp.set('industry', params.industry);
@@ -74,7 +61,7 @@ export async function fetchDirectory(
   if (params.limit != null) sp.set('limit', String(params.limit));
   const qs = sp.toString();
   const url = `/api/directory${qs ? `?${qs}` : ''}`;
-  const res = await fetch(url, { headers, credentials: 'include' });
+  const res = await authedFetch(url, { method: 'GET' }, { client: supabase });
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -102,13 +89,14 @@ export async function connectRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const headers = await getAuthHeaders(supabase);
-  const res = await fetch('/api/directory/connect', {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: JSON.stringify({ targetId }),
-  });
+  const res = await authedFetch(
+    '/api/directory/connect',
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -132,13 +120,14 @@ export async function acceptRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const headers = await getAuthHeaders(supabase);
-  const res = await fetch('/api/directory/accept', {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: JSON.stringify({ targetId }),
-  });
+  const res = await authedFetch(
+    '/api/directory/accept',
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -162,13 +151,14 @@ export async function declineRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const headers = await getAuthHeaders(supabase);
-  const res = await fetch('/api/directory/decline', {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: JSON.stringify({ targetId }),
-  });
+  const res = await authedFetch(
+    '/api/directory/decline',
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -192,13 +182,14 @@ export async function disconnect(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const headers = await getAuthHeaders(supabase);
-  const res = await fetch('/api/directory/disconnect', {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: JSON.stringify({ targetId }),
-  });
+  const res = await authedFetch(
+    '/api/directory/disconnect',
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;

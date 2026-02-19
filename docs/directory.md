@@ -67,6 +67,7 @@ seconds before retrying.
 Send a connection request. Body: `{ "targetId": "uuid" }`.
 
 - **201** — request created.
+- **200** — reverse pending request auto-accepted; mutual connection created.
 - **409** — request already exists.
 
 ### POST /api/directory/accept
@@ -74,11 +75,15 @@ Send a connection request. Body: `{ "targetId": "uuid" }`.
 Accept a pending connection request (recipient only). Body:
 `{ "targetId": "uuid" }`.
 
-Creates mutual `feed_connections` and marks the request accepted.
+Creates mutual `feed_connections`, marks the request accepted, and sends an
+in-app notification to the original requester.
 
 ### POST /api/directory/decline
 
 Decline a pending connection request. Body: `{ "targetId": "uuid" }`.
+
+Marks the request declined and sends an in-app notification to the original
+requester.
 
 ### POST /api/directory/disconnect
 
@@ -90,9 +95,11 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 
 1. **Not connected** → User A clicks Connect → `connection_requests` row created
    (pending).
-2. **Pending** (A's view) / **Pending received** (B's view) → B can Accept or
-   Decline. Accept creates mutual `feed_connections`.
-3. **Connected** → Either can open Chat or Disconnect.
+2. **Pending** (A's view: "Awaiting approval") / **Pending received** (B's view:
+   "Needs your approval") → B can Accept or Decline.
+3. **Auto-accept path:** If B already sent A a pending request, A clicking
+   Connect auto-accepts the relationship immediately.
+4. **Connected** → Either can open Chat or Disconnect.
 
 ## Frontend
 

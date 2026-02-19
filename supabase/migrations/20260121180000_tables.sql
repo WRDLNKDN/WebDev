@@ -869,14 +869,19 @@ create table public.chat_message_attachments (
   id uuid primary key default gen_random_uuid(),
   message_id uuid not null references public.chat_messages(id) on delete cascade,
   storage_path text not null,
-  mime_type text not null,
-  file_size bigint not null,
+  mime_type text not null check (mime_type in (
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+  )),
+  file_size bigint not null check (file_size > 0 and file_size <= 6291456),
   created_at timestamptz not null default now()
 );
 
 create index idx_chat_message_attachments_message_id on public.chat_message_attachments(message_id);
 
-comment on table public.chat_message_attachments is 'Attachments: max 6MB per file, 5 per message, allowlist enforced in app.';
+comment on table public.chat_message_attachments is 'Attachments: max 6MB per file, 5 per message, allowlist enforced in app and DB.';
 
 create table public.chat_read_receipts (
   message_id uuid not null references public.chat_messages(id) on delete cascade,

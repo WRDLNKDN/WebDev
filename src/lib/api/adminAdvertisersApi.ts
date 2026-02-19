@@ -5,30 +5,26 @@
 
 import sjson from 'secure-json-parse';
 import { messageFromApiResponse } from '../utils/errors';
+import { authedFetch } from './authFetch';
 
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
 
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const { supabase } = await import('../auth/supabaseClient');
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token ?? null;
-  if (!token) throw new Error('Not signed in');
-  return { Authorization: `Bearer ${token}` };
-}
-
 export async function uploadAdImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${API_BASE}/api/admin/advertisers/upload`, {
-    method: 'POST',
-    headers: await getAuthHeaders(),
-    credentials: API_BASE ? 'omit' : 'include',
-    body: formData,
-  });
+  const res = await authedFetch(
+    `${API_BASE}/api/admin/advertisers/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    {
+      includeJsonContentType: false,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   const text = await res.text();
   let data: { ok?: boolean; data?: { publicUrl?: string }; error?: string };
   try {

@@ -501,6 +501,33 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_requests: {
+        Row: {
+          id: string
+          requester_id: string
+          recipient_id: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          requester_id: string
+          recipient_id: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          requester_id?: string
+          recipient_id?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

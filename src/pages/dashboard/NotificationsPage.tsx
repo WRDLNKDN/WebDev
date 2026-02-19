@@ -1,6 +1,7 @@
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -15,10 +16,12 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { acceptRequest, declineRequest } from '../../lib/api/directoryApi';
 import {
   getNotificationLink,
   type NotificationPayload,
 } from '../../lib/notifications/notificationLinks';
+import { toMessage } from '../../lib/utils/errors';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -37,6 +40,8 @@ type NotificationRow = {
   actor_avatar?: string | null;
   /** False when referenced content (post, event, room) no longer exists. */
   reference_exists?: boolean;
+  /** True when this notification points to a still-pending connection request. */
+  connection_request_pending?: boolean;
 };
 
 function formatTime(iso: string): string {
@@ -66,6 +71,10 @@ function getNotificationLabel(row: NotificationRow): string {
       return `${actor} sent you a message`;
     case 'connection_request':
       return `${actor} wants to connect`;
+    case 'connection_request_accepted':
+      return `${actor} accepted your connection request`;
+    case 'connection_request_declined':
+      return `${actor} declined your connection request`;
     case 'event_rsvp':
       return `${actor} RSVP'd to your event`;
     default:
@@ -78,6 +87,8 @@ export const NotificationsPage = () => {
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
+  const [actingRequestId, setActingRequestId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -168,10 +179,20 @@ export const NotificationsPage = () => {
           .map((x) => (x.payload as { room_id: string }).room_id),
       ),
     ];
+    const connectionRequestIds = [
+      ...new Set(
+        list
+          .filter(
+            (x) => x.type === 'connection_request' && x.reference_id != null,
+          )
+          .map((x) => x.reference_id as string),
+      ),
+    ];
 
     let feedExists: Set<string> = new Set();
     let eventExists: Set<string> = new Set();
     let roomExists: Set<string> = new Set();
+    let pendingConnectionRequestIds: Set<string> = new Set();
 
     if (feedRefs.length > 0) {
       const { data: feedRows } = await supabase
@@ -193,6 +214,18 @@ export const NotificationsPage = () => {
         .select('id')
         .in('id', roomIds);
       roomExists = new Set((roomRows ?? []).map((x) => x.id));
+    }
+    if (connectionRequestIds.length > 0) {
+      const { data: requestRows } = await supabase
+        .from('connection_requests')
+        .select('id, status')
+        .eq('recipient_id', sess.user.id)
+        .in('id', connectionRequestIds);
+      pendingConnectionRequestIds = new Set(
+        (requestRows ?? [])
+          .filter((x) => x.status === 'pending')
+          .map((x) => x.id),
+      );
     }
 
     const refExists = (r: NotificationRow): boolean => {
@@ -221,6 +254,10 @@ export const NotificationsPage = () => {
         actor_display_name: a?.display_name ?? null,
         actor_avatar: a?.avatar ?? null,
         reference_exists: refExists(r),
+        connection_request_pending:
+          r.type === 'connection_request' && r.reference_id != null
+            ? pendingConnectionRequestIds.has(r.reference_id)
+            : undefined,
       };
     });
 
@@ -271,6 +308,38 @@ export const NotificationsPage = () => {
 
   const unreadCount = rows.filter((r) => !r.read_at).length;
 
+  const handleConnectionDecision = useCallback(
+    async (row: NotificationRow, decision: 'accept' | 'decline') => {
+      if (!row.actor_id) return;
+      setError(null);
+      setActingRequestId(row.id);
+      try {
+        if (decision === 'accept') {
+          await acceptRequest(supabase, row.actor_id);
+        } else {
+          await declineRequest(supabase, row.actor_id);
+        }
+        const nowIso = new Date().toISOString();
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === row.id
+              ? {
+                  ...r,
+                  connection_request_pending: false,
+                  read_at: r.read_at ?? nowIso,
+                }
+              : r,
+          ),
+        );
+      } catch (e) {
+        setError(toMessage(e));
+      } finally {
+        setActingRequestId(null);
+      }
+    },
+    [],
+  );
+
   if (!session) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -306,6 +375,11 @@ export const NotificationsPage = () => {
             </Button>
           )}
         </Box>
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -334,47 +408,101 @@ export const NotificationsPage = () => {
             <List disablePadding>
               {rows.map((row) => (
                 <ListItem key={row.id} disablePadding divider>
-                  <ListItemButton
-                    component={RouterLink}
-                    to={getNotificationLink(row)}
-                    sx={{
-                      py: 1.5,
-                      bgcolor: row.read_at ? undefined : 'action.hover',
-                    }}
-                    onClick={() => {
-                      if (!row.read_at) void markAsRead(row.id);
-                    }}
-                  >
-                    <ProfileAvatar
-                      src={row.actor_avatar ?? undefined}
-                      alt={row.actor_display_name || row.actor_handle || '?'}
-                      size="small"
-                      sx={{ mr: 2 }}
-                    />
-                    <ListItemText
-                      primary={getNotificationLabel(row)}
-                      secondary={
-                        row.reference_exists === false
-                          ? 'Content may no longer be available'
-                          : formatTime(row.created_at)
-                      }
-                      primaryTypographyProps={{
-                        fontWeight: row.read_at ? 400 : 600,
+                  {row.type === 'connection_request' &&
+                  row.connection_request_pending ? (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        py: 1.5,
+                        px: 2,
+                        bgcolor: row.read_at ? undefined : 'action.hover',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
                       }}
-                      secondaryTypographyProps={{
-                        variant: 'caption',
-                        color:
-                          row.reference_exists === false
-                            ? 'text.secondary'
-                            : undefined,
-                      }}
-                    />
-                    {!row.read_at && (
-                      <NotificationsActiveIcon
-                        sx={{ fontSize: 16, color: 'primary.main', ml: 1 }}
+                    >
+                      <ProfileAvatar
+                        src={row.actor_avatar ?? undefined}
+                        alt={row.actor_display_name || row.actor_handle || '?'}
+                        size="small"
                       />
-                    )}
-                  </ListItemButton>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <ListItemText
+                          primary={getNotificationLabel(row)}
+                          secondary="Approve or decline this connection request"
+                          primaryTypographyProps={{
+                            fontWeight: row.read_at ? 400 : 600,
+                          }}
+                          secondaryTypographyProps={{
+                            variant: 'caption',
+                          }}
+                          sx={{ m: 0 }}
+                        />
+                      </Box>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() =>
+                          void handleConnectionDecision(row, 'accept')
+                        }
+                        disabled={actingRequestId === row.id}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() =>
+                          void handleConnectionDecision(row, 'decline')
+                        }
+                        disabled={actingRequestId === row.id}
+                      >
+                        Decline
+                      </Button>
+                    </Box>
+                  ) : (
+                    <ListItemButton
+                      component={RouterLink}
+                      to={getNotificationLink(row)}
+                      sx={{
+                        py: 1.5,
+                        bgcolor: row.read_at ? undefined : 'action.hover',
+                      }}
+                      onClick={() => {
+                        if (!row.read_at) void markAsRead(row.id);
+                      }}
+                    >
+                      <ProfileAvatar
+                        src={row.actor_avatar ?? undefined}
+                        alt={row.actor_display_name || row.actor_handle || '?'}
+                        size="small"
+                        sx={{ mr: 2 }}
+                      />
+                      <ListItemText
+                        primary={getNotificationLabel(row)}
+                        secondary={
+                          row.reference_exists === false
+                            ? 'Content may no longer be available'
+                            : formatTime(row.created_at)
+                        }
+                        primaryTypographyProps={{
+                          fontWeight: row.read_at ? 400 : 600,
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                          color:
+                            row.reference_exists === false
+                              ? 'text.secondary'
+                              : undefined,
+                        }}
+                      />
+                      {!row.read_at && (
+                        <NotificationsActiveIcon
+                          sx={{ fontSize: 16, color: 'primary.main', ml: 1 }}
+                        />
+                      )}
+                    </ListItemButton>
+                  )}
                 </ListItem>
               ))}
             </List>

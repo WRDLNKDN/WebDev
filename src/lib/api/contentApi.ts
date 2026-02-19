@@ -5,23 +5,11 @@
 
 import sjson from 'secure-json-parse';
 import { messageFromApiResponse } from '../utils/errors';
+import { authedFetch } from './authFetch';
 
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
-
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const { supabase } = await import('../auth/supabaseClient');
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token ?? null;
-  if (!token) throw new Error('Not signed in');
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-}
 
 async function parseJson<T>(res: Response, url: string): Promise<T> {
   const text = await res.text();
@@ -57,13 +45,17 @@ export type SubmitContentBody = {
 export async function submitContent(
   body: SubmitContentBody,
 ): Promise<{ id: string; status: string; createdAt: string }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/content/submissions`, {
-    method: 'POST',
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-    body: JSON.stringify(body),
-  });
+  const res = await authedFetch(
+    `${API_BASE}/api/content/submissions`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+    {
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   const data = await parseJson<{
     ok: boolean;
     data?: { id: string; status: string; createdAt: string };
@@ -86,13 +78,17 @@ export async function getUploadUrl(
   filename: string,
   contentType = 'video/mp4',
 ): Promise<{ uploadUrl: string; storagePath: string }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/content/uploads/url`, {
-    method: 'POST',
-    headers,
-    credentials: API_BASE ? 'omit' : 'include',
-    body: JSON.stringify({ filename, contentType }),
-  });
+  const res = await authedFetch(
+    `${API_BASE}/api/content/uploads/url`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ filename, contentType }),
+    },
+    {
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   const data = await parseJson<{
     ok: boolean;
     data?: { uploadUrl: string; storagePath: string };

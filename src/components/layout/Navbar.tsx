@@ -36,6 +36,8 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { ProfileAvatar } from '../avatar/ProfileAvatar';
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { toMessage } from '../../lib/utils/errors';
 import {
   signInWithOAuth,
@@ -93,6 +95,7 @@ export const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { avatarUrl } = useCurrentUserAvatar();
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -660,6 +663,22 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
+                  <Box
+                    component={RouterLink}
+                    to="/dashboard"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                    }}
+                  >
+                    <ProfileAvatar
+                      src={avatarUrl ?? undefined}
+                      alt={session.user?.user_metadata?.full_name || 'User'}
+                      size="small"
+                    />
+                  </Box>
                   {isAdmin && (
                     <Button
                       component={RouterLink}
@@ -727,14 +746,33 @@ export const Navbar = () => {
                   </Box>
                 </>
               ) : (
-                <Button
-                  size="small"
-                  sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
-                  onClick={() => void signOut()}
-                  disabled={busy}
-                >
-                  Sign Out
-                </Button>
+                <>
+                  <Box
+                    component={RouterLink}
+                    to="/dashboard"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                    }}
+                  >
+                    <ProfileAvatar
+                      src={avatarUrl ?? undefined}
+                      alt={session.user?.user_metadata?.full_name || 'User'}
+                      size="small"
+                    />
+                  </Box>
+                  <Button
+                    size="small"
+                    sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
+                    onClick={() => void signOut()}
+                    disabled={busy}
+                  >
+                    Sign Out
+                  </Button>
+                </>
               )}
             </Stack>
           )}

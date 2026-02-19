@@ -24,6 +24,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { AvatarReplacementBox } from '../avatar/AvatarReplacementBox';
+import { AVATAR_PRESETS } from '../../config/avatarPresets';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
@@ -111,10 +113,14 @@ type EditProfileDialogProps = {
   hasWeirdling?: boolean;
   /** Fallback avatar URL (e.g. from OAuth provider) when profile has none */
   avatarFallback?: string | null;
+  /** Resolved current avatar URL (for preset replacement box) */
+  currentResolvedAvatarUrl?: string | null;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
   onUpload: (file: File) => Promise<string | undefined>;
+  /** Called when avatar changes (e.g. preset selected) for reactive UI update */
+  onAvatarChanged?: () => void;
 };
 
 const safeStr = (val: unknown, fallback: string = ''): string => {
@@ -128,8 +134,10 @@ export const EditProfileDialog = ({
   profile,
   hasWeirdling: _hasWeirdling = false,
   avatarFallback,
+  currentResolvedAvatarUrl,
   onUpdate,
   onUpload,
+  onAvatarChanged,
 }: EditProfileDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -283,6 +291,38 @@ export const EditProfileDialog = ({
     uploadedAvatarUrl || profile?.avatar || avatarFallback || null;
   const previewURL = `http://localhost:5173/profile/${formData.handle}`;
 
+  const presetUrls = AVATAR_PRESETS.map((p) => p.image_url);
+  const resolvedForPreset =
+    currentResolvedAvatarUrl ?? uploadedAvatarUrl ?? profile?.avatar ?? '';
+  const selectedPresetUrl = presetUrls.includes(resolvedForPreset)
+    ? resolvedForPreset
+    : null;
+
+  const handlePresetSelect = async (preset: {
+    preset_id: string;
+    name: string;
+    image_url: string;
+    description?: string;
+  }) => {
+    try {
+      setBusy(true);
+      await onUpdate({
+        avatar: preset.image_url,
+        use_weirdling_avatar: false,
+      } as Partial<DashboardProfile>);
+      setUploadedAvatarUrl(preset.image_url);
+      setToastMessage('Avatar updated.');
+      setShowToast(true);
+      onAvatarChanged?.();
+    } catch (error) {
+      console.error(error);
+      setToastMessage(toMessage(error));
+      setShowToast(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -377,6 +417,19 @@ export const EditProfileDialog = ({
                 />
               </Box>
             </Box>
+
+            {/* Avatar Replacement Box: presets + AI Weirdling CTA */}
+            <AvatarReplacementBox
+              currentAvatarUrl={
+                currentResolvedAvatarUrl ??
+                uploadedAvatarUrl ??
+                profile?.avatar ??
+                null
+              }
+              selectedPresetUrl={selectedPresetUrl}
+              onSelectPreset={handlePresetSelect}
+              disabled={busy}
+            />
 
             {/* Handle */}
             <Box>

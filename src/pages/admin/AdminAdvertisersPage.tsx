@@ -399,10 +399,12 @@ export const AdminAdvertisersPage = () => {
                   textAlign: 'center',
                   cursor: uploadingImage ? 'wait' : 'pointer',
                   bgcolor: form.image_url ? 'action.hover' : 'transparent',
-                  '&:hover': !uploadingImage && {
-                    borderColor: 'primary.main',
-                    bgcolor: 'action.hover',
-                  },
+                  ...(!uploadingImage && {
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      bgcolor: 'action.hover',
+                    },
+                  }),
                 }}
               >
                 {form.image_url ? (

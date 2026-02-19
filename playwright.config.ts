@@ -6,21 +6,21 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 const isCI = process.env.CI === 'true';
 
 export default defineConfig({
-  testDir: './src/tests/e2e',
+  testDir: './src/tests', // <-- POINT TO THE PARENT: Lets you target e2e OR quarantine via CLI
   timeout: 30_000,
   expect: { timeout: 15_000 },
-
-  // Keep this deterministic. If you want retries/workers later,
-  // we can add them back after TS is happy.
+  outputDir: 'test-results',
   retries: 1,
 
-  reporter: isCI
-    ? [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']]
-    : 'list',
+  // 🚀 THE FIX: Always generate the HTML report so you can see the pictures and video!
+  reporter: [
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    ['list'],
+  ],
 
   use: {
     baseURL: BASE_URL,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure', // <-- THE FIX: Always keep the trace if it blows up
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

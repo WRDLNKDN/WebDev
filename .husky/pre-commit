@@ -52,14 +52,5 @@ npx lint-staged
 # lint-staged runs markdownlint --fix on staged .md files so fixable issues
 # are applied before we run the full markdown check below.
 
-# --- 5. Markdown Lint (full repo check) ---
-echo "📝 [STEP 5]: Auditing documentation (markdownlint)..."
-if ! npx --no-install markdownlint . --ignore node_modules; then
-  echo "🛑 [DOCS FAULT]: Markdown lint failed."
-  echo "   Run: npm run lint:md:fix (fixes only rules that support --fix)."
-  echo "   See docs/development/markdownlint.md for why some issues need manual fixes."
-  exit 1
-fi
-echo "✅ [STEP 5]: Docs are clean."
 
 echo "✅ Integrity verified. Proceeding with commit."

@@ -248,7 +248,7 @@ export const Directory = () => {
           }}
         >
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-            Find Members
+            Discover Members
           </Typography>
 
           <Stack spacing={2}>

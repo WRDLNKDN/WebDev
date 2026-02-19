@@ -109,9 +109,12 @@ export const Dashboard = () => {
   const rawName =
     profile?.display_name || session.user.user_metadata?.full_name;
   const displayName = safeStr(rawName, 'Verified Generalist');
-  const avatarUrl = safeStr(
-    profile?.avatar || session.user.user_metadata?.avatar_url,
-  );
+  // Resolved avatar: use_weirdling_avatar ? weirdling : profile.avatar
+  const resolvedAvatarUrl =
+    profile?.use_weirdling_avatar && weirdlings?.[0]?.avatarUrl
+      ? weirdlings[0].avatarUrl
+      : profile?.avatar || session.user.user_metadata?.avatar_url;
+  const avatarUrl = safeStr(resolvedAvatarUrl);
 
   const safeNerdCreds =
     profile?.nerd_creds && typeof profile.nerd_creds === 'object'
@@ -420,14 +423,19 @@ export const Dashboard = () => {
       />
       <EditProfileDialog
         open={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
+        onClose={() => {
+          setIsEditOpen(false);
+          void refresh();
+        }}
         profile={profile}
         hasWeirdling={Boolean(weirdlings?.length)}
         avatarFallback={
           session?.user?.user_metadata?.avatar_url as string | undefined
         }
+        currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
+        onAvatarChanged={() => void refresh()}
       />
       <EditLinksDialog
         open={isLinksOpen}

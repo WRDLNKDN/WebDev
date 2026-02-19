@@ -26,7 +26,7 @@ export default defineConfig({
   },
 
   webServer: {
-    command: isCI ? 'npm run e2e:serve:ci' : 'npm run e2e:serve',
+    command: 'npm run e2e:serve:ci',
     url: BASE_URL,
     reuseExistingServer: !isCI,
     timeout: 120_000,

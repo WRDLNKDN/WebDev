@@ -35,6 +35,16 @@ control.
 - See [Supabase README](../supabase/README.md) for provider setup (e.g. Azure
   redirect URI, env vars for local).
 
+### 1.4 Route Guard Hydration and Redirect Safety
+
+- Protected member surfaces (for example `/directory`, `/feed`, `/dashboard`)
+  use a guard that waits for session hydration before deciding access.
+- The onboarding guard must not downgrade an already-validated authenticated
+  route to `/join` on transient null session/profile reads during hydration.
+- Explicit sign-out (`SIGNED_OUT`) still immediately redirects to `/join`.
+- If profile reads are briefly unavailable but auth is valid, the current
+  protected route remains stable (no flicker-then-redirect behavior).
+
 ---
 
 ## 2. Admin Access Requirements

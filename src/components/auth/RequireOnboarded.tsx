@@ -1,5 +1,5 @@
 import { Box, CircularProgress } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import type { ProfileOnboardingCheck } from '../../lib/profile/profileOnboarding';
@@ -19,7 +19,6 @@ export const RequireOnboarded = ({
   children: React.ReactNode;
 }) => {
   const location = useLocation();
-  const [state, setState] = useState<State>('loading');
 
   // Sync: AuthCallback passed profile in location.state — allow through without fetch
   const validated = location.state as
@@ -28,11 +27,17 @@ export const RequireOnboarded = ({
   const hasValidatedFromState =
     validated?.profileValidated &&
     isProfileOnboarded(validated.profileValidated);
+  const [state, setState] = useState<State>(
+    hasValidatedFromState ? 'allowed' : 'loading',
+  );
+  const hasEverAllowedRef = useRef<boolean>(Boolean(hasValidatedFromState));
+  const checkRunRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const check = async () => {
+      const runId = ++checkRunRef.current;
       // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
       let { data } = await supabase.auth.getSession();
       if (!data.session) {
@@ -45,9 +50,15 @@ export const RequireOnboarded = ({
         if (cancelled) return;
         ({ data } = await supabase.auth.getSession());
       }
-      if (cancelled) return;
+      if (cancelled || runId !== checkRunRef.current) return;
 
       if (!data.session) {
+        // If we've already validated access for this mounted route, do not
+        // downgrade to redirect on a transient auth hydration miss.
+        if (hasEverAllowedRef.current) {
+          setState('allowed');
+          return;
+        }
         console.log('🔴 RequireOnboarded: No session found');
         setState('redirect');
         return;
@@ -60,6 +71,7 @@ export const RequireOnboarded = ({
       const cached = getProfileValidated(userId);
       if (cached && isProfileOnboarded(cached)) {
         console.log('✅ RequireOnboarded: Using cached profile');
+        hasEverAllowedRef.current = true;
         setState('allowed');
         return;
       }
@@ -103,18 +115,24 @@ export const RequireOnboarded = ({
         console.log('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
       }
 
-      if (cancelled) return;
+      if (cancelled || runId !== checkRunRef.current) return;
 
       // CRITICAL: If RLS is blocking, allow through anyway
       if (error && error.code === 'PGRST116') {
         console.warn(
           '⚠️ RequireOnboarded: RLS blocking read - allowing through',
         );
+        hasEverAllowedRef.current = true;
         setState('allowed');
         return;
       }
 
       if (!profile) {
+        if (hasEverAllowedRef.current) {
+          // Keep current authorized view if this is a transient profile read miss.
+          setState('allowed');
+          return;
+        }
         console.log(
           '🔴 RequireOnboarded: No profile after 3 attempts, redirecting to /join',
         );
@@ -136,13 +154,24 @@ export const RequireOnboarded = ({
       }
 
       console.log('✅ RequireOnboarded: Profile valid, allowing through');
+      hasEverAllowedRef.current = true;
       setState('allowed');
     };
 
     void check();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      if (!cancelled) void check();
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === 'SIGNED_OUT') {
+        hasEverAllowedRef.current = false;
+        setState('redirect');
+        return;
+      }
+      // Ignore transient null sessions after we've already allowed this route.
+      if (!session && hasEverAllowedRef.current) {
+        return;
+      }
+      void check();
     });
 
     return () => {
@@ -150,10 +179,6 @@ export const RequireOnboarded = ({
       sub.subscription.unsubscribe();
     };
   }, []);
-
-  if (hasValidatedFromState) {
-    return <>{children}</>;
-  }
 
   if (state === 'loading') {
     return (

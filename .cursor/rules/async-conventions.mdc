@@ -1,0 +1,44 @@
+---
+description: Async/await conventions for the WRDLNKDN codebase
+alwaysApply: true
+---
+
+# Async Usage Conventions
+
+Use async/await consistently across the repo.
+
+## Rules
+
+- **Prefer async/await** over `.then()` / `.catch()` chains.
+- **Mark async functions** with the `async` keyword when they use `await` or return a Promise.
+- **Use try/catch** for error handling in async functions instead of `.catch()`.
+- **Fire-and-forget**: Use `void fn()` when calling async functions without awaiting (e.g. in event handlers, `useEffect`).
+
+## Examples
+
+```ts
+// Good
+const handleSubmit = async () => {
+  try {
+    await submit();
+  } catch (e) {
+    handleError(e);
+  }
+};
+
+// Fire-and-forget
+onClick={() => void handleSubmit()}
+useEffect(() => { void init(); }, []);
+```
+
+```ts
+// Avoid: .catch() for control flow
+video.play().catch(() => {});
+
+// Prefer: async + try/catch
+const handlePlay = async () => {
+  try {
+    await video.play();
+  } catch { /* ignore */ }
+};
+```

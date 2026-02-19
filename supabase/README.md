@@ -6,12 +6,16 @@ This folder contains Supabase schema, security (RLS), and dev seed SQL.
 
 ## Structure
 
-- `migrations/` — two files: `20260121180000_tables.sql` (schema) and
-  `20260121180005_rls.sql` (RLS policies, grants, storage policies).
+- `migrations/` — **exactly two files** (never add new ones):
+  - `20260121180000_tables.sql` — all tables, functions, triggers
+  - `20260121180005_rls.sql` — RLS policies, grants, storage policies
 - `seeds/` contains optional development-only data scripts.
 
 ## Conventions
 
+- **Two-file only:** All schema changes go into `tables.sql`; all RLS, policies,
+  and idempotent alterations go into `rls.sql`. Do not create new migration
+  files.
 - Keep table/schema changes separate from RLS policy changes.
 - RLS policies should be minimal and explicit.
 - Public read access must never expose pending/rejected/disabled profiles.
@@ -84,11 +88,17 @@ Optional (dev only):
 [docs/DEPLOYMENT_UAT_PROD.md](../docs/DEPLOYMENT_UAT_PROD.md) for secrets and
 troubleshooting.
 
-**Note:** If you see
-`duplicate key violates unique constraint schema_migrations_pkey` for
-`20260214140000`, run
-`supabase migration repair 20260214140000 --status reverted` then push again.
-(That migration was consolidated into the two files above.)
+**Migration repair:** If you see
+`duplicate key violates unique constraint schema_migrations_pkey` or need to
+repair migrations that were consolidated into these two files, run:
+
+```bash
+supabase migration repair 20260214140000 --status reverted
+supabase migration repair 20260214160000 --status reverted
+supabase migration repair 20260214170000 --status reverted
+```
+
+Then `supabase db push` again.
 
 ## Microsoft (Azure) OAuth Setup
 

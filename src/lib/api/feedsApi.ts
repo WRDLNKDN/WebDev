@@ -128,15 +128,19 @@ async function postFeed(
 
   const postUrl = `${API_BASE}/api/feeds`;
   if (!res.ok) {
-    let payload: { error?: string };
+    let payload: { error?: string; message?: string };
     try {
-      payload = await parseJsonResponse<{ error?: string }>(res, postUrl);
+      payload = await parseJsonResponse<{ error?: string; message?: string }>(
+        res,
+        postUrl,
+      );
     } catch (e) {
       if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      payload = { error: undefined };
+      payload = {};
     }
-    const msg = typeof payload.error === 'string' ? payload.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(
+      messageFromApiResponse(res.status, payload.error, payload.message),
+    );
   }
 }
 

@@ -6,6 +6,7 @@
 -- -----------------------------
 drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int) cascade;
 drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int, text) cascade;
+drop function if exists public.feed_items_update_last_active() cascade;
 drop function if exists public.set_updated_at() cascade;
 drop function if exists public.profiles_block_status_change() cascade;
 drop function if exists public.is_admin() cascade;
@@ -458,6 +459,31 @@ comment on column public.feed_items.payload is
   'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
 comment on column public.feed_items.scheduled_at is
   'When set, post is hidden until this time. Null = publish immediately.';
+
+-- Update profiles.last_active_at on post, comment, or reaction (Directory sort)
+create or replace function public.feed_items_update_last_active()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  if new.kind = 'post' then
+    update public.profiles set last_active_at = now() where id = new.user_id;
+  elsif new.kind = 'reaction' and new.user_id is not null then
+    update public.profiles set last_active_at = now() where id = new.user_id;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_feed_items_update_last_active
+after insert on public.feed_items
+for each row
+execute function public.feed_items_update_last_active();
+
+comment on function public.feed_items_update_last_active() is
+  'Updates profiles.last_active_at when user posts or reacts (Directory sort).';
 
 -- -----------------------------
 -- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts; scheduled posts)

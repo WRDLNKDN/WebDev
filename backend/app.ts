@@ -21,6 +21,7 @@ import {
   logDirectoryRateLimit,
   logDirectoryError,
 } from './directory/logger.js';
+import { sendApiError } from './lib/apiError.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -117,7 +118,7 @@ const requireAdmin = async (
     if (bearer) {
       const { data, error } = await adminSupabase.auth.getUser(bearer);
       if (error || !data.user?.email) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return sendApiError(res, 401, 'Unauthorized');
       }
 
       const email = data.user.email;
@@ -129,11 +130,11 @@ const requireAdmin = async (
         .maybeSingle();
 
       if (allowErr) {
-        return res.status(500).json({ error: allowErr.message });
+        return sendApiError(res, 500, 'Server error');
       }
 
       if (!allowRow?.email) {
-        return res.status(403).json({ error: `Forbidden: ${email}` });
+        return sendApiError(res, 403, 'Forbidden');
       }
 
       req.adminEmail = email;
@@ -145,9 +146,9 @@ const requireAdmin = async (
     const token = String(req.header('x-admin-token') || '').trim();
     if (token && ADMIN_TOKEN && token === ADMIN_TOKEN) return next();
 
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendApiError(res, 401, 'Unauthorized');
   } catch (e: unknown) {
-    return res.status(500).json({ error: errorMessage(e, 'Server error') });
+    return sendApiError(res, 500, errorMessage(e, 'Server error'));
   }
 };
 
@@ -159,16 +160,16 @@ const requireAuth = async (
   try {
     const bearer = pickBearer(req);
     if (!bearer) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return sendApiError(res, 401, 'Unauthorized');
     }
     const { data, error } = await adminSupabase.auth.getUser(bearer);
     if (error || !data.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return sendApiError(res, 401, 'Unauthorized');
     }
     req.userId = data.user.id;
     next();
   } catch (e: unknown) {
-    return res.status(500).json({ error: errorMessage(e, 'Server error') });
+    return sendApiError(res, 500, errorMessage(e, 'Server error'));
   }
 };
 
@@ -178,14 +179,17 @@ const MODEL_VERSION = getModelVersion();
 
 const handleWeirdlingGenerate = async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
   const rl = checkRateLimit(userId);
   if (!rl.allowed) {
-    return res.status(429).json({
-      error: 'Too many generations. Please try again later.',
-      retryAfter: rl.retryAfter,
-    });
+    return sendApiError(
+      res,
+      429,
+      'Too many generations. Please try again later.',
+      undefined,
+      rl.retryAfter ? { retryAfter: rl.retryAfter } : undefined,
+    );
   }
 
   const body = req.body as Record<string, unknown>;
@@ -215,9 +219,11 @@ const handleWeirdlingGenerate = async (req: AuthRequest, res: Response) => {
     typeof body.includeImage === 'boolean' ? body.includeImage : false;
 
   if (!displayNameOrHandle || !roleVibe) {
-    return res.status(400).json({
-      error: 'Missing required fields: displayNameOrHandle, roleVibe',
-    });
+    return sendApiError(
+      res,
+      400,
+      'Missing required fields: displayNameOrHandle, roleVibe',
+    );
   }
 
   let jobId: string | null = null;
@@ -269,9 +275,7 @@ const handleWeirdlingGenerate = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (jobErr || !job?.id) {
-    return res
-      .status(500)
-      .json({ error: jobErr?.message ?? 'Failed to create job' });
+    return sendApiError(res, 500, 'Failed to create job');
   }
   jobId = job.id;
 
@@ -329,7 +333,7 @@ const handleWeirdlingGenerate = async (req: AuthRequest, res: Response) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', jobId);
-    return res.status(422).json({ error: msg });
+    return sendApiError(res, 422, msg);
   }
 };
 
@@ -341,7 +345,7 @@ app.post(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const body = req.body as Record<string, unknown>;
 
@@ -356,9 +360,7 @@ app.post(
         .maybeSingle();
 
       if (jobError || !job?.raw_response) {
-        return res.status(400).json({
-          error: 'Job not found or not complete',
-        });
+        return sendApiError(res, 400, 'Job not found or not complete');
       }
 
       let validated;
@@ -367,9 +369,7 @@ app.post(
           job.raw_response as Record<string, unknown>,
         );
       } catch (e) {
-        return res.status(400).json({
-          error: errorMessage(e, 'Invalid job response'),
-        });
+        return sendApiError(res, 400, errorMessage(e, 'Invalid job response'));
       }
 
       const { error: insertErr } = await adminSupabase
@@ -392,7 +392,7 @@ app.post(
         });
 
       if (insertErr) {
-        return res.status(500).json({ error: insertErr.message });
+        return sendApiError(res, 500, 'Failed to save weirdling');
       }
       return res.json({ ok: true });
     }
@@ -416,9 +416,7 @@ app.post(
     const bio = typeof body.bio === 'string' ? body.bio.trim() : undefined;
 
     if (!displayName || !handle || !roleVibe || !tagline) {
-      return res.status(400).json({
-        error: 'Missing required preview fields',
-      });
+      return sendApiError(res, 400, 'Missing required preview fields');
     }
 
     const { error: insertErr } = await adminSupabase.from('weirdlings').insert({
@@ -438,7 +436,7 @@ app.post(
     });
 
     if (insertErr) {
-      return res.status(500).json({ error: insertErr.message });
+      return sendApiError(res, 500, 'Failed to save weirdling');
     }
     return res.json({ ok: true });
   },
@@ -449,7 +447,7 @@ app.get(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const { data: rows, error } = await adminSupabase
       .from('weirdlings')
@@ -458,7 +456,7 @@ app.get(
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     const weirdlings = (rows ?? []).map((row: Record<string, unknown>) => ({
       id: row.id,
@@ -488,8 +486,8 @@ app.delete(
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     const id = (req.params as { id?: string }).id;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    if (!id) return res.status(400).json({ error: 'Missing weirdling id' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    if (!id) return sendApiError(res, 400, 'Missing weirdling id');
 
     const { error } = await adminSupabase
       .from('weirdlings')
@@ -497,7 +495,7 @@ app.delete(
       .eq('id', id)
       .eq('user_id', userId);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.json({ ok: true });
   },
 );
@@ -544,7 +542,7 @@ app.get(
 
     const { data, error, count } = await query;
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     // IMPORTANT: UI expects { data, count } (not rows)
     return res.json({
@@ -571,8 +569,7 @@ app.post(
   requireAdmin,
   async (req: Request, res: Response) => {
     const ids = requireIds(req.body as BulkIds);
-    if (ids.length === 0)
-      return res.status(400).json({ error: 'Missing ids[]' });
+    if (ids.length === 0) return sendApiError(res, 400, 'Missing ids[]');
 
     const { error } = await adminSupabase
       .from('profiles')
@@ -582,7 +579,7 @@ app.post(
       })
       .in('id', ids);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.json({ ok: true });
   },
 );
@@ -593,8 +590,7 @@ app.post(
   requireAdmin,
   async (req: Request, res: Response) => {
     const ids = requireIds(req.body as BulkIds);
-    if (ids.length === 0)
-      return res.status(400).json({ error: 'Missing ids[]' });
+    if (ids.length === 0) return sendApiError(res, 400, 'Missing ids[]');
 
     const { error } = await adminSupabase
       .from('profiles')
@@ -604,7 +600,7 @@ app.post(
       })
       .in('id', ids);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.json({ ok: true });
   },
 );
@@ -615,8 +611,7 @@ app.post(
   requireAdmin,
   async (req: Request, res: Response) => {
     const ids = requireIds(req.body as BulkIds);
-    if (ids.length === 0)
-      return res.status(400).json({ error: 'Missing ids[]' });
+    if (ids.length === 0) return sendApiError(res, 400, 'Missing ids[]');
 
     const { error } = await adminSupabase
       .from('profiles')
@@ -626,7 +621,7 @@ app.post(
       })
       .in('id', ids);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.json({ ok: true });
   },
 );
@@ -638,15 +633,14 @@ app.post(
   async (req: Request, res: Response) => {
     const body = req.body as BulkDelete;
     const ids = requireIds(body);
-    if (ids.length === 0)
-      return res.status(400).json({ error: 'Missing ids[]' });
+    if (ids.length === 0) return sendApiError(res, 400, 'Missing ids[]');
 
     // Delete profiles first
     const { error: profErr } = await adminSupabase
       .from('profiles')
       .delete()
       .in('id', ids);
-    if (profErr) return res.status(500).json({ error: profErr.message });
+    if (profErr) return sendApiError(res, 500, 'Server error');
 
     // Optionally delete auth users (dangerous)
     if (body.hardDeleteAuthUsers) {
@@ -667,7 +661,7 @@ app.post(
 app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const cursorRaw =
@@ -713,12 +707,11 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         error.message,
         error,
       );
-      return res.status(500).json({
-        error:
-          error.message ||
-          'Feed could not be loaded. Ensure Supabase migrations are applied ' +
-            '(feed_items, feed_connections, get_feed_page).',
-      });
+      return sendApiError(
+        res,
+        500,
+        'Feed could not be loaded. Ensure Supabase migrations are applied.',
+      );
     }
 
     const list = Array.isArray(rows) ? rows : [];
@@ -777,16 +770,14 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     return res.json({ data, nextCursor });
   } catch (e: unknown) {
     console.error('[GET /api/feeds] Unhandled error:', e);
-    return res
-      .status(500)
-      .json({ error: errorMessage(e, 'Feed could not be loaded.') });
+    return sendApiError(res, 500, 'Feed could not be loaded.');
   }
 });
 
 // POST /api/feeds — create a new feed item (post or external_link)
 app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
   const body = req.body as Record<string, unknown>;
   const rawKind =
@@ -798,7 +789,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     rawKind !== 'reaction' &&
     rawKind !== 'repost'
   ) {
-    return res.status(400).json({ error: 'Unsupported kind' });
+    return sendApiError(res, 400, 'Unsupported kind');
   }
 
   if (rawKind === 'post') {
@@ -810,9 +801,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
           : '';
     const text = textRaw.trim();
     if (!text) {
-      return res
-        .status(400)
-        .json({ error: 'Post body is required', field: 'body' });
+      return sendApiError(res, 400, 'Post body is required');
     }
 
     const payload: {
@@ -852,7 +841,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     });
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return sendApiError(res, 500, 'Server error');
     }
 
     return res.status(201).json({ ok: true });
@@ -866,18 +855,17 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     const emojiTypes = ['like', 'love', 'inspiration', 'care'];
     const isEmoji = emojiTypes.includes(type);
     if (!parentId || (type !== 'comment' && !isEmoji)) {
-      return res.status(400).json({
-        error:
-          'parent_id and type (like|love|inspiration|care|comment) required',
-      });
+      return sendApiError(
+        res,
+        400,
+        'parent_id and type (like|love|inspiration|care|comment) required',
+      );
     }
     const payload: Record<string, string> = { type };
     if (type === 'comment') {
       const commentBody = typeof body.body === 'string' ? body.body.trim() : '';
       if (!commentBody) {
-        return res
-          .status(400)
-          .json({ error: 'Comment body required', field: 'body' });
+        return sendApiError(res, 400, 'Comment body required');
       }
       payload.body = commentBody;
     }
@@ -897,7 +885,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       parent_id: parentId,
       payload,
     });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.status(201).json({ ok: true });
   }
 
@@ -905,7 +893,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
     const originalId =
       typeof body.original_id === 'string' ? body.original_id.trim() : null;
     if (!originalId) {
-      return res.status(400).json({ error: 'original_id required for repost' });
+      return sendApiError(res, 400, 'original_id required for repost');
     }
     const { data: original, error: fetchErr } = await adminSupabase
       .from('feed_items')
@@ -913,7 +901,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       .eq('id', originalId)
       .single();
     if (fetchErr || !original) {
-      return res.status(404).json({ error: 'Original post not found' });
+      return sendApiError(res, 404, 'Original post not found');
     }
     const op = original.payload as Record<string, unknown> | null;
     const { data: author } = await adminSupabase
@@ -944,7 +932,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       kind: 'repost',
       payload: { original_id: originalId, snapshot },
     });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.status(201).json({ ok: true });
   }
 
@@ -953,7 +941,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   const label = typeof body.label === 'string' ? body.label.trim() : undefined;
 
   if (!url) {
-    return res.status(400).json({ error: 'URL is required', field: 'url' });
+    return sendApiError(res, 400, 'URL is required');
   }
 
   // Guardrail: treat URL as opaque metadata; do not fetch or scrape it.
@@ -967,7 +955,7 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   });
 
   if (error) {
-    return res.status(500).json({ error: error.message });
+    return sendApiError(res, 500, 'Server error');
   }
 
   return res.status(201).json({ ok: true });
@@ -979,10 +967,10 @@ app.delete(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
     const postIdRaw = req.params.postId;
     const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
-    if (!postId) return res.status(400).json({ error: 'Invalid post id' });
+    if (!postId) return sendApiError(res, 400, 'Invalid post id');
     const { error } = await adminSupabase
       .from('feed_items')
       .delete()
@@ -992,7 +980,7 @@ app.delete(
       .or(
         'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
       );
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     return res.status(204).send();
   },
 );
@@ -1004,7 +992,7 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     const postIdRaw = req.params.postId;
     const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
-    if (!postId) return res.status(400).json({ error: 'Invalid post id' });
+    if (!postId) return sendApiError(res, 400, 'Invalid post id');
     const { data: rows, error } = await adminSupabase
       .from('feed_items')
       .select('id, user_id, payload, created_at')
@@ -1012,7 +1000,7 @@ app.get(
       .eq('parent_id', postId)
       .eq('payload->>type', 'comment')
       .order('created_at', { ascending: true });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
     const comments = rows ?? [];
     const userIds = [
       ...new Set((comments as { user_id: string }[]).map((c) => c.user_id)),
@@ -1088,10 +1076,13 @@ const directoryRateLimitAndLog = (
       retryAfter: rl.retryAfter,
     });
     if (rl.retryAfter) res.setHeader('Retry-After', String(rl.retryAfter));
-    res.status(429).json({
-      error: 'Too many requests. Please try again later.',
-      retryAfter: rl.retryAfter,
-    });
+    sendApiError(
+      res,
+      429,
+      'Too many requests. Please try again later.',
+      undefined,
+      rl.retryAfter ? { retryAfter: rl.retryAfter } : undefined,
+    );
     return;
   }
   const start = Date.now();
@@ -1111,7 +1102,7 @@ app.use('/api/directory', requireAuth, directoryRateLimitAndLog);
 
 app.get('/api/directory', async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
   const search =
     typeof req.query.q === 'string' ? req.query.q.trim() || null : null;
@@ -1165,7 +1156,7 @@ app.get('/api/directory', async (req: AuthRequest, res: Response) => {
       userId: userId ?? undefined,
       error: error.message,
     });
-    return res.status(500).json({ error: error.message });
+    return sendApiError(res, 500, 'Server error');
   }
 
   const list = Array.isArray(rows) ? rows : [];
@@ -1182,8 +1173,7 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
     typeof (req.body as { targetId?: string }).targetId === 'string'
       ? (req.body as { targetId: string }).targetId.trim()
       : null;
-  if (!userId || !targetId)
-    return res.status(400).json({ error: 'Missing targetId' });
+  if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
 
   const { error } = await adminSupabase.from('connection_requests').insert({
     requester_id: userId,
@@ -1192,14 +1182,14 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
   });
   if (error) {
     if (error.code === '23505')
-      return res.status(409).json({ error: 'Request already exists' });
+      return sendApiError(res, 409, 'Request already exists');
     logDirectoryError({
       method: 'POST',
       path: '/api/directory/connect',
       userId: userId ?? undefined,
       error: error.message,
     });
-    return res.status(500).json({ error: error.message });
+    return sendApiError(res, 500, 'Server error');
   }
   return res.status(201).json({ ok: true });
 });
@@ -1211,8 +1201,7 @@ app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {
     typeof (req.body as { targetId?: string }).targetId === 'string'
       ? (req.body as { targetId: string }).targetId.trim()
       : null;
-  if (!userId || !targetId)
-    return res.status(400).json({ error: 'Missing targetId' });
+  if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
 
   const { data: reqRow } = await adminSupabase
     .from('connection_requests')
@@ -1221,8 +1210,7 @@ app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {
     .eq('recipient_id', userId)
     .eq('status', 'pending')
     .maybeSingle();
-  if (!reqRow)
-    return res.status(404).json({ error: 'No pending request found' });
+  if (!reqRow) return sendApiError(res, 404, 'No pending request found');
 
   await adminSupabase
     .from('connection_requests')
@@ -1244,8 +1232,7 @@ app.post('/api/directory/decline', async (req: AuthRequest, res: Response) => {
     typeof (req.body as { targetId?: string }).targetId === 'string'
       ? (req.body as { targetId: string }).targetId.trim()
       : null;
-  if (!userId || !targetId)
-    return res.status(400).json({ error: 'Missing targetId' });
+  if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
 
   const { data } = await adminSupabase
     .from('connection_requests')
@@ -1254,8 +1241,7 @@ app.post('/api/directory/decline', async (req: AuthRequest, res: Response) => {
     .eq('recipient_id', userId)
     .eq('status', 'pending')
     .select('id');
-  if (!data?.length)
-    return res.status(404).json({ error: 'No pending request found' });
+  if (!data?.length) return sendApiError(res, 404, 'No pending request found');
   return res.json({ ok: true });
 });
 
@@ -1268,8 +1254,7 @@ app.post(
       typeof (req.body as { targetId?: string }).targetId === 'string'
         ? (req.body as { targetId: string }).targetId.trim()
         : null;
-    if (!userId || !targetId)
-      return res.status(400).json({ error: 'Missing targetId' });
+    if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
 
     await adminSupabase
       .from('feed_connections')
@@ -1291,8 +1276,7 @@ app.get(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId)
-      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const { data: profile } = await adminSupabase
       .from('profiles')
@@ -1329,12 +1313,11 @@ app.get(
 // --- Auth & profile: GET /api/me ---
 app.get('/api/me', requireAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
-  if (!userId)
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
-  const { data: user } = await adminSupabase.auth.getUser(pickBearer(req));
-  if (!user?.user)
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  const bearer = pickBearer(req);
+  const { data: user } = await adminSupabase.auth.getUser(bearer ?? undefined);
+  if (!user?.user) return sendApiError(res, 401, 'Unauthorized');
 
   const { data: profile } = await adminSupabase
     .from('profiles')
@@ -1374,8 +1357,7 @@ app.post(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId)
-      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const body = req.body as Record<string, unknown>;
     const title = typeof body.title === 'string' ? body.title.trim() : '';
@@ -1398,16 +1380,11 @@ app.post(
         ? body.notesForModerators.trim() || null
         : null;
 
-    if (!title)
-      return res.status(400).json({ ok: false, error: 'Missing title' });
+    if (!title) return sendApiError(res, 400, 'Missing title');
     if (type === 'youtube' && !youtubeUrl)
-      return res
-        .status(400)
-        .json({ ok: false, error: 'YouTube URL required for type youtube' });
+      return sendApiError(res, 400, 'YouTube URL required for type youtube');
     if (type === 'upload' && !storagePath)
-      return res
-        .status(400)
-        .json({ ok: false, error: 'Storage path required for type upload' });
+      return sendApiError(res, 400, 'Storage path required for type upload');
 
     const { data, error } = await adminSupabase
       .from('content_submissions')
@@ -1425,7 +1402,7 @@ app.post(
       .select('id, status, created_at')
       .single();
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     return res.status(201).json({
       ok: true,
@@ -1446,15 +1423,13 @@ app.post(
   requireAuth,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
-    if (!userId)
-      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const body = req.body as Record<string, unknown>;
     const filename =
       typeof body.filename === 'string' ? body.filename.trim() : '';
 
-    if (!filename)
-      return res.status(400).json({ ok: false, error: 'Missing filename' });
+    if (!filename) return sendApiError(res, 400, 'Missing filename');
 
     const ext = filename.includes('.')
       ? filename.slice(filename.lastIndexOf('.'))
@@ -1465,7 +1440,7 @@ app.post(
       .from('content-submissions')
       .createSignedUploadUrl(storagePath);
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     return res.json({
       ok: true,
@@ -1492,9 +1467,7 @@ app.post(
         'code' in err &&
         err.code === 'LIMIT_FILE_SIZE'
       ) {
-        return res
-          .status(413)
-          .json({ ok: false, error: 'File too large. Max 15MB.' });
+        return sendApiError(res, 413, 'File too large. Max 15MB.');
       }
       if (err) return next(err);
       next();
@@ -1504,16 +1477,15 @@ app.post(
     try {
       const file = (req as Request & { file?: Express.Multer.File }).file;
       if (!file || !file.buffer) {
-        return res.status(400).json({
-          ok: false,
-          error: 'No file uploaded. Use multipart field "file".',
-        });
+        return sendApiError(
+          res,
+          400,
+          'No file uploaded. Use multipart field "file".',
+        );
       }
       const valid = ['image/jpeg', 'image/png'].includes(file.mimetype);
       if (!valid) {
-        return res
-          .status(400)
-          .json({ ok: false, error: 'Only JPG and PNG images are allowed.' });
+        return sendApiError(res, 400, 'Only JPG and PNG images are allowed.');
       }
       const ext = file.mimetype === 'image/png' ? '.png' : '.jpg';
       const storagePath = `ads/${crypto.randomUUID()}${ext}`;
@@ -1525,7 +1497,7 @@ app.post(
         });
       if (error) {
         console.error('[advertisers/upload] Supabase storage error:', error);
-        return res.status(500).json({ ok: false, error: error.message });
+        return sendApiError(res, 500, 'Upload failed');
       }
       const { data: publicUrl } = adminSupabase.storage
         .from('feed-ad-images')
@@ -1536,9 +1508,8 @@ app.post(
         error: null,
       });
     } catch (e) {
-      const msg = errorMessage(e, 'Upload failed');
       console.error('[advertisers/upload] Unhandled error:', e);
-      return res.status(500).json({ ok: false, error: msg });
+      return sendApiError(res, 500, 'Upload failed');
     }
   },
 );
@@ -1557,7 +1528,7 @@ app.get('/api/public/playlists', async (_req: Request, res: Response) => {
     .order('updated_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return res.status(500).json({ ok: false, error: error.message });
+  if (error) return sendApiError(res, 500, 'Server error');
 
   const { count } = await adminSupabase
     .from('playlists')
@@ -1610,8 +1581,7 @@ app.get(
   '/api/public/playlists/:slug/items',
   async (req: Request, res: Response) => {
     const slug = req.params.slug;
-    if (!slug)
-      return res.status(400).json({ ok: false, error: 'Missing slug' });
+    if (!slug) return sendApiError(res, 400, 'Missing slug');
 
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const offset = Math.max(0, Number(req.query.offset) || 0);
@@ -1623,8 +1593,7 @@ app.get(
       .eq('is_public', true)
       .maybeSingle();
 
-    if (plErr || !playlist)
-      return res.status(404).json({ ok: false, error: 'Playlist not found' });
+    if (plErr || !playlist) return sendApiError(res, 404, 'Playlist not found');
 
     const { data: items, error } = await adminSupabase
       .from('playlist_items')
@@ -1647,7 +1616,7 @@ app.get(
       .order('published_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     const { count } = await adminSupabase
       .from('playlist_items')
@@ -1675,10 +1644,10 @@ app.get(
     const subIds = [
       ...new Set(
         (subs ?? [])
-          .filter(Boolean)
-          .map((s: { submitted_by: string }) => s.submitted_by),
+          .filter((s): s is SubRow => s != null)
+          .map((s) => s.submitted_by),
       ),
-    ] as string[];
+    ];
 
     const { data: profiles } =
       subIds.length > 0
@@ -1788,7 +1757,7 @@ app.get(
 
     const { data: rows, error, count } = await query;
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     const subIds = [
       ...new Set(
@@ -1872,8 +1841,8 @@ app.post(
       .select('id, status')
       .single();
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
-    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+    if (error) return sendApiError(res, 500, 'Server error');
+    if (!row) return sendApiError(res, 404, 'Not found');
 
     await insertAuditLog(
       email,
@@ -1917,8 +1886,8 @@ app.post(
       .select('id, status')
       .single();
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
-    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+    if (error) return sendApiError(res, 500, 'Server error');
+    if (!row) return sendApiError(res, 404, 'Not found');
 
     await insertAuditLog(
       email,
@@ -1961,8 +1930,8 @@ app.post(
       .select('id, status')
       .single();
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
-    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+    if (error) return sendApiError(res, 500, 'Server error');
+    if (!row) return sendApiError(res, 404, 'Not found');
 
     await insertAuditLog(
       email,
@@ -1998,8 +1967,7 @@ app.post(
         ? (req.body as { publishAt: string }).publishAt.trim() || null
         : null;
 
-    if (!playlistId)
-      return res.status(400).json({ ok: false, error: 'Missing playlistId' });
+    if (!playlistId) return sendApiError(res, 400, 'Missing playlistId');
 
     const { data: subRow } = await adminSupabase
       .from('content_submissions')
@@ -2008,10 +1976,11 @@ app.post(
       .single();
 
     if (!subRow || (subRow as { status: string }).status !== 'approved')
-      return res.status(400).json({
-        ok: false,
-        error: 'Submission must be approved before publishing',
-      });
+      return sendApiError(
+        res,
+        400,
+        'Submission must be approved before publishing',
+      );
 
     const { data: plRow } = await adminSupabase
       .from('playlists')
@@ -2019,8 +1988,7 @@ app.post(
       .eq('id', playlistId)
       .maybeSingle();
 
-    if (!plRow)
-      return res.status(404).json({ ok: false, error: 'Playlist not found' });
+    if (!plRow) return sendApiError(res, 404, 'Playlist not found');
 
     const { data: maxOrder } = await adminSupabase
       .from('playlist_items')
@@ -2044,10 +2012,8 @@ app.post(
 
     if (insertErr) {
       if (insertErr.code === '23505')
-        return res
-          .status(409)
-          .json({ ok: false, error: 'Already in playlist' });
-      return res.status(500).json({ ok: false, error: insertErr.message });
+        return sendApiError(res, 409, 'Already in playlist');
+      return sendApiError(res, 500, 'Server error');
     }
 
     await adminSupabase
@@ -2075,13 +2041,13 @@ app.post(
 app.get(
   '/api/admin/playlists',
   requireAdmin,
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     const { data, error } = await adminSupabase
       .from('playlists')
       .select('id, slug, title, is_public')
       .order('title');
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     return res.json({ ok: true, data: data ?? [], error: null, meta: {} });
   },
@@ -2104,8 +2070,7 @@ app.post(
         : null;
     const isPublic = body.isPublic === true;
 
-    if (!title)
-      return res.status(400).json({ ok: false, error: 'Missing title' });
+    if (!title) return sendApiError(res, 400, 'Missing title');
 
     const finalSlug =
       slug ||
@@ -2127,10 +2092,8 @@ app.post(
 
     if (error) {
       if (error.code === '23505')
-        return res
-          .status(409)
-          .json({ ok: false, error: 'Slug already exists' });
-      return res.status(500).json({ ok: false, error: error.message });
+        return sendApiError(res, 409, 'Slug already exists');
+      return sendApiError(res, 500, 'Server error');
     }
 
     return res.status(201).json({ ok: true, data, error: null, meta: {} });
@@ -2155,7 +2118,7 @@ app.get(
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (error) return sendApiError(res, 500, 'Server error');
 
     const data = (rows ?? []).map(
       (r: {

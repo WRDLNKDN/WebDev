@@ -83,12 +83,14 @@ export async function fetchDirectory(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
     const retryAfter =
       typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
     if (res.status === 429 && retryAfter != null) {
       throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
     }
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
   return {
     data: (data.data as DirectoryMember[]) ?? [],
@@ -115,12 +117,14 @@ export async function connectRequest(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
     const retryAfter =
       typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
     if (res.status === 429 && retryAfter != null) {
       throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
     }
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }
 
@@ -143,12 +147,14 @@ export async function acceptRequest(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
     const retryAfter =
       typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
     if (res.status === 429 && retryAfter != null) {
       throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
     }
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }
 
@@ -171,12 +177,14 @@ export async function declineRequest(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
     const retryAfter =
       typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
     if (res.status === 429 && retryAfter != null) {
       throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
     }
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }
 
@@ -199,11 +207,13 @@ export async function disconnect(
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
     const retryAfter =
       typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
     if (res.status === 429 && retryAfter != null) {
       throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
     }
-    throw new Error(messageFromApiResponse(res.status, msg));
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
   }
 }

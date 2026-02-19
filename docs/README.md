@@ -70,6 +70,16 @@ Central index for WRDLNKDN WebDev documentation.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
   testing.
 
+## Governance (API & Data Layer)
+
+- [RLS Audit](./governance/RLS_AUDIT.md) — Supabase schema and RLS coverage.
+- [Auth config parity](./governance/AUTH_CONFIG_PARITY.md) — UAT vs PROD OAuth
+  and redirect URLs.
+- [Profile provisioning](./governance/PROFILE_PROVISIONING.md) — Deterministic
+  profile creation after auth.
+- [Sorting rules](./governance/SORTING_RULES.md) — Deterministic Feed and
+  Directory ordering.
+
 ## See also
 
 - [Project README](../README.md) — Overview, stack, getting started.

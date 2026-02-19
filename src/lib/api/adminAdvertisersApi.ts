@@ -43,7 +43,14 @@ export async function uploadAdImage(file: File): Promise<string> {
         : 'Invalid response',
     );
   }
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
   if (!data?.ok || !data.data?.publicUrl)
     throw new Error(data?.error ?? 'Upload failed');
   return data.data.publicUrl;

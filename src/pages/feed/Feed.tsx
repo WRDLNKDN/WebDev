@@ -898,6 +898,14 @@ export const Feed = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [advertisers, setAdvertisers] = useState<FeedAdvertiser[]>([]);
+  const [dismissedAdIds, setDismissedAdIds] = useState<Set<string>>(() => {
+    try {
+      const s = localStorage.getItem('feed_dismissed_ad_ids');
+      return s ? new Set(JSON.parse(s) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -948,10 +956,29 @@ export const Feed = () => {
     }
     return list.filter(hasRenderableContent);
   }, [items, sortBy]);
-  const displayItems = useMemo(
-    () => interleaveWithAds(sortedItems, advertisers, AD_EVERY_N_POSTS),
-    [sortedItems, advertisers],
+  const visibleAdvertisers = useMemo(
+    () => advertisers.filter((a) => !dismissedAdIds.has(a.id)),
+    [advertisers, dismissedAdIds],
   );
+  const displayItems = useMemo(
+    () => interleaveWithAds(sortedItems, visibleAdvertisers, AD_EVERY_N_POSTS),
+    [sortedItems, visibleAdvertisers],
+  );
+
+  const handleDismissAd = useCallback((adId: string) => {
+    setDismissedAdIds((prev) => {
+      const next = new Set(prev).add(adId);
+      try {
+        localStorage.setItem(
+          'feed_dismissed_ad_ids',
+          JSON.stringify([...next]),
+        );
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
@@ -1761,6 +1788,7 @@ export const Feed = () => {
                     <FeedAdCard
                       key={`ad-${entry.advertiser.id}`}
                       advertiser={entry.advertiser}
+                      onDismiss={() => handleDismissAd(entry.advertiser.id)}
                     />
                   ),
                 )}

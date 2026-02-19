@@ -28,11 +28,15 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasStartedRef = useRef(false);
 
-  const handleCanPlayThrough = useCallback(() => {
+  const handleCanPlayThrough = useCallback(async () => {
     const video = videoRef.current;
     if (!video || !autoPlay || hasStartedRef.current) return;
     hasStartedRef.current = true;
-    video.play().catch(() => {});
+    try {
+      await video.play();
+    } catch {
+      // Ignore autoplay failures (e.g. user gesture required)
+    }
   }, [autoPlay]);
 
   useEffect(() => {

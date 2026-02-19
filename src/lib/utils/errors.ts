@@ -116,14 +116,21 @@ export function messageForStatus(status: number): string {
 }
 
 /**
- * Picks the best user-facing message from server response: use body.error if it's short and
- * non-technical; otherwise use messageForStatus(status).
+ * Picks the best user-facing message from server response.
+ * Prefers body.message (standardized) or body.error; otherwise messageForStatus(status).
  */
 export function messageFromApiResponse(
   status: number,
   bodyError?: string | null,
+  bodyMessage?: string | null,
 ): string {
-  const trimmed = typeof bodyError === 'string' ? bodyError.trim() : '';
+  const candidate =
+    typeof bodyMessage === 'string' && bodyMessage.trim()
+      ? bodyMessage.trim()
+      : typeof bodyError === 'string'
+        ? bodyError.trim()
+        : '';
+  const trimmed = candidate;
   if (trimmed && trimmed.length <= FRIENDLY_MESSAGE_MAX_LEN) {
     const lower = trimmed.toLowerCase();
     const looksTechnical =

@@ -69,7 +69,14 @@ export async function submitContent(
     data?: { id: string; status: string; createdAt: string };
     error?: string;
   }>(res, '/api/content/submissions');
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
   if (!data?.ok || !data.data)
     throw new Error(data?.error ?? 'Submission failed');
   return data.data;
@@ -91,7 +98,14 @@ export async function getUploadUrl(
     data?: { uploadUrl: string; storagePath: string };
     error?: string;
   }>(res, '/api/content/uploads/url');
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
   if (!data?.ok || !data.data)
     throw new Error(data?.error ?? 'Failed to get upload URL');
   return data.data;
@@ -125,7 +139,11 @@ export async function fetchPublicPlaylists(opts?: {
   }>(res, '/api/public/playlists');
   if (!res.ok)
     throw new Error(
-      messageFromApiResponse(res.status, (data as { error?: string })?.error),
+      messageFromApiResponse(
+        res.status,
+        (data as { error?: string })?.error,
+        (data as { message?: string })?.message,
+      ),
     );
   return {
     data: data.data ?? [],
@@ -161,7 +179,11 @@ export async function fetchPlaylistItems(
   }>(res, `/api/public/playlists/${slug}/items`);
   if (!res.ok)
     throw new Error(
-      messageFromApiResponse(res.status, (data as { error?: string })?.error),
+      messageFromApiResponse(
+        res.status,
+        (data as { error?: string })?.error,
+        (data as { message?: string })?.message,
+      ),
     );
   return {
     data: data.data ?? [],
@@ -219,7 +241,11 @@ export async function fetchAdminContentSubmissions(
   }>(res, '/api/admin/content/submissions');
   if (!res.ok)
     throw new Error(
-      messageFromApiResponse(res.status, (data as { error?: string })?.error),
+      messageFromApiResponse(
+        res.status,
+        (data as { error?: string })?.error,
+        (data as { message?: string })?.message,
+      ),
     );
   return {
     data: data.data ?? [],
@@ -245,7 +271,14 @@ export async function approveContent(
     res,
     `/api/admin/content/${id}/approve`,
   );
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
 }
 
 export async function rejectContent(
@@ -266,7 +299,14 @@ export async function rejectContent(
     res,
     `/api/admin/content/${id}/reject`,
   );
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
 }
 
 export async function requestChangesContent(
@@ -290,7 +330,14 @@ export async function requestChangesContent(
     res,
     `/api/admin/content/${id}/request-changes`,
   );
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
 }
 
 export async function publishContent(
@@ -312,7 +359,14 @@ export async function publishContent(
     res,
     `/api/admin/content/${id}/publish`,
   );
-  if (!res.ok) throw new Error(messageFromApiResponse(res.status, data?.error));
+  if (!res.ok)
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
 }
 
 export type AdminPlaylist = {
@@ -335,7 +389,11 @@ export async function fetchAdminPlaylists(
   );
   if (!res.ok)
     throw new Error(
-      messageFromApiResponse(res.status, (data as { error?: string })?.error),
+      messageFromApiResponse(
+        res.status,
+        (data as { error?: string })?.error,
+        (data as { message?: string })?.message,
+      ),
     );
   return data.data ?? [];
 }

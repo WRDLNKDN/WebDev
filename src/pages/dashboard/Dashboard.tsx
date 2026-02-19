@@ -118,7 +118,7 @@ export const Dashboard = () => {
     profile?.use_weirdling_avatar && weirdlings?.[0]?.avatarUrl
       ? weirdlings[0].avatarUrl
       : profile?.avatar || session.user.user_metadata?.avatar_url;
-  const avatarUrl = safeStr(resolvedAvatarUrl);
+  const avatarUrl = ctxAvatarUrl ?? safeStr(resolvedAvatarUrl);
 
   const safeNerdCreds =
     profile?.nerd_creds && typeof profile.nerd_creds === 'object'

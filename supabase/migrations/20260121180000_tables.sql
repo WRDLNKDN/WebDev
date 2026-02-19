@@ -1230,15 +1230,43 @@ for each row
 execute function public.chat_audit_on_message();
 
 -- -----------------------------
--- Storage: avatars bucket (public so profile images load via URL)
+-- Storage: avatars bucket (profile photos; max 512x512, <=1MB; Vercel CDN)
 -- -----------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'avatars',
   'avatars',
   true,
-  6291456,
+  1048576,
   array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- weirdling-previews: AI preview images, 1hr TTL (cron cleanup)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'weirdling-previews',
+  'weirdling-previews',
+  true,
+  1048576,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- weirdling-avatars: permanent AI Weirdling images (max 512x512, <=1MB)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'weirdling-avatars',
+  'weirdling-avatars',
+  true,
+  1048576,
+  array['image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update set
   public = excluded.public,

@@ -394,6 +394,32 @@ create policy "Public read avatars"
   to public
   using (bucket_id = 'avatars');
 
+-- weirdling-previews: authenticated upload, public read (temporary AI previews)
+drop policy if exists "Authenticated can upload weirdling-previews" on storage.objects;
+create policy "Authenticated can upload weirdling-previews"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'weirdling-previews');
+
+drop policy if exists "Public read weirdling-previews" on storage.objects;
+create policy "Public read weirdling-previews"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'weirdling-previews');
+
+-- weirdling-avatars: authenticated upload, public read (permanent AI avatars)
+drop policy if exists "Authenticated can upload weirdling-avatars" on storage.objects;
+create policy "Authenticated can upload weirdling-avatars"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'weirdling-avatars');
+
+drop policy if exists "Public read weirdling-avatars" on storage.objects;
+create policy "Public read weirdling-avatars"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'weirdling-avatars');
+
 -- feed-ad-images: authenticated upload, public read
 drop policy if exists "Public read feed-ad-images" on storage.objects;
 create policy "Public read feed-ad-images"

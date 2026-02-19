@@ -1038,7 +1038,9 @@ export const Feed = () => {
     const fetchAdvertisers = async () => {
       const { data, error } = await supabase
         .from('feed_advertisers')
-        .select('*')
+        .select(
+          'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
+        )
         .eq('active', true)
         .order('sort_order', { ascending: true });
 

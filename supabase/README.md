@@ -6,8 +6,8 @@ This folder contains Supabase schema, security (RLS), and dev seed SQL.
 
 ## Structure
 
-- `migrations/` contains ordered SQL scripts to create/update schema and
-  policies.
+- `migrations/` — two files: `20260121180000_tables.sql` (schema) and
+  `20260121180005_rls.sql` (RLS policies, grants, storage policies).
 - `seeds/` contains optional development-only data scripts.
 
 ## Conventions
@@ -84,9 +84,11 @@ Optional (dev only):
 [docs/DEPLOYMENT_UAT_PROD.md](../docs/DEPLOYMENT_UAT_PROD.md) for secrets and
 troubleshooting.
 
-**Note:** If your DB already had the former 20260214 migrations applied, run
-`supabase migration repair 20260214180000 --status reverted` and
-`supabase migration repair 20260214180005 --status reverted` before pushing.
+**Note:** If you see
+`duplicate key violates unique constraint schema_migrations_pkey` for
+`20260214140000`, run
+`supabase migration repair 20260214140000 --status reverted` then push again.
+(That migration was consolidated into the two files above.)
 
 ## Microsoft (Azure) OAuth Setup
 

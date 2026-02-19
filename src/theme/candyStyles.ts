@@ -1,7 +1,18 @@
 // src/theme/candyStyles.ts
 
 // --- BACKGROUND ASSETS (The Substrate) ---
-export const SYNERGY_BG = 'url("/assets/background.png")';
+// Responsive: mobile on xs/sm, desktop on md+
+export const PAGE_BACKGROUND = {
+  backgroundImage: {
+    xs: 'url("/assets/background-mobile.png")',
+    md: 'url("/assets/background-desktop.png")',
+  },
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+} as const;
+
+/** @deprecated Use PAGE_BACKGROUND. Kept for legacy SYNERGY_BG usage. */
+export const SYNERGY_BG = 'url("/assets/background-desktop.png")';
 export const PROFILE_BG = 'url("/assets/profile-bg.png")';
 export const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 export const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
@@ -121,10 +132,13 @@ export const SIGNUP_BG = {
   placeItems: 'center',
   px: 2,
   py: 6,
-  backgroundImage: 'url(/assets/background.png)',
+  backgroundImage: {
+    xs: 'url("/assets/background-mobile.png")',
+    md: 'url("/assets/background-desktop.png")',
+  },
   backgroundSize: 'cover',
   backgroundPosition: 'center',
-  backgroundAttachment: 'fixed',
+  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
   '&::before': {
     content: '""',
     position: 'absolute',

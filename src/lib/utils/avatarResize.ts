@@ -84,12 +84,18 @@ async function imageDimensions(file: File): Promise<[number, number]> {
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(file);
-  return new Promise((resolve, reject) => {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Could not load image'));
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not load image'));
+    };
     img.src = url;
-  }).finally(() => URL.revokeObjectURL(url));
+  });
 }
 
 async function compressMore(

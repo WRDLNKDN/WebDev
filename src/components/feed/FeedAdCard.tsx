@@ -16,7 +16,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 export type FeedAdvertiserLink = { label: string; url: string };
 
@@ -32,6 +33,10 @@ export type FeedAdvertiser = {
   active: boolean;
   sort_order: number;
 };
+
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+  '';
 
 function parseLinks(raw: unknown): FeedAdvertiserLink[] {
   if (!Array.isArray(raw)) return [];
@@ -55,6 +60,49 @@ type Props = {
 export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
   const links = parseLinks(advertiser.links);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
+
+  const heroImageUrl = useMemo(
+    () => advertiser.image_url || fallbackImageUrl || null,
+    [advertiser.image_url, fallbackImageUrl],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (advertiser.image_url) {
+      setFallbackImageUrl(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+        const res = await fetch(
+          `${API_BASE}/api/link-preview?url=${encodeURIComponent(advertiser.url)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: API_BASE ? 'omit' : 'include',
+          },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          data?: { image?: string | null } | null;
+        };
+        const image = json.data?.image ?? null;
+        if (!cancelled && image) setFallbackImageUrl(image);
+      } catch {
+        // Keep ad visible even when preview fetch fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [advertiser.image_url, advertiser.url]);
 
   return (
     <Card
@@ -63,7 +111,7 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
       component="article"
       aria-label={`Sponsored: ${advertiser.title}`}
     >
-      {advertiser.image_url && (
+      {heroImageUrl && (
         <Box
           component="a"
           href={advertiser.url}
@@ -77,7 +125,7 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
         >
           <Box
             component="img"
-            src={advertiser.image_url}
+            src={heroImageUrl}
             alt={`${advertiser.company_name} – ${advertiser.title}`}
             loading="eager"
             referrerPolicy="no-referrer"

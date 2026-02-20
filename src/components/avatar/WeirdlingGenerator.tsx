@@ -24,6 +24,7 @@ import { useRef, useState } from 'react';
 
 // PATH FIX: We go up two levels to find the client in src/
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 
 // --- TYPES ---
 interface WeirdlingGeneratorProps {
@@ -109,12 +110,7 @@ const WeirdlingGenerator = ({
       }, 500);
     } catch (err: unknown) {
       console.error('Weirdling Error:', err);
-      // ERROR TYPE GUARD: Safely extract message from unknown error
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'The Weirdling refused to manifest.';
-      setError(errorMessage);
+      setError(toMessage(err));
     } finally {
       setLoading(false);
     }

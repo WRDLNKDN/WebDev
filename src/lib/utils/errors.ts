@@ -98,6 +98,22 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
     friendly: 'Connection problem. Check your network and try again.',
   },
   {
+    pattern: /no active session|^no user$|not authenticated|not signed in/i,
+    friendly: 'You need to sign in to do that.',
+  },
+  {
+    pattern: /max 100 members/i,
+    friendly: 'A group can have up to 100 members.',
+  },
+  {
+    pattern: /report message or user|category required/i,
+    friendly: 'Please choose what you want to report and include a reason.',
+  },
+  {
+    pattern: /gif fetch failed/i,
+    friendly: "We couldn't add that GIF. Please try another one.",
+  },
+  {
     pattern: /new row violates row-level security|rls policy/i,
     friendly: "You don't have permission to do that. Try signing in again.",
   },
@@ -210,6 +226,15 @@ function extractMessage(e: unknown): string {
     }
   }
   return '';
+}
+
+/**
+ * Returns the best raw message for logic checks (e.g. provider-specific branching),
+ * without applying friendly phrase replacement.
+ */
+export function getErrorMessage(e: unknown, fallback = ''): string {
+  const raw = extractMessage(e);
+  return raw || fallback;
 }
 
 /**

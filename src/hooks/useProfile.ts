@@ -171,7 +171,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('AUTH_FAILURE: No active session');
+      if (!session?.user) {
+        throw new Error('You need to sign in to update your profile.');
+      }
 
       // Preserve existing keys (Deep Merge); status_message removed from UI
       const currentCreds =
@@ -224,7 +226,7 @@ export function useProfile() {
         }
         throw new Error(
           (updateError as { message?: string }).message ||
-            'Could not save profile. Please try again.',
+            "We couldn't save your profile. Please try again.",
         );
       }
 
@@ -309,7 +311,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('No active session');
+      if (!session?.user) {
+        throw new Error('You need to sign in to add a project.');
+      }
 
       await ensureProfileExists(
         session.user.id,
@@ -352,18 +356,12 @@ export function useProfile() {
         .select()
         .single();
 
-      if (insertError) {
-        const msg =
-          (insertError as { message?: string }).message ||
-          (insertError as { details?: string }).details ||
-          'Could not add project.';
-        throw new Error(msg);
-      }
+      if (insertError) throw new Error(toMessage(insertError));
 
       setProjects((prev) => [data as PortfolioItem, ...prev]);
     } catch (err) {
       console.error('Add Project Error:', err);
-      throw err;
+      throw new Error(toMessage(err));
     } finally {
       setUpdating(false);
     }
@@ -374,7 +372,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('No active session');
+      if (!session?.user) {
+        throw new Error('You need to sign in to delete a project.');
+      }
 
       const { error: deleteError } = await supabase
         .from('portfolio_items')
@@ -387,7 +387,7 @@ export function useProfile() {
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
     } catch (err) {
       console.error('Delete Project Error:', err);
-      throw err;
+      throw new Error(toMessage(err));
     }
   };
 
@@ -408,7 +408,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('No active session');
+      if (!session?.user) {
+        throw new Error('You need to sign in to update a project.');
+      }
 
       let finalImageUrl = updates.image_url;
 
@@ -451,7 +453,7 @@ export function useProfile() {
       );
     } catch (err) {
       console.error('Update Project Error:', err);
-      throw err;
+      throw new Error(toMessage(err));
     } finally {
       setUpdating(false);
     }
@@ -463,7 +465,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('No user');
+      if (!session?.user) {
+        throw new Error('You need to sign in to upload an avatar.');
+      }
 
       const { blob } = await processAvatarForUpload(file);
 
@@ -484,7 +488,7 @@ export function useProfile() {
       return publicUrl;
     } catch (err) {
       console.error(err);
-      throw err;
+      throw new Error(toMessage(err));
     } finally {
       setUpdating(false);
     }
@@ -496,7 +500,9 @@ export function useProfile() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('No user');
+      if (!session?.user) {
+        throw new Error('You need to sign in to upload a resume.');
+      }
 
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
       if (ext !== '.pdf' && ext !== '.docx') {
@@ -523,7 +529,7 @@ export function useProfile() {
       return publicUrl;
     } catch (err) {
       console.error(err);
-      throw err;
+      throw new Error(toMessage(err));
     } finally {
       setUpdating(false);
     }

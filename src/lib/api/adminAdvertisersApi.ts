@@ -1,11 +1,9 @@
 /**
- * Admin advertisers API — upload ad banner images via backend proxy.
- * Backend uses service role (bypasses RLS and bucket restrictions).
+ * Admin advertisers API — upload ad/partner images directly to Supabase Storage.
+ * This avoids Vercel request-size limits on large multipart uploads.
  */
 
-import sjson from 'secure-json-parse';
-import { messageFromApiResponse } from '../utils/errors';
-import { authedFetch } from './authFetch';
+import { supabase } from '../auth/supabaseClient';
 
 export const AD_IMAGE_MAX_BYTES = 50 * 1024 * 1024;
 export const AD_IMAGE_ALLOWED_MIMES = [
@@ -32,47 +30,71 @@ export function validateAdImageFile(file: File): string | null {
   return null;
 }
 
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
-  '';
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object') {
+    const obj = error as Record<string, unknown>;
+    if (typeof obj.message === 'string' && obj.message.trim()) {
+      return obj.message.trim();
+    }
+    if (typeof obj.error === 'string' && obj.error.trim()) {
+      return obj.error.trim();
+    }
+  }
+  return '';
+}
+
+function normalizeUploadError(error: unknown): string {
+  const raw = extractErrorMessage(error).toLowerCase();
+
+  if (
+    /payload too large|request entity too large|limit_file_size|too large/.test(
+      raw,
+    )
+  ) {
+    return 'File too large. Max is 50MB.';
+  }
+  if (
+    /invalid mime|mime type|unsupported media type|unsupported image type/.test(
+      raw,
+    )
+  ) {
+    return `Unsupported image type. Allowed: ${AD_IMAGE_ALLOWED_LABEL}.`;
+  }
+  if (
+    /row-level security|rls|permission denied|forbidden|unauthorized|not authorized/.test(
+      raw,
+    )
+  ) {
+    return "You don't have permission to upload images. Please sign in again.";
+  }
+  if (/bucket.*not found|not found/.test(raw)) {
+    return 'Image storage is not configured correctly. Please contact support.';
+  }
+  if (/failed to fetch|network|load failed|timeout/.test(raw)) {
+    return 'Connection problem while uploading. Please try again.';
+  }
+  return 'Upload failed. Please try again in a moment.';
+}
 
 export async function uploadAdImage(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await authedFetch(
-    `${API_BASE}/api/admin/advertisers/upload`,
-    {
-      method: 'POST',
-      body: formData,
-    },
-    {
-      includeJsonContentType: false,
-      credentials: API_BASE ? 'omit' : 'include',
-    },
-  );
-  const text = await res.text();
-  let data: { ok?: boolean; data?: { publicUrl?: string }; error?: string };
-  try {
-    data = sjson.parse(text, undefined, {
-      protoAction: 'remove',
-      constructorAction: 'remove',
-    }) as typeof data;
-  } catch {
+  const path = `ads/${crypto.randomUUID()}-${file.name.replace(/\s+/g, '-')}`;
+  const { error } = await supabase.storage
+    .from('feed-ad-images')
+    .upload(path, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(normalizeUploadError(error));
+  }
+
+  const { data } = supabase.storage.from('feed-ad-images').getPublicUrl(path);
+  if (!data?.publicUrl) {
     throw new Error(
-      text.startsWith('<')
-        ? 'API returned HTML. Set VITE_API_URL.'
-        : 'Invalid response',
+      'Upload succeeded, but we could not generate a public URL for this image.',
     );
   }
-  if (!res.ok)
-    throw new Error(
-      messageFromApiResponse(
-        res.status,
-        data?.error,
-        (data as { message?: string })?.message,
-      ),
-    );
-  if (!data?.ok || !data.data?.publicUrl)
-    throw new Error(data?.error ?? 'Upload failed');
-  return data.data.publicUrl;
+  return data.publicUrl;
 }

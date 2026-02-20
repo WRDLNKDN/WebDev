@@ -25,6 +25,9 @@
 - Admin ad/partner image uploads now allow JPG/PNG/WEBP/GIF up to 50MB.
 - Admin upload errors now return actionable messages for invalid type, oversized
   files, and storage failures.
+- Auth callback, sign-in, chat group creation, and Weirdling generation now use
+  shared friendly error normalization so raw technical messages are less likely
+  to appear in member/admin UI.
 - Nettica fallback is enabled by default and can be disabled with
   `VITE_ENABLE_NETTICA_PARTNER_FALLBACK=false` to reveal the empty-state
   variant.

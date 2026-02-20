@@ -30,6 +30,7 @@ import {
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
   CHAT_MAX_FILE_BYTES,
 } from '../../types/chat';
+import { toMessage } from '../../lib/utils/errors';
 
 const EXIF_STRIP_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -173,7 +174,11 @@ export const MessageInput = ({
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        setError('You need to sign in to upload attachments.');
+        setUploading(false);
+        return;
+      }
 
       const basePath = `${session.user.id}/${Date.now()}`;
 
@@ -191,7 +196,9 @@ export const MessageInput = ({
         }
         const mime = normalizeChatAttachmentMime(f);
         if (!mime) {
-          setError('Unsupported attachment type.');
+          setError(
+            'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
+          );
           setUploading(false);
           return;
         }
@@ -210,7 +217,7 @@ export const MessageInput = ({
           .upload(path, blob, { contentType: mime });
 
         if (uploadErr) {
-          setError('File upload failed. Please try again.');
+          setError(toMessage(uploadErr));
           setUploading(false);
           return;
         }

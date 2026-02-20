@@ -106,6 +106,10 @@ profile routes (IA), Directory, footer, and Dashboard.
        Type in “Start a post”, click Post → post appears (if API is up). Sort
       and feed load behave as before.
 
+- [ ] **Post-auth stability (UAT)**  
+       After OAuth sign-in (`/join` → `/feed`), no false "You need to sign in"
+      toast appears and no redirect back to `/join` occurs.
+
 ---
 
 ## 5. Dashboard

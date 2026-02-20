@@ -58,6 +58,14 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { shouldLoadMoreForDeepLink } from '../../lib/feed/deepLink';
+import {
+  getOrCreateSessionAdSeed,
+  interleaveWithAds,
+  seededShuffle,
+  type FeedDisplayItem,
+} from '../../lib/feed/adRotation';
+import { logFeedAdEvent } from '../../lib/analytics/feedAdEvents';
+import { trackEvent } from '../../lib/analytics/trackEvent';
 import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
@@ -88,14 +96,22 @@ import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivism
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
-import WeirdlingGenerator from '../../components/avatar/WeirdlingGenerator';
 import {
   FeedAdCard,
   type FeedAdvertiser,
 } from '../../components/feed/FeedAdCard';
 
 const FEED_LIMIT = 20;
-const AD_EVERY_N_POSTS = 6;
+const AD_EVERY_N_POSTS = (() => {
+  const raw = Number(import.meta.env.VITE_FEED_AD_EVERY_N_POSTS ?? 6);
+  const value = Math.floor(raw);
+  return Number.isFinite(value) && value > 0 ? value : 6;
+})();
+const AD_IMPRESSION_CAP_PER_SESSION = (() => {
+  const raw = Number(import.meta.env.VITE_FEED_AD_IMPRESSION_CAP ?? 12);
+  const value = Math.floor(raw);
+  return Number.isFinite(value) && value > 0 ? value : 12;
+})();
 const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
 
@@ -325,30 +341,7 @@ function hasRenderableContent(item: FeedItem): boolean {
   return false;
 }
 
-export type FeedDisplayItem =
-  | { kind: 'post'; item: FeedItem }
-  | { kind: 'ad'; advertiser: FeedAdvertiser };
-
-function interleaveWithAds(
-  posts: FeedItem[],
-  advertisers: FeedAdvertiser[],
-  everyN: number,
-): FeedDisplayItem[] {
-  if (advertisers.length === 0) {
-    return posts.map((item) => ({ kind: 'post' as const, item }));
-  }
-  const result: FeedDisplayItem[] = [];
-  let adIndex = 0;
-  posts.forEach((item, i) => {
-    if ((i + 1) % everyN === 0) {
-      const ad = advertisers[adIndex % advertisers.length];
-      result.push({ kind: 'ad', advertiser: ad });
-      adIndex += 1;
-    }
-    result.push({ kind: 'post', item });
-  });
-  return result;
-}
+type LocalFeedDisplayItem = FeedDisplayItem<FeedItem, FeedAdvertiser>;
 
 const ShareDialog = ({
   item,
@@ -1199,6 +1192,32 @@ export const Feed = () => {
     return times;
   })();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const adImpressionStorageKey = useMemo(
+    () => `feed_ad_impressions:${session?.user?.id ?? 'anon'}`,
+    [session?.user?.id],
+  );
+  const [adImpressionCounts, setAdImpressionCounts] = useState<
+    Record<string, number>
+  >({});
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(adImpressionStorageKey);
+      if (!raw) {
+        setAdImpressionCounts({});
+        return;
+      }
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const sanitized: Record<string, number> = {};
+      Object.entries(parsed).forEach(([key, value]) => {
+        const n = typeof value === 'number' ? value : Number(value);
+        if (Number.isFinite(n) && n > 0) sanitized[key] = Math.floor(n);
+      });
+      setAdImpressionCounts(sanitized);
+    } catch {
+      setAdImpressionCounts({});
+    }
+  }, [adImpressionStorageKey]);
   const sortedItems = useMemo(() => {
     let list = items;
     if (sortBy === 'oldest')
@@ -1221,12 +1240,24 @@ export const Feed = () => {
     return list.filter(hasRenderableContent);
   }, [items, sortBy]);
   const visibleAdvertisers = useMemo(
-    () => advertisers.filter((a) => !dismissedAdIds.has(a.id)),
-    [advertisers, dismissedAdIds],
+    () =>
+      advertisers.filter((a) => {
+        if (dismissedAdIds.has(a.id)) return false;
+        return (adImpressionCounts[a.id] ?? 0) < AD_IMPRESSION_CAP_PER_SESSION;
+      }),
+    [advertisers, dismissedAdIds, adImpressionCounts],
   );
-  const displayItems = useMemo(
-    () => interleaveWithAds(sortedItems, visibleAdvertisers, AD_EVERY_N_POSTS),
-    [sortedItems, visibleAdvertisers],
+  const adSeed = useMemo(
+    () => getOrCreateSessionAdSeed(session?.user?.id ?? null),
+    [session?.user?.id],
+  );
+  const shuffledAdvertisers = useMemo(
+    () => seededShuffle(visibleAdvertisers, adSeed),
+    [visibleAdvertisers, adSeed],
+  );
+  const displayItems: LocalFeedDisplayItem[] = useMemo(
+    () => interleaveWithAds(sortedItems, shuffledAdvertisers, AD_EVERY_N_POSTS),
+    [sortedItems, shuffledAdvertisers],
   );
 
   const handleDismissAd = useCallback((adId: string) => {
@@ -1243,6 +1274,63 @@ export const Feed = () => {
       return next;
     });
   }, []);
+  const handleAdImpression = useCallback(
+    (advertiser: FeedAdvertiser, slotIndex: number) => {
+      setAdImpressionCounts((prev) => {
+        const nextCount = (prev[advertiser.id] ?? 0) + 1;
+        const next = { ...prev, [advertiser.id]: nextCount };
+        try {
+          sessionStorage.setItem(adImpressionStorageKey, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+
+      trackEvent('feed_ad_impression', {
+        source: 'feed',
+        ad_id: advertiser.id,
+        advertiser_name: advertiser.company_name,
+        slot_index: slotIndex,
+      });
+      void logFeedAdEvent({
+        advertiserId: advertiser.id,
+        memberId: session?.user?.id ?? null,
+        eventName: 'feed_ad_impression',
+        slotIndex,
+        pagePath:
+          typeof window !== 'undefined' ? window.location.pathname : null,
+      });
+    },
+    [adImpressionStorageKey, session?.user?.id],
+  );
+  const handleAdClick = useCallback(
+    (
+      advertiser: FeedAdvertiser,
+      slotIndex: number,
+      payload: { target: string; url: string },
+    ) => {
+      trackEvent('feed_ad_click', {
+        source: 'feed',
+        ad_id: advertiser.id,
+        advertiser_name: advertiser.company_name,
+        slot_index: slotIndex,
+        target: payload.target,
+        url: payload.url,
+      });
+      void logFeedAdEvent({
+        advertiserId: advertiser.id,
+        memberId: session?.user?.id ?? null,
+        eventName: 'feed_ad_click',
+        slotIndex,
+        target: payload.target,
+        url: payload.url,
+        pagePath:
+          typeof window !== 'undefined' ? window.location.pathname : null,
+      });
+    },
+    [session?.user?.id],
+  );
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
@@ -1263,7 +1351,6 @@ export const Feed = () => {
 
   const [feedViewPreference, setFeedViewPreference] =
     useState<FeedViewPreference>('anyone');
-  const [generatorOpen, setGeneratorOpen] = useState(false);
   const { avatarUrl } = useCurrentUserAvatar();
   const feedCacheKey = useMemo(
     () =>
@@ -1955,7 +2042,7 @@ export const Feed = () => {
             alignItems: 'flex-start',
           }}
         >
-          {/* LEFT SIDEBAR: Explore — hidden on mobile; md: 2-col with Feed; lg: 3-col with Feed + Partners */}
+          {/* LEFT SIDEBAR: Explore — hidden on mobile; desktop companion rail */}
           <Grid
             size={{ xs: 12, md: 2, lg: 2 }}
             sx={{
@@ -2163,9 +2250,9 @@ export const Feed = () => {
             </Paper>
           </Grid>
 
-          {/* CENTER: Feed — full width xs; md: Explore+Feed; lg: 3-col */}
+          {/* CENTER: Feed — expands now that right rail is removed */}
           <Grid
-            size={{ xs: 12, md: 10, lg: 7 }}
+            size={{ xs: 12, md: 10, lg: 10 }}
             sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
           >
             {/* Feed header: title + view toggle + Post + Sort */}
@@ -2322,7 +2409,7 @@ export const Feed = () => {
               </Paper>
             ) : (
               <>
-                {displayItems.map((entry) =>
+                {displayItems.map((entry, index) =>
                   entry.kind === 'post' ? (
                     <Box
                       key={entry.item.id}
@@ -2352,9 +2439,15 @@ export const Feed = () => {
                     </Box>
                   ) : (
                     <FeedAdCard
-                      key={`ad-${entry.advertiser.id}`}
+                      key={`ad-${entry.advertiser.id}-${index}`}
                       advertiser={entry.advertiser}
                       onDismiss={() => handleDismissAd(entry.advertiser.id)}
+                      onImpression={() =>
+                        handleAdImpression(entry.advertiser, index)
+                      }
+                      onAdClick={(payload) =>
+                        handleAdClick(entry.advertiser, index, payload)
+                      }
                     />
                   ),
                 )}
@@ -2376,82 +2469,6 @@ export const Feed = () => {
                 )}
               </>
             )}
-          </Grid>
-
-          {/* RIGHT RAIL: Community Partners — hidden until lg (hides before Explore at md) */}
-          <Grid
-            size={{ xs: 12, md: 12, lg: 3 }}
-            sx={{
-              minWidth: 0,
-              order: { xs: 3, md: 3 },
-              display: { xs: 'none', md: 'none', lg: 'block' },
-            }}
-          >
-            <Paper
-              variant="outlined"
-              sx={{
-                borderRadius: 2,
-                p: 2,
-                position: { xs: 'static', lg: 'sticky' },
-                top: 88,
-                width: '100%',
-                maxWidth: { lg: 280 },
-                minWidth: { lg: 220 },
-              }}
-            >
-              <Box
-                sx={{
-                  pb: 1.5,
-                  mb: 1,
-                  borderBottom: '1px solid',
-                  borderColor: 'rgba(255,255,255,0.08)',
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Community Partners
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Community Partners Coming Soon!
-              </Typography>
-
-              {/* PROJECT WRDLNKDN INJECTION */}
-              <Box
-                sx={{
-                  mt: 3,
-                  pt: 2,
-                  borderTop: '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  fontWeight={600}
-                  sx={{ mb: 1, color: 'primary.light' }}
-                >
-                  Project WRDLNKDN
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Establish your visual identity in the human OS.
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  fullWidth
-                  onClick={() => setGeneratorOpen(true)}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Initialize Weirdling
-                </Button>
-              </Box>
-            </Paper>
           </Grid>
         </Grid>
       </Box>
@@ -2760,47 +2777,6 @@ export const Feed = () => {
             Next
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* THE WEIRDLING GENERATOR MODAL */}
-      <Dialog
-        open={generatorOpen}
-        onClose={() => setGeneratorOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            border: '1px solid rgba(255,255,255,0.1)',
-            backgroundImage: 'none',
-            position: 'relative',
-          },
-        }}
-      >
-        <DialogContent sx={{ p: { xs: 2, sm: 4 } }}>
-          {/* Close Button Top Right */}
-          <IconButton
-            onClick={() => setGeneratorOpen(false)}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: 'text.secondary',
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-
-          <WeirdlingGenerator
-            session={session}
-            onWeirdlingGenerated={() => {
-              setGeneratorOpen(false);
-              setSnack('Identity Secured. Welcome to the grid.');
-              void loadPage();
-            }}
-          />
-        </DialogContent>
       </Dialog>
 
       <ShareDialog

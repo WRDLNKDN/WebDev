@@ -26,13 +26,16 @@ import { toMessage } from '../../lib/utils/errors';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 
 const BG_SX = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   position: 'relative' as const,
-  display: 'grid',
-  placeItems: 'center',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: { xs: 'flex-start', md: 'center' },
   px: { xs: 1.5, sm: 2 },
-  py: 6,
-  overflow: 'hidden',
+  py: { xs: 2, sm: 3, md: 6 },
+  overflowX: 'hidden',
+  overflowY: 'auto',
+  scrollbarGutter: 'stable both-edges',
 };
 
 const CARD_SX = {
@@ -152,7 +155,7 @@ export const Signup = () => {
 
   if (checking) {
     return (
-      <Box sx={BG_SX}>
+      <Box sx={BG_SX} data-testid="join-scroll-container">
         <Container maxWidth="sm" sx={{ ...CARD_SX, p: 4, zIndex: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
             <CircularProgress size={20} thickness={5} aria-label="Loading" />
@@ -166,7 +169,7 @@ export const Signup = () => {
   }
 
   return (
-    <Box sx={BG_SX}>
+    <Box sx={BG_SX} data-testid="join-scroll-container">
       <Container
         maxWidth={
           state.currentStep === 'welcome' || state.currentStep === 'complete'

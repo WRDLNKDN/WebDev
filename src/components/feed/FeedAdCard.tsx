@@ -16,7 +16,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 export type FeedAdvertiserLink = { label: string; url: string };
@@ -55,12 +55,20 @@ function parseLinks(raw: unknown): FeedAdvertiserLink[] {
 type Props = {
   advertiser: FeedAdvertiser;
   onDismiss?: () => void;
+  onAdClick?: (payload: { target: string; url: string }) => void;
+  onImpression?: () => void;
 };
 
-export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
+export const FeedAdCard = ({
+  advertiser,
+  onDismiss,
+  onAdClick,
+  onImpression,
+}: Props) => {
   const links = parseLinks(advertiser.links);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
+  const hasTrackedImpressionRef = useRef(false);
 
   const heroImageUrl = useMemo(
     () => advertiser.image_url || fallbackImageUrl || null,
@@ -103,6 +111,12 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
       cancelled = true;
     };
   }, [advertiser.image_url, advertiser.url]);
+
+  useEffect(() => {
+    if (hasTrackedImpressionRef.current) return;
+    hasTrackedImpressionRef.current = true;
+    onImpression?.();
+  }, [onImpression]);
 
   return (
     <Card
@@ -207,6 +221,12 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
                   href={advertiser.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() =>
+                    onAdClick?.({
+                      target: 'advertiser_domain',
+                      url: advertiser.url,
+                    })
+                  }
                   sx={{
                     color: 'text.secondary',
                     textDecoration: 'none',
@@ -222,6 +242,9 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
               href={advertiser.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                onAdClick?.({ target: 'advertiser_title', url: advertiser.url })
+              }
               variant="subtitle1"
               fontWeight={600}
               sx={{
@@ -272,6 +295,12 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
                         href={l.url || advertiser.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                          onAdClick?.({
+                            target: `cta_link_${i + 1}`,
+                            url: l.url || advertiser.url,
+                          })
+                        }
                         variant="body2"
                         sx={{
                           color: 'primary.main',
@@ -294,6 +323,12 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
                   href={advertiser.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() =>
+                    onAdClick?.({
+                      target: 'cta_learn_more',
+                      url: advertiser.url,
+                    })
+                  }
                   variant="body2"
                   sx={{
                     color: 'primary.main',
@@ -314,6 +349,9 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
               href={advertiser.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                onAdClick?.({ target: 'ad_image', url: advertiser.url })
+              }
               sx={{
                 display: 'block',
                 flexShrink: 0,

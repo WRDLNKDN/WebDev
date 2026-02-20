@@ -152,9 +152,30 @@ profile routes (IA), Directory, footer, and Dashboard.
       pages (`/terms`, `/privacy`, `/guidelines`). Legal (Canonical Index) opens
       GitHub wiki.
 
+- [ ] **Community Partners link**  
+       Expand Company section and open `Community Partners` from footer. Route
+      is `/community-partners`.
+
 ---
 
-## 7. Join flow (Intent)
+## 7. Community Partners page
+
+- [ ] **Partner cards render**  
+       `/community-partners` shows active partner cards with company name and
+      outbound `Visit partner` link.
+
+- [ ] **Fallback / empty-state behavior**  
+       With fallback enabled (default), Nettica appears when there are no active
+      partner records. With `VITE_ENABLE_NETTICA_PARTNER_FALLBACK=false`, empty
+      state appears when no active partners exist.
+
+- [ ] **Mobile card fit**  
+       On narrow viewport, cards are readable, links remain tappable, and no
+      horizontal overflow appears.
+
+---
+
+## 8. Join flow (Intent)
 
 - [ ] **Step labels**  
        Progress shows: Welcome → Sign in → **Intent** → Profile (no “Values”).
@@ -165,7 +186,19 @@ profile routes (IA), Directory, footer, and Dashboard.
 
 ---
 
-## 8. Smoke / build
+## 9. Mobile viewport checks
+
+- [ ] **Join scroll behavior**  
+       On a small viewport (e.g. 320×500), `/join` can scroll through the auth
+      step without clipping controls.
+
+- [ ] **Footer accordion**  
+       Footer sections expand/collapse cleanly on mobile, and only one section
+      is open at a time.
+
+---
+
+## 10. Smoke / build
 
 - [ ] **Build**  
        `npm run build` succeeds.
@@ -176,6 +209,17 @@ profile routes (IA), Directory, footer, and Dashboard.
 - [ ] **E2E (if run)**  
        Critical paths (e.g. sign-in, Feed, Directory) pass if you run E2E tests.
       Preferred command: `npm run test:e2e`.
+
+---
+
+## 11. Admin ad analytics
+
+- [ ] **Metrics table loads**  
+       In `/admin/advertisers`, impressions/clicks/CTR columns render for each
+      ad row (no crash).
+
+- [ ] **Window toggle works**  
+       Switch 7d/30d/90d and confirm counts refresh for the selected period.
 
 ---
 

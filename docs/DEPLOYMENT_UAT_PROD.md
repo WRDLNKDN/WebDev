@@ -225,46 +225,16 @@ columns, or RLS are missing:
    `supabase/scripts/apply-to-supabase.sql` for one-off fixes) into **Supabase
    Dashboard → SQL Editor** and run against the correct project.
 
-5. **GitHub Actions**  
-   Verify `SUPABASE_UAT_DB_PASSWORD` / `SUPABASE_PROD_DB_PASSWORD` are set.  
-   Workflow logs: Actions → select the run → "Push migrations" step.
+5. **CLI run output**  
+   Verify migration steps complete without SQL or auth errors.
 
-## GitHub Actions: Supabase migrations
-
-**supabase-migrate-uat-prod** runs when `supabase/migrations/**`,
-`supabase/seed/**`, `supabase/config.toml`, or the workflow file changes (or on
-manual run). Uses `db push` — applies only pending migrations and seed (no data
-wipe).
+## Supabase migrations (manual CLI)
 
 Migrations are split into two files: `20260121180000_tables.sql` (tables,
 functions) and `20260121180005_rls.sql` (RLS policies, grants).
 
 **Data preservation:** `db push` runs only migrations not yet in
 `schema_migrations`. It does not reset or dump tables. Existing data stays.
-
-Developers can also push migrations manually via the Supabase CLI (see below).
-
-### Required secrets (per environment)
-
-| Secret                      | Where to add              | Value                                    |
-| --------------------------- | ------------------------- | ---------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`     | Repo secrets or both envs | Supabase Dashboard → Account → New token |
-| `SUPABASE_UAT_PROJECT_REF`  | Environment `uat`         | `lgxwseyzoefxggxijatp`                   |
-| `SUPABASE_UAT_DB_PASSWORD`  | Environment `uat`         | UAT Postgres password                    |
-| `SUPABASE_PROD_PROJECT_REF` | Environment `production`  | `rpcaazmxymymqdejevtb`                   |
-| `SUPABASE_PROD_DB_PASSWORD` | Environment `production`  | PROD Postgres password                   |
-
-**Environments:** GitHub → Repo → Settings → Environments → `uat` / `production`
-→  
-Add as **Environment secrets** (not repository secrets) so UAT and PROD use
-the  
-correct project refs and passwords.
-
-### Manual trigger (migrations only)
-
-To run migrations without waiting for path changes: use the Supabase CLI
-commands below, or run **supabase-migrate-uat-prod** manually and check "Also
-migrate PROD" if needed.
 
 ### Push migrations via Supabase CLI (manual)
 
@@ -308,12 +278,12 @@ If the CLI keeps failing, apply SQL directly:
 
 ### Common failures
 
-| Symptom                            | Fix                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| "Missing SUPABASE_ACCESS_TOKEN"    | Create token at supabase.com/dashboard/account/tokens; add to secrets |
-| "Missing SUPABASE_UAT_DB_PASSWORD" | Add DB password to `uat` environment secrets                          |
-| "relation already exists"          | Migration already applied; or run `supabase migration repair` + push  |
-| "permission denied" / auth failure | Verify `SUPABASE_ACCESS_TOKEN` is valid and has project access        |
+| Symptom                            | Fix                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------- |
+| "Missing SUPABASE_ACCESS_TOKEN"    | Create token at supabase.com/dashboard/account/tokens; run `supabase login` |
+| "Missing SUPABASE_DB_PASSWORD"     | Export `SUPABASE_DB_PASSWORD` or pass `-p` to `supabase db push`            |
+| "relation already exists"          | Migration already applied; or run `supabase migration repair` + push        |
+| "permission denied" / auth failure | Verify `SUPABASE_ACCESS_TOKEN` is valid and has project access              |
 
 ## See also
 

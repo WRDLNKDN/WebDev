@@ -1,9 +1,9 @@
 # RLS and Schema Audit Summary
 
 **Epic:** API & Data Layer Governance  
-**Date:** 2026-02-14  
+**Date:** 2026-02-19  
 **Scope:** profiles, feed_items (posts/comments/reactions), chat, directory,
-content, events (N/A)
+content, events, community partners
 
 ---
 
@@ -20,6 +20,7 @@ content, events (N/A)
 | `connection_requests`      | ✅          | Requester CRUD, recipient select/update                              |                                                                              |
 | `feed_items`               | ✅          | Select from self or followees, insert own, delete own                | **Gap:** No update policy (posts are immutable; comments/reactions = insert) |
 | `feed_advertisers`         | ✅          | Public read active, admin all                                        | Anon has no select; authenticated can select                                 |
+| `community_partners`       | ✅          | Public read active, admin all                                        | Decoupled from ad inventory; anon + authenticated select                     |
 | `chat_rooms`               | ✅          | Members read, authenticated insert, admins update                    |                                                                              |
 | `chat_room_members`        | ✅          | Members read, admins insert/update, users leave                      |                                                                              |
 | `chat_blocks`              | ✅          | Own CRUD                                                             |                                                                              |
@@ -69,7 +70,12 @@ content, events (N/A)
 - Inserts happen via triggers (chat_audit_on_message). Triggers run as definer.
 - **Risk:** Low. No user-initiated insert.
 
-### 5. Storage buckets
+### 5. `community_partners` — `community_partners_public_read`
+
+- Policy: `using (active = true)` — anon/authenticated can read active records.
+- **Risk:** Low. Public partner listings are intended to be publicly visible.
+
+### 6. Storage buckets
 
 - All buckets have explicit policies. No anon insert on sensitive buckets.
 - **Risk:** Low.
@@ -83,7 +89,8 @@ content, events (N/A)
    handled by `get_feed_page`.
 2. **Optional:** Document that `get_feed_page` and `get_directory_page` bypass
    RLS (security definer) but enforce equivalent logic.
-3. **Events/RSVPs:** Not present in schema. Add if needed per product spec.
+3. **Optional:** Add dedicated storage bucket/policies for community partner
+   media if partner assets should be isolated from ad assets operationally.
 
 ---
 

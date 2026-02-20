@@ -1,6 +1,7 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -62,6 +63,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Advertisers',
     to: '/admin/advertisers',
     icon: <CampaignIcon />,
+  },
+  {
+    label: 'Community Partners',
+    to: '/admin/partners',
+    icon: <HandshakeIcon />,
   },
 ];
 

@@ -72,6 +72,90 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_ad_events: {
+        Row: {
+          id: string
+          advertiser_id: string
+          member_id: string | null
+          event_name: string
+          slot_index: number | null
+          target: string | null
+          url: string | null
+          page_path: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          advertiser_id: string
+          member_id?: string | null
+          event_name: string
+          slot_index?: number | null
+          target?: string | null
+          url?: string | null
+          page_path?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          advertiser_id?: string
+          member_id?: string | null
+          event_name?: string
+          slot_index?: number | null
+          target?: string | null
+          url?: string | null
+          page_path?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      community_partners: {
+        Row: {
+          id: string
+          company_name: string
+          title: string | null
+          description: string | null
+          url: string
+          logo_url: string | null
+          image_url: string | null
+          links: Json
+          active: boolean
+          featured: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_name: string
+          title?: string | null
+          description?: string | null
+          url: string
+          logo_url?: string | null
+          image_url?: string | null
+          links?: Json
+          active?: boolean
+          featured?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_name?: string
+          title?: string | null
+          description?: string | null
+          url?: string
+          logo_url?: string | null
+          image_url?: string | null
+          links?: Json
+          active?: boolean
+          featured?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feed_connections: {
         Row: {
           user_id: string

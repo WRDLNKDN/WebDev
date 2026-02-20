@@ -57,6 +57,8 @@ drop table if exists public.generation_jobs cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.admin_allowlist cascade;
 drop table if exists public.feed_advertisers cascade;
+drop table if exists public.feed_ad_events cascade;
+drop table if exists public.community_partners cascade;
 drop table if exists public.playlist_items cascade;
 drop table if exists public.playlists cascade;
 drop table if exists public.event_rsvps cascade;
@@ -411,27 +413,92 @@ comment on column public.feed_advertisers.image_url is
 comment on table public.feed_advertisers is
   'Advertisers displayed in Feed every 6th post. Admin CRUD.';
 
--- Seed Nettica VPN (idempotent: only if empty)
+-- Seed baseline ad slot (idempotent: only if empty)
 insert into public.feed_advertisers (
   company_name, title, description, url, logo_url, links, active, sort_order
 )
 select
-  'NETTICA CORPORATION',
-  'Welcome to Nettica VPN',
-  'We provide fast, secure connections using the latest VPN software. Secure Relay and Tunnel VPN services powered by WireGuard technology.',
-  'https://www.nettica.com',
+  'WRDLNKDN',
+  'Sponsor spotlight',
+  'Reserved ad placement for approved sponsors.',
+  'https://wrdlnkdn.com',
   null,
   '[
-    {"label":"Downloads","url":"https://www.nettica.com"},
-    {"label":"Nettica VPN Performance","url":"https://www.nettica.com"},
-    {"label":"API","url":"https://www.nettica.com"},
-    {"label":"Getting Started","url":"https://www.nettica.com"},
-    {"label":"Launch a Cloud Instance","url":"https://www.nettica.com"},
-    {"label":"Enterprise","url":"https://www.nettica.com"}
+    {"label":"Learn more","url":"https://wrdlnkdn.com"},
+    {"label":"Contact","url":"https://wrdlnkdn.com/about"}
   ]'::jsonb,
   true,
   0
 where not exists (select 1 from public.feed_advertisers limit 1);
+
+-- -----------------------------
+-- feed_ad_events: analytics sink for feed ad impressions/clicks
+-- -----------------------------
+create table public.feed_ad_events (
+  id uuid primary key default gen_random_uuid(),
+  advertiser_id uuid not null references public.feed_advertisers(id) on delete cascade,
+  member_id uuid references auth.users(id) on delete set null,
+  event_name text not null check (event_name in ('feed_ad_impression', 'feed_ad_click')),
+  slot_index int,
+  target text,
+  url text,
+  page_path text,
+  created_at timestamptz not null default now()
+);
+
+create index idx_feed_ad_events_advertiser_created
+  on public.feed_ad_events(advertiser_id, created_at desc);
+create index idx_feed_ad_events_name_created
+  on public.feed_ad_events(event_name, created_at desc);
+
+comment on table public.feed_ad_events is
+  'Feed ad analytics events for admin reporting.';
+
+-- -----------------------------
+-- community_partners: public partner listings (decoupled from ad inventory)
+-- -----------------------------
+create table public.community_partners (
+  id uuid primary key default gen_random_uuid(),
+  company_name text not null,
+  title text,
+  description text,
+  url text not null,
+  logo_url text,
+  image_url text,
+  links jsonb default '[]'::jsonb,
+  active boolean not null default true,
+  featured boolean not null default false,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_community_partners_active_order
+  on public.community_partners(active, featured desc, sort_order)
+  where active = true;
+
+create trigger trg_community_partners_updated_at
+  before update on public.community_partners
+  for each row execute function public.set_updated_at();
+
+comment on table public.community_partners is
+  'Public Community Partners directory, managed separately from feed ads.';
+
+-- Seed Nettica partner (idempotent: only if empty)
+insert into public.community_partners (
+  company_name, title, description, url, logo_url, image_url, active, featured, sort_order
+)
+select
+  'Nettica',
+  'Secure networking partner',
+  'Nettica helps teams run secure private networking with simple WireGuard management.',
+  'https://nettica.com/',
+  null,
+  null,
+  true,
+  true,
+  0
+where not exists (select 1 from public.community_partners limit 1);
 
 -- -----------------------------
 -- Feed items

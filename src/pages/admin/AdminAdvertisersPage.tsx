@@ -57,7 +57,6 @@ type FormState = {
   title: string;
   description: string;
   url: string;
-  logo_url: string;
   image_url: string;
   links: LinkItem[];
   active: boolean;
@@ -69,7 +68,6 @@ const emptyForm: FormState = {
   title: '',
   description: '',
   url: '',
-  logo_url: '',
   image_url: '',
   links: [],
   active: true,
@@ -100,7 +98,6 @@ function formFromRow(row: AdvertiserRow | null): FormState {
     title: row.title,
     description: row.description,
     url: row.url,
-    logo_url: row.logo_url ?? '',
     image_url: (row as AdvertiserRow & { image_url?: string }).image_url ?? '',
     links,
     active: row.active,
@@ -121,6 +118,7 @@ export const AdminAdvertisersPage = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [editingLogoUrl, setEditingLogoUrl] = useState<string | null>(null);
   const [metricsWindowDays, setMetricsWindowDays] =
     useState<MetricsWindowDays>(30);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -172,13 +170,23 @@ export const AdminAdvertisersPage = () => {
   }, [load]);
 
   const openAdd = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
     setEditingId(null);
+    setEditingLogoUrl(null);
     setForm(emptyForm);
     setDialogOpen(true);
   };
 
   const openEdit = (row: AdvertiserRow) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
     setEditingId(row.id);
+    setEditingLogoUrl(row.logo_url ?? null);
     setForm(formFromRow(row));
     setDialogOpen(true);
   };
@@ -186,6 +194,7 @@ export const AdminAdvertisersPage = () => {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingId(null);
+    setEditingLogoUrl(null);
     setForm(emptyForm);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -209,9 +218,24 @@ export const AdminAdvertisersPage = () => {
     setError(null);
     try {
       const publicUrl = await uploadAdImage(file);
+      if (editingId) {
+        // In edit mode, persist image swaps immediately so replacement is reliable
+        // even before the rest of the form is saved.
+        const { error: updateError } = await supabase
+          .from('feed_advertisers')
+          .update({
+            image_url: publicUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingId);
+        if (updateError) throw updateError;
+      }
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
       setForm((f) => ({ ...f, image_url: publicUrl }));
+      if (editingId) {
+        await load();
+      }
     } catch (err) {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
@@ -223,6 +247,10 @@ export const AdminAdvertisersPage = () => {
   };
 
   const handleSave = async () => {
+    if (uploadingImage) {
+      setError('Please wait for the image upload to finish before saving.');
+      return;
+    }
     const links = form.links
       .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
       .filter((l) => l.label || l.url);
@@ -234,7 +262,6 @@ export const AdminAdvertisersPage = () => {
         title: form.title.trim(),
         description: form.description.trim(),
         url: form.url.trim(),
-        logo_url: form.logo_url.trim() || null,
         image_url: form.image_url.trim() || null,
         links,
         active: form.active,
@@ -245,13 +272,18 @@ export const AdminAdvertisersPage = () => {
       if (editingId) {
         const { error: updateError } = await supabase
           .from('feed_advertisers')
-          .update(payload)
+          .update({
+            ...payload,
+            // Logo URL field is no longer editable in this form;
+            // preserve existing value on updates.
+            logo_url: editingLogoUrl,
+          })
           .eq('id', editingId);
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
           .from('feed_advertisers')
-          .insert(payload);
+          .insert({ ...payload, logo_url: null });
         if (insertError) throw insertError;
       }
       closeDialog();
@@ -578,6 +610,25 @@ export const AdminAdvertisersPage = () => {
                   </>
                 )}
               </Box>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mt: 1 }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  {editingId
+                    ? 'Image changes save immediately when upload completes.'
+                    : 'Upload an image, then save the ad.'}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  Replace image
+                </Button>
+              </Stack>
             </Box>
 
             {/* Basic Ad Details */}
@@ -618,16 +669,6 @@ export const AdminAdvertisersPage = () => {
               required
               placeholder="https://example.com"
             />
-            <TextField
-              label="Logo URL (optional)"
-              value={form.logo_url}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, logo_url: e.target.value }))
-              }
-              fullWidth
-              placeholder="https://…"
-            />
-
             {/* Call-To-Action Links */}
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
@@ -744,12 +785,19 @@ export const AdminAdvertisersPage = () => {
             onClick={() => void handleSave()}
             disabled={
               saving ||
+              uploadingImage ||
               !form.company_name.trim() ||
               !form.title.trim() ||
               !form.url.trim()
             }
           >
-            {saving ? <CircularProgress size={20} /> : 'Save Ad'}
+            {saving ? (
+              <CircularProgress size={20} />
+            ) : uploadingImage ? (
+              'Uploading image…'
+            ) : (
+              'Save Ad'
+            )}
           </Button>
         </DialogActions>
       </Dialog>

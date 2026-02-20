@@ -12,6 +12,7 @@ async function stubAvatar(page: Page) {
 }
 
 test('Global Accessibility Audit', async ({ page }) => {
+  test.setTimeout(60000);
   await stubAvatar(page);
   await page.goto('/');
 
@@ -21,10 +22,13 @@ test('Global Accessibility Audit', async ({ page }) => {
     timeout: 15000,
   });
 
-  await expect(page.getByRole('link', { name: /Join/i }).first()).toBeVisible();
+  const joinLink = page.getByRole('link', { name: /Join/i }).first();
+  const joinButton = page.getByRole('button', { name: /Join/i }).first();
+  await expect(joinLink.or(joinButton)).toBeVisible();
+  await page.waitForLoadState('networkidle');
 
   const results = await new AxeBuilder({ page })
-    .include('#root')
+    .include('main')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();
 

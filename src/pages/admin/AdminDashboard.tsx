@@ -1,4 +1,5 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -38,6 +39,13 @@ const SECTIONS: SectionCard[] = [
       'Manage feed advertisers. Add, edit, or deactivate ads shown every 6th post.',
     to: '/admin/advertisers',
     icon: <CampaignIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'Community Partners',
+    description:
+      'Manage public partner listings on /community-partners independently from feed ads.',
+    to: '/admin/partners',
+    icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
   },
 ];
 

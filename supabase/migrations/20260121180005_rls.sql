@@ -24,6 +24,67 @@
 alter table public.feed_advertisers add column if not exists image_url text;
 alter table public.feed_items add column if not exists edited_at timestamptz;
 
+-- Optional: community_partners table (idempotent for existing DBs)
+-- -----------------------------
+create table if not exists public.community_partners (
+  id uuid primary key default gen_random_uuid(),
+  company_name text not null,
+  title text,
+  description text,
+  url text not null,
+  logo_url text,
+  image_url text,
+  links jsonb default '[]'::jsonb,
+  active boolean not null default true,
+  featured boolean not null default false,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_community_partners_active_order
+  on public.community_partners(active, featured desc, sort_order)
+  where active = true;
+
+drop trigger if exists trg_community_partners_updated_at on public.community_partners;
+create trigger trg_community_partners_updated_at
+  before update on public.community_partners
+  for each row execute function public.set_updated_at();
+
+insert into public.community_partners (
+  company_name, title, description, url, logo_url, image_url, active, featured, sort_order
+)
+select
+  'Nettica',
+  'Secure networking partner',
+  'Nettica helps teams run secure private networking with simple WireGuard management.',
+  'https://nettica.com/',
+  null,
+  null,
+  true,
+  true,
+  0
+where not exists (select 1 from public.community_partners limit 1);
+
+-- Optional: feed_ad_events table (idempotent for existing DBs)
+-- -----------------------------
+create table if not exists public.feed_ad_events (
+  id uuid primary key default gen_random_uuid(),
+  advertiser_id uuid not null references public.feed_advertisers(id) on delete cascade,
+  member_id uuid references auth.users(id) on delete set null,
+  event_name text not null check (event_name in ('feed_ad_impression', 'feed_ad_click')),
+  slot_index int,
+  target text,
+  url text,
+  page_path text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_feed_ad_events_advertiser_created
+  on public.feed_ad_events(advertiser_id, created_at desc);
+create index if not exists idx_feed_ad_events_name_created
+  on public.feed_ad_events(event_name, created_at desc);
+
 -- Optional: feed-ad-images bucket (idempotent; 15MB; null = no MIME restriction)
 -- -----------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -786,6 +847,48 @@ create policy feed_advertisers_admin_all
 revoke all on table public.feed_advertisers from anon, authenticated;
 grant select on table public.feed_advertisers to authenticated;
 grant select, insert, update, delete on table public.feed_advertisers to authenticated;
+
+-- -----------------------------
+-- feed_ad_events: authenticated insert own, admin read
+-- -----------------------------
+alter table public.feed_ad_events enable row level security;
+
+drop policy if exists feed_ad_events_insert_own on public.feed_ad_events;
+drop policy if exists feed_ad_events_admin_read on public.feed_ad_events;
+
+create policy feed_ad_events_insert_own
+  on public.feed_ad_events for insert
+  to authenticated
+  with check (member_id is null or auth.uid() = member_id);
+
+create policy feed_ad_events_admin_read
+  on public.feed_ad_events for select
+  to authenticated
+  using (public.is_admin());
+
+revoke all on table public.feed_ad_events from anon, authenticated;
+grant insert, select on table public.feed_ad_events to authenticated;
+
+-- -----------------------------
+-- community_partners: public read active; admin full access
+-- -----------------------------
+alter table public.community_partners enable row level security;
+
+drop policy if exists community_partners_public_read on public.community_partners;
+drop policy if exists community_partners_admin_all on public.community_partners;
+
+create policy community_partners_public_read
+  on public.community_partners for select
+  using (active = true);
+
+create policy community_partners_admin_all
+  on public.community_partners for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+revoke all on table public.community_partners from anon, authenticated;
+grant select on table public.community_partners to anon, authenticated;
+grant select, insert, update, delete on table public.community_partners to authenticated;
 
 -- -----------------------------
 -- notifications: recipient only

@@ -18,6 +18,7 @@ import { useKonamiCode } from './hooks/useKonamiCode';
 import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
 import { supabase } from './lib/auth/supabaseClient';
+import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
@@ -230,6 +231,11 @@ const AdminAdvertisersPage = lazy(async () => {
   return { default: m.AdminAdvertisersPage };
 });
 
+const AdminPartnersPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminPartnersPage');
+  return { default: m.AdminPartnersPage };
+});
+
 // 5. System Components
 const Loading = () => (
   <Box
@@ -271,6 +277,10 @@ const App = () => {
       navigate('/divergence');
     }
   }, [searchParams, navigate]);
+
+  useEffect(() => {
+    registerAnalyticsSinks();
+  }, []);
 
   return (
     <>
@@ -458,6 +468,7 @@ const App = () => {
                     path="advertisers"
                     element={<AdminAdvertisersPage />}
                   />
+                  <Route path="partners" element={<AdminPartnersPage />} />
                 </Route>
                 <Route
                   path="/admin/pending"

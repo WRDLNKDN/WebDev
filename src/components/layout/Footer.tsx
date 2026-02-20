@@ -13,6 +13,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { trackEvent } from '../../lib/analytics/trackEvent';
 
 type FooterLink = {
   label: string;
@@ -40,6 +41,7 @@ const sections: FooterSection[] = [
     links: [
       { label: 'About', href: '/about' },
       { label: 'Advertise', href: '/advertise' },
+      { label: 'Community Partners', href: '/community-partners' },
       {
         label: 'Contact',
         href: 'https://github.com/WRDLNKDN/Agreements?tab=readme-ov-file#contact',
@@ -128,7 +130,13 @@ export const Footer = () => {
   }, [reduceMotion]);
 
   const toggleSection = (title: string) => {
-    setExpanded((prev) => ({ ...prev, [title]: !prev[title] }));
+    setExpanded((prev) => {
+      const shouldOpen = !prev[title];
+      const next: Record<string, boolean> = {};
+      for (const key of Object.keys(prev)) next[key] = false;
+      next[title] = shouldOpen;
+      return next;
+    });
   };
 
   const closeAllSections = () => {
@@ -170,6 +178,16 @@ export const Footer = () => {
     );
   };
 
+  const handleFooterLinkClick = (link: FooterLink) => {
+    if (!link.external && link.href === '/community-partners') {
+      trackEvent('footer_community_partners_click', {
+        source: 'footer',
+        target: link.href,
+      });
+    }
+    closeAllSections();
+  };
+
   return (
     <Box
       ref={footerRef}
@@ -197,19 +215,24 @@ export const Footer = () => {
         <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
           <Grid size={{ xs: 12, md: 5 }}>
             <Stack
-              spacing={1.25}
+              spacing={1.1}
               sx={{
                 pr: { md: 3 },
-                alignItems: { xs: 'flex-start', md: 'flex-start' },
+                alignItems: { xs: 'center', md: 'flex-start' },
+                textAlign: { xs: 'center', md: 'left' },
               }}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={{ xs: 0.6, md: 0.9 }}
+                alignItems="center"
+              >
                 <Box
                   component="img"
                   src="/assets/og_weirdlings/weirdling_1.png"
                   alt="WRDLNKDN Weirdling logo"
-                  width={isDesktop ? 54 : 46}
-                  height={isDesktop ? 54 : 46}
+                  width={isDesktop ? 70 : 58}
+                  height={isDesktop ? 70 : 58}
                   sx={{
                     display: 'block',
                     objectFit: 'contain',
@@ -222,7 +245,7 @@ export const Footer = () => {
                   component="img"
                   src="/assets/wrdlnkdn_logo.png"
                   alt="WRDLNKDN wordmark"
-                  width={isDesktop ? 210 : 170}
+                  width={isDesktop ? 236 : 192}
                   sx={{
                     display: 'block',
                     maxWidth: '100%',
@@ -373,7 +396,7 @@ export const Footer = () => {
                                   href={link.href}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  onClick={closeAllSections}
+                                  onClick={() => handleFooterLinkClick(link)}
                                   sx={commonSx}
                                 >
                                   {link.label}
@@ -382,7 +405,7 @@ export const Footer = () => {
                                 <Link
                                   component={RouterLink}
                                   to={link.href}
-                                  onClick={closeAllSections}
+                                  onClick={() => handleFooterLinkClick(link)}
                                   sx={commonSx}
                                 >
                                   {link.label}

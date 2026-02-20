@@ -22,31 +22,27 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
-import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
+import React, { useEffect, useState } from 'react';
 import { uploadAdImage } from '../../lib/api/adminAdvertisersApi';
-import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 
-type AdvertiserRow = FeedAdvertiser & {
+type PartnerRow = {
+  id: string;
+  company_name: string;
+  title: string | null;
+  description: string | null;
+  url: string;
+  logo_url: string | null;
+  image_url: string | null;
+  active: boolean;
+  featured: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };
-type AdEventRow = {
-  advertiser_id: string;
-  event_name: 'feed_ad_impression' | 'feed_ad_click';
-};
-type AdStats = {
-  impressions: number;
-  clicks: number;
-};
-type MetricsWindowDays = 7 | 30 | 90;
-
-type LinkItem = { label: string; url: string };
 
 type FormState = {
   company_name: string;
@@ -55,8 +51,8 @@ type FormState = {
   url: string;
   logo_url: string;
   image_url: string;
-  links: LinkItem[];
   active: boolean;
+  featured: boolean;
   sort_order: number;
 };
 
@@ -67,117 +63,60 @@ const emptyForm: FormState = {
   url: '',
   logo_url: '',
   image_url: '',
-  links: [],
   active: true,
+  featured: false,
   sort_order: 0,
 };
 
-const MAX_LINKS = 4;
-
-function parseLinks(raw: unknown): LinkItem[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter(
-      (x: unknown): x is { label?: string; url?: string } =>
-        x != null && typeof x === 'object',
-    )
-    .map((x) => ({
-      label: String(x.label ?? '').trim(),
-      url: String(x.url ?? '').trim(),
-    }))
-    .filter((x) => x.label || x.url);
-}
-
-function formFromRow(row: AdvertiserRow | null): FormState {
+function formFromRow(row: PartnerRow | null): FormState {
   if (!row) return emptyForm;
-  const links = parseLinks(row.links);
   return {
     company_name: row.company_name,
-    title: row.title,
-    description: row.description,
+    title: row.title ?? '',
+    description: row.description ?? '',
     url: row.url,
     logo_url: row.logo_url ?? '',
-    image_url: (row as AdvertiserRow & { image_url?: string }).image_url ?? '',
-    links,
+    image_url: row.image_url ?? '',
     active: row.active,
+    featured: row.featured,
     sort_order: row.sort_order,
   };
 }
 
-export const AdminAdvertisersPage = () => {
-  const [rows, setRows] = useState<AdvertiserRow[]>([]);
-  const [statsByAdvertiserId, setStatsByAdvertiserId] = useState<
-    Record<string, AdStats>
-  >({});
+export const AdminPartnersPage = () => {
+  const [rows, setRows] = useState<PartnerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm);
-  const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [metricsWindowDays, setMetricsWindowDays] =
-    useState<MetricsWindowDays>(30);
+  const [form, setForm] = useState<FormState>(emptyForm);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
+  const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const since = new Date(
-        Date.now() - metricsWindowDays * 24 * 60 * 60 * 1000,
-      ).toISOString();
-      const [adsRes, eventsRes] = await Promise.all([
-        supabase
-          .from('feed_advertisers')
-          .select('*')
-          .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('feed_ad_events')
-          .select('advertiser_id,event_name')
-          .gte('created_at', since)
-          .limit(20000),
-      ]);
-
-      if (adsRes.error) throw adsRes.error;
-      if (eventsRes.error) throw eventsRes.error;
-
-      setRows((adsRes.data ?? []) as AdvertiserRow[]);
-      const stats: Record<string, AdStats> = {};
-      for (const row of (eventsRes.data ?? []) as AdEventRow[]) {
-        const current = stats[row.advertiser_id] ?? {
-          impressions: 0,
-          clicks: 0,
-        };
-        if (row.event_name === 'feed_ad_impression') current.impressions += 1;
-        if (row.event_name === 'feed_ad_click') current.clicks += 1;
-        stats[row.advertiser_id] = current;
-      }
-      setStatsByAdvertiserId(stats);
+      const { data, error: fetchError } = await supabase
+        .from('community_partners')
+        .select('*')
+        .order('featured', { ascending: false })
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (fetchError) throw fetchError;
+      setRows((data ?? []) as PartnerRow[]);
     } catch (e: unknown) {
       setError(toMessage(e));
     } finally {
       setLoading(false);
     }
-  }, [metricsWindowDays]);
+  };
 
   useEffect(() => {
     void load();
-  }, [load]);
-
-  const openAdd = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (row: AdvertiserRow) => {
-    setEditingId(row.id);
-    setForm(formFromRow(row));
-    setDialogOpen(true);
-  };
+  }, []);
 
   const closeDialog = () => {
     setDialogOpen(false);
@@ -192,12 +131,11 @@ export const AdminAdvertisersPage = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const valid = ['image/jpeg', 'image/png'].includes(file.type);
+    const valid = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
     if (!valid) {
-      setError('Only JPG and PNG images are allowed.');
+      setError('Only JPG, PNG, and WEBP images are allowed.');
       return;
     }
-    // Immediate preview while uploading
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     setUploadingImage(true);
@@ -206,7 +144,7 @@ export const AdminAdvertisersPage = () => {
       const publicUrl = await uploadAdImage(file);
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
-      setForm((f) => ({ ...f, image_url: publicUrl }));
+      setForm((prev) => ({ ...prev, image_url: publicUrl }));
     } catch (err) {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
@@ -218,34 +156,31 @@ export const AdminAdvertisersPage = () => {
   };
 
   const handleSave = async () => {
-    const links = form.links
-      .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
-      .filter((l) => l.label || l.url);
     setSaving(true);
     setError(null);
     try {
       const payload = {
         company_name: form.company_name.trim(),
-        title: form.title.trim(),
-        description: form.description.trim(),
+        title: form.title.trim() || null,
+        description: form.description.trim() || null,
         url: form.url.trim(),
         logo_url: form.logo_url.trim() || null,
         image_url: form.image_url.trim() || null,
-        links,
         active: form.active,
+        featured: form.featured,
         sort_order: form.sort_order,
         updated_at: new Date().toISOString(),
       };
 
       if (editingId) {
         const { error: updateError } = await supabase
-          .from('feed_advertisers')
+          .from('community_partners')
           .update(payload)
           .eq('id', editingId);
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
-          .from('feed_advertisers')
+          .from('community_partners')
           .insert(payload);
         if (insertError) throw insertError;
       }
@@ -259,12 +194,12 @@ export const AdminAdvertisersPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this advertiser? This cannot be undone.')) return;
+    if (!confirm('Delete this partner? This cannot be undone.')) return;
     setLoading(true);
     setError(null);
     try {
       const { error: deleteError } = await supabase
-        .from('feed_advertisers')
+        .from('community_partners')
         .delete()
         .eq('id', id);
       if (deleteError) throw deleteError;
@@ -276,66 +211,28 @@ export const AdminAdvertisersPage = () => {
     }
   };
 
-  const toggleActive = async (row: AdvertiserRow) => {
-    try {
-      const { error: updateError } = await supabase
-        .from('feed_advertisers')
-        .update({
-          active: !row.active,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', row.id);
-      if (updateError) throw updateError;
-      await load();
-    } catch (e: unknown) {
-      setError(toMessage(e));
-    }
-  };
-
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" gutterBottom>
-          Feed Advertisers
+          Community Partners
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          Manage ads shown every 6th post in the Feed. Add, edit, or deactivate
-          advertisers.
+          Manage public partner listings independently from feed ads.
         </Typography>
-        <Typography
-          variant="caption"
-          sx={{ opacity: 0.7, display: 'block', mt: 0.75 }}
-        >
-          Metrics below show tracked impressions/clicks for the selected window.
-        </Typography>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-          <Typography variant="caption" sx={{ opacity: 0.7 }}>
-            Window:
-          </Typography>
-          <ToggleButtonGroup
-            size="small"
-            color="primary"
-            exclusive
-            value={metricsWindowDays}
-            onChange={(_, next: MetricsWindowDays | null) => {
-              if (next) setMetricsWindowDays(next);
-            }}
-            aria-label="Ad metrics window"
-          >
-            <ToggleButton value={7}>7d</ToggleButton>
-            <ToggleButton value={30}>30d</ToggleButton>
-            <ToggleButton value={90}>90d</ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
       </Box>
 
       <Button
         variant="contained"
         startIcon={<AddIcon />}
-        onClick={openAdd}
+        onClick={() => {
+          setEditingId(null);
+          setForm(emptyForm);
+          setDialogOpen(true);
+        }}
         sx={{ mb: 2 }}
       >
-        Add Advertiser
+        Add Partner
       </Button>
 
       {error && (
@@ -347,11 +244,11 @@ export const AdminAdvertisersPage = () => {
       {loading ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 4 }}>
           <CircularProgress size={24} />
-          <Typography variant="body2">Loading advertisers…</Typography>
+          <Typography variant="body2">Loading partners…</Typography>
         </Box>
       ) : rows.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
-          No advertisers yet. Add one to get started.
+          No partners yet. Add one to get started.
         </Typography>
       ) : (
         <Table
@@ -365,11 +262,7 @@ export const AdminAdvertisersPage = () => {
               <TableCell>Title</TableCell>
               <TableCell>URL</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell align="right">
-                {`Impressions (${metricsWindowDays}d)`}
-              </TableCell>
-              <TableCell align="right">{`Clicks (${metricsWindowDays}d)`}</TableCell>
-              <TableCell align="right">CTR</TableCell>
+              <TableCell>Featured</TableCell>
               <TableCell align="right">Order</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -411,12 +304,12 @@ export const AdminAdvertisersPage = () => {
                   )}
                 </TableCell>
                 <TableCell>{row.company_name}</TableCell>
-                <TableCell>{row.title}</TableCell>
+                <TableCell>{row.title ?? '—'}</TableCell>
                 <TableCell>
                   <Typography
                     variant="body2"
                     sx={{
-                      maxWidth: 200,
+                      maxWidth: 220,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -432,30 +325,25 @@ export const AdminAdvertisersPage = () => {
                     size="small"
                     color={row.active ? 'success' : 'default'}
                     variant="outlined"
-                    onClick={() => void toggleActive(row)}
-                    sx={{ cursor: 'pointer' }}
                   />
                 </TableCell>
-                <TableCell align="right">
-                  {statsByAdvertiserId[row.id]?.impressions ?? 0}
-                </TableCell>
-                <TableCell align="right">
-                  {statsByAdvertiserId[row.id]?.clicks ?? 0}
-                </TableCell>
-                <TableCell align="right">
-                  {(() => {
-                    const impressions =
-                      statsByAdvertiserId[row.id]?.impressions ?? 0;
-                    const clicks = statsByAdvertiserId[row.id]?.clicks ?? 0;
-                    if (impressions <= 0) return '0.00%';
-                    return `${((clicks / impressions) * 100).toFixed(2)}%`;
-                  })()}
+                <TableCell>
+                  <Chip
+                    label={row.featured ? 'Featured' : 'Standard'}
+                    size="small"
+                    color={row.featured ? 'primary' : 'default'}
+                    variant="outlined"
+                  />
                 </TableCell>
                 <TableCell align="right">{row.sort_order}</TableCell>
                 <TableCell align="right">
                   <IconButton
                     size="small"
-                    onClick={() => openEdit(row)}
+                    onClick={() => {
+                      setEditingId(row.id);
+                      setForm(formFromRow(row));
+                      setDialogOpen(true);
+                    }}
                     aria-label="Edit"
                   >
                     <EditIcon fontSize="small" />
@@ -480,9 +368,7 @@ export const AdminAdvertisersPage = () => {
         onClose={closeDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2, bgcolor: 'background.paper' },
-        }}
+        PaperProps={{ sx: { borderRadius: 2, bgcolor: 'background.paper' } }}
       >
         <DialogTitle
           sx={{
@@ -492,7 +378,7 @@ export const AdminAdvertisersPage = () => {
             pr: 1,
           }}
         >
-          Advertiser Ad Editor
+          Partner Editor
           <IconButton
             size="small"
             onClick={closeDialog}
@@ -504,12 +390,11 @@ export const AdminAdvertisersPage = () => {
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5} sx={{ pt: 1 }}>
-            {/* Image Upload */}
             <Box>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
@@ -539,7 +424,7 @@ export const AdminAdvertisersPage = () => {
                     <Box
                       component="img"
                       src={previewUrl ?? form.image_url ?? ''}
-                      alt="Ad banner"
+                      alt="Partner image"
                       sx={{
                         maxWidth: '100%',
                         maxHeight: 200,
@@ -565,50 +450,49 @@ export const AdminAdvertisersPage = () => {
                       sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
                     />
                     <Typography variant="body1" fontWeight={500}>
-                      Upload Image
+                      Upload Partner Image
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      1200x400 recommended (JPG, PNG)
+                      1200x400 hero or square logo (JPG, PNG, WEBP)
                     </Typography>
                   </>
                 )}
               </Box>
             </Box>
 
-            {/* Basic Ad Details */}
             <TextField
-              label="Company"
+              label="Company *"
               value={form.company_name}
               onChange={(e) =>
-                setForm((f) => ({ ...f, company_name: e.target.value }))
-              }
-              fullWidth
-            />
-            <TextField
-              label="Title *"
-              value={form.title}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, title: e.target.value }))
+                setForm((prev) => ({ ...prev, company_name: e.target.value }))
               }
               fullWidth
               required
-              placeholder="e.g. Sponsor spotlight"
+            />
+            <TextField
+              label="Title"
+              value={form.title}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, title: e.target.value }))
+              }
+              fullWidth
             />
             <TextField
               label="Description"
               value={form.description}
               onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
+                setForm((prev) => ({ ...prev, description: e.target.value }))
               }
               fullWidth
               multiline
               rows={4}
-              placeholder="Describe your product or service…"
             />
             <TextField
-              label="Main URL"
+              label="Partner URL *"
               value={form.url}
-              onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, url: e.target.value }))
+              }
               fullWidth
               required
               placeholder="https://example.com"
@@ -617,117 +501,42 @@ export const AdminAdvertisersPage = () => {
               label="Logo URL (optional)"
               value={form.logo_url}
               onChange={(e) =>
-                setForm((f) => ({ ...f, logo_url: e.target.value }))
+                setForm((prev) => ({ ...prev, logo_url: e.target.value }))
               }
               fullWidth
-              placeholder="https://…"
             />
 
-            {/* Call-To-Action Links */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Call-To-Action Links
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mb: 1, display: 'block' }}
-              >
-                Add up to 4 links (e.g. Learn more, Contact, Docs).
-              </Typography>
-              {form.links.map((link, i) => (
-                <Stack
-                  key={i}
-                  direction="row"
-                  spacing={1}
-                  sx={{ mb: 1 }}
-                  alignItems="center"
-                >
-                  <TextField
-                    label="Label"
-                    size="small"
-                    value={link.label}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        links: f.links.map((l, j) =>
-                          j === i ? { ...l, label: e.target.value } : l,
-                        ),
-                      }))
-                    }
-                    placeholder="e.g. Downloads"
-                    sx={{ flex: 1, minWidth: 100 }}
-                  />
-                  <TextField
-                    label="URL"
-                    size="small"
-                    type="url"
-                    value={link.url}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        links: f.links.map((l, j) =>
-                          j === i ? { ...l, url: e.target.value } : l,
-                        ),
-                      }))
-                    }
-                    placeholder="https://…"
-                    sx={{ flex: 2, minWidth: 140 }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        links: f.links.filter((_, j) => j !== i),
-                      }))
-                    }
-                    aria-label="Remove link"
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              ))}
-              {form.links.length < MAX_LINKS && (
-                <Button
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      links: [...f.links, { label: '', url: '' }],
-                    }))
-                  }
-                >
-                  Add Another Link
-                </Button>
-              )}
-            </Box>
-
-            {/* Sort Order & Active */}
             <Stack direction="row" spacing={3} alignItems="center">
               <TextField
                 label="Sort Order"
                 type="number"
                 value={form.sort_order}
                 onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
+                  setForm((prev) => ({
+                    ...prev,
                     sort_order: parseInt(e.target.value, 10) || 0,
                   }))
                 }
                 inputProps={{ min: 0 }}
-                sx={{ width: 100 }}
+                sx={{ width: 120 }}
               />
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <Switch
                   checked={form.active}
                   onChange={(_, checked) =>
-                    setForm((f) => ({ ...f, active: checked }))
+                    setForm((prev) => ({ ...prev, active: checked }))
                   }
-                  color="primary"
                 />
                 <Typography variant="body2">Active</Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Switch
+                  checked={form.featured}
+                  onChange={(_, checked) =>
+                    setForm((prev) => ({ ...prev, featured: checked }))
+                  }
+                />
+                <Typography variant="body2">Featured</Typography>
               </Stack>
             </Stack>
           </Stack>
@@ -737,17 +546,14 @@ export const AdminAdvertisersPage = () => {
           <Button
             variant="contained"
             onClick={() => void handleSave()}
-            disabled={
-              saving ||
-              !form.company_name.trim() ||
-              !form.title.trim() ||
-              !form.url.trim()
-            }
+            disabled={saving || !form.company_name.trim() || !form.url.trim()}
           >
-            {saving ? <CircularProgress size={20} /> : 'Save Ad'}
+            {saving ? <CircularProgress size={20} /> : 'Save Partner'}
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 };
+
+export default AdminPartnersPage;

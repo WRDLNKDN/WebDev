@@ -73,6 +73,8 @@ Central index for WRDLNKDN WebDev documentation.
   everything; pre-commit and commands.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
   testing.
+- [Beta notes](./BETA_NOTES.md) — Current Beta-scope adjustments and temporary
+  decisions.
 
 ## Governance (API & Data Layer)
 

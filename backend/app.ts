@@ -977,11 +977,8 @@ app.patch(
     const postIdRaw = req.params.postId;
     const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
     if (!postId) return sendApiError(res, 400, 'Invalid post id');
-    const bodyRaw =
-      typeof (req.body as Record<string, unknown>).body === 'string'
-        ? (req.body as Record<string, unknown>).body
-        : '';
-    const text = bodyRaw.trim();
+    const reqBody = req.body as { body?: unknown };
+    const text = typeof reqBody.body === 'string' ? reqBody.body.trim() : '';
     if (!text) return sendApiError(res, 400, 'Post body is required');
 
     const { data: existing, error: existingErr } = await adminSupabase
@@ -1225,11 +1222,8 @@ app.patch(
     const commentId =
       typeof commentIdRaw === 'string' ? commentIdRaw.trim() : '';
     if (!commentId) return sendApiError(res, 400, 'Invalid comment id');
-    const bodyRaw =
-      typeof (req.body as Record<string, unknown>).body === 'string'
-        ? (req.body as Record<string, unknown>).body
-        : '';
-    const text = bodyRaw.trim();
+    const reqBody = req.body as { body?: unknown };
+    const text = typeof reqBody.body === 'string' ? reqBody.body.trim() : '';
     if (!text) return sendApiError(res, 400, 'Comment body is required');
 
     const { data: existing, error: existingErr } = await adminSupabase

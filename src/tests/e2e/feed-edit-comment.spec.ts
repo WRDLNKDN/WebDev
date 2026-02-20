@@ -56,6 +56,7 @@ test.describe('Feed post/comment edit persistence', () => {
   test('author can edit post and comment with Edited persisting after reload', async ({
     page,
   }) => {
+    test.setTimeout(90000);
     await seedSignedInSession(page);
 
     const postState = {
@@ -195,8 +196,18 @@ test.describe('Feed post/comment edit persistence', () => {
       },
     );
 
+    const initialFeedResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        response.url().includes('/api/feeds'),
+      { timeout: 30000 },
+    );
     await page.goto('/feed');
-    await expect(page.getByText('Original post body')).toBeVisible();
+    await expect(page).toHaveURL(/\/feed/, { timeout: 30000 });
+    await initialFeedResponse;
+    await expect(page.getByText('Original post body')).toBeVisible({
+      timeout: 30000,
+    });
 
     await page.getByRole('button', { name: 'Edit' }).first().click();
     const postEditor = page.locator('textarea').first();

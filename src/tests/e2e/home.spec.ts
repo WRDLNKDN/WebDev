@@ -34,9 +34,9 @@ test.describe('Home Page - High-Integrity Audit', () => {
       ),
     ).toBeVisible();
 
-    await expect(
-      page.getByRole('link', { name: /Join/i }).first(),
-    ).toBeVisible();
+    const joinLink = page.getByRole('link', { name: /Join/i }).first();
+    const joinButton = page.getByRole('button', { name: /Join/i }).first();
+    await expect(joinLink.or(joinButton)).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .include('#root')

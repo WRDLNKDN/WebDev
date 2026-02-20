@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 
 type ProfileOption = {
   id: string;
@@ -107,13 +108,7 @@ export const CreateGroupDialog = ({
       await onCreate(name.trim(), memberIds);
       onClose();
     } catch (e) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : typeof (e as { message?: string })?.message === 'string'
-            ? (e as { message: string }).message
-            : 'Could not create group';
-      setError(msg);
+      setError(toMessage(e));
     } finally {
       setSubmitting(false);
     }

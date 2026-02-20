@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
+import { toMessage } from '../lib/utils/errors';
 import type {
   ChatMessage,
   ChatMessageAttachment,
@@ -522,7 +523,9 @@ export function useChat(roomId: string | null) {
         .eq('room_id', roomId)
         .is('left_at', null);
       const current = count ?? 0;
-      if (current + toAdd.length > 100) throw new Error('Max 100 members');
+      if (current + toAdd.length > 100) {
+        throw new Error('A group can have up to 100 members.');
+      }
       await supabase
         .from('chat_room_members')
         .insert(
@@ -744,7 +747,7 @@ export function useChatRooms() {
         b: otherUserId,
       });
       if (blocked) {
-        throw new Error('You cannot message this user');
+        throw new Error('You cannot message this member.');
       }
 
       const { data: conn } = await supabase.rpc('are_chat_connections', {
@@ -752,7 +755,7 @@ export function useChatRooms() {
         b: otherUserId,
       });
       if (!conn) {
-        throw new Error('Only connections can start 1:1 chats');
+        throw new Error('You can only start 1:1 chats with Connections.');
       }
 
       const { data: room, error } = await supabase
@@ -785,7 +788,9 @@ export function useChatRooms() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Sign in to create a group');
-      if (memberIds.length >= 100) throw new Error('Max 100 members');
+      if (memberIds.length >= 100) {
+        throw new Error('A group can have up to 100 members.');
+      }
 
       const { data: roomId, error } = await supabase.rpc('chat_create_group', {
         p_name: name.trim(),
@@ -799,7 +804,7 @@ export function useChatRooms() {
         throw new Error(
           isStaleSession
             ? 'Your session may be stale. Sign out and sign in again, then try creating the group.'
-            : (error.message ?? 'Could not create group'),
+            : toMessage(error),
         );
       }
       if (!roomId) return null;
@@ -831,10 +836,13 @@ export function useReportMessage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Not authenticated');
-      if (!reportedMessageId && !reportedUserId)
-        throw new Error('Report message or user');
-      if (!category) throw new Error('Category required');
+      if (!session?.user) {
+        throw new Error('You need to sign in to send reports.');
+      }
+      if (!reportedMessageId && !reportedUserId) {
+        throw new Error('Select a message or member to report.');
+      }
+      if (!category) throw new Error('Choose a report reason.');
 
       const { error } = await supabase.from('chat_reports').insert({
         reporter_id: session.user.id,

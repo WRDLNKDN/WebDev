@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useSignup } from '../../context/useSignup';
 import {
+  getErrorMessage,
   toMessage,
   MICROSOFT_SIGNIN_NOT_CONFIGURED,
 } from '../../lib/utils/errors';
@@ -169,7 +170,7 @@ export const IdentityStep = () => {
         setLoadingProvider(null);
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Authentication failed';
+      const raw = getErrorMessage(err, 'Authentication failed');
       const msg = raw.toLowerCase();
 
       const providerLabel = provider === 'google' ? 'Google' : 'Microsoft';

@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
 import {
+  getErrorMessage,
   toMessage,
   MICROSOFT_SIGNIN_NOT_CONFIGURED,
 } from '../../lib/utils/errors';
@@ -187,7 +188,7 @@ export const AuthCallback = () => {
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : '';
+          const msg = getErrorMessage(e);
 
           if (
             msg.toLowerCase().includes('network') ||

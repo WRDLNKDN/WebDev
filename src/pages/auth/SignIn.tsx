@@ -16,6 +16,7 @@ import {
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
+  getErrorMessage,
   toMessage,
   MICROSOFT_SIGNIN_NOT_CONFIGURED,
 } from '../../lib/utils/errors';
@@ -45,7 +46,7 @@ export const SignIn = () => {
 
       if (data.url) window.location.href = data.url;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed';
+      const msg = getErrorMessage(err, 'Authentication failed');
       if (
         msg.toLowerCase().includes('provider') &&
         msg.toLowerCase().includes('not enabled')

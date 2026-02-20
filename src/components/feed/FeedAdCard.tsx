@@ -111,37 +111,70 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
       component="article"
       aria-label={`Sponsored: ${advertiser.title}`}
     >
-      {heroImageUrl && (
-        <Box
-          component="a"
-          href={advertiser.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{
-            display: 'block',
-            width: '100%',
-            lineHeight: 0,
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            component="img"
-            src={heroImageUrl}
-            alt={`${advertiser.company_name} – ${advertiser.title}`}
-            loading="eager"
-            referrerPolicy="no-referrer"
-            sx={{
-              width: '100%',
-              height: { xs: 72, sm: 84, md: 96 },
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block',
-              bgcolor: 'action.hover',
-            }}
-          />
-        </Box>
-      )}
-      <CardContent sx={{ pt: 2, pb: 2, '&:last-child': { pb: 2 } }}>
+      <CardContent
+        sx={{
+          pt: 2,
+          pb: 2,
+          pr: onDismiss ? { xs: 6.5, sm: 7 } : 2,
+          position: 'relative',
+          '&:last-child': { pb: 2 },
+        }}
+      >
+        {onDismiss && (
+          <>
+            <IconButton
+              size="small"
+              sx={{ position: 'absolute', top: 8, right: 8 }}
+              aria-label="More options"
+              aria-haspopup="true"
+              aria-expanded={!!menuAnchor}
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+            >
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchor}
+              open={!!menuAnchor}
+              onClose={() => setMenuAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  onDismiss();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <BlockOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Hide this ad</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  onDismiss();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <ThumbDownOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Not interested</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  onDismiss();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <VisibilityOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Seen too often</ListItemText>
+              </MenuItem>
+            </Menu>
+          </>
+        )}
         <Stack
           direction="row"
           spacing={{ xs: 1, sm: 2 }}
@@ -159,12 +192,7 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
             {advertiser.company_name.charAt(0).toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Stack
-              direction="row"
-              alignItems="flex-start"
-              justifyContent="space-between"
-              gap={1}
-            >
+            <Stack direction="row" alignItems="flex-start" gap={1}>
               <Box sx={{ minWidth: 0 }}>
                 <Typography
                   variant="caption"
@@ -188,61 +216,6 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
                   {advertiser.url.replace(/^https?:\/\//, '')}
                 </Typography>
               </Box>
-              {onDismiss && (
-                <>
-                  <IconButton
-                    size="small"
-                    sx={{ mt: -0.5, mr: -0.5 }}
-                    aria-label="More options"
-                    aria-haspopup="true"
-                    aria-expanded={!!menuAnchor}
-                    onClick={(e) => setMenuAnchor(e.currentTarget)}
-                  >
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
-                  <Menu
-                    anchorEl={menuAnchor}
-                    open={!!menuAnchor}
-                    onClose={() => setMenuAnchor(null)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        onDismiss();
-                        setMenuAnchor(null);
-                      }}
-                    >
-                      <ListItemIcon>
-                        <BlockOutlinedIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Hide this ad</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        onDismiss();
-                        setMenuAnchor(null);
-                      }}
-                    >
-                      <ListItemIcon>
-                        <ThumbDownOutlinedIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Not interested</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        onDismiss();
-                        setMenuAnchor(null);
-                      }}
-                    >
-                      <ListItemIcon>
-                        <VisibilityOutlinedIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Seen too often</ListItemText>
-                    </MenuItem>
-                  </Menu>
-                </>
-              )}
             </Stack>
             <Typography
               component="a"
@@ -264,48 +237,112 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mt: 0.5, display: 'block' }}
+              sx={{ mt: 0.5, display: 'block', lineHeight: 1.45 }}
             >
               {advertiser.description}
             </Typography>
-            {links.length > 0 && (
-              <Stack
-                direction="row"
-                flexWrap="wrap"
-                gap={0.5}
-                sx={{ mt: 1 }}
-                component="nav"
-              >
-                {links.map((l, i) => (
-                  <Box component="span" key={i}>
-                    {i > 0 && (
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mx: 0.5 }}
-                      >
-                        •
-                      </Typography>
-                    )}
-                    <Link
-                      href={l.url || advertiser.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      variant="body2"
-                      sx={{
-                        color: 'primary.main',
-                        fontSize: '0.8125rem',
-                        '&:hover': { textDecoration: 'underline' },
-                      }}
+            {links.length > 0 ? (
+              <Box component="nav" sx={{ mt: 1.25 }} aria-label="Ad links">
+                <Box
+                  component="ul"
+                  sx={{
+                    m: 0,
+                    pl: 1.75,
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, minmax(0, 1fr))',
+                    },
+                    columnGap: 1.5,
+                    rowGap: 0.35,
+                    color: 'text.secondary',
+                    '& li::marker': {
+                      color: 'text.disabled',
+                      fontSize: '0.62rem',
+                    },
+                  }}
+                >
+                  {links.map((l, i) => (
+                    <Box
+                      component="li"
+                      key={`${l.label}-${i}`}
+                      sx={{ minWidth: 0, lineHeight: 1.1 }}
                     >
-                      {l.label}
-                    </Link>
-                  </Box>
-                ))}
+                      <Link
+                        href={l.url || advertiser.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="body2"
+                        sx={{
+                          color: 'primary.main',
+                          fontSize: '0.82rem',
+                          fontWeight: 400,
+                          textDecoration: 'underline',
+                          textUnderlineOffset: '2px',
+                        }}
+                      >
+                        {l.label}
+                      </Link>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            ) : (
+              <Stack direction="row" sx={{ mt: 1.5 }}>
+                <Link
+                  component="a"
+                  href={advertiser.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body2"
+                  sx={{
+                    color: 'primary.main',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '2px',
+                  }}
+                >
+                  Learn more
+                </Link>
               </Stack>
             )}
           </Box>
+          {heroImageUrl && (
+            <Box
+              component="a"
+              href={advertiser.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'block',
+                flexShrink: 0,
+                width: { xs: 64, sm: 78, md: 92 },
+                height: { xs: 64, sm: 78, md: 92 },
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'action.hover',
+                mr: onDismiss ? { xs: 4.5, sm: 5, md: 5.5 } : 0,
+              }}
+            >
+              <Box
+                component="img"
+                src={heroImageUrl}
+                alt={`${advertiser.company_name} – ${advertiser.title}`}
+                loading="eager"
+                referrerPolicy="no-referrer"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          )}
         </Stack>
       </CardContent>
     </Card>

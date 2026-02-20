@@ -93,6 +93,15 @@ import {
 
 const FEED_LIMIT = 20;
 const AD_EVERY_N_POSTS = 6;
+const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
+const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
+
+type FeedCachePayload = {
+  items: FeedItem[];
+  nextCursor?: string;
+  advertisers: FeedAdvertiser[];
+  cachedAt: number;
+};
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -1008,6 +1017,11 @@ export const Feed = () => {
     useState<FeedViewPreference>('anyone');
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const { avatarUrl } = useCurrentUserAvatar();
+  const feedCacheKey = useMemo(
+    () =>
+      session?.user?.id ? `${FEED_CACHE_KEY_PREFIX}:${session.user.id}` : null,
+    [session?.user?.id],
+  );
 
   const handleDismissLinkPreview = useCallback((postId: string) => {
     setDismissedLinkPreviewIds((prev) => new Set(prev).add(postId));
@@ -1108,9 +1122,10 @@ export const Feed = () => {
   const loadPage = useCallback(
     async (cursor?: string, append = false) => {
       if (!session?.access_token) return;
+      const showInitialLoader = !append && items.length === 0;
       try {
         if (append) setLoadingMore(true);
-        else setLoading(true);
+        else if (showInitialLoader) setLoading(true);
         const res = await fetchFeeds({
           limit: FEED_LIMIT,
           cursor,
@@ -1125,12 +1140,51 @@ export const Feed = () => {
       } catch (e) {
         await handleAuthError(e, 'Failed to load feed');
       } finally {
-        setLoading(false);
+        if (showInitialLoader) setLoading(false);
         setLoadingMore(false);
       }
     },
-    [handleAuthError, session?.access_token],
+    [handleAuthError, items.length, session?.access_token],
   );
+
+  useEffect(() => {
+    if (!feedCacheKey) return;
+    try {
+      const raw = sessionStorage.getItem(feedCacheKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as FeedCachePayload;
+      if (
+        !parsed ||
+        !Array.isArray(parsed.items) ||
+        !Array.isArray(parsed.advertisers) ||
+        typeof parsed.cachedAt !== 'number'
+      ) {
+        return;
+      }
+      if (Date.now() - parsed.cachedAt > FEED_CACHE_TTL_MS) return;
+      setItems(parsed.items);
+      setNextCursor(parsed.nextCursor);
+      setAdvertisers(parsed.advertisers);
+      setLoading(false);
+    } catch {
+      // Ignore malformed cache and continue with network fetch.
+    }
+  }, [feedCacheKey]);
+
+  useEffect(() => {
+    if (!feedCacheKey) return;
+    const payload: FeedCachePayload = {
+      items,
+      nextCursor,
+      advertisers,
+      cachedAt: Date.now(),
+    };
+    try {
+      sessionStorage.setItem(feedCacheKey, JSON.stringify(payload));
+    } catch {
+      // Ignore storage write failures (private mode / quota).
+    }
+  }, [advertisers, feedCacheKey, items, nextCursor]);
 
   useEffect(() => {
     if (!session) return;
@@ -1430,7 +1484,14 @@ export const Feed = () => {
   ]);
 
   return (
-    <Box sx={{ position: 'relative', flex: 1, width: '100%' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        flex: 1,
+        width: '100%',
+        scrollbarGutter: 'stable both-edges',
+      }}
+    >
       <Box
         sx={{
           maxWidth: 1200,
@@ -1473,7 +1534,6 @@ export const Feed = () => {
           spacing={2}
           sx={{
             alignItems: 'flex-start',
-            transition: 'all 0.25s ease-in-out',
           }}
         >
           {/* LEFT SIDEBAR: Explore — hidden on mobile; md: 2-col with Feed; lg: 3-col with Feed + Partners */}
@@ -1797,7 +1857,7 @@ export const Feed = () => {
             </Paper>
 
             {/* Feed list */}
-            {loading ? (
+            {loading && items.length === 0 ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress aria-label="Loading feed" />
               </Box>

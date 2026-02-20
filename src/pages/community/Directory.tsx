@@ -21,7 +21,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type {
@@ -41,6 +41,14 @@ import { supabase } from '../../lib/auth/supabaseClient';
 
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const PAGE_SIZE = 25;
+const DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
+const DIRECTORY_CACHE_KEY_PREFIX = 'directory_cache_v1';
+
+type DirectoryCachePayload = {
+  rows: DirectoryMember[];
+  hasMore: boolean;
+  cachedAt: number;
+};
 
 export const Directory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,10 +70,30 @@ export const Directory = () => {
     id: string;
     name: string;
   } | null>(null);
+  const hasInitialDataRef = useRef(false);
 
   const skills = useMemo(
     () => (skillsParam ? skillsParam.split(',').filter(Boolean) : []),
     [skillsParam],
+  );
+  const queryCacheKey = useMemo(
+    () =>
+      JSON.stringify({
+        q: q.trim(),
+        industry,
+        location,
+        skills,
+        connectionStatus,
+        sort,
+      }),
+    [q, industry, location, skills, connectionStatus, sort],
+  );
+  const directoryCacheKey = useMemo(
+    () =>
+      session?.user?.id
+        ? `${DIRECTORY_CACHE_KEY_PREFIX}:${session.user.id}:${queryCacheKey}`
+        : null,
+    [session?.user?.id, queryCacheKey],
   );
 
   const updateUrl = useCallback(
@@ -86,7 +114,8 @@ export const Directory = () => {
     async (append = false, appendOffset?: number) => {
       if (!session?.user?.id) return;
       const offset = append ? (appendOffset ?? 0) : 0;
-      if (!append) setLoading(true);
+      const showInitialLoader = !append && !hasInitialDataRef.current;
+      if (!append && showInitialLoader) setLoading(true);
       else setLoadingMore(true);
       setError(null);
       try {
@@ -104,6 +133,7 @@ export const Directory = () => {
           setRows((prev) => [...prev, ...data]);
         } else {
           setRows(data);
+          hasInitialDataRef.current = true;
         }
         setHasMore(more);
       } catch (e: unknown) {
@@ -118,7 +148,7 @@ export const Directory = () => {
             : msg,
         );
       } finally {
-        setLoading(false);
+        if (showInitialLoader) setLoading(false);
         setLoadingMore(false);
       }
     },
@@ -137,6 +167,48 @@ export const Directory = () => {
     };
     void init();
   }, []);
+
+  useEffect(() => {
+    hasInitialDataRef.current = false;
+  }, [directoryCacheKey]);
+
+  useEffect(() => {
+    if (!directoryCacheKey) return;
+    try {
+      const raw = sessionStorage.getItem(directoryCacheKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as DirectoryCachePayload;
+      if (
+        !parsed ||
+        !Array.isArray(parsed.rows) ||
+        typeof parsed.hasMore !== 'boolean' ||
+        typeof parsed.cachedAt !== 'number'
+      ) {
+        return;
+      }
+      if (Date.now() - parsed.cachedAt > DIRECTORY_CACHE_TTL_MS) return;
+      setRows(parsed.rows);
+      setHasMore(parsed.hasMore);
+      hasInitialDataRef.current = true;
+      setLoading(false);
+    } catch {
+      // Ignore malformed cache and fetch fresh data.
+    }
+  }, [directoryCacheKey]);
+
+  useEffect(() => {
+    if (!directoryCacheKey) return;
+    const payload: DirectoryCachePayload = {
+      rows,
+      hasMore,
+      cachedAt: Date.now(),
+    };
+    try {
+      sessionStorage.setItem(directoryCacheKey, JSON.stringify(payload));
+    } catch {
+      // Ignore storage write failures.
+    }
+  }, [directoryCacheKey, rows, hasMore]);
 
   useEffect(() => {
     if (session?.user?.id) void load(false);
@@ -380,7 +452,7 @@ export const Directory = () => {
           </Alert>
         )}
 
-        {loading ? (
+        {loading && rows.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress size={48} />
           </Box>

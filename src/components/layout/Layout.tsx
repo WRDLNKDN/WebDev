@@ -43,6 +43,7 @@ const LayoutContent = () => {
           flexDirection: 'column',
           minHeight: '100vh',
           overflowX: 'hidden',
+          scrollbarGutter: 'stable both-edges',
           ...PAGE_BG,
         }}
       >

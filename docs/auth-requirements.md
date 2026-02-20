@@ -41,7 +41,9 @@ control.
   use a guard that waits for session hydration before deciding access.
 - The onboarding guard must not downgrade an already-validated authenticated
   route to `/join` on transient null session/profile reads during hydration.
-- Explicit sign-out (`SIGNED_OUT`) still immediately redirects to `/join`.
+- `SIGNED_OUT` auth events are re-verified with `getSession` and
+  `refreshSession` before redirecting, to avoid transient false sign-out states
+  during token churn.
 - If profile reads are briefly unavailable but auth is valid, the current
   protected route remains stable (no flicker-then-redirect behavior).
 

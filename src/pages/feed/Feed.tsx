@@ -1071,8 +1071,24 @@ export const Feed = () => {
 
       // Only redirect on explicit sign-out, not on token refresh/errors
       if (evt === 'SIGNED_OUT') {
-        setSession(null);
-        navigate('/join', { replace: true });
+        // UAT hardening: transient SIGNED_OUT events can happen during token
+        // refresh churn. Re-verify before redirecting.
+        void (async () => {
+          const { data: current } = await supabase.auth.getSession();
+          if (cancelled) return;
+          if (current.session) {
+            setSession(current.session);
+            return;
+          }
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (cancelled) return;
+          if (refreshed.session) {
+            setSession(refreshed.session);
+            return;
+          }
+          setSession(null);
+          navigate('/join', { replace: true });
+        })();
         return;
       }
 

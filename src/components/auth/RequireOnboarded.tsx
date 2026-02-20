@@ -185,8 +185,24 @@ export const RequireOnboarded = ({
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       if (event === 'SIGNED_OUT') {
-        hasEverAllowedRef.current = false;
-        setState('redirect');
+        // UAT hardening: SIGNED_OUT can be emitted transiently during token
+        // churn. Re-verify/refresh before forcing redirect.
+        void (async () => {
+          const { data: current } = await supabase.auth.getSession();
+          if (cancelled) return;
+          if (current.session) {
+            void check();
+            return;
+          }
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (cancelled) return;
+          if (refreshed.session) {
+            void check();
+            return;
+          }
+          hasEverAllowedRef.current = false;
+          setState('redirect');
+        })();
         return;
       }
       // Ignore transient null sessions after we've already allowed this route.

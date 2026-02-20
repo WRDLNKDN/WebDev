@@ -61,20 +61,37 @@ The Feed is optimized for signal-based content, not engagement farming.
 - `setReaction`, `removeReaction` via `feedsApi.ts`
 - Backend: POST/DELETE `/api/feeds` (reaction kind), DELETE
   `/api/feeds/items/:postId/reaction`
+- Comments support the same emoji model with deterministic per-emoji counts and
+  viewer state.
 
-### 3.4 Activity Stream Integrity ✅
+### 3.4 Post & Comment Ownership Actions ✅
+
+- Members can edit and delete their own posts.
+- Members can edit and delete their own comments.
+- Edited state persists using `edited_at` and renders as `Edited` in the Feed
+  UI.
+- No placeholder rows remain after delete.
+
+### 3.5 Activity Stream Integrity ✅
 
 - No blank cards: empty states handled
 - Error handling: `handleAuthError`, snackbar feedback
 - Cursor-based pagination for stable ordering
+- No duplicate emoji reaction entries per member/target
 
-### 3.5 Layout Stability ✅
+### 3.6 Real-Time Consistency ✅
+
+- Feed and comment updates refresh across active sessions via Supabase realtime
+  feed item change subscription.
+- Reactions and deletes reflect without requiring a hard page refresh.
+
+### 3.7 Layout Stability ✅
 
 - Responsive structure (Grid, breakpoints)
 - Sidebar collapse (Explore, Community, Legal)
 - Footer navigation integrity
 
-### 3.6 Feed Endpoint Integration ✅
+### 3.8 Feed Endpoint Integration ✅
 
 - `GET /api/feeds` — MVP, deterministic `created_at DESC` ordering
 - No engagement-based ranking
@@ -114,6 +131,9 @@ The Feed does **not**:
 | No engagement-based ranking exists         | ✅     |
 | Layout is responsive and stable            | ✅     |
 | Navigation highlights Feed when on `/feed` | ✅     |
+| Author can edit/delete own posts/comments  | ✅     |
+| `Edited` marker persists on refresh        | ✅     |
+| Reactions are deterministic per emoji      | ✅     |
 
 ---
 

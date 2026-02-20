@@ -1872,11 +1872,6 @@ begin
 end;
 $$;
 
-create trigger trg_notifications_on_event_rsvp
-  after insert on public.event_rsvps
-  for each row
-  execute function public.notifications_on_event_rsvp();
-
 -- -----------------------------
 -- notifications_on_mention: parse @handle in post/comment body
 -- -----------------------------
@@ -2023,6 +2018,12 @@ $$;
 create trigger trg_event_rsvps_block_suspended
   before insert on public.event_rsvps
   for each row execute function public.event_rsvps_block_suspended();
+
+drop trigger if exists trg_notifications_on_event_rsvp on public.event_rsvps;
+create trigger trg_notifications_on_event_rsvp
+  after insert on public.event_rsvps
+  for each row
+  execute function public.notifications_on_event_rsvp();
 
 comment on table public.event_rsvps is 'RSVP state: yes, no, maybe.';
 

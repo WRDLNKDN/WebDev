@@ -3,6 +3,13 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test.beforeEach(async ({ page }) => {
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ avatarUrl: null }),
+      });
+    });
     await page.goto('/');
 
     await expect(page.locator('#root')).toBeVisible();

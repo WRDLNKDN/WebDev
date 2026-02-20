@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Directory Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ avatarUrl: null }),
+      });
+    });
+  });
+
   test('unauthenticated user redirects to join', async ({ page }) => {
     await page.goto('/directory');
 

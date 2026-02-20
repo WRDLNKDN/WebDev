@@ -79,6 +79,7 @@ export type FeedItem = {
   payload: Record<string, unknown>;
   parent_id?: string | null;
   created_at: string;
+  edited_at?: string | null;
   actor: FeedItemActor;
   like_count?: number;
   love_count?: number;
@@ -289,6 +290,12 @@ export type FeedComment = {
   user_id: string;
   body: string;
   created_at: string;
+  edited_at?: string | null;
+  like_count?: number;
+  love_count?: number;
+  inspiration_count?: number;
+  care_count?: number;
+  viewer_reaction?: ReactionType | null;
   actor: FeedItemActor;
 };
 
@@ -355,15 +362,120 @@ export async function deleteFeedPost(params: {
 }): Promise<void> {
   const { postId } = params;
   if (!postId.trim()) throw new Error('Post id is required');
-  const { supabase } = await import('../auth/supabaseClient');
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) throw new Error('Not signed in');
-  const { error } = await supabase
-    .from('feed_items')
-    .delete()
-    .eq('id', postId)
-    .eq('user_id', session.user.id);
-  if (error) throw new Error(error.message);
+  const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}`;
+  const res = await authedFetch(
+    url,
+    { method: 'DELETE' },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      body = { error: undefined };
+    }
+    throw new Error(messageFromApiResponse(res.status, body.error));
+  }
+}
+
+export async function editFeedPost(params: {
+  postId: string;
+  body: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const postId = params.postId.trim();
+  const body = params.body.trim();
+  if (!postId) throw new Error('Post id is required');
+  if (!body) throw new Error('Post body is required');
+  const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}`;
+  const res = await authedFetch(
+    url,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let payload: { error?: string };
+    try {
+      payload = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      payload = {};
+    }
+    throw new Error(messageFromApiResponse(res.status, payload.error));
+  }
+}
+
+export async function editFeedComment(params: {
+  commentId: string;
+  body: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const commentId = params.commentId.trim();
+  const body = params.body.trim();
+  if (!commentId) throw new Error('Comment id is required');
+  if (!body) throw new Error('Comment body is required');
+  const url = `${API_BASE}/api/feeds/comments/${encodeURIComponent(commentId)}`;
+  const res = await authedFetch(
+    url,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let payload: { error?: string };
+    try {
+      payload = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      payload = {};
+    }
+    throw new Error(messageFromApiResponse(res.status, payload.error));
+  }
+}
+
+export async function deleteFeedComment(params: {
+  commentId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const commentId = params.commentId.trim();
+  if (!commentId) throw new Error('Comment id is required');
+  const url = `${API_BASE}/api/feeds/comments/${encodeURIComponent(commentId)}`;
+  const res = await authedFetch(
+    url,
+    { method: 'DELETE' },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let payload: { error?: string };
+    try {
+      payload = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      payload = {};
+    }
+    throw new Error(messageFromApiResponse(res.status, payload.error));
+  }
 }

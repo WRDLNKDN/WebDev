@@ -449,6 +449,7 @@ create table public.feed_items (
   payload jsonb not null default '{}',
   parent_id uuid references public.feed_items(id) on delete set null,
   created_at timestamptz not null default now(),
+  edited_at timestamptz,
   scheduled_at timestamptz
 );
 
@@ -468,6 +469,8 @@ comment on column public.feed_items.payload is
   'Opaque per kind. External URLs stored as metadata only; no third-party fetch.';
 comment on column public.feed_items.scheduled_at is
   'When set, post is hidden until this time. Null = publish immediately.';
+comment on column public.feed_items.edited_at is
+  'Timestamp of latest edit for posts/comments. Null when never edited.';
 
 -- Update profiles.last_active_at on post, comment, or reaction (Directory sort)
 create or replace function public.feed_items_update_last_active()
@@ -511,6 +514,7 @@ returns table (
   payload jsonb,
   parent_id uuid,
   created_at timestamptz,
+  edited_at timestamptz,
   scheduled_at timestamptz,
   actor_handle text,
   actor_display_name text,
@@ -551,6 +555,7 @@ begin
     fi.payload,
     fi.parent_id,
     fi.created_at,
+    fi.edited_at,
     fi.scheduled_at,
     p.handle::text as actor_handle,
     p.display_name as actor_display_name,

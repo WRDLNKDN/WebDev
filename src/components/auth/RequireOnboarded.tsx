@@ -73,7 +73,20 @@ export const RequireOnboarded = ({
           setState('allowed');
           return;
         }
-        console.log('🔴 RequireOnboarded: No session found');
+        // Final hydration grace pass before redirecting on fresh OAuth landings.
+        await new Promise((r) => setTimeout(r, 900));
+        if (cancelled || runId !== checkRunRef.current) return;
+        const { data: recheck } = await supabase.auth.getSession();
+        if (recheck.session) {
+          data = recheck;
+        } else {
+          const { data: refreshedFinal } = await supabase.auth.refreshSession();
+          if (refreshedFinal.session) data = refreshedFinal;
+        }
+      }
+
+      if (!data.session) {
+        console.log('🔴 RequireOnboarded: No session found after grace check');
         setState('redirect');
         return;
       }

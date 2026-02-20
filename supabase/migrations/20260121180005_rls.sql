@@ -22,6 +22,7 @@
 -- Optional: feed_advertisers.image_url (idempotent for existing DBs)
 -- -----------------------------
 alter table public.feed_advertisers add column if not exists image_url text;
+alter table public.feed_items add column if not exists edited_at timestamptz;
 
 -- Optional: feed-ad-images bucket (idempotent; 15MB; null = no MIME restriction)
 -- -----------------------------

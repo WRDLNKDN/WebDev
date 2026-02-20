@@ -101,7 +101,7 @@ export const MessageInput = ({
       const results = await getTrendingChatGifs(24, gifContentFilter);
       setGifResults(results);
     } catch {
-      setError('Could not load GIFs right now. Please try again.');
+      setError("We couldn't load GIFs right now. Please try again.");
     } finally {
       setGifLoading(false);
     }
@@ -126,7 +126,7 @@ export const MessageInput = ({
         : await getTrendingChatGifs(24, contentFilter);
       setGifResults(results);
     } catch {
-      setError('Could not search GIFs right now. Please try again.');
+      setError("We couldn't search GIFs right now. Please try again.");
     } finally {
       setGifLoading(false);
     }
@@ -155,7 +155,7 @@ export const MessageInput = ({
       );
       setGifPickerOpen(false);
     } catch {
-      setError('Failed to add GIF. Please try another one.');
+      setError("We couldn't add that GIF. Please try another one.");
     } finally {
       setAddingGif(false);
     }

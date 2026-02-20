@@ -1424,13 +1424,13 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- feed-ad-images (ad banner images 1200x400; 15MB limit; null = no MIME restriction)
+-- feed-ad-images (ad/partner images; 50MB limit; null = no MIME restriction)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'feed-ad-images',
   'feed-ad-images',
   true,
-  15728640,
+  52428800,
   null
 )
 on conflict (id) do update set

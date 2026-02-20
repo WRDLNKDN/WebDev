@@ -162,7 +162,9 @@ export const IdentityStep = () => {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError('OAuth redirect URL missing');
+        setError(
+          "Sign-in couldn't start because the redirect URL is missing. Please contact support.",
+        );
         setLoading(false);
         setLoadingProvider(null);
       }

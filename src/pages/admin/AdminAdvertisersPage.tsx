@@ -28,7 +28,11 @@ import {
 } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { FeedAdvertiser } from '../../components/feed/FeedAdCard';
-import { uploadAdImage } from '../../lib/api/adminAdvertisersApi';
+import {
+  AD_IMAGE_ALLOWED_LABEL,
+  uploadAdImage,
+  validateAdImageFile,
+} from '../../lib/api/adminAdvertisersApi';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -192,9 +196,10 @@ export const AdminAdvertisersPage = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const valid = ['image/jpeg', 'image/png'].includes(file.type);
-    if (!valid) {
-      setError('Only JPG and PNG images are allowed.');
+    const validationError = validateAdImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
       return;
     }
     // Immediate preview while uploading
@@ -509,7 +514,7 @@ export const AdminAdvertisersPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
@@ -568,7 +573,7 @@ export const AdminAdvertisersPage = () => {
                       Upload Image
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      1200x400 recommended (JPG, PNG)
+                      1200x400 recommended (max 50MB, {AD_IMAGE_ALLOWED_LABEL})
                     </Typography>
                   </>
                 )}

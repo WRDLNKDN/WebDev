@@ -22,6 +22,9 @@
 - Feed now persists `feed_ad_impression` / `feed_ad_click` events to
   `feed_ad_events`, and Admin Advertisers shows impressions, clicks, and CTR
   with selectable 7d/30d/90d windows.
+- Admin ad/partner image uploads now allow JPG/PNG/WEBP/GIF up to 50MB.
+- Admin upload errors now return actionable messages for invalid type, oversized
+  files, and storage failures.
 - Nettica fallback is enabled by default and can be disabled with
   `VITE_ENABLE_NETTICA_PARTNER_FALLBACK=false` to reveal the empty-state
   variant.

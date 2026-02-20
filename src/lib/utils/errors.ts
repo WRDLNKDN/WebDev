@@ -13,7 +13,7 @@ export const MICROSOFT_SIGNIN_NOT_CONFIGURED =
   'See supabase/README.md for details.';
 
 /** Max length for treating server message as user-friendly (long messages are often stack traces or technical). */
-const FRIENDLY_MESSAGE_MAX_LEN = 120;
+const FRIENDLY_MESSAGE_MAX_LEN = 180;
 
 /** Fallback when no useful error info is available. */
 const FALLBACK_MESSAGE =
@@ -32,6 +32,10 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
     friendly: 'Our server hit an error. Please try again in a moment.',
   },
   {
+    pattern: /^server error$/i,
+    friendly: 'Our server hit an error. Please try again in a moment.',
+  },
+  {
     pattern: /bad gateway|gateway timeout|service unavailable/i,
     friendly:
       'The service is temporarily unavailable. Please try again in a moment.',
@@ -44,6 +48,50 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   {
     pattern: /too many requests/i,
     friendly: 'Too many requests. Please wait a moment and try again.',
+  },
+  {
+    pattern: /payload too large|request entity too large|limit_file_size/i,
+    friendly: 'File too large. Please upload a smaller file.',
+  },
+  {
+    pattern: /unsupported image type|invalid mime|mime type/i,
+    friendly: 'Unsupported file type. Please upload JPG, PNG, WEBP, or GIF.',
+  },
+  {
+    pattern: /upload failed/i,
+    friendly:
+      'Upload failed. Please try a smaller file or try again in a moment.',
+  },
+  {
+    pattern: /api returned html|vite_api_url/i,
+    friendly:
+      'Upload endpoint is not configured correctly. Please ask an administrator to verify API settings.',
+  },
+  {
+    pattern: /^missing\s+[a-z_]+/i,
+    friendly:
+      'A required field is missing. Please complete all required fields.',
+  },
+  {
+    pattern: /^invalid\s+[a-z_]+\s+id/i,
+    friendly: "That item couldn't be found. Refresh and try again.",
+  },
+  {
+    pattern: /only the .* author may (edit|delete)/i,
+    friendly: 'You can only modify content that you created.',
+  },
+  {
+    pattern: /account suspended|account disabled/i,
+    friendly: 'Your account is currently restricted for this action.',
+  },
+  {
+    pattern: /no pending request found/i,
+    friendly: 'No pending request was found for that action.',
+  },
+  {
+    pattern: /job not found or not complete/i,
+    friendly:
+      'That generation job is not ready yet. Please wait a moment and try again.',
   },
   {
     pattern: /failed to fetch|network error|load failed/i,
@@ -102,6 +150,10 @@ export function messageForStatus(status: number): string {
       return "That couldn't be found. It may have been removed.";
     case 409:
       return 'That conflicts with existing data. Try a different title or URL.';
+    case 413:
+      return 'That file is too large. Please choose a smaller file and try again.';
+    case 422:
+      return "Some information couldn't be processed. Please review and try again.";
     case 405:
       return "This action isn't available right now. Please refresh and try again.";
     case 429:

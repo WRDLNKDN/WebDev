@@ -22,6 +22,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { filterEventsByBlockedHosts } from '../../lib/events/blockedFilter';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 
 type EventRow = {
   id: string;
@@ -185,8 +186,8 @@ export const EventsPage = () => {
       setCreateLocationType('');
       setCreateLinkUrl('');
       await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create event');
+    } catch (e: unknown) {
+      setError(toMessage(e) || 'Failed to create event');
     } finally {
       setSubmitting(false);
     }

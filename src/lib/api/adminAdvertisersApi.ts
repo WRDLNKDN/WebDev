@@ -7,6 +7,31 @@ import sjson from 'secure-json-parse';
 import { messageFromApiResponse } from '../utils/errors';
 import { authedFetch } from './authFetch';
 
+export const AD_IMAGE_MAX_BYTES = 50 * 1024 * 1024;
+export const AD_IMAGE_ALLOWED_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
+
+export const AD_IMAGE_ALLOWED_LABEL = 'JPG, PNG, WEBP, GIF';
+
+export function validateAdImageFile(file: File): string | null {
+  if (
+    !AD_IMAGE_ALLOWED_MIMES.includes(
+      file.type as (typeof AD_IMAGE_ALLOWED_MIMES)[number],
+    )
+  ) {
+    return `Unsupported image type. Allowed: ${AD_IMAGE_ALLOWED_LABEL}.`;
+  }
+  if (file.size > AD_IMAGE_MAX_BYTES) {
+    const sizeMb = Math.ceil(file.size / (1024 * 1024));
+    return `File too large (${sizeMb}MB). Max is 50MB.`;
+  }
+  return null;
+}
+
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';

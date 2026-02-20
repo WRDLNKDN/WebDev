@@ -63,7 +63,7 @@ export const Footer = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    Platform: true,
+    Platform: false,
     Company: false,
     Legal: false,
   });

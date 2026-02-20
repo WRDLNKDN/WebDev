@@ -54,6 +54,16 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Signed-in auth resilience + GIF flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ avatarUrl: null }),
+      });
+    });
+  });
+
   test('signed-in member can connect without false unauthorized', async ({
     page,
   }) => {

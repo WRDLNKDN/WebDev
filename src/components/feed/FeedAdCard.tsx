@@ -321,8 +321,6 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
                 height: { xs: 64, sm: 78, md: 92 },
                 borderRadius: 1,
                 overflow: 'hidden',
-                border: '1px solid',
-                borderColor: 'divider',
                 bgcolor: 'action.hover',
                 mr: onDismiss ? { xs: 4.5, sm: 5, md: 5.5 } : 0,
               }}

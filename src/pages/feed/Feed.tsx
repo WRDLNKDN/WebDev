@@ -62,7 +62,10 @@ import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
   createFeedPost,
+  deleteFeedComment,
   deleteFeedPost,
+  editFeedComment,
+  editFeedPost,
   fetchComments,
   fetchFeeds,
   removeReaction,
@@ -268,16 +271,26 @@ type FeedCardActions = {
   updateItem: (id: string, patch: Partial<FeedItem>) => void;
   onReaction: (postId: string, type: ReactionType) => void;
   onRemoveReaction: (postId: string) => void;
+  onCommentReaction: (commentId: string, type: ReactionType) => void;
+  onCommentRemoveReaction: (commentId: string) => void;
   onRepost: (item: FeedItem) => void;
   onSend: (item: FeedItem) => void;
   onCommentToggle: (postId: string) => void;
   onDelete: (postId: string) => void;
+  onEditPost: (postId: string, body: string) => Promise<void>;
+  onEditComment: (
+    postId: string,
+    commentId: string,
+    body: string,
+  ) => Promise<void>;
+  onDeleteComment: (postId: string, commentId: string) => Promise<void>;
 };
 
 type FeedCardProps = {
   item: FeedItem;
   actions: FeedCardActions;
   isOwner: boolean;
+  viewerUserId?: string;
   commentsExpanded: boolean;
   comments: FeedComment[];
   commentsLoading: boolean;
@@ -430,6 +443,7 @@ const FeedCard = ({
   item,
   actions,
   isOwner,
+  viewerUserId,
   commentsExpanded,
   comments,
   commentsLoading,
@@ -439,6 +453,12 @@ const FeedCard = ({
 }: FeedCardProps) => {
   const [commentDraft, setCommentDraft] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editPostDraft, setEditPostDraft] = useState('');
+  const [savingPostEdit, setSavingPostEdit] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentDraft, setEditCommentDraft] = useState('');
+  const [savingCommentEdit, setSavingCommentEdit] = useState(false);
   const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(
     null,
   );
@@ -474,6 +494,7 @@ const FeedCard = ({
   const totalReactions = likeCount + loveCount + inspirationCount + careCount;
   const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
+  const isPostEdited = Boolean(item.edited_at);
 
   const handleReaction = (type: ReactionType) => {
     if (viewerReaction === type) {
@@ -523,6 +544,25 @@ const FeedCard = ({
       });
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleSavePostEdit = async () => {
+    const nextBody = editPostDraft.trim();
+    if (!nextBody || savingPostEdit) return;
+    setSavingPostEdit(true);
+    try {
+      await actions.onEditPost(item.id, nextBody);
+      actions.updateItem(item.id, {
+        payload: {
+          ...(item.payload ?? {}),
+          body: nextBody,
+        },
+        edited_at: new Date().toISOString(),
+      });
+      setIsEditingPost(false);
+    } finally {
+      setSavingPostEdit(false);
     }
   };
 
@@ -589,6 +629,11 @@ const FeedCard = ({
               <Typography variant="body2" color="text.secondary">
                 • {formatTime(item.created_at)}
               </Typography>
+              {isPostEdited && (
+                <Typography variant="caption" color="text.secondary">
+                  • Edited
+                </Typography>
+              )}
               {item.kind === 'repost' && (
                 <Typography
                   variant="caption"
@@ -599,20 +644,51 @@ const FeedCard = ({
                 </Typography>
               )}
             </Stack>
-            {body && (
-              <Typography
-                variant="body1"
-                component="span"
-                sx={{
-                  mt: 0.5,
-                  whiteSpace: 'pre-wrap',
-                  display: 'block',
-                  overflowWrap: 'break-word',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {linkifyBody(body)}
-              </Typography>
+            {isEditingPost ? (
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                <TextField
+                  value={editPostDraft}
+                  onChange={(e) => setEditPostDraft(e.target.value)}
+                  multiline
+                  minRows={3}
+                  fullWidth
+                />
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => void handleSavePostEdit()}
+                    disabled={!editPostDraft.trim() || savingPostEdit}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setIsEditingPost(false);
+                      setEditPostDraft(body);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Stack>
+            ) : (
+              body && (
+                <Typography
+                  variant="body1"
+                  component="span"
+                  sx={{
+                    mt: 0.5,
+                    whiteSpace: 'pre-wrap',
+                    display: 'block',
+                    overflowWrap: 'break-word',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {linkifyBody(body)}
+                </Typography>
+              )
             )}
             {linkPreview?.url && !isLinkPreviewDismissed && (
               <LinkPreviewCard
@@ -804,6 +880,22 @@ const FeedCard = ({
               >
                 Send
               </Button>
+              {isOwner && item.kind === 'post' && !isEditingPost && (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setEditPostDraft(body);
+                    setIsEditingPost(true);
+                  }}
+                  sx={{
+                    textTransform: 'none',
+                    color: 'text.secondary',
+                    minWidth: 0,
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
             </Stack>
             {commentsExpanded && (
               <Box sx={{ mt: 2, pl: 0 }}>
@@ -840,21 +932,84 @@ const FeedCard = ({
                           </ListItemAvatar>
                           <ListItemText
                             primary={
-                              <Typography variant="body2" fontWeight={600}>
-                                {c.actor?.display_name ||
-                                  c.actor?.handle ||
-                                  'Someone'}
-                              </Typography>
+                              <Stack
+                                direction="row"
+                                spacing={0.75}
+                                alignItems="center"
+                              >
+                                <Typography variant="body2" fontWeight={600}>
+                                  {c.actor?.display_name ||
+                                    c.actor?.handle ||
+                                    'Someone'}
+                                </Typography>
+                                {c.edited_at && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    Edited
+                                  </Typography>
+                                )}
+                              </Stack>
                             }
                             secondary={
                               <>
-                                <Typography
-                                  variant="body2"
-                                  component="span"
-                                  sx={{ whiteSpace: 'pre-wrap' }}
-                                >
-                                  {c.body}
-                                </Typography>
+                                {editingCommentId === c.id ? (
+                                  <Stack spacing={1} sx={{ mt: 0.5 }}>
+                                    <TextField
+                                      size="small"
+                                      multiline
+                                      minRows={2}
+                                      value={editCommentDraft}
+                                      onChange={(e) =>
+                                        setEditCommentDraft(e.target.value)
+                                      }
+                                    />
+                                    <Stack direction="row" spacing={1}>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        onClick={() => {
+                                          void (async () => {
+                                            setSavingCommentEdit(true);
+                                            try {
+                                              await actions.onEditComment(
+                                                item.id,
+                                                c.id,
+                                                editCommentDraft,
+                                              );
+                                              setEditingCommentId(null);
+                                            } finally {
+                                              setSavingCommentEdit(false);
+                                            }
+                                          })();
+                                        }}
+                                        disabled={
+                                          savingCommentEdit ||
+                                          !editCommentDraft.trim()
+                                        }
+                                      >
+                                        Save
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        onClick={() =>
+                                          setEditingCommentId(null)
+                                        }
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </Stack>
+                                  </Stack>
+                                ) : (
+                                  <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ whiteSpace: 'pre-wrap' }}
+                                  >
+                                    {c.body}
+                                  </Typography>
+                                )}
                                 <Typography
                                   variant="caption"
                                   display="block"
@@ -862,6 +1017,98 @@ const FeedCard = ({
                                 >
                                   {formatTime(c.created_at)}
                                 </Typography>
+                                <Stack direction="row" spacing={1}>
+                                  {REACTION_OPTIONS.map(
+                                    ({ type, Icon, IconOutlined, color }) => {
+                                      const active = c.viewer_reaction === type;
+                                      const count =
+                                        type === 'like'
+                                          ? (c.like_count ?? 0)
+                                          : type === 'love'
+                                            ? (c.love_count ?? 0)
+                                            : type === 'inspiration'
+                                              ? (c.inspiration_count ?? 0)
+                                              : (c.care_count ?? 0);
+                                      const CurrentIcon = active
+                                        ? Icon
+                                        : IconOutlined;
+                                      return (
+                                        <Button
+                                          key={`${c.id}-${type}`}
+                                          size="small"
+                                          onClick={() => {
+                                            if (active) {
+                                              actions.onCommentRemoveReaction(
+                                                c.id,
+                                              );
+                                            } else {
+                                              actions.onCommentReaction(
+                                                c.id,
+                                                type,
+                                              );
+                                            }
+                                          }}
+                                          sx={{
+                                            textTransform: 'none',
+                                            minWidth: 0,
+                                            px: 0.25,
+                                            color: active
+                                              ? color
+                                              : 'text.secondary',
+                                          }}
+                                          startIcon={
+                                            <CurrentIcon
+                                              sx={{
+                                                fontSize: 16,
+                                                color: active
+                                                  ? color
+                                                  : undefined,
+                                              }}
+                                            />
+                                          }
+                                        >
+                                          {count > 0 ? count : ''}
+                                        </Button>
+                                      );
+                                    },
+                                  )}
+                                  {viewerUserId === c.user_id &&
+                                    editingCommentId !== c.id && (
+                                      <>
+                                        <Button
+                                          size="small"
+                                          onClick={() => {
+                                            setEditingCommentId(c.id);
+                                            setEditCommentDraft(c.body);
+                                          }}
+                                          sx={{
+                                            textTransform: 'none',
+                                            minWidth: 0,
+                                            px: 0,
+                                          }}
+                                        >
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          size="small"
+                                          color="error"
+                                          onClick={() =>
+                                            void actions.onDeleteComment(
+                                              item.id,
+                                              c.id,
+                                            )
+                                          }
+                                          sx={{
+                                            textTransform: 'none',
+                                            minWidth: 0,
+                                            px: 0,
+                                          }}
+                                        >
+                                          Delete
+                                        </Button>
+                                      </>
+                                    )}
+                                </Stack>
                               </>
                             }
                           />
@@ -913,6 +1160,7 @@ export const Feed = () => {
   const postParam = searchParams.get('post');
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
+  const itemsRef = useRef<FeedItem[]>([]);
   const [advertisers, setAdvertisers] = useState<FeedAdvertiser[]>([]);
   const [dismissedAdIds, setDismissedAdIds] = useState<Set<string>>(() => {
     try {
@@ -1033,6 +1281,10 @@ export const Feed = () => {
     );
   }, []);
 
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   const handleAuthError = useCallback(
     async (error: unknown, fallback: string) => {
       const raw = error instanceof Error ? error.message : String(error ?? '');
@@ -1122,7 +1374,7 @@ export const Feed = () => {
   const loadPage = useCallback(
     async (cursor?: string, append = false) => {
       if (!session?.access_token) return;
-      const showInitialLoader = !append && items.length === 0;
+      const showInitialLoader = !append && itemsRef.current.length === 0;
       try {
         if (append) setLoadingMore(true);
         else if (showInitialLoader) setLoading(true);
@@ -1144,7 +1396,7 @@ export const Feed = () => {
         setLoadingMore(false);
       }
     },
-    [handleAuthError, items.length, session?.access_token],
+    [handleAuthError, session?.access_token],
   );
 
   useEffect(() => {
@@ -1234,6 +1486,50 @@ export const Feed = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id || !session?.access_token) return;
+    let cancelled = false;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (cancelled) return;
+        void loadPage();
+        if (expandedCommentsPostId) {
+          void (async () => {
+            const { data } = await fetchComments({
+              postId: expandedCommentsPostId,
+              accessToken: session.access_token,
+            });
+            if (cancelled) return;
+            setCommentsByPostId((prev) => ({
+              ...prev,
+              [expandedCommentsPostId]: data,
+            }));
+          })();
+        }
+      }, 250);
+    };
+    const channel = supabase
+      .channel(`feed-items-live-${session.user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feed_items' },
+        scheduleRefresh,
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [
+    expandedCommentsPostId,
+    loadPage,
+    session?.access_token,
+    session?.user?.id,
+  ]);
 
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
@@ -1378,6 +1674,122 @@ export const Feed = () => {
     [session?.access_token],
   );
 
+  const handleEditPost = useCallback(
+    async (postId: string, body: string) => {
+      if (!session?.access_token) return;
+      try {
+        await editFeedPost({
+          postId,
+          body,
+          accessToken: session.access_token,
+        });
+      } catch (e) {
+        await handleAuthError(e, 'Could not edit post');
+      }
+    },
+    [handleAuthError, session?.access_token],
+  );
+
+  const handleEditComment = useCallback(
+    async (postId: string, commentId: string, body: string) => {
+      if (!session?.access_token) return;
+      try {
+        await editFeedComment({
+          commentId,
+          body,
+          accessToken: session.access_token,
+        });
+        const { data } = await fetchComments({
+          postId,
+          accessToken: session.access_token,
+        });
+        setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+      } catch (e) {
+        await handleAuthError(e, 'Could not edit comment');
+      }
+    },
+    [handleAuthError, session?.access_token],
+  );
+
+  const handleDeleteComment = useCallback(
+    async (postId: string, commentId: string) => {
+      if (!session?.access_token) return;
+      if (!confirm('Delete this comment? This cannot be undone.')) return;
+      try {
+        await deleteFeedComment({
+          commentId,
+          accessToken: session.access_token,
+        });
+        const { data } = await fetchComments({
+          postId,
+          accessToken: session.access_token,
+        });
+        setCommentsByPostId((prev) => ({ ...prev, [postId]: data }));
+        updateItem(postId, {
+          comment_count: Math.max(
+            0,
+            (itemsRef.current.find((it) => it.id === postId)?.comment_count ??
+              1) - 1,
+          ),
+        });
+      } catch (e) {
+        await handleAuthError(e, 'Could not delete comment');
+      }
+    },
+    [handleAuthError, session?.access_token, updateItem],
+  );
+
+  const handleCommentReaction = useCallback(
+    async (commentId: string, type: ReactionType) => {
+      if (!session?.access_token) return;
+      try {
+        await setReaction({
+          postId: commentId,
+          type,
+          accessToken: session.access_token,
+        });
+        if (expandedCommentsPostId) {
+          const { data } = await fetchComments({
+            postId: expandedCommentsPostId,
+            accessToken: session.access_token,
+          });
+          setCommentsByPostId((prev) => ({
+            ...prev,
+            [expandedCommentsPostId]: data,
+          }));
+        }
+      } catch (e) {
+        await handleAuthError(e, 'Could not react to comment');
+      }
+    },
+    [expandedCommentsPostId, handleAuthError, session?.access_token],
+  );
+
+  const handleCommentRemoveReaction = useCallback(
+    async (commentId: string) => {
+      if (!session?.access_token) return;
+      try {
+        await removeReaction({
+          postId: commentId,
+          accessToken: session.access_token,
+        });
+        if (expandedCommentsPostId) {
+          const { data } = await fetchComments({
+            postId: expandedCommentsPostId,
+            accessToken: session.access_token,
+          });
+          setCommentsByPostId((prev) => ({
+            ...prev,
+            [expandedCommentsPostId]: data,
+          }));
+        }
+      } catch (e) {
+        await handleAuthError(e, 'Could not remove comment reaction');
+      }
+    },
+    [expandedCommentsPostId, handleAuthError, session?.access_token],
+  );
+
   const handleCopyLink = useCallback(async (url: string) => {
     await navigator.clipboard.writeText(url);
     setSnack('Link copied');
@@ -1421,10 +1833,17 @@ export const Feed = () => {
     updateItem,
     onReaction: (postId, type) => void handleReaction(postId, type),
     onRemoveReaction: (postId) => void handleRemoveReaction(postId),
+    onCommentReaction: (commentId, type) =>
+      void handleCommentReaction(commentId, type),
+    onCommentRemoveReaction: (commentId) =>
+      void handleCommentRemoveReaction(commentId),
     onRepost: handleRepost,
     onSend: handleSend,
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
+    onEditPost: handleEditPost,
+    onEditComment: handleEditComment,
+    onDeleteComment: handleDeleteComment,
   };
 
   const postParamProcessed = useRef<string | null>(null);
@@ -1914,6 +2333,7 @@ export const Feed = () => {
                         item={entry.item}
                         actions={feedCardActions}
                         isOwner={session?.user?.id === entry.item.user_id}
+                        viewerUserId={session?.user?.id}
                         commentsExpanded={
                           expandedCommentsPostId === entry.item.id
                         }

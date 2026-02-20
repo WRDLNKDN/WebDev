@@ -98,6 +98,7 @@ export type Database = {
           payload: Json
           parent_id: string | null
           created_at: string
+          edited_at: string | null
           scheduled_at: string | null
         }
         Insert: {
@@ -107,6 +108,7 @@ export type Database = {
           payload?: Json
           parent_id?: string | null
           created_at?: string
+          edited_at?: string | null
           scheduled_at?: string | null
         }
         Update: {
@@ -116,6 +118,7 @@ export type Database = {
           payload?: Json
           parent_id?: string | null
           created_at?: string
+          edited_at?: string | null
           scheduled_at?: string | null
         }
         Relationships: [

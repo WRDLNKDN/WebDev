@@ -34,6 +34,7 @@ metadata only; no scraping or third-party data ingestion.
       "payload": { ... },
       "parent_id": "uuid | null",
       "created_at": "ISO8601",
+      "edited_at": "ISO8601 | null",
       "actor": {
         "handle": "string | null",
         "display_name": "string | null"
@@ -61,6 +62,8 @@ error).
   backend).
 - **repost** — Repost of another feed item; `parent_id` references the original.
 - **reaction** — Reaction to another item; `parent_id` references the target.
+  Emoji types: `like | love | inspiration | care`. Comments are also represented
+  as `kind = reaction` with `payload.type = comment`.
 
 ## Guardrails
 
@@ -124,11 +127,61 @@ Notes:
 - **401 Unauthorized** — missing/invalid token.
 - **5xx** — server/database error; returns `{ "error": "message" }`.
 
+## Mutations: post/comment lifecycle
+
+### PATCH /api/feeds/items/:postId
+
+- **Auth:** Required.
+- **Purpose:** Edit viewer-owned feed post body.
+- **Body:** `{ "body": "Updated text" }`
+- **Responses:**
+  - `204 No Content` on success.
+  - `403` if viewer is not the post author.
+  - `404` if post does not exist.
+
+### DELETE /api/feeds/items/:postId
+
+- **Auth:** Required.
+- **Purpose:** Delete viewer-owned post.
+- **Responses:**
+  - `204 No Content` on success.
+  - `403` if viewer is not the post author.
+  - `404` if post does not exist.
+
+### GET /api/feeds/items/:postId/comments
+
+- **Auth:** Required.
+- **Purpose:** Returns comments for a post.
+- **Ordering:** Deterministic by `created_at ASC`.
+- **Fields include:** `edited_at`, reaction counts
+  (`like_count | love_count | inspiration_count | care_count`), and
+  `viewer_reaction`.
+
+### PATCH /api/feeds/comments/:commentId
+
+- **Auth:** Required.
+- **Purpose:** Edit viewer-owned comment body.
+- **Body:** `{ "body": "Updated comment" }`
+- **Responses:**
+  - `204 No Content` on success.
+  - `403` if viewer is not the comment author.
+  - `404` if comment does not exist.
+
+### DELETE /api/feeds/comments/:commentId
+
+- **Auth:** Required.
+- **Purpose:** Delete viewer-owned comment.
+- **Responses:**
+  - `204 No Content` on success.
+  - `403` if viewer is not the comment author.
+  - `404` if comment does not exist.
+
 ## Usage
 
 - Frontend: use [`src/lib/feedsApi.ts`](../src/lib/feedsApi.ts)
-  `fetchFeeds({ limit?, cursor?, accessToken? })`, `createFeedPost`, and
-  `createFeedExternalLink`.
+  `fetchFeeds({ limit?, cursor?, accessToken? })`, `createFeedPost`,
+  `createFeedExternalLink`, reaction methods, and post/comment edit-delete
+  methods.
 - Backend: GET/POST `/api/feeds` are implemented in `backend/server.ts`; GET
   calls Supabase RPC `get_feed_page`, POST inserts into `feed_items`.
 

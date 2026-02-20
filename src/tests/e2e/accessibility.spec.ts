@@ -1,7 +1,18 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+async function stubAvatar(page: Page) {
+  await page.route('**/api/me/avatar', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ avatarUrl: null }),
+    });
+  });
+}
 
 test('Global Accessibility Audit', async ({ page }) => {
+  await stubAvatar(page);
   await page.goto('/');
 
   await expect(page.locator('#root')).toBeVisible();
@@ -21,6 +32,7 @@ test('Global Accessibility Audit', async ({ page }) => {
 });
 
 test('Notifications route accessibility', async ({ page }) => {
+  await stubAvatar(page);
   await page.goto('/dashboard/notifications');
   await page.waitForLoadState('networkidle');
   await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });

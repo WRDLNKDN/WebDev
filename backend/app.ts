@@ -741,6 +741,7 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         payload?: unknown;
         parent_id?: string | null;
         created_at?: string;
+        edited_at?: string | null;
         actor_handle?: string | null;
         actor_display_name?: string | null;
         actor_avatar?: string | null;
@@ -757,6 +758,7 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         payload: row.payload ?? {},
         parent_id: row.parent_id ?? null,
         created_at: row.created_at,
+        edited_at: row.edited_at ?? null,
         actor: {
           handle: row.actor_handle ?? null,
           display_name: row.actor_display_name ?? null,
@@ -965,6 +967,90 @@ app.post('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   return res.status(201).json({ ok: true });
 });
 
+// PATCH /api/feeds/items/:postId — edit viewer-owned post body
+app.patch(
+  '/api/feeds/items/:postId',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const postIdRaw = req.params.postId;
+    const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
+    if (!postId) return sendApiError(res, 400, 'Invalid post id');
+    const reqBody = req.body as { body?: unknown };
+    const text = typeof reqBody.body === 'string' ? reqBody.body.trim() : '';
+    if (!text) return sendApiError(res, 400, 'Post body is required');
+
+    const { data: existing, error: existingErr } = await adminSupabase
+      .from('feed_items')
+      .select('id, user_id, kind, payload')
+      .eq('id', postId)
+      .maybeSingle();
+    if (existingErr) return sendApiError(res, 500, 'Server error');
+    if (!existing) return sendApiError(res, 404, 'Post not found');
+    if ((existing as { user_id: string }).user_id !== userId) {
+      return sendApiError(res, 403, 'Only the post author may edit');
+    }
+    if ((existing as { kind: string }).kind !== 'post') {
+      return sendApiError(res, 400, 'Only post items can be edited');
+    }
+
+    const payload = ((existing as { payload?: Record<string, unknown> })
+      .payload ?? {}) as Record<string, unknown>;
+    payload.body = text;
+    const firstUrl = getFirstUrl(text);
+    if (firstUrl) {
+      const linkPreview = await fetchLinkPreview(firstUrl);
+      if (linkPreview) payload.link_preview = linkPreview;
+      else delete payload.link_preview;
+    } else {
+      delete payload.link_preview;
+    }
+
+    const { error } = await adminSupabase
+      .from('feed_items')
+      .update({ payload, edited_at: new Date().toISOString() })
+      .eq('id', postId)
+      .eq('user_id', userId)
+      .eq('kind', 'post');
+    if (error) return sendApiError(res, 500, 'Server error');
+    return res.status(204).send();
+  },
+);
+
+// DELETE /api/feeds/items/:postId — delete viewer-owned post
+app.delete(
+  '/api/feeds/items/:postId',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const postIdRaw = req.params.postId;
+    const postId = typeof postIdRaw === 'string' ? postIdRaw.trim() : '';
+    if (!postId) return sendApiError(res, 400, 'Invalid post id');
+    const { data: existing, error: existingErr } = await adminSupabase
+      .from('feed_items')
+      .select('id, user_id, kind')
+      .eq('id', postId)
+      .maybeSingle();
+    if (existingErr) return sendApiError(res, 500, 'Server error');
+    if (!existing) return sendApiError(res, 404, 'Post not found');
+    if ((existing as { user_id: string }).user_id !== userId) {
+      return sendApiError(res, 403, 'Only the post author may delete');
+    }
+    if ((existing as { kind: string }).kind === 'reaction') {
+      return sendApiError(res, 400, 'Use comment delete endpoint for comments');
+    }
+    const { error } = await adminSupabase
+      .from('feed_items')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', userId);
+    if (error) return sendApiError(res, 500, 'Server error');
+    return res.status(204).send();
+  },
+);
+
 // DELETE /api/feeds/items/:postId/reaction — remove viewer's emoji reaction on a post
 app.delete(
   '/api/feeds/items/:postId/reaction',
@@ -999,7 +1085,7 @@ app.get(
     if (!postId) return sendApiError(res, 400, 'Invalid post id');
     const { data: rows, error } = await adminSupabase
       .from('feed_items')
-      .select('id, user_id, payload, created_at')
+      .select('id, user_id, payload, created_at, edited_at')
       .eq('kind', 'reaction')
       .eq('parent_id', postId)
       .eq('payload->>type', 'comment')
@@ -1038,15 +1124,82 @@ app.get(
           (w as { avatar_url: string | null }).avatar_url ?? null;
       }
     }
+    const commentIds = (comments as { id: string }[]).map((c) => c.id);
+    let reactionRows: {
+      parent_id: string | null;
+      payload: unknown;
+      user_id: string;
+    }[] = [];
+    if (commentIds.length > 0) {
+      const { data: rr } = await adminSupabase
+        .from('feed_items')
+        .select('parent_id, payload, user_id')
+        .eq('kind', 'reaction')
+        .in('parent_id', commentIds)
+        .or(
+          'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
+        );
+      reactionRows = (rr ?? []) as {
+        parent_id: string | null;
+        payload: unknown;
+        user_id: string;
+      }[];
+    }
+
+    const reactionMap: Record<
+      string,
+      {
+        like_count: number;
+        love_count: number;
+        inspiration_count: number;
+        care_count: number;
+        viewer_reaction: string | null;
+      }
+    > = {};
+    for (const row of reactionRows) {
+      const parentId = row.parent_id;
+      if (!parentId) continue;
+      if (!reactionMap[parentId]) {
+        reactionMap[parentId] = {
+          like_count: 0,
+          love_count: 0,
+          inspiration_count: 0,
+          care_count: 0,
+          viewer_reaction: null,
+        };
+      }
+      const type = (row.payload as { type?: string })?.type;
+      if (type === 'like') reactionMap[parentId].like_count += 1;
+      if (type === 'love') reactionMap[parentId].love_count += 1;
+      if (type === 'inspiration') reactionMap[parentId].inspiration_count += 1;
+      if (type === 'care') reactionMap[parentId].care_count += 1;
+      if (type && row.user_id === req.userId) {
+        reactionMap[parentId].viewer_reaction = type;
+      }
+    }
+
     const list = comments.map((r: Record<string, unknown>) => {
       const uid = r.user_id as string;
       const p = profilesMap[uid];
       const avatar = weirdlingsMap[uid] ?? p?.avatar ?? null;
+      const counts = reactionMap[String(r.id)] ?? {
+        like_count: 0,
+        love_count: 0,
+        inspiration_count: 0,
+        care_count: 0,
+        viewer_reaction: null,
+      };
       return {
         id: r.id,
         user_id: r.user_id,
         body: (r.payload as Record<string, unknown>)?.body ?? '',
         created_at: r.created_at,
+        edited_at: r.edited_at ?? null,
+        like_count: counts.like_count,
+        love_count: counts.love_count,
+        inspiration_count: counts.inspiration_count,
+        care_count: counts.care_count,
+        viewer_reaction: counts.viewer_reaction,
         actor: {
           handle: p?.handle ?? null,
           display_name: p?.display_name ?? null,
@@ -1055,6 +1208,92 @@ app.get(
       };
     });
     return res.json({ data: list });
+  },
+);
+
+// PATCH /api/feeds/comments/:commentId — edit viewer-owned comment
+app.patch(
+  '/api/feeds/comments/:commentId',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const commentIdRaw = req.params.commentId;
+    const commentId =
+      typeof commentIdRaw === 'string' ? commentIdRaw.trim() : '';
+    if (!commentId) return sendApiError(res, 400, 'Invalid comment id');
+    const reqBody = req.body as { body?: unknown };
+    const text = typeof reqBody.body === 'string' ? reqBody.body.trim() : '';
+    if (!text) return sendApiError(res, 400, 'Comment body is required');
+
+    const { data: existing, error: existingErr } = await adminSupabase
+      .from('feed_items')
+      .select('id, user_id, kind, payload')
+      .eq('id', commentId)
+      .maybeSingle();
+    if (existingErr) return sendApiError(res, 500, 'Server error');
+    if (!existing) return sendApiError(res, 404, 'Comment not found');
+    if ((existing as { user_id: string }).user_id !== userId) {
+      return sendApiError(res, 403, 'Only the comment author may edit');
+    }
+    const type = (existing as { payload?: { type?: string } }).payload?.type;
+    if (
+      (existing as { kind: string }).kind !== 'reaction' ||
+      type !== 'comment'
+    ) {
+      return sendApiError(res, 400, 'Target item is not a comment');
+    }
+
+    const payload = ((existing as { payload?: Record<string, unknown> })
+      .payload ?? {}) as Record<string, unknown>;
+    payload.body = text;
+    const { error } = await adminSupabase
+      .from('feed_items')
+      .update({ payload, edited_at: new Date().toISOString() })
+      .eq('id', commentId)
+      .eq('user_id', userId);
+    if (error) return sendApiError(res, 500, 'Server error');
+    return res.status(204).send();
+  },
+);
+
+// DELETE /api/feeds/comments/:commentId — delete viewer-owned comment
+app.delete(
+  '/api/feeds/comments/:commentId',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const commentIdRaw = req.params.commentId;
+    const commentId =
+      typeof commentIdRaw === 'string' ? commentIdRaw.trim() : '';
+    if (!commentId) return sendApiError(res, 400, 'Invalid comment id');
+
+    const { data: existing, error: existingErr } = await adminSupabase
+      .from('feed_items')
+      .select('id, user_id, kind, payload')
+      .eq('id', commentId)
+      .maybeSingle();
+    if (existingErr) return sendApiError(res, 500, 'Server error');
+    if (!existing) return sendApiError(res, 404, 'Comment not found');
+    if ((existing as { user_id: string }).user_id !== userId) {
+      return sendApiError(res, 403, 'Only the comment author may delete');
+    }
+    const type = (existing as { payload?: { type?: string } }).payload?.type;
+    if (
+      (existing as { kind: string }).kind !== 'reaction' ||
+      type !== 'comment'
+    ) {
+      return sendApiError(res, 400, 'Target item is not a comment');
+    }
+
+    const { error } = await adminSupabase
+      .from('feed_items')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', userId);
+    if (error) return sendApiError(res, 500, 'Server error');
+    return res.status(204).send();
   },
 );
 

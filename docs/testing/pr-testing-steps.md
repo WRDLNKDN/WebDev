@@ -106,6 +106,20 @@ profile routes (IA), Directory, footer, and Dashboard.
        Type in “Start a post”, click Post → post appears (if API is up). Sort
       and feed load behave as before.
 
+- [ ] **Post edit/delete ownership**  
+       As post author, edit and delete your post from Feed; `Edited` indicator
+      appears after save and deleted post is removed with no placeholder. As
+      non-author, edit/delete controls are not available.
+
+- [ ] **Comment edit/delete ownership**  
+       Add a comment, edit it, confirm `Edited` indicator appears and survives
+      refresh. Delete own comment and verify row is removed (no placeholder). As
+      non-author, edit/delete controls are not available.
+
+- [ ] **Emoji reactions (post + comment)**  
+       Add/remove emoji reactions and confirm counts update immediately. Open a
+      second active session and verify updates propagate there as well.
+
 - [ ] **Post-auth stability (UAT)**  
        After OAuth sign-in (`/join` → `/feed`), no false "You need to sign in"
       toast appears and no redirect back to `/join` occurs.

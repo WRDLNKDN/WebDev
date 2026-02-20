@@ -132,7 +132,7 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
             referrerPolicy="no-referrer"
             sx={{
               width: '100%',
-              height: { xs: 120, sm: 150, md: 170 },
+              height: { xs: 72, sm: 84, md: 96 },
               objectFit: 'cover',
               objectPosition: 'center',
               display: 'block',

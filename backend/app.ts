@@ -63,7 +63,7 @@ app.use(express.json());
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB for ad images
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for ad/partner images
 });
 
 // Vercel rewrites send /api/:path* to /api with path in query; restore req.url so routes match
@@ -1808,7 +1808,11 @@ app.post(
         'code' in err &&
         err.code === 'LIMIT_FILE_SIZE'
       ) {
-        return sendApiError(res, 413, 'File too large. Max 15MB.');
+        return sendApiError(
+          res,
+          413,
+          'File too large. Max 50MB for ad and partner images.',
+        );
       }
       if (err) return next(err);
       next();
@@ -1824,11 +1828,22 @@ app.post(
           'No file uploaded. Use multipart field "file".',
         );
       }
-      const valid = ['image/jpeg', 'image/png'].includes(file.mimetype);
+      const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const valid = validMimes.includes(file.mimetype);
       if (!valid) {
-        return sendApiError(res, 400, 'Only JPG and PNG images are allowed.');
+        return sendApiError(
+          res,
+          400,
+          'Unsupported image type. Allowed: JPG, PNG, WEBP, GIF.',
+        );
       }
-      const ext = file.mimetype === 'image/png' ? '.png' : '.jpg';
+      const extByMime: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/webp': '.webp',
+        'image/gif': '.gif',
+      };
+      const ext = extByMime[file.mimetype] ?? '.jpg';
       const storagePath = `ads/${crypto.randomUUID()}${ext}`;
       const { error } = await adminSupabase.storage
         .from('feed-ad-images')
@@ -1838,7 +1853,7 @@ app.post(
         });
       if (error) {
         console.error('[advertisers/upload] Supabase storage error:', error);
-        return sendApiError(res, 500, 'Upload failed');
+        return sendApiError(res, 500, `Upload failed: ${error.message}`);
       }
       const { data: publicUrl } = adminSupabase.storage
         .from('feed-ad-images')

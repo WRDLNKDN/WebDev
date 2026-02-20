@@ -105,7 +105,7 @@ export const StartDmDialog = ({
       await onSelect(userId);
       onClose();
     } catch {
-      setError('Could not start a chat with this member. Please try again.');
+      setError("We couldn't start a chat with this member. Please try again.");
     } finally {
       setLoading(false);
     }

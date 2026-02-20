@@ -123,7 +123,7 @@ export const LandingPage = () => {
       setIsFollowing(true);
     } catch (e) {
       console.error('Follow failed:', e);
-      setSnack('Could not connect. Please try again.');
+      setSnack("We couldn't connect right now. Please try again.");
     } finally {
       setConnectionLoading(false);
     }

@@ -379,7 +379,7 @@ export function useChat(roomId: string | null) {
         .update({ content, edited_at: new Date().toISOString() })
         .eq('id', messageId);
 
-      if (err) setError('Could not update message. Please try again.');
+      if (err) setError("We couldn't update that message. Please try again.");
     },
     [],
   );
@@ -394,7 +394,7 @@ export function useChat(roomId: string | null) {
       })
       .eq('id', messageId);
 
-    if (err) setError('Could not delete message. Please try again.');
+    if (err) setError("We couldn't delete that message. Please try again.");
   }, []);
 
   const markAsRead = useCallback(

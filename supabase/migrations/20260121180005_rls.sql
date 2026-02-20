@@ -85,11 +85,11 @@ create index if not exists idx_feed_ad_events_advertiser_created
 create index if not exists idx_feed_ad_events_name_created
   on public.feed_ad_events(event_name, created_at desc);
 
--- Optional: feed-ad-images bucket (idempotent; 15MB; null = no MIME restriction)
+-- Optional: feed-ad-images bucket (idempotent; 50MB; null = no MIME restriction)
 -- -----------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('feed-ad-images', 'feed-ad-images', true, 15728640, null)
-on conflict (id) do update set public = excluded.public, file_size_limit = 15728640, allowed_mime_types = null;
+values ('feed-ad-images', 'feed-ad-images', true, 52428800, null)
+on conflict (id) do update set public = excluded.public, file_size_limit = 52428800, allowed_mime_types = null;
 
 -- Optional: profiles status default + backfill (remove moderation)
 -- -----------------------------

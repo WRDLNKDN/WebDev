@@ -97,7 +97,9 @@ export function useProfile() {
         }
         if (!profileData) {
           setLoading(false);
-          setError('Could not create profile. Try again or contact support.');
+          setError(
+            "We couldn't create your profile. Please try again, or contact support if this keeps happening.",
+          );
           return;
         }
       }

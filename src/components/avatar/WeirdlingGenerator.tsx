@@ -144,7 +144,7 @@ const WeirdlingGenerator = ({
       if (onWeirdlingGenerated) onWeirdlingGenerated();
     } catch (err: unknown) {
       console.error('Save Error:', err);
-      setError('Failed to bind Weirdling to your soul (Database Error).');
+      setError("We couldn't save your Weirdling right now. Please try again.");
       setSaveStatus('idle');
     }
   };

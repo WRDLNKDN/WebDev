@@ -25,7 +25,11 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { uploadAdImage } from '../../lib/api/adminAdvertisersApi';
+import {
+  AD_IMAGE_ALLOWED_LABEL,
+  uploadAdImage,
+  validateAdImageFile,
+} from '../../lib/api/adminAdvertisersApi';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { toMessage } from '../../lib/utils/errors';
 
@@ -131,9 +135,10 @@ export const AdminPartnersPage = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const valid = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-    if (!valid) {
-      setError('Only JPG, PNG, and WEBP images are allowed.');
+    const validationError = validateAdImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
       return;
     }
     const objectUrl = URL.createObjectURL(file);
@@ -394,7 +399,7 @@ export const AdminPartnersPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
@@ -453,7 +458,8 @@ export const AdminPartnersPage = () => {
                       Upload Partner Image
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      1200x400 hero or square logo (JPG, PNG, WEBP)
+                      1200x400 hero or square logo (max 50MB,{' '}
+                      {AD_IMAGE_ALLOWED_LABEL})
                     </Typography>
                   </>
                 )}

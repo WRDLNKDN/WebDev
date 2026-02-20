@@ -121,6 +121,7 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
             display: 'block',
             width: '100%',
             lineHeight: 0,
+            overflow: 'hidden',
           }}
         >
           <Box
@@ -131,10 +132,9 @@ export const FeedAdCard = ({ advertiser, onDismiss }: Props) => {
             referrerPolicy="no-referrer"
             sx={{
               width: '100%',
-              height: 'auto',
-              minHeight: 120,
-              maxHeight: 280,
+              height: { xs: 120, sm: 150, md: 170 },
               objectFit: 'cover',
+              objectPosition: 'center',
               display: 'block',
               bgcolor: 'action.hover',
             }}

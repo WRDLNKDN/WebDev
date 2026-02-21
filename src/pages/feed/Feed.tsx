@@ -114,6 +114,7 @@ const AD_IMPRESSION_CAP_PER_SESSION = (() => {
 })();
 const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
+const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
 
 type FeedCachePayload = {
   items: FeedItem[];
@@ -164,6 +165,26 @@ function linkifyBody(body: string): ReactNode {
   }
   if (lastIndex < body.length) parts.push(body.slice(lastIndex));
   return parts.length === 1 && typeof parts[0] === 'string' ? parts[0] : parts;
+}
+
+function extractBodyUrls(body: string): string[] {
+  if (!body.trim()) return [];
+  const urls: string[] = [];
+  let m: RegExpExecArray | null;
+  const re = new RegExp(URL_REGEX.source, 'gi');
+  while ((m = re.exec(body)) !== null) {
+    urls.push(m[0]);
+  }
+  return urls;
+}
+
+function isGifUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return /\.gif$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
 }
 
 type LinkPreviewPayload = {
@@ -480,6 +501,8 @@ const FeedCard = ({
   const linkPreview = item.payload?.link_preview as
     | LinkPreviewPayload
     | undefined;
+  const bodyGifUrls = extractBodyUrls(body).filter(isGifUrl);
+  const bodyGifUrlSet = new Set(bodyGifUrls);
   const likeCount = item.like_count ?? 0;
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
@@ -668,19 +691,40 @@ const FeedCard = ({
               </Stack>
             ) : (
               body && (
-                <Typography
-                  variant="body1"
-                  component="span"
-                  sx={{
-                    mt: 0.5,
-                    whiteSpace: 'pre-wrap',
-                    display: 'block',
-                    overflowWrap: 'break-word',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {linkifyBody(body)}
-                </Typography>
+                <>
+                  <Typography
+                    variant="body1"
+                    component="span"
+                    sx={{
+                      mt: 0.5,
+                      whiteSpace: 'pre-wrap',
+                      display: 'block',
+                      overflowWrap: 'break-word',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {linkifyBody(body)}
+                  </Typography>
+                  {bodyGifUrls.map((gifUrl) => (
+                    <Box
+                      key={gifUrl}
+                      component="img"
+                      src={gifUrl}
+                      alt=""
+                      loading="lazy"
+                      sx={{
+                        mt: 1,
+                        maxWidth: 320,
+                        width: '100%',
+                        maxHeight: 320,
+                        objectFit: 'contain',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    />
+                  ))}
+                </>
               )
             )}
             {linkPreview?.url && !isLinkPreviewDismissed && (
@@ -697,20 +741,22 @@ const FeedCard = ({
                   sx={{ mt: 1.5 }}
                   flexWrap="wrap"
                 >
-                  {(item.payload.images as string[]).map((imgUrl) => (
-                    <Box
-                      key={imgUrl}
-                      component="img"
-                      src={imgUrl}
-                      alt=""
-                      sx={{
-                        maxWidth: 280,
-                        maxHeight: 280,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                      }}
-                    />
-                  ))}
+                  {(item.payload.images as string[])
+                    .filter((imgUrl) => !bodyGifUrlSet.has(imgUrl))
+                    .map((imgUrl) => (
+                      <Box
+                        key={imgUrl}
+                        component="img"
+                        src={imgUrl}
+                        alt=""
+                        sx={{
+                          maxWidth: 280,
+                          maxHeight: 280,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                        }}
+                      />
+                    ))}
                 </Stack>
               )}
             {url && (
@@ -1551,28 +1597,47 @@ export const Feed = () => {
     };
   }, [session?.user?.id]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchAdvertisers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('feed_advertisers')
+      .select(
+        'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
+      )
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
 
-    const fetchAdvertisers = async () => {
-      const { data, error } = await supabase
-        .from('feed_advertisers')
-        .select(
-          'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
-        )
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
-
-      if (cancelled) return;
-      if (error) return; // Non-fatal: feed still works without ads
-      setAdvertisers((data ?? []) as FeedAdvertiser[]);
-    };
-
-    void fetchAdvertisers();
-    return () => {
-      cancelled = true;
-    };
+    if (error) return; // Non-fatal: feed still works without ads
+    setAdvertisers((data ?? []) as FeedAdvertiser[]);
   }, []);
+
+  useEffect(() => {
+    void fetchAdvertisers();
+  }, [fetchAdvertisers]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== ADVERTISERS_UPDATED_EVENT_KEY) return;
+      void fetchAdvertisers();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [fetchAdvertisers]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('feed-advertisers-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feed_advertisers' },
+        () => {
+          void fetchAdvertisers();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchAdvertisers]);
 
   useEffect(() => {
     if (!session?.user?.id || !session?.access_token) return;

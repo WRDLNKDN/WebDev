@@ -276,6 +276,7 @@ export const EditProfileDialog = ({
         setUploadedAvatarUrl(url);
         setToastMessage('Avatar updated.');
         setShowToast(true);
+        onAvatarChanged?.();
       }
     } catch (error) {
       console.error(error);
@@ -346,6 +347,7 @@ export const EditProfileDialog = ({
       >
         <Typography
           variant="h6"
+          component="span"
           sx={{
             fontWeight: 600,
             background: AVATAR_GRADIENT,

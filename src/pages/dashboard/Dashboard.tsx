@@ -464,7 +464,10 @@ export const Dashboard = () => {
         currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
-        onAvatarChanged={() => void refresh()}
+        onAvatarChanged={() => {
+          void refresh();
+          void refreshAvatar();
+        }}
       />
       <EditLinksDialog
         open={isLinksOpen}

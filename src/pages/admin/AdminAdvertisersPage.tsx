@@ -33,6 +33,10 @@ import {
   uploadAdImage,
   validateAdImageFile,
 } from '../../lib/api/adminAdvertisersApi';
+import {
+  buildAdvertiserInsertPayload,
+  buildAdvertiserUpdatePayload,
+} from '../../lib/admin/advertiserPayload';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -51,6 +55,7 @@ type AdStats = {
 type MetricsWindowDays = 7 | 30 | 90;
 
 type LinkItem = { label: string; url: string };
+const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
 
 type FormState = {
   company_name: string;
@@ -112,6 +117,7 @@ export const AdminAdvertisersPage = () => {
   >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -122,6 +128,14 @@ export const AdminAdvertisersPage = () => {
   const [metricsWindowDays, setMetricsWindowDays] =
     useState<MetricsWindowDays>(30);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const notifyAdvertiserUpdate = () => {
+    try {
+      localStorage.setItem(ADVERTISERS_UPDATED_EVENT_KEY, String(Date.now()));
+    } catch {
+      // Ignore storage failures.
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -177,6 +191,8 @@ export const AdminAdvertisersPage = () => {
     setEditingId(null);
     setEditingLogoUrl(null);
     setForm(emptyForm);
+    setError(null);
+    setSuccess(null);
     setDialogOpen(true);
   };
 
@@ -188,6 +204,8 @@ export const AdminAdvertisersPage = () => {
     setEditingId(row.id);
     setEditingLogoUrl(row.logo_url ?? null);
     setForm(formFromRow(row));
+    setError(null);
+    setSuccess(null);
     setDialogOpen(true);
   };
 
@@ -216,6 +234,7 @@ export const AdminAdvertisersPage = () => {
     setPreviewUrl(objectUrl);
     setUploadingImage(true);
     setError(null);
+    setSuccess(null);
     try {
       const publicUrl = await uploadAdImage(file);
       if (editingId) {
@@ -229,10 +248,16 @@ export const AdminAdvertisersPage = () => {
           })
           .eq('id', editingId);
         if (updateError) throw updateError;
+        notifyAdvertiserUpdate();
       }
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
       setForm((f) => ({ ...f, image_url: publicUrl }));
+      setSuccess(
+        editingId
+          ? 'Image updated.'
+          : 'Image uploaded. Save the ad to apply this change.',
+      );
       if (editingId) {
         await load();
       }
@@ -246,6 +271,41 @@ export const AdminAdvertisersPage = () => {
     }
   };
 
+  const handleRemoveImage = async () => {
+    setError(null);
+    setSuccess(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+
+    if (!editingId) {
+      setForm((f) => ({ ...f, image_url: '' }));
+      setSuccess('Image removed.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('feed_advertisers')
+        .update({
+          image_url: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingId);
+      if (updateError) throw updateError;
+      setForm((f) => ({ ...f, image_url: '' }));
+      setSuccess('Image removed.');
+      notifyAdvertiserUpdate();
+      await load();
+    } catch (e: unknown) {
+      setError(toMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (uploadingImage) {
       setError('Please wait for the image upload to finish before saving.');
@@ -256,36 +316,27 @@ export const AdminAdvertisersPage = () => {
       .filter((l) => l.label || l.url);
     setSaving(true);
     setError(null);
+    setSuccess(null);
     try {
       const payload = {
-        company_name: form.company_name.trim(),
-        title: form.title.trim(),
-        description: form.description.trim(),
-        url: form.url.trim(),
-        image_url: form.image_url.trim() || null,
+        ...form,
         links,
-        active: form.active,
-        sort_order: form.sort_order,
-        updated_at: new Date().toISOString(),
       };
 
       if (editingId) {
         const { error: updateError } = await supabase
           .from('feed_advertisers')
-          .update({
-            ...payload,
-            // Logo URL field is no longer editable in this form;
-            // preserve existing value on updates.
-            logo_url: editingLogoUrl,
-          })
+          .update(buildAdvertiserUpdatePayload(payload, editingLogoUrl))
           .eq('id', editingId);
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
           .from('feed_advertisers')
-          .insert({ ...payload, logo_url: null });
+          .insert(buildAdvertiserInsertPayload(payload));
         if (insertError) throw insertError;
       }
+      notifyAdvertiserUpdate();
+      setSuccess(editingId ? 'Advertiser updated.' : 'Advertiser added.');
       closeDialog();
       await load();
     } catch (e: unknown) {
@@ -305,6 +356,7 @@ export const AdminAdvertisersPage = () => {
         .delete()
         .eq('id', id);
       if (deleteError) throw deleteError;
+      notifyAdvertiserUpdate();
       await load();
     } catch (e: unknown) {
       setError(toMessage(e));
@@ -323,6 +375,7 @@ export const AdminAdvertisersPage = () => {
         })
         .eq('id', row.id);
       if (updateError) throw updateError;
+      notifyAdvertiserUpdate();
       await load();
     } catch (e: unknown) {
       setError(toMessage(e));
@@ -378,6 +431,15 @@ export const AdminAdvertisersPage = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setSuccess(null)}
+        >
+          {success}
         </Alert>
       )}
 
@@ -624,9 +686,19 @@ export const AdminAdvertisersPage = () => {
                 <Button
                   size="small"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
+                  disabled={uploadingImage || saving}
                 >
                   Replace image
+                </Button>
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={() => void handleRemoveImage()}
+                  disabled={
+                    uploadingImage || saving || (!previewUrl && !form.image_url)
+                  }
+                >
+                  Remove image
                 </Button>
               </Stack>
             </Box>

@@ -140,7 +140,13 @@ export const ContentSubmitPage = () => {
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Type
             </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{
+                '& .MuiButton-root': { width: { xs: '100%', sm: 'auto' } },
+              }}
+            >
               <Button
                 variant={type === 'youtube' ? 'contained' : 'outlined'}
                 size="small"

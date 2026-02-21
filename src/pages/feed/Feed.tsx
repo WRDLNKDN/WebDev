@@ -773,11 +773,11 @@ const FeedCard = ({
             )}
             <Stack
               direction="row"
-              spacing={1}
+              spacing={{ xs: 0.75, sm: 1 }}
               sx={{
                 mt: 1.5,
                 flexWrap: 'wrap',
-                gap: 0.5,
+                gap: { xs: 0.75, sm: 0.5 },
                 alignItems: 'center',
               }}
             >
@@ -811,6 +811,8 @@ const FeedCard = ({
                             ? current.color
                             : 'text.secondary',
                           minWidth: 0,
+                          minHeight: { xs: 40, sm: 32 },
+                          px: { xs: 1.25, sm: 1 },
                         }}
                         aria-label={
                           viewerReaction
@@ -886,6 +888,8 @@ const FeedCard = ({
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1.25, sm: 1 },
                 }}
               >
                 Comment
@@ -903,6 +907,8 @@ const FeedCard = ({
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1.25, sm: 1 },
                 }}
               >
                 Repost
@@ -915,6 +921,8 @@ const FeedCard = ({
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1.25, sm: 1 },
                 }}
               >
                 Send
@@ -930,6 +938,8 @@ const FeedCard = ({
                     textTransform: 'none',
                     color: 'text.secondary',
                     minWidth: 0,
+                    minHeight: { xs: 40, sm: 32 },
+                    px: { xs: 1.25, sm: 1 },
                   }}
                 >
                   Edit
@@ -1056,7 +1066,14 @@ const FeedCard = ({
                                 >
                                   {formatTime(c.created_at)}
                                 </Typography>
-                                <Stack direction="row" spacing={1}>
+                                <Stack
+                                  direction="row"
+                                  spacing={{ xs: 0.75, sm: 1 }}
+                                  sx={{
+                                    flexWrap: 'wrap',
+                                    gap: { xs: 0.5, sm: 0 },
+                                  }}
+                                >
                                   {REACTION_OPTIONS.map(
                                     ({ type, Icon, IconOutlined, color }) => {
                                       const active = c.viewer_reaction === type;
@@ -1090,7 +1107,8 @@ const FeedCard = ({
                                           sx={{
                                             textTransform: 'none',
                                             minWidth: 0,
-                                            px: 0.25,
+                                            px: { xs: 0.75, sm: 0.25 },
+                                            minHeight: { xs: 36, sm: 30 },
                                             color: active
                                               ? color
                                               : 'text.secondary',
@@ -1123,7 +1141,8 @@ const FeedCard = ({
                                           sx={{
                                             textTransform: 'none',
                                             minWidth: 0,
-                                            px: 0,
+                                            px: { xs: 0.75, sm: 0 },
+                                            minHeight: { xs: 36, sm: 30 },
                                           }}
                                         >
                                           Edit
@@ -1140,7 +1159,8 @@ const FeedCard = ({
                                           sx={{
                                             textTransform: 'none',
                                             minWidth: 0,
-                                            px: 0,
+                                            px: { xs: 0.75, sm: 0 },
+                                            minHeight: { xs: 36, sm: 30 },
                                           }}
                                         >
                                           Delete
@@ -2314,16 +2334,20 @@ export const Feed = () => {
               sx={{
                 borderRadius: 2,
                 mb: 2,
-                p: 2,
+                p: { xs: 1.5, sm: 2 },
               }}
             >
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 alignItems={{ xs: 'stretch', sm: 'center' }}
                 justifyContent="space-between"
-                gap={2}
+                gap={{ xs: 1.5, sm: 2 }}
               >
-                <Stack direction="row" alignItems="center" spacing={2}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  spacing={{ xs: 1.25, sm: 2 }}
+                >
                   <Typography variant="h6" fontWeight={600}>
                     Feed
                   </Typography>
@@ -2335,9 +2359,10 @@ export const Feed = () => {
                     sx={{
                       '& .MuiToggleButton-root': {
                         textTransform: 'none',
-                        fontSize: '0.8rem',
-                        py: 0.5,
-                        px: 1.5,
+                        fontSize: { xs: '0.85rem', sm: '0.8rem' },
+                        py: { xs: 0.9, sm: 0.5 },
+                        px: { xs: 1.75, sm: 1.5 },
+                        minHeight: { xs: 42, sm: 32 },
                       },
                     }}
                   >
@@ -2355,12 +2380,15 @@ export const Feed = () => {
                     </ToggleButton>
                   </ToggleButtonGroup>
                 </Stack>
-                <FormControl size="small" sx={{ minWidth: 160 }}>
+                <FormControl
+                  size="small"
+                  sx={{ minWidth: { xs: '100%', sm: 160 } }}
+                >
                   <Select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
                     displayEmpty
-                    sx={{ fontSize: '0.875rem' }}
+                    sx={{ fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
                   >
                     <MenuItem value="recent">Sort by: Recent</MenuItem>
                     <MenuItem value="oldest">Sort by: Oldest</MenuItem>

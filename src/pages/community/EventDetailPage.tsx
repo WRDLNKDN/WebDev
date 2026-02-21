@@ -282,7 +282,15 @@ export const EventDetailPage = () => {
               <Typography variant="subtitle2" gutterBottom>
                 Will you attend?
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                flexWrap="wrap"
+                useFlexGap
+                sx={{
+                  '& .MuiButton-root': { width: { xs: '100%', sm: 'auto' } },
+                }}
+              >
                 <Button
                   size="small"
                   variant={viewerRsvp === 'yes' ? 'contained' : 'outlined'}

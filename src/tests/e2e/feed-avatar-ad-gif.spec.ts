@@ -431,4 +431,106 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
     await page.goto('/feed');
     await expect(page.locator(`img[src="${gifUrl}"]`)).toHaveCount(1);
   });
+
+  test('mobile feed header stacks and action buttons remain tap-friendly', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await seedSignedInSession(page);
+
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
+      });
+    });
+    await page.route('**/rest/v1/notifications*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-0/0' },
+        body: '[]',
+      });
+    });
+    await page.route('**/rest/v1/rpc/is_admin', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(false),
+      });
+    });
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      const reqUrl = route.request().url();
+      if (reqUrl.includes('select=feed_view_preference')) {
+        await fulfillPostgrest(route, [{ feed_view_preference: 'anyone' }]);
+        return;
+      }
+      await fulfillPostgrest(route, [
+        {
+          id: USER_ID,
+          handle: 'member',
+          display_name: 'Member',
+          avatar: null,
+          status: 'approved',
+          join_reason: ['networking'],
+          participation_style: ['builder'],
+          policy_version: '1.0',
+        },
+      ]);
+    });
+    await page.route('**/rest/v1/feed_advertisers*', async (route) => {
+      await fulfillPostgrest(route, []);
+    });
+    await page.route(/\/api\/feeds(\?.*)?$/, async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [
+            {
+              id: 'post-mobile',
+              user_id: USER_ID,
+              kind: 'post',
+              payload: { body: 'Mobile layout test post' },
+              parent_id: null,
+              created_at: new Date().toISOString(),
+              edited_at: null,
+              actor: { handle: 'member', display_name: 'Member', avatar: null },
+              like_count: 0,
+              love_count: 0,
+              inspiration_count: 0,
+              care_count: 0,
+              viewer_reaction: null,
+              comment_count: 0,
+            },
+          ],
+          nextCursor: null,
+        }),
+      });
+    });
+
+    await page.goto('/feed');
+    const heading = page.getByRole('heading', { name: 'Feed', exact: true });
+    await expect(heading).toBeVisible();
+
+    const headerControlStack = heading.locator(
+      'xpath=ancestor::*[contains(@class,"MuiStack-root")][1]',
+    );
+    const headerDirection = await headerControlStack.evaluate(
+      (el) => window.getComputedStyle(el).flexDirection,
+    );
+    expect(headerDirection).toBe('column');
+
+    const likeButton = page.getByRole('button', { name: /^Like$/ }).first();
+    await expect(likeButton).toBeVisible();
+    const likeHeight = await likeButton.evaluate(
+      (el) => el.getBoundingClientRect().height,
+    );
+    expect(likeHeight).toBeGreaterThanOrEqual(40);
+  });
 });

@@ -153,10 +153,10 @@ export const ProjectPage = () => {
         <Box
           sx={{
             display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: 2,
+            gap: { xs: 1.5, sm: 2 },
             mb: 3,
           }}
         >
@@ -168,7 +168,11 @@ export const ProjectPage = () => {
               variant="outlined"
               startIcon={<EditIcon />}
               onClick={() => setEditOpen(true)}
-              sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: 'white',
+                width: { xs: '100%', sm: 'auto' },
+              }}
             >
               Edit
             </Button>

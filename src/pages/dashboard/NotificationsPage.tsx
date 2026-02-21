@@ -417,7 +417,8 @@ export const NotificationsPage = () => {
                         px: 2,
                         bgcolor: row.read_at ? undefined : 'action.hover',
                         display: 'flex',
-                        alignItems: 'center',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'flex-start', sm: 'center' },
                         gap: 2,
                       }}
                     >
@@ -439,26 +440,34 @@ export const NotificationsPage = () => {
                           sx={{ m: 0 }}
                         />
                       </Box>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() =>
-                          void handleConnectionDecision(row, 'accept')
-                        }
-                        disabled={actingRequestId === row.id}
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                       >
-                        Approve
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() =>
-                          void handleConnectionDecision(row, 'decline')
-                        }
-                        disabled={actingRequestId === row.id}
-                      >
-                        Decline
-                      </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() =>
+                            void handleConnectionDecision(row, 'accept')
+                          }
+                          disabled={actingRequestId === row.id}
+                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() =>
+                            void handleConnectionDecision(row, 'decline')
+                          }
+                          disabled={actingRequestId === row.id}
+                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                          Decline
+                        </Button>
+                      </Stack>
                     </Box>
                   ) : (
                     <ListItemButton

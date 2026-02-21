@@ -30,6 +30,23 @@ Audit of main screens and error handling across the frontend.
 - **Feed:** Fixed: header stacks, sidebars static on mobile.
 - **Home, EventsPage, IdentityHeader:** Use responsive breakpoints.
 
+### Additional Mobile Polish (2026-02-21)
+
+- **Feed:** Post action buttons and comment actions now use larger tap targets
+  and better wrap spacing on mobile.
+- **DirectoryRow:** Connection action buttons stack and stretch on mobile for
+  clearer touch controls.
+- **MessageInput:** Attach/emoji/GIF/send controls and input height are larger
+  on mobile.
+- **Dashboard:** Edit Profile and Edit Links action buttons now stack full-width
+  on small screens.
+- **NotificationsPage:** Connection request Approve/Decline actions stack on
+  mobile.
+- **LandingPage:** Connection buttons (Connect/Following/Unfollow) stack cleanly
+  on mobile.
+- **ProjectPage, EventsPage, EventDetailPage, ContentSubmitPage, HelpPage:**
+  Header and CTA/action rows now stack or expand for mobile readability.
+
 ---
 
 ## 2. Error Message Improvements

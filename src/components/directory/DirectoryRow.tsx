@@ -144,7 +144,13 @@ export const DirectoryRow = ({
           )}
         </Box>
 
-        <Stack direction="row" spacing={1} flexShrink={0} alignItems="center">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          flexShrink={0}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           <Typography variant="caption" color="text.secondary">
             {connectionStateLabel[member.connection_state]}
           </Typography>
@@ -155,13 +161,22 @@ export const DirectoryRow = ({
               startIcon={<PersonAddIcon />}
               onClick={() => onConnect(member.id)}
               disabled={busy}
-              sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: 'white',
+                minHeight: { xs: 40, sm: 32 },
+              }}
             >
               Connect
             </Button>
           )}
           {member.connection_state === 'pending' && (
-            <Button variant="outlined" size="small" disabled>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled
+              sx={{ minHeight: { xs: 40, sm: 32 } }}
+            >
               Pending
             </Button>
           )}
@@ -172,6 +187,7 @@ export const DirectoryRow = ({
                 size="small"
                 onClick={() => onAccept(member.id)}
                 disabled={busy}
+                sx={{ minHeight: { xs: 40, sm: 32 } }}
               >
                 Accept
               </Button>
@@ -180,7 +196,11 @@ export const DirectoryRow = ({
                 size="small"
                 onClick={() => onDecline(member.id)}
                 disabled={busy}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                  minHeight: { xs: 40, sm: 32 },
+                }}
               >
                 Decline
               </Button>
@@ -194,7 +214,11 @@ export const DirectoryRow = ({
                 component={RouterLink}
                 to={`/chat?with=${member.id}`}
                 startIcon={<ChatIcon />}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                  minHeight: { xs: 40, sm: 32 },
+                }}
               >
                 Chat
               </Button>
@@ -204,7 +228,11 @@ export const DirectoryRow = ({
                 startIcon={<PersonRemoveIcon />}
                 onClick={() => onDisconnect(member)}
                 disabled={busy}
-                sx={{ borderColor: 'error.main', color: 'error.main' }}
+                sx={{
+                  borderColor: 'error.main',
+                  color: 'error.main',
+                  minHeight: { xs: 40, sm: 32 },
+                }}
               >
                 Disconnect
               </Button>

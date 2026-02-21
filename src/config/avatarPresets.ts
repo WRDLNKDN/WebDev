@@ -1,6 +1,5 @@
 /**
- * Avatar preset config — 6 selectable Weirdling presets.
- * Used in Avatar Replacement Box (Edit Profile).
+ * Avatar preset config — selectable Weirdling presets for Edit Profile.
  */
 import { WEIRDLING_ASSET_COUNT } from '../types/weirdling';
 
@@ -12,12 +11,18 @@ export type AvatarPreset = {
 };
 
 const NAMES = [
-  'Builder',
-  'Chaos Coordinator',
-  'Wizard',
-  'Debugger',
-  'Architect',
-  'Explorer',
+  'Greenling',
+  'Pinkling',
+  'Blue Sprite',
+  'Orbitling',
+  'Sparkling',
+  'Echoling',
+  'Lumenling',
+  'Mistling',
+  'Nova Nook',
+  'Pixel Puck',
+  'Signal Sprite',
+  'Voltling',
 ];
 
 export const AVATAR_PRESETS: AvatarPreset[] = Array.from(
@@ -29,3 +34,10 @@ export const AVATAR_PRESETS: AvatarPreset[] = Array.from(
     description: `Preset Weirdling avatar ${i + 1}`,
   }),
 );
+
+export const DEFAULT_AVATAR_PRESET_ID = 'preset-1';
+export const DEFAULT_AVATAR_URL =
+  AVATAR_PRESETS.find((preset) => preset.preset_id === DEFAULT_AVATAR_PRESET_ID)
+    ?.image_url ??
+  AVATAR_PRESETS[0]?.image_url ??
+  null;

@@ -8,15 +8,19 @@ for fast loads and consistent UX.
 
 ---
 
-## 1. Preset Weirdlings (Option A: App Assets)
+## 1. Preset Weirdlings (Edit Profile picker)
 
 **Location:** `public/assets/og_weirdlings/`  
-**Files:** `weirdling_1.png` … `weirdling_6.png`
+**Files:** `weirdling_1.png` … `weirdling_12.png`
 
 - Hosted as static assets in the app
 - Served by **Vercel CDN** on deploy
 - No Supabase storage required
 - URLs: `/assets/og_weirdlings/weirdling_N.png`
+- Edit Profile uses a preset-only picker (square tiles, no per-avatar title
+  text)
+- Default avatar is **Greenling** (`weirdling_1.png`) when no profile/provider
+  photo is available
 
 ---
 

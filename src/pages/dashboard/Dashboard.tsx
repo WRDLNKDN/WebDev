@@ -29,17 +29,13 @@ import {
 import { SettingsDialog } from '../../components/profile/SettingsDialog';
 import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
-import { WeirdlingBannerSlot } from '../../components/profile/WeirdlingBannerSlot';
-import { WeirdlingCreateDialog } from '../../components/profile/WeirdlingCreateDialog';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
 import { toMessage } from '../../lib/utils/errors';
-import { deleteWeirdling, getMyWeirdlings } from '../../lib/api/weirdlingApi';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
-import type { Weirdling } from '../../types/weirdling';
 import type { NerdCreds } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
 
@@ -54,10 +50,6 @@ export const Dashboard = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isEmailPrefsOpen, setIsEmailPrefsOpen] = useState(false);
-  const [isAddWeirdlingOpen, setIsAddWeirdlingOpen] = useState(false);
-  const [weirdlings, setWeirdlings] = useState<Weirdling[] | null | undefined>(
-    undefined,
-  );
 
   useEffect(() => {
     const init = async () => {
@@ -78,19 +70,6 @@ export const Dashboard = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [state?.openEditDialog, navigate, location.pathname]);
-
-  useEffect(() => {
-    if (!session) return;
-    const load = async () => {
-      try {
-        const list = await getMyWeirdlings();
-        setWeirdlings(list);
-      } catch {
-        setWeirdlings([]);
-      }
-    };
-    void load();
-  }, [session]);
 
   const {
     profile,
@@ -114,11 +93,8 @@ export const Dashboard = () => {
   const rawName =
     profile?.display_name || session.user.user_metadata?.full_name;
   const displayName = safeStr(rawName, 'Verified Generalist');
-  // Resolved avatar: use_weirdling_avatar ? weirdling : profile.avatar
   const resolvedAvatarUrl =
-    profile?.use_weirdling_avatar && weirdlings?.[0]?.avatarUrl
-      ? weirdlings[0].avatarUrl
-      : profile?.avatar || session.user.user_metadata?.avatar_url;
+    profile?.avatar || session.user.user_metadata?.avatar_url;
   const avatarUrl = ctxAvatarUrl ?? safeStr(resolvedAvatarUrl);
 
   const safeNerdCreds =
@@ -178,23 +154,7 @@ export const Dashboard = () => {
               onSkillsClick={() => setIsEditOpen(true)}
             />
           }
-          slotBetweenContentAndActions={
-            weirdlings && weirdlings.length > 0 ? (
-              <WeirdlingBannerSlot
-                weirdlings={weirdlings}
-                onAddClick={() => setIsAddWeirdlingOpen(true)}
-                onRemove={async (id: string) => {
-                  try {
-                    await deleteWeirdling(id);
-                    const list = await getMyWeirdlings();
-                    setWeirdlings(list);
-                  } catch (e) {
-                    setSnack(toMessage(e));
-                  }
-                }}
-              />
-            ) : undefined
-          }
+          slotBetweenContentAndActions={undefined}
           actions={
             <>
               <Button
@@ -219,13 +179,6 @@ export const Dashboard = () => {
                 }}
               >
                 Settings
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => setIsAddWeirdlingOpen(true)}
-                sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-              >
-                Add weirdling
               </Button>
             </>
           }
@@ -437,27 +390,14 @@ export const Dashboard = () => {
         </Paper>
       </Container>
 
-      <WeirdlingCreateDialog
-        open={isAddWeirdlingOpen}
-        onClose={() => setIsAddWeirdlingOpen(false)}
-        onSuccess={async () => {
-          try {
-            const list = await getMyWeirdlings();
-            setWeirdlings(list);
-          } catch {
-            setWeirdlings([]);
-          }
-          void refreshAvatar();
-        }}
-      />
       <EditProfileDialog
         open={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
           void refresh();
+          void refreshAvatar();
         }}
         profile={profile}
-        hasWeirdling={Boolean(weirdlings?.length)}
         avatarFallback={
           session?.user?.user_metadata?.avatar_url as string | undefined
         }

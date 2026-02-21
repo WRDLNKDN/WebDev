@@ -64,6 +64,16 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/link-preview**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: null }),
+      });
+    });
+  });
+
   test('Google profile photo hydrates to navbar avatar without manual change', async ({
     page,
   }) => {
@@ -343,13 +353,6 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
-      });
-    });
-    await page.route('**/api/link-preview**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: null }),
       });
     });
     await page.route('**/rest/v1/notifications*', async (route) => {

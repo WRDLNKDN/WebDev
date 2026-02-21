@@ -269,7 +269,11 @@ export const Dashboard = () => {
           }
           slotBetweenContentAndActions={undefined}
           actions={
-            <>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
@@ -278,6 +282,8 @@ export const Dashboard = () => {
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
+                  width: { xs: '100%', sm: 'auto' },
+                  minHeight: { xs: 40, sm: 36 },
                 }}
               >
                 Edit Profile
@@ -288,11 +294,13 @@ export const Dashboard = () => {
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
+                  width: { xs: '100%', sm: 'auto' },
+                  minHeight: { xs: 40, sm: 36 },
                 }}
               >
                 Edit Links
               </Button>
-            </>
+            </Stack>
           }
         />
 

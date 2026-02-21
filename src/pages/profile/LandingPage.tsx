@@ -238,7 +238,11 @@ export const LandingPage = () => {
       variant="outlined"
       startIcon={<EditIcon />}
       size="medium"
-      sx={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white' }}
+      sx={{
+        borderColor: 'rgba(255,255,255,0.4)',
+        color: 'white',
+        width: { xs: '100%', sm: 'auto' },
+      }}
     >
       Edit profile
     </Button>
@@ -246,11 +250,10 @@ export const LandingPage = () => {
 
   const connectActions = showConnect ? (
     <Stack
-      direction="row"
-      spacing={2}
-      alignItems="center"
-      flexWrap="wrap"
-      useFlexGap
+      direction={{ xs: 'column', sm: 'row' }}
+      spacing={1}
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      sx={{ width: { xs: '100%', sm: 'auto' } }}
     >
       {isFollowing ? (
         <>
@@ -259,6 +262,7 @@ export const LandingPage = () => {
             startIcon={<PersonIcon />}
             disabled
             size="medium"
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Following
           </Button>
@@ -267,6 +271,7 @@ export const LandingPage = () => {
             size="medium"
             disabled={connectionLoading}
             onClick={() => void unfollow()}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Unfollow
           </Button>
@@ -278,6 +283,7 @@ export const LandingPage = () => {
           disabled={connectionLoading}
           onClick={() => void follow()}
           size="medium"
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           {connectionLoading ? 'Connecting…' : 'Connect'}
         </Button>

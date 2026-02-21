@@ -217,7 +217,10 @@ export const HelpPage = () => {
                 startIcon={<ChatIcon />}
                 component={RouterLink}
                 to="/chat"
-                sx={{ textTransform: 'none' }}
+                sx={{
+                  textTransform: 'none',
+                  width: { xs: '100%', sm: 'auto' },
+                }}
               >
                 Go to Chat
               </Button>

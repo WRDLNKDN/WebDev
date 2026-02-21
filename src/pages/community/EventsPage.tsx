@@ -205,8 +205,8 @@ export const EventsPage = () => {
   return (
     <Box sx={{ py: 3, px: 2, maxWidth: 720, mx: 'auto' }}>
       <Stack
-        direction="row"
-        alignItems="center"
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
         flexWrap="wrap"
         gap={2}
@@ -220,7 +220,7 @@ export const EventsPage = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateOpen(true)}
-            sx={{ textTransform: 'none' }}
+            sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
           >
             Create Event
           </Button>

@@ -67,6 +67,7 @@ test.describe('Signed-in auth resilience + GIF flow', () => {
   test('signed-in member can connect without false unauthorized', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
     await seedSignedInSession(page);
 
     let connectedRequested = false;
@@ -130,6 +131,16 @@ test.describe('Signed-in auth resilience + GIF flow', () => {
 
     await page.goto('/directory');
     await expect(page).toHaveURL(/\/directory/);
+    const connectButton = page.getByRole('button', { name: /connect/i });
+    const actionStack = connectButton.locator(
+      'xpath=ancestor::*[contains(@class,"MuiStack-root")][1]',
+    );
+    await expect(actionStack).toBeVisible();
+    const stackDirection = await actionStack.evaluate(
+      (el) => window.getComputedStyle(el).flexDirection,
+    );
+    expect(stackDirection).toBe('column');
+
     await page.getByRole('button', { name: /connect/i }).click();
 
     await expect(page.getByText('You need to sign in to do that.')).toHaveCount(

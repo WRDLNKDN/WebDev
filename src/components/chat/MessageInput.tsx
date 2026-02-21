@@ -296,7 +296,13 @@ export const MessageInput = ({
           ))}
         </Box>
       )}
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: { xs: 1.25, sm: 1 },
+        }}
+      >
         <input
           ref={fileInputRef}
           type="file"
@@ -309,7 +315,11 @@ export const MessageInput = ({
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || uploading}
           aria-label="Attach file"
-          sx={{ color: 'rgba(255,255,255,0.75)' }}
+          sx={{
+            color: 'rgba(255,255,255,0.75)',
+            minWidth: { xs: 40, sm: 36 },
+            minHeight: { xs: 40, sm: 36 },
+          }}
         >
           <AttachFileIcon />
         </IconButton>
@@ -317,7 +327,11 @@ export const MessageInput = ({
           onClick={(e) => setEmojiAnchor(e.currentTarget)}
           disabled={disabled || uploading}
           aria-label="Add emoji"
-          sx={{ color: 'rgba(255,255,255,0.75)' }}
+          sx={{
+            color: 'rgba(255,255,255,0.75)',
+            minWidth: { xs: 40, sm: 36 },
+            minHeight: { xs: 40, sm: 36 },
+          }}
         >
           <EmojiEmotionsOutlinedIcon />
         </IconButton>
@@ -325,7 +339,11 @@ export const MessageInput = ({
           onClick={() => void handleOpenGifPicker()}
           disabled={disabled || uploading || pendingFiles.length >= 5}
           aria-label="Add GIF"
-          sx={{ color: 'rgba(255,255,255,0.75)' }}
+          sx={{
+            color: 'rgba(255,255,255,0.75)',
+            minWidth: { xs: 40, sm: 36 },
+            minHeight: { xs: 40, sm: 36 },
+          }}
         >
           <GifBoxIcon />
         </IconButton>
@@ -353,6 +371,7 @@ export const MessageInput = ({
               bgcolor: 'rgba(17,24,39,0.68)',
               color: 'white',
               borderRadius: 2,
+              minHeight: { xs: 40, sm: 36 },
               '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
               '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.35)' },
             },
@@ -365,7 +384,11 @@ export const MessageInput = ({
             disabled || uploading || (!text.trim() && pendingFiles.length === 0)
           }
           aria-label="Send message"
-          sx={{ color: 'primary.main' }}
+          sx={{
+            color: 'primary.main',
+            minWidth: { xs: 40, sm: 36 },
+            minHeight: { xs: 40, sm: 36 },
+          }}
         >
           <SendIcon />
         </IconButton>

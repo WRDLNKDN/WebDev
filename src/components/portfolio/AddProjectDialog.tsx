@@ -249,7 +249,7 @@ export const AddProjectDialog = ({
               <TextField
                 fullWidth
                 required
-                label="Project Title"
+                label="Project Name"
                 value={formData.title}
                 onChange={handleChange('title')}
                 variant="filled"

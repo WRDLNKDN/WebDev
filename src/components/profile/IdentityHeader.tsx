@@ -11,6 +11,8 @@ interface IdentityHeaderProps {
   avatarUrl?: string | null;
   statusEmoji?: string;
   statusMessage?: string;
+  /** Optional content rendered left of the avatar on desktop (stacks on mobile). */
+  slotLeftOfAvatar?: React.ReactNode;
   /** Optional label above slot (e.g. "WEIRDLINGS") */
   slotUnderAvatarLabel?: string;
   /** Renders under the avatar (e.g. Weirdling list or "Add your weirdling") */
@@ -33,6 +35,7 @@ export const IdentityHeader = ({
   tagline,
   bio,
   avatarUrl,
+  slotLeftOfAvatar,
   slotUnderAvatarLabel,
   slotUnderAvatar,
   badges,
@@ -78,30 +81,52 @@ export const IdentityHeader = ({
       alignItems={{ xs: 'center', md: 'flex-start' }}
       sx={{ textAlign: { xs: 'center', md: 'left' } }}
     >
-      <Stack alignItems="center" spacing={1.5} sx={{ flexShrink: 0 }}>
-        <ProfileAvatar
-          src={avatarUrl || undefined}
-          alt={displayName}
-          size="header"
-          sx={{
-            border: '4px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          }}
-        />
-        {slotUnderAvatarLabel && (
-          <Typography
-            variant="overline"
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        alignItems={{ xs: 'center', md: 'flex-start' }}
+        sx={{ flexShrink: 0 }}
+      >
+        {slotLeftOfAvatar && (
+          <Box
             sx={{
-              letterSpacing: 1.5,
-              color: 'text.secondary',
-              fontWeight: 600,
-              fontSize: '0.7rem',
+              order: { xs: 2, md: 1 },
+              minWidth: { md: 220 },
+              maxWidth: { md: 280 },
             }}
           >
-            {slotUnderAvatarLabel}
-          </Typography>
+            {slotLeftOfAvatar}
+          </Box>
         )}
-        {slotUnderAvatar}
+        <Stack
+          alignItems="center"
+          spacing={1.5}
+          sx={{ order: { xs: 1, md: 2 } }}
+        >
+          <ProfileAvatar
+            src={avatarUrl || undefined}
+            alt={displayName}
+            size="header"
+            sx={{
+              border: '4px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+          />
+          {slotUnderAvatarLabel && (
+            <Typography
+              variant="overline"
+              sx={{
+                letterSpacing: 1.5,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+              }}
+            >
+              {slotUnderAvatarLabel}
+            </Typography>
+          )}
+          {slotUnderAvatar}
+        </Stack>
       </Stack>
       <Box
         sx={{
@@ -135,6 +160,19 @@ export const IdentityHeader = ({
             {tagline}
           </Typography>
         )}
+        <Typography
+          variant="overline"
+          sx={{
+            letterSpacing: 1.5,
+            color: 'text.secondary',
+            fontWeight: 700,
+            fontSize: '0.72rem',
+            display: 'block',
+            mt: 0.5,
+          }}
+        >
+          Description
+        </Typography>
         <Typography
           component="blockquote"
           variant="body1"

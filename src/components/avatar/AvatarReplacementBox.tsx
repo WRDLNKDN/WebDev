@@ -117,6 +117,7 @@ export const AvatarReplacementBox = ({
                 overflow: 'hidden',
                 cursor: disabled ? 'default' : 'pointer',
                 bgcolor: 'transparent',
+                position: 'relative',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 '&:hover': disabled
                   ? {}
@@ -132,14 +133,36 @@ export const AvatarReplacementBox = ({
               }}
             >
               <Box
+                aria-hidden
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background:
+                    'linear-gradient(135deg, rgba(0,196,204,0.28) 0%, rgba(255,34,201,0.25) 100%)',
+                  color: 'rgba(255,255,255,0.82)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                }}
+              >
+                {index + 1}
+              </Box>
+              <Box
                 component="img"
                 src={preset.image_url}
                 alt=""
                 sx={{
+                  position: 'absolute',
+                  inset: 0,
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
                   display: 'block',
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             </Box>

@@ -1,6 +1,6 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { Button, Paper, Typography } from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
 import { CANDY_HAZARD, CANDY_SUCCESS } from '../../theme/candyStyles';
 
 interface ResumeCardProps {
@@ -11,6 +11,7 @@ interface ResumeCardProps {
 
 export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
   const hasResume = Boolean(url);
+  const isPdf = typeof url === 'string' && url.toLowerCase().includes('.pdf');
 
   // BRAND PROTECTION: If no resume exists and user isn't the owner,
   // don't show a broken/empty state to the public.
@@ -34,16 +35,47 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
     >
       {hasResume ? (
         <>
-          <CheckCircleOutlineIcon
-            sx={{ fontSize: { xs: 48, md: 60 }, mb: 2 }}
-          />
-          <Typography
-            variant="h6"
-            fontWeight={800}
-            letterSpacing={1}
-            sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: 300,
+              height: { xs: 170, md: 240 },
+              borderRadius: 2,
+              border: '1px solid rgba(255,255,255,0.25)',
+              overflow: 'hidden',
+              bgcolor: 'rgba(0,0,0,0.35)',
+              mb: 2,
+            }}
           >
-            RESUME.PDF
+            {isPdf ? (
+              <Box
+                component="iframe"
+                src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
+                title="Resume preview"
+                sx={{ width: '100%', height: '100%', border: 0 }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  p: 2,
+                  textAlign: 'center',
+                }}
+              >
+                <CheckCircleOutlineIcon sx={{ fontSize: 42, mb: 1 }} />
+                <Typography variant="caption" color="text.secondary">
+                  Thumbnail preview available for PDF resumes.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Typography variant="h6" fontWeight={800} letterSpacing={1}>
+            RESUME
           </Typography>
           <Button
             variant="outlined"

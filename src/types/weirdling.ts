@@ -7,7 +7,7 @@
  * Number of Weirdling image assets in public/assets/og_weirdlings
  * (weirdling_1.png … weirdling_N.png). Single source of truth.
  */
-export const WEIRDLING_ASSET_COUNT = 12;
+export const WEIRDLING_ASSET_COUNT = 7;
 
 /** When includeImage is true: pick from preset grid or let backend pick one (by handle + roleVibe). */
 export type WeirdlingImageSource = 'preset' | 'generate';

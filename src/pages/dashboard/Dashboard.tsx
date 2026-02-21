@@ -1,12 +1,9 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
   Button,
   Container,
-  Grid,
   Paper,
   Snackbar,
   Stack,
@@ -14,19 +11,14 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
 import { ProjectCard } from '../../components/portfolio/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
-import { EmailPreferencesDialog } from '../../components/profile/EmailPreferencesDialog';
-import {
-  IdentityBadges,
-  IdentityHeader,
-} from '../../components/profile/IdentityHeader';
-import { SettingsDialog } from '../../components/profile/SettingsDialog';
+import { IdentityHeader } from '../../components/profile/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
 
@@ -47,9 +39,7 @@ export const Dashboard = () => {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
-  const [isEmailPrefsOpen, setIsEmailPrefsOpen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -106,6 +96,64 @@ export const Dashboard = () => {
     safeNerdCreds.bio,
     '"Building the Human OS. Prioritizing authenticity over engagement metrics."',
   );
+  const selectedSkills =
+    Array.isArray(safeNerdCreds.skills) &&
+    safeNerdCreds.skills.every((skill) => typeof skill === 'string')
+      ? (safeNerdCreds.skills as string[])
+          .map((skill) => skill.trim())
+          .filter(Boolean)
+      : typeof safeNerdCreds.skills === 'string'
+        ? safeNerdCreds.skills
+            .split(',')
+            .map((skill) => skill.trim())
+            .filter(Boolean)
+        : [];
+  const selectedIndustries = safeStr(profile?.industry)
+    .split(',')
+    .map((industry) => industry.trim())
+    .filter(Boolean);
+  const orderedProjectIds =
+    Array.isArray(safeNerdCreds.project_order) &&
+    safeNerdCreds.project_order.every((id) => typeof id === 'string')
+      ? (safeNerdCreds.project_order as string[])
+      : [];
+  const projectLookup = new Map(
+    projects.map((project) => [project.id, project]),
+  );
+  const orderedProjects = [
+    ...orderedProjectIds
+      .map((id) => projectLookup.get(id))
+      .filter((project): project is (typeof projects)[number] =>
+        Boolean(project),
+      ),
+    ...projects.filter((project) => !orderedProjectIds.includes(project.id)),
+  ];
+
+  const persistProjectOrder = async (projectIds: string[]) => {
+    await updateProfile({
+      nerd_creds: {
+        project_order: projectIds,
+      } as Partial<NerdCreds>,
+    });
+    await refresh();
+  };
+
+  const moveProject = async (projectId: string, direction: 'up' | 'down') => {
+    const index = orderedProjects.findIndex(
+      (project) => project.id === projectId,
+    );
+    if (index < 0) return;
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= orderedProjects.length) return;
+    const next = [...orderedProjects];
+    const [moving] = next.splice(index, 1);
+    next.splice(swapIndex, 0, moving);
+    try {
+      await persistProjectOrder(next.map((project) => project.id));
+    } catch (e) {
+      setSnack(toMessage(e));
+    }
+  };
 
   const handleResumeUpload = async (file: File) => {
     try {
@@ -130,14 +178,14 @@ export const Dashboard = () => {
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           avatarUrl={avatarUrl}
-          slotUnderAvatarLabel={undefined}
-          slotUnderAvatar={
+          slotLeftOfAvatar={
             <ProfileLinksWidget
               socials={profile?.socials ?? []}
+              grouped
               isOwner
               onRemove={async (linkId) => {
                 const next = (profile?.socials ?? []).filter(
-                  (s) => s.id !== linkId,
+                  (link) => link.id !== linkId,
                 );
                 try {
                   await updateProfile({ socials: next });
@@ -148,11 +196,76 @@ export const Dashboard = () => {
               }}
             />
           }
+          slotUnderAvatarLabel={undefined}
+          slotUnderAvatar={null}
           badges={
-            <IdentityBadges
-              onTagsClick={() => setIsEditOpen(true)}
-              onSkillsClick={() => setIsEditOpen(true)}
-            />
+            selectedSkills.length > 0 || selectedIndustries.length > 0 ? (
+              <Stack spacing={1.25} sx={{ mt: 1 }}>
+                {selectedSkills.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Skills
+                  </Typography>
+                )}
+                {selectedSkills.length > 0 && (
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    {selectedSkills.map((skill) => (
+                      <Box
+                        key={`skill-${skill}`}
+                        sx={{
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 999,
+                          bgcolor: 'rgba(236,64,122,0.15)',
+                          border: '1px solid rgba(236,64,122,0.35)',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {skill}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+                {selectedIndustries.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Industries
+                  </Typography>
+                )}
+                {selectedIndustries.map((industry) => (
+                  <Box
+                    key={`industry-${industry}`}
+                    sx={{
+                      display: 'inline-flex',
+                      mr: 1,
+                      mb: 1,
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 999,
+                      bgcolor: 'rgba(66,165,245,0.15)',
+                      border: '1px solid rgba(66,165,245,0.35)',
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    {industry}
+                  </Box>
+                ))}
+              </Stack>
+            ) : undefined
           }
           slotBetweenContentAndActions={undefined}
           actions={
@@ -171,20 +284,19 @@ export const Dashboard = () => {
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<SettingsIcon />}
-                onClick={() => setIsSettingsOpen(true)}
+                onClick={() => setIsLinksOpen(true)}
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
                 }}
               >
-                Settings
+                Edit Links
               </Button>
             </>
           }
         />
 
-        {/* PORTFOLIO: Action buttons + content cards */}
+        {/* PORTFOLIO: Resume + Projects */}
         <Paper
           elevation={0}
           sx={{
@@ -205,30 +317,7 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          {/* Quick links: Notifications, Settings */}
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            useFlexGap
-            spacing={2}
-            sx={{ mb: 3 }}
-          >
-            <Button
-              component={RouterLink}
-              to="/dashboard/notifications"
-              startIcon={<NotificationsIcon />}
-              sx={{
-                textTransform: 'none',
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: 'white',
-              }}
-              variant="outlined"
-            >
-              Notifications
-            </Button>
-          </Stack>
-
-          {/* Action buttons: responsive grid on mobile */}
+          {/* Action buttons: Portfolio only */}
           <Stack
             direction="row"
             flexWrap="wrap"
@@ -259,7 +348,7 @@ export const Dashboard = () => {
             >
               <AddIcon sx={{ fontSize: 36, mb: 1 }} />
               <Typography variant="subtitle2" fontWeight={600}>
-                Add Resume
+                Resume
               </Typography>
               <input
                 type="file"
@@ -300,93 +389,42 @@ export const Dashboard = () => {
                 Add Project
               </Typography>
             </Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setIsEditOpen(true)}
-              sx={{
-                flex: { xs: '1 1 45%', md: 1 },
-                minWidth: { xs: 120, md: 0 },
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 100,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
-                color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Skills
-              </Typography>
-            </Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setIsLinksOpen(true)}
-              sx={{
-                flex: { xs: '1 1 45%', md: 1 },
-                minWidth: { xs: 120, md: 0 },
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 100,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
-                color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Links
-              </Typography>
-            </Box>
           </Stack>
 
-          {/* Content cards: Resume + Projects */}
-          <Grid container spacing={{ xs: 2, md: 4 }}>
-            {profile?.resume_url && (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                <ResumeCard
-                  url={profile.resume_url}
-                  onUpload={handleResumeUpload}
-                  isOwner
-                />
-              </Grid>
-            )}
-            {projects.map((project) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={project.id}>
-                <ProjectCard
-                  project={project}
-                  isOwner
-                  onDelete={async (id) => {
-                    try {
-                      await deleteProject(id);
-                    } catch (e) {
-                      setSnack(toMessage(e));
-                    }
-                  }}
-                />
-              </Grid>
+          <Stack spacing={2.5}>
+            <ResumeCard
+              url={profile?.resume_url}
+              onUpload={handleResumeUpload}
+              isOwner
+            />
+
+            {orderedProjects.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                isOwner
+                canMoveUp={index > 0}
+                canMoveDown={index < orderedProjects.length - 1}
+                onMoveUp={(id) => {
+                  void moveProject(id, 'up');
+                }}
+                onMoveDown={(id) => {
+                  void moveProject(id, 'down');
+                }}
+                onDelete={async (id) => {
+                  try {
+                    await deleteProject(id);
+                    const next = orderedProjects
+                      .filter((projectItem) => projectItem.id !== id)
+                      .map((projectItem) => projectItem.id);
+                    await persistProjectOrder(next);
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
             ))}
-          </Grid>
+          </Stack>
         </Paper>
       </Container>
 
@@ -418,29 +456,6 @@ export const Dashboard = () => {
           await refresh();
         }}
       />
-
-      <SettingsDialog
-        open={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onEditProfile={() => {
-          setIsSettingsOpen(false);
-          setIsEditOpen(true);
-        }}
-        onManageLinks={() => {
-          setIsSettingsOpen(false);
-          setIsLinksOpen(true);
-        }}
-        onEmailPreferences={() => {
-          setIsSettingsOpen(false);
-          setIsEmailPrefsOpen(true);
-        }}
-      />
-
-      <EmailPreferencesDialog
-        open={isEmailPrefsOpen}
-        onClose={() => setIsEmailPrefsOpen(false)}
-      />
-
       <AddProjectDialog
         open={isAddProjectOpen}
         onClose={() => setIsAddProjectOpen(false)}

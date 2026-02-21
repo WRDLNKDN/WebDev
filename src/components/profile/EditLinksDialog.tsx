@@ -91,7 +91,7 @@ export const EditLinksDialog = ({
       order: links.length,
     };
 
-    setLinks([...links, newLinkItem]);
+    setLinks((prev) => [...prev, newLinkItem]);
 
     setNewPlatform('');
     setNewUrl('');
@@ -99,7 +99,7 @@ export const EditLinksDialog = ({
   };
 
   const handleDelete = (id: string) => {
-    setLinks(links.filter((l) => l.id !== id));
+    setLinks((prev) => prev.filter((l) => l.id !== id));
   };
 
   const handleSave = async () => {

@@ -49,7 +49,7 @@
 
 ## Avatar consistency and presets
 
-- Edit Profile now uses preset Weirdling selection only (12 options) and removes
+- Edit Profile now uses preset Weirdling selection only (7 options) and removes
   the "customize" entrypoint from that flow.
 - Preset tiles are square and display without visible per-avatar title text.
 - Greenling is the default avatar fallback when no saved avatar/provider photo
@@ -57,3 +57,7 @@
 - For OAuth sign-in, provider photo fallback now hydrates globally (including
   Navbar avatar) so the avatar shown in Edit Profile and app chrome stays
   consistent.
+- Dashboard identity chips now show real selected values (skills and industry)
+  instead of generic "Builder Tags"/"Edit Profile" chips.
+- Dashboard top action strip now keeps Edit Profile and removes the separate
+  Settings entrypoint.

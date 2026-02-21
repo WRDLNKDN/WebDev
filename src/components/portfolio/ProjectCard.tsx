@@ -1,4 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Button, IconButton, Paper, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
@@ -16,12 +18,20 @@ interface ProjectCardProps {
   /** When true, show delete button and call onDelete when removed */
   isOwner?: boolean;
   onDelete?: (projectId: string) => void | Promise<void>;
+  onMoveUp?: (projectId: string) => void;
+  onMoveDown?: (projectId: string) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 export const ProjectCard = ({
   project,
   isOwner,
   onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
 }: ProjectCardProps) => {
   const url = project.project_url?.trim() ?? '';
   const external = url && isExternalUrl(url);
@@ -42,26 +52,72 @@ export const ProjectCard = ({
       }}
     >
       {isOwner && onDelete && (
-        <IconButton
-          size="small"
-          aria-label={`Remove project ${project.title}`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void onDelete(project.id);
-          }}
+        <Box
           sx={{
             position: 'absolute',
             top: 8,
             right: 8,
             zIndex: 1,
-            bgcolor: 'rgba(0,0,0,0.6)',
-            color: 'white',
-            '&:hover': { bgcolor: 'error.main', color: 'white' },
+            display: 'flex',
+            gap: 0.75,
+            alignItems: 'center',
           }}
         >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+          {onMoveUp && (
+            <IconButton
+              size="small"
+              aria-label={`Move project ${project.title} up`}
+              disabled={!canMoveUp}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onMoveUp(project.id);
+              }}
+              sx={{
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.78)' },
+              }}
+            >
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
+          )}
+          {onMoveDown && (
+            <IconButton
+              size="small"
+              aria-label={`Move project ${project.title} down`}
+              disabled={!canMoveDown}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onMoveDown(project.id);
+              }}
+              sx={{
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.78)' },
+              }}
+            >
+              <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
+          )}
+          <IconButton
+            size="small"
+            aria-label={`Remove project ${project.title}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void onDelete(project.id);
+            }}
+            sx={{
+              bgcolor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              '&:hover': { bgcolor: 'error.main', color: 'white' },
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
       )}
       <Box
         sx={{

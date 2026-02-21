@@ -143,7 +143,7 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
     await expect(page).toHaveURL(/\/dashboard/);
     await expect(page.locator('header img[alt="Member"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Edit Profile' }).first().click();
-    await page.getByRole('button', { name: 'Select Builder' }).click();
+    await page.getByRole('button', { name: 'Select Weirdling 1' }).click();
 
     await expect.poll(() => avatarPatched).toBe(true);
     await expect.poll(() => avatarReadCalls).toBeGreaterThan(1);

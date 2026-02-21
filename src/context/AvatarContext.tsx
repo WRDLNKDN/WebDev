@@ -9,7 +9,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { DEFAULT_AVATAR_URL } from '../config/avatarPresets';
 import { supabase } from '../lib/auth/supabaseClient';
 
 const API_BASE =
@@ -61,10 +60,10 @@ export const AvatarProvider = ({ children }: { children: React.ReactNode }) => {
       data: { session },
     } = await supabase.auth.getSession();
     const providerAvatar = getProviderAvatarUrl(session);
-    const fallbackAvatar = providerAvatar ?? DEFAULT_AVATAR_URL ?? null;
+    const fallbackAvatar = providerAvatar ?? null;
 
     if (!session?.access_token) {
-      setAvatarUrl(DEFAULT_AVATAR_URL ?? null);
+      setAvatarUrl(null);
       setLoading(false);
       return;
     }

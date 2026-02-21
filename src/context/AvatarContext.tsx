@@ -23,6 +23,34 @@ export interface AvatarContextValue {
 
 const AvatarContext = createContext<AvatarContextValue | null>(null);
 
+const getProviderAvatarUrl = (
+  session: {
+    user?: { user_metadata?: Record<string, unknown> };
+  } | null,
+): string | null => {
+  const metadata = session?.user?.user_metadata;
+  if (!metadata || typeof metadata !== 'object') return null;
+  const candidates = [metadata.avatar_url, metadata.picture];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return null;
+};
+
+const syncGoogleAvatarToProfile = async (userId: string, avatar: string) => {
+  try {
+    await supabase
+      .from('profiles')
+      .update({ avatar, use_weirdling_avatar: false })
+      .eq('id', userId)
+      .is('avatar', null);
+  } catch {
+    // Best effort: UI fallback still uses provider avatar even if persistence fails.
+  }
+};
+
 export const AvatarProvider = ({ children }: { children: React.ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +59,9 @@ export const AvatarProvider = ({ children }: { children: React.ReactNode }) => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    const providerAvatar = getProviderAvatarUrl(session);
+    const fallbackAvatar = providerAvatar ?? null;
+
     if (!session?.access_token) {
       setAvatarUrl(null);
       setLoading(false);
@@ -46,12 +77,24 @@ export const AvatarProvider = ({ children }: { children: React.ReactNode }) => {
         data?: { avatarUrl?: string | null };
       };
       if (json?.ok && json.data) {
-        setAvatarUrl(json.data.avatarUrl ?? null);
+        const serverAvatar =
+          typeof json.data.avatarUrl === 'string' && json.data.avatarUrl.trim()
+            ? json.data.avatarUrl.trim()
+            : null;
+
+        if (serverAvatar) {
+          setAvatarUrl(serverAvatar);
+        } else {
+          setAvatarUrl(fallbackAvatar);
+          if (providerAvatar) {
+            void syncGoogleAvatarToProfile(session.user.id, providerAvatar);
+          }
+        }
       } else {
-        setAvatarUrl(null);
+        setAvatarUrl(fallbackAvatar);
       }
     } catch {
-      setAvatarUrl(null);
+      setAvatarUrl(fallbackAvatar);
     } finally {
       setLoading(false);
     }

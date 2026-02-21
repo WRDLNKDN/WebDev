@@ -1224,7 +1224,7 @@ export const Feed = () => {
     return d.toISOString().slice(0, 10);
   });
   const [scheduleTime, setScheduleTime] = useState('09:30');
-  type SortOption = 'recent' | 'oldest' | 'most_liked';
+  type SortOption = 'recent' | 'oldest';
 
   const SCHEDULE_TIMES = (() => {
     const times: string[] = [];
@@ -1271,18 +1271,6 @@ export const Feed = () => {
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
-    else if (sortBy === 'most_liked') {
-      const total = (x: FeedItem) =>
-        (x.like_count ?? 0) +
-        (x.love_count ?? 0) +
-        (x.inspiration_count ?? 0) +
-        (x.care_count ?? 0);
-      list = [...items].sort(
-        (a, b) =>
-          total(b) - total(a) ||
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-    }
     return list.filter(hasRenderableContent);
   }, [items, sortBy]);
   const visibleAdvertisers = useMemo(
@@ -2376,7 +2364,6 @@ export const Feed = () => {
                   >
                     <MenuItem value="recent">Sort by: Recent</MenuItem>
                     <MenuItem value="oldest">Sort by: Oldest</MenuItem>
-                    <MenuItem value="most_liked">Sort by: Most liked</MenuItem>
                   </Select>
                 </FormControl>
               </Stack>

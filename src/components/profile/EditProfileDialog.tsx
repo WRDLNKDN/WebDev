@@ -1,6 +1,6 @@
 import {
-  CameraAlt as CameraIcon,
   Close as CloseIcon,
+  Edit as EditIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { AvatarReplacementBox } from '../avatar/AvatarReplacementBox';
-import { AVATAR_PRESETS } from '../../config/avatarPresets';
+import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
@@ -289,7 +289,11 @@ export const EditProfileDialog = ({
   };
 
   const currentAvatar =
-    uploadedAvatarUrl || profile?.avatar || avatarFallback || null;
+    uploadedAvatarUrl ||
+    profile?.avatar ||
+    avatarFallback ||
+    DEFAULT_AVATAR_URL ||
+    null;
   const previewURL = `http://localhost:5173/profile/${formData.handle}`;
 
   const presetUrls = AVATAR_PRESETS.map((p) => p.image_url);
@@ -297,7 +301,7 @@ export const EditProfileDialog = ({
     currentResolvedAvatarUrl ?? uploadedAvatarUrl ?? profile?.avatar ?? '';
   const selectedPresetUrl = presetUrls.includes(resolvedForPreset)
     ? resolvedForPreset
-    : null;
+    : DEFAULT_AVATAR_URL;
 
   const handlePresetSelect = async (preset: {
     preset_id: string;
@@ -395,20 +399,21 @@ export const EditProfileDialog = ({
                 <IconButton
                   onClick={() => fileInputRef.current?.click()}
                   disabled={busy}
+                  aria-label="Edit avatar"
                   sx={{
                     position: 'absolute',
-                    bottom: -4,
-                    right: -4,
-                    bgcolor: GRADIENT_START,
+                    bottom: 2,
+                    right: 2,
+                    bgcolor: 'rgba(0,0,0,0.7)',
                     color: 'white',
-                    width: 32,
-                    height: 32,
+                    width: 24,
+                    height: 24,
                     '&:hover': {
-                      bgcolor: GRADIENT_END,
+                      bgcolor: 'rgba(0,0,0,0.85)',
                     },
                   }}
                 >
-                  <CameraIcon sx={{ fontSize: 18 }} />
+                  <EditIcon sx={{ fontSize: 14 }} />
                 </IconButton>
                 <input
                   ref={fileInputRef}
@@ -420,7 +425,7 @@ export const EditProfileDialog = ({
               </Box>
             </Box>
 
-            {/* Avatar Replacement Box: presets + AI Weirdling CTA */}
+            {/* Avatar Replacement Box: preset Weirdling picker */}
             <AvatarReplacementBox
               currentAvatarUrl={
                 currentResolvedAvatarUrl ??

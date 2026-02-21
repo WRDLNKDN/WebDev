@@ -1,19 +1,17 @@
 /**
- * Avatar Replacement Box — preset grid + AI Weirdling CTA.
+ * Avatar Replacement Box — preset-only Weirdling picker.
  * Any selection replaces current avatar (photo or AI Weirdling).
  */
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import {
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Button,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { AVATAR_PRESETS, type AvatarPreset } from '../../config/avatarPresets';
 
 const BORDER_COLOR = 'rgba(255,255,255,0.08)';
@@ -90,29 +88,6 @@ export const AvatarReplacementBox = ({
         Any selection here will replace your current avatar.
       </Typography>
 
-      {/* AI Weirdling CTA */}
-      <Button
-        component={RouterLink}
-        to="/weirdling/create"
-        variant="outlined"
-        size="small"
-        startIcon={<PsychologyIcon />}
-        disabled={disabled}
-        sx={{
-          mb: 2,
-          borderColor: PURPLE_ACCENT,
-          color: PURPLE_ACCENT,
-          textTransform: 'none',
-          '&:hover': {
-            borderColor: `${PURPLE_ACCENT}dd`,
-            color: `${PURPLE_ACCENT}dd`,
-            bgcolor: 'rgba(179,102,255,0.08)',
-          },
-        }}
-      >
-        Create your own AI Weirdling
-      </Button>
-
       {/* Preset grid */}
       <Box
         sx={{
@@ -124,7 +99,7 @@ export const AvatarReplacementBox = ({
           gap: 1.5,
         }}
       >
-        {AVATAR_PRESETS.map((preset) => {
+        {AVATAR_PRESETS.map((preset, index) => {
           const selected = isPresetActive(preset.image_url);
           return (
             <Box
@@ -133,7 +108,7 @@ export const AvatarReplacementBox = ({
               type="button"
               onClick={() => handlePresetClick(preset)}
               disabled={disabled}
-              aria-label={`Select ${preset.name}`}
+              aria-label={`Select Weirdling ${index + 1}`}
               sx={{
                 p: 0,
                 border: 2,
@@ -142,6 +117,7 @@ export const AvatarReplacementBox = ({
                 overflow: 'hidden',
                 cursor: disabled ? 'default' : 'pointer',
                 bgcolor: 'transparent',
+                position: 'relative',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 '&:hover': disabled
                   ? {}
@@ -157,15 +133,36 @@ export const AvatarReplacementBox = ({
               }}
             >
               <Box
-                component="img"
-                src={preset.image_url}
-                alt={preset.name}
+                aria-hidden
                 sx={{
                   width: '100%',
                   height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background:
+                    'linear-gradient(135deg, rgba(0,196,204,0.28) 0%, rgba(255,34,201,0.25) 100%)',
+                  color: 'rgba(255,255,255,0.82)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                }}
+              >
+                {index + 1}
+              </Box>
+              <Box
+                component="img"
+                src={preset.image_url}
+                alt=""
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
-                  borderRadius: '50%',
                   display: 'block',
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             </Box>

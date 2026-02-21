@@ -229,7 +229,7 @@ export const Footer = () => {
               >
                 <Box
                   component="img"
-                  src="/assets/og_weirdlings/weirdling_1.png"
+                  src="/assets/og_weirdlings/werdling1_transparent.png"
                   alt="WRDLNKDN Weirdling logo"
                   width={isDesktop ? 70 : 58}
                   height={isDesktop ? 70 : 58}

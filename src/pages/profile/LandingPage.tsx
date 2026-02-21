@@ -2,6 +2,7 @@
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Container,
   Grid,
@@ -22,11 +23,7 @@ import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton
 import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
 import { ProjectCard } from '../../components/portfolio/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
-import {
-  IdentityBadges,
-  IdentityHeader,
-} from '../../components/profile/IdentityHeader';
-import { ViewTagsSkillsDialog } from '../../components/profile/ViewTagsSkillsDialog';
+import { IdentityHeader } from '../../components/profile/IdentityHeader';
 
 // --- NEW WIDGET SECTOR ---
 import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
@@ -58,7 +55,6 @@ export const LandingPage = () => {
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [followCheckDone, setFollowCheckDone] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
-  const [tagsSkillsDialogOpen, setTagsSkillsDialogOpen] = useState(false);
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     null,
   );
@@ -219,6 +215,20 @@ export const LandingPage = () => {
   const isOwner = !!viewer && viewer.id === profile.id;
   const showConnect =
     !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
+  const selectedSkills =
+    Array.isArray(creds.skills) &&
+    creds.skills.every((skill) => typeof skill === 'string')
+      ? (creds.skills as string[]).map((skill) => skill.trim()).filter(Boolean)
+      : typeof creds.skills === 'string'
+        ? creds.skills
+            .split(',')
+            .map((skill) => skill.trim())
+            .filter(Boolean)
+        : [];
+  const selectedIndustries = safeStr(profile.industry)
+    .split(',')
+    .map((industry) => industry.trim())
+    .filter(Boolean);
 
   const ownerActions = isOwner ? (
     <Button
@@ -304,26 +314,40 @@ export const LandingPage = () => {
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
             badges={
-              <IdentityBadges
-                onTagsClick={() => setTagsSkillsDialogOpen(true)}
-                onSkillsClick={() => setTagsSkillsDialogOpen(true)}
-              />
+              selectedSkills.length > 0 || selectedIndustries.length > 0 ? (
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {selectedIndustries.map((industry) => (
+                    <Chip
+                      key={`industry-${industry}`}
+                      size="small"
+                      label={`Industry: ${industry}`}
+                      sx={{
+                        bgcolor: 'rgba(66,165,245,0.15)',
+                        color: 'text.primary',
+                        border: '1px solid rgba(66,165,245,0.35)',
+                      }}
+                    />
+                  ))}
+                  {selectedSkills.map((skill) => (
+                    <Chip
+                      key={`skill-${skill}`}
+                      size="small"
+                      label={`Skill: ${skill}`}
+                      sx={{
+                        bgcolor: 'rgba(236,64,122,0.15)',
+                        color: 'text.primary',
+                        border: '1px solid rgba(236,64,122,0.35)',
+                      }}
+                    />
+                  ))}
+                </Stack>
+              ) : undefined
             }
             actions={
               <>
                 {ownerActions}
                 {connectActions}
               </>
-            }
-          />
-          <ViewTagsSkillsDialog
-            open={tagsSkillsDialogOpen}
-            onClose={() => setTagsSkillsDialogOpen(false)}
-            tagline={profile.tagline ?? undefined}
-            skills={
-              Array.isArray(creds.skills)
-                ? (creds.skills as string[])
-                : undefined
             }
           />
 

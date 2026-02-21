@@ -3,7 +3,9 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
 
-function mockSessionPayload() {
+function mockSessionPayload(overrides?: {
+  userMetadata?: Record<string, unknown>;
+}) {
   const now = Math.floor(Date.now() / 1000);
   return {
     access_token: 'e2e-access-token',
@@ -20,7 +22,11 @@ function mockSessionPayload() {
       phone: '',
       confirmed_at: new Date().toISOString(),
       app_metadata: { provider: 'email', providers: ['email'] },
-      user_metadata: { handle: 'member', full_name: 'Member' },
+      user_metadata: {
+        handle: 'member',
+        full_name: 'Member',
+        ...(overrides?.userMetadata ?? {}),
+      },
       identities: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -28,8 +34,11 @@ function mockSessionPayload() {
   };
 }
 
-async function seedSignedInSession(page: Page) {
-  const payload = mockSessionPayload();
+async function seedSignedInSession(
+  page: Page,
+  overrides?: { userMetadata?: Record<string, unknown> },
+) {
+  const payload = mockSessionPayload(overrides);
   await page.addInitScript((session) => {
     [
       'dev-sb-wrdlnkdn-auth',
@@ -55,6 +64,83 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/link-preview**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: null }),
+      });
+    });
+  });
+
+  test('Google profile photo hydrates to navbar avatar without manual change', async ({
+    page,
+  }) => {
+    const providerAvatar =
+      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+    let syncedAvatar: string | null = null;
+    await seedSignedInSession(page, {
+      userMetadata: { avatar_url: providerAvatar },
+    });
+
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
+      });
+    });
+
+    await page.route('**/rest/v1/rpc/is_admin', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(false),
+      });
+    });
+
+    await page.route('**/rest/v1/notifications*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-0/0' },
+        body: '[]',
+      });
+    });
+
+    await page.route('**/rest/v1/portfolio_items*', async (route) => {
+      await fulfillPostgrest(route, []);
+    });
+
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      if (route.request().method() === 'PATCH') {
+        const body = route.request().postDataJSON() as { avatar?: string };
+        syncedAvatar = typeof body.avatar === 'string' ? body.avatar : null;
+        await route.fulfill({ status: 204, body: '' });
+        return;
+      }
+      await fulfillPostgrest(route, [
+        {
+          id: USER_ID,
+          handle: 'member',
+          display_name: 'Member',
+          avatar: null,
+          status: 'approved',
+          join_reason: ['networking'],
+          participation_style: ['builder'],
+          policy_version: '1.0',
+          nerd_creds: { bio: 'Hello' },
+          socials: [],
+        },
+      ]);
+    });
+
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect.poll(() => syncedAvatar).toBe(providerAvatar);
+  });
+
   test('avatar change updates navbar avatar across site', async ({ page }) => {
     await seedSignedInSession(page);
 
@@ -143,7 +229,7 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
     await expect(page).toHaveURL(/\/dashboard/);
     await expect(page.locator('header img[alt="Member"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Edit Profile' }).first().click();
-    await page.getByRole('button', { name: 'Select Builder' }).click();
+    await page.getByRole('button', { name: /^Select Weirdling 1$/ }).click();
 
     await expect.poll(() => avatarPatched).toBe(true);
     await expect.poll(() => avatarReadCalls).toBeGreaterThan(1);
@@ -267,13 +353,6 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
-      });
-    });
-    await page.route('**/api/link-preview**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: null }),
       });
     });
     await page.route('**/rest/v1/notifications*', async (route) => {

@@ -13,6 +13,59 @@ export function useProfile() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeSocials = (rawSocials: unknown): SocialLink[] => {
+    if (Array.isArray(rawSocials)) {
+      return rawSocials
+        .filter(
+          (s) =>
+            s &&
+            typeof s === 'object' &&
+            'id' in s &&
+            'url' in s &&
+            typeof (s as { url: unknown }).url === 'string',
+        )
+        .map((s, index) => ({
+          ...(s as SocialLink),
+          isVisible: (s as { isVisible?: boolean }).isVisible !== false,
+          order:
+            typeof (s as { order?: number }).order === 'number'
+              ? (s as { order: number }).order
+              : index,
+        }));
+    }
+
+    // Legacy shape support: { discord?: string, reddit?: string, github?: string }
+    if (rawSocials && typeof rawSocials === 'object') {
+      const legacy = rawSocials as Record<string, unknown>;
+      const map: Array<{
+        key: string;
+        label: string;
+        category: 'Social' | 'Professional';
+      }> = [
+        { key: 'discord', label: 'Discord', category: 'Social' },
+        { key: 'reddit', label: 'Reddit', category: 'Social' },
+        { key: 'github', label: 'GitHub', category: 'Professional' },
+      ];
+      return map
+        .map((item, index) => {
+          const value = legacy[item.key];
+          if (typeof value !== 'string' || !value.trim()) return null;
+          return {
+            id: `legacy-${item.key}`,
+            category: item.category,
+            platform: item.label,
+            url: value.trim(),
+            label: item.label,
+            isVisible: true,
+            order: index,
+          } as SocialLink;
+        })
+        .filter((link): link is SocialLink => Boolean(link));
+    }
+
+    return [];
+  };
+
   // LOGIC SECTOR: FETCH DATA
   const fetchData = useCallback(async () => {
     try {
@@ -113,26 +166,7 @@ export function useProfile() {
 
       // Normalize socials: DB may have legacy { discord, reddit, github } or SocialLink[]
       const rawSocials = profileData.socials;
-      let safeSocials: SocialLink[] = [];
-      if (Array.isArray(rawSocials)) {
-        safeSocials = rawSocials
-          .filter(
-            (s) =>
-              s &&
-              typeof s === 'object' &&
-              'id' in s &&
-              'url' in s &&
-              typeof (s as { url: unknown }).url === 'string',
-          )
-          .map((s) => ({
-            ...(s as SocialLink),
-            isVisible: (s as { isVisible?: boolean }).isVisible !== false,
-            order:
-              typeof (s as { order?: number }).order === 'number'
-                ? (s as { order: number }).order
-                : 0,
-          }));
-      }
+      const safeSocials = normalizeSocials(rawSocials);
 
       setProfile({
         ...profileData,
@@ -196,10 +230,12 @@ export function useProfile() {
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)
       // Cast to Record for .update() — Supabase types may lag behind schema changes
-      const { error: updateError } = await supabase
+      const { data: updatedRow, error: updateError } = await supabase
         .from('profiles')
         .update(payload as Record<string, unknown>)
-        .eq('id', session.user.id);
+        .eq('id', session.user.id)
+        .select('id')
+        .maybeSingle();
 
       if (updateError) {
         const code = (updateError as { code?: string }).code;
@@ -227,6 +263,11 @@ export function useProfile() {
         throw new Error(
           (updateError as { message?: string }).message ||
             "We couldn't save your profile. Please try again.",
+        );
+      }
+      if (!updatedRow) {
+        throw new Error(
+          "We couldn't save your profile changes right now. Please refresh and try again.",
         );
       }
 

@@ -1,5 +1,6 @@
 import {
   Article,
+  CalendarMonth,
   Code,
   DesignServices,
   Description,
@@ -13,6 +14,8 @@ import {
   Reddit,
   RssFeed,
   Share,
+  VolunteerActivism,
+  MusicNote,
   Twitter,
   VideoLibrary,
   X,
@@ -92,6 +95,10 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       Icon = Instagram;
       brandColor = '#e4405f';
       break;
+    case 'tiktok':
+      Icon = MusicNote;
+      brandColor = '#ffffff';
+      break;
     case 'reddit':
       Icon = Reddit;
       brandColor = '#ff4500';
@@ -125,6 +132,18 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
     case 'substack':
       Icon = RssFeed;
       brandColor = '#ff6719';
+      break;
+    case 'patreon':
+      Icon = VolunteerActivism;
+      brandColor = '#ff424d';
+      break;
+    case 'calendly':
+      Icon = CalendarMonth;
+      brandColor = '#006bff';
+      break;
+    case 'other':
+      Icon = Public;
+      brandColor = 'inherit';
       break;
 
     // --- CUSTOM / DEFAULT ---

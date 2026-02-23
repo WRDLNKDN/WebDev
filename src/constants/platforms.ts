@@ -12,6 +12,7 @@ export const PLATFORM_OPTIONS = [
   },
   { label: 'Dev.to', value: 'Dev.to', category: 'Professional' }, // New
   { label: 'Notion', value: 'Notion', category: 'Professional' }, // New
+  { label: 'Calendly', value: 'Calendly', category: 'Professional' },
   { label: 'Behance', value: 'Behance', category: 'Professional' }, // New
   { label: 'Dribbble', value: 'Dribbble', category: 'Professional' }, // New
   { label: 'Figma', value: 'Figma', category: 'Professional' }, // New
@@ -20,6 +21,7 @@ export const PLATFORM_OPTIONS = [
   { label: 'X (Twitter)', value: 'X', category: 'Social' },
   { label: 'Facebook', value: 'Facebook', category: 'Social' },
   { label: 'Instagram', value: 'Instagram', category: 'Social' },
+  { label: 'TikTok', value: 'TikTok', category: 'Social' },
   { label: 'Reddit', value: 'Reddit', category: 'Social' },
   { label: 'Discord', value: 'Discord', category: 'Social' },
   { label: 'Threads', value: 'Threads', category: 'Social' }, // New
@@ -30,9 +32,7 @@ export const PLATFORM_OPTIONS = [
   { label: 'Twitch', value: 'Twitch', category: 'Content' },
   { label: 'Medium', value: 'Medium', category: 'Content' },
   { label: 'Substack', value: 'Substack', category: 'Content' },
-
-  // --- CUSTOM ---
-  { label: 'Custom URL', value: 'Custom', category: 'Custom' },
+  { label: 'Patreon', value: 'Patreon', category: 'Content' },
 ] as const;
 
 export const CATEGORY_ORDER: LinkCategory[] = [

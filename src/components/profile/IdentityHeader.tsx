@@ -78,13 +78,13 @@ export const IdentityHeader = ({
     <Stack
       direction={{ xs: 'column', md: 'row' }}
       spacing={{ xs: 3, md: 4 }}
-      alignItems={{ xs: 'center', md: 'flex-start' }}
-      sx={{ textAlign: { xs: 'center', md: 'left' } }}
+      alignItems="flex-start"
+      sx={{ textAlign: 'left' }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={2}
-        alignItems={{ xs: 'center', md: 'flex-start' }}
+        alignItems="flex-start"
         sx={{ flexShrink: 0 }}
       >
         {slotLeftOfAvatar && (
@@ -99,7 +99,7 @@ export const IdentityHeader = ({
           </Box>
         )}
         <Stack
-          alignItems="center"
+          alignItems="flex-start"
           spacing={1.5}
           sx={{ order: { xs: 1, md: 2 } }}
         >
@@ -178,7 +178,6 @@ export const IdentityHeader = ({
           variant="body1"
           color="text.secondary"
           sx={{
-            mx: { xs: 'auto', md: 0 },
             lineHeight: 1.6,
             fontStyle: 'italic',
             borderLeft: '3px solid',

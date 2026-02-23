@@ -61,3 +61,14 @@
   instead of generic "Builder Tags"/"Edit Profile" chips.
 - Dashboard top action strip now keeps Edit Profile and removes the separate
   Settings entrypoint.
+
+## Link manager quality update
+
+- Edit Links now requires Platform selection before adding a link and shows
+  inline validation when missing.
+- Platform options now include TikTok, YouTube, Substack, Medium, Patreon, and
+  Calendly plus an `Other` option (generic web icon fallback).
+- Current Links in Edit Links are grouped by Category with deterministic
+  in-category ordering.
+- Profile link rendering now prefers the stored `platform` metadata (with URL
+  detection fallback for legacy links) so icon/label consistency is preserved.

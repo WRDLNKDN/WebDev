@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
 import { toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
@@ -26,6 +27,11 @@ export function useProfile() {
         )
         .map((s, index) => ({
           ...(s as SocialLink),
+          platform:
+            typeof (s as { platform?: unknown }).platform === 'string' &&
+            (s as { platform?: string }).platform.trim()
+              ? (s as { platform: string }).platform
+              : detectPlatformFromUrl((s as { url: string }).url),
           isVisible: (s as { isVisible?: boolean }).isVisible !== false,
           order:
             typeof (s as { order?: number }).order === 'number'

@@ -112,6 +112,9 @@ export const Dashboard = () => {
     .split(',')
     .map((industry) => industry.trim())
     .filter(Boolean);
+  const hasVisibleSocialLinks = (profile?.socials ?? []).some(
+    (link) => link.isVisible,
+  );
   const orderedProjectIds =
     Array.isArray(safeNerdCreds.project_order) &&
     safeNerdCreds.project_order.every((id) => typeof id === 'string')
@@ -179,22 +182,24 @@ export const Dashboard = () => {
           bio={bio}
           avatarUrl={avatarUrl}
           slotLeftOfAvatar={
-            <ProfileLinksWidget
-              socials={profile?.socials ?? []}
-              grouped
-              isOwner
-              onRemove={async (linkId) => {
-                const next = (profile?.socials ?? []).filter(
-                  (link) => link.id !== linkId,
-                );
-                try {
-                  await updateProfile({ socials: next });
-                  await refresh();
-                } catch (e) {
-                  setSnack(toMessage(e));
-                }
-              }}
-            />
+            hasVisibleSocialLinks ? (
+              <ProfileLinksWidget
+                socials={profile?.socials ?? []}
+                grouped
+                isOwner
+                onRemove={async (linkId) => {
+                  const next = (profile?.socials ?? []).filter(
+                    (link) => link.id !== linkId,
+                  );
+                  try {
+                    await updateProfile({ socials: next });
+                    await refresh();
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
+            ) : undefined
           }
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
@@ -220,6 +225,10 @@ export const Dashboard = () => {
                       <Box
                         key={`skill-${skill}`}
                         sx={{
+                          display: 'inline-flex',
+                          width: 'fit-content',
+                          maxWidth: '100%',
+                          whiteSpace: 'nowrap',
                           px: 1.25,
                           py: 0.5,
                           borderRadius: 999,
@@ -246,24 +255,29 @@ export const Dashboard = () => {
                     Industries
                   </Typography>
                 )}
-                {selectedIndustries.map((industry) => (
-                  <Box
-                    key={`industry-${industry}`}
-                    sx={{
-                      display: 'inline-flex',
-                      mr: 1,
-                      mb: 1,
-                      px: 1.25,
-                      py: 0.5,
-                      borderRadius: 999,
-                      bgcolor: 'rgba(66,165,245,0.15)',
-                      border: '1px solid rgba(66,165,245,0.35)',
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    {industry}
-                  </Box>
-                ))}
+                {selectedIndustries.length > 0 && (
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    {selectedIndustries.map((industry) => (
+                      <Box
+                        key={`industry-${industry}`}
+                        sx={{
+                          display: 'inline-flex',
+                          width: 'fit-content',
+                          maxWidth: '100%',
+                          whiteSpace: 'nowrap',
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 999,
+                          bgcolor: 'rgba(66,165,245,0.15)',
+                          border: '1px solid rgba(66,165,245,0.35)',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {industry}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </Stack>
             ) : undefined
           }

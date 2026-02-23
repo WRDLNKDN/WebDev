@@ -27,11 +27,12 @@ export function useProfile() {
         )
         .map((s, index) => ({
           ...(s as SocialLink),
-          platform:
-            typeof (s as { platform?: unknown }).platform === 'string' &&
-            (s as { platform?: string }).platform.trim()
-              ? (s as { platform: string }).platform
-              : detectPlatformFromUrl((s as { url: string }).url),
+          platform: (() => {
+            const candidate = (s as { platform?: unknown }).platform;
+            return typeof candidate === 'string' && candidate.trim()
+              ? candidate
+              : detectPlatformFromUrl((s as { url: string }).url);
+          })(),
           isVisible: (s as { isVisible?: boolean }).isVisible !== false,
           order:
             typeof (s as { order?: number }).order === 'number'

@@ -24,6 +24,30 @@ describe('feed ad rotation', () => {
     ]);
   });
 
+  it('keeps ad cadence based on full post sequence', () => {
+    const posts = [
+      { id: 'p1', renderable: true },
+      { id: 'p2', renderable: false },
+      { id: 'p3', renderable: true },
+      { id: 'p4', renderable: true },
+      { id: 'p5', renderable: true },
+      { id: 'p6', renderable: true },
+      { id: 'p7', renderable: true },
+    ];
+    const ads = ['a1'];
+    const display = interleaveWithAds(posts, ads, 6, (p) => p.renderable);
+
+    expect(display).toEqual([
+      { kind: 'post', item: posts[0] },
+      { kind: 'post', item: posts[2] },
+      { kind: 'post', item: posts[3] },
+      { kind: 'post', item: posts[4] },
+      { kind: 'ad', advertiser: 'a1' },
+      { kind: 'post', item: posts[5] },
+      { kind: 'post', item: posts[6] },
+    ]);
+  });
+
   it('produces deterministic shuffle for same seed', () => {
     const ads = ['a1', 'a2', 'a3', 'a4'];
     const seed = hashStringToSeed('member-123-session');

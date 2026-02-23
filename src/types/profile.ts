@@ -34,6 +34,11 @@ export interface NerdCreds {
 
   // --- Portfolio Layer ---
   portfolio?: PortfolioItem[];
+  resume_thumbnail_url?: string;
+  resume_thumbnail_status?: 'pending' | 'complete' | 'failed';
+  resume_thumbnail_updated_at?: string;
+  resume_thumbnail_error?: string | null;
+  resume_thumbnail_source_extension?: string;
 
   // --- Legacy Support ---
   [key: string]: unknown;

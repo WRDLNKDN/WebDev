@@ -61,3 +61,33 @@
   instead of generic "Builder Tags"/"Edit Profile" chips.
 - Dashboard top action strip now keeps Edit Profile and removes the separate
   Settings entrypoint.
+
+## Link manager quality update
+
+- Edit Links now requires Platform selection before adding a link and shows
+  inline validation when missing.
+- Platform options now include TikTok, YouTube, Substack, Medium, Patreon, and
+  Calendly plus an `Other` option (generic web icon fallback).
+- Current Links in Edit Links are grouped by Category with deterministic
+  in-category ordering.
+- Profile link rendering now prefers the stored `platform` metadata (with URL
+  detection fallback for legacy links) so icon/label consistency is preserved.
+
+## Resume thumbnail expansion
+
+- Resume upload now supports `.doc` in addition to `.pdf` and `.docx`.
+- Added authenticated server-side thumbnail generation for Word resumes
+  (`.doc`/`.docx`) at upload time.
+- Generated thumbnails are persisted and reused from profile metadata so
+  Dashboard and public Profile render a deterministic preview state: `pending`,
+  `complete`, or `failed`.
+- Owners now get a `Retry Preview` action when a Word thumbnail generation
+  attempt fails.
+- Admin dashboard now includes a resume-thumbnail ops summary (`pending`,
+  `complete`, `failed`, and recent failures) for governance visibility.
+- Added `/admin/resume-thumbnails` drill-down for failure inspection, one-click
+  per-member retry, and deterministic backfill batches.
+- Added a backfill concurrency lock and run-history telemetry surfaced in admin
+  summary/details to prevent overlapping operations.
+- Added CSV export for failed resume-thumbnail rows and per-run detail drawer in
+  `/admin/resume-thumbnails`.

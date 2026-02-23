@@ -65,13 +65,16 @@
     "@supabase/supabase-js": "2.89.0",
     "cors": "2.8.5",
     "express": "5.2.1",
+    "mammoth": "1.11.0",
     "multer": "2.0.2",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-helmet-async": "2.0.5",
     "react-router-dom": "7.12.0",
     "secure-json-parse": "4.1.0",
-    "uuid": "13.0.0"
+    "sharp": "0.34.5",
+    "uuid": "13.0.0",
+    "word-extractor": "1.0.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",

@@ -212,6 +212,16 @@ export const LandingPage = () => {
   if (!profile) return <NotFoundPage />;
 
   const creds = profile.nerd_creds as Record<string, unknown>;
+  const resumeThumbnailUrl =
+    typeof creds.resume_thumbnail_url === 'string'
+      ? creds.resume_thumbnail_url
+      : null;
+  const resumeThumbnailStatus =
+    creds.resume_thumbnail_status === 'pending' ||
+    creds.resume_thumbnail_status === 'complete' ||
+    creds.resume_thumbnail_status === 'failed'
+      ? creds.resume_thumbnail_status
+      : null;
   const isOwner = !!viewer && viewer.id === profile.id;
   const showConnect =
     !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
@@ -380,7 +390,11 @@ export const LandingPage = () => {
             {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 8 }}' */}
             <Grid size={{ xs: 12, md: 8 }} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio Frame">
-                <ResumeCard url={profile.resume_url} />
+                <ResumeCard
+                  url={profile.resume_url}
+                  thumbnailUrl={resumeThumbnailUrl}
+                  thumbnailStatus={resumeThumbnailStatus}
+                />
 
                 {projects.map((project) => (
                   <ProjectCard key={project.id} project={project} />

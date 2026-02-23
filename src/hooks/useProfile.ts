@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { authedFetch } from '../lib/api/authFetch';
+import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
-import { toMessage } from '../lib/utils/errors';
+import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
+
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+  '';
 
 export function useProfile() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
@@ -26,6 +32,12 @@ export function useProfile() {
         )
         .map((s, index) => ({
           ...(s as SocialLink),
+          platform: (() => {
+            const candidate = (s as { platform?: unknown }).platform;
+            return typeof candidate === 'string' && candidate.trim()
+              ? candidate
+              : detectPlatformFromUrl((s as { url: string }).url);
+          })(),
           isVisible: (s as { isVisible?: boolean }).isVisible !== false,
           order:
             typeof (s as { order?: number }).order === 'number'
@@ -546,9 +558,9 @@ export function useProfile() {
       }
 
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
-      if (ext !== '.pdf' && ext !== '.docx') {
+      if (ext !== '.pdf' && ext !== '.doc' && ext !== '.docx') {
         throw new Error(
-          'Resume must be a PDF or Word document (.pdf or .docx only)',
+          'Resume must be a PDF or Word document (.pdf, .doc, or .docx only)',
         );
       }
 
@@ -565,9 +577,114 @@ export function useProfile() {
         data: { publicUrl },
       } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
-      await updateProfile({ resume_url: publicUrl });
+      await updateProfile({
+        resume_url: publicUrl,
+        nerd_creds:
+          ext === '.doc' || ext === '.docx'
+            ? { resume_thumbnail_status: 'pending' }
+            : {},
+      });
+
+      if (ext === '.doc' || ext === '.docx') {
+        try {
+          const thumbResponse = await authedFetch(
+            `${API_BASE}/api/resumes/generate-thumbnail`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ storagePath: fileName }),
+            },
+            {
+              includeJsonContentType: true,
+              credentials: API_BASE ? 'omit' : 'include',
+            },
+          );
+
+          const thumbPayload = (await thumbResponse.json()) as
+            | {
+                ok?: boolean;
+                data?: { status?: string; thumbnailUrl?: string };
+                error?: string;
+                message?: string;
+              }
+            | undefined;
+
+          if (!thumbResponse.ok) {
+            throw new Error(
+              messageFromApiResponse(
+                thumbResponse.status,
+                thumbPayload?.error,
+                thumbPayload?.message,
+              ),
+            );
+          }
+        } catch (thumbnailError) {
+          console.warn('Resume thumbnail generation failed:', thumbnailError);
+        }
+      }
 
       return publicUrl;
+    } catch (err) {
+      console.error(err);
+      throw new Error(toMessage(err));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const retryResumeThumbnail = async () => {
+    try {
+      setUpdating(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error(
+          'You need to sign in to retry resume preview generation.',
+        );
+      }
+      const resumeUrl =
+        typeof profile?.resume_url === 'string' ? profile.resume_url : '';
+      if (!resumeUrl) throw new Error('No resume found to generate a preview.');
+
+      const ext = '.' + (resumeUrl.split('.').pop()?.toLowerCase() ?? '');
+      if (ext !== '.doc' && ext !== '.docx') {
+        throw new Error('Retry is only available for Word documents.');
+      }
+
+      const storagePath = `${session.user.id}/resume.${ext.slice(1)}`;
+      setProfile((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          nerd_creds: {
+            ...(prev.nerd_creds as Record<string, unknown>),
+            resume_thumbnail_status: 'pending',
+            resume_thumbnail_error: null,
+          },
+        };
+      });
+
+      const res = await authedFetch(
+        `${API_BASE}/api/resumes/generate-thumbnail`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ storagePath }),
+        },
+        {
+          includeJsonContentType: true,
+          credentials: API_BASE ? 'omit' : 'include',
+        },
+      );
+      const payload = (await res.json()) as
+        | { error?: string; message?: string }
+        | undefined;
+      if (!res.ok) {
+        throw new Error(
+          messageFromApiResponse(res.status, payload?.error, payload?.message),
+        );
+      }
+
+      await fetchData();
     } catch (err) {
       console.error(err);
       throw new Error(toMessage(err));
@@ -609,5 +726,6 @@ export function useProfile() {
     updateProject,
     deleteProject,
     uploadResume,
+    retryResumeThumbnail,
   };
 }

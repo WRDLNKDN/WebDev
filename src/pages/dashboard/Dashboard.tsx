@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
   Button,
@@ -71,6 +72,8 @@ export const Dashboard = () => {
     addProject,
     deleteProject,
     uploadResume,
+    retryResumeThumbnail,
+    updating,
   } = useProfile();
 
   const { avatarUrl: ctxAvatarUrl, refresh: refreshAvatar } =
@@ -91,6 +94,16 @@ export const Dashboard = () => {
     profile?.nerd_creds && typeof profile.nerd_creds === 'object'
       ? (profile.nerd_creds as unknown as NerdCreds)
       : ({} as NerdCreds);
+  const resumeThumbnailUrl =
+    typeof safeNerdCreds.resume_thumbnail_url === 'string'
+      ? safeNerdCreds.resume_thumbnail_url
+      : null;
+  const resumeThumbnailStatus =
+    safeNerdCreds.resume_thumbnail_status === 'pending' ||
+    safeNerdCreds.resume_thumbnail_status === 'complete' ||
+    safeNerdCreds.resume_thumbnail_status === 'failed'
+      ? safeNerdCreds.resume_thumbnail_status
+      : null;
 
   const bio = safeStr(
     safeNerdCreds.bio,
@@ -112,6 +125,9 @@ export const Dashboard = () => {
     .split(',')
     .map((industry) => industry.trim())
     .filter(Boolean);
+  const hasVisibleSocialLinks = (profile?.socials ?? []).some(
+    (link) => link.isVisible,
+  );
   const orderedProjectIds =
     Array.isArray(safeNerdCreds.project_order) &&
     safeNerdCreds.project_order.every((id) => typeof id === 'string')
@@ -179,22 +195,24 @@ export const Dashboard = () => {
           bio={bio}
           avatarUrl={avatarUrl}
           slotLeftOfAvatar={
-            <ProfileLinksWidget
-              socials={profile?.socials ?? []}
-              grouped
-              isOwner
-              onRemove={async (linkId) => {
-                const next = (profile?.socials ?? []).filter(
-                  (link) => link.id !== linkId,
-                );
-                try {
-                  await updateProfile({ socials: next });
-                  await refresh();
-                } catch (e) {
-                  setSnack(toMessage(e));
-                }
-              }}
-            />
+            hasVisibleSocialLinks ? (
+              <ProfileLinksWidget
+                socials={profile?.socials ?? []}
+                grouped
+                isOwner
+                onRemove={async (linkId) => {
+                  const next = (profile?.socials ?? []).filter(
+                    (link) => link.id !== linkId,
+                  );
+                  try {
+                    await updateProfile({ socials: next });
+                    await refresh();
+                  } catch (e) {
+                    setSnack(toMessage(e));
+                  }
+                }}
+              />
+            ) : undefined
           }
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
@@ -220,6 +238,10 @@ export const Dashboard = () => {
                       <Box
                         key={`skill-${skill}`}
                         sx={{
+                          display: 'inline-flex',
+                          width: 'fit-content',
+                          maxWidth: '100%',
+                          whiteSpace: 'nowrap',
                           px: 1.25,
                           py: 0.5,
                           borderRadius: 999,
@@ -246,24 +268,29 @@ export const Dashboard = () => {
                     Industries
                   </Typography>
                 )}
-                {selectedIndustries.map((industry) => (
-                  <Box
-                    key={`industry-${industry}`}
-                    sx={{
-                      display: 'inline-flex',
-                      mr: 1,
-                      mb: 1,
-                      px: 1.25,
-                      py: 0.5,
-                      borderRadius: 999,
-                      bgcolor: 'rgba(66,165,245,0.15)',
-                      border: '1px solid rgba(66,165,245,0.35)',
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    {industry}
-                  </Box>
-                ))}
+                {selectedIndustries.length > 0 && (
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    {selectedIndustries.map((industry) => (
+                      <Box
+                        key={`industry-${industry}`}
+                        sx={{
+                          display: 'inline-flex',
+                          width: 'fit-content',
+                          maxWidth: '100%',
+                          whiteSpace: 'nowrap',
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 999,
+                          bgcolor: 'rgba(66,165,245,0.15)',
+                          border: '1px solid rgba(66,165,245,0.35)',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {industry}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </Stack>
             ) : undefined
           }
@@ -300,6 +327,24 @@ export const Dashboard = () => {
               >
                 Edit Links
               </Button>
+              {profile?.handle && (
+                <Button
+                  variant="outlined"
+                  component="a"
+                  href={`/profile/${profile.handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<OpenInNewIcon />}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    width: { xs: '100%', sm: 'auto' },
+                    minHeight: { xs: 40, sm: 36 },
+                  }}
+                >
+                  View Profile
+                </Button>
+              )}
             </Stack>
           }
         />
@@ -361,7 +406,7 @@ export const Dashboard = () => {
               <input
                 type="file"
                 hidden
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) handleResumeUpload(f);
@@ -402,7 +447,15 @@ export const Dashboard = () => {
           <Stack spacing={2.5}>
             <ResumeCard
               url={profile?.resume_url}
+              thumbnailUrl={resumeThumbnailUrl}
+              thumbnailStatus={resumeThumbnailStatus}
               onUpload={handleResumeUpload}
+              onRetryThumbnail={() => {
+                void retryResumeThumbnail().catch((e) => {
+                  setSnack(toMessage(e));
+                });
+              }}
+              retryThumbnailBusy={updating}
               isOwner
             />
 

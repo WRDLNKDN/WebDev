@@ -100,7 +100,7 @@ export const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');

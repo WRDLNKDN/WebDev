@@ -42,7 +42,9 @@ export const ProfileLinksWidget = ({
   });
 
   const renderLink = (link: SocialLink) => {
-    const displayPlatform = detectPlatformFromUrl(link.url);
+    const displayPlatform = link.platform?.trim()
+      ? link.platform
+      : detectPlatformFromUrl(link.url);
     return (
       <Box
         key={link.id}

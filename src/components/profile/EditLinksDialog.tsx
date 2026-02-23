@@ -8,6 +8,7 @@ import {
   DialogActions,
   DialogContent,
   FormControl,
+  FormHelperText,
   IconButton,
   InputLabel,
   MenuItem,
@@ -16,7 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
@@ -41,6 +42,7 @@ export const EditLinksDialog = ({
   currentLinks,
   onUpdate,
 }: EditLinksDialogProps) => {
+  const OTHER_PLATFORM = 'other';
   // 1. SAFE INITIALIZATION (Prevents "map is not a function" crash)
   const [links, setLinks] = useState<SocialLink[]>(
     Array.isArray(currentLinks) ? currentLinks : [],
@@ -48,13 +50,21 @@ export const EditLinksDialog = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
 
-  // Sync links from profile when dialog opens so we always show latest
+  // Sync from profile only when dialog transitions closed -> open.
+  // Prevents silent data loss when parent refreshes while user is editing.
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setSaveError(null);
       setLinks(Array.isArray(currentLinks) ? [...currentLinks] : []);
+      setNewCategory('Professional');
+      setNewPlatform('');
+      setNewUrl('');
+      setNewLabel('');
+      setAddAttempted(false);
     }
+    wasOpenRef.current = open;
   }, [open, currentLinks]);
 
   // 2. Form State: The "Add New" inputs
@@ -62,33 +72,55 @@ export const EditLinksDialog = ({
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [newLabel, setNewLabel] = useState('');
+  const [addAttempted, setAddAttempted] = useState(false);
 
   // Filter the platform dropdown based on the chosen category
-  const availablePlatforms = PLATFORM_OPTIONS.filter(
-    (p) => p.category === newCategory,
+  const availablePlatforms = useMemo(
+    () => [
+      ...PLATFORM_OPTIONS.filter((p) => p.category === newCategory),
+      { label: 'Other', value: OTHER_PLATFORM, category: newCategory },
+    ],
+    [newCategory],
+  );
+  const hasValidUrl = newUrl.trim().length > 0;
+  const canAddLink = hasValidUrl && newPlatform.trim().length > 0;
+  const platformError = addAttempted && !newPlatform.trim();
+
+  const sortedLinks = useMemo(
+    () =>
+      [...links].sort((a, b) => {
+        const catA = CATEGORY_ORDER.indexOf(a.category);
+        const catB = CATEGORY_ORDER.indexOf(b.category);
+        if (catA !== catB) return catA - catB;
+        if (a.order !== b.order) return a.order - b.order;
+        const labelCmp = (a.label || '').localeCompare(b.label || '');
+        if (labelCmp !== 0) return labelCmp;
+        const urlCmp = a.url.localeCompare(b.url);
+        if (urlCmp !== 0) return urlCmp;
+        return a.id.localeCompare(b.id);
+      }),
+    [links],
   );
 
   // --- ACTIONS ---
 
   const handleAddLink = () => {
-    if (!newUrl.trim()) return;
+    setAddAttempted(true);
+    if (!canAddLink) return;
 
-    // Detect platform from URL domain so each link gets correct icon/label
-    const detectedPlatform = detectPlatformFromUrl(newUrl.trim());
-    const platform =
-      newCategory === 'Custom'
-        ? 'Custom'
-        : detectedPlatform !== 'Custom'
-          ? detectedPlatform
-          : newPlatform || 'Custom';
+    const platform = newPlatform.trim();
+    const nextOrder =
+      links.reduce((max, link) => Math.max(max, link.order), -1) + 1;
     const newLinkItem: SocialLink = {
       id: uuidv4(),
       category: newCategory,
       platform,
       url: newUrl.trim(),
-      label: newLabel?.trim() || (platform === 'Custom' ? 'Link' : platform),
+      label:
+        newLabel?.trim() ||
+        (platform.toLowerCase() === OTHER_PLATFORM ? 'Link' : platform),
       isVisible: true,
-      order: links.length,
+      order: nextOrder,
     };
 
     setLinks((prev) => [...prev, newLinkItem]);
@@ -96,6 +128,7 @@ export const EditLinksDialog = ({
     setNewPlatform('');
     setNewUrl('');
     setNewLabel('');
+    setAddAttempted(false);
   };
 
   const handleDelete = (id: string) => {
@@ -162,9 +195,10 @@ export const EditLinksDialog = ({
                   <Select
                     value={newCategory}
                     label="Category"
-                    onChange={(e) =>
-                      setNewCategory(e.target.value as LinkCategory)
-                    }
+                    onChange={(e) => {
+                      setNewCategory(e.target.value as LinkCategory);
+                      setNewPlatform('');
+                    }}
                   >
                     {CATEGORY_ORDER.map((c) => (
                       <MenuItem key={c} value={c}>
@@ -175,20 +209,28 @@ export const EditLinksDialog = ({
                 </FormControl>
 
                 {/* Platform Dropdown */}
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth size="small" error={platformError}>
                   <InputLabel>Platform</InputLabel>
                   <Select
                     value={newPlatform}
                     label="Platform"
                     onChange={(e) => setNewPlatform(e.target.value)}
-                    disabled={newCategory === 'Custom'}
                   >
                     {availablePlatforms.map((p) => (
                       <MenuItem key={p.value} value={p.value}>
-                        {p.label}
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <LinkIcon
+                            platform={p.value}
+                            sx={{ width: 18, fontSize: '1rem' }}
+                          />
+                          <Typography variant="body2">{p.label}</Typography>
+                        </Stack>
                       </MenuItem>
                     ))}
                   </Select>
+                  {platformError && (
+                    <FormHelperText>Platform is required.</FormHelperText>
+                  )}
                 </FormControl>
               </Stack>
 
@@ -203,7 +245,7 @@ export const EditLinksDialog = ({
               />
 
               {/* Conditional Label Input (Only for Custom links) */}
-              {(newCategory === 'Custom' || newPlatform === 'Custom') && (
+              {(newCategory === 'Custom' || newPlatform === OTHER_PLATFORM) && (
                 <TextField
                   label="Label (e.g. My Portfolio)"
                   size="small"
@@ -217,7 +259,7 @@ export const EditLinksDialog = ({
                 variant="outlined"
                 startIcon={<AddIcon />}
                 onClick={handleAddLink}
-                disabled={!newUrl}
+                disabled={!canAddLink}
                 sx={{ alignSelf: 'flex-start' }}
               >
                 Add to List
@@ -245,66 +287,90 @@ export const EditLinksDialog = ({
               </Typography>
             )}
 
-            {links.map((link) => (
-              <Box
-                key={link.id}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1.5,
-                  p: 2,
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'rgba(255,255,255,0.04)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.2)',
-                  },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={2}
-                  sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}
-                >
-                  <LinkIcon platform={detectPlatformFromUrl(link.url)} />
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" fontWeight={600} noWrap>
-                      {getShortLinkLabel(link.url)}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      noWrap
-                      display="block"
-                    >
-                      {link.url}
-                    </Typography>
-                  </Box>
-                </Stack>
+            {CATEGORY_ORDER.map((category) => {
+              const categoryLinks = sortedLinks.filter(
+                (link) => link.category === category,
+              );
+              if (categoryLinks.length === 0) return null;
+              return (
+                <Stack key={category} spacing={1}>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      color: 'text.secondary',
+                      letterSpacing: 1,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {category}
+                  </Typography>
+                  {categoryLinks.map((link) => {
+                    const platformForIcon =
+                      link.platform?.trim() || detectPlatformFromUrl(link.url);
+                    return (
+                      <Box
+                        key={link.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 1.5,
+                          p: 2,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: 'rgba(255,255,255,0.04)',
+                          '&:hover': {
+                            borderColor: 'rgba(255,255,255,0.2)',
+                          },
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={2}
+                          sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}
+                        >
+                          <LinkIcon platform={platformForIcon} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {getShortLinkLabel(link.url)}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              noWrap
+                              display="block"
+                            >
+                              {link.url}
+                            </Typography>
+                          </Box>
+                        </Stack>
 
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(link.id)}
-                  aria-label={`Remove ${link.label || link.platform}`}
-                  sx={{
-                    flexShrink: 0,
-                    p: 0.25,
-                    minWidth: 0,
-                    minHeight: 0,
-                    color: 'error.main',
-                    '&:hover': {
-                      bgcolor: 'error.main',
-                      color: 'error.contrastText',
-                    },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Box>
-            ))}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(link.id)}
+                          aria-label={`Remove ${link.label || link.platform}`}
+                          sx={{
+                            flexShrink: 0,
+                            p: 0.25,
+                            minWidth: 0,
+                            minHeight: 0,
+                            color: 'error.main',
+                            '&:hover': {
+                              bgcolor: 'error.main',
+                              color: 'error.contrastText',
+                            },
+                          }}
+                        >
+                          <CloseIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              );
+            })}
           </Stack>
         </Stack>
       </DialogContent>

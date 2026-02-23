@@ -1,5 +1,6 @@
 import { Alert, Box, CircularProgress, Container } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -33,6 +34,7 @@ export const AdminGate = ({ children }: Props) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -42,10 +44,12 @@ export const AdminGate = ({ children }: Props) => {
         } = await supabase.auth.getSession();
 
         if (!session) {
-          // Not signed in: allow through so AdminApp can show its own sign-in UI
-          setIsAdmin(true);
+          // Deterministic unauthorized response for signed-out access.
+          setIsSignedIn(false);
+          setIsAdmin(false);
           return;
         }
+        setIsSignedIn(true);
 
         const { data, error: rpcError } = (await supabase.rpc('is_admin')) as {
           data: boolean | null;
@@ -100,8 +104,16 @@ export const AdminGate = ({ children }: Props) => {
       <Box sx={BG_SX}>
         <Container maxWidth="md" sx={CARD_SX}>
           <Alert severity="warning" sx={{ bgcolor: 'rgba(237, 108, 2, 0.1)' }}>
-            You do not have admin access. Please contact an administrator if you
-            believe this is an error.
+            <strong>403 Forbidden.</strong>{' '}
+            {isSignedIn
+              ? "You don't have admin access for this governance surface."
+              : 'You must sign in with an admin account to access this governance surface.'}
+            {!isSignedIn && (
+              <>
+                {' '}
+                <RouterLink to="/signin?next=/admin">Sign in</RouterLink>.
+              </>
+            )}
           </Alert>
         </Container>
       </Box>

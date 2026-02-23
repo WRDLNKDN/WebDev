@@ -236,6 +236,11 @@ const AdminPartnersPage = lazy(async () => {
   return { default: m.AdminPartnersPage };
 });
 
+const AdminResumeThumbnailsPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminResumeThumbnailsPage');
+  return { default: m.AdminResumeThumbnailsPage };
+});
+
 // 5. System Components
 const Loading = () => (
   <Box
@@ -468,7 +473,20 @@ const App = () => {
                     path="advertisers"
                     element={<AdminAdvertisersPage />}
                   />
-                  <Route path="partners" element={<AdminPartnersPage />} />
+                  <Route
+                    path="community-partners"
+                    element={<AdminPartnersPage />}
+                  />
+                  <Route
+                    path="resume-thumbnails"
+                    element={<AdminResumeThumbnailsPage />}
+                  />
+                  <Route
+                    path="partners"
+                    element={
+                      <Navigate to="/admin/community-partners" replace />
+                    }
+                  />
                 </Route>
                 <Route
                   path="/admin/pending"

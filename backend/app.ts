@@ -26,6 +26,11 @@ import {
   getConnectionOutcomeNotificationType,
 } from './directory/connectionFlow.js';
 import { sendApiError } from './lib/apiError.js';
+import {
+  generateResumeThumbnailPng,
+  getResumeExtension,
+  isSupportedResumeThumbnailExtension,
+} from './resumeThumbnail.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -109,6 +114,271 @@ const errorMessage = (e: unknown, fallback: string) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string' && e.trim()) return e;
   return fallback;
+};
+
+const readNerdCreds = async (
+  userId: string,
+): Promise<Record<string, unknown>> => {
+  const { data } = await adminSupabase
+    .from('profiles')
+    .select('nerd_creds')
+    .eq('id', userId)
+    .maybeSingle();
+  const raw = (data as { nerd_creds?: unknown } | null)?.nerd_creds;
+  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+};
+
+const updateResumeThumbnailState = async (
+  userId: string,
+  updates: Record<string, unknown>,
+): Promise<void> => {
+  const nerdCreds = await readNerdCreds(userId);
+  const payload = {
+    ...nerdCreds,
+    ...updates,
+    resume_thumbnail_updated_at: new Date().toISOString(),
+  };
+  await adminSupabase
+    .from('profiles')
+    .update({ nerd_creds: payload })
+    .eq('id', userId);
+};
+
+const logResumeThumbnailEvent = async (params: {
+  userId: string;
+  action:
+    | 'RESUME_THUMBNAIL_PENDING'
+    | 'RESUME_THUMBNAIL_COMPLETE'
+    | 'RESUME_THUMBNAIL_FAILED';
+  meta: Record<string, unknown>;
+}): Promise<void> => {
+  await adminSupabase.from('audit_log').insert({
+    actor_id: params.userId,
+    actor_email: null,
+    action: params.action,
+    target_type: 'resume_thumbnail',
+    target_id: params.userId,
+    meta: params.meta,
+  });
+};
+
+type ResumeBackfillLock = {
+  runId: string;
+  acquiredAtIso: string;
+  adminEmail: string | null;
+  lockEventId?: string;
+};
+
+const RESUME_BACKFILL_LOCK_TTL_MS = 15 * 60 * 1000;
+
+const isLockExpired = (acquiredAtIso: string): boolean => {
+  const acquiredMs = new Date(acquiredAtIso).getTime();
+  if (!Number.isFinite(acquiredMs)) return true;
+  return Date.now() - acquiredMs > RESUME_BACKFILL_LOCK_TTL_MS;
+};
+
+const fetchActiveResumeBackfillLock =
+  async (): Promise<ResumeBackfillLock | null> => {
+    const { data, error } = await adminSupabase
+      .from('audit_log')
+      .select('id, action, target_id, actor_email, created_at')
+      .eq('target_type', 'resume_thumbnail_backfill_lock')
+      .in('action', [
+        'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED',
+        'RESUME_THUMBNAIL_BACKFILL_LOCK_RELEASED',
+      ])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const row = data as {
+      id: string;
+      action: string;
+      target_id: string | null;
+      actor_email: string | null;
+      created_at: string;
+    };
+    if (row.action !== 'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED') return null;
+    if (!row.target_id || isLockExpired(row.created_at)) return null;
+    return {
+      runId: row.target_id,
+      acquiredAtIso: row.created_at,
+      adminEmail: row.actor_email ?? null,
+      lockEventId: row.id,
+    };
+  };
+
+const acquireResumeBackfillLock = async (
+  adminEmail: string | undefined,
+  adminUserId: string | undefined,
+): Promise<{
+  lock: ResumeBackfillLock | null;
+  lockExpiresInMs: number | null;
+}> => {
+  const active = await fetchActiveResumeBackfillLock();
+  if (active) {
+    return {
+      lock: active,
+      lockExpiresInMs: Math.max(
+        0,
+        RESUME_BACKFILL_LOCK_TTL_MS -
+          (Date.now() - new Date(active.acquiredAtIso).getTime()),
+      ),
+    };
+  }
+
+  const runId = crypto.randomUUID();
+  const { data: inserted, error } = await adminSupabase
+    .from('audit_log')
+    .insert({
+      actor_id: adminUserId ?? null,
+      actor_email: adminEmail ?? null,
+      action: 'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED',
+      target_type: 'resume_thumbnail_backfill_lock',
+      target_id: runId,
+      meta: { runId, lockTtlMs: RESUME_BACKFILL_LOCK_TTL_MS },
+    })
+    .select('id, target_id, actor_email, created_at')
+    .single();
+  if (error || !inserted) {
+    return { lock: null, lockExpiresInMs: null };
+  }
+
+  const latest = await fetchActiveResumeBackfillLock();
+  if (!latest || latest.runId !== runId) {
+    return {
+      lock: latest,
+      lockExpiresInMs: latest
+        ? Math.max(
+            0,
+            RESUME_BACKFILL_LOCK_TTL_MS -
+              (Date.now() - new Date(latest.acquiredAtIso).getTime()),
+          )
+        : null,
+    };
+  }
+
+  return { lock: latest, lockExpiresInMs: RESUME_BACKFILL_LOCK_TTL_MS };
+};
+
+const releaseResumeBackfillLock = async (
+  runId: string,
+  adminEmail: string | undefined,
+  adminUserId: string | undefined,
+): Promise<void> => {
+  await adminSupabase.from('audit_log').insert({
+    actor_id: adminUserId ?? null,
+    actor_email: adminEmail ?? null,
+    action: 'RESUME_THUMBNAIL_BACKFILL_LOCK_RELEASED',
+    target_type: 'resume_thumbnail_backfill_lock',
+    target_id: runId,
+    meta: { runId },
+  });
+};
+
+const decodeResumeStoragePath = (resumeUrl: string): string | null => {
+  try {
+    const parsed = new URL(resumeUrl);
+    const marker = '/resumes/';
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx < 0) return null;
+    const raw = parsed.pathname.slice(idx + marker.length);
+    const clean = decodeURIComponent(raw).replace(/^\/+/, '').trim();
+    return clean || null;
+  } catch {
+    const marker = '/resumes/';
+    const idx = resumeUrl.indexOf(marker);
+    if (idx < 0) return null;
+    const raw = resumeUrl.slice(idx + marker.length);
+    const clean = decodeURIComponent(raw).replace(/^\/+/, '').trim();
+    return clean || null;
+  }
+};
+
+const generateAndPersistResumeThumbnail = async (
+  userId: string,
+  storagePath: string,
+): Promise<{ thumbnailUrl: string; extension: string; durationMs: number }> => {
+  const extension = getResumeExtension(storagePath);
+  if (!isSupportedResumeThumbnailExtension(extension)) {
+    throw new Error('Only .doc and .docx are supported');
+  }
+
+  await updateResumeThumbnailState(userId, {
+    resume_thumbnail_status: 'pending',
+    resume_thumbnail_error: null,
+  });
+  await logResumeThumbnailEvent({
+    userId,
+    action: 'RESUME_THUMBNAIL_PENDING',
+    meta: { storagePath, extension },
+  });
+
+  const startedAt = Date.now();
+  const { data: fileBlob, error: downloadError } = await adminSupabase.storage
+    .from('resumes')
+    .download(storagePath);
+  if (downloadError || !fileBlob) {
+    const message =
+      downloadError?.message || 'Could not download resume for thumbnailing';
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'failed',
+      resume_thumbnail_error: message,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_FAILED',
+      meta: { storagePath, extension, error: message },
+    });
+    throw new Error(message);
+  }
+
+  try {
+    const fileBuffer = Buffer.from(await fileBlob.arrayBuffer());
+    const thumbnailBuffer = await generateResumeThumbnailPng(
+      fileBuffer,
+      storagePath,
+    );
+    const thumbPath = `${userId}/resume-thumbnail.png`;
+    const { error: uploadError } = await adminSupabase.storage
+      .from('resumes')
+      .upload(thumbPath, thumbnailBuffer, {
+        contentType: 'image/png',
+        upsert: true,
+      });
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data: thumbPublic } = adminSupabase.storage
+      .from('resumes')
+      .getPublicUrl(thumbPath);
+    const thumbnailUrl = thumbPublic.publicUrl;
+    const durationMs = Date.now() - startedAt;
+
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'complete',
+      resume_thumbnail_url: thumbnailUrl,
+      resume_thumbnail_error: null,
+      resume_thumbnail_source_extension: extension,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_COMPLETE',
+      meta: { storagePath, extension, durationMs },
+    });
+    return { thumbnailUrl, extension, durationMs };
+  } catch (e: unknown) {
+    const message = errorMessage(e, 'Thumbnail generation failed');
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'failed',
+      resume_thumbnail_error: message,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_FAILED',
+      meta: { storagePath, extension, error: message },
+    });
+    throw new Error(message);
+  }
 };
 
 const requireAdmin = async (
@@ -1426,6 +1696,53 @@ app.get(
   },
 );
 
+// POST /api/resumes/generate-thumbnail — generate persisted thumbnail for .doc/.docx
+app.post(
+  '/api/resumes/generate-thumbnail',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+    const storagePath =
+      typeof (req.body as { storagePath?: unknown }).storagePath === 'string'
+        ? (req.body as { storagePath: string }).storagePath.trim()
+        : '';
+    if (!storagePath) return sendApiError(res, 400, 'Missing storagePath');
+    if (!storagePath.startsWith(`${userId}/`)) {
+      return sendApiError(res, 403, 'Forbidden');
+    }
+
+    const extension = getResumeExtension(storagePath);
+    if (!isSupportedResumeThumbnailExtension(extension)) {
+      return sendApiError(res, 400, 'Only .doc and .docx are supported');
+    }
+
+    try {
+      const { thumbnailUrl, durationMs } =
+        await generateAndPersistResumeThumbnail(userId, storagePath);
+      console.info('[resume-thumbnail] complete', {
+        userId,
+        storagePath,
+        durationMs,
+      });
+
+      return res.json({
+        ok: true,
+        data: { status: 'complete', thumbnailUrl },
+      });
+    } catch (e: unknown) {
+      const message = errorMessage(e, 'Thumbnail generation failed');
+      console.warn('[resume-thumbnail] failed', {
+        userId,
+        storagePath,
+        message,
+      });
+      return sendApiError(res, 422, message);
+    }
+  },
+);
+
 // POST /api/directory/connect — send connection request
 app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
@@ -1508,6 +1825,520 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
   }
   return res.status(201).json({ ok: true });
 });
+
+// GET /api/admin/resume-thumbnails/summary — operational overview for admins
+app.get(
+  '/api/admin/resume-thumbnails/summary',
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    const [
+      pending,
+      complete,
+      failed,
+      totalWithResume,
+      recentFailed,
+      recentRuns,
+    ] = await Promise.all([
+      adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('nerd_creds->>resume_thumbnail_status', 'pending'),
+      adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('nerd_creds->>resume_thumbnail_status', 'complete'),
+      adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('nerd_creds->>resume_thumbnail_status', 'failed'),
+      adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .not('resume_url', 'is', null),
+      adminSupabase
+        .from('profiles')
+        .select('id, handle, nerd_creds')
+        .eq('nerd_creds->>resume_thumbnail_status', 'failed')
+        .order('updated_at', { ascending: false })
+        .limit(5),
+      adminSupabase
+        .from('audit_log')
+        .select('id, action, target_id, meta, created_at')
+        .eq('target_type', 'resume_thumbnail_backfill')
+        .in('action', [
+          'RESUME_THUMBNAIL_BACKFILL_STARTED',
+          'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+          'RESUME_THUMBNAIL_BACKFILL_FAILED',
+        ])
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    const firstError =
+      pending.error ||
+      complete.error ||
+      failed.error ||
+      totalWithResume.error ||
+      recentFailed.error ||
+      recentRuns.error;
+    if (firstError) {
+      return sendApiError(
+        res,
+        500,
+        errorMessage(firstError.message, 'Could not load thumbnail summary'),
+      );
+    }
+
+    const recentFailures = (recentFailed.data ?? []).map((row) => {
+      const creds = (row as { nerd_creds?: unknown }).nerd_creds;
+      const meta =
+        creds && typeof creds === 'object'
+          ? (creds as Record<string, unknown>)
+          : {};
+      return {
+        profileId: (row as { id: string }).id,
+        handle: (row as { handle?: string | null }).handle ?? null,
+        error:
+          typeof meta.resume_thumbnail_error === 'string'
+            ? meta.resume_thumbnail_error
+            : null,
+        updatedAt:
+          typeof meta.resume_thumbnail_updated_at === 'string'
+            ? meta.resume_thumbnail_updated_at
+            : null,
+      };
+    });
+
+    const latestBackfillRuns = (recentRuns.data ?? []).map((row) => {
+      const meta =
+        (row as { meta?: unknown }).meta &&
+        typeof (row as { meta?: unknown }).meta === 'object'
+          ? ((row as { meta: Record<string, unknown> }).meta ?? {})
+          : {};
+      return {
+        id: (row as { id: string }).id,
+        action: (row as { action: string }).action,
+        runId:
+          typeof meta.runId === 'string'
+            ? meta.runId
+            : ((row as { target_id?: string | null }).target_id ?? null),
+        attempted: typeof meta.attempted === 'number' ? meta.attempted : null,
+        completed: typeof meta.completed === 'number' ? meta.completed : null,
+        failed: typeof meta.failed === 'number' ? meta.failed : null,
+        durationMs:
+          typeof meta.durationMs === 'number' ? meta.durationMs : null,
+        createdAt: (row as { created_at: string }).created_at,
+      };
+    });
+    const activeBackfillLock = await fetchActiveResumeBackfillLock();
+
+    return res.json({
+      ok: true,
+      data: {
+        pending: pending.count ?? 0,
+        complete: complete.count ?? 0,
+        failed: failed.count ?? 0,
+        totalWithResume: totalWithResume.count ?? 0,
+        recentFailures,
+        backfillLock: activeBackfillLock
+          ? {
+              runId: activeBackfillLock.runId,
+              acquiredAt: activeBackfillLock.acquiredAtIso,
+              adminEmail: activeBackfillLock.adminEmail ?? null,
+            }
+          : null,
+        latestBackfillRuns,
+      },
+      error: null,
+    });
+  },
+);
+
+// GET /api/admin/resume-thumbnails/failures — paged failures list
+app.get(
+  '/api/admin/resume-thumbnails/failures',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const { data, error, count } = await adminSupabase
+      .from('profiles')
+      .select('id, handle, resume_url, nerd_creds, updated_at', {
+        count: 'exact',
+      })
+      .eq('nerd_creds->>resume_thumbnail_status', 'failed')
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+
+    const rows = (data ?? []).map((row) => {
+      const creds = (row as { nerd_creds?: unknown }).nerd_creds;
+      const meta =
+        creds && typeof creds === 'object'
+          ? (creds as Record<string, unknown>)
+          : {};
+      return {
+        profileId: (row as { id: string }).id,
+        handle: (row as { handle?: string | null }).handle ?? null,
+        resumeUrl: (row as { resume_url?: string | null }).resume_url ?? null,
+        error:
+          typeof meta.resume_thumbnail_error === 'string'
+            ? meta.resume_thumbnail_error
+            : null,
+        status:
+          typeof meta.resume_thumbnail_status === 'string'
+            ? meta.resume_thumbnail_status
+            : 'failed',
+        updatedAt:
+          typeof meta.resume_thumbnail_updated_at === 'string'
+            ? meta.resume_thumbnail_updated_at
+            : ((row as { updated_at?: string | null }).updated_at ?? null),
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: rows,
+      meta: { total: count ?? 0, limit, offset },
+      error: null,
+    });
+  },
+);
+
+// GET /api/admin/resume-thumbnails/runs — paged backfill run history
+app.get(
+  '/api/admin/resume-thumbnails/runs',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const { data, error, count } = await adminSupabase
+      .from('audit_log')
+      .select('id, actor_email, action, target_id, meta, created_at', {
+        count: 'exact',
+      })
+      .eq('target_type', 'resume_thumbnail_backfill')
+      .in('action', [
+        'RESUME_THUMBNAIL_BACKFILL_STARTED',
+        'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+        'RESUME_THUMBNAIL_BACKFILL_FAILED',
+      ])
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+
+    const rows = (data ?? []).map((row) => {
+      const meta =
+        (row as { meta?: unknown }).meta &&
+        typeof (row as { meta?: unknown }).meta === 'object'
+          ? ((row as { meta: Record<string, unknown> }).meta ?? {})
+          : {};
+      return {
+        id: (row as { id: string }).id,
+        actorEmail:
+          (row as { actor_email?: string | null }).actor_email ?? null,
+        action: (row as { action: string }).action,
+        runId:
+          typeof meta.runId === 'string'
+            ? meta.runId
+            : ((row as { target_id?: string | null }).target_id ?? null),
+        attempted: typeof meta.attempted === 'number' ? meta.attempted : null,
+        completed: typeof meta.completed === 'number' ? meta.completed : null,
+        failed: typeof meta.failed === 'number' ? meta.failed : null,
+        durationMs:
+          typeof meta.durationMs === 'number' ? meta.durationMs : null,
+        createdAt: (row as { created_at: string }).created_at,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: rows,
+      meta: { total: count ?? 0, limit, offset },
+      error: null,
+    });
+  },
+);
+
+// GET /api/admin/resume-thumbnails/runs/:runId — details for one run
+app.get(
+  '/api/admin/resume-thumbnails/runs/:runId',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const rawRunId = req.params.runId;
+    const runId =
+      typeof rawRunId === 'string'
+        ? rawRunId.trim()
+        : Array.isArray(rawRunId)
+          ? (rawRunId[0] ?? '').trim()
+          : '';
+    if (!runId) return sendApiError(res, 400, 'Missing runId');
+
+    const { data, error } = await adminSupabase
+      .from('audit_log')
+      .select('id, actor_email, action, target_id, meta, created_at')
+      .eq('target_type', 'resume_thumbnail_backfill')
+      .eq('target_id', runId)
+      .order('created_at', { ascending: true });
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+    if (!data || data.length === 0)
+      return sendApiError(res, 404, 'Run not found');
+
+    const items = data.map((row) => {
+      const meta =
+        (row as { meta?: unknown }).meta &&
+        typeof (row as { meta?: unknown }).meta === 'object'
+          ? ((row as { meta: Record<string, unknown> }).meta ?? {})
+          : {};
+      return {
+        id: (row as { id: string }).id,
+        actorEmail:
+          (row as { actor_email?: string | null }).actor_email ?? null,
+        action: (row as { action: string }).action,
+        createdAt: (row as { created_at: string }).created_at,
+        meta,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: {
+        runId,
+        events: items,
+      },
+      error: null,
+    });
+  },
+);
+
+// POST /api/admin/resume-thumbnails/retry — retry one profile
+app.post(
+  '/api/admin/resume-thumbnails/retry',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const profileId =
+      typeof (req.body as { profileId?: unknown }).profileId === 'string'
+        ? (req.body as { profileId: string }).profileId.trim()
+        : '';
+    if (!profileId) return sendApiError(res, 400, 'Missing profileId');
+
+    const { data: profile, error } = await adminSupabase
+      .from('profiles')
+      .select('id, resume_url')
+      .eq('id', profileId)
+      .maybeSingle();
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+    if (!profile) return sendApiError(res, 404, 'Profile not found');
+
+    const resumeUrl =
+      (profile as { resume_url?: string | null }).resume_url ?? null;
+    if (!resumeUrl) return sendApiError(res, 400, 'Profile has no resume URL');
+    const storagePath = decodeResumeStoragePath(resumeUrl);
+    if (!storagePath)
+      return sendApiError(res, 400, 'Resume URL is not in resumes bucket');
+
+    try {
+      const result = await generateAndPersistResumeThumbnail(
+        profileId,
+        storagePath,
+      );
+      return res.json({
+        ok: true,
+        data: {
+          profileId,
+          status: 'complete',
+          thumbnailUrl: result.thumbnailUrl,
+          durationMs: result.durationMs,
+        },
+      });
+    } catch (e: unknown) {
+      return sendApiError(res, 422, errorMessage(e, 'Thumbnail retry failed'));
+    }
+  },
+);
+
+// POST /api/admin/resume-thumbnails/backfill — batch-generate missing/failed previews
+app.post(
+  '/api/admin/resume-thumbnails/backfill',
+  requireAdmin,
+  async (req: AdminRequest, res: Response) => {
+    const acquired = await acquireResumeBackfillLock(
+      req.adminEmail,
+      req.adminUserId,
+    );
+    const activeLock = acquired.lock;
+    if (!activeLock) {
+      return sendApiError(
+        res,
+        500,
+        'Could not acquire backfill lock. Please try again.',
+      );
+    }
+    if (acquired.lockExpiresInMs !== RESUME_BACKFILL_LOCK_TTL_MS) {
+      return sendApiError(
+        res,
+        409,
+        'A resume thumbnail backfill is already in progress.',
+        'BACKFILL_LOCKED',
+        {
+          runId: activeLock.runId,
+          acquiredAt: activeLock.acquiredAtIso,
+          lockExpiresInMs: acquired.lockExpiresInMs ?? 0,
+        },
+      );
+    }
+    const runId = activeLock.runId;
+
+    const recordBackfillAudit = async (
+      action:
+        | 'RESUME_THUMBNAIL_BACKFILL_STARTED'
+        | 'RESUME_THUMBNAIL_BACKFILL_COMPLETED'
+        | 'RESUME_THUMBNAIL_BACKFILL_FAILED',
+      meta: Record<string, unknown>,
+    ) => {
+      await adminSupabase.from('audit_log').insert({
+        actor_id: req.adminUserId ?? null,
+        actor_email: req.adminEmail ?? null,
+        action,
+        target_type: 'resume_thumbnail_backfill',
+        target_id: runId,
+        meta: {
+          runId,
+          ...meta,
+        },
+      });
+    };
+
+    const limit = Math.min(
+      200,
+      Math.max(1, Number((req.body as { limit?: unknown }).limit) || 25),
+    );
+    const startedAt = Date.now();
+    await recordBackfillAudit('RESUME_THUMBNAIL_BACKFILL_STARTED', {
+      limit,
+      lockTtlMs: RESUME_BACKFILL_LOCK_TTL_MS,
+    });
+
+    try {
+      const { data: rows, error } = await adminSupabase
+        .from('profiles')
+        .select('id, resume_url, nerd_creds')
+        .not('resume_url', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(limit * 4);
+      if (error) {
+        throw new Error(errorMessage(error.message, 'Server error'));
+      }
+
+      const candidates = (rows ?? [])
+        .map((row) => {
+          const profileId = (row as { id: string }).id;
+          const resumeUrl =
+            (row as { resume_url?: string | null }).resume_url ?? null;
+          const nerdCreds = (row as { nerd_creds?: unknown }).nerd_creds;
+          const status =
+            nerdCreds && typeof nerdCreds === 'object'
+              ? (nerdCreds as Record<string, unknown>).resume_thumbnail_status
+              : null;
+          if (!resumeUrl || status === 'complete') return null;
+          const storagePath = decodeResumeStoragePath(resumeUrl);
+          if (!storagePath) return null;
+          const extension = getResumeExtension(storagePath);
+          if (!isSupportedResumeThumbnailExtension(extension)) return null;
+          return { profileId, storagePath };
+        })
+        .filter((item): item is { profileId: string; storagePath: string } =>
+          Boolean(item),
+        )
+        .slice(0, limit);
+
+      const results: Array<{
+        profileId: string;
+        status: 'complete' | 'failed';
+        message?: string;
+      }> = [];
+
+      for (const candidate of candidates) {
+        try {
+          await generateAndPersistResumeThumbnail(
+            candidate.profileId,
+            candidate.storagePath,
+          );
+          results.push({ profileId: candidate.profileId, status: 'complete' });
+        } catch (e: unknown) {
+          results.push({
+            profileId: candidate.profileId,
+            status: 'failed',
+            message: errorMessage(e, 'Thumbnail generation failed'),
+          });
+        }
+      }
+
+      const completed = results.filter((r) => r.status === 'complete').length;
+      const failedCount = results.filter((r) => r.status === 'failed').length;
+      const attempted = results.length;
+      const durationMs = Date.now() - startedAt;
+      await recordBackfillAudit('RESUME_THUMBNAIL_BACKFILL_COMPLETED', {
+        limit,
+        attempted,
+        completed,
+        failed: failedCount,
+        durationMs,
+        failedProfiles: results
+          .filter((r) => r.status === 'failed')
+          .map((r) => ({
+            profileId: r.profileId,
+            message: r.message ?? 'Thumbnail generation failed',
+          })),
+      });
+
+      return res.json({
+        ok: true,
+        data: {
+          runId,
+          attempted,
+          completed,
+          failed: failedCount,
+          durationMs,
+          results,
+        },
+        error: null,
+      });
+    } catch (e: unknown) {
+      const message = errorMessage(e, 'Backfill failed');
+      await recordBackfillAudit('RESUME_THUMBNAIL_BACKFILL_FAILED', {
+        limit,
+        durationMs: Date.now() - startedAt,
+        error: message,
+      });
+      return sendApiError(res, 500, message);
+    } finally {
+      await releaseResumeBackfillLock(runId, req.adminEmail, req.adminUserId);
+    }
+  },
+);
 
 // POST /api/directory/accept — accept connection request
 app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {

@@ -18,6 +18,7 @@ export type DetectablePlatform =
   | 'X'
   | 'Facebook'
   | 'Instagram'
+  | 'TikTok'
   | 'Reddit'
   | 'Discord'
   | 'Threads'
@@ -26,6 +27,8 @@ export type DetectablePlatform =
   | 'Twitch'
   | 'Medium'
   | 'Substack'
+  | 'Patreon'
+  | 'Calendly'
   | 'Custom';
 
 /** Domain (hostname) -> platform value. Order matters for subdomain matches. */
@@ -47,6 +50,7 @@ const DOMAIN_TO_PLATFORM: [string | RegExp, DetectablePlatform][] = [
   ['facebook.com', 'Facebook'],
   ['fb.com', 'Facebook'],
   ['instagram.com', 'Instagram'],
+  ['tiktok.com', 'TikTok'],
   ['reddit.com', 'Reddit'],
   ['discord.com', 'Discord'],
   ['threads.net', 'Threads'],
@@ -57,6 +61,8 @@ const DOMAIN_TO_PLATFORM: [string | RegExp, DetectablePlatform][] = [
   ['twitch.tv', 'Twitch'],
   ['medium.com', 'Medium'],
   ['substack.com', 'Substack'],
+  ['patreon.com', 'Patreon'],
+  ['calendly.com', 'Calendly'],
 ];
 
 /**

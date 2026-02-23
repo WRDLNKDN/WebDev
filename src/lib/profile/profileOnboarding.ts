@@ -13,6 +13,7 @@ export type ProfileOnboardingCheck = {
   join_reason?: string[] | null;
   participation_style?: string[] | null;
   policy_version?: string | null;
+  status?: string | null;
 };
 
 /**

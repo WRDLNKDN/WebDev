@@ -14,6 +14,8 @@ interface ResumeCardProps {
   thumbnailUrl?: string | null;
   thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
   onUpload?: (file: File) => void;
+  onRetryThumbnail?: () => void;
+  retryThumbnailBusy?: boolean;
   isOwner?: boolean;
 }
 
@@ -22,6 +24,8 @@ export const ResumeCard = ({
   thumbnailUrl,
   thumbnailStatus,
   onUpload,
+  onRetryThumbnail,
+  retryThumbnailBusy = false,
   isOwner,
 }: ResumeCardProps) => {
   const hasResume = Boolean(url);
@@ -126,6 +130,16 @@ export const ResumeCard = ({
           >
             View Document
           </Button>
+          {isOwner && thumbnailStatus === 'failed' && onRetryThumbnail && (
+            <Button
+              variant="text"
+              sx={{ mt: 1, color: 'inherit' }}
+              disabled={retryThumbnailBusy}
+              onClick={onRetryThumbnail}
+            >
+              {retryThumbnailBusy ? 'Retrying...' : 'Retry Preview'}
+            </Button>
+          )}
         </>
       ) : (
         <>

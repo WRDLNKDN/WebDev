@@ -114,6 +114,17 @@ test.describe('Dashboard links and profile layout regressions', () => {
       });
     });
 
+    await page.route('**/api/resumes/generate-thumbnail', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          data: { status: 'complete', thumbnailUrl: null },
+        }),
+      });
+    });
+
     await page.route('**/rest/v1/profiles*', async (route) => {
       if (route.request().method() === 'PATCH') {
         await route.fulfill({ status: 204, body: '' });
@@ -261,6 +272,25 @@ test.describe('Dashboard links and profile layout regressions', () => {
     await expect(page).toHaveURL(/\/profile\/member/);
     await expect(
       page.getByRole('img', { name: 'Resume thumbnail preview' }),
+    ).toBeVisible();
+  });
+
+  test('failed word preview shows retry action for owner', async ({ page }) => {
+    profileRow.resume_url = 'https://example.com/member/resume.docx';
+    profileRow.nerd_creds = {
+      ...(profileRow.nerd_creds as Record<string, unknown>),
+      resume_thumbnail_status: 'failed',
+      resume_thumbnail_error: 'renderer timeout',
+      resume_thumbnail_url: null,
+    };
+
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(
+      page.getByText('Preview failed. Open the document directly.'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Retry Preview' }),
     ).toBeVisible();
   });
 });

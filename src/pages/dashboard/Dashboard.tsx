@@ -72,6 +72,8 @@ export const Dashboard = () => {
     addProject,
     deleteProject,
     uploadResume,
+    retryResumeThumbnail,
+    updating,
   } = useProfile();
 
   const { avatarUrl: ctxAvatarUrl, refresh: refreshAvatar } =
@@ -448,6 +450,12 @@ export const Dashboard = () => {
               thumbnailUrl={resumeThumbnailUrl}
               thumbnailStatus={resumeThumbnailStatus}
               onUpload={handleResumeUpload}
+              onRetryThumbnail={() => {
+                void retryResumeThumbnail().catch((e) => {
+                  setSnack(toMessage(e));
+                });
+              }}
+              retryThumbnailBusy={updating}
               isOwner
             />
 

@@ -631,6 +631,68 @@ export function useProfile() {
     }
   };
 
+  const retryResumeThumbnail = async () => {
+    try {
+      setUpdating(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error(
+          'You need to sign in to retry resume preview generation.',
+        );
+      }
+      const resumeUrl =
+        typeof profile?.resume_url === 'string' ? profile.resume_url : '';
+      if (!resumeUrl) throw new Error('No resume found to generate a preview.');
+
+      const ext = '.' + (resumeUrl.split('.').pop()?.toLowerCase() ?? '');
+      if (ext !== '.doc' && ext !== '.docx') {
+        throw new Error('Retry is only available for Word documents.');
+      }
+
+      const storagePath = `${session.user.id}/resume.${ext.slice(1)}`;
+      setProfile((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          nerd_creds: {
+            ...(prev.nerd_creds as Record<string, unknown>),
+            resume_thumbnail_status: 'pending',
+            resume_thumbnail_error: null,
+          },
+        };
+      });
+
+      const res = await authedFetch(
+        `${API_BASE}/api/resumes/generate-thumbnail`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ storagePath }),
+        },
+        {
+          includeJsonContentType: true,
+          credentials: API_BASE ? 'omit' : 'include',
+        },
+      );
+      const payload = (await res.json()) as
+        | { error?: string; message?: string }
+        | undefined;
+      if (!res.ok) {
+        throw new Error(
+          messageFromApiResponse(res.status, payload?.error, payload?.message),
+        );
+      }
+
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      throw new Error(toMessage(err));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
@@ -664,5 +726,6 @@ export function useProfile() {
     updateProject,
     deleteProject,
     uploadResume,
+    retryResumeThumbnail,
   };
 }

@@ -144,6 +144,24 @@ const updateResumeThumbnailState = async (
     .eq('id', userId);
 };
 
+const logResumeThumbnailEvent = async (params: {
+  userId: string;
+  action:
+    | 'RESUME_THUMBNAIL_PENDING'
+    | 'RESUME_THUMBNAIL_COMPLETE'
+    | 'RESUME_THUMBNAIL_FAILED';
+  meta: Record<string, unknown>;
+}): Promise<void> => {
+  await adminSupabase.from('audit_log').insert({
+    actor_id: params.userId,
+    actor_email: null,
+    action: params.action,
+    target_type: 'resume_thumbnail',
+    target_id: params.userId,
+    meta: params.meta,
+  });
+};
+
 const requireAdmin = async (
   req: AdminRequest,
   res: Response,
@@ -1485,8 +1503,14 @@ app.post(
       resume_thumbnail_status: 'pending',
       resume_thumbnail_error: null,
     });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_PENDING',
+      meta: { storagePath, extension },
+    });
 
     try {
+      const startedAt = Date.now();
       const { data: fileBlob, error: downloadError } =
         await adminSupabase.storage.from('resumes').download(storagePath);
       if (downloadError || !fileBlob) {
@@ -1521,6 +1545,17 @@ app.post(
         resume_thumbnail_error: null,
         resume_thumbnail_source_extension: extension,
       });
+      const durationMs = Date.now() - startedAt;
+      await logResumeThumbnailEvent({
+        userId,
+        action: 'RESUME_THUMBNAIL_COMPLETE',
+        meta: { storagePath, extension, durationMs },
+      });
+      console.info('[resume-thumbnail] complete', {
+        userId,
+        storagePath,
+        durationMs,
+      });
 
       return res.json({
         ok: true,
@@ -1531,6 +1566,16 @@ app.post(
       await updateResumeThumbnailState(userId, {
         resume_thumbnail_status: 'failed',
         resume_thumbnail_error: message,
+      });
+      await logResumeThumbnailEvent({
+        userId,
+        action: 'RESUME_THUMBNAIL_FAILED',
+        meta: { storagePath, extension, error: message },
+      });
+      console.warn('[resume-thumbnail] failed', {
+        userId,
+        storagePath,
+        message,
       });
       return sendApiError(res, 422, message);
     }
@@ -1619,6 +1664,85 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
   }
   return res.status(201).json({ ok: true });
 });
+
+// GET /api/admin/resume-thumbnails/summary — operational overview for admins
+app.get(
+  '/api/admin/resume-thumbnails/summary',
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    const [pending, complete, failed, totalWithResume, recentFailed] =
+      await Promise.all([
+        adminSupabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('nerd_creds->>resume_thumbnail_status', 'pending'),
+        adminSupabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('nerd_creds->>resume_thumbnail_status', 'complete'),
+        adminSupabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('nerd_creds->>resume_thumbnail_status', 'failed'),
+        adminSupabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .not('resume_url', 'is', null),
+        adminSupabase
+          .from('profiles')
+          .select('id, handle, nerd_creds')
+          .eq('nerd_creds->>resume_thumbnail_status', 'failed')
+          .order('updated_at', { ascending: false })
+          .limit(5),
+      ]);
+
+    const firstError =
+      pending.error ||
+      complete.error ||
+      failed.error ||
+      totalWithResume.error ||
+      recentFailed.error;
+    if (firstError) {
+      return sendApiError(
+        res,
+        500,
+        errorMessage(firstError.message, 'Could not load thumbnail summary'),
+      );
+    }
+
+    const recentFailures = (recentFailed.data ?? []).map((row) => {
+      const creds = (row as { nerd_creds?: unknown }).nerd_creds;
+      const meta =
+        creds && typeof creds === 'object'
+          ? (creds as Record<string, unknown>)
+          : {};
+      return {
+        profileId: (row as { id: string }).id,
+        handle: (row as { handle?: string | null }).handle ?? null,
+        error:
+          typeof meta.resume_thumbnail_error === 'string'
+            ? meta.resume_thumbnail_error
+            : null,
+        updatedAt:
+          typeof meta.resume_thumbnail_updated_at === 'string'
+            ? meta.resume_thumbnail_updated_at
+            : null,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: {
+        pending: pending.count ?? 0,
+        complete: complete.count ?? 0,
+        failed: failed.count ?? 0,
+        totalWithResume: totalWithResume.count ?? 0,
+        recentFailures,
+      },
+      error: null,
+    });
+  },
+);
 
 // POST /api/directory/accept — accept connection request
 app.post('/api/directory/accept', async (req: AuthRequest, res: Response) => {

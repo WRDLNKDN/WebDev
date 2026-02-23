@@ -372,6 +372,19 @@ export type AdminPlaylist = {
   isPublic: boolean;
 };
 
+export type AdminResumeThumbnailSummary = {
+  pending: number;
+  complete: number;
+  failed: number;
+  totalWithResume: number;
+  recentFailures: Array<{
+    profileId: string;
+    handle: string | null;
+    error: string | null;
+    updatedAt: string | null;
+  }>;
+};
+
 export async function fetchAdminPlaylists(
   token: string,
 ): Promise<AdminPlaylist[]> {
@@ -392,4 +405,37 @@ export async function fetchAdminPlaylists(
       ),
     );
   return data.data ?? [];
+}
+
+export async function fetchAdminResumeThumbnailSummary(
+  token: string,
+): Promise<AdminResumeThumbnailSummary> {
+  const res = await fetch(`${API_BASE}/api/admin/resume-thumbnails/summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: API_BASE ? 'omit' : 'include',
+  });
+  const data = await parseJson<{
+    ok: boolean;
+    data?: AdminResumeThumbnailSummary;
+    error?: string;
+    message?: string;
+  }>(res, '/api/admin/resume-thumbnails/summary');
+  if (!res.ok) {
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
+  }
+  return (
+    data.data ?? {
+      pending: 0,
+      complete: 0,
+      failed: 0,
+      totalWithResume: 0,
+      recentFailures: [],
+    }
+  );
 }

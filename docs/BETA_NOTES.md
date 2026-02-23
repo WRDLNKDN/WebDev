@@ -81,3 +81,7 @@
 - Generated thumbnails are persisted and reused from profile metadata so
   Dashboard and public Profile render a deterministic preview state: `pending`,
   `complete`, or `failed`.
+- Owners now get a `Retry Preview` action when a Word thumbnail generation
+  attempt fails.
+- Admin dashboard now includes a resume-thumbnail ops summary (`pending`,
+  `complete`, `failed`, and recent failures) for governance visibility.

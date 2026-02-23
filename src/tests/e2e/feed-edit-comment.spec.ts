@@ -64,6 +64,7 @@ test.describe('Feed post/comment edit persistence', () => {
       body: 'Original post body',
       edited_at: null as string | null,
       created_at: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+      deleted: false,
     };
     const commentState = {
       id: 'comment-1',
@@ -112,30 +113,40 @@ test.describe('Feed post/comment edit persistence', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: [
-              {
-                id: postState.id,
-                user_id: USER_ID,
-                kind: 'post',
-                payload: { body: postState.body },
-                parent_id: null,
-                created_at: postState.created_at,
-                edited_at: postState.edited_at,
-                actor: {
-                  handle: 'member',
-                  display_name: 'Member',
-                  avatar: null,
-                },
-                like_count: 0,
-                love_count: 0,
-                inspiration_count: 0,
-                care_count: 0,
-                viewer_reaction: null,
-                comment_count: 1,
-              },
-            ],
+            data: postState.deleted
+              ? []
+              : [
+                  {
+                    id: postState.id,
+                    user_id: USER_ID,
+                    kind: 'post',
+                    payload: { body: postState.body },
+                    parent_id: null,
+                    created_at: postState.created_at,
+                    edited_at: postState.edited_at,
+                    actor: {
+                      handle: 'member',
+                      display_name: 'Member',
+                      avatar: null,
+                    },
+                    like_count: 0,
+                    love_count: 0,
+                    inspiration_count: 0,
+                    care_count: 0,
+                    viewer_reaction: null,
+                    comment_count: 1,
+                  },
+                ],
           }),
         });
+        return;
+      }
+      if (
+        method === 'DELETE' &&
+        url.pathname === `/api/feeds/items/${postState.id}`
+      ) {
+        postState.deleted = true;
+        await route.fulfill({ status: 204, body: '' });
         return;
       }
       if (
@@ -179,6 +190,7 @@ test.describe('Feed post/comment edit persistence', () => {
             ],
           }),
         });
+        return;
       },
     );
 
@@ -240,5 +252,12 @@ test.describe('Feed post/comment edit persistence', () => {
       .click();
     await expect(page.getByText('Updated comment body')).toBeVisible();
     await expect(page.getByText(/Edited/)).toHaveCount(2);
+
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Delete this post');
+      await dialog.accept();
+    });
+    await page.getByRole('button', { name: 'Delete' }).first().click();
+    await expect(page.getByText('Updated post body')).not.toBeVisible();
   });
 });

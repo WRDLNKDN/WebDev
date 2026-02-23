@@ -15,7 +15,6 @@ import type { Session } from '@supabase/supabase-js';
 import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/auth/supabaseClient';
 
-import { CompleteStep } from '../../components/signup/CompleteStep';
 import { IdentityStep } from '../../components/signup/IdentityStep';
 import { ProfileStep } from '../../components/signup/ProfileStep';
 import { SignupProgress } from '../../components/signup/SignupProgress';
@@ -24,6 +23,7 @@ import { WelcomeStep } from '../../components/signup/WelcomeStep';
 
 import { toMessage } from '../../lib/utils/errors';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
+import { setSignupCompletionFlash } from '../../lib/profile/signupCompletionFlash';
 
 const BG_SX = {
   minHeight: '100dvh',
@@ -140,13 +140,28 @@ export const Signup = () => {
     };
   }, [navigate, resetSignup, reconcileWithExistingProfile]);
 
+  useEffect(() => {
+    if (state.currentStep !== 'complete') return;
+    void (async () => {
+      try {
+        await import('../feed/Feed');
+      } catch {
+        // Redirect still proceeds if prefetch fails.
+      }
+      setSignupCompletionFlash();
+      navigate(
+        { pathname: '/feed', search: '?signup=complete' },
+        { replace: true },
+      );
+    })();
+  }, [navigate, state.currentStep]);
+
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {
       welcome: <WelcomeStep />,
       identity: <IdentityStep />,
       values: <ValuesStep />,
       profile: <ProfileStep />,
-      complete: <CompleteStep />,
     };
     return steps[state.currentStep] || <WelcomeStep />;
   };

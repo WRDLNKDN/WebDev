@@ -89,6 +89,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 type AdminRequest = Request & { adminEmail?: string; adminUserId?: string };
 type AuthRequest = Request & { userId?: string };
+const ENFORCED_INACTIVE_STATUSES = new Set(['disabled', 'suspended', 'banned']);
 
 type Status = 'pending' | 'approved' | 'rejected' | 'disabled';
 
@@ -392,7 +393,7 @@ const requireAdmin = async (
     if (bearer) {
       const { data, error } = await adminSupabase.auth.getUser(bearer);
       if (error || !data.user?.email) {
-        return sendApiError(res, 401, 'Unauthorized');
+        return sendApiError(res, 403, 'Forbidden');
       }
 
       const email = data.user.email;
@@ -420,7 +421,7 @@ const requireAdmin = async (
     const token = String(req.header('x-admin-token') || '').trim();
     if (token && ADMIN_TOKEN && token === ADMIN_TOKEN) return next();
 
-    return sendApiError(res, 401, 'Unauthorized');
+    return sendApiError(res, 403, 'Forbidden');
   } catch (e: unknown) {
     return sendApiError(res, 500, errorMessage(e, 'Server error'));
   }
@@ -440,7 +441,30 @@ const requireAuth = async (
     if (error || !data.user?.id) {
       return sendApiError(res, 401, 'Unauthorized');
     }
-    req.userId = data.user.id;
+    const userId = data.user.id;
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('status')
+      .eq('id', userId)
+      .maybeSingle();
+    const status =
+      profile && typeof (profile as { status?: unknown }).status === 'string'
+        ? String((profile as { status: string }).status).toLowerCase()
+        : 'active';
+    if (ENFORCED_INACTIVE_STATUSES.has(status)) {
+      await adminSupabase.from('audit_log').insert({
+        actor_id: userId,
+        actor_email: data.user.email ?? null,
+        action: 'AUTH_BLOCKED_INACTIVE_STATUS',
+        target_type: 'profile',
+        target_id: userId,
+        meta: { status },
+      });
+      return sendApiError(res, 403, 'Forbidden', undefined, {
+        code: 'INACTIVE_ACCOUNT',
+      });
+    }
+    req.userId = userId;
     next();
   } catch (e: unknown) {
     return sendApiError(res, 500, errorMessage(e, 'Server error'));
@@ -2018,7 +2042,11 @@ app.get(
   async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const offset = Math.max(0, Number(req.query.offset) || 0);
-    const { data, error, count } = await adminSupabase
+    const action =
+      typeof req.query.action === 'string' ? req.query.action.trim() : '';
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
+    let query = adminSupabase
       .from('audit_log')
       .select('id, actor_email, action, target_id, meta, created_at', {
         count: 'exact',
@@ -2028,7 +2056,10 @@ app.get(
         'RESUME_THUMBNAIL_BACKFILL_STARTED',
         'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
         'RESUME_THUMBNAIL_BACKFILL_FAILED',
-      ])
+      ]);
+    if (action) query = query.eq('action', action);
+    if (q) query = query.ilike('target_id', `%${q}%`);
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

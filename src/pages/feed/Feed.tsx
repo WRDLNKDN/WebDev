@@ -777,8 +777,11 @@ const FeedCard = ({
               sx={{
                 mt: 1.5,
                 flexWrap: 'wrap',
-                gap: { xs: 0.75, sm: 0.5 },
+                justifyContent: 'flex-start',
+                gap: { xs: 0.5, sm: 0.375 },
                 alignItems: 'center',
+                width: 'fit-content',
+                maxWidth: '100%',
               }}
             >
               <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
@@ -812,7 +815,7 @@ const FeedCard = ({
                             : 'text.secondary',
                           minWidth: 0,
                           minHeight: { xs: 40, sm: 32 },
-                          px: { xs: 1.25, sm: 1 },
+                          px: { xs: 1, sm: 0.75 },
                         }}
                         aria-label={
                           viewerReaction
@@ -889,7 +892,7 @@ const FeedCard = ({
                   color: 'text.secondary',
                   minWidth: 0,
                   minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1.25, sm: 1 },
+                  px: { xs: 1, sm: 0.75 },
                 }}
               >
                 Comment
@@ -908,7 +911,7 @@ const FeedCard = ({
                   color: 'text.secondary',
                   minWidth: 0,
                   minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1.25, sm: 1 },
+                  px: { xs: 1, sm: 0.75 },
                 }}
               >
                 Repost
@@ -922,7 +925,7 @@ const FeedCard = ({
                   color: 'text.secondary',
                   minWidth: 0,
                   minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1.25, sm: 1 },
+                  px: { xs: 1, sm: 0.75 },
                 }}
               >
                 Send
@@ -939,10 +942,25 @@ const FeedCard = ({
                     color: 'text.secondary',
                     minWidth: 0,
                     minHeight: { xs: 40, sm: 32 },
-                    px: { xs: 1.25, sm: 1 },
+                    px: { xs: 1, sm: 0.75 },
                   }}
                 >
                   Edit
+                </Button>
+              )}
+              {isOwner && item.kind === 'post' && !isEditingPost && (
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => actions.onDelete(item.id)}
+                  sx={{
+                    textTransform: 'none',
+                    minWidth: 0,
+                    minHeight: { xs: 40, sm: 32 },
+                    px: { xs: 1, sm: 0.75 },
+                  }}
+                >
+                  Delete
                 </Button>
               )}
             </Stack>
@@ -1431,6 +1449,16 @@ export const Feed = () => {
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    if (searchParams.get('signup') !== 'complete') return;
+    trackEvent('signup_completed_landed_feed', {
+      source: 'signup_wizard',
+    });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('signup');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleAuthError = useCallback(
     async (error: unknown, fallback: string) => {

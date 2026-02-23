@@ -1,7 +1,6 @@
 /**
- * Bumper-after-Join: show bumper once per session.
- * CompleteStep uses hasBumperBeenShown(): IF true → go to Feed; ELSE → go to /bumper?from=join.
- * BumperPage (when from=join) calls setBumperShown() before redirect so next time we go straight to Feed.
+ * Bumper session flag for optional /bumper flows.
+ * BumperPage (when from=join) calls setBumperShown() before redirect.
  */
 export const BUMPER_SHOWN_KEY = 'wrdlnkdn-bumper-shown';
 

@@ -26,6 +26,7 @@ drop function if exists public.chat_rate_limit_check() cascade;
 drop function if exists public.chat_audit_on_message() cascade;
 drop function if exists public.chat_room_summaries(uuid[], uuid) cascade;
 drop function if exists public.chat_prune_audit_log() cascade;
+drop function if exists public.audit_prune_resume_backfill_lock_events() cascade;
 drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) cascade;
 drop function if exists public.notifications_on_feed_reaction() cascade;
 drop function if exists public.notifications_on_connection_request() cascade;
@@ -1666,6 +1667,35 @@ revoke all on function public.chat_prune_audit_log() from public;
 grant execute on function public.chat_prune_audit_log() to service_role;
 
 comment on function public.chat_prune_audit_log is 'Prune chat_audit_log older than 90 days. Call from Edge Function or pg_cron.';
+
+-- -----------------------------
+-- resume backfill lock event prune (invoked by Edge Function or cron)
+-- -----------------------------
+create or replace function public.audit_prune_resume_backfill_lock_events()
+returns integer
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  deleted_count integer;
+begin
+  with deleted as (
+    delete from public.audit_log
+    where target_type = 'resume_thumbnail_backfill_lock'
+      and created_at < now() - interval '30 days'
+    returning 1
+  )
+  select count(*)::integer into deleted_count from deleted;
+  return deleted_count;
+end;
+$$;
+
+revoke all on function public.audit_prune_resume_backfill_lock_events() from public;
+grant execute on function public.audit_prune_resume_backfill_lock_events() to service_role;
+
+comment on function public.audit_prune_resume_backfill_lock_events is
+  'Prune resume backfill lock events older than 30 days. Call from Edge Function or pg_cron.';
 
 -- -----------------------------
 -- Notifications (in-app activity signals)

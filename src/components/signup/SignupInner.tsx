@@ -5,7 +5,6 @@ import { useSignup } from '../../context/useSignup';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 import { signupMain, signupProgressWrapper } from '../../theme/signupStyles';
-import { CompleteStep } from './CompleteStep';
 import { IdentityStep } from './IdentityStep';
 import { ProfileStep } from './ProfileStep';
 import { SignupProgress } from './SignupProgress';
@@ -51,8 +50,6 @@ export const SignupInner = () => {
         return <ValuesStep />;
       case 'profile':
         return <ProfileStep />;
-      case 'complete':
-        return <CompleteStep />;
       default:
         return <WelcomeStep />;
     }

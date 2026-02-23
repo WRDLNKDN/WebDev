@@ -7,11 +7,15 @@ import {
   CircularProgress,
   Divider,
   Drawer,
+  FormControlLabel,
+  MenuItem,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -58,6 +62,12 @@ export const AdminResumeThumbnailsPage = () => {
   const [backfillLimit, setBackfillLimit] = useState('25');
   const [flash, setFlash] = useState<string | null>(null);
   const [runs, setRuns] = useState<AdminResumeThumbnailRun[]>([]);
+  const [runsTotal, setRunsTotal] = useState(0);
+  const [runPage, setRunPage] = useState(0);
+  const [runRowsPerPage, setRunRowsPerPage] = useState(10);
+  const [runActionFilter, setRunActionFilter] = useState('all');
+  const [runSearch, setRunSearch] = useState('');
+  const [exportRedacted, setExportRedacted] = useState(true);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [activeRunDetails, setActiveRunDetails] =
     useState<AdminResumeThumbnailRunDetails | null>(null);
@@ -86,16 +96,19 @@ export const AdminResumeThumbnailsPage = () => {
     try {
       setRunsLoading(true);
       const runRes = await fetchAdminResumeThumbnailRuns(token, {
-        limit: 25,
-        offset: 0,
+        limit: runRowsPerPage,
+        offset: runPage * runRowsPerPage,
+        action: runActionFilter === 'all' ? '' : runActionFilter,
+        q: runSearch.trim(),
       });
       setRuns(runRes.data);
+      setRunsTotal(runRes.meta.total);
     } catch (e) {
       setError(toMessage(e));
     } finally {
       setRunsLoading(false);
     }
-  }, [token]);
+  }, [token, runActionFilter, runPage, runRowsPerPage, runSearch]);
 
   useEffect(() => {
     void load();
@@ -142,11 +155,16 @@ export const AdminResumeThumbnailsPage = () => {
   const handleExportCsv = () => {
     const rowsForCsv = rows.map((row) => ({
       member: row.handle ? `@${row.handle}` : row.profileId,
-      profileId: row.profileId,
+      profileId: exportRedacted ? '' : row.profileId,
       status: row.status,
-      error: row.error ?? '',
+      error: exportRedacted
+        ? (row.error ?? '').replace(
+            /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g,
+            '[redacted-email]',
+          )
+        : (row.error ?? ''),
       updatedAt: row.updatedAt ?? '',
-      resumeUrl: row.resumeUrl ?? '',
+      resumeUrl: exportRedacted ? '' : (row.resumeUrl ?? ''),
     }));
     const header = [
       'member',
@@ -260,8 +278,17 @@ export const AdminResumeThumbnailsPage = () => {
           onClick={handleExportCsv}
           disabled={rows.length === 0}
         >
-          Export CSV
+          Export CSV {exportRedacted ? '(Redacted)' : '(Full)'}
         </Button>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={exportRedacted}
+              onChange={(_, checked) => setExportRedacted(checked)}
+            />
+          }
+          label="Redact CSV"
+        />
       </Stack>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -289,6 +316,44 @@ export const AdminResumeThumbnailsPage = () => {
       <Typography variant="subtitle1" sx={{ mb: 1.5 }}>
         Backfill Run History
       </Typography>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
+      >
+        <TextField
+          size="small"
+          select
+          label="Action"
+          value={runActionFilter}
+          onChange={(e) => {
+            setRunPage(0);
+            setRunActionFilter(e.target.value);
+          }}
+          sx={{ minWidth: 240 }}
+        >
+          <MenuItem value="all">All actions</MenuItem>
+          <MenuItem value="RESUME_THUMBNAIL_BACKFILL_STARTED">
+            Backfill started
+          </MenuItem>
+          <MenuItem value="RESUME_THUMBNAIL_BACKFILL_COMPLETED">
+            Backfill completed
+          </MenuItem>
+          <MenuItem value="RESUME_THUMBNAIL_BACKFILL_FAILED">
+            Backfill failed
+          </MenuItem>
+        </TextField>
+        <TextField
+          size="small"
+          label="Run ID contains"
+          value={runSearch}
+          onChange={(e) => {
+            setRunPage(0);
+            setRunSearch(e.target.value);
+          }}
+          sx={{ minWidth: 260 }}
+        />
+      </Stack>
       {runsLoading ? (
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
           <CircularProgress size={16} />
@@ -335,6 +400,20 @@ export const AdminResumeThumbnailsPage = () => {
             ))}
           </TableBody>
         </Table>
+      )}
+      {!runsLoading && runs.length > 0 && (
+        <TablePagination
+          component="div"
+          count={runsTotal}
+          page={runPage}
+          onPageChange={(_event, page) => setRunPage(page)}
+          rowsPerPage={runRowsPerPage}
+          onRowsPerPageChange={(event) => {
+            setRunPage(0);
+            setRunRowsPerPage(Number(event.target.value));
+          }}
+          rowsPerPageOptions={[10, 25, 50]}
+        />
       )}
 
       {loading ? (

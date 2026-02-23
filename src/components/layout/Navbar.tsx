@@ -48,6 +48,7 @@ import {
   type OAuthProvider,
 } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { consumeSignupCompletionFlash } from '../../lib/profile/signupCompletionFlash';
 
 /**
  * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback
@@ -331,6 +332,12 @@ export const Navbar = () => {
     if (path === '/join') {
       setJoinLoading(false);
     }
+  }, [path]);
+
+  useEffect(() => {
+    if (path !== '/feed') return;
+    if (!consumeSignupCompletionFlash()) return;
+    setSnack('Signup complete. Welcome to the Feed.');
   }, [path]);
 
   return (

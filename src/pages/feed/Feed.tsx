@@ -4,7 +4,6 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EventIcon from '@mui/icons-material/Event';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MessageIcon from '@mui/icons-material/Message';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -772,242 +771,199 @@ const FeedCard = ({
                 {label || url}
               </Typography>
             )}
-            <Box
+            <Stack
+              direction="row"
+              spacing={{ xs: 0.75, sm: 1 }}
               sx={{
                 mt: 1.5,
-                mx: { xs: -2, sm: -3 },
-                mb: -1,
-                borderTop: '1px solid rgba(255,255,255,0.12)',
-                borderBottomLeftRadius: 12,
-                borderBottomRightRadius: 12,
-                bgcolor: '#282A2E',
-                overflow: 'hidden',
+                flexWrap: 'wrap',
+                justifyContent: 'flex-start',
+                gap: { xs: 0.5, sm: 0.375 },
+                alignItems: 'center',
+                width: 'fit-content',
+                maxWidth: '100%',
               }}
             >
-              <Stack
-                direction="row"
-                sx={{
-                  flex: 1,
-                  '& > *': { flex: 1, minWidth: 0 },
-                }}
-              >
-                <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flex: 1,
-                      minWidth: 0,
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {(() => {
-                      const current =
-                        REACTION_OPTIONS.find(
-                          (r) => r.type === viewerReaction,
-                        ) ?? REACTION_OPTIONS[0];
-                      const CurrentIcon = viewerReaction
-                        ? current.Icon
-                        : current.IconOutlined;
-                      return (
-                        <>
-                          <Button
-                            fullWidth
-                            onClick={(e) => {
-                              setReactionAnchor((prev) =>
-                                prev ? null : (e.currentTarget as HTMLElement),
-                              );
-                            }}
+              <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
+                <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {(() => {
+                    const current =
+                      REACTION_OPTIONS.find((r) => r.type === viewerReaction) ??
+                      REACTION_OPTIONS[0];
+                    const CurrentIcon = viewerReaction
+                      ? current.Icon
+                      : current.IconOutlined;
+                    return (
+                      <Button
+                        size="small"
+                        startIcon={
+                          <CurrentIcon
                             sx={{
-                              flexDirection: 'column',
-                              gap: 0.25,
-                              py: 1.25,
-                              px: 1,
-                              textTransform: 'none',
-                              color: viewerReaction ? current.color : '#B0B0B0',
-                              minHeight: { xs: 56, sm: 52 },
-                              '&:hover': {
-                                bgcolor: 'rgba(255,255,255,0.06)',
-                                color: viewerReaction
-                                  ? current.color
-                                  : '#E0E0E0',
-                              },
+                              color: viewerReaction ? current.color : undefined,
                             }}
-                            aria-label={
-                              viewerReaction
-                                ? `${current.label} (click to remove)`
-                                : 'Like'
-                            }
-                            aria-haspopup="true"
-                            aria-expanded={Boolean(reactionAnchor)}
-                          >
-                            <CurrentIcon
-                              sx={{
-                                fontSize: 22,
-                                color: 'inherit',
-                              }}
-                            />
-                            <span
-                              style={{ fontSize: '0.8rem', fontWeight: 500 }}
-                            >
-                              {viewerReaction ? current.label : 'Like'}
-                              {totalReactions > 0 ? ` ${totalReactions}` : ''}
-                            </span>
-                          </Button>
-                          <Popover
-                            open={Boolean(reactionAnchor)}
-                            anchorEl={reactionAnchor}
-                            onClose={() => setReactionAnchor(null)}
-                            anchorOrigin={{
-                              vertical: 'top',
-                              horizontal: 'left',
-                            }}
-                            transformOrigin={{
-                              vertical: 'bottom',
-                              horizontal: 'left',
-                            }}
-                            slotProps={{
-                              paper: {
-                                sx: {
-                                  borderRadius: 2,
-                                  boxShadow: 2,
-                                  p: 0.5,
-                                },
-                              },
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              sx={{ py: 0.5 }}
-                            >
-                              {REACTION_OPTIONS.map(
-                                ({ type, label, Icon, color }) => (
-                                  <IconButton
-                                    key={type}
-                                    size="small"
-                                    onClick={() => {
-                                      handleReaction(type);
-                                      setReactionAnchor(null);
-                                    }}
-                                    sx={{
-                                      color: 'text.secondary',
-                                      '&:hover': { color },
-                                    }}
-                                    aria-label={label}
-                                  >
-                                    <Icon sx={{ fontSize: 24 }} />
-                                  </IconButton>
-                                ),
-                              )}
-                            </Stack>
-                          </Popover>
-                        </>
-                      );
-                    })()}
-                  </Box>
-                </ClickAwayListener>
-                <Button
-                  fullWidth
-                  onClick={() => actions.onCommentToggle(item.id)}
-                  sx={{
-                    flexDirection: 'column',
-                    gap: 0.25,
-                    py: 1.25,
-                    px: 1,
-                    textTransform: 'none',
-                    color: '#B0B0B0',
-                    minHeight: { xs: 56, sm: 52 },
-                    '&:hover': {
-                      bgcolor: 'rgba(255,255,255,0.06)',
-                      color: '#E0E0E0',
-                    },
-                  }}
-                  aria-label="Comment"
-                >
-                  <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 22 }} />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                    Comment
-                    {commentCount > 0 ? ` ${commentCount}` : ''}
-                  </span>
-                </Button>
-                <Button
-                  fullWidth
-                  onClick={() => actions.onRepost(item)}
-                  sx={{
-                    flexDirection: 'column',
-                    gap: 0.25,
-                    py: 1.25,
-                    px: 1,
-                    textTransform: 'none',
-                    color: '#B0B0B0',
-                    minHeight: { xs: 56, sm: 52 },
-                    '&:hover': {
-                      bgcolor: 'rgba(255,255,255,0.06)',
-                      color: '#E0E0E0',
-                    },
-                  }}
-                  aria-label="Repost"
-                >
-                  <RepeatOutlinedIcon sx={{ fontSize: 22 }} />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                    Repost
-                  </span>
-                </Button>
-                <Button
-                  fullWidth
-                  onClick={() => actions.onSend(item)}
-                  sx={{
-                    flexDirection: 'column',
-                    gap: 0.25,
-                    py: 1.25,
-                    px: 1,
-                    textTransform: 'none',
-                    color: '#B0B0B0',
-                    minHeight: { xs: 56, sm: 52 },
-                    '&:hover': {
-                      bgcolor: 'rgba(255,255,255,0.06)',
-                      color: '#E0E0E0',
-                    },
-                  }}
-                  aria-label="Send"
-                >
-                  <SendOutlinedIcon sx={{ fontSize: 22 }} />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                    Send
-                  </span>
-                </Button>
-                {isOwner && item.kind === 'post' && !isEditingPost && (
-                  <Button
-                    fullWidth
-                    onClick={() => {
-                      setEditPostDraft(body);
-                      setIsEditingPost(true);
+                          />
+                        }
+                        onClick={(e) => {
+                          setReactionAnchor((prev) =>
+                            prev ? null : (e.currentTarget as HTMLElement),
+                          );
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: viewerReaction
+                            ? current.color
+                            : 'text.secondary',
+                          minWidth: 0,
+                          minHeight: { xs: 40, sm: 32 },
+                          px: { xs: 1, sm: 0.75 },
+                        }}
+                        aria-label={
+                          viewerReaction
+                            ? `${current.label} (click to remove)`
+                            : 'Like'
+                        }
+                        aria-haspopup="true"
+                        aria-expanded={Boolean(reactionAnchor)}
+                      >
+                        {viewerReaction ? current.label : 'Like'}
+                      </Button>
+                    );
+                  })()}
+                  <Popover
+                    open={Boolean(reactionAnchor)}
+                    anchorEl={reactionAnchor}
+                    onClose={() => setReactionAnchor(null)}
+                    anchorOrigin={{
+                      vertical: 'top',
+                      horizontal: 'left',
                     }}
-                    sx={{
-                      flexDirection: 'column',
-                      gap: 0.25,
-                      py: 1.25,
-                      px: 1,
-                      textTransform: 'none',
-                      color: '#B0B0B0',
-                      minHeight: { xs: 56, sm: 52 },
-                      flex: 1,
-                      '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.06)',
-                        color: '#E0E0E0',
+                    transformOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          boxShadow: 2,
+                          p: 0.5,
+                        },
                       },
                     }}
-                    aria-label="Edit post"
                   >
-                    <EditOutlinedIcon sx={{ fontSize: 22 }} />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      Edit
-                    </span>
-                  </Button>
+                    <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
+                      {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
+                        <IconButton
+                          key={type}
+                          size="small"
+                          onClick={() => {
+                            handleReaction(type);
+                            setReactionAnchor(null);
+                          }}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': { color },
+                          }}
+                          aria-label={label}
+                        >
+                          <Icon sx={{ fontSize: 24 }} />
+                        </IconButton>
+                      ))}
+                    </Stack>
+                  </Popover>
+                  {totalReactions > 0 && (
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 0.25 }}
+                    >
+                      {totalReactions}
+                    </Typography>
+                  )}
+                </Box>
+              </ClickAwayListener>
+              <Button
+                size="small"
+                startIcon={<ChatBubbleOutlineOutlinedIcon />}
+                onClick={() => actions.onCommentToggle(item.id)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1, sm: 0.75 },
+                }}
+              >
+                Comment
+                {commentCount > 0 && (
+                  <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
+                    {commentCount}
+                  </Typography>
                 )}
-              </Stack>
-            </Box>
+              </Button>
+              <Button
+                size="small"
+                startIcon={<RepeatOutlinedIcon />}
+                onClick={() => actions.onRepost(item)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1, sm: 0.75 },
+                }}
+              >
+                Repost
+              </Button>
+              <Button
+                size="small"
+                startIcon={<SendOutlinedIcon />}
+                onClick={() => actions.onSend(item)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 0,
+                  minHeight: { xs: 40, sm: 32 },
+                  px: { xs: 1, sm: 0.75 },
+                }}
+              >
+                Send
+              </Button>
+              {isOwner && item.kind === 'post' && !isEditingPost && (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setEditPostDraft(body);
+                    setIsEditingPost(true);
+                  }}
+                  sx={{
+                    textTransform: 'none',
+                    color: 'text.secondary',
+                    minWidth: 0,
+                    minHeight: { xs: 40, sm: 32 },
+                    px: { xs: 1, sm: 0.75 },
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
+              {isOwner && item.kind === 'post' && !isEditingPost && (
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => actions.onDelete(item.id)}
+                  sx={{
+                    textTransform: 'none',
+                    minWidth: 0,
+                    minHeight: { xs: 40, sm: 32 },
+                    px: { xs: 1, sm: 0.75 },
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+            </Stack>
             {commentsExpanded && (
               <Box sx={{ mt: 2, pl: 0 }}>
                 {commentsLoading ? (
@@ -1493,6 +1449,16 @@ export const Feed = () => {
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    if (searchParams.get('signup') !== 'complete') return;
+    trackEvent('signup_completed_landed_feed', {
+      source: 'signup_wizard',
+    });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('signup');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleAuthError = useCallback(
     async (error: unknown, fallback: string) => {

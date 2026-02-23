@@ -606,11 +606,13 @@ export async function runAdminResumeThumbnailBackfill(
 
 export async function fetchAdminResumeThumbnailRuns(
   token: string,
-  opts?: { limit?: number; offset?: number },
+  opts?: { limit?: number; offset?: number; action?: string; q?: string },
 ): Promise<{ data: AdminResumeThumbnailRun[]; meta: { total: number } }> {
   const params = new URLSearchParams();
   if (opts?.limit) params.set('limit', String(opts.limit));
   if (opts?.offset) params.set('offset', String(opts.offset));
+  if (opts?.action) params.set('action', opts.action);
+  if (opts?.q) params.set('q', opts.q);
   const qs = params.toString() ? `?${params.toString()}` : '';
   const res = await fetch(`${API_BASE}/api/admin/resume-thumbnails/runs${qs}`, {
     headers: { Authorization: `Bearer ${token}` },

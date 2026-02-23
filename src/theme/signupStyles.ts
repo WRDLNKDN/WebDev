@@ -42,21 +42,6 @@ export const signupBackButton = {
   alignSelf: 'flex-start',
 } as const;
 
-// CompleteStep
-export const completeStepTitle = {
-  fontWeight: 800,
-  mb: 1,
-  textAlign: 'center',
-} as const;
-
-export const completeStepSubtext = {
-  opacity: 0.8,
-} as const;
-
-export const completeStepStack = {
-  alignItems: 'center',
-} as const;
-
 // WelcomeStep
 export const welcomeStepTitle = {
   fontWeight: 800,

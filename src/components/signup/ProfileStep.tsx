@@ -26,8 +26,7 @@ import {
   profileStepTitle,
 } from '../../theme/signupStyles';
 import { useSignup } from '../../context/useSignup';
-
-const BUMPER_FROM_JOIN = '/bumper?from=join&next=/feed';
+import { setSignupCompletionFlash } from '../../lib/profile/signupCompletionFlash';
 
 const ProfileStep = () => {
   const navigate = useNavigate();
@@ -72,11 +71,6 @@ const ProfileStep = () => {
       return;
     }
 
-    if (!marketingOptIn) {
-      setLocalError('You must agree to receive emails to continue');
-      return;
-    }
-
     const profileData = {
       displayName: displayName.trim(),
       marketingOptIn,
@@ -88,7 +82,17 @@ const ProfileStep = () => {
       await submitRegistration(profileData);
       completeStep('profile');
       resetSignup();
-      navigate(BUMPER_FROM_JOIN, { replace: true });
+      try {
+        // Warm Feed chunk before redirect to avoid transient lazy-load misses on slower environments.
+        await import('../../pages/feed/Feed');
+      } catch {
+        // Navigation still proceeds if prefetch fails.
+      }
+      setSignupCompletionFlash();
+      navigate(
+        { pathname: '/feed', search: '?signup=complete' },
+        { replace: true },
+      );
     } catch {
       // submitError is shown below
     }
@@ -147,7 +151,6 @@ const ProfileStep = () => {
       />
 
       <FormControlLabel
-        required
         control={
           <Checkbox
             checked={marketingOptIn}
@@ -155,15 +158,13 @@ const ProfileStep = () => {
               setMarketingOptIn(e.target.checked);
               setLocalError(null);
             }}
-            color={
-              localError?.toLowerCase().includes('agree') ? 'error' : 'primary'
-            }
+            color="primary"
           />
         }
         label={
           <Typography variant="body2" sx={profileStepTipText}>
-            I agree to receive occasional emails from WRDLNKDN (product updates,
-            events, community news). I can unsubscribe anytime. See{' '}
+            Send me occasional WRDLNKDN emails (product updates, events,
+            community news). Optional, and I can unsubscribe anytime. See{' '}
             <Link
               component={RouterLink}
               to="/privacy"
@@ -227,7 +228,7 @@ const ProfileStep = () => {
         <Button
           variant="contained"
           onClick={() => void handleContinue()}
-          disabled={submitting || !displayName.trim() || !marketingOptIn}
+          disabled={submitting || !displayName.trim()}
           startIcon={
             submitting ? (
               <CircularProgress size={18} sx={{ color: '#ffffff' }} />

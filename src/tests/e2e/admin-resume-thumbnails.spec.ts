@@ -138,6 +138,63 @@ test.describe('Admin resume thumbnail operations', () => {
       },
     );
 
+    await page.route(
+      '**/api/admin/resume-thumbnails/runs?**',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            data: [
+              {
+                id: 'run-row-1',
+                actorEmail: 'admin@example.com',
+                action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+                runId: 'run-123',
+                attempted: 2,
+                completed: 2,
+                failed: 0,
+                durationMs: 42,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            meta: { total: 1, limit: 25, offset: 0 },
+          }),
+        });
+      },
+    );
+
+    await page.route(
+      '**/api/admin/resume-thumbnails/runs/run-123',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            data: {
+              runId: 'run-123',
+              events: [
+                {
+                  id: 'evt-1',
+                  actorEmail: 'admin@example.com',
+                  action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+                  createdAt: new Date().toISOString(),
+                  meta: {
+                    attempted: 2,
+                    completed: 2,
+                    failed: 0,
+                    failedProfiles: [],
+                  },
+                },
+              ],
+            },
+          }),
+        });
+      },
+    );
+
     await page.route('**/api/admin/resume-thumbnails/retry', async (route) => {
       retryCalled = true;
       await route.fulfill({
@@ -183,5 +240,8 @@ test.describe('Admin resume thumbnail operations', () => {
     await page.getByRole('button', { name: 'Run Backfill' }).click();
     await expect.poll(() => backfillCalled).toBe(true);
     await expect(page.getByText(/Backfill .* complete in/i)).toBeVisible();
+
+    await page.getByRole('button', { name: 'View' }).click();
+    await expect(page.getByText('Run Details')).toBeVisible();
   });
 });

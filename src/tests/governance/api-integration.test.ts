@@ -4,6 +4,7 @@
  *
  * Validates:
  * - Unauthenticated requests to protected routes return 401
+ * - Unauthorized admin-route requests return deterministic 403
  * - Error responses follow { status, message, code } format
  * - Health endpoint is public
  *
@@ -83,9 +84,30 @@ describe.skipIf(!hasSupabaseEnv)(
       expect(b.code).toBe('UNAUTHORIZED');
     });
 
-    it('GET /api/admin/profiles without auth returns 401', async () => {
+    it('GET /api/admin/profiles without auth returns 403', async () => {
       const { status } = await request('/api/admin/profiles');
-      expect(status).toBe(401);
+      expect(status).toBe(403);
+    });
+
+    it('GET /api/admin/resume-thumbnails/summary without auth returns 403', async () => {
+      const { status } = await request('/api/admin/resume-thumbnails/summary');
+      expect(status).toBe(403);
+    });
+
+    it('GET /api/admin/resume-thumbnails/runs without auth returns 403', async () => {
+      const { status } = await request('/api/admin/resume-thumbnails/runs');
+      expect(status).toBe(403);
+    });
+
+    it('POST /api/admin/resume-thumbnails/backfill without auth returns 403', async () => {
+      const { status } = await request(
+        '/api/admin/resume-thumbnails/backfill',
+        {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+      expect(status).toBe(403);
     });
 
     it('GET /api/admin/resume-thumbnails/summary without auth returns 401', async () => {

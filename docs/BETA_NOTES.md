@@ -89,3 +89,5 @@
   per-member retry, and deterministic backfill batches.
 - Added a backfill concurrency lock and run-history telemetry surfaced in admin
   summary/details to prevent overlapping operations.
+- Added CSV export for failed resume-thumbnail rows and per-run detail drawer in
+  `/admin/resume-thumbnails`.

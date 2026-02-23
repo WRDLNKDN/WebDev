@@ -409,6 +409,29 @@ export type AdminResumeThumbnailFailure = {
   updatedAt: string | null;
 };
 
+export type AdminResumeThumbnailRun = {
+  id: string;
+  actorEmail: string | null;
+  action: string;
+  runId: string | null;
+  attempted: number | null;
+  completed: number | null;
+  failed: number | null;
+  durationMs: number | null;
+  createdAt: string;
+};
+
+export type AdminResumeThumbnailRunDetails = {
+  runId: string;
+  events: Array<{
+    id: string;
+    actorEmail: string | null;
+    action: string;
+    createdAt: string;
+    meta: Record<string, unknown>;
+  }>;
+};
+
 export async function fetchAdminPlaylists(
   token: string,
 ): Promise<AdminPlaylist[]> {
@@ -579,4 +602,68 @@ export async function runAdminResumeThumbnailBackfill(
     failed: data.data?.failed ?? 0,
     durationMs: data.data?.durationMs ?? 0,
   };
+}
+
+export async function fetchAdminResumeThumbnailRuns(
+  token: string,
+  opts?: { limit?: number; offset?: number },
+): Promise<{ data: AdminResumeThumbnailRun[]; meta: { total: number } }> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  if (opts?.offset) params.set('offset', String(opts.offset));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_BASE}/api/admin/resume-thumbnails/runs${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: API_BASE ? 'omit' : 'include',
+  });
+  const data = await parseJson<{
+    ok: boolean;
+    data?: AdminResumeThumbnailRun[];
+    meta?: { total?: number };
+    error?: string;
+    message?: string;
+  }>(res, '/api/admin/resume-thumbnails/runs');
+  if (!res.ok) {
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
+  }
+  return {
+    data: data.data ?? [],
+    meta: { total: data.meta?.total ?? 0 },
+  };
+}
+
+export async function fetchAdminResumeThumbnailRunDetails(
+  token: string,
+  runId: string,
+): Promise<AdminResumeThumbnailRunDetails> {
+  const safeRunId = encodeURIComponent(runId);
+  const res = await fetch(
+    `${API_BASE}/api/admin/resume-thumbnails/runs/${safeRunId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  const data = await parseJson<{
+    ok: boolean;
+    data?: AdminResumeThumbnailRunDetails;
+    error?: string;
+    message?: string;
+  }>(res, `/api/admin/resume-thumbnails/runs/${safeRunId}`);
+  if (!res.ok) {
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
+  }
+  return data.data ?? { runId, events: [] };
 }

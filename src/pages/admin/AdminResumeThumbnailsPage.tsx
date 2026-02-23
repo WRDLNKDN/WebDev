@@ -1,9 +1,12 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DownloadIcon from '@mui/icons-material/Download';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
+  Divider,
+  Drawer,
   Stack,
   Table,
   TableBody,
@@ -16,10 +19,14 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchAdminResumeThumbnailFailures,
+  fetchAdminResumeThumbnailRunDetails,
+  fetchAdminResumeThumbnailRuns,
   fetchAdminResumeThumbnailSummary,
   retryAdminResumeThumbnail,
   runAdminResumeThumbnailBackfill,
   type AdminResumeThumbnailFailure,
+  type AdminResumeThumbnailRun,
+  type AdminResumeThumbnailRunDetails,
   type AdminResumeThumbnailSummary,
 } from '../../lib/api/contentApi';
 import { toMessage } from '../../lib/utils/errors';
@@ -42,6 +49,7 @@ export const AdminResumeThumbnailsPage = () => {
     useState<AdminResumeThumbnailSummary>(EMPTY_SUMMARY);
   const [rows, setRows] = useState<AdminResumeThumbnailFailure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [runsLoading, setRunsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryingProfileId, setRetryingProfileId] = useState<string | null>(
     null,
@@ -49,6 +57,11 @@ export const AdminResumeThumbnailsPage = () => {
   const [backfillBusy, setBackfillBusy] = useState(false);
   const [backfillLimit, setBackfillLimit] = useState('25');
   const [flash, setFlash] = useState<string | null>(null);
+  const [runs, setRuns] = useState<AdminResumeThumbnailRun[]>([]);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [activeRunDetails, setActiveRunDetails] =
+    useState<AdminResumeThumbnailRunDetails | null>(null);
+  const [activeRunLoading, setActiveRunLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -68,9 +81,29 @@ export const AdminResumeThumbnailsPage = () => {
     }
   }, [token]);
 
+  const loadRuns = useCallback(async () => {
+    if (!token) return;
+    try {
+      setRunsLoading(true);
+      const runRes = await fetchAdminResumeThumbnailRuns(token, {
+        limit: 25,
+        offset: 0,
+      });
+      setRuns(runRes.data);
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setRunsLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadRuns();
+  }, [loadRuns]);
 
   const handleRetry = async (profileId: string) => {
     if (!token) return;
@@ -98,10 +131,67 @@ export const AdminResumeThumbnailsPage = () => {
         `Backfill ${result.runId || '(run)'} complete in ${result.durationMs}ms: attempted ${result.attempted}, completed ${result.completed}, failed ${result.failed}.`,
       );
       await load();
+      await loadRuns();
     } catch (e) {
       setError(toMessage(e));
     } finally {
       setBackfillBusy(false);
+    }
+  };
+
+  const handleExportCsv = () => {
+    const rowsForCsv = rows.map((row) => ({
+      member: row.handle ? `@${row.handle}` : row.profileId,
+      profileId: row.profileId,
+      status: row.status,
+      error: row.error ?? '',
+      updatedAt: row.updatedAt ?? '',
+      resumeUrl: row.resumeUrl ?? '',
+    }));
+    const header = [
+      'member',
+      'profileId',
+      'status',
+      'error',
+      'updatedAt',
+      'resumeUrl',
+    ];
+    const lines = [
+      header.join(','),
+      ...rowsForCsv.map((record) =>
+        header
+          .map((key) => {
+            const value = String(record[key as keyof typeof record] ?? '');
+            return `"${value.replaceAll('"', '""')}"`;
+          })
+          .join(','),
+      ),
+    ];
+    const blob = new Blob([lines.join('\n')], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resume-thumbnail-failures-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const openRunDetails = async (runId: string) => {
+    if (!token) return;
+    try {
+      setActiveRunId(runId);
+      setActiveRunDetails(null);
+      setActiveRunLoading(true);
+      const detail = await fetchAdminResumeThumbnailRunDetails(token, runId);
+      setActiveRunDetails(detail);
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setActiveRunLoading(false);
     }
   };
 
@@ -156,10 +246,21 @@ export const AdminResumeThumbnailsPage = () => {
         <Button
           variant="outlined"
           startIcon={<RefreshIcon />}
-          onClick={() => void load()}
+          onClick={() => {
+            void load();
+            void loadRuns();
+          }}
           disabled={loading}
         >
           Refresh
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={handleExportCsv}
+          disabled={rows.length === 0}
+        >
+          Export CSV
         </Button>
       </Stack>
 
@@ -183,6 +284,57 @@ export const AdminResumeThumbnailsPage = () => {
             })
             .join(' | ')}
         </Typography>
+      )}
+      <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.12)' }} />
+      <Typography variant="subtitle1" sx={{ mb: 1.5 }}>
+        Backfill Run History
+      </Typography>
+      {runsLoading ? (
+        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+          <CircularProgress size={16} />
+          <Typography variant="body2" color="text.secondary">
+            Loading run history...
+          </Typography>
+        </Stack>
+      ) : runs.length === 0 ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No backfill runs recorded yet.
+        </Alert>
+      ) : (
+        <Table size="small" sx={{ mb: 2 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Run</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell>Result</TableCell>
+              <TableCell>When</TableCell>
+              <TableCell align="right">Details</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {runs.map((run) => (
+              <TableRow key={run.id}>
+                <TableCell>{run.runId ?? run.id.slice(0, 8)}</TableCell>
+                <TableCell>{run.action}</TableCell>
+                <TableCell>
+                  {run.completed ?? 0}/{run.attempted ?? 0} complete,{' '}
+                  {run.failed ?? 0} failed
+                </TableCell>
+                <TableCell>{run.createdAt}</TableCell>
+                <TableCell align="right">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void openRunDetails(run.runId ?? '')}
+                    disabled={!run.runId}
+                  >
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {loading ? (
@@ -231,6 +383,73 @@ export const AdminResumeThumbnailsPage = () => {
           </TableBody>
         </Table>
       )}
+      <Drawer
+        anchor="right"
+        open={Boolean(activeRunId)}
+        onClose={() => setActiveRunId(null)}
+      >
+        <Box sx={{ width: { xs: 320, sm: 460 }, p: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Run Details
+          </Typography>
+          {activeRunLoading ? (
+            <Stack direction="row" alignItems="center" gap={1}>
+              <CircularProgress size={16} />
+              <Typography variant="body2" color="text.secondary">
+                Loading run details...
+              </Typography>
+            </Stack>
+          ) : !activeRunDetails ? (
+            <Alert severity="info">No details loaded.</Alert>
+          ) : (
+            <Stack spacing={1.25}>
+              <Typography variant="body2" color="text.secondary">
+                Run ID: {activeRunDetails.runId}
+              </Typography>
+              {activeRunDetails.events.map((event) =>
+                (() => {
+                  const failedProfiles = Array.isArray(
+                    event.meta.failedProfiles,
+                  )
+                    ? (event.meta.failedProfiles as Array<{
+                        profileId?: string;
+                      }>)
+                    : null;
+                  return (
+                    <Box
+                      key={event.id}
+                      sx={{
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 1.5,
+                        p: 1.25,
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {event.action}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {event.createdAt}
+                      </Typography>
+                      {failedProfiles && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.75 }}
+                        >
+                          Failed profiles:{' '}
+                          {failedProfiles
+                            .map((item) => item.profileId ?? 'unknown')
+                            .join(', ')}
+                        </Typography>
+                      )}
+                    </Box>
+                  );
+                })(),
+              )}
+            </Stack>
+          )}
+        </Box>
+      </Drawer>
     </Box>
   );
 };

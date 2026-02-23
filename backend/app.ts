@@ -165,20 +165,115 @@ const logResumeThumbnailEvent = async (params: {
 type ResumeBackfillLock = {
   runId: string;
   acquiredAtIso: string;
-  expiresAtMs: number;
-  adminEmail?: string;
+  adminEmail: string | null;
+  lockEventId?: string;
 };
 
 const RESUME_BACKFILL_LOCK_TTL_MS = 15 * 60 * 1000;
-let resumeBackfillLock: ResumeBackfillLock | null = null;
 
-const getActiveResumeBackfillLock = (): ResumeBackfillLock | null => {
-  if (!resumeBackfillLock) return null;
-  if (Date.now() > resumeBackfillLock.expiresAtMs) {
-    resumeBackfillLock = null;
-    return null;
+const isLockExpired = (acquiredAtIso: string): boolean => {
+  const acquiredMs = new Date(acquiredAtIso).getTime();
+  if (!Number.isFinite(acquiredMs)) return true;
+  return Date.now() - acquiredMs > RESUME_BACKFILL_LOCK_TTL_MS;
+};
+
+const fetchActiveResumeBackfillLock =
+  async (): Promise<ResumeBackfillLock | null> => {
+    const { data, error } = await adminSupabase
+      .from('audit_log')
+      .select('id, action, target_id, actor_email, created_at')
+      .eq('target_type', 'resume_thumbnail_backfill_lock')
+      .in('action', [
+        'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED',
+        'RESUME_THUMBNAIL_BACKFILL_LOCK_RELEASED',
+      ])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const row = data as {
+      id: string;
+      action: string;
+      target_id: string | null;
+      actor_email: string | null;
+      created_at: string;
+    };
+    if (row.action !== 'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED') return null;
+    if (!row.target_id || isLockExpired(row.created_at)) return null;
+    return {
+      runId: row.target_id,
+      acquiredAtIso: row.created_at,
+      adminEmail: row.actor_email ?? null,
+      lockEventId: row.id,
+    };
+  };
+
+const acquireResumeBackfillLock = async (
+  adminEmail: string | undefined,
+  adminUserId: string | undefined,
+): Promise<{
+  lock: ResumeBackfillLock | null;
+  lockExpiresInMs: number | null;
+}> => {
+  const active = await fetchActiveResumeBackfillLock();
+  if (active) {
+    return {
+      lock: active,
+      lockExpiresInMs: Math.max(
+        0,
+        RESUME_BACKFILL_LOCK_TTL_MS -
+          (Date.now() - new Date(active.acquiredAtIso).getTime()),
+      ),
+    };
   }
-  return resumeBackfillLock;
+
+  const runId = crypto.randomUUID();
+  const { data: inserted, error } = await adminSupabase
+    .from('audit_log')
+    .insert({
+      actor_id: adminUserId ?? null,
+      actor_email: adminEmail ?? null,
+      action: 'RESUME_THUMBNAIL_BACKFILL_LOCK_ACQUIRED',
+      target_type: 'resume_thumbnail_backfill_lock',
+      target_id: runId,
+      meta: { runId, lockTtlMs: RESUME_BACKFILL_LOCK_TTL_MS },
+    })
+    .select('id, target_id, actor_email, created_at')
+    .single();
+  if (error || !inserted) {
+    return { lock: null, lockExpiresInMs: null };
+  }
+
+  const latest = await fetchActiveResumeBackfillLock();
+  if (!latest || latest.runId !== runId) {
+    return {
+      lock: latest,
+      lockExpiresInMs: latest
+        ? Math.max(
+            0,
+            RESUME_BACKFILL_LOCK_TTL_MS -
+              (Date.now() - new Date(latest.acquiredAtIso).getTime()),
+          )
+        : null,
+    };
+  }
+
+  return { lock: latest, lockExpiresInMs: RESUME_BACKFILL_LOCK_TTL_MS };
+};
+
+const releaseResumeBackfillLock = async (
+  runId: string,
+  adminEmail: string | undefined,
+  adminUserId: string | undefined,
+): Promise<void> => {
+  await adminSupabase.from('audit_log').insert({
+    actor_id: adminUserId ?? null,
+    actor_email: adminEmail ?? null,
+    action: 'RESUME_THUMBNAIL_BACKFILL_LOCK_RELEASED',
+    target_type: 'resume_thumbnail_backfill_lock',
+    target_id: runId,
+    meta: { runId },
+  });
 };
 
 const decodeResumeStoragePath = (resumeUrl: string): string | null => {
@@ -1835,7 +1930,7 @@ app.get(
         createdAt: (row as { created_at: string }).created_at,
       };
     });
-    const activeBackfillLock = getActiveResumeBackfillLock();
+    const activeBackfillLock = await fetchActiveResumeBackfillLock();
 
     return res.json({
       ok: true,
@@ -1916,6 +2011,123 @@ app.get(
   },
 );
 
+// GET /api/admin/resume-thumbnails/runs — paged backfill run history
+app.get(
+  '/api/admin/resume-thumbnails/runs',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const { data, error, count } = await adminSupabase
+      .from('audit_log')
+      .select('id, actor_email, action, target_id, meta, created_at', {
+        count: 'exact',
+      })
+      .eq('target_type', 'resume_thumbnail_backfill')
+      .in('action', [
+        'RESUME_THUMBNAIL_BACKFILL_STARTED',
+        'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+        'RESUME_THUMBNAIL_BACKFILL_FAILED',
+      ])
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+
+    const rows = (data ?? []).map((row) => {
+      const meta =
+        (row as { meta?: unknown }).meta &&
+        typeof (row as { meta?: unknown }).meta === 'object'
+          ? ((row as { meta: Record<string, unknown> }).meta ?? {})
+          : {};
+      return {
+        id: (row as { id: string }).id,
+        actorEmail:
+          (row as { actor_email?: string | null }).actor_email ?? null,
+        action: (row as { action: string }).action,
+        runId:
+          typeof meta.runId === 'string'
+            ? meta.runId
+            : ((row as { target_id?: string | null }).target_id ?? null),
+        attempted: typeof meta.attempted === 'number' ? meta.attempted : null,
+        completed: typeof meta.completed === 'number' ? meta.completed : null,
+        failed: typeof meta.failed === 'number' ? meta.failed : null,
+        durationMs:
+          typeof meta.durationMs === 'number' ? meta.durationMs : null,
+        createdAt: (row as { created_at: string }).created_at,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: rows,
+      meta: { total: count ?? 0, limit, offset },
+      error: null,
+    });
+  },
+);
+
+// GET /api/admin/resume-thumbnails/runs/:runId — details for one run
+app.get(
+  '/api/admin/resume-thumbnails/runs/:runId',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const rawRunId = req.params.runId;
+    const runId =
+      typeof rawRunId === 'string'
+        ? rawRunId.trim()
+        : Array.isArray(rawRunId)
+          ? (rawRunId[0] ?? '').trim()
+          : '';
+    if (!runId) return sendApiError(res, 400, 'Missing runId');
+
+    const { data, error } = await adminSupabase
+      .from('audit_log')
+      .select('id, actor_email, action, target_id, meta, created_at')
+      .eq('target_type', 'resume_thumbnail_backfill')
+      .eq('target_id', runId)
+      .order('created_at', { ascending: true });
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+    if (!data || data.length === 0)
+      return sendApiError(res, 404, 'Run not found');
+
+    const items = data.map((row) => {
+      const meta =
+        (row as { meta?: unknown }).meta &&
+        typeof (row as { meta?: unknown }).meta === 'object'
+          ? ((row as { meta: Record<string, unknown> }).meta ?? {})
+          : {};
+      return {
+        id: (row as { id: string }).id,
+        actorEmail:
+          (row as { actor_email?: string | null }).actor_email ?? null,
+        action: (row as { action: string }).action,
+        createdAt: (row as { created_at: string }).created_at,
+        meta,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: {
+        runId,
+        events: items,
+      },
+      error: null,
+    });
+  },
+);
+
 // POST /api/admin/resume-thumbnails/retry — retry one profile
 app.post(
   '/api/admin/resume-thumbnails/retry',
@@ -1972,8 +2184,19 @@ app.post(
   '/api/admin/resume-thumbnails/backfill',
   requireAdmin,
   async (req: AdminRequest, res: Response) => {
-    const activeLock = getActiveResumeBackfillLock();
-    if (activeLock) {
+    const acquired = await acquireResumeBackfillLock(
+      req.adminEmail,
+      req.adminUserId,
+    );
+    const activeLock = acquired.lock;
+    if (!activeLock) {
+      return sendApiError(
+        res,
+        500,
+        'Could not acquire backfill lock. Please try again.',
+      );
+    }
+    if (acquired.lockExpiresInMs !== RESUME_BACKFILL_LOCK_TTL_MS) {
       return sendApiError(
         res,
         409,
@@ -1982,18 +2205,11 @@ app.post(
         {
           runId: activeLock.runId,
           acquiredAt: activeLock.acquiredAtIso,
-          lockExpiresInMs: Math.max(0, activeLock.expiresAtMs - Date.now()),
+          lockExpiresInMs: acquired.lockExpiresInMs ?? 0,
         },
       );
     }
-
-    const runId = crypto.randomUUID();
-    resumeBackfillLock = {
-      runId,
-      acquiredAtIso: new Date().toISOString(),
-      expiresAtMs: Date.now() + RESUME_BACKFILL_LOCK_TTL_MS,
-      adminEmail: req.adminEmail,
-    };
+    const runId = activeLock.runId;
 
     const recordBackfillAudit = async (
       action:
@@ -2090,6 +2306,12 @@ app.post(
         completed,
         failed: failedCount,
         durationMs,
+        failedProfiles: results
+          .filter((r) => r.status === 'failed')
+          .map((r) => ({
+            profileId: r.profileId,
+            message: r.message ?? 'Thumbnail generation failed',
+          })),
       });
 
       return res.json({
@@ -2113,10 +2335,7 @@ app.post(
       });
       return sendApiError(res, 500, message);
     } finally {
-      const active = getActiveResumeBackfillLock();
-      if (active?.runId === runId) {
-        resumeBackfillLock = null;
-      }
+      await releaseResumeBackfillLock(runId, req.adminEmail, req.adminUserId);
     }
   },
 );

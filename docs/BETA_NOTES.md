@@ -72,3 +72,12 @@
   in-category ordering.
 - Profile link rendering now prefers the stored `platform` metadata (with URL
   detection fallback for legacy links) so icon/label consistency is preserved.
+
+## Resume thumbnail expansion
+
+- Resume upload now supports `.doc` in addition to `.pdf` and `.docx`.
+- Added authenticated server-side thumbnail generation for Word resumes
+  (`.doc`/`.docx`) at upload time.
+- Generated thumbnails are persisted and reused from profile metadata so
+  Dashboard and public Profile render a deterministic preview state: `pending`,
+  `complete`, or `failed`.

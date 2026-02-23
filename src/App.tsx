@@ -468,7 +468,16 @@ const App = () => {
                     path="advertisers"
                     element={<AdminAdvertisersPage />}
                   />
-                  <Route path="partners" element={<AdminPartnersPage />} />
+                  <Route
+                    path="community-partners"
+                    element={<AdminPartnersPage />}
+                  />
+                  <Route
+                    path="partners"
+                    element={
+                      <Navigate to="/admin/community-partners" replace />
+                    }
+                  />
                 </Route>
                 <Route
                   path="/admin/pending"

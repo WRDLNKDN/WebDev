@@ -6,9 +6,12 @@ export function interleaveWithAds<TPost, TAd>(
   posts: TPost[],
   advertisers: TAd[],
   everyN: number,
+  includePost?: (post: TPost) => boolean,
 ): FeedDisplayItem<TPost, TAd>[] {
   if (advertisers.length === 0) {
-    return posts.map((item) => ({ kind: 'post' as const, item }));
+    return posts
+      .filter((item) => (includePost ? includePost(item) : true))
+      .map((item) => ({ kind: 'post' as const, item }));
   }
   const result: FeedDisplayItem<TPost, TAd>[] = [];
   let adIndex = 0;
@@ -18,7 +21,9 @@ export function interleaveWithAds<TPost, TAd>(
       result.push({ kind: 'ad', advertiser: ad });
       adIndex += 1;
     }
-    result.push({ kind: 'post', item });
+    if (!includePost || includePost(item)) {
+      result.push({ kind: 'post', item });
+    }
   });
   return result;
 }

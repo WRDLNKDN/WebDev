@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { authedFetch } from '../lib/api/authFetch';
 import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
-import { toMessage } from '../lib/utils/errors';
+import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
+
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+  '';
 
 export function useProfile() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
@@ -553,9 +558,9 @@ export function useProfile() {
       }
 
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
-      if (ext !== '.pdf' && ext !== '.docx') {
+      if (ext !== '.pdf' && ext !== '.doc' && ext !== '.docx') {
         throw new Error(
-          'Resume must be a PDF or Word document (.pdf or .docx only)',
+          'Resume must be a PDF or Word document (.pdf, .doc, or .docx only)',
         );
       }
 
@@ -572,7 +577,50 @@ export function useProfile() {
         data: { publicUrl },
       } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
-      await updateProfile({ resume_url: publicUrl });
+      await updateProfile({
+        resume_url: publicUrl,
+        nerd_creds:
+          ext === '.doc' || ext === '.docx'
+            ? { resume_thumbnail_status: 'pending' }
+            : {},
+      });
+
+      if (ext === '.doc' || ext === '.docx') {
+        try {
+          const thumbResponse = await authedFetch(
+            `${API_BASE}/api/resumes/generate-thumbnail`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ storagePath: fileName }),
+            },
+            {
+              includeJsonContentType: true,
+              credentials: API_BASE ? 'omit' : 'include',
+            },
+          );
+
+          const thumbPayload = (await thumbResponse.json()) as
+            | {
+                ok?: boolean;
+                data?: { status?: string; thumbnailUrl?: string };
+                error?: string;
+                message?: string;
+              }
+            | undefined;
+
+          if (!thumbResponse.ok) {
+            throw new Error(
+              messageFromApiResponse(
+                thumbResponse.status,
+                thumbPayload?.error,
+                thumbPayload?.message,
+              ),
+            );
+          }
+        } catch (thumbnailError) {
+          console.warn('Resume thumbnail generation failed:', thumbnailError);
+        }
+      }
 
       return publicUrl;
     } catch (err) {

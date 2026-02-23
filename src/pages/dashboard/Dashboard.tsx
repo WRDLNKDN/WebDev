@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
   Button,
@@ -91,6 +92,16 @@ export const Dashboard = () => {
     profile?.nerd_creds && typeof profile.nerd_creds === 'object'
       ? (profile.nerd_creds as unknown as NerdCreds)
       : ({} as NerdCreds);
+  const resumeThumbnailUrl =
+    typeof safeNerdCreds.resume_thumbnail_url === 'string'
+      ? safeNerdCreds.resume_thumbnail_url
+      : null;
+  const resumeThumbnailStatus =
+    safeNerdCreds.resume_thumbnail_status === 'pending' ||
+    safeNerdCreds.resume_thumbnail_status === 'complete' ||
+    safeNerdCreds.resume_thumbnail_status === 'failed'
+      ? safeNerdCreds.resume_thumbnail_status
+      : null;
 
   const bio = safeStr(
     safeNerdCreds.bio,
@@ -314,6 +325,24 @@ export const Dashboard = () => {
               >
                 Edit Links
               </Button>
+              {profile?.handle && (
+                <Button
+                  variant="outlined"
+                  component="a"
+                  href={`/profile/${profile.handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<OpenInNewIcon />}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    width: { xs: '100%', sm: 'auto' },
+                    minHeight: { xs: 40, sm: 36 },
+                  }}
+                >
+                  View Profile
+                </Button>
+              )}
             </Stack>
           }
         />
@@ -375,7 +404,7 @@ export const Dashboard = () => {
               <input
                 type="file"
                 hidden
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) handleResumeUpload(f);
@@ -416,6 +445,8 @@ export const Dashboard = () => {
           <Stack spacing={2.5}>
             <ResumeCard
               url={profile?.resume_url}
+              thumbnailUrl={resumeThumbnailUrl}
+              thumbnailStatus={resumeThumbnailStatus}
               onUpload={handleResumeUpload}
               isOwner
             />

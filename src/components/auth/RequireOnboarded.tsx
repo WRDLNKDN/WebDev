@@ -11,6 +11,7 @@ import {
 import { supabase } from '../../lib/auth/supabaseClient';
 
 type State = 'loading' | 'redirect' | 'allowed';
+const ENFORCED_INACTIVE_STATUSES = new Set(['disabled', 'suspended', 'banned']);
 
 /**
  * Route guard: requires auth AND completed profile (onboarding).
@@ -108,7 +109,7 @@ export const RequireOnboarded = ({
         const { data: profile, error } = await supabase
           .from('profiles')
           .select(
-            'display_name, join_reason, participation_style, policy_version',
+            'display_name, join_reason, participation_style, policy_version, status',
           )
           .eq('id', userId)
           .maybeSingle();
@@ -178,8 +179,20 @@ export const RequireOnboarded = ({
         displayName: profile.display_name,
         joinReason: profile.join_reason,
         participationStyle: profile.participation_style,
+        status: profile.status,
         isOnboarded: isProfileOnboarded(profile),
       });
+
+      if (
+        typeof profile.status === 'string' &&
+        ENFORCED_INACTIVE_STATUSES.has(profile.status)
+      ) {
+        // Deterministic enforcement: revoke local session and block app surfaces.
+        await supabase.auth.signOut({ scope: 'global' });
+        hasEverAllowedRef.current = false;
+        setState('redirect');
+        return;
+      }
 
       if (!isProfileOnboarded(profile)) {
         console.log('🔴 RequireOnboarded: Profile not onboarded');

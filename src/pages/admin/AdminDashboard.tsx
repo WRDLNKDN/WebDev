@@ -44,7 +44,7 @@ const SECTIONS: SectionCard[] = [
     title: 'Community Partners',
     description:
       'Manage public partner listings on /community-partners independently from feed ads.',
-    to: '/admin/partners',
+    to: '/admin/community-partners',
     icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
   },
 ];

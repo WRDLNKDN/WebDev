@@ -26,6 +26,11 @@ import {
   getConnectionOutcomeNotificationType,
 } from './directory/connectionFlow.js';
 import { sendApiError } from './lib/apiError.js';
+import {
+  generateResumeThumbnailPng,
+  getResumeExtension,
+  isSupportedResumeThumbnailExtension,
+} from './resumeThumbnail.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -109,6 +114,34 @@ const errorMessage = (e: unknown, fallback: string) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string' && e.trim()) return e;
   return fallback;
+};
+
+const readNerdCreds = async (
+  userId: string,
+): Promise<Record<string, unknown>> => {
+  const { data } = await adminSupabase
+    .from('profiles')
+    .select('nerd_creds')
+    .eq('id', userId)
+    .maybeSingle();
+  const raw = (data as { nerd_creds?: unknown } | null)?.nerd_creds;
+  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+};
+
+const updateResumeThumbnailState = async (
+  userId: string,
+  updates: Record<string, unknown>,
+): Promise<void> => {
+  const nerdCreds = await readNerdCreds(userId);
+  const payload = {
+    ...nerdCreds,
+    ...updates,
+    resume_thumbnail_updated_at: new Date().toISOString(),
+  };
+  await adminSupabase
+    .from('profiles')
+    .update({ nerd_creds: payload })
+    .eq('id', userId);
 };
 
 const requireAdmin = async (
@@ -1423,6 +1456,84 @@ app.get(
 
     const preview = await fetchLinkPreview(rawUrl);
     return res.json({ ok: true, data: preview });
+  },
+);
+
+// POST /api/resumes/generate-thumbnail — generate persisted thumbnail for .doc/.docx
+app.post(
+  '/api/resumes/generate-thumbnail',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+    const storagePath =
+      typeof (req.body as { storagePath?: unknown }).storagePath === 'string'
+        ? (req.body as { storagePath: string }).storagePath.trim()
+        : '';
+    if (!storagePath) return sendApiError(res, 400, 'Missing storagePath');
+    if (!storagePath.startsWith(`${userId}/`)) {
+      return sendApiError(res, 403, 'Forbidden');
+    }
+
+    const extension = getResumeExtension(storagePath);
+    if (!isSupportedResumeThumbnailExtension(extension)) {
+      return sendApiError(res, 400, 'Only .doc and .docx are supported');
+    }
+
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'pending',
+      resume_thumbnail_error: null,
+    });
+
+    try {
+      const { data: fileBlob, error: downloadError } =
+        await adminSupabase.storage.from('resumes').download(storagePath);
+      if (downloadError || !fileBlob) {
+        throw new Error(
+          downloadError?.message ||
+            'Could not download resume for thumbnailing',
+        );
+      }
+
+      const fileBuffer = Buffer.from(await fileBlob.arrayBuffer());
+      const thumbnailBuffer = await generateResumeThumbnailPng(
+        fileBuffer,
+        storagePath,
+      );
+      const thumbPath = `${userId}/resume-thumbnail.png`;
+      const { error: uploadError } = await adminSupabase.storage
+        .from('resumes')
+        .upload(thumbPath, thumbnailBuffer, {
+          contentType: 'image/png',
+          upsert: true,
+        });
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: thumbPublic } = adminSupabase.storage
+        .from('resumes')
+        .getPublicUrl(thumbPath);
+      const thumbnailUrl = thumbPublic.publicUrl;
+
+      await updateResumeThumbnailState(userId, {
+        resume_thumbnail_status: 'complete',
+        resume_thumbnail_url: thumbnailUrl,
+        resume_thumbnail_error: null,
+        resume_thumbnail_source_extension: extension,
+      });
+
+      return res.json({
+        ok: true,
+        data: { status: 'complete', thumbnailUrl },
+      });
+    } catch (e: unknown) {
+      const message = errorMessage(e, 'Thumbnail generation failed');
+      await updateResumeThumbnailState(userId, {
+        resume_thumbnail_status: 'failed',
+        resume_thumbnail_error: message,
+      });
+      return sendApiError(res, 422, message);
+    }
   },
 );
 

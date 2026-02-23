@@ -1,16 +1,31 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { Box, Button, Paper, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Paper,
+  Typography,
+} from '@mui/material';
 import { CANDY_HAZARD, CANDY_SUCCESS } from '../../theme/candyStyles';
 
 interface ResumeCardProps {
   url?: string | null;
+  thumbnailUrl?: string | null;
+  thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
   onUpload?: (file: File) => void;
   isOwner?: boolean;
 }
 
-export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
+export const ResumeCard = ({
+  url,
+  thumbnailUrl,
+  thumbnailStatus,
+  onUpload,
+  isOwner,
+}: ResumeCardProps) => {
   const hasResume = Boolean(url);
+  const hasThumbnail = Boolean(thumbnailUrl);
   const isPdf = typeof url === 'string' && url.toLowerCase().includes('.pdf');
 
   // BRAND PROTECTION: If no resume exists and user isn't the owner,
@@ -47,7 +62,14 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
               mb: 2,
             }}
           >
-            {isPdf ? (
+            {hasThumbnail ? (
+              <Box
+                component="img"
+                src={thumbnailUrl ?? ''}
+                alt="Resume thumbnail preview"
+                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : isPdf ? (
               <Box
                 component="iframe"
                 src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
@@ -67,10 +89,28 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
                   textAlign: 'center',
                 }}
               >
-                <CheckCircleOutlineIcon sx={{ fontSize: 42, mb: 1 }} />
-                <Typography variant="caption" color="text.secondary">
-                  Thumbnail preview available for PDF resumes.
-                </Typography>
+                {thumbnailStatus === 'pending' ? (
+                  <>
+                    <CircularProgress size={28} sx={{ mb: 1.25 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Generating preview...
+                    </Typography>
+                  </>
+                ) : thumbnailStatus === 'failed' ? (
+                  <>
+                    <CheckCircleOutlineIcon sx={{ fontSize: 42, mb: 1 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Preview failed. Open the document directly.
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleOutlineIcon sx={{ fontSize: 42, mb: 1 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Thumbnail preview available for PDF resumes.
+                    </Typography>
+                  </>
+                )}
               </Box>
             )}
           </Box>
@@ -119,7 +159,7 @@ export const ResumeCard = ({ url, onUpload, isOwner }: ResumeCardProps) => {
           <input
             type="file"
             hidden
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={(e) =>
               onUpload && e.target.files?.[0] && onUpload(e.target.files[0])
             }

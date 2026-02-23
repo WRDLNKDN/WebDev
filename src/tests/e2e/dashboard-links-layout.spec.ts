@@ -203,4 +203,16 @@ test.describe('Dashboard links and profile layout regressions', () => {
       industryMetrics.parentWidth * 0.95,
     );
   });
+
+  test('view profile button points to canonical public route in new tab', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    const viewProfileButton = page.getByRole('link', { name: 'View Profile' });
+    await expect(viewProfileButton).toBeVisible();
+    await expect(viewProfileButton).toHaveAttribute('href', '/profile/member');
+    await expect(viewProfileButton).toHaveAttribute('target', '_blank');
+  });
 });

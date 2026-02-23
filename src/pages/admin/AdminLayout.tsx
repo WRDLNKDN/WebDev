@@ -66,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Community Partners',
-    to: '/admin/partners',
+    to: '/admin/community-partners',
     icon: <HandshakeIcon />,
   },
 ];

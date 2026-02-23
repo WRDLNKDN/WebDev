@@ -1291,7 +1291,7 @@ export const Feed = () => {
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
-    return list.filter(hasRenderableContent);
+    return list;
   }, [items, sortBy]);
   const visibleAdvertisers = useMemo(
     () =>
@@ -1310,7 +1310,13 @@ export const Feed = () => {
     [visibleAdvertisers, adSeed],
   );
   const displayItems: LocalFeedDisplayItem[] = useMemo(
-    () => interleaveWithAds(sortedItems, shuffledAdvertisers, AD_EVERY_N_POSTS),
+    () =>
+      interleaveWithAds(
+        sortedItems,
+        shuffledAdvertisers,
+        AD_EVERY_N_POSTS,
+        hasRenderableContent,
+      ),
     [sortedItems, shuffledAdvertisers],
   );
 

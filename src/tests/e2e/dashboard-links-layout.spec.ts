@@ -53,8 +53,29 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Dashboard links and profile layout regressions', () => {
+  let profileRow: Record<string, unknown>;
   test.beforeEach(async ({ page }) => {
     await seedSignedInSession(page);
+    profileRow = {
+      id: USER_ID,
+      handle: 'member',
+      display_name: 'April Drake',
+      avatar: null,
+      status: 'approved',
+      join_reason: ['networking'],
+      participation_style: ['builder'],
+      policy_version: '1.0',
+      industry: 'Technology,Healthcare,Education,Engineering',
+      nerd_creds: {
+        bio: 'Technology leader with systems mindset.',
+        skills: [
+          'Technical Program Management',
+          'Technical Product Management',
+          'Technical Project Management',
+        ],
+      },
+      socials: [],
+    };
 
     await page.route('**/api/me/avatar', async (route) => {
       await route.fulfill({
@@ -85,33 +106,20 @@ test.describe('Dashboard links and profile layout regressions', () => {
       await fulfillPostgrest(route, []);
     });
 
+    await page.route('**/rest/v1/feed_connections*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    });
+
     await page.route('**/rest/v1/profiles*', async (route) => {
       if (route.request().method() === 'PATCH') {
         await route.fulfill({ status: 204, body: '' });
         return;
       }
-      await fulfillPostgrest(route, [
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'April Drake',
-          avatar: null,
-          status: 'approved',
-          join_reason: ['networking'],
-          participation_style: ['builder'],
-          policy_version: '1.0',
-          industry: 'Technology,Healthcare,Education,Engineering',
-          nerd_creds: {
-            bio: 'Technology leader with systems mindset.',
-            skills: [
-              'Technical Program Management',
-              'Technical Product Management',
-              'Technical Project Management',
-            ],
-          },
-          socials: [],
-        },
-      ]);
+      await fulfillPostgrest(route, [profileRow]);
     });
   });
 
@@ -214,5 +222,45 @@ test.describe('Dashboard links and profile layout regressions', () => {
     await expect(viewProfileButton).toBeVisible();
     await expect(viewProfileButton).toHaveAttribute('href', '/profile/member');
     await expect(viewProfileButton).toHaveAttribute('target', '_blank');
+  });
+
+  test('word resume shows pending preview state on dashboard', async ({
+    page,
+  }) => {
+    profileRow.resume_url = 'https://example.com/member/resume.docx';
+    profileRow.nerd_creds = {
+      ...(profileRow.nerd_creds as Record<string, unknown>),
+      resume_thumbnail_status: 'pending',
+      resume_thumbnail_url: null,
+    };
+
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    await expect(page.getByText('Generating preview...')).toBeVisible();
+  });
+
+  test('word resume thumbnail renders on dashboard and public profile', async ({
+    page,
+  }) => {
+    profileRow.resume_url = 'https://example.com/member/resume.docx';
+    profileRow.nerd_creds = {
+      ...(profileRow.nerd_creds as Record<string, unknown>),
+      resume_thumbnail_status: 'complete',
+      resume_thumbnail_url:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Yf7xZ0AAAAASUVORK5CYII=',
+    };
+
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(
+      page.getByRole('img', { name: 'Resume thumbnail preview' }),
+    ).toBeVisible();
+
+    await page.goto('/profile/member');
+    await expect(page).toHaveURL(/\/profile\/member/);
+    await expect(
+      page.getByRole('img', { name: 'Resume thumbnail preview' }),
+    ).toBeVisible();
   });
 });

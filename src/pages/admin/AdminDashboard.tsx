@@ -73,6 +73,8 @@ const EMPTY_SUMMARY: AdminResumeThumbnailSummary = {
   failed: 0,
   totalWithResume: 0,
   recentFailures: [],
+  backfillLock: null,
+  latestBackfillRuns: [],
 };
 
 export const AdminDashboard = () => {

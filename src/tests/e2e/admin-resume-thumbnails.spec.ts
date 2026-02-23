@@ -95,6 +95,19 @@ test.describe('Admin resume thumbnail operations', () => {
                   updatedAt: new Date().toISOString(),
                 },
               ],
+              backfillLock: null,
+              latestBackfillRuns: [
+                {
+                  id: 'run-row-1',
+                  action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
+                  runId: 'run-123',
+                  attempted: 2,
+                  completed: 2,
+                  failed: 0,
+                  durationMs: 42,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
             },
           }),
         });
@@ -143,7 +156,13 @@ test.describe('Admin resume thumbnail operations', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
-            data: { attempted: 1, completed: 1, failed: 0 },
+            data: {
+              runId: 'run-xyz',
+              attempted: 1,
+              completed: 1,
+              failed: 0,
+              durationMs: 21,
+            },
           }),
         });
       },
@@ -163,6 +182,6 @@ test.describe('Admin resume thumbnail operations', () => {
     await page.getByLabel('Backfill Batch Size').fill('10');
     await page.getByRole('button', { name: 'Run Backfill' }).click();
     await expect.poll(() => backfillCalled).toBe(true);
-    await expect(page.getByText(/Backfill complete:/)).toBeVisible();
+    await expect(page.getByText(/Backfill .* complete in/i)).toBeVisible();
   });
 });

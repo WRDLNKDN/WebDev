@@ -383,6 +383,21 @@ export type AdminResumeThumbnailSummary = {
     error: string | null;
     updatedAt: string | null;
   }>;
+  backfillLock: {
+    runId: string;
+    acquiredAt: string;
+    adminEmail: string | null;
+  } | null;
+  latestBackfillRuns: Array<{
+    id: string;
+    action: string;
+    runId: string | null;
+    attempted: number | null;
+    completed: number | null;
+    failed: number | null;
+    durationMs: number | null;
+    createdAt: string;
+  }>;
 };
 
 export type AdminResumeThumbnailFailure = {
@@ -445,6 +460,8 @@ export async function fetchAdminResumeThumbnailSummary(
       failed: 0,
       totalWithResume: 0,
       recentFailures: [],
+      backfillLock: null,
+      latestBackfillRuns: [],
     }
   );
 }
@@ -518,7 +535,13 @@ export async function retryAdminResumeThumbnail(
 export async function runAdminResumeThumbnailBackfill(
   token: string,
   limit = 25,
-): Promise<{ attempted: number; completed: number; failed: number }> {
+): Promise<{
+  runId: string;
+  attempted: number;
+  completed: number;
+  failed: number;
+  durationMs: number;
+}> {
   const res = await fetch(`${API_BASE}/api/admin/resume-thumbnails/backfill`, {
     method: 'POST',
     headers: {
@@ -530,7 +553,13 @@ export async function runAdminResumeThumbnailBackfill(
   });
   const data = await parseJson<{
     ok: boolean;
-    data?: { attempted?: number; completed?: number; failed?: number };
+    data?: {
+      runId?: string;
+      attempted?: number;
+      completed?: number;
+      failed?: number;
+      durationMs?: number;
+    };
     error?: string;
     message?: string;
   }>(res, '/api/admin/resume-thumbnails/backfill');
@@ -544,8 +573,10 @@ export async function runAdminResumeThumbnailBackfill(
     );
   }
   return {
+    runId: data.data?.runId ?? '',
     attempted: data.data?.attempted ?? 0,
     completed: data.data?.completed ?? 0,
     failed: data.data?.failed ?? 0,
+    durationMs: data.data?.durationMs ?? 0,
   };
 }

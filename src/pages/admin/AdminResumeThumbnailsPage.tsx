@@ -31,6 +31,8 @@ const EMPTY_SUMMARY: AdminResumeThumbnailSummary = {
   failed: 0,
   totalWithResume: 0,
   recentFailures: [],
+  backfillLock: null,
+  latestBackfillRuns: [],
 };
 
 export const AdminResumeThumbnailsPage = () => {
@@ -93,7 +95,7 @@ export const AdminResumeThumbnailsPage = () => {
       const limit = Math.max(1, Math.min(200, Number(backfillLimit) || 25));
       const result = await runAdminResumeThumbnailBackfill(token, limit);
       setFlash(
-        `Backfill complete: attempted ${result.attempted}, completed ${result.completed}, failed ${result.failed}.`,
+        `Backfill ${result.runId || '(run)'} complete in ${result.durationMs}ms: attempted ${result.attempted}, completed ${result.completed}, failed ${result.failed}.`,
       );
       await load();
     } catch (e) {
@@ -121,6 +123,13 @@ export const AdminResumeThumbnailsPage = () => {
       {flash && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {flash}
+        </Alert>
+      )}
+      {summary.backfillLock && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Backfill lock active for run {summary.backfillLock.runId} (
+          {summary.backfillLock.adminEmail ?? 'unknown admin'}) started at{' '}
+          {summary.backfillLock.acquiredAt}.
         </Alert>
       )}
 
@@ -158,6 +167,23 @@ export const AdminResumeThumbnailsPage = () => {
         Status totals - pending: {summary.pending}, complete: {summary.complete}
         , failed: {summary.failed}, resumes: {summary.totalWithResume}
       </Typography>
+      {summary.latestBackfillRuns.length > 0 && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mb: 2, display: 'block' }}
+        >
+          Recent runs:{' '}
+          {summary.latestBackfillRuns
+            .slice(0, 3)
+            .map((run) => {
+              const runId = run.runId ?? run.id;
+              if (run.action.endsWith('STARTED')) return `${runId} started`;
+              return `${runId} ${run.action.endsWith('COMPLETED') ? 'completed' : 'failed'} (${run.completed ?? 0}/${run.attempted ?? 0})`;
+            })
+            .join(' | ')}
+        </Typography>
+      )}
 
       {loading ? (
         <Stack direction="row" alignItems="center" gap={1}>

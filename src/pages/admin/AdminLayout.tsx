@@ -3,6 +3,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import DescriptionIcon from '@mui/icons-material/Description';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
   Box,
@@ -68,6 +69,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Community Partners',
     to: '/admin/community-partners',
     icon: <HandshakeIcon />,
+  },
+  {
+    label: 'Resume Thumbnails',
+    to: '/admin/resume-thumbnails',
+    icon: <DescriptionIcon />,
   },
 ];
 

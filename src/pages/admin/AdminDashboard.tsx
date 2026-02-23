@@ -1,4 +1,5 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
+import DescriptionIcon from '@mui/icons-material/Description';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
@@ -56,6 +57,13 @@ const SECTIONS: SectionCard[] = [
       'Manage public partner listings on /community-partners independently from feed ads.',
     to: '/admin/community-partners',
     icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'Resume Thumbnails',
+    description:
+      'Review failed Word thumbnail jobs and run deterministic backfill/retry operations.',
+    to: '/admin/resume-thumbnails',
+    icon: <DescriptionIcon sx={{ fontSize: 40 }} />,
   },
 ];
 

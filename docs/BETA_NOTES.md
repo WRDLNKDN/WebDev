@@ -85,3 +85,5 @@
   attempt fails.
 - Admin dashboard now includes a resume-thumbnail ops summary (`pending`,
   `complete`, `failed`, and recent failures) for governance visibility.
+- Added `/admin/resume-thumbnails` drill-down for failure inspection, one-click
+  per-member retry, and deterministic backfill batches.

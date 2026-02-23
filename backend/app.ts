@@ -162,6 +162,111 @@ const logResumeThumbnailEvent = async (params: {
   });
 };
 
+const decodeResumeStoragePath = (resumeUrl: string): string | null => {
+  try {
+    const parsed = new URL(resumeUrl);
+    const marker = '/resumes/';
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx < 0) return null;
+    const raw = parsed.pathname.slice(idx + marker.length);
+    const clean = decodeURIComponent(raw).replace(/^\/+/, '').trim();
+    return clean || null;
+  } catch {
+    const marker = '/resumes/';
+    const idx = resumeUrl.indexOf(marker);
+    if (idx < 0) return null;
+    const raw = resumeUrl.slice(idx + marker.length);
+    const clean = decodeURIComponent(raw).replace(/^\/+/, '').trim();
+    return clean || null;
+  }
+};
+
+const generateAndPersistResumeThumbnail = async (
+  userId: string,
+  storagePath: string,
+): Promise<{ thumbnailUrl: string; extension: string; durationMs: number }> => {
+  const extension = getResumeExtension(storagePath);
+  if (!isSupportedResumeThumbnailExtension(extension)) {
+    throw new Error('Only .doc and .docx are supported');
+  }
+
+  await updateResumeThumbnailState(userId, {
+    resume_thumbnail_status: 'pending',
+    resume_thumbnail_error: null,
+  });
+  await logResumeThumbnailEvent({
+    userId,
+    action: 'RESUME_THUMBNAIL_PENDING',
+    meta: { storagePath, extension },
+  });
+
+  const startedAt = Date.now();
+  const { data: fileBlob, error: downloadError } = await adminSupabase.storage
+    .from('resumes')
+    .download(storagePath);
+  if (downloadError || !fileBlob) {
+    const message =
+      downloadError?.message || 'Could not download resume for thumbnailing';
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'failed',
+      resume_thumbnail_error: message,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_FAILED',
+      meta: { storagePath, extension, error: message },
+    });
+    throw new Error(message);
+  }
+
+  try {
+    const fileBuffer = Buffer.from(await fileBlob.arrayBuffer());
+    const thumbnailBuffer = await generateResumeThumbnailPng(
+      fileBuffer,
+      storagePath,
+    );
+    const thumbPath = `${userId}/resume-thumbnail.png`;
+    const { error: uploadError } = await adminSupabase.storage
+      .from('resumes')
+      .upload(thumbPath, thumbnailBuffer, {
+        contentType: 'image/png',
+        upsert: true,
+      });
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data: thumbPublic } = adminSupabase.storage
+      .from('resumes')
+      .getPublicUrl(thumbPath);
+    const thumbnailUrl = thumbPublic.publicUrl;
+    const durationMs = Date.now() - startedAt;
+
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'complete',
+      resume_thumbnail_url: thumbnailUrl,
+      resume_thumbnail_error: null,
+      resume_thumbnail_source_extension: extension,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_COMPLETE',
+      meta: { storagePath, extension, durationMs },
+    });
+    return { thumbnailUrl, extension, durationMs };
+  } catch (e: unknown) {
+    const message = errorMessage(e, 'Thumbnail generation failed');
+    await updateResumeThumbnailState(userId, {
+      resume_thumbnail_status: 'failed',
+      resume_thumbnail_error: message,
+    });
+    await logResumeThumbnailEvent({
+      userId,
+      action: 'RESUME_THUMBNAIL_FAILED',
+      meta: { storagePath, extension, error: message },
+    });
+    throw new Error(message);
+  }
+};
+
 const requireAdmin = async (
   req: AdminRequest,
   res: Response,
@@ -1499,58 +1604,9 @@ app.post(
       return sendApiError(res, 400, 'Only .doc and .docx are supported');
     }
 
-    await updateResumeThumbnailState(userId, {
-      resume_thumbnail_status: 'pending',
-      resume_thumbnail_error: null,
-    });
-    await logResumeThumbnailEvent({
-      userId,
-      action: 'RESUME_THUMBNAIL_PENDING',
-      meta: { storagePath, extension },
-    });
-
     try {
-      const startedAt = Date.now();
-      const { data: fileBlob, error: downloadError } =
-        await adminSupabase.storage.from('resumes').download(storagePath);
-      if (downloadError || !fileBlob) {
-        throw new Error(
-          downloadError?.message ||
-            'Could not download resume for thumbnailing',
-        );
-      }
-
-      const fileBuffer = Buffer.from(await fileBlob.arrayBuffer());
-      const thumbnailBuffer = await generateResumeThumbnailPng(
-        fileBuffer,
-        storagePath,
-      );
-      const thumbPath = `${userId}/resume-thumbnail.png`;
-      const { error: uploadError } = await adminSupabase.storage
-        .from('resumes')
-        .upload(thumbPath, thumbnailBuffer, {
-          contentType: 'image/png',
-          upsert: true,
-        });
-      if (uploadError) throw new Error(uploadError.message);
-
-      const { data: thumbPublic } = adminSupabase.storage
-        .from('resumes')
-        .getPublicUrl(thumbPath);
-      const thumbnailUrl = thumbPublic.publicUrl;
-
-      await updateResumeThumbnailState(userId, {
-        resume_thumbnail_status: 'complete',
-        resume_thumbnail_url: thumbnailUrl,
-        resume_thumbnail_error: null,
-        resume_thumbnail_source_extension: extension,
-      });
-      const durationMs = Date.now() - startedAt;
-      await logResumeThumbnailEvent({
-        userId,
-        action: 'RESUME_THUMBNAIL_COMPLETE',
-        meta: { storagePath, extension, durationMs },
-      });
+      const { thumbnailUrl, durationMs } =
+        await generateAndPersistResumeThumbnail(userId, storagePath);
       console.info('[resume-thumbnail] complete', {
         userId,
         storagePath,
@@ -1563,15 +1619,6 @@ app.post(
       });
     } catch (e: unknown) {
       const message = errorMessage(e, 'Thumbnail generation failed');
-      await updateResumeThumbnailState(userId, {
-        resume_thumbnail_status: 'failed',
-        resume_thumbnail_error: message,
-      });
-      await logResumeThumbnailEvent({
-        userId,
-        action: 'RESUME_THUMBNAIL_FAILED',
-        meta: { storagePath, extension, error: message },
-      });
       console.warn('[resume-thumbnail] failed', {
         userId,
         storagePath,
@@ -1738,6 +1785,195 @@ app.get(
         failed: failed.count ?? 0,
         totalWithResume: totalWithResume.count ?? 0,
         recentFailures,
+      },
+      error: null,
+    });
+  },
+);
+
+// GET /api/admin/resume-thumbnails/failures — paged failures list
+app.get(
+  '/api/admin/resume-thumbnails/failures',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const { data, error, count } = await adminSupabase
+      .from('profiles')
+      .select('id, handle, resume_url, nerd_creds, updated_at', {
+        count: 'exact',
+      })
+      .eq('nerd_creds->>resume_thumbnail_status', 'failed')
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+
+    const rows = (data ?? []).map((row) => {
+      const creds = (row as { nerd_creds?: unknown }).nerd_creds;
+      const meta =
+        creds && typeof creds === 'object'
+          ? (creds as Record<string, unknown>)
+          : {};
+      return {
+        profileId: (row as { id: string }).id,
+        handle: (row as { handle?: string | null }).handle ?? null,
+        resumeUrl: (row as { resume_url?: string | null }).resume_url ?? null,
+        error:
+          typeof meta.resume_thumbnail_error === 'string'
+            ? meta.resume_thumbnail_error
+            : null,
+        status:
+          typeof meta.resume_thumbnail_status === 'string'
+            ? meta.resume_thumbnail_status
+            : 'failed',
+        updatedAt:
+          typeof meta.resume_thumbnail_updated_at === 'string'
+            ? meta.resume_thumbnail_updated_at
+            : ((row as { updated_at?: string | null }).updated_at ?? null),
+      };
+    });
+
+    return res.json({
+      ok: true,
+      data: rows,
+      meta: { total: count ?? 0, limit, offset },
+      error: null,
+    });
+  },
+);
+
+// POST /api/admin/resume-thumbnails/retry — retry one profile
+app.post(
+  '/api/admin/resume-thumbnails/retry',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const profileId =
+      typeof (req.body as { profileId?: unknown }).profileId === 'string'
+        ? (req.body as { profileId: string }).profileId.trim()
+        : '';
+    if (!profileId) return sendApiError(res, 400, 'Missing profileId');
+
+    const { data: profile, error } = await adminSupabase
+      .from('profiles')
+      .select('id, resume_url')
+      .eq('id', profileId)
+      .maybeSingle();
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+    if (!profile) return sendApiError(res, 404, 'Profile not found');
+
+    const resumeUrl =
+      (profile as { resume_url?: string | null }).resume_url ?? null;
+    if (!resumeUrl) return sendApiError(res, 400, 'Profile has no resume URL');
+    const storagePath = decodeResumeStoragePath(resumeUrl);
+    if (!storagePath)
+      return sendApiError(res, 400, 'Resume URL is not in resumes bucket');
+
+    try {
+      const result = await generateAndPersistResumeThumbnail(
+        profileId,
+        storagePath,
+      );
+      return res.json({
+        ok: true,
+        data: {
+          profileId,
+          status: 'complete',
+          thumbnailUrl: result.thumbnailUrl,
+          durationMs: result.durationMs,
+        },
+      });
+    } catch (e: unknown) {
+      return sendApiError(res, 422, errorMessage(e, 'Thumbnail retry failed'));
+    }
+  },
+);
+
+// POST /api/admin/resume-thumbnails/backfill — batch-generate missing/failed previews
+app.post(
+  '/api/admin/resume-thumbnails/backfill',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(
+      200,
+      Math.max(1, Number((req.body as { limit?: unknown }).limit) || 25),
+    );
+    const { data: rows, error } = await adminSupabase
+      .from('profiles')
+      .select('id, resume_url, nerd_creds')
+      .not('resume_url', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(limit * 4);
+    if (error)
+      return sendApiError(
+        res,
+        500,
+        errorMessage(error.message, 'Server error'),
+      );
+
+    const candidates = (rows ?? [])
+      .map((row) => {
+        const profileId = (row as { id: string }).id;
+        const resumeUrl =
+          (row as { resume_url?: string | null }).resume_url ?? null;
+        const nerdCreds = (row as { nerd_creds?: unknown }).nerd_creds;
+        const status =
+          nerdCreds && typeof nerdCreds === 'object'
+            ? (nerdCreds as Record<string, unknown>).resume_thumbnail_status
+            : null;
+        if (!resumeUrl || status === 'complete') return null;
+        const storagePath = decodeResumeStoragePath(resumeUrl);
+        if (!storagePath) return null;
+        const extension = getResumeExtension(storagePath);
+        if (!isSupportedResumeThumbnailExtension(extension)) return null;
+        return { profileId, storagePath };
+      })
+      .filter((item): item is { profileId: string; storagePath: string } =>
+        Boolean(item),
+      )
+      .slice(0, limit);
+
+    const results: Array<{
+      profileId: string;
+      status: 'complete' | 'failed';
+      message?: string;
+    }> = [];
+
+    for (const candidate of candidates) {
+      try {
+        await generateAndPersistResumeThumbnail(
+          candidate.profileId,
+          candidate.storagePath,
+        );
+        results.push({ profileId: candidate.profileId, status: 'complete' });
+      } catch (e: unknown) {
+        results.push({
+          profileId: candidate.profileId,
+          status: 'failed',
+          message: errorMessage(e, 'Thumbnail generation failed'),
+        });
+      }
+    }
+
+    const completed = results.filter((r) => r.status === 'complete').length;
+    const failedCount = results.filter((r) => r.status === 'failed').length;
+    return res.json({
+      ok: true,
+      data: {
+        attempted: results.length,
+        completed,
+        failed: failedCount,
+        results,
       },
       error: null,
     });

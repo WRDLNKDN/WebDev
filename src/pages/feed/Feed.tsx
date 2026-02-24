@@ -187,6 +187,32 @@ function isGifUrl(url: string): boolean {
   }
 }
 
+const SUPPORTED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+]);
+
+function fileExtension(fileName: string): string {
+  const ext = fileName.split('.').pop();
+  return (ext ?? '').toLowerCase();
+}
+
+function isSupportedImageFile(file: File): boolean {
+  const mime = file.type.toLowerCase();
+  if (SUPPORTED_IMAGE_MIME_TYPES.has(mime)) return true;
+  return SUPPORTED_IMAGE_EXTENSIONS.has(fileExtension(file.name));
+}
+
 type LinkPreviewPayload = {
   url: string;
   title?: string;
@@ -487,6 +513,19 @@ const FeedCard = ({
           actor_display_name?: string;
         })
       : null;
+  const repostOriginalHandle =
+    typeof snapshot?.actor_handle === 'string' && snapshot.actor_handle.trim()
+      ? snapshot.actor_handle.trim()
+      : null;
+  const repostOriginalName =
+    typeof snapshot?.actor_display_name === 'string' &&
+    snapshot.actor_display_name.trim()
+      ? snapshot.actor_display_name.trim()
+      : repostOriginalHandle;
+  const repostOriginalId =
+    item.kind === 'repost' && typeof item.payload?.original_id === 'string'
+      ? item.payload.original_id
+      : null;
   const body =
     (snapshot?.body as string) ||
     (item.payload?.body as string) ||
@@ -651,13 +690,47 @@ const FeedCard = ({
                 </Typography>
               )}
               {item.kind === 'repost' && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 0.25 }}
-                >
-                  Reposted
-                </Typography>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mt: 0.25 }}
+                  >
+                    Reposted from
+                  </Typography>
+                  {repostOriginalHandle ? (
+                    <Typography
+                      component={RouterLink}
+                      to={`/profile/${repostOriginalHandle}`}
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'underline',
+                        '&:hover': { color: 'text.primary' },
+                      }}
+                    >
+                      {repostOriginalName || `@${repostOriginalHandle}`}
+                    </Typography>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      original member
+                    </Typography>
+                  )}
+                  {repostOriginalId && (
+                    <Typography
+                      component={RouterLink}
+                      to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'underline',
+                        '&:hover': { color: 'text.primary' },
+                      }}
+                    >
+                      original post
+                    </Typography>
+                  )}
+                </Stack>
               )}
             </Stack>
             {isEditingPost ? (
@@ -1412,6 +1485,7 @@ export const Feed = () => {
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
     string | null
   >(null);
@@ -1753,19 +1827,24 @@ export const Feed = () => {
 
   const handleAddPostImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !session?.user) return;
-    const valid = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ].includes(file.type);
-    if (!valid) {
-      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+    if (!file) return;
+    if (!session?.user) {
+      setSnack('Please sign in again before uploading images.');
+      e.target.value = '';
       return;
     }
+    if (!isSupportedImageFile(file)) {
+      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+      e.target.value = '';
+      return;
+    }
+    setImageUploading(true);
     try {
-      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${file.name.split('.').pop() ?? 'jpg'}`;
+      const extension =
+        fileExtension(file.name) ||
+        file.type.split('/')[1]?.toLowerCase() ||
+        'jpg';
+      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${extension}`;
       const { error } = await supabase.storage
         .from('feed-post-images')
         .upload(path, file, { contentType: file.type });
@@ -1773,11 +1852,19 @@ export const Feed = () => {
       const {
         data: { publicUrl },
       } = supabase.storage.from('feed-post-images').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Storage URL not returned');
       setComposerImages((prev) => [...prev, publicUrl]);
     } catch (err) {
-      setSnack(toMessage(err));
+      const details = toMessage(err);
+      setSnack(
+        details
+          ? `Image upload failed: ${details}`
+          : 'Image upload failed. Please try again.',
+      );
+    } finally {
+      setImageUploading(false);
+      e.target.value = '';
     }
-    e.target.value = '';
   };
 
   const handleReaction = useCallback(
@@ -2710,6 +2797,7 @@ export const Feed = () => {
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp"
               onChange={handleAddPostImage}
+              disabled={imageUploading}
               style={{ display: 'none' }}
               id="post-image-upload"
             />
@@ -2718,10 +2806,19 @@ export const Feed = () => {
               htmlFor="post-image-upload"
               size="small"
               aria-label="Add image"
+              disabled={imageUploading}
               sx={{ color: 'text.secondary' }}
             >
               <ImageOutlinedIcon />
             </IconButton>
+            {imageUploading && (
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <CircularProgress size={14} />
+                <Typography variant="caption" color="text.secondary">
+                  Uploading image...
+                </Typography>
+              </Stack>
+            )}
             <IconButton
               size="small"
               aria-label="Schedule post"
@@ -2760,7 +2857,7 @@ export const Feed = () => {
           <Button
             variant="contained"
             onClick={() => void handleSubmitPost()}
-            disabled={posting || !composerValue.trim()}
+            disabled={posting || imageUploading || !composerValue.trim()}
             sx={{ textTransform: 'none', borderRadius: '9999px', px: 3 }}
           >
             {posting ? 'Posting…' : 'Post'}

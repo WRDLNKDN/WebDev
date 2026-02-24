@@ -1,27 +1,16 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
-import DescriptionIcon from '@mui/icons-material/Description';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
-  Alert,
   Box,
   Card,
   CardActionArea,
   CardContent,
-  CircularProgress,
   Grid,
-  Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-  fetchAdminResumeThumbnailSummary,
-  type AdminResumeThumbnailSummary,
-} from '../../lib/api/contentApi';
-import { toMessage } from '../../lib/utils/errors';
-import { useAdminSession } from './AdminSessionContext';
 
 type SectionCard = {
   title: string;
@@ -58,54 +47,9 @@ const SECTIONS: SectionCard[] = [
     to: '/admin/community-partners',
     icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
   },
-  {
-    title: 'Resume Thumbnails',
-    description:
-      'Review failed Word thumbnail jobs and run deterministic backfill/retry operations.',
-    to: '/admin/resume-thumbnails',
-    icon: <DescriptionIcon sx={{ fontSize: 40 }} />,
-  },
 ];
 
-const EMPTY_SUMMARY: AdminResumeThumbnailSummary = {
-  pending: 0,
-  complete: 0,
-  failed: 0,
-  totalWithResume: 0,
-  recentFailures: [],
-  backfillLock: null,
-  latestBackfillRuns: [],
-};
-
 export const AdminDashboard = () => {
-  const session = useAdminSession();
-  const [summary, setSummary] =
-    useState<AdminResumeThumbnailSummary>(EMPTY_SUMMARY);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = session?.access_token;
-    if (!token) {
-      setSummaryLoading(false);
-      return;
-    }
-
-    const load = async () => {
-      try {
-        setSummaryLoading(true);
-        setSummaryError(null);
-        const data = await fetchAdminResumeThumbnailSummary(token);
-        setSummary(data);
-      } catch (e) {
-        setSummaryError(toMessage(e));
-      } finally {
-        setSummaryLoading(false);
-      }
-    };
-    void load();
-  }, [session?.access_token]);
-
   return (
     <Box>
       <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
@@ -114,52 +58,6 @@ export const AdminDashboard = () => {
       <Typography variant="body2" sx={{ opacity: 0.85, mb: 3 }}>
         Select an area below to get started.
       </Typography>
-
-      <Card
-        variant="outlined"
-        sx={{
-          mb: 3,
-          borderColor: 'rgba(255,255,255,0.12)',
-          bgcolor: 'rgba(255,255,255,0.03)',
-        }}
-      >
-        <CardContent sx={{ p: 2.5 }}>
-          <Typography variant="h6" gutterBottom>
-            Resume Thumbnail Ops
-          </Typography>
-          {summaryLoading ? (
-            <Stack direction="row" alignItems="center" gap={1}>
-              <CircularProgress size={18} />
-              <Typography variant="body2" color="text.secondary">
-                Loading operational summary...
-              </Typography>
-            </Stack>
-          ) : summaryError ? (
-            <Alert severity="warning">{summaryError}</Alert>
-          ) : (
-            <Stack spacing={1}>
-              <Typography variant="body2" color="text.secondary">
-                Total resumes uploaded: {summary.totalWithResume}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Thumbnail status - pending: {summary.pending}, complete:{' '}
-                {summary.complete}, failed: {summary.failed}
-              </Typography>
-              {summary.recentFailures.length > 0 && (
-                <Typography variant="caption" color="text.secondary">
-                  Recent failures:{' '}
-                  {summary.recentFailures
-                    .map(
-                      (item) =>
-                        `@${item.handle ?? item.profileId.slice(0, 8)} (${item.error ?? 'unknown error'})`,
-                    )
-                    .join(' | ')}
-                </Typography>
-              )}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
 
       <Grid container spacing={2}>
         {SECTIONS.map((section) => (

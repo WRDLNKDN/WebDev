@@ -3,7 +3,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import DescriptionIcon from '@mui/icons-material/Description';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
   Box,
@@ -20,24 +19,16 @@ import {
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
+import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const BG_SX = {
   minHeight: '100vh',
   position: 'relative' as const,
   display: 'flex',
   flexDirection: 'column' as const,
-  backgroundColor: '#05070f',
-  backgroundImage: 'url(/assets/landing-bg.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  overflow: 'hidden' as const,
-  '&::before': {
-    content: '""',
-    position: 'absolute' as const,
-    inset: 0,
-    background:
-      'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.85))',
-  },
+  overflowX: 'hidden' as const,
+  ...PAGE_BACKGROUND,
+  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
 
 const SIDEBAR_WIDTH = 260;
@@ -69,11 +60,6 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Community Partners',
     to: '/admin/community-partners',
     icon: <HandshakeIcon />,
-  },
-  {
-    label: 'Resume Thumbnails',
-    to: '/admin/resume-thumbnails',
-    icon: <DescriptionIcon />,
   },
 ];
 

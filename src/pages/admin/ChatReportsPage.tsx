@@ -229,11 +229,6 @@ export const ChatReportsPage = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      {reports.length === 0 && (
-        <Typography variant="body2" color="text.secondary">
-          No reports yet.
-        </Typography>
-      )}
     </Box>
   );
 };

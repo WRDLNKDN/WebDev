@@ -40,14 +40,11 @@ async function seedSignedInSession(page: Page) {
   }, payload);
 }
 
-test.describe('Admin resume thumbnail operations', () => {
-  test('admin can view failures and trigger retry/backfill', async ({
+test.describe('Admin resume thumbnail surface deprecation', () => {
+  test('admin no longer sees Resume Thumbnails nav and route redirects', async ({
     page,
   }) => {
     await seedSignedInSession(page);
-
-    let retryCalled = false;
-    let backfillCalled = false;
 
     await page.route('**/api/me/avatar', async (route) => {
       await route.fulfill({
@@ -74,174 +71,12 @@ test.describe('Admin resume thumbnail operations', () => {
       });
     });
 
-    await page.route(
-      '**/api/admin/resume-thumbnails/summary',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            data: {
-              pending: 1,
-              complete: 4,
-              failed: 1,
-              totalWithResume: 6,
-              recentFailures: [
-                {
-                  profileId: USER_ID,
-                  handle: 'member',
-                  error: 'renderer timeout',
-                  updatedAt: new Date().toISOString(),
-                },
-              ],
-              backfillLock: null,
-              latestBackfillRuns: [
-                {
-                  id: 'run-row-1',
-                  action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
-                  runId: 'run-123',
-                  attempted: 2,
-                  completed: 2,
-                  failed: 0,
-                  durationMs: 42,
-                  createdAt: new Date().toISOString(),
-                },
-              ],
-            },
-          }),
-        });
-      },
-    );
-
-    await page.route(
-      '**/api/admin/resume-thumbnails/failures**',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            data: [
-              {
-                profileId: USER_ID,
-                handle: 'member',
-                resumeUrl: 'https://example.com/member/resume.docx',
-                error: 'renderer timeout',
-                status: 'failed',
-                updatedAt: new Date().toISOString(),
-              },
-            ],
-            meta: { total: 1, limit: 50, offset: 0 },
-          }),
-        });
-      },
-    );
-
-    await page.route(
-      '**/api/admin/resume-thumbnails/runs?**',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            data: [
-              {
-                id: 'run-row-1',
-                actorEmail: 'admin@example.com',
-                action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
-                runId: 'run-123',
-                attempted: 2,
-                completed: 2,
-                failed: 0,
-                durationMs: 42,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-            meta: { total: 1, limit: 25, offset: 0 },
-          }),
-        });
-      },
-    );
-
-    await page.route(
-      '**/api/admin/resume-thumbnails/runs/run-123',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            data: {
-              runId: 'run-123',
-              events: [
-                {
-                  id: 'evt-1',
-                  actorEmail: 'admin@example.com',
-                  action: 'RESUME_THUMBNAIL_BACKFILL_COMPLETED',
-                  createdAt: new Date().toISOString(),
-                  meta: {
-                    attempted: 2,
-                    completed: 2,
-                    failed: 0,
-                    failedProfiles: [],
-                  },
-                },
-              ],
-            },
-          }),
-        });
-      },
-    );
-
-    await page.route('**/api/admin/resume-thumbnails/retry', async (route) => {
-      retryCalled = true;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, data: { status: 'complete' } }),
-      });
-    });
-
-    await page.route(
-      '**/api/admin/resume-thumbnails/backfill',
-      async (route) => {
-        backfillCalled = true;
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            data: {
-              runId: 'run-xyz',
-              attempted: 1,
-              completed: 1,
-              failed: 0,
-              durationMs: 21,
-            },
-          }),
-        });
-      },
-    );
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByText('Resume Thumbnails')).toHaveCount(0);
 
     await page.goto('/admin/resume-thumbnails');
-    await expect(page).toHaveURL(/\/admin\/resume-thumbnails/);
-    await page.waitForLoadState('networkidle');
-    await expect(
-      page.getByRole('heading', { name: 'Resume Thumbnail Ops' }),
-    ).toBeVisible({ timeout: 45000 });
-    await expect(page.getByText('@member')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Retry' }).click();
-    await expect.poll(() => retryCalled).toBe(true);
-
-    await page.getByLabel('Backfill Batch Size').fill('10');
-    await page.getByRole('button', { name: 'Run Backfill' }).click();
-    await expect.poll(() => backfillCalled).toBe(true);
-    await expect(page.getByText(/Backfill .* complete in/i)).toBeVisible();
-
-    await page.getByRole('button', { name: 'View' }).click();
-    await expect(page.getByText('Run Details')).toBeVisible();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByText('Resume Thumbnails')).toHaveCount(0);
   });
 });

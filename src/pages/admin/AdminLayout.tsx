@@ -3,7 +3,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import DescriptionIcon from '@mui/icons-material/Description';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
   Box,
@@ -20,24 +19,16 @@ import {
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
+import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const BG_SX = {
   minHeight: '100vh',
   position: 'relative' as const,
   display: 'flex',
   flexDirection: 'column' as const,
-  backgroundColor: '#05070f',
-  backgroundImage: 'url(/assets/landing-bg.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  overflow: 'hidden' as const,
-  '&::before': {
-    content: '""',
-    position: 'absolute' as const,
-    inset: 0,
-    background:
-      'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.85))',
-  },
+  overflowX: 'hidden' as const,
+  ...PAGE_BACKGROUND,
+  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
 
 const SIDEBAR_WIDTH = 260;
@@ -70,34 +61,7 @@ const NAV_ITEMS: NavItem[] = [
     to: '/admin/community-partners',
     icon: <HandshakeIcon />,
   },
-  {
-    label: 'Resume Thumbnails',
-    to: '/admin/resume-thumbnails',
-    icon: <DescriptionIcon />,
-  },
 ];
-
-function getBreadcrumbs(pathname: string): { label: string; to?: string }[] {
-  const parts = pathname
-    .replace(/^\/admin\/?/, '')
-    .split('/')
-    .filter(Boolean);
-  const crumbs: { label: string; to?: string }[] = [
-    { label: 'Admin', to: '/admin' },
-  ];
-  let acc = '/admin';
-  for (const p of parts) {
-    acc += `/${p}`;
-    const item = NAV_ITEMS.find((n) => n.to === acc);
-    crumbs.push({
-      label:
-        item?.label ??
-        p.charAt(0).toUpperCase() + p.slice(1).replace(/-/g, ' '),
-      to: acc,
-    });
-  }
-  return crumbs;
-}
 
 type Props = {
   children: ReactNode;
@@ -117,7 +81,6 @@ export const AdminLayout = ({
   subtitle,
 }: Props) => {
   const location = useLocation();
-  const breadcrumbs = getBreadcrumbs(location.pathname);
 
   const sidebar = (
     <Paper
@@ -209,56 +172,6 @@ export const AdminLayout = ({
 
             {/* Main content */}
             <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-              {/* Breadcrumbs */}
-              <Box
-                sx={{
-                  mb: 2,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}
-              >
-                {breadcrumbs.map((crumb, i) => (
-                  <Box key={crumb.to ?? 'current'} component="span">
-                    {i > 0 && (
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mx: 0.5 }}
-                      >
-                        /
-                      </Typography>
-                    )}
-                    {crumb.to && i < breadcrumbs.length - 1 ? (
-                      <Typography
-                        component={RouterLink}
-                        to={crumb.to}
-                        variant="body2"
-                        sx={{
-                          color: 'primary.main',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {crumb.label}
-                      </Typography>
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          fontWeight: i === breadcrumbs.length - 1 ? 600 : 400,
-                        }}
-                      >
-                        {crumb.label}
-                      </Typography>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-
               {/* Optional page title */}
               {(title || subtitle) && (
                 <Box sx={{ mb: 3 }}>

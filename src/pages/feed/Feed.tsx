@@ -1,8 +1,11 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EventIcon from '@mui/icons-material/Event';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MessageIcon from '@mui/icons-material/Message';
@@ -64,6 +67,13 @@ import {
   seededShuffle,
   type FeedDisplayItem,
 } from '../../lib/feed/adRotation';
+import {
+  createClosedImagePreviewState,
+  createOpeningImagePreviewState,
+  getWrappedPreviewIndex,
+  reduceImagePreviewErrored,
+  reduceImagePreviewLoaded,
+} from '../../lib/feed/imagePreviewState';
 import { logFeedAdEvent } from '../../lib/analytics/feedAdEvents';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import { toMessage } from '../../lib/utils/errors';
@@ -185,6 +195,48 @@ function isGifUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function removeGifUrlsFromBody(body: string): string {
+  if (!body.trim()) return '';
+  const gifUrls = extractBodyUrls(body).filter(isGifUrl);
+  if (gifUrls.length === 0) return body;
+
+  let cleaned = body;
+  for (const url of gifUrls) {
+    cleaned = cleaned.split(url).join('');
+  }
+  return cleaned
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+const SUPPORTED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+]);
+
+function fileExtension(fileName: string): string {
+  const ext = fileName.split('.').pop();
+  return (ext ?? '').toLowerCase();
+}
+
+function isSupportedImageFile(file: File): boolean {
+  const mime = file.type.toLowerCase();
+  if (SUPPORTED_IMAGE_MIME_TYPES.has(mime)) return true;
+  return SUPPORTED_IMAGE_EXTENSIONS.has(fileExtension(file.name));
 }
 
 type LinkPreviewPayload = {
@@ -336,6 +388,8 @@ type FeedCardProps = {
   onDismissLinkPreview: () => void;
 };
 
+type PreviewImageSource = 'body_gif' | 'post_attachment';
+
 /**
  * Minimum renderable post criteria: exclude feed items with no displayable
  * content (avoids blank cards with only header + action buttons).
@@ -473,6 +527,10 @@ const FeedCard = ({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState('');
   const [savingCommentEdit, setSavingCommentEdit] = useState(false);
+  const [imagePreviewState, setImagePreviewState] = useState(
+    createClosedImagePreviewState,
+  );
+  const imageTouchStartXRef = useRef<number | null>(null);
   const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(
     null,
   );
@@ -486,6 +544,19 @@ const FeedCard = ({
           actor_handle?: string;
           actor_display_name?: string;
         })
+      : null;
+  const repostOriginalHandle =
+    typeof snapshot?.actor_handle === 'string' && snapshot.actor_handle.trim()
+      ? snapshot.actor_handle.trim()
+      : null;
+  const repostOriginalName =
+    typeof snapshot?.actor_display_name === 'string' &&
+    snapshot.actor_display_name.trim()
+      ? snapshot.actor_display_name.trim()
+      : repostOriginalHandle;
+  const repostOriginalId =
+    item.kind === 'repost' && typeof item.payload?.original_id === 'string'
+      ? item.payload.original_id
       : null;
   const body =
     (snapshot?.body as string) ||
@@ -501,8 +572,36 @@ const FeedCard = ({
   const linkPreview = item.payload?.link_preview as
     | LinkPreviewPayload
     | undefined;
-  const bodyGifUrls = extractBodyUrls(body).filter(isGifUrl);
-  const bodyGifUrlSet = new Set(bodyGifUrls);
+  const bodyGifUrls = useMemo(
+    () => extractBodyUrls(body).filter(isGifUrl),
+    [body],
+  );
+  const bodyGifUrlSet = useMemo(() => new Set(bodyGifUrls), [bodyGifUrls]);
+  const postAttachmentImages = useMemo(
+    () =>
+      Array.isArray(item.payload?.images)
+        ? ((item.payload.images as string[]).filter(
+            (imgUrl) => !bodyGifUrlSet.has(imgUrl),
+          ) as string[])
+        : [],
+    [bodyGifUrlSet, item.payload?.images],
+  );
+  const previewableImages = useMemo(() => {
+    const ordered: { url: string; source: PreviewImageSource }[] = [];
+    const seen = new Set<string>();
+    for (const gifUrl of bodyGifUrls) {
+      if (seen.has(gifUrl)) continue;
+      seen.add(gifUrl);
+      ordered.push({ url: gifUrl, source: 'body_gif' });
+    }
+    for (const imageUrl of postAttachmentImages) {
+      if (seen.has(imageUrl)) continue;
+      seen.add(imageUrl);
+      ordered.push({ url: imageUrl, source: 'post_attachment' });
+    }
+    return ordered;
+  }, [bodyGifUrls, postAttachmentImages]);
+  const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
   const likeCount = item.like_count ?? 0;
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
@@ -511,6 +610,109 @@ const FeedCard = ({
   const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
   const isPostEdited = Boolean(item.edited_at);
+  const imageLightboxUrl = imagePreviewState.url;
+  const currentPreviewIndex = useMemo(
+    () =>
+      imageLightboxUrl
+        ? previewableImages.findIndex((img) => img.url === imageLightboxUrl)
+        : -1,
+    [imageLightboxUrl, previewableImages],
+  );
+
+  const openImageLightbox = useCallback(
+    (
+      urlToOpen: string,
+      source: PreviewImageSource,
+      trackAction: 'open' | 'navigate' = 'open',
+    ) => {
+      setImagePreviewState(createOpeningImagePreviewState(urlToOpen));
+      if (trackAction === 'open') {
+        trackEvent('feed_image_preview_opened', {
+          source: 'feed',
+          post_id: item.id,
+          media_source: source,
+          media_url: urlToOpen,
+        });
+      }
+    },
+    [item.id],
+  );
+
+  const openImageByIndex = useCallback(
+    (index: number) => {
+      const next = previewableImages[index];
+      if (!next) return;
+      openImageLightbox(next.url, next.source, 'navigate');
+    },
+    [openImageLightbox, previewableImages],
+  );
+
+  const handlePreviewPrevious = useCallback(() => {
+    if (previewableImages.length <= 1 || currentPreviewIndex < 0) return;
+    const nextIndex = getWrappedPreviewIndex(
+      currentPreviewIndex,
+      'previous',
+      previewableImages.length,
+    );
+    if (nextIndex < 0) return;
+    openImageByIndex(nextIndex);
+  }, [currentPreviewIndex, openImageByIndex, previewableImages.length]);
+
+  const handlePreviewNext = useCallback(() => {
+    if (previewableImages.length <= 1 || currentPreviewIndex < 0) return;
+    const nextIndex = getWrappedPreviewIndex(
+      currentPreviewIndex,
+      'next',
+      previewableImages.length,
+    );
+    if (nextIndex < 0) return;
+    openImageByIndex(nextIndex);
+  }, [currentPreviewIndex, openImageByIndex, previewableImages.length]);
+
+  const closeImageLightbox = useCallback(() => {
+    if (imageLightboxUrl) {
+      trackEvent('feed_image_preview_closed', {
+        source: 'feed',
+        post_id: item.id,
+        media_url: imageLightboxUrl,
+      });
+    }
+    setImagePreviewState(createClosedImagePreviewState());
+  }, [imageLightboxUrl, item.id]);
+
+  useEffect(() => {
+    if (!imageLightboxUrl) return;
+    const { body, documentElement } = document;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyTouchAction = body.style.touchAction;
+    const prevBodyOverscrollBehavior = body.style.overscrollBehavior;
+    const prevHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
+    body.style.overflow = 'hidden';
+    body.style.touchAction = 'none';
+    body.style.overscrollBehavior = 'none';
+    documentElement.style.overscrollBehavior = 'none';
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      body.style.touchAction = prevBodyTouchAction;
+      body.style.overscrollBehavior = prevBodyOverscrollBehavior;
+      documentElement.style.overscrollBehavior = prevHtmlOverscrollBehavior;
+    };
+  }, [imageLightboxUrl]);
+
+  useEffect(() => {
+    if (!imageLightboxUrl) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        handlePreviewPrevious();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        handlePreviewNext();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handlePreviewNext, handlePreviewPrevious, imageLightboxUrl]);
 
   const handleReaction = (type: ReactionType) => {
     if (viewerReaction === type) {
@@ -588,20 +790,43 @@ const FeedCard = ({
       sx={{ borderRadius: 2, mb: 2, minWidth: 0, position: 'relative' }}
     >
       {isOwner && (
-        <IconButton
-          size="small"
-          onClick={() => actions.onDelete(item.id)}
-          aria-label="Delete post"
+        <Stack
+          direction="row"
+          spacing={0.5}
           sx={{
             position: 'absolute',
             top: 8,
             right: 8,
-            color: 'text.secondary',
-            '&:hover': { color: 'error.main' },
           }}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+          {item.kind === 'post' && !isEditingPost && (
+            <IconButton
+              size="small"
+              onClick={() => {
+                setEditPostDraft(body);
+                setIsEditingPost(true);
+              }}
+              aria-label="Edit post"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          )}
+          <IconButton
+            size="small"
+            onClick={() => actions.onDelete(item.id)}
+            aria-label="Delete post"
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { color: 'error.main' },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
       )}
       <CardContent sx={{ pt: 2, pb: 1, '&:last-child': { pb: 2 } }}>
         <Stack
@@ -651,13 +876,47 @@ const FeedCard = ({
                 </Typography>
               )}
               {item.kind === 'repost' && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 0.25 }}
-                >
-                  Reposted
-                </Typography>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mt: 0.25 }}
+                  >
+                    Reposted from
+                  </Typography>
+                  {repostOriginalHandle ? (
+                    <Typography
+                      component={RouterLink}
+                      to={`/profile/${repostOriginalHandle}`}
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'underline',
+                        '&:hover': { color: 'text.primary' },
+                      }}
+                    >
+                      {repostOriginalName || `@${repostOriginalHandle}`}
+                    </Typography>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      original member
+                    </Typography>
+                  )}
+                  {repostOriginalId && (
+                    <Typography
+                      component={RouterLink}
+                      to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'underline',
+                        '&:hover': { color: 'text.primary' },
+                      }}
+                    >
+                      original post
+                    </Typography>
+                  )}
+                </Stack>
               )}
             </Stack>
             {isEditingPost ? (
@@ -690,21 +949,23 @@ const FeedCard = ({
                 </Stack>
               </Stack>
             ) : (
-              body && (
+              (bodyTextWithoutGifUrls || bodyGifUrls.length > 0) && (
                 <>
-                  <Typography
-                    variant="body1"
-                    component="span"
-                    sx={{
-                      mt: 0.5,
-                      whiteSpace: 'pre-wrap',
-                      display: 'block',
-                      overflowWrap: 'break-word',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {linkifyBody(body)}
-                  </Typography>
+                  {bodyTextWithoutGifUrls && (
+                    <Typography
+                      variant="body1"
+                      component="span"
+                      sx={{
+                        mt: 0.5,
+                        whiteSpace: 'pre-wrap',
+                        display: 'block',
+                        overflowWrap: 'break-word',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {linkifyBody(bodyTextWithoutGifUrls)}
+                    </Typography>
+                  )}
                   {bodyGifUrls.map((gifUrl) => (
                     <Box
                       key={gifUrl}
@@ -712,6 +973,16 @@ const FeedCard = ({
                       src={gifUrl}
                       alt=""
                       loading="lazy"
+                      onClick={() => openImageLightbox(gifUrl, 'body_gif')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openImageLightbox(gifUrl, 'body_gif');
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label="View image full screen"
                       sx={{
                         mt: 1,
                         maxWidth: 320,
@@ -721,6 +992,7 @@ const FeedCard = ({
                         borderRadius: 1,
                         border: '1px solid',
                         borderColor: 'divider',
+                        cursor: 'zoom-in',
                       }}
                     />
                   ))}
@@ -733,32 +1005,40 @@ const FeedCard = ({
                 onDismiss={onDismissLinkPreview}
               />
             )}
-            {Array.isArray(item.payload?.images) &&
-              (item.payload.images as string[]).length > 0 && (
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  sx={{ mt: 1.5 }}
-                  flexWrap="wrap"
-                >
-                  {(item.payload.images as string[])
-                    .filter((imgUrl) => !bodyGifUrlSet.has(imgUrl))
-                    .map((imgUrl) => (
-                      <Box
-                        key={imgUrl}
-                        component="img"
-                        src={imgUrl}
-                        alt=""
-                        sx={{
-                          maxWidth: 280,
-                          maxHeight: 280,
-                          objectFit: 'cover',
-                          borderRadius: 1,
-                        }}
-                      />
-                    ))}
-                </Stack>
-              )}
+            {postAttachmentImages.length > 0 && (
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{ mt: 1.5 }}
+                flexWrap="wrap"
+              >
+                {postAttachmentImages.map((imgUrl) => (
+                  <Box
+                    key={imgUrl}
+                    component="img"
+                    src={imgUrl}
+                    alt=""
+                    onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openImageLightbox(imgUrl, 'post_attachment');
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label="View image full screen"
+                    sx={{
+                      maxWidth: 280,
+                      maxHeight: 280,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                      cursor: 'zoom-in',
+                    }}
+                  />
+                ))}
+              </Stack>
+            )}
             {url && (
               <Typography
                 variant="body2"
@@ -930,39 +1210,6 @@ const FeedCard = ({
               >
                 Send
               </Button>
-              {isOwner && item.kind === 'post' && !isEditingPost && (
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setEditPostDraft(body);
-                    setIsEditingPost(true);
-                  }}
-                  sx={{
-                    textTransform: 'none',
-                    color: 'text.secondary',
-                    minWidth: 0,
-                    minHeight: { xs: 40, sm: 32 },
-                    px: { xs: 1, sm: 0.75 },
-                  }}
-                >
-                  Edit
-                </Button>
-              )}
-              {isOwner && item.kind === 'post' && !isEditingPost && (
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={() => actions.onDelete(item.id)}
-                  sx={{
-                    textTransform: 'none',
-                    minWidth: 0,
-                    minHeight: { xs: 40, sm: 32 },
-                    px: { xs: 1, sm: 0.75 },
-                  }}
-                >
-                  Delete
-                </Button>
-              )}
             </Stack>
             {commentsExpanded && (
               <Box sx={{ mt: 2, pl: 0 }}>
@@ -1227,6 +1474,146 @@ const FeedCard = ({
           </Box>
         </Stack>
       </CardContent>
+      <Dialog
+        open={Boolean(imageLightboxUrl)}
+        onClose={closeImageLightbox}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
+          Image preview
+          <Box sx={{ flex: 1 }} />
+          <IconButton
+            edge="end"
+            onClick={closeImageLightbox}
+            aria-label="Close image preview"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{
+            position: 'relative',
+            display: 'flex',
+            justifyContent: 'center',
+            p: { xs: 1, sm: 2 },
+          }}
+        >
+          {imageLightboxUrl ? (
+            <Box
+              sx={{
+                width: '100%',
+                minHeight: 160,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+              }}
+              onTouchStart={(event) => {
+                imageTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+              }}
+              onTouchEnd={(event) => {
+                if (previewableImages.length <= 1) return;
+                const startX = imageTouchStartXRef.current;
+                const endX = event.changedTouches[0]?.clientX ?? null;
+                imageTouchStartXRef.current = null;
+                if (startX === null || endX === null) return;
+                const deltaX = startX - endX;
+                if (Math.abs(deltaX) < 40) return;
+                if (deltaX > 0) {
+                  handlePreviewNext();
+                } else {
+                  handlePreviewPrevious();
+                }
+              }}
+            >
+              {previewableImages.length > 1 && (
+                <>
+                  <IconButton
+                    onClick={handlePreviewPrevious}
+                    aria-label="Previous image"
+                    sx={{ position: 'absolute', left: 8, zIndex: 1 }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={handlePreviewNext}
+                    aria-label="Next image"
+                    sx={{ position: 'absolute', right: 8, zIndex: 1 }}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </>
+              )}
+              {imagePreviewState.error ? (
+                <Typography variant="body2" color="text.secondary">
+                  Unable to load image preview.
+                </Typography>
+              ) : (
+                <>
+                  {imagePreviewState.loading && <CircularProgress size={28} />}
+                  <Box
+                    component="img"
+                    src={imageLightboxUrl}
+                    alt="Full-screen post image"
+                    onLoad={() =>
+                      setImagePreviewState((prev) =>
+                        reduceImagePreviewLoaded(prev),
+                      )
+                    }
+                    onError={() =>
+                      setImagePreviewState((prev) =>
+                        reduceImagePreviewErrored(prev),
+                      )
+                    }
+                    sx={{
+                      display: imagePreviewState.loading ? 'none' : 'block',
+                      maxWidth: '100%',
+                      maxHeight: '80vh',
+                      objectFit: 'contain',
+                      borderRadius: 1,
+                    }}
+                  />
+                </>
+              )}
+            </Box>
+          ) : null}
+          {imageLightboxUrl && (
+            <Button
+              component="a"
+              href={imageLightboxUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="text"
+              startIcon={<OpenInNewIcon />}
+              sx={{ position: 'absolute', bottom: 4, left: 8, minWidth: 0 }}
+            >
+              Open original
+            </Button>
+          )}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              position: 'absolute',
+              bottom: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            {currentPreviewIndex >= 0 ? currentPreviewIndex + 1 : 0}/
+            {previewableImages.length || 0}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ position: 'absolute', bottom: 8, right: 12 }}
+          >
+            Press Esc to close
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
@@ -1412,6 +1799,7 @@ export const Feed = () => {
   const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
     string | null
   >(null);
@@ -1753,19 +2141,24 @@ export const Feed = () => {
 
   const handleAddPostImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !session?.user) return;
-    const valid = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ].includes(file.type);
-    if (!valid) {
-      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+    if (!file) return;
+    if (!session?.user) {
+      setSnack('Please sign in again before uploading images.');
+      e.target.value = '';
       return;
     }
+    if (!isSupportedImageFile(file)) {
+      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+      e.target.value = '';
+      return;
+    }
+    setImageUploading(true);
     try {
-      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${file.name.split('.').pop() ?? 'jpg'}`;
+      const extension =
+        fileExtension(file.name) ||
+        file.type.split('/')[1]?.toLowerCase() ||
+        'jpg';
+      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${extension}`;
       const { error } = await supabase.storage
         .from('feed-post-images')
         .upload(path, file, { contentType: file.type });
@@ -1773,11 +2166,19 @@ export const Feed = () => {
       const {
         data: { publicUrl },
       } = supabase.storage.from('feed-post-images').getPublicUrl(path);
+      if (!publicUrl) throw new Error('Storage URL not returned');
       setComposerImages((prev) => [...prev, publicUrl]);
     } catch (err) {
-      setSnack(toMessage(err));
+      const details = toMessage(err);
+      setSnack(
+        details
+          ? `Image upload failed: ${details}`
+          : 'Image upload failed. Please try again.',
+      );
+    } finally {
+      setImageUploading(false);
+      e.target.value = '';
     }
-    e.target.value = '';
   };
 
   const handleReaction = useCallback(
@@ -2710,6 +3111,7 @@ export const Feed = () => {
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp"
               onChange={handleAddPostImage}
+              disabled={imageUploading}
               style={{ display: 'none' }}
               id="post-image-upload"
             />
@@ -2718,10 +3120,19 @@ export const Feed = () => {
               htmlFor="post-image-upload"
               size="small"
               aria-label="Add image"
+              disabled={imageUploading}
               sx={{ color: 'text.secondary' }}
             >
               <ImageOutlinedIcon />
             </IconButton>
+            {imageUploading && (
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <CircularProgress size={14} />
+                <Typography variant="caption" color="text.secondary">
+                  Uploading image...
+                </Typography>
+              </Stack>
+            )}
             <IconButton
               size="small"
               aria-label="Schedule post"
@@ -2760,7 +3171,7 @@ export const Feed = () => {
           <Button
             variant="contained"
             onClick={() => void handleSubmitPost()}
-            disabled={posting || !composerValue.trim()}
+            disabled={posting || imageUploading || !composerValue.trim()}
             sx={{ textTransform: 'none', borderRadius: '9999px', px: 3 }}
           >
             {posting ? 'Posting…' : 'Post'}

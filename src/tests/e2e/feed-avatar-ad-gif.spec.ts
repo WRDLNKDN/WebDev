@@ -432,6 +432,122 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
     await expect(page.locator(`img[src="${gifUrl}"]`)).toHaveCount(1);
   });
 
+  test('attached post images support fullscreen, navigation, and escape close', async ({
+    page,
+  }) => {
+    await seedSignedInSession(page);
+    const firstImageUrl =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8WfR8AAAAASUVORK5CYII=';
+    const secondImageUrl =
+      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+    await page.route('**/api/me/avatar', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
+      });
+    });
+    await page.route('**/rest/v1/notifications*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-0/0' },
+        body: '[]',
+      });
+    });
+    await page.route('**/rest/v1/rpc/is_admin', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(false),
+      });
+    });
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      const reqUrl = route.request().url();
+      if (reqUrl.includes('select=feed_view_preference')) {
+        await fulfillPostgrest(route, [{ feed_view_preference: 'anyone' }]);
+        return;
+      }
+      await fulfillPostgrest(route, [
+        {
+          id: USER_ID,
+          handle: 'member',
+          display_name: 'Member',
+          avatar: null,
+          status: 'approved',
+          join_reason: ['networking'],
+          participation_style: ['builder'],
+          policy_version: '1.0',
+        },
+      ]);
+    });
+    await page.route('**/rest/v1/feed_advertisers*', async (route) => {
+      await fulfillPostgrest(route, []);
+    });
+    await page.route(/\/api\/feeds(\?.*)?$/, async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [
+            {
+              id: 'post-image',
+              user_id: USER_ID,
+              kind: 'post',
+              payload: {
+                body: 'Image preview test',
+                images: [firstImageUrl, secondImageUrl],
+              },
+              parent_id: null,
+              created_at: new Date().toISOString(),
+              edited_at: null,
+              actor: { handle: 'member', display_name: 'Member', avatar: null },
+              like_count: 0,
+              love_count: 0,
+              inspiration_count: 0,
+              care_count: 0,
+              viewer_reaction: null,
+              comment_count: 0,
+            },
+          ],
+          nextCursor: null,
+        }),
+      });
+    });
+
+    await page.goto('/feed');
+
+    await page
+      .locator('img[aria-label="View image full screen"]')
+      .first()
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Image preview' });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole('img', { name: 'Full-screen post image' }),
+    ).toBeVisible();
+    await expect(dialog.getByText('1/2')).toBeVisible();
+    await expect(
+      dialog.getByRole('link', { name: 'Open original' }),
+    ).toHaveAttribute('href', firstImageUrl);
+
+    await dialog.getByRole('button', { name: 'Next image' }).click();
+    await expect(dialog.getByText('2/2')).toBeVisible();
+    await expect(
+      dialog.getByRole('link', { name: 'Open original' }),
+    ).toHaveAttribute('href', secondImageUrl);
+    await dialog.getByRole('button', { name: 'Next image' }).click();
+    await expect(dialog.getByText('1/2')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+  });
+
   test('mobile feed header stacks and action buttons remain tap-friendly', async ({
     page,
   }) => {

@@ -2,7 +2,6 @@
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import { HomeSkeleton } from '../../components/home/HomeSkeleton';
@@ -14,10 +13,9 @@ import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
- * If user has session, redirect to /feed. Else show guest hero and CTAs.
+ * Always render as the canonical "/" destination.
  */
 export const Home = () => {
-  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [error, setError] = useState<string | null>(null);
@@ -44,23 +42,18 @@ export const Home = () => {
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
-  // AUTH: if session exists, redirect to /feed. Else stop loading and show Hero.
+  // AUTH: initialize once; home remains canonical even when signed in.
   useEffect(() => {
     let mounted = true;
 
     const checkSession = async () => {
       try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { error: sessionError } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         if (sessionError)
           console.warn('Session check warning:', sessionError.message);
-
-        if (data.session) {
-          navigate('/feed', { replace: true });
-          return;
-        }
 
         setIsLoading(false);
       } catch (err) {
@@ -74,10 +67,8 @@ export const Home = () => {
 
     void checkSession();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted && session) {
-        navigate('/feed', { replace: true });
-      }
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      if (mounted) setIsLoading(false);
     });
 
     const safetyTimer = setTimeout(() => {
@@ -89,7 +80,7 @@ export const Home = () => {
       clearTimeout(safetyTimer);
       sub.subscription.unsubscribe();
     };
-  }, [navigate, isLoading]);
+  }, [isLoading]);
 
   const handleVideoEnded = () => {
     if (!prefersReducedMotion) setHeroPhase('dimmed');

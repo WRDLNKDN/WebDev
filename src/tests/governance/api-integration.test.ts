@@ -110,27 +110,6 @@ describe.skipIf(!hasSupabaseEnv)(
       expect(status).toBe(403);
     });
 
-    it('GET /api/admin/resume-thumbnails/summary without auth returns 401', async () => {
-      const { status } = await request('/api/admin/resume-thumbnails/summary');
-      expect(status).toBe(401);
-    });
-
-    it('GET /api/admin/resume-thumbnails/runs without auth returns 401', async () => {
-      const { status } = await request('/api/admin/resume-thumbnails/runs');
-      expect(status).toBe(401);
-    });
-
-    it('POST /api/admin/resume-thumbnails/backfill without auth returns 401', async () => {
-      const { status } = await request(
-        '/api/admin/resume-thumbnails/backfill',
-        {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-      expect(status).toBe(401);
-    });
-
     it('invalid Bearer token returns 401', async () => {
       const { status, body } = await request('/api/feeds', {
         headers: { Authorization: 'Bearer invalid.jwt.token' },

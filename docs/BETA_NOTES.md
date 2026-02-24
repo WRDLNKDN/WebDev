@@ -91,3 +91,16 @@
   summary/details to prevent overlapping operations.
 - Added CSV export for failed resume-thumbnail rows and per-run detail drawer in
   `/admin/resume-thumbnails`.
+
+## Signup completion and feed ownership UX
+
+- Signup completion now routes directly to `/feed` without the extra completion
+  interstitial step.
+- Added a one-time completion flash message on Feed arrival to confirm signup is
+  complete without blocking members with new tasks.
+- Added `signup_completed_landed_feed` analytics tracking for completion
+  landing.
+- Feed post actions now include a clear owner-only `Delete` button (in addition
+  to the corner icon) so members can reliably remove their own posts.
+- Added Playwright coverage for signup completion landing behavior and owner
+  post delete flow.

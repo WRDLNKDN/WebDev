@@ -74,6 +74,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
+  const forcePublicHeader = path === '/join' || path === '/signup';
   const isFeedActive = path === '/feed';
   const isJoinActive = path === '/join';
   const isDirectoryActive =
@@ -105,6 +106,7 @@ export const Navbar = () => {
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
+  const showAuthedHeader = Boolean(session) && !forcePublicHeader;
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -225,6 +227,16 @@ export const Navbar = () => {
 
   // Search: debounced fetch of approved profiles, then filter client-side by handle/display_name for dropdown.
   useEffect(() => {
+    if (!showAuthedHeader) {
+      setSearchMatches([]);
+      setSearchOpen(false);
+      setSearchLoading(false);
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+      return;
+    }
     const term = searchQuery.trim().toLowerCase();
     if (term.length < SEARCH_MIN_LENGTH) {
       setSearchMatches([]);
@@ -262,7 +274,7 @@ export const Navbar = () => {
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     };
-  }, [searchQuery]);
+  }, [searchQuery, showAuthedHeader]);
 
   const handleSignIn = async (provider: OAuthProvider) => {
     setSignInAnchor(null);
@@ -407,7 +419,7 @@ export const Navbar = () => {
                 Store
               </Button>
               {/* IF logged in: show Feed + Dashboard + Search; ELSE these are hidden */}
-              {session && (
+              {showAuthedHeader && (
                 <>
                   <Button
                     component={RouterLink}
@@ -689,7 +701,7 @@ export const Navbar = () => {
             <Stack direction="row" spacing={2} alignItems="center">
               {path === '/auth/callback' ? null : !sessionLoaded ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
-              ) : !session ? (
+              ) : !showAuthedHeader ? (
                 <>
                   {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
                   <Box
@@ -751,7 +763,7 @@ export const Navbar = () => {
                   >
                     <ProfileAvatar
                       src={avatarUrl ?? undefined}
-                      alt={session.user?.user_metadata?.full_name || 'User'}
+                      alt={session?.user?.user_metadata?.full_name || 'User'}
                       size="small"
                     />
                   </Box>
@@ -782,7 +794,7 @@ export const Navbar = () => {
             <Stack direction="row" spacing={1} alignItems="center">
               {path === '/auth/callback' ? null : !sessionLoaded ? (
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
-              ) : !session ? (
+              ) : !showAuthedHeader ? (
                 <>
                   <Box
                     component="button"
@@ -842,7 +854,7 @@ export const Navbar = () => {
                   >
                     <ProfileAvatar
                       src={avatarUrl ?? undefined}
-                      alt={session.user?.user_metadata?.full_name || 'User'}
+                      alt={session?.user?.user_metadata?.full_name || 'User'}
                       size="small"
                     />
                   </Box>
@@ -923,7 +935,7 @@ export const Navbar = () => {
             >
               Store
             </Button>
-            {session && (
+            {showAuthedHeader && (
               <>
                 <Button
                   component={RouterLink}
@@ -981,7 +993,7 @@ export const Navbar = () => {
           </Stack>
 
           {/* Explore: sub-menus (matches Feed sidebar) */}
-          {session && (
+          {showAuthedHeader && (
             <List dense disablePadding sx={{ py: 0 }}>
               <ListSubheader
                 component="div"
@@ -1203,7 +1215,7 @@ export const Navbar = () => {
             </ListItemButton>
           </List>
 
-          {session && (
+          {showAuthedHeader && (
             <Box sx={{ pt: 2, px: 2 }}>
               {isAdmin && (
                 <Button

@@ -22,7 +22,7 @@ Audit of main screens and error handling across the frontend.
 - **LandingPage:** Verify Profile Grid (PortfolioFrame, IdentityHeader) on
   mobile.
 - **AdminApp:** Header + nav might wrap awkwardly. Use flexWrap, stack on xs.
-- **Signup:** Wizard card padding—check step content overflow on narrow.
+- **Join:** Wizard card padding—check step content overflow on narrow.
 
 ### Minor / Already OK
 
@@ -94,7 +94,7 @@ Audit of main screens and error handling across the frontend.
 - [x] AdminApp header: responsive nav (flexWrap, minWidth: 0, reduced px on xs)
 - [x] LandingPage: Profile grid (PortfolioFrame column on xs, responsive
       padding)
-- [x] Signup: wizard card padding, step content overflow (responsive buttons,
+- [x] Join: wizard card padding, step content overflow (responsive buttons,
       overflow handling)
 
 ### Errors (implemented)

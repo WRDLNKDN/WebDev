@@ -111,7 +111,7 @@ export const AdminGate = ({ children }: Props) => {
             {!isSignedIn && (
               <>
                 {' '}
-                <RouterLink to="/signin?next=/admin">Sign in</RouterLink>.
+                <RouterLink to="/join">Sign in</RouterLink>.
               </>
             )}
           </Alert>

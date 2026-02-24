@@ -95,7 +95,7 @@ Directory: Feed = activity stream, Directory = people discovery.
 - **Legacy terms prohibited:** Use **Join** (not Signup). Feed and Directory are
   distinct: **Feed** = activity stream, **Directory** = member discovery.
 
-Legacy routes redirect: `/signup` → `/join`, `/u/:handle` → `/profile/:handle`.
+Legacy routes retained: `/u/:handle` → `/profile/:handle`.
 
 ---
 

@@ -30,11 +30,10 @@ import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
-import { isUat } from '../../lib/utils/env';
+import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const DRAWER_WIDTH = 360;
-const UAT_BANNER_OFFSET_PX = 32;
 
 export const MessengerOverlay = () => {
   const theme = useTheme();
@@ -46,7 +45,7 @@ export const MessengerOverlay = () => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const bannerOffsetPx = isUat ? UAT_BANNER_OFFSET_PX : 0;
+  const bannerOffsetPx = useUatBannerOffset();
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
 

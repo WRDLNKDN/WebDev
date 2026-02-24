@@ -382,14 +382,14 @@ export const LandingPage = () => {
                   top: { md: 24 },
                 }}
               >
-                <ProfileLinksWidget socials={profile.socials || []} />
+                <ProfileLinksWidget socials={profile.socials || []} grouped />
               </Paper>
             </Grid>
 
             {/* RIGHT COLUMN: The "Main Content" Sector */}
             {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 8 }}' */}
             <Grid size={{ xs: 12, md: 8 }} sx={{ minWidth: 0 }}>
-              <PortfolioFrame title="Portfolio Frame">
+              <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={profile.resume_url}
                   thumbnailUrl={resumeThumbnailUrl}

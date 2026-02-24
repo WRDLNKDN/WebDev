@@ -18,6 +18,26 @@ interface ProfileLinksWidgetProps {
   grouped?: boolean;
 }
 
+type DisplayCategory = 'Professional' | 'Social' | 'Other';
+const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
+  'Professional',
+  'Social',
+  'Other',
+];
+
+const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
+  if (link.category === 'Professional' || link.category === 'Social') {
+    return link.category;
+  }
+
+  const platform = (
+    link.platform?.trim() || detectPlatformFromUrl(link.url)
+  ).toLowerCase();
+  if (platform === 'linkedin' || platform === 'github') return 'Professional';
+  if (platform === 'instagram' || platform === 'facebook') return 'Social';
+  return 'Other';
+};
+
 export const ProfileLinksWidget = ({
   socials,
   isOwner = false,
@@ -33,7 +53,7 @@ export const ProfileLinksWidget = ({
 
   if (visibleLinks.length === 0) return null;
 
-  // Sort all visible links by category order, then by link order
+  // Sort all visible links by schema category order, then by link order
   const sortedLinks = [...visibleLinks].sort((a, b) => {
     const catA = CATEGORY_ORDER.indexOf(a.category);
     const catB = CATEGORY_ORDER.indexOf(b.category);
@@ -126,38 +146,44 @@ export const ProfileLinksWidget = ({
     );
   }
 
-  const groupedLinks = sortedLinks.reduce<Record<string, SocialLink[]>>(
+  const groupedLinks = sortedLinks.reduce<
+    Record<DisplayCategory, SocialLink[]>
+  >(
     (acc, link) => {
-      const key = link.category || 'Other';
+      const key = normalizeDisplayCategory(link);
       acc[key] = acc[key] ? [...acc[key], link] : [link];
       return acc;
     },
-    {},
+    {
+      Professional: [],
+      Social: [],
+      Other: [],
+    },
   );
 
   return (
     <Stack spacing={1.5} sx={{ width: '100%' }}>
-      {CATEGORY_ORDER.filter((category) => groupedLinks[category]?.length).map(
-        (category) => (
-          <Box key={category}>
-            <Typography
-              variant="overline"
-              sx={{
-                fontSize: '0.66rem',
-                letterSpacing: 1.2,
-                color: 'text.secondary',
-                display: 'block',
-                mb: 0.5,
-              }}
-            >
-              {category}
-            </Typography>
-            <Stack spacing={0.75}>
-              {groupedLinks[category].map((link) => renderLink(link))}
-            </Stack>
-          </Box>
-        ),
-      )}
+      {DISPLAY_CATEGORY_ORDER.filter(
+        (category) => groupedLinks[category].length,
+      ).map((category) => (
+        <Box key={category}>
+          <Typography
+            variant="overline"
+            sx={{
+              fontSize: '0.66rem',
+              letterSpacing: 1.2,
+              color: 'text.secondary',
+              display: 'block',
+              mb: 0.5,
+            }}
+          >
+            {category}
+          </Typography>
+          <Stack spacing={0.75}>
+            {groupedLinks[category].map((link) => renderLink(link))}
+          </Stack>
+        </Box>
+      ))}
     </Stack>
   );
 };

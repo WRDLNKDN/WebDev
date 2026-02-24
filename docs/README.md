@@ -25,7 +25,7 @@ Central index for WRDLNKDN WebDev documentation.
   (operational, scalability, security).
 - [API Layer](./architecture/api-layer.md) — Frontend–backend API contract and
   response envelope.
-- [ADR: Unified signup wizard](./architecture/adr-unified-signup-wizard.md) —
+- [ADR: Unified Join wizard](./architecture/adr-unified-join-wizard.md) —
   Decision record for the Join flow (onboarding wizard implementation).
 - [ADR: Site chrome consolidation](./architecture/adr-site-chrome-consolidation.md)
   — Vercel as source of truth for header, footer, hero, and navigation.

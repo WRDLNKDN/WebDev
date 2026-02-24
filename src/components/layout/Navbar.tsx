@@ -3,11 +3,9 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ForumIcon from '@mui/icons-material/Forum';
-import GoogleIcon from '@mui/icons-material/Google';
 import GavelIcon from '@mui/icons-material/Gavel';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import MenuIcon from '@mui/icons-material/Menu';
-import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -26,7 +24,6 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  Menu,
   MenuItem,
   Paper,
   Popper,
@@ -43,12 +40,8 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { toMessage } from '../../lib/utils/errors';
-import {
-  signInWithOAuth,
-  type OAuthProvider,
-} from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { consumeSignupCompletionFlash } from '../../lib/profile/signupCompletionFlash';
+import { consumeJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 
 /**
  * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback
@@ -74,7 +67,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
-  const forcePublicHeader = path === '/join' || path === '/signup';
+  const forcePublicHeader = path === '/join';
   const isFeedActive = path === '/feed';
   const isJoinActive = path === '/join';
   const isDirectoryActive =
@@ -86,8 +79,6 @@ export const Navbar = () => {
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [signInLoading, setSignInLoading] = useState(false);
-  const [signInAnchor, setSignInAnchor] = useState<HTMLElement | null>(null);
   /** Search: query string, dropdown matches from Supabase, open state, refs for Popper and debounce. */
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
@@ -276,34 +267,6 @@ export const Navbar = () => {
     };
   }, [searchQuery, showAuthedHeader]);
 
-  const handleSignIn = async (provider: OAuthProvider) => {
-    setSignInAnchor(null);
-    setSignInLoading(true);
-    setBusy(true);
-
-    try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-        '/feed',
-      )}`;
-
-      const { data, error } = await signInWithOAuth(provider, { redirectTo });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        setSignInLoading(false);
-        setBusy(false);
-        setSnack('Sign-in could not be completed. Please try again.');
-      }
-    } catch (err) {
-      console.error(err);
-      setSnack(toMessage(err));
-      setSignInLoading(false);
-      setBusy(false);
-    }
-  };
-
   const signOut = async () => {
     setBusy(true);
 
@@ -332,7 +295,7 @@ export const Navbar = () => {
     setJoinLoading(true);
     try {
       // Warm the Join chunk so members get instant feedback.
-      await import('../../pages/auth/Signup');
+      await import('../../pages/auth/Join');
     } catch {
       // Navigation still proceeds even if preload fails.
     } finally {
@@ -348,8 +311,8 @@ export const Navbar = () => {
 
   useEffect(() => {
     if (path !== '/feed') return;
-    if (!consumeSignupCompletionFlash()) return;
-    setSnack('Signup complete. Welcome to the Feed.');
+    if (!consumeJoinCompletionFlash()) return;
+    setSnack('Join complete. Welcome to the Feed.');
   }, [path]);
 
   return (
@@ -703,7 +666,7 @@ export const Navbar = () => {
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
               ) : !showAuthedHeader ? (
                 <>
-                  {/* Guest: Join (to /join) + Sign in (opens Google/Microsoft menu) */}
+                  {/* Guest: Join + Sign in (both route to /join) */}
                   <Box
                     component="button"
                     type="button"
@@ -728,24 +691,20 @@ export const Navbar = () => {
                   <Box
                     component="button"
                     type="button"
-                    onClick={(e) => setSignInAnchor(e.currentTarget)}
-                    disabled={busy}
+                    onClick={() => void openJoin()}
                     sx={{
                       background: 'none',
                       border: 'none',
                       padding: 0,
-                      cursor: busy ? 'default' : 'pointer',
+                      cursor: 'pointer',
                       color: 'text.secondary',
                       font: 'inherit',
-                      '&:hover': busy ? {} : { color: 'white' },
+                      '&:hover': { color: 'white' },
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 1,
                     }}
                   >
-                    {busy ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : null}
                     Sign in
                   </Box>
                 </>
@@ -817,25 +776,21 @@ export const Navbar = () => {
                   <Box
                     component="button"
                     type="button"
-                    onClick={(e) => setSignInAnchor(e.currentTarget)}
-                    disabled={busy}
+                    onClick={() => void openJoin()}
                     sx={{
                       background: 'none',
                       border: 'none',
                       padding: 0,
-                      cursor: busy ? 'default' : 'pointer',
+                      cursor: 'pointer',
                       color: 'text.secondary',
                       font: 'inherit',
                       fontSize: '0.875rem',
-                      '&:hover': busy ? {} : { color: 'white' },
+                      '&:hover': { color: 'white' },
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 1,
                     }}
                   >
-                    {busy ? (
-                      <CircularProgress size={14} color="inherit" />
-                    ) : null}
                     Sign in
                   </Box>
                 </>
@@ -872,38 +827,6 @@ export const Navbar = () => {
           )}
         </Toolbar>
       </AppBar>
-
-      {/* Sign-in provider menu (shared by desktop + mobile) */}
-      <Menu
-        anchorEl={signInAnchor}
-        open={Boolean(signInAnchor)}
-        onClose={() => setSignInAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{ sx: { minWidth: 220, mt: 1, borderRadius: 2 } }}
-        disableScrollLock
-      >
-        <MenuItem
-          onClick={() => void handleSignIn('google')}
-          disabled={busy}
-          sx={{ py: 1.5 }}
-        >
-          <ListItemIcon>
-            <GoogleIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Google</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => void handleSignIn('azure')}
-          disabled={busy}
-          sx={{ py: 1.5 }}
-        >
-          <ListItemIcon>
-            <MicrosoftIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Microsoft</ListItemText>
-        </MenuItem>
-      </Menu>
 
       {/* Mobile drawer */}
       <Drawer
@@ -1262,7 +1185,7 @@ export const Navbar = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
       <Backdrop
-        open={joinLoading || signInLoading}
+        open={joinLoading}
         sx={{
           color: '#fff',
           zIndex: (theme) => theme.zIndex.drawer + 2,
@@ -1271,9 +1194,7 @@ export const Navbar = () => {
         }}
       >
         <CircularProgress color="inherit" size={28} />
-        <Box sx={{ fontSize: 14, opacity: 0.9 }}>
-          {signInLoading ? 'Signing you in…' : 'Opening Join…'}
-        </Box>
+        <Box sx={{ fontSize: 14, opacity: 0.9 }}>Opening Join…</Box>
       </Backdrop>
     </>
   );

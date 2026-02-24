@@ -41,7 +41,7 @@
   (instead of ad creatives) should be moved to `community_partners`.
 - Keep `feed_advertisers` for Feed ad inventory only.
 
-## Signup mobile behavior
+## Join mobile behavior
 
 - Updated `/join` container layout to support reliable vertical scroll on mobile
   viewports.
@@ -92,15 +92,14 @@
 - Added CSV export for failed resume-thumbnail rows and per-run detail drawer in
   `/admin/resume-thumbnails`.
 
-## Signup completion and feed ownership UX
+## Join completion and feed ownership UX
 
-- Signup completion now routes directly to `/feed` without the extra completion
+- Join completion now routes directly to `/feed` without the extra completion
   interstitial step.
-- Added a one-time completion flash message on Feed arrival to confirm signup is
+- Added a one-time completion flash message on Feed arrival to confirm Join is
   complete without blocking members with new tasks.
-- Added `signup_completed_landed_feed` analytics tracking for completion
-  landing.
+- Added `join_completed_landed_feed` analytics tracking for completion landing.
 - Feed post actions now include a clear owner-only `Delete` button (in addition
   to the corner icon) so members can reliably remove their own posts.
-- Added Playwright coverage for signup completion landing behavior and owner
-  post delete flow.
+- Added Playwright coverage for Join completion landing behavior and owner post
+  delete flow.

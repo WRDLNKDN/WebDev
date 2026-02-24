@@ -26,7 +26,7 @@ export const GuestView = ({
   const goToJoin = useCallback(async () => {
     setJoinLoading(true);
     try {
-      await import('../../pages/auth/Signup');
+      await import('../../pages/auth/Join');
     } catch {
       // Continue to Join even if preload fails.
     } finally {

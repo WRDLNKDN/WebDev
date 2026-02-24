@@ -11,7 +11,7 @@ import {
 
 // HOOKS & CONTEXT
 import { AvatarProvider } from './context/AvatarContext';
-import { SignupProvider } from './context/SignupProvider';
+import { JoinProvider } from './context/JoinProvider';
 import { useKonamiCode } from './hooks/useKonamiCode';
 
 // LAYOUT & UTILS
@@ -174,19 +174,14 @@ const NotFoundPage = lazy(async () => {
 });
 
 // 2. Auth Pages
-const SignIn = lazy(async () => {
-  const m = await import('./pages/auth/SignIn');
-  return { default: m.SignIn };
-});
-
 const AuthCallback = lazy(async () => {
   const m = await import('./pages/auth/AuthCallback');
   return { default: m.AuthCallback };
 });
 
-const Signup = lazy(async () => {
-  const m = await import('./pages/auth/Signup');
-  return { default: m.Signup };
+const Join = lazy(async () => {
+  const m = await import('./pages/auth/Join');
+  return { default: m.Join };
 });
 
 // 3. Legal Pages
@@ -291,7 +286,7 @@ const App = () => {
     <>
       <AuthBoot />
 
-      <SignupProvider>
+      <JoinProvider>
         <AvatarProvider>
           <Suspense fallback={<Loading />}>
             <Routes>
@@ -442,13 +437,15 @@ const App = () => {
                 />
 
                 {/* --- Authentication --- */}
-                <Route path="/login" element={<SignIn />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/join" element={<Signup />} />
                 <Route
-                  path="/signup"
+                  path="/login"
                   element={<Navigate to="/join" replace />}
                 />
+                <Route
+                  path="/signin"
+                  element={<Navigate to="/join" replace />}
+                />
+                <Route path="/join" element={<Join />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
 
                 {/* --- Legal --- */}
@@ -512,7 +509,7 @@ const App = () => {
             </Routes>
           </Suspense>
         </AvatarProvider>
-      </SignupProvider>
+      </JoinProvider>
     </>
   );
 };

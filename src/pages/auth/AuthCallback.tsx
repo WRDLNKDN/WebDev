@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSignup } from '../../context/useSignup';
+import { useJoin } from '../../context/useJoin';
 import {
   getErrorMessage,
   toMessage,
@@ -20,8 +20,8 @@ import {
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { supabase } from '../../lib/auth/supabaseClient';
-import type { IdentityProvider } from '../../types/signup';
-import { POLICY_VERSION } from '../../types/signup';
+import type { IdentityProvider } from '../../types/join';
+import { POLICY_VERSION } from '../../types/join';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
@@ -44,7 +44,7 @@ function getOAuthError(): string | null {
 export const AuthCallback = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { setIdentity, goToStep } = useSignup();
+  const { setIdentity, goToStep } = useJoin();
   const [error, setError] = useState<string | null>(null);
 
   // Default post-login destination: Feed
@@ -89,7 +89,7 @@ export const AuthCallback = () => {
 
         if (!cancelled) {
           // --- LOGIC BRANCH: SIGNUP VS DIRECT ENTRY ---
-          if (next === '/join' || next === '/signup') {
+          if (next === '/join') {
             console.log('📝 AuthCallback: Setting up Join flow');
 
             const provider = mapSupabaseProvider(user);
@@ -259,16 +259,7 @@ export const AuthCallback = () => {
                   >
                     <Button
                       variant="contained"
-                      onClick={() =>
-                        navigate(
-                          next === '/join' || next === '/signup'
-                            ? '/join'
-                            : '/signin',
-                          {
-                            replace: true,
-                          },
-                        )
-                      }
+                      onClick={() => navigate('/join', { replace: true })}
                     >
                       Try again
                     </Button>

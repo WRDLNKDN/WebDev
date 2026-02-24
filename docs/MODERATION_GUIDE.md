@@ -1,6 +1,6 @@
 # Moderation Guide: Content & Chat Reports
 
-Profile moderation has been removed — all users are auto-approved on signup.
+Profile moderation has been removed — all members are auto-approved on join.
 This guide covers the remaining moderation systems.
 
 ---

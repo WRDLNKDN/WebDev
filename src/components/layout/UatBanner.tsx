@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { isUat } from '../../lib/utils/env';
+import { UAT_BANNER_ELEMENT_ID } from '../../lib/utils/useUatBannerOffset';
 
 const PROD_SUPABASE_REF = 'rpcaazmxymymqdejevtb';
 
@@ -32,6 +33,7 @@ export const UatBanner = () => {
 
   return (
     <Box
+      id={UAT_BANNER_ELEMENT_ID}
       component="aside"
       role="banner"
       aria-label="UAT environment"

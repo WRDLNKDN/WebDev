@@ -7,5 +7,5 @@ export const safeStr = (val: unknown, fallback: string = ''): string => {
 export const toMessage = (e: unknown) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
-  return 'Signup failed';
+  return 'Join failed';
 };

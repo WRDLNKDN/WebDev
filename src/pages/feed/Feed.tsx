@@ -1451,11 +1451,14 @@ export const Feed = () => {
   }, [items]);
 
   useEffect(() => {
-    if (searchParams.get('signup') !== 'complete') return;
-    trackEvent('signup_completed_landed_feed', {
-      source: 'signup_wizard',
+    const joinComplete = searchParams.get('join') === 'complete';
+    const legacySignupComplete = searchParams.get('signup') === 'complete';
+    if (!joinComplete && !legacySignupComplete) return;
+    trackEvent('join_completed_landed_feed', {
+      source: joinComplete ? 'join_wizard' : 'legacy_signup_wizard',
     });
     const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('join');
     nextParams.delete('signup');
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -2102,7 +2105,6 @@ export const Feed = () => {
         position: 'relative',
         flex: 1,
         width: '100%',
-        scrollbarGutter: 'stable both-edges',
       }}
     >
       <Box

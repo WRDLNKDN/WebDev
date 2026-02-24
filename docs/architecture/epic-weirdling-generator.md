@@ -32,7 +32,7 @@ model and can be reused across the site.
 - Backend orchestration that calls an AI API to generate structured outputs
 - Persisted Weirdling entity and related artifacts according to MVP models
 - “Regenerate” and “Edit” flows that preserve history and attribution
-- Safety and abuse protections suitable for public signup funnel
+- Safety and abuse protections suitable for public join funnel
 
 ---
 

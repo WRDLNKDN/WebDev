@@ -81,7 +81,7 @@ neutral regarding Profile vs Dashboard rendering mode.
 
 ### Legacy terms prohibited
 
-- **Signup** — use Join
+- **Join** — never use Signup
 - **Directory renamed to Feed** — prohibited; Feed = activity stream, Directory
   = people discovery
 - **Feed used for people discovery** — prohibited; Directory is people discovery

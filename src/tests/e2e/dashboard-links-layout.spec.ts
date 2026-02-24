@@ -275,6 +275,66 @@ test.describe('Dashboard links and profile layout regressions', () => {
     ).toBeVisible();
   });
 
+  test('public profile groups links and uses Portfolio label', async ({
+    page,
+  }) => {
+    profileRow.socials = [
+      {
+        id: 'social-1',
+        category: 'Professional',
+        platform: 'LinkedIn',
+        url: 'https://linkedin.com/in/aprildrake',
+        isVisible: true,
+        order: 0,
+      },
+      {
+        id: 'social-2',
+        category: 'Social',
+        platform: 'Instagram',
+        url: 'https://instagram.com/aprildrake',
+        isVisible: true,
+        order: 1,
+      },
+      {
+        id: 'social-3',
+        category: 'Custom',
+        platform: 'Other',
+        url: 'https://example.com/april',
+        isVisible: true,
+        order: 2,
+      },
+    ];
+
+    await page.goto('/profile/member');
+    await expect(page).toHaveURL(/\/profile\/member/);
+
+    const professional = page.getByText('Professional').first();
+    const social = page.getByText('Social').first();
+    const other = page.getByText('Other').first();
+
+    await expect(professional).toBeVisible();
+    await expect(social).toBeVisible();
+    await expect(other).toBeVisible();
+
+    const [professionalBox, socialBox, otherBox] = await Promise.all([
+      professional.boundingBox(),
+      social.boundingBox(),
+      other.boundingBox(),
+    ]);
+    expect(professionalBox).not.toBeNull();
+    expect(socialBox).not.toBeNull();
+    expect(otherBox).not.toBeNull();
+    expect(professionalBox?.y ?? 0).toBeLessThan(socialBox?.y ?? 0);
+    expect(socialBox?.y ?? 0).toBeLessThan(otherBox?.y ?? 0);
+
+    await expect(
+      page.getByRole('heading', { name: 'Portfolio' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Portfolio Frame' }),
+    ).toHaveCount(0);
+  });
+
   test('failed word preview shows retry action for owner', async ({ page }) => {
     profileRow.resume_url = 'https://example.com/member/resume.docx';
     profileRow.nerd_creds = {

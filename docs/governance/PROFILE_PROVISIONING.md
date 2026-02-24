@@ -31,7 +31,7 @@
 
 - **reconcileWithExistingProfile**: When user returns to /join with existing
   partial profile, populates form and advances to correct step.
-- **submitRegistration**: If existing row, UPDATE with signup data. No orphan
+- **submitRegistration**: If existing row, UPDATE with join data. No orphan
   rows.
 
 ---

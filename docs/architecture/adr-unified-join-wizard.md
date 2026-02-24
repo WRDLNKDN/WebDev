@@ -1,4 +1,4 @@
-# ADR: Unified Signup Wizard Transition
+# ADR: Unified Join Wizard Transition
 
 [← Docs index](../README.md)
 
@@ -8,7 +8,7 @@
 
 ## Context
 
-The previous signup flow used a fragmented sign-in gate. Users could land on a
+The previous join flow used a fragmented sign-in gate. Users could land on a
 standalone sign-in screen before entering the main flow, which caused drop-offs
 and inconsistent conversion metrics. There was no single, state-driven path from
 intent to completion.
@@ -23,7 +23,7 @@ Migrate to a **5-step state-driven wizard**:
 4. **Profile** – Display name and tagline
 5. **Complete** – Confirmation and next steps
 
-All steps are driven by client-side signup state (e.g. `SignupContext`), with
+All steps are driven by client-side join state (e.g. `JoinContext`), with
 persistence where appropriate. "Create account" from the home page routes
 directly into this wizard (Welcome step) instead of a separate sign-in gate.
 

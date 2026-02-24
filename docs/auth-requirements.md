@@ -62,7 +62,7 @@ requirements below may access admin UI and admin API routes.
   authentication email (from the JWT) matches a row in `admin_allowlist`
   (case-insensitive).
 - **Management:** Rows are inserted/removed via SQL or migrations (or future
-  admin-management tooling). There is no self-service signup for admin.
+  admin-management tooling). There is no self-service join flow for admin.
 
 ### 2.2 Backend (Node/Express) Admin Check
 

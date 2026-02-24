@@ -40,7 +40,7 @@ state by:
   - Signed-in users with incomplete profiles are routed into onboarding
   - Signed-in users with complete profiles are redirected to the authenticated
     surface
-- **Legacy redirect:** `/signup` → `/join` (replace)
+- **Legacy route status:** `/signup` is retired; `/join` is canonical
 
 ---
 

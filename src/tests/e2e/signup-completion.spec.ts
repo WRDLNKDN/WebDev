@@ -27,7 +27,7 @@ function mockSessionPayload() {
   };
 }
 
-async function seedSignedInSessionAndSignupState(page: Page) {
+async function seedSignedInSessionAndJoinState(page: Page) {
   const payload = mockSessionPayload();
   await page.addInitScript((session) => {
     [
@@ -38,7 +38,7 @@ async function seedSignedInSessionAndSignupState(page: Page) {
       window.localStorage.setItem(key, JSON.stringify(session));
     });
     window.localStorage.setItem(
-      'wrdlnkdn-signup-state',
+      'wrdlnkdn-join-state',
       JSON.stringify({
         currentStep: 'profile',
         completedSteps: ['welcome', 'identity', 'values'],
@@ -73,9 +73,9 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
   });
 }
 
-test.describe('Signup completion landing', () => {
+test.describe('Join completion landing', () => {
   test('final submit lands directly on feed', async ({ page }) => {
-    await seedSignedInSessionAndSignupState(page);
+    await seedSignedInSessionAndJoinState(page);
 
     await page.route('**/api/me/avatar', async (route) => {
       await route.fulfill({
@@ -184,12 +184,12 @@ test.describe('Signup completion landing', () => {
     await expect(page).toHaveURL(/\/feed/);
   });
 
-  test('feed signup completion message shows once for signup query param', async ({
+  test('feed join completion message shows once for join query param', async ({
     page,
   }) => {
-    await seedSignedInSessionAndSignupState(page);
+    await seedSignedInSessionAndJoinState(page);
     await page.addInitScript(() => {
-      window.sessionStorage.setItem('wrdlnkdn-signup-complete-flash', '1');
+      window.sessionStorage.setItem('wrdlnkdn-join-complete-flash', '1');
     });
 
     await page.route('**/api/me/avatar', async (route) => {
@@ -281,16 +281,16 @@ test.describe('Signup completion landing', () => {
       });
     });
 
-    await page.goto('/feed?signup=complete');
+    await page.goto('/feed?join=complete');
     await expect(
-      page.getByText('Signup complete. Welcome to the Feed.'),
+      page.getByText('Join complete. Welcome to the Feed.'),
     ).toBeVisible();
 
     await expect(page).toHaveURL(/\/feed/);
     await page.reload();
     await expect(page).toHaveURL(/\/feed/);
     await expect(
-      page.getByText('Signup complete. Welcome to the Feed.'),
+      page.getByText('Join complete. Welcome to the Feed.'),
     ).not.toBeVisible();
   });
 });

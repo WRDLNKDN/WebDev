@@ -11,10 +11,12 @@ import { ReportDialog } from './ReportDialog';
 import { useChat, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { isUat } from '../../lib/utils/env';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const POPOVER_WIDTH = 460;
 const POPOVER_HEIGHT = 740;
+const UAT_BANNER_OFFSET_PX = 32;
 
 type ChatPopoverProps = {
   roomId: string;
@@ -38,6 +40,7 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
     userId?: string;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const topOffsetPx = 80 + (isUat ? UAT_BANNER_OFFSET_PX : 0);
 
   const uid = session?.user?.id ?? undefined;
 
@@ -112,7 +115,7 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
         sx={{
           ...GLASS_CARD,
           position: 'fixed',
-          top: 80,
+          top: topOffsetPx,
           right: 24,
           width: POPOVER_WIDTH,
           height: POPOVER_HEIGHT,

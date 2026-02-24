@@ -30,9 +30,11 @@ import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
+import { isUat } from '../../lib/utils/env';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const DRAWER_WIDTH = 360;
+const UAT_BANNER_OFFSET_PX = 32;
 
 export const MessengerOverlay = () => {
   const theme = useTheme();
@@ -44,6 +46,9 @@ export const MessengerOverlay = () => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const bannerOffsetPx = isUat ? UAT_BANNER_OFFSET_PX : 0;
+  const drawerTopDesktop = 64 + bannerOffsetPx;
+  const drawerTopMobile = 56 + bannerOffsetPx;
 
   const {
     rooms,
@@ -156,7 +161,7 @@ export const MessengerOverlay = () => {
           sx={{
             position: 'fixed',
             right: 0,
-            top: mobile ? 88 : 80,
+            top: (mobile ? 88 : 80) + bannerOffsetPx,
             zIndex: 1200,
             bgcolor: 'background.paper',
             border: '1px solid rgba(255,255,255,0.12)',
@@ -200,9 +205,11 @@ export const MessengerOverlay = () => {
                 ...GLASS_CARD,
                 position: 'fixed',
                 right: 0,
-                top: mobile ? 56 : 64,
+                top: mobile ? drawerTopMobile : drawerTopDesktop,
                 width: mobile ? '100%' : DRAWER_WIDTH,
-                height: mobile ? 'calc(100vh - 56px)' : 'calc(100vh - 64px)',
+                height: mobile
+                  ? `calc(100vh - ${drawerTopMobile}px)`
+                  : `calc(100vh - ${drawerTopDesktop}px)`,
                 zIndex: 1300,
                 borderLeft: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: '8px 0 0 8px',

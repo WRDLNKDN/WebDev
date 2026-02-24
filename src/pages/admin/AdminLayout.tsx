@@ -63,28 +63,6 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-function getBreadcrumbs(pathname: string): { label: string; to?: string }[] {
-  const parts = pathname
-    .replace(/^\/admin\/?/, '')
-    .split('/')
-    .filter(Boolean);
-  const crumbs: { label: string; to?: string }[] = [
-    { label: 'Admin', to: '/admin' },
-  ];
-  let acc = '/admin';
-  for (const p of parts) {
-    acc += `/${p}`;
-    const item = NAV_ITEMS.find((n) => n.to === acc);
-    crumbs.push({
-      label:
-        item?.label ??
-        p.charAt(0).toUpperCase() + p.slice(1).replace(/-/g, ' '),
-      to: acc,
-    });
-  }
-  return crumbs;
-}
-
 type Props = {
   children: ReactNode;
   session: Session | null;
@@ -103,7 +81,6 @@ export const AdminLayout = ({
   subtitle,
 }: Props) => {
   const location = useLocation();
-  const breadcrumbs = getBreadcrumbs(location.pathname);
 
   const sidebar = (
     <Paper
@@ -195,56 +172,6 @@ export const AdminLayout = ({
 
             {/* Main content */}
             <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-              {/* Breadcrumbs */}
-              <Box
-                sx={{
-                  mb: 2,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}
-              >
-                {breadcrumbs.map((crumb, i) => (
-                  <Box key={crumb.to ?? 'current'} component="span">
-                    {i > 0 && (
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mx: 0.5 }}
-                      >
-                        /
-                      </Typography>
-                    )}
-                    {crumb.to && i < breadcrumbs.length - 1 ? (
-                      <Typography
-                        component={RouterLink}
-                        to={crumb.to}
-                        variant="body2"
-                        sx={{
-                          color: 'primary.main',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {crumb.label}
-                      </Typography>
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          fontWeight: i === breadcrumbs.length - 1 ? 600 : 400,
-                        }}
-                      >
-                        {crumb.label}
-                      </Typography>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-
               {/* Optional page title */}
               {(title || subtitle) && (
                 <Box sx={{ mb: 3 }}>

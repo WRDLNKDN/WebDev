@@ -98,6 +98,7 @@ export const Navbar = () => {
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const showAuthedHeader = Boolean(session) && !forcePublicHeader;
+  const showUnreadNotifications = showAuthedHeader && notificationsUnread > 0;
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -423,26 +424,6 @@ export const Navbar = () => {
                   >
                     Events
                   </Button>
-                  <IconButton
-                    component={RouterLink}
-                    to="/dashboard/notifications"
-                    aria-label={
-                      notificationsUnread > 0
-                        ? `${notificationsUnread} unread notifications`
-                        : 'Notifications'
-                    }
-                    sx={{
-                      color: 'white',
-                      ...(path === '/dashboard/notifications' && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                      }),
-                    }}
-                  >
-                    <Badge badgeContent={notificationsUnread} color="error">
-                      <NotificationsIcon />
-                    </Badge>
-                  </IconButton>
                   <Button
                     component={RouterLink}
                     to="/dashboard"
@@ -710,6 +691,24 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
+                  {showUnreadNotifications && (
+                    <IconButton
+                      component={RouterLink}
+                      to="/dashboard/notifications"
+                      aria-label={`${notificationsUnread} unread notifications`}
+                      sx={{
+                        color: 'white',
+                        ...(path === '/dashboard/notifications' && {
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        }),
+                      }}
+                    >
+                      <Badge badgeContent={notificationsUnread} color="error">
+                        <NotificationsIcon />
+                      </Badge>
+                    </IconButton>
+                  )}
                   <Box
                     component={RouterLink}
                     to="/dashboard"
@@ -796,6 +795,24 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
+                  {showUnreadNotifications && (
+                    <IconButton
+                      component={RouterLink}
+                      to="/dashboard/notifications"
+                      aria-label={`${notificationsUnread} unread notifications`}
+                      sx={{
+                        color: 'white',
+                        ...(path === '/dashboard/notifications' && {
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        }),
+                      }}
+                    >
+                      <Badge badgeContent={notificationsUnread} color="error">
+                        <NotificationsIcon />
+                      </Badge>
+                    </IconButton>
+                  )}
                   <Box
                     component={RouterLink}
                     to="/dashboard"

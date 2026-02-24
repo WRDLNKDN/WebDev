@@ -572,13 +572,20 @@ const FeedCard = ({
   const linkPreview = item.payload?.link_preview as
     | LinkPreviewPayload
     | undefined;
-  const bodyGifUrls = extractBodyUrls(body).filter(isGifUrl);
-  const bodyGifUrlSet = new Set(bodyGifUrls);
-  const postAttachmentImages = Array.isArray(item.payload?.images)
-    ? ((item.payload.images as string[]).filter(
-        (imgUrl) => !bodyGifUrlSet.has(imgUrl),
-      ) as string[])
-    : [];
+  const bodyGifUrls = useMemo(
+    () => extractBodyUrls(body).filter(isGifUrl),
+    [body],
+  );
+  const bodyGifUrlSet = useMemo(() => new Set(bodyGifUrls), [bodyGifUrls]);
+  const postAttachmentImages = useMemo(
+    () =>
+      Array.isArray(item.payload?.images)
+        ? ((item.payload.images as string[]).filter(
+            (imgUrl) => !bodyGifUrlSet.has(imgUrl),
+          ) as string[])
+        : [],
+    [bodyGifUrlSet, item.payload?.images],
+  );
   const previewableImages = useMemo(() => {
     const ordered: { url: string; source: PreviewImageSource }[] = [];
     const seen = new Set<string>();

@@ -1,0 +1,49 @@
+name: Nightly Accessibility Audit
+
+on:
+  schedule:
+    # 08:00 UTC daily
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: WebDev-nightly-a11y-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  accessibility:
+    name: ♿ Nightly WCAG + Colorblind Sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_SUPABASE_URL: 'https://example.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
+      E2E_PORT: '5173'
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: ♿ Run accessibility suite
+        run: npm run test:e2e -- src/tests/e2e/accessibility.spec.ts
+
+      - name: 📎 Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-accessibility-playwright-report
+          path: playwright-report
+          retention-days: 14

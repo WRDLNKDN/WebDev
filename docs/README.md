@@ -72,6 +72,8 @@ Central index for WRDLNKDN WebDev documentation.
 - [Home scroll analytics queries](./development/home-scroll-analytics.md) — How
   to inspect `home_below_fold_reached` and `home_scroll_depth` events in QA and
   analytics sinks.
+- [AAA accessibility backlog](./accessibility/AAA_BACKLOG.md) — Tracking list
+  for non-blocking AAA findings from nightly accessibility sweeps.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
   everything; pre-commit and commands.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge

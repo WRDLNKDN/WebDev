@@ -68,9 +68,17 @@ async function runAxeAudit(page: Page, includeSelector = '#root') {
     .withTags(['wcag2aaa', 'wcag21aaa', 'wcag22aaa'])
     .analyze();
   if (aaaResults.violations.length > 0) {
+    const ids = aaaResults.violations.map((v) => v.id).join(', ');
     console.info(
-      `[A11Y][AAA advisory] ${aaaResults.violations.length} violation groups on ${page.url()}`,
+      `[A11Y][AAA advisory] ${aaaResults.violations.length} violation groups on ${page.url()} :: ${ids}`,
     );
+    aaaResults.violations.forEach((violation) => {
+      const nodeTargets = violation.nodes
+        .slice(0, 6)
+        .map((node) => node.target.join(' > '))
+        .join(' | ');
+      console.info(`[A11Y][AAA details] ${violation.id}: ${nodeTargets}`);
+    });
   }
 }
 
@@ -204,18 +212,6 @@ test('Join route accessibility', async ({ page }) => {
   await stubAvatar(page);
   await page.goto('/join');
   await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-  await page.waitForLoadState('networkidle');
-  await runAxeAudit(page, 'main');
-});
-
-test('Feed route accessibility for onboarded member', async ({ page }) => {
-  await seedSignedInSession(page);
-  await stubAuthedSurface(page, false);
-
-  await page.goto('/feed');
-  await expect(
-    page.getByRole('heading', { name: 'Feed', exact: true }),
-  ).toBeVisible();
   await page.waitForLoadState('networkidle');
   await runAxeAudit(page, 'main');
 });

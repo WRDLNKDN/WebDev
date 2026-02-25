@@ -97,8 +97,8 @@ export const ValuesStep = () => {
               <Typography
                 component="span"
                 sx={{
-                  fontWeight: 500,
-                  color: 'error.main',
+                  fontWeight: 700,
+                  color: '#ffb4ab',
                   fontSize: '0.85em',
                 }}
               >
@@ -133,8 +133,8 @@ export const ValuesStep = () => {
               <Typography
                 component="span"
                 sx={{
-                  fontWeight: 500,
-                  color: 'error.main',
+                  fontWeight: 700,
+                  color: '#ffb4ab',
                   fontSize: '0.85em',
                 }}
               >

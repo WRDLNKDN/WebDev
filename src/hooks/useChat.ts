@@ -699,8 +699,15 @@ export function useChatRooms() {
 
     const membersByRoom = new Map<string, ChatRoomMember[]>();
     for (const member of allMembersData ?? []) {
+      const normalized: ChatRoomMember = {
+        room_id: member.room_id,
+        user_id: member.user_id,
+        role: member.role === 'admin' ? 'admin' : 'member',
+        joined_at: member.joined_at,
+        left_at: member.left_at,
+      };
       const existing = membersByRoom.get(member.room_id) ?? [];
-      existing.push(member);
+      existing.push(normalized);
       membersByRoom.set(member.room_id, existing);
     }
 

@@ -23,7 +23,7 @@ export const JoinInner = () => {
       } = await supabase.auth.getSession();
 
       if (session) {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('id')
           .eq('id', session.user.id)
@@ -31,6 +31,19 @@ export const JoinInner = () => {
 
         if (profile) {
           // User already has profile — go straight to feed, never re-enter wizard
+          resetSignup();
+          navigate('/feed', { replace: true });
+          return;
+        }
+
+        if (
+          error &&
+          (error.code === '42501' ||
+            error.code === 'PGRST116' ||
+            /permission denied/i.test(error.message ?? ''))
+        ) {
+          // If profile reads are blocked during policy rollout, do not strand
+          // signed-in members in the join wizard.
           resetSignup();
           navigate('/feed', { replace: true });
         }

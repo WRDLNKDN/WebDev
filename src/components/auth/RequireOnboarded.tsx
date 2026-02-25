@@ -146,10 +146,16 @@ export const RequireOnboarded = ({
 
       if (cancelled || runId !== checkRunRef.current) return;
 
-      // CRITICAL: If RLS is blocking, allow through anyway
-      if (error && error.code === 'PGRST116') {
+      // If profile reads are blocked during deploy/policy churn, do not trap
+      // existing members in a feed->join loop.
+      if (
+        error &&
+        (error.code === 'PGRST116' ||
+          error.code === '42501' ||
+          /permission denied/i.test(error.message ?? ''))
+      ) {
         console.warn(
-          '⚠️ RequireOnboarded: RLS blocking read - allowing through',
+          '⚠️ RequireOnboarded: profile read blocked - allowing through',
         );
         hasEverAllowedRef.current = true;
         setState('allowed');

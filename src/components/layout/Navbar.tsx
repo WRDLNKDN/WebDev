@@ -359,6 +359,17 @@ export const Navbar = () => {
     }
   }, [navigate, path]);
 
+  const openSignIn = useCallback(async () => {
+    if (path === '/signin') return;
+    try {
+      await import('../../pages/auth/SignIn');
+    } catch {
+      // Navigation still proceeds even if preload fails.
+    } finally {
+      navigate('/signin');
+    }
+  }, [navigate, path]);
+
   useEffect(() => {
     if (path === '/join') {
       setJoinLoading(false);
@@ -708,7 +719,7 @@ export const Navbar = () => {
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
               ) : !showAuthedHeader ? (
                 <>
-                  {/* Guest: Join + Sign in (both route to /join) */}
+                  {/* Guest: Join + Sign in */}
                   {!isJoinActive && (
                     <Box
                       component="button"
@@ -731,7 +742,7 @@ export const Navbar = () => {
                   <Box
                     component="button"
                     type="button"
-                    onClick={() => void openJoin()}
+                    onClick={() => void openSignIn()}
                     sx={{
                       background: 'none',
                       border: 'none',
@@ -837,7 +848,7 @@ export const Navbar = () => {
                   <Box
                     component="button"
                     type="button"
-                    onClick={() => void openJoin()}
+                    onClick={() => void openSignIn()}
                     sx={{
                       background: 'none',
                       border: 'none',

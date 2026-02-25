@@ -184,6 +184,11 @@ const Join = lazy(async () => {
   return { default: m.Join };
 });
 
+const SignIn = lazy(async () => {
+  const m = await import('./pages/auth/SignIn');
+  return { default: m.SignIn };
+});
+
 // 3. Legal Pages
 const Guidelines = lazy(async () => {
   const m = await import('./pages/legal/Guidelines');
@@ -443,12 +448,9 @@ const App = () => {
                 {/* --- Authentication --- */}
                 <Route
                   path="/login"
-                  element={<Navigate to="/join" replace />}
+                  element={<Navigate to="/signin" replace />}
                 />
-                <Route
-                  path="/signin"
-                  element={<Navigate to="/join" replace />}
-                />
+                <Route path="/signin" element={<SignIn />} />
                 <Route path="/join" element={<Join />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
 

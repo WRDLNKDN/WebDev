@@ -161,6 +161,23 @@ export const Join = () => {
       identity: <IdentityStep />,
       values: <ValuesStep />,
       profile: <ProfileStep />,
+      complete: (
+        <Stack
+          spacing={2}
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: 220 }}
+        >
+          <CircularProgress
+            size={24}
+            thickness={5}
+            aria-label="Finalizing Join"
+          />
+          <Typography variant="body2" sx={{ opacity: 0.85 }}>
+            Finalizing your profile and opening your Feed…
+          </Typography>
+        </Stack>
+      ),
     };
     return steps[state.currentStep] || <WelcomeStep />;
   };

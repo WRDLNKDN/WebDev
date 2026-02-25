@@ -8,6 +8,7 @@ import { HomeSkeleton } from '../../components/home/HomeSkeleton';
 import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
+import { trackEvent } from '../../lib/analytics/trackEvent';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -17,6 +18,8 @@ import { supabase } from '../../lib/auth/supabaseClient';
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scrollMilestonesSeenRef = useRef<Set<number>>(new Set());
+  const belowFoldTrackedRef = useRef(false);
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +84,45 @@ export const Home = () => {
       sub.subscription.unsubscribe();
     };
   }, [isLoading]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const milestones = [25, 50, 75, 100];
+    const handleScrollDepth = () => {
+      const doc = document.documentElement;
+      const maxScrollable = doc.scrollHeight - window.innerHeight;
+      if (maxScrollable <= 0) return;
+      const depthPercent = Math.min(
+        100,
+        Math.round((window.scrollY / maxScrollable) * 100),
+      );
+      if (!belowFoldTrackedRef.current && depthPercent >= 25) {
+        belowFoldTrackedRef.current = true;
+        trackEvent('home_below_fold_reached', {
+          source: 'home',
+          depth_percent: depthPercent,
+        });
+      }
+      milestones.forEach((milestone) => {
+        if (depthPercent < milestone) return;
+        if (scrollMilestonesSeenRef.current.has(milestone)) return;
+        scrollMilestonesSeenRef.current.add(milestone);
+        trackEvent('home_scroll_depth', {
+          source: 'home',
+          depth_percent: milestone,
+          viewport_height: window.innerHeight,
+          document_height: doc.scrollHeight,
+        });
+      });
+    };
+    window.addEventListener('scroll', handleScrollDepth, { passive: true });
+    window.addEventListener('resize', handleScrollDepth);
+    handleScrollDepth();
+    return () => {
+      window.removeEventListener('scroll', handleScrollDepth);
+      window.removeEventListener('resize', handleScrollDepth);
+    };
+  }, []);
 
   const handleVideoEnded = () => {
     if (!prefersReducedMotion) setHeroPhase('dimmed');
@@ -167,7 +209,8 @@ export const Home = () => {
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
           alignItems: 'center',
-          overflow: 'hidden',
+          overflowX: 'hidden',
+          overflowY: 'visible',
         }}
       >
         <Box

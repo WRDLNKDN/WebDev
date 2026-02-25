@@ -42,6 +42,7 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { consumeJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
+import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 
 /**
  * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback
@@ -77,6 +78,8 @@ export const Navbar = () => {
 
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
+  const [profileOnboarded, setProfileOnboarded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   /** Search: query string, dropdown matches from Supabase, open state, refs for Popper and debounce. */
@@ -97,7 +100,8 @@ export const Navbar = () => {
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
-  const showAuthedHeader = Boolean(session) && !forcePublicHeader;
+  const showAuthedHeader =
+    Boolean(session) && profileOnboarded && !forcePublicHeader;
   const showUnreadNotifications = showAuthedHeader && notificationsUnread > 0;
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
@@ -151,6 +155,51 @@ export const Navbar = () => {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkOnboarding = async () => {
+      if (forcePublicHeader) {
+        if (!cancelled) {
+          setProfileOnboarded(false);
+          setOnboardingLoaded(true);
+        }
+        return;
+      }
+      if (!session?.user?.id) {
+        if (!cancelled) {
+          setProfileOnboarded(false);
+          setOnboardingLoaded(true);
+        }
+        return;
+      }
+      setOnboardingLoaded(false);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select(
+            'display_name, join_reason, participation_style, policy_version',
+          )
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (!cancelled) {
+          setProfileOnboarded(Boolean(data && isProfileOnboarded(data)));
+          setOnboardingLoaded(true);
+        }
+      } catch {
+        if (!cancelled) {
+          // Fail-open on profile read errors so signed-in members are not
+          // incorrectly treated as signed-out due transient fetch issues.
+          setProfileOnboarded(true);
+          setOnboardingLoaded(true);
+        }
+      }
+    };
+    void checkOnboarding();
+    return () => {
+      cancelled = true;
+    };
+  }, [forcePublicHeader, session?.user?.id]);
 
   // Re-fetch session when navigating away from /auth/callback (AuthCallback just established it)
   const prevPathRef = useRef(path);
@@ -293,6 +342,10 @@ export const Navbar = () => {
   };
 
   const openJoin = useCallback(async () => {
+    if (path === '/join') {
+      setJoinLoading(false);
+      return;
+    }
     setJoinLoading(true);
     try {
       // Warm the Join chunk so members get instant feedback.
@@ -302,7 +355,7 @@ export const Navbar = () => {
     } finally {
       navigate('/join');
     }
-  }, [navigate]);
+  }, [navigate, path]);
 
   useEffect(() => {
     if (path === '/join') {
@@ -458,7 +511,7 @@ export const Navbar = () => {
                         minWidth: 200,
                         maxWidth: 280,
                         bgcolor: 'rgba(255,255,255,0.06)',
-                        borderRadius: '18px',
+                        borderRadius: 1,
                         border: '1px solid rgba(255,255,255,0.1)',
                         transition: 'border-color 0.2s, background-color 0.2s',
                         '&:focus-within': {
@@ -643,32 +696,31 @@ export const Navbar = () => {
           {/* Desktop auth: hidden on mobile (shown in drawer) */}
           {!isMobile && (
             <Stack direction="row" spacing={2} alignItems="center">
-              {path === '/auth/callback' ? null : !sessionLoaded ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
+              {path === '/auth/callback' ? null : !sessionLoaded ||
+                (session && !onboardingLoaded) ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
               ) : !showAuthedHeader ? (
                 <>
                   {/* Guest: Join + Sign in (both route to /join) */}
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => void openJoin()}
-                    sx={{
-                      background: 'none',
-                      border: 0,
-                      p: 0,
-                      font: 'inherit',
-                      cursor: 'pointer',
-                      color: 'text.secondary',
-                      textDecoration: 'none',
-                      '&:hover': { color: 'white' },
-                      ...(isJoinActive && {
-                        color: 'white',
-                        fontWeight: 600,
-                      }),
-                    }}
-                  >
-                    Join
-                  </Box>
+                  {!isJoinActive && (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => void openJoin()}
+                      sx={{
+                        background: 'none',
+                        border: 0,
+                        p: 0,
+                        font: 'inherit',
+                        cursor: 'pointer',
+                        color: 'text.secondary',
+                        textDecoration: 'none',
+                        '&:hover': { color: 'white' },
+                      }}
+                    >
+                      Join
+                    </Box>
+                  )}
                   <Box
                     component="button"
                     type="button"
@@ -750,28 +802,31 @@ export const Navbar = () => {
           {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
           {isMobile && (
             <Stack direction="row" spacing={1} alignItems="center">
-              {path === '/auth/callback' ? null : !sessionLoaded ? (
+              {path === '/auth/callback' ? null : !sessionLoaded ||
+                (session && !onboardingLoaded) ? (
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
               ) : !showAuthedHeader ? (
                 <>
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => void openJoin()}
-                    sx={{
-                      background: 'none',
-                      border: 0,
-                      p: 0,
-                      font: 'inherit',
-                      cursor: 'pointer',
-                      color: 'text.secondary',
-                      textDecoration: 'none',
-                      fontSize: '0.875rem',
-                      '&:hover': { color: 'white' },
-                    }}
-                  >
-                    Join
-                  </Box>
+                  {!isJoinActive && (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => void openJoin()}
+                      sx={{
+                        background: 'none',
+                        border: 0,
+                        p: 0,
+                        font: 'inherit',
+                        cursor: 'pointer',
+                        color: 'text.secondary',
+                        textDecoration: 'none',
+                        fontSize: '0.875rem',
+                        '&:hover': { color: 'white' },
+                      }}
+                    >
+                      Join
+                    </Box>
+                  )}
                   <Box
                     component="button"
                     type="button"

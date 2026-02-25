@@ -302,6 +302,16 @@ export const Dashboard = () => {
               sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               <Button
+                variant="contained"
+                onClick={() => navigate('/feed')}
+                sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  minHeight: { xs: 40, sm: 36 },
+                }}
+              >
+                Back to Feed
+              </Button>
+              <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
                 onClick={() => setIsEditOpen(true)}

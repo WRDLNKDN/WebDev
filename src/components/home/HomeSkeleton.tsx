@@ -8,7 +8,8 @@ export const HomeSkeleton = () => {
         display: 'flex',
         alignItems: 'center',
         bgcolor: '#05070f', // Match the Home.tsx background
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'visible',
       }}
     >
       <Container maxWidth="lg">

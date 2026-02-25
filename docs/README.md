@@ -69,6 +69,9 @@ Central index for WRDLNKDN WebDev documentation.
   instructions.
 - [Feed post buttons](./development/feed-post-buttons.md) — Post and Link button
   behavior in the Feed composer.
+- [Home scroll analytics queries](./development/home-scroll-analytics.md) — How
+  to inspect `home_below_fold_reached` and `home_scroll_depth` events in QA and
+  analytics sinks.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
   everything; pre-commit and commands.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge

@@ -123,10 +123,17 @@ export const ResumeCard = ({
           </Typography>
           <Button
             variant="outlined"
+            size="small"
             href={url || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            sx={{ mt: 2, color: 'inherit', borderColor: 'currentColor' }}
+            sx={{
+              mt: 2,
+              color: 'inherit',
+              borderColor: 'currentColor',
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
           >
             View Document
           </Button>

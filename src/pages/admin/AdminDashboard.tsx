@@ -1,5 +1,6 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
 import HandshakeIcon from '@mui/icons-material/Handshake';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -46,6 +47,13 @@ const SECTIONS: SectionCard[] = [
       'Manage public partner listings on /community-partners independently from feed ads.',
     to: '/admin/community-partners',
     icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'Auth Callback Health',
+    description:
+      'Review recent callback timeout and error diagnostics in a dedicated health view.',
+    to: '/admin/auth-callback-health',
+    icon: <MonitorHeartIcon sx={{ fontSize: 40 }} />,
   },
 ];
 

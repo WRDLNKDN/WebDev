@@ -1,6 +1,7 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
@@ -50,6 +51,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Chat Reports',
     to: '/admin/chat-reports',
     icon: <ReportProblemIcon />,
+  },
+  {
+    label: 'Auth Callback Health',
+    to: '/admin/auth-callback-health',
+    icon: <MonitorHeartIcon />,
   },
   {
     label: 'Advertisers',

@@ -77,6 +77,7 @@ export const IdentityStep = () => {
 
   const hasCheckedAuth = useRef(false);
   const hasAdvanced = useRef(false);
+  const redirectGuardRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
@@ -143,6 +144,14 @@ export const IdentityStep = () => {
     void checkAuthentication();
   }, [goToStep, markComplete, setIdentity, state.completedSteps]);
 
+  useEffect(() => {
+    return () => {
+      if (redirectGuardRef.current) {
+        clearTimeout(redirectGuardRef.current);
+      }
+    };
+  }, []);
+
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     if (!canProceed) {
       setError('Please accept the Terms and Community Guidelines to continue');
@@ -161,7 +170,17 @@ export const IdentityStep = () => {
       if (authError) throw authError;
 
       if (data.url) {
-        window.location.href = data.url;
+        // Android/webview browsers can occasionally fail to follow OAuth redirect.
+        // Recover by clearing loading state and surfacing guidance.
+        if (redirectGuardRef.current) clearTimeout(redirectGuardRef.current);
+        redirectGuardRef.current = setTimeout(() => {
+          setLoading(false);
+          setLoadingProvider(null);
+          setError(
+            'Sign-in did not open correctly. Please try again. If this is Android, open in Chrome and retry.',
+          );
+        }, 12000);
+        window.location.assign(data.url);
       } else {
         setError(
           "Sign-in couldn't start because the redirect URL is missing. Please contact support.",

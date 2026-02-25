@@ -66,6 +66,139 @@ app.use(
 
 app.use(express.json());
 
+type AuthCallbackLogBody = {
+  event?: unknown;
+  next?: unknown;
+  timed_out?: unknown;
+  timeout_ms?: unknown;
+  provider?: unknown;
+  app_env?: unknown;
+  elapsed_ms?: unknown;
+  url?: unknown;
+  user_agent?: unknown;
+  error?: unknown;
+  timestamp?: unknown;
+};
+
+const AUTH_CALLBACK_TIMEOUT_ALERT_WINDOW_MS = 10 * 60 * 1000;
+const AUTH_CALLBACK_TIMEOUT_ALERT_THRESHOLD = 3;
+
+// Frontend diagnostic breadcrumb for OAuth callback failures/timeouts.
+app.post('/api/auth/callback-log', async (req: Request, res: Response) => {
+  const body = (req.body ?? {}) as AuthCallbackLogBody;
+  const truncate = (v: unknown, max = 300) =>
+    typeof v === 'string' ? v.slice(0, max) : '';
+
+  const payload = {
+    event: truncate(body.event || 'auth_callback_error', 80),
+    next: truncate(body.next, 120),
+    timed_out: Boolean(body.timed_out),
+    timeout_ms:
+      typeof body.timeout_ms === 'number' && Number.isFinite(body.timeout_ms)
+        ? Math.max(0, Math.floor(body.timeout_ms))
+        : null,
+    provider: truncate(body.provider || 'unknown', 32),
+    app_env: truncate(body.app_env || 'unknown', 32),
+    elapsed_ms:
+      typeof body.elapsed_ms === 'number' && Number.isFinite(body.elapsed_ms)
+        ? Math.max(0, Math.floor(body.elapsed_ms))
+        : null,
+    url: truncate(body.url, 300),
+    user_agent: truncate(body.user_agent, 300),
+    error: truncate(body.error, 500),
+    timestamp: truncate(body.timestamp, 80),
+    server_received_at: new Date().toISOString(),
+  };
+
+  console.warn('[auth-callback-log]', payload);
+  try {
+    await adminSupabase.from('audit_log').insert({
+      actor_id: null,
+      actor_email: null,
+      action: 'AUTH_CALLBACK_ERROR',
+      target_type: 'auth_callback',
+      target_id: null,
+      meta: payload,
+    });
+  } catch (e) {
+    console.warn(
+      '[auth-callback-log] failed to persist AUTH_CALLBACK_ERROR',
+      errorMessage(e, 'unknown'),
+    );
+  }
+
+  if (payload.timed_out) {
+    const windowStartIso = new Date(
+      Date.now() - AUTH_CALLBACK_TIMEOUT_ALERT_WINDOW_MS,
+    ).toISOString();
+
+    const { data: timeoutRows, error: timeoutErr } = await adminSupabase
+      .from('audit_log')
+      .select('meta, created_at')
+      .eq('target_type', 'auth_callback')
+      .eq('action', 'AUTH_CALLBACK_ERROR')
+      .gte('created_at', windowStartIso);
+
+    if (timeoutErr) {
+      console.warn(
+        '[auth-callback-timeout-alert] failed to read timeout window',
+        timeoutErr.message,
+      );
+    } else {
+      const timeoutCount = (timeoutRows ?? []).filter((row) => {
+        const meta =
+          row.meta && typeof row.meta === 'object'
+            ? (row.meta as Record<string, unknown>)
+            : {};
+        return meta.timed_out === true;
+      }).length;
+
+      if (timeoutCount >= AUTH_CALLBACK_TIMEOUT_ALERT_THRESHOLD) {
+        const { count: recentAlertCount, error: alertReadErr } =
+          await adminSupabase
+            .from('audit_log')
+            .select('id', { count: 'exact', head: true })
+            .eq('target_type', 'auth_callback')
+            .eq('action', 'AUTH_CALLBACK_TIMEOUT_ALERT')
+            .gte('created_at', windowStartIso);
+
+        if (alertReadErr) {
+          console.warn(
+            '[auth-callback-timeout-alert] failed to read recent alerts',
+            alertReadErr.message,
+          );
+        } else if ((recentAlertCount ?? 0) === 0) {
+          const alertMeta = {
+            reason: 'auth_callback_timeout_threshold',
+            threshold: AUTH_CALLBACK_TIMEOUT_ALERT_THRESHOLD,
+            window_ms: AUTH_CALLBACK_TIMEOUT_ALERT_WINDOW_MS,
+            observed_timeouts: timeoutCount,
+            last_event: payload,
+            server_received_at: new Date().toISOString(),
+          };
+          console.error('[auth-callback-timeout-alert]', alertMeta);
+          try {
+            await adminSupabase.from('audit_log').insert({
+              actor_id: null,
+              actor_email: null,
+              action: 'AUTH_CALLBACK_TIMEOUT_ALERT',
+              target_type: 'auth_callback',
+              target_id: null,
+              meta: alertMeta,
+            });
+          } catch (e) {
+            console.warn(
+              '[auth-callback-timeout-alert] failed to persist alert',
+              errorMessage(e, 'unknown'),
+            );
+          }
+        }
+      }
+    }
+  }
+  return res.json({ ok: true });
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for ad/partner images
@@ -1640,6 +1773,16 @@ app.use('/api/directory', requireAuth, directoryRateLimitAndLog);
 app.get('/api/directory', async (req: AuthRequest, res: Response) => {
   const userId = req.userId;
   if (!userId) return sendApiError(res, 401, 'Unauthorized');
+  const DIRECTORY_SEARCH_MAX_CHARS = 500;
+
+  const rawSearch = typeof req.query.q === 'string' ? req.query.q.trim() : null;
+  if (rawSearch && rawSearch.length > DIRECTORY_SEARCH_MAX_CHARS) {
+    return sendApiError(
+      res,
+      400,
+      `Search query cannot exceed ${DIRECTORY_SEARCH_MAX_CHARS} characters.`,
+    );
+  }
 
   const search =
     typeof req.query.q === 'string' ? req.query.q.trim() || null : null;
@@ -3315,6 +3458,55 @@ app.post(
     }
 
     return res.status(201).json({ ok: true, data, error: null, meta: {} });
+  },
+);
+
+// GET /api/admin/auth-callback-logs — recent callback diagnostics + alerts
+app.get(
+  '/api/admin/auth-callback-logs',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+
+    const {
+      data: rows,
+      error,
+      count,
+    } = await adminSupabase
+      .from('audit_log')
+      .select('id, action, actor_email, meta, created_at', { count: 'exact' })
+      .eq('target_type', 'auth_callback')
+      .in('action', ['AUTH_CALLBACK_ERROR', 'AUTH_CALLBACK_TIMEOUT_ALERT'])
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) return sendApiError(res, 500, 'Server error');
+
+    const data = (rows ?? []).map(
+      (row: {
+        id: string;
+        action: string;
+        actor_email: string | null;
+        meta: unknown;
+        created_at: string;
+      }) => ({
+        id: row.id,
+        action: row.action,
+        actorEmail: row.actor_email,
+        meta:
+          row.meta && typeof row.meta === 'object'
+            ? (row.meta as Record<string, unknown>)
+            : {},
+        createdAt: row.created_at,
+      }),
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      error: null,
+      meta: { total: count ?? data.length },
+    });
   },
 );
 

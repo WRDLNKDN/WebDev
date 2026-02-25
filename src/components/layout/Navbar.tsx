@@ -63,6 +63,7 @@ type SearchMatch = {
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
+const SEARCH_MAX_QUERY_CHARS = 500;
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -100,6 +101,7 @@ export const Navbar = () => {
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
+  const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const showAuthedHeader =
     Boolean(session) && profileOnboarded && !forcePublicHeader;
   const showUnreadNotifications = showAuthedHeader && notificationsUnread > 0;
@@ -532,7 +534,11 @@ export const Navbar = () => {
                       <InputBase
                         placeholder="Search for members"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) =>
+                          setSearchQuery(
+                            e.target.value.slice(0, SEARCH_MAX_QUERY_CHARS),
+                          )
+                        }
                         onFocus={() =>
                           searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
                           setSearchOpen(true)
@@ -540,6 +546,7 @@ export const Navbar = () => {
                         inputProps={{
                           'aria-label': 'Search for members',
                           'aria-expanded': searchOpen,
+                          maxLength: SEARCH_MAX_QUERY_CHARS,
                         }}
                         fullWidth
                         sx={{
@@ -1034,9 +1041,16 @@ export const Navbar = () => {
               </ListItemButton>
               <ListItemButton
                 component={RouterLink}
-                to="/forums"
+                to="/groups"
                 onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
+                sx={{
+                  minHeight: 40,
+                  py: 0.5,
+                  ...(isGroupsActive && {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                  }),
+                }}
               >
                 <ListItemIcon sx={{ minWidth: 36 }}>
                   <ForumIcon fontSize="small" />

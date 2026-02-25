@@ -12,6 +12,8 @@ import type {
 } from '../types/chat';
 import { CHAT_MAX_FILE_BYTES } from '../types/chat';
 
+const CHAT_MESSAGES_PAGE_SIZE = 60;
+
 export type ChatRoomWithMembers = ChatRoom & {
   members: Array<
     ChatRoomMember & {
@@ -48,6 +50,11 @@ export function useChat(roomId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const oldestLoadedRef = useRef<{ created_at: string; id: string } | null>(
+    null,
+  );
 
   const fetchRoom = useCallback(async (id: string): Promise<boolean> => {
     const { data: roomData, error: roomErr } = await supabase
@@ -93,30 +100,21 @@ export function useChat(roomId: string | null) {
     return true;
   }, []);
 
-  const fetchMessages = useCallback(async (id: string) => {
-    const { data: msgData, error: msgErr } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('room_id', id)
-      .order('created_at', { ascending: true });
-
-    if (msgErr) {
-      setError('Messages could not be loaded. Please try again.');
-      setMessages([]);
-      return;
-    }
-
+  const enrichMessages = useCallback(async (msgData: ChatMessage[]) => {
     const senderIds = [
       ...new Set(
-        (msgData ?? [])
+        msgData
           .map((m) => m.sender_id)
           .filter((id): id is string => id != null),
       ),
     ];
-    const { data: senderProfiles } = await supabase
-      .from('profiles')
-      .select('id, handle, display_name, avatar')
-      .in('id', senderIds);
+    const { data: senderProfiles } =
+      senderIds.length > 0
+        ? await supabase
+            .from('profiles')
+            .select('id, handle, display_name, avatar')
+            .in('id', senderIds)
+        : { data: [] };
 
     const senderMap = new Map(
       (senderProfiles ?? []).map((p) => [
@@ -125,7 +123,7 @@ export function useChat(roomId: string | null) {
       ]),
     );
 
-    const msgIds = (msgData ?? []).map((m) => m.id);
+    const msgIds = msgData.map((m) => m.id);
     const [reactionsRes, attachmentsRes, receiptsRes] = await Promise.all([
       msgIds.length > 0
         ? supabase
@@ -169,7 +167,6 @@ export function useChat(roomId: string | null) {
       acc[a.message_id].push(a);
       return acc;
     }, {});
-
     const readByMsg = (receiptsRes.data ?? []).reduce<Record<string, string[]>>(
       (acc, r) => {
         if (!acc[r.message_id]) acc[r.message_id] = [];
@@ -179,22 +176,93 @@ export function useChat(roomId: string | null) {
       {},
     );
 
-    const enriched = (msgData ?? []).map((m) => ({
+    return msgData.map((m) => ({
       ...m,
       sender_profile: m.sender_id ? (senderMap.get(m.sender_id) ?? null) : null,
       reactions: reactionsByMsg[m.id],
       attachments: attachmentsByMsg[m.id],
       read_by: readByMsg[m.id],
-    }));
-
-    setMessages(enriched as unknown as MessageWithExtras[]);
+    })) as unknown as MessageWithExtras[];
   }, []);
+
+  const fetchMessages = useCallback(
+    async (id: string) => {
+      const { data: msgData, error: msgErr } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('room_id', id)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(CHAT_MESSAGES_PAGE_SIZE);
+
+      if (msgErr) {
+        setError('Messages could not be loaded. Please try again.');
+        setMessages([]);
+        setHasOlderMessages(false);
+        oldestLoadedRef.current = null;
+        return;
+      }
+
+      const pageDesc = (msgData ?? []) as ChatMessage[];
+      const pageAsc = [...pageDesc].reverse();
+      const enriched = await enrichMessages(pageAsc);
+      setMessages(enriched);
+
+      const oldest = pageAsc[0];
+      oldestLoadedRef.current = oldest
+        ? { created_at: oldest.created_at, id: oldest.id }
+        : null;
+      setHasOlderMessages(pageDesc.length === CHAT_MESSAGES_PAGE_SIZE);
+    },
+    [enrichMessages],
+  );
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!roomId || loadingOlder || !oldestLoadedRef.current) return;
+    setLoadingOlder(true);
+    try {
+      const cursor = oldestLoadedRef.current;
+      const { data: olderRows, error: olderErr } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('room_id', roomId)
+        .lt('created_at', cursor.created_at)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(CHAT_MESSAGES_PAGE_SIZE);
+
+      if (olderErr) {
+        setError('Older messages could not be loaded. Please try again.');
+        return;
+      }
+
+      const olderDesc = (olderRows ?? []) as ChatMessage[];
+      if (olderDesc.length === 0) {
+        setHasOlderMessages(false);
+        return;
+      }
+
+      const olderAsc = [...olderDesc].reverse();
+      const enrichedOlder = await enrichMessages(olderAsc);
+      setMessages((prev) => [...enrichedOlder, ...prev]);
+
+      const oldest = olderAsc[0];
+      oldestLoadedRef.current = oldest
+        ? { created_at: oldest.created_at, id: oldest.id }
+        : oldestLoadedRef.current;
+      setHasOlderMessages(olderDesc.length === CHAT_MESSAGES_PAGE_SIZE);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [enrichMessages, loadingOlder, roomId]);
 
   useEffect(() => {
     if (!roomId) {
       setRoom(null);
       setMessages([]);
       setLoading(false);
+      setHasOlderMessages(false);
+      oldestLoadedRef.current = null;
       return;
     }
 
@@ -446,7 +514,7 @@ export function useChat(roomId: string | null) {
         });
       }
 
-      await fetchMessages(roomId ?? '');
+      if (roomId) await fetchMessages(roomId);
     },
     [messages, roomId, fetchMessages],
   );
@@ -553,6 +621,9 @@ export function useChat(roomId: string | null) {
     loading,
     error,
     sending,
+    hasOlderMessages,
+    loadingOlder,
+    loadOlderMessages,
     sendMessage,
     editMessage,
     deleteMessage,
@@ -620,16 +691,41 @@ export function useChatRooms() {
       blockedPair.add([session.user.id, other].sort().join(':'));
     });
 
+    const { data: allMembersData } = await supabase
+      .from('chat_room_members')
+      .select('room_id, user_id, role, joined_at, left_at')
+      .in('room_id', roomIds)
+      .is('left_at', null);
+
+    const membersByRoom = new Map<string, ChatRoomMember[]>();
+    for (const member of allMembersData ?? []) {
+      const existing = membersByRoom.get(member.room_id) ?? [];
+      existing.push(member);
+      membersByRoom.set(member.room_id, existing);
+    }
+
+    const profileIds = [
+      ...new Set((allMembersData ?? []).map((m) => m.user_id).filter(Boolean)),
+    ];
+    const { data: allProfilesData } =
+      profileIds.length > 0
+        ? await supabase
+            .from('profiles')
+            .select('id, handle, display_name, avatar')
+            .in('id', profileIds)
+        : { data: [] };
+
+    const profileMap = new Map(
+      (allProfilesData ?? []).map((p) => [
+        p.id,
+        { handle: p.handle, display_name: p.display_name, avatar: p.avatar },
+      ]),
+    );
+
     const withMembers: ChatRoomWithMembers[] = [];
-
-    for (const r of roomData ?? []) {
-      const { data: membersData } = await supabase
-        .from('chat_room_members')
-        .select('room_id, user_id, role, joined_at, left_at')
-        .eq('room_id', r.id)
-        .is('left_at', null);
-
-      if (r.room_type === 'dm' && membersData?.length === 2) {
+    for (const room of roomData ?? []) {
+      const membersData = membersByRoom.get(room.id) ?? [];
+      if (room.room_type === 'dm' && membersData.length === 2) {
         const other = membersData.find(
           (m) => m.user_id !== session.user.id,
         )?.user_id;
@@ -641,22 +737,9 @@ export function useChatRooms() {
         }
       }
 
-      const userIds = [...new Set((membersData ?? []).map((m) => m.user_id))];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, handle, display_name, avatar')
-        .in('id', userIds);
-
-      const profileMap = new Map(
-        (profilesData ?? []).map((p) => [
-          p.id,
-          { handle: p.handle, display_name: p.display_name, avatar: p.avatar },
-        ]),
-      );
-
       withMembers.push({
-        ...(r as ChatRoom),
-        members: (membersData ?? []).map((m) => ({
+        ...(room as ChatRoom),
+        members: membersData.map((m) => ({
           ...m,
           profile: profileMap.get(m.user_id) ?? null,
         })) as ChatRoomWithMembers['members'],

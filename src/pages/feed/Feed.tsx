@@ -2630,7 +2630,7 @@ export const Feed = () => {
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
-                    to="/forums"
+                    to="/groups"
                     sx={{
                       minHeight: 40,
                       py: 0.5,

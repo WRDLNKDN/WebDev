@@ -298,15 +298,19 @@ export const Dashboard = () => {
           actions={
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
+              flexWrap="wrap"
               spacing={1}
               sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               <Button
                 variant="contained"
                 onClick={() => navigate('/feed')}
+                size="small"
                 sx={{
                   width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: 40, sm: 36 },
+                  minHeight: { xs: 36, sm: 32 },
+                  fontSize: '0.8rem',
+                  px: 1.5,
                 }}
               >
                 Back to Feed
@@ -316,11 +320,14 @@ export const Dashboard = () => {
                 startIcon={<EditIcon />}
                 onClick={() => setIsEditOpen(true)}
                 disabled={loading}
+                size="small"
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
                   width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: 40, sm: 36 },
+                  minHeight: { xs: 36, sm: 32 },
+                  fontSize: '0.8rem',
+                  px: 1.5,
                 }}
               >
                 Edit Profile
@@ -328,14 +335,17 @@ export const Dashboard = () => {
               <Button
                 variant="outlined"
                 onClick={() => setIsLinksOpen(true)}
+                size="small"
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
                   width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: 40, sm: 36 },
+                  minHeight: { xs: 36, sm: 32 },
+                  fontSize: '0.8rem',
+                  px: 1.5,
                 }}
               >
-                Edit Links
+                Add or Edit Links
               </Button>
               {profile?.handle && (
                 <Button
@@ -345,11 +355,14 @@ export const Dashboard = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   startIcon={<OpenInNewIcon />}
+                  size="small"
                   sx={{
                     borderColor: 'rgba(255,255,255,0.3)',
                     color: 'white',
                     width: { xs: '100%', sm: 'auto' },
-                    minHeight: { xs: 40, sm: 36 },
+                    minHeight: { xs: 36, sm: 32 },
+                    fontSize: '0.8rem',
+                    px: 1.5,
                   }}
                 >
                   View Profile
@@ -381,23 +394,29 @@ export const Dashboard = () => {
           </Typography>
 
           {/* Action buttons: Portfolio only */}
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            useFlexGap
-            spacing={2}
-            sx={{ mb: 4 }}
+          <Box
+            sx={{
+              mb: 4,
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                lg: 'repeat(3, minmax(0, 1fr))',
+              },
+              justifyItems: { xs: 'stretch', sm: 'center' },
+            }}
           >
             <Box
               component="label"
               sx={{
-                flex: { xs: '1 1 45%', md: 1 },
-                minWidth: { xs: 120, md: 0 },
+                width: '100%',
+                maxWidth: 360,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: 100,
+                minHeight: 116,
                 bgcolor: 'rgba(45, 45, 50, 0.95)',
                 color: 'white',
                 borderRadius: 2,
@@ -428,13 +447,13 @@ export const Dashboard = () => {
               type="button"
               onClick={() => setIsAddProjectOpen(true)}
               sx={{
-                flex: { xs: '1 1 45%', md: 1 },
-                minWidth: { xs: 120, md: 0 },
+                width: '100%',
+                maxWidth: 360,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: 100,
+                minHeight: 116,
                 bgcolor: 'rgba(45, 45, 50, 0.95)',
                 color: 'white',
                 borderRadius: 2,
@@ -452,9 +471,21 @@ export const Dashboard = () => {
                 Add Project
               </Typography>
             </Box>
-          </Stack>
+          </Box>
 
-          <Stack spacing={2.5}>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2.5,
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                lg: 'repeat(3, minmax(0, 1fr))',
+              },
+              justifyItems: { xs: 'stretch', sm: 'center' },
+              alignItems: 'start',
+            }}
+          >
             <ResumeCard
               url={profile?.resume_url}
               thumbnailUrl={resumeThumbnailUrl}
@@ -495,7 +526,7 @@ export const Dashboard = () => {
                 }}
               />
             ))}
-          </Stack>
+          </Box>
         </Paper>
       </Container>
 

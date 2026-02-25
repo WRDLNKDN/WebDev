@@ -251,7 +251,7 @@ test('Authenticated route sweep accessibility (AA enforced, AAA advisory)', asyn
     '/dashboard',
     '/dashboard/notifications',
     '/events',
-    '/forums',
+    '/groups',
     '/saved',
     '/chat-full',
   ];

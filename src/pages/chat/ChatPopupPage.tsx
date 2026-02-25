@@ -39,6 +39,9 @@ export const ChatPopupPage = () => {
     loading,
     error,
     sending,
+    hasOlderMessages,
+    loadingOlder,
+    loadOlderMessages,
     sendMessage,
     editMessage,
     deleteMessage,
@@ -198,6 +201,9 @@ export const ChatPopupPage = () => {
             currentUserId={uid}
             roomType={room?.room_type ?? 'dm'}
             otherUserId={otherMember?.user_id}
+            onLoadOlder={() => void loadOlderMessages()}
+            hasOlderMessages={hasOlderMessages}
+            loadingOlder={loadingOlder}
             onEdit={editMessage}
             onDelete={deleteMessage}
             onReaction={toggleReaction}

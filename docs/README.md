@@ -78,6 +78,8 @@ Central index for WRDLNKDN WebDev documentation.
   everything; pre-commit and commands.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
   testing.
+- [Android sign-in smoke test](./testing/android-signin-smoke.md) — Manual
+  callback and recovery verification on Android Chrome/webview.
 - [Beta notes](./BETA_NOTES.md) — Current Beta-scope adjustments and temporary
   decisions.
 

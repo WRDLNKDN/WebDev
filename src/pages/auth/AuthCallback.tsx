@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
 import {
@@ -46,12 +46,111 @@ export const AuthCallback = () => {
   const [params] = useSearchParams();
   const { setIdentity, goToStep } = useJoin();
   const [error, setError] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [startedAtMs] = useState(() => Date.now());
+  const logSentRef = useRef(false);
+  const providerForLogRef = useRef<'google' | 'microsoft' | 'unknown'>(
+    'unknown',
+  );
 
   // Default post-login destination: Feed
   const next = params.get('next') || '/feed';
+  const appEnv =
+    (import.meta.env.VITE_APP_ENV as string | undefined)
+      ?.trim()
+      .toLowerCase() || 'dev';
+  const callbackTimeoutMs = /android/i.test(navigator.userAgent)
+    ? 20000
+    : 30000;
+
+  const buildDebugInfo = () => {
+    const elapsedMs = Date.now() - startedAtMs;
+    return [
+      `event=auth_callback_error`,
+      `next=${next}`,
+      `timed_out=${timedOut}`,
+      `timeout_ms=${callbackTimeoutMs}`,
+      `provider=${providerForLogRef.current}`,
+      `app_env=${appEnv}`,
+      `elapsed_ms=${elapsedMs}`,
+      `url=${window.location.href}`,
+      `user_agent=${navigator.userAgent}`,
+      `error=${error ?? 'none'}`,
+      `timestamp=${new Date().toISOString()}`,
+    ].join('\n');
+  };
+
+  const copyDebugInfo = async () => {
+    const payload = buildDebugInfo();
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = payload;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopyStatus('Debug info copied.');
+    } catch {
+      setCopyStatus(
+        'Could not copy automatically. Please screenshot this page.',
+      );
+    }
+  };
+
+  const postAuthCallbackLog = useCallback(() => {
+    if (logSentRef.current) return;
+    logSentRef.current = true;
+    const payload = {
+      event: 'auth_callback_error',
+      next,
+      timed_out: timedOut,
+      timeout_ms: callbackTimeoutMs,
+      provider: providerForLogRef.current,
+      app_env: appEnv,
+      elapsed_ms: Date.now() - startedAtMs,
+      url: window.location.href,
+      user_agent: navigator.userAgent,
+      error: error ?? 'none',
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify(payload)], {
+          type: 'application/json',
+        });
+        navigator.sendBeacon('/api/auth/callback-log', blob);
+        return;
+      }
+    } catch {
+      // Fall through to fetch keepalive path.
+    }
+    void fetch('/api/auth/callback-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // Intentionally swallow diagnostics failures.
+    });
+  }, [appEnv, callbackTimeoutMs, error, next, startedAtMs, timedOut]);
 
   useEffect(() => {
     let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      setTimedOut(true);
+      setError(
+        'Sign-in is taking longer than expected. Please try again. On Android, opening in Chrome usually fixes this.',
+      );
+    }, callbackTimeoutMs);
 
     const runSyncProtocol = async () => {
       try {
@@ -85,6 +184,7 @@ export const AuthCallback = () => {
         }
 
         const user = data.session.user;
+        providerForLogRef.current = mapSupabaseProvider(user);
         void updateLastActive(supabase, user.id);
 
         if (!cancelled) {
@@ -197,18 +297,30 @@ export const AuthCallback = () => {
             setError(
               'We had trouble completing sign-in due to a network issue. You can try again or return home.',
             );
+          } else if (msg.toLowerCase().includes('no session found')) {
+            setError(
+              'Sign-in did not complete on this device. Please try again. On Android, opening in Chrome usually fixes this.',
+            );
           } else {
             setError(toMessage(e));
           }
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
 
     void runSyncProtocol();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [navigate, next, setIdentity, goToStep]);
+  }, [callbackTimeoutMs, navigate, next, setIdentity, goToStep]);
+
+  useEffect(() => {
+    if (!error) return;
+    postAuthCallbackLog();
+  }, [error, postAuthCallbackLog]);
 
   return (
     <Box sx={SIGNUP_BG}>
@@ -255,7 +367,7 @@ export const AuthCallback = () => {
                     direction="row"
                     spacing={2}
                     justifyContent="center"
-                    sx={{ mt: 1 }}
+                    sx={{ mt: 1, flexWrap: 'wrap' }}
                   >
                     <Button
                       variant="contained"
@@ -269,7 +381,15 @@ export const AuthCallback = () => {
                     >
                       Back home
                     </Button>
+                    <Button variant="text" onClick={() => void copyDebugInfo()}>
+                      Copy debug info
+                    </Button>
                   </Stack>
+                  {copyStatus && (
+                    <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                      {copyStatus}
+                    </Typography>
+                  )}
                 </>
               ) : (
                 <Typography
@@ -282,7 +402,7 @@ export const AuthCallback = () => {
               )}
             </Box>
 
-            {!error && (
+            {!error && !timedOut && (
               <Typography
                 variant="caption"
                 sx={{

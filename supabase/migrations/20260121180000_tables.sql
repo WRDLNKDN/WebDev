@@ -35,6 +35,9 @@ drop function if exists public.notifications_on_event_rsvp() cascade;
 drop function if exists public.notifications_on_mention() cascade;
 drop function if exists public.event_rsvps_block_suspended() cascade;
 
+-- Extensions used by schema/indexes
+create extension if not exists pg_trgm with schema public;
+
 -- -----------------------------
 -- Drop tables (reverse dependency order)
 -- -----------------------------
@@ -187,6 +190,23 @@ create index idx_profiles_email on public.profiles (email);
 create index idx_profiles_industry on public.profiles(industry) where industry is not null;
 create index idx_profiles_location on public.profiles(location) where location is not null;
 create index idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+create index idx_profiles_display_name_trgm
+  on public.profiles using gin (lower(display_name) gin_trgm_ops)
+  where display_name is not null;
+create index idx_profiles_handle_trgm
+  on public.profiles using gin (lower(handle) gin_trgm_ops)
+  where handle is not null;
+create index idx_profiles_tagline_trgm
+  on public.profiles using gin (lower(tagline) gin_trgm_ops)
+  where tagline is not null;
+create index idx_profiles_industry_trgm
+  on public.profiles using gin (lower(industry) gin_trgm_ops)
+  where industry is not null;
+create index idx_profiles_location_trgm
+  on public.profiles using gin (lower(location) gin_trgm_ops)
+  where location is not null;
+create index idx_profiles_bio_trgm
+  on public.profiles using gin (lower(coalesce(nerd_creds->>'bio', '')) gin_trgm_ops);
 
 -- -----------------------------
 -- updated_at trigger (profiles)
@@ -353,6 +373,8 @@ create table public.feed_connections (
 
 create index idx_feed_connections_user_id on public.feed_connections(user_id);
 create index idx_feed_connections_connected_user_id on public.feed_connections(connected_user_id);
+create index idx_feed_connections_connected_user_user
+  on public.feed_connections(connected_user_id, user_id);
 
 comment on table public.feed_connections is
   'Who follows whom; used to scope feed to self + connected users.';
@@ -375,6 +397,12 @@ create table public.connection_requests (
 create index idx_connection_requests_requester on public.connection_requests(requester_id);
 create index idx_connection_requests_recipient on public.connection_requests(recipient_id);
 create index idx_connection_requests_status on public.connection_requests(status) where status = 'pending';
+create index idx_connection_requests_pending_requester_recipient
+  on public.connection_requests(requester_id, recipient_id)
+  where status = 'pending';
+create index idx_connection_requests_pending_recipient_requester
+  on public.connection_requests(recipient_id, requester_id)
+  where status = 'pending';
 
 comment on table public.connection_requests is
   'Connection requests: pending until accepted (creates mutual feed_connections) or declined.';
@@ -708,89 +736,114 @@ returns table (
   connection_state text,
   use_weirdling_avatar boolean
 )
-language plpgsql
+language sql
 stable
 security definer
 set search_path = public, pg_catalog
 as $$
-declare
-  v_sql text;
-  v_skills_arr text[];
-  v_search_trim text;
-begin
-  if p_viewer_id is null then
-    return;
-  end if;
-
-  v_search_trim := nullif(trim(p_search), '');
-  v_skills_arr := coalesce(p_skills, '{}');
-
-  return query
-  with visible as (
-    select p.id, p.handle, p.display_name, p.avatar, p.tagline, p.pronouns,
-           p.industry, p.location, p.nerd_creds, p.created_at, p.last_active_at,
-           p.profile_visibility, p.use_weirdling_avatar,
-           w.avatar_url as weirdling_avatar
+  with params as (
+    select
+      p_viewer_id as viewer_id,
+      nullif(lower(trim(p_search)), '') as search_q,
+      nullif(lower(trim(p_industry)), '') as industry_q,
+      nullif(lower(trim(p_location)), '') as location_q,
+      coalesce(
+        (select array_agg(lower(trim(s))) from unnest(coalesce(p_skills, '{}')) s where trim(s) <> ''),
+        '{}'
+      ) as skills_q
+  ),
+  viewer_outgoing as (
+    select fc.connected_user_id as profile_id
+    from public.feed_connections fc
+    join params pr on true
+    where fc.user_id = pr.viewer_id
+  ),
+  viewer_incoming as (
+    select fc.user_id as profile_id
+    from public.feed_connections fc
+    join params pr on true
+    where fc.connected_user_id = pr.viewer_id
+  ),
+  any_connection as (
+    select profile_id from viewer_outgoing
+    union
+    select profile_id from viewer_incoming
+  ),
+  mutual_connection as (
+    select vo.profile_id
+    from viewer_outgoing vo
+    join viewer_incoming vi on vi.profile_id = vo.profile_id
+  ),
+  pending_out as (
+    select cr.recipient_id as profile_id
+    from public.connection_requests cr
+    join params pr on true
+    where cr.requester_id = pr.viewer_id
+      and cr.status = 'pending'
+  ),
+  pending_in as (
+    select cr.requester_id as profile_id
+    from public.connection_requests cr
+    join params pr on true
+    where cr.recipient_id = pr.viewer_id
+      and cr.status = 'pending'
+  ),
+  visible as (
+    select
+      p.id,
+      p.handle,
+      p.display_name,
+      p.avatar,
+      p.tagline,
+      p.pronouns,
+      p.industry,
+      p.location,
+      p.nerd_creds,
+      p.created_at,
+      p.last_active_at,
+      p.use_weirdling_avatar,
+      w.avatar_url as weirdling_avatar
     from public.profiles p
+    join params pr on true
     left join public.weirdlings w on w.user_id = p.id and w.is_active = true
     where p.status = 'approved'
-      and p.id != p_viewer_id
+      and p.id != pr.viewer_id
       and (
         p.profile_visibility = 'members_only'
-        or exists (
-          select 1 from public.feed_connections fc
-          where (fc.user_id = p_viewer_id and fc.connected_user_id = p.id)
-             or (fc.user_id = p.id and fc.connected_user_id = p_viewer_id)
-        )
+        or exists (select 1 from any_connection ac where ac.profile_id = p.id)
       )
       and (
-        v_search_trim is null
-        or p.display_name ilike '%' || v_search_trim || '%'
-        or p.handle ilike '%' || v_search_trim || '%'
-        or p.tagline ilike '%' || v_search_trim || '%'
-        or coalesce(p.industry, '') ilike '%' || v_search_trim || '%'
-        or coalesce(p.location, '') ilike '%' || v_search_trim || '%'
-        or coalesce(p.nerd_creds->>'bio', '') ilike '%' || v_search_trim || '%'
+        pr.search_q is null
+        or lower(coalesce(p.display_name, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.handle, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.tagline, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.industry, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.location, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.nerd_creds->>'bio', '')) like '%' || pr.search_q || '%'
         or exists (
           select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
-          where s ilike '%' || v_search_trim || '%'
+          where lower(s) like '%' || pr.search_q || '%'
         )
       )
-      and (p_industry is null or p.industry ilike '%' || trim(p_industry) || '%')
-      and (p_location is null or p.location ilike '%' || trim(p_location) || '%')
+      and (pr.industry_q is null or lower(coalesce(p.industry, '')) like '%' || pr.industry_q || '%')
+      and (pr.location_q is null or lower(coalesce(p.location, '')) like '%' || pr.location_q || '%')
       and (
-        array_length(v_skills_arr, 1) is null
+        array_length(pr.skills_q, 1) is null
         or exists (
           select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
-          where lower(s) = any(
-            select lower(unnest(v_skills_arr))
-          )
+          where lower(s) = any(pr.skills_q)
         )
       )
   ),
   conn_state as (
-    select v.id,
-           case
-             when exists (
-               select 1 from public.feed_connections fc
-               where fc.user_id = p_viewer_id and fc.connected_user_id = v.id
-                 and exists (
-                   select 1 from public.feed_connections fc2
-                   where fc2.user_id = v.id and fc2.connected_user_id = p_viewer_id
-                 )
-             ) then 'connected'
-             when exists (
-               select 1 from public.connection_requests cr
-               where cr.requester_id = p_viewer_id and cr.recipient_id = v.id
-                 and cr.status = 'pending'
-             ) then 'pending'
-             when exists (
-               select 1 from public.connection_requests cr
-               where cr.requester_id = v.id and cr.recipient_id = p_viewer_id
-                 and cr.status = 'pending'
-             ) then 'pending_received'
-             else 'not_connected'
-           end as state
+    select
+      v.id,
+      case
+        when exists (select 1 from mutual_connection mc where mc.profile_id = v.id) then 'connected'
+        when exists (select 1 from pending_out po where po.profile_id = v.id) then 'pending'
+        when exists (select 1 from pending_in pi where pi.profile_id = v.id) then 'pending_received'
+        else 'not_connected'
+      end as state
     from visible v
   )
   select
@@ -807,7 +860,11 @@ begin
     v.location,
     (
       select coalesce(array_agg(t.val), '{}')
-      from (select s::text as val from jsonb_array_elements_text(coalesce(v.nerd_creds->'skills', '[]'::jsonb)) s limit 3) t
+      from (
+        select s::text as val
+        from jsonb_array_elements_text(coalesce(v.nerd_creds->'skills', '[]'::jsonb)) s
+        limit 3
+      ) t
     ) as skills,
     left(coalesce(v.nerd_creds->>'bio', ''), 120) as bio_snippet,
     cs.state as connection_state,
@@ -836,7 +893,6 @@ begin
     v.id desc
   offset greatest(0, p_offset)
   limit least(p_limit, 51);
-end;
 $$;
 
 comment on function public.get_directory_page is
@@ -1572,6 +1628,8 @@ create table if not exists public.audit_log (
 create index idx_audit_log_created_at on public.audit_log(created_at desc);
 create index idx_audit_log_actor_id on public.audit_log(actor_id);
 create index idx_audit_log_target on public.audit_log(target_type, target_id);
+create index idx_audit_log_target_action_created_at
+  on public.audit_log(target_type, action, created_at desc);
 
 comment on table public.audit_log is
   'Audit trail for privileged operations: content approval, rejection, publishing, etc.';

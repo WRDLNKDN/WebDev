@@ -1,4 +1,11 @@
-import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+} from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import React, { useRef, useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -21,6 +28,9 @@ type MessageListProps = {
   onReaction?: (messageId: string, emoji: string) => void;
   onReport?: (messageId: string) => void;
   onMessagesViewed?: (messageIds: string[]) => void;
+  onLoadOlder?: () => void;
+  hasOlderMessages?: boolean;
+  loadingOlder?: boolean;
   isAdmin?: boolean;
   compact?: boolean;
 };
@@ -42,10 +52,20 @@ export const MessageList = ({
   onReaction,
   onReport,
   onMessagesViewed,
+  onLoadOlder,
+  hasOlderMessages = false,
+  loadingOlder = false,
   isAdmin,
   compact = false,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const previousBoundaryRef = useRef<{
+    firstId: string | null;
+    lastId: string | null;
+  }>({
+    firstId: null,
+    lastId: null,
+  });
   const [anchorEl, setAnchorEl] = useState<{
     el: HTMLElement;
     msg: MessageWithExtras;
@@ -57,7 +77,18 @@ export const MessageList = ({
   >({});
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const nextFirst = messages[0]?.id ?? null;
+    const nextLast = messages[messages.length - 1]?.id ?? null;
+    const prev = previousBoundaryRef.current;
+    const prependedOlder =
+      prev.firstId !== null &&
+      prev.lastId !== null &&
+      nextFirst !== prev.firstId &&
+      nextLast === prev.lastId;
+    if (!prependedOlder) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    previousBoundaryRef.current = { firstId: nextFirst, lastId: nextLast };
   }, [messages]);
 
   useEffect(() => {
@@ -132,6 +163,7 @@ export const MessageList = ({
 
   return (
     <Box
+      data-testid="chat-message-scroll"
       sx={{
         flex: 1,
         overflow: 'auto',
@@ -141,6 +173,25 @@ export const MessageList = ({
         p: compact ? 1.25 : 2,
       }}
     >
+      {hasOlderMessages && onLoadOlder && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', pb: 0.5 }}>
+          <Button
+            data-testid="chat-load-older"
+            size="small"
+            variant="outlined"
+            onClick={onLoadOlder}
+            disabled={loadingOlder}
+            sx={{
+              border: '1px solid rgba(255,255,255,0.2)',
+              bgcolor: 'rgba(255,255,255,0.04)',
+              color: 'text.secondary',
+              textTransform: 'none',
+            }}
+          >
+            {loadingOlder ? 'Loading older…' : 'Load older messages'}
+          </Button>
+        </Box>
+      )}
       {messages.map((msg) => {
         const isOwn = msg.sender_id === currentUserId;
         const canAct = isOwn && !msg.is_system_message && !msg.is_deleted;

@@ -35,6 +35,13 @@ export const ProjectCard = ({
 }: ProjectCardProps) => {
   const url = project.project_url?.trim() ?? '';
   const external = url && isExternalUrl(url);
+  const ctaSx = {
+    alignSelf: 'flex-start',
+    color: 'inherit',
+    borderColor: 'currentColor',
+    textTransform: 'none',
+    fontWeight: 600,
+  } as const;
 
   return (
     <Paper
@@ -121,7 +128,8 @@ export const ProjectCard = ({
       )}
       <Box
         sx={{
-          height: { xs: 140, md: 200 },
+          width: '100%',
+          aspectRatio: '16 / 9',
           bgcolor: 'rgba(0,0,0,0.5)',
           position: 'relative',
           overflow: 'hidden',
@@ -190,21 +198,23 @@ export const ProjectCard = ({
         {url &&
           (external ? (
             <Button
+              variant="outlined"
               href={url}
               target="_blank"
               rel="noopener noreferrer"
               size="small"
               endIcon={<OpenInNewIcon />}
-              sx={{ alignSelf: 'flex-start', color: 'inherit', opacity: 0.8 }}
+              sx={ctaSx}
             >
               View Project
             </Button>
           ) : (
             <Button
+              variant="outlined"
               component={RouterLink}
               to={url}
               size="small"
-              sx={{ alignSelf: 'flex-start', color: 'inherit', opacity: 0.8 }}
+              sx={ctaSx}
             >
               View Project
             </Button>

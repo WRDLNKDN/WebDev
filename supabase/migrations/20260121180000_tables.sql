@@ -36,7 +36,20 @@ drop function if exists public.notifications_on_mention() cascade;
 drop function if exists public.event_rsvps_block_suspended() cascade;
 
 -- Extensions used by schema/indexes
-create extension if not exists pg_trgm with schema public;
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+    where e.extname = 'pg_trgm'
+      and n.nspname = 'public'
+  ) then
+    alter extension pg_trgm set schema extensions;
+  end if;
+end $$;
 
 -- -----------------------------
 -- Drop tables (reverse dependency order)
@@ -191,22 +204,22 @@ create index idx_profiles_industry on public.profiles(industry) where industry i
 create index idx_profiles_location on public.profiles(location) where location is not null;
 create index idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
 create index idx_profiles_display_name_trgm
-  on public.profiles using gin (lower(display_name) gin_trgm_ops)
+  on public.profiles using gin (lower(display_name) extensions.gin_trgm_ops)
   where display_name is not null;
 create index idx_profiles_handle_trgm
-  on public.profiles using gin (lower(handle) gin_trgm_ops)
+  on public.profiles using gin (lower(handle) extensions.gin_trgm_ops)
   where handle is not null;
 create index idx_profiles_tagline_trgm
-  on public.profiles using gin (lower(tagline) gin_trgm_ops)
+  on public.profiles using gin (lower(tagline) extensions.gin_trgm_ops)
   where tagline is not null;
 create index idx_profiles_industry_trgm
-  on public.profiles using gin (lower(industry) gin_trgm_ops)
+  on public.profiles using gin (lower(industry) extensions.gin_trgm_ops)
   where industry is not null;
 create index idx_profiles_location_trgm
-  on public.profiles using gin (lower(location) gin_trgm_ops)
+  on public.profiles using gin (lower(location) extensions.gin_trgm_ops)
   where location is not null;
 create index idx_profiles_bio_trgm
-  on public.profiles using gin (lower(coalesce(nerd_creds->>'bio', '')) gin_trgm_ops);
+  on public.profiles using gin (lower(coalesce(nerd_creds->>'bio', '')) extensions.gin_trgm_ops);
 
 -- -----------------------------
 -- updated_at trigger (profiles)

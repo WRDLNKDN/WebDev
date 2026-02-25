@@ -8,5 +8,6 @@ values
   ('wrdlnkdn@gmail.com'),
   ('aprillordrake@gmail.com'),
   ('piorana@gmail.com'),
-  ('christopher.s.carter01@gmail.com')
+  ('christopher.s.carter01@gmail.com'),
+  ('danny.j.schwab@gmail.com')
 on conflict (email) do nothing;

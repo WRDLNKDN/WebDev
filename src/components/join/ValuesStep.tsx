@@ -81,7 +81,7 @@ export const ValuesStep = () => {
           },
         }}
       >
-        <Stack spacing={4}>
+        <Stack spacing={{ xs: 2.25, md: 2.75 }}>
           <Box>
             <Typography variant="h5" sx={signupStepLabel}>
               Your Intent
@@ -109,7 +109,14 @@ export const ValuesStep = () => {
               Select at least one.
             </Typography>
 
-            <FormGroup>
+            <FormGroup
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                columnGap: 2,
+                rowGap: 0.25,
+              }}
+            >
               {JOIN_REASONS.map((reason) => (
                 <FormControlLabel
                   key={reason}
@@ -145,7 +152,14 @@ export const ValuesStep = () => {
               Select at least one.
             </Typography>
 
-            <FormGroup>
+            <FormGroup
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                columnGap: 2,
+                rowGap: 0.25,
+              }}
+            >
               {PARTICIPATION_STYLES.map((style) => (
                 <FormControlLabel
                   key={style}
@@ -169,7 +183,7 @@ export const ValuesStep = () => {
             </Typography>
             <TextField
               multiline
-              rows={4}
+              rows={3}
               fullWidth
               placeholder={
                 "Tell us more about your interests, what you're working on, " +

@@ -1,3 +1,4 @@
+import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
   Alert,
@@ -91,7 +92,9 @@ export const SignIn = () => {
               startIcon={
                 loadingProvider === 'google' ? (
                   <CircularProgress size={20} color="inherit" />
-                ) : undefined
+                ) : (
+                  <GoogleIcon />
+                )
               }
               sx={{
                 textTransform: 'none',

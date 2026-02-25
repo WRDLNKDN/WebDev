@@ -32,3 +32,4 @@ declare module '@mui/icons-material/LightbulbOutlined';
 declare module '@mui/icons-material/Favorite';
 declare module '@mui/icons-material/FavoriteBorder';
 declare module '@mui/icons-material/ReportProblem';
+declare module '@mui/icons-material/Google';

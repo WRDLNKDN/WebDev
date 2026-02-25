@@ -192,8 +192,41 @@ export const AuthCallback = () => {
           if (next === '/join') {
             console.log('📝 AuthCallback: Setting up Join flow');
 
-            const provider = mapSupabaseProvider(user);
+            const fetchProfile = async () => {
+              const { data, error } = await supabase
+                .from('profiles')
+                .select(
+                  'display_name, join_reason, participation_style, policy_version',
+                )
+                .eq('id', user.id)
+                .maybeSingle();
+              return { data, error };
+            };
 
+            let { data: profile, error: profileError } = await fetchProfile();
+            if (!profile) {
+              await new Promise((r) => setTimeout(r, 500));
+              if (cancelled) return;
+              ({ data: profile, error: profileError } = await fetchProfile());
+            }
+
+            if (profile && isProfileOnboarded(profile)) {
+              // Existing member: avoid sending them into Join flow.
+              setProfileValidated(user.id, profile);
+              navigate('/feed', {
+                replace: true,
+                state: { profileValidated: profile },
+              });
+              return;
+            }
+
+            if (profileError) {
+              // Fail-open for existing members when profile read is blocked.
+              navigate('/feed', { replace: true });
+              return;
+            }
+
+            const provider = mapSupabaseProvider(user);
             setIdentity({
               provider,
               userId: user.id,
@@ -203,9 +236,7 @@ export const AuthCallback = () => {
               policyVersion: POLICY_VERSION,
               timestamp: new Date().toISOString(),
             });
-
             goToStep('values');
-
             await new Promise((r) => setTimeout(r, 200));
             navigate('/join', { replace: true });
           } else {
@@ -232,16 +263,16 @@ export const AuthCallback = () => {
                 return { data, error: null };
               };
 
-              let { data: profile } = await fetchProfile();
+              let { data: profile, error: profileError } = await fetchProfile();
               if (!profile) {
                 await new Promise((r) => setTimeout(r, 800));
                 if (cancelled) return;
-                ({ data: profile } = await fetchProfile());
+                ({ data: profile, error: profileError } = await fetchProfile());
               }
               if (!profile) {
                 await new Promise((r) => setTimeout(r, 1000));
                 if (cancelled) return;
-                ({ data: profile } = await fetchProfile());
+                ({ data: profile, error: profileError } = await fetchProfile());
               }
               if (cancelled) return;
 
@@ -256,6 +287,17 @@ export const AuthCallback = () => {
                 console.warn(
                   '🔵 AuthCallback: profile fetch returned null after retries → sending to /join',
                 );
+              }
+
+              if (!profile && profileError) {
+                // If profile reads are temporarily blocked (RLS/deploy lag), do not
+                // force an existing member into the Join wizard.
+                console.warn(
+                  '🔵 AuthCallback: profile read error; continuing to protected route',
+                  profileError,
+                );
+                navigate(next, { replace: true });
+                return;
               }
 
               if (!profile || !isProfileOnboarded(profile)) {

@@ -1,4 +1,3 @@
-import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import {
   Alert,
@@ -7,8 +6,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Menu,
-  MenuItem,
   Paper,
   Stack,
   Typography,
@@ -27,9 +24,6 @@ export const SignIn = () => {
   const [loadingProvider, setLoadingProvider] = useState<
     'google' | 'azure' | null
   >(null);
-  const [providerAnchor, setProviderAnchor] = useState<HTMLElement | null>(
-    null,
-  );
   const [error, setError] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
@@ -92,10 +86,10 @@ export const SignIn = () => {
               variant="outlined"
               size="large"
               fullWidth
-              onClick={(e) => setProviderAnchor(e.currentTarget)}
+              onClick={() => void handleOAuthSignIn('google')}
               disabled={loading}
               startIcon={
-                loadingProvider ? (
+                loadingProvider === 'google' ? (
                   <CircularProgress size={20} color="inherit" />
                 ) : undefined
               }
@@ -105,38 +99,33 @@ export const SignIn = () => {
                 justifyContent: 'flex-start',
               }}
             >
-              {loadingProvider ? 'Signing in…' : 'Sign in'}
+              {loadingProvider === 'google'
+                ? 'Signing in with Google…'
+                : 'Sign in with Google'}
             </Button>
-            <Menu
-              anchorEl={providerAnchor}
-              open={Boolean(providerAnchor)}
-              onClose={() => setProviderAnchor(null)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={() => void handleOAuthSignIn('azure')}
+              disabled={loading}
+              startIcon={
+                loadingProvider === 'azure' ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <MicrosoftIcon />
+                )
+              }
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                justifyContent: 'flex-start',
+              }}
             >
-              <MenuItem
-                onClick={() => {
-                  setProviderAnchor(null);
-                  void handleOAuthSignIn('google');
-                }}
-                disabled={loading}
-                sx={{ minWidth: 240 }}
-              >
-                <GoogleIcon fontSize="small" sx={{ mr: 1.5 }} />
-                Google
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setProviderAnchor(null);
-                  void handleOAuthSignIn('azure');
-                }}
-                disabled={loading}
-                sx={{ minWidth: 240 }}
-              >
-                <MicrosoftIcon fontSize="small" sx={{ mr: 1.5 }} />
-                Microsoft
-              </MenuItem>
-            </Menu>
+              {loadingProvider === 'azure'
+                ? 'Signing in with Microsoft…'
+                : 'Sign in with Microsoft'}
+            </Button>
 
             <Divider />
 

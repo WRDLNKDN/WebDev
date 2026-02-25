@@ -31,8 +31,10 @@ test.describe('Directory Page', () => {
     // Wait for redirect (RequireOnboarded async check can take a few seconds)
     await expect(page).toHaveURL(/\/join/, { timeout: 15000 });
 
-    const joinButton = page.getByRole('button', { name: /Join/i }).first();
-    await expect(joinButton).toBeVisible({
+    await expect(page.getByRole('button', { name: /Join/i })).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: /Sign in/i }).first(),
+    ).toBeVisible({
       timeout: 10000,
     });
   });

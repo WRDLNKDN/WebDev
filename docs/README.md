@@ -69,10 +69,17 @@ Central index for WRDLNKDN WebDev documentation.
   instructions.
 - [Feed post buttons](./development/feed-post-buttons.md) — Post and Link button
   behavior in the Feed composer.
+- [Home scroll analytics queries](./development/home-scroll-analytics.md) — How
+  to inspect `home_below_fold_reached` and `home_scroll_depth` events in QA and
+  analytics sinks.
+- [AAA accessibility backlog](./accessibility/AAA_BACKLOG.md) — Tracking list
+  for non-blocking AAA findings from nightly accessibility sweeps.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
   everything; pre-commit and commands.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
   testing.
+- [Android sign-in smoke test](./testing/android-signin-smoke.md) — Manual
+  callback and recovery verification on Android Chrome/webview.
 - [Beta notes](./BETA_NOTES.md) — Current Beta-scope adjustments and temporary
   decisions.
 

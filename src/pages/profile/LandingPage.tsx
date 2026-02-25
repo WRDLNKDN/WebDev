@@ -239,6 +239,9 @@ export const LandingPage = () => {
     .split(',')
     .map((industry) => industry.trim())
     .filter(Boolean);
+  const hasVisibleSocialLinks = Array.isArray(profile.socials)
+    ? profile.socials.some((link) => link?.isVisible)
+    : false;
 
   const ownerActions = isOwner ? (
     <Button
@@ -369,26 +372,28 @@ export const LandingPage = () => {
 
           {/* 2. THE GRID LAYOUT */}
           <Grid container spacing={{ xs: 3, md: 4 }} sx={{ mt: 2 }}>
-            {/* LEFT COLUMN: The "Widget" Sector */}
-            {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 4 }}' */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  ...GLASS_CARD,
-                  p: { xs: 2, md: 3 },
-                  mb: 4,
-                  position: { md: 'sticky' },
-                  top: { md: 24 },
-                }}
-              >
-                <ProfileLinksWidget socials={profile.socials || []} grouped />
-              </Paper>
-            </Grid>
+            {hasVisibleSocialLinks && (
+              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...GLASS_CARD,
+                    p: { xs: 2, md: 3 },
+                    mb: 4,
+                    position: { md: 'sticky' },
+                    top: { md: 24 },
+                  }}
+                >
+                  <ProfileLinksWidget socials={profile.socials || []} grouped />
+                </Paper>
+              </Grid>
+            )}
 
             {/* RIGHT COLUMN: The "Main Content" Sector */}
-            {/* FIXED: Removed 'item', used 'size={{ xs: 12, md: 8 }}' */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ minWidth: 0 }}>
+            <Grid
+              size={{ xs: 12, md: hasVisibleSocialLinks ? 8 : 12 }}
+              sx={{ minWidth: 0 }}
+            >
               <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={profile.resume_url}

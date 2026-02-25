@@ -199,6 +199,60 @@ comment on constraint profiles_approved_has_display_name on public.profiles is
   'Approved profiles must have non-empty display_name for directory.';
 
 -- -----------------------------
+-- RLS replay safety: clear policies before re-create
+-- -----------------------------
+-- Allows safe re-application of this file on existing databases.
+do $$
+declare
+  p record;
+  managed_tables constant text[] := array[
+    'admin_allowlist',
+    'profiles',
+    'portfolio_items',
+    'generation_jobs',
+    'weirdlings',
+    'feed_connections',
+    'connection_requests',
+    'feed_items',
+    'chat_rooms',
+    'chat_room_members',
+    'chat_blocks',
+    'chat_suspensions',
+    'chat_messages',
+    'chat_message_reactions',
+    'chat_message_attachments',
+    'chat_read_receipts',
+    'chat_reports',
+    'chat_audit_log',
+    'chat_moderators',
+    'feed_advertisers',
+    'feed_ad_events',
+    'community_partners',
+    'notifications',
+    'events',
+    'event_rsvps',
+    'content_submissions',
+    'playlists',
+    'playlist_items',
+    'audit_log'
+  ];
+begin
+  for p in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = any(managed_tables)
+  loop
+    execute format(
+      'drop policy if exists %I on %I.%I',
+      p.policyname,
+      p.schemaname,
+      p.tablename
+    );
+  end loop;
+end $$;
+
+-- -----------------------------
 -- admin_allowlist: RLS (admin only)
 -- -----------------------------
 alter table public.admin_allowlist enable row level security;
@@ -207,8 +261,8 @@ drop policy if exists admin_allowlist_admin_all on public.admin_allowlist;
 create policy admin_allowlist_admin_all
   on public.admin_allowlist for all
   to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 revoke all on table public.admin_allowlist from anon, authenticated;
 grant select, insert, update, delete on table public.admin_allowlist to authenticated;
@@ -254,25 +308,25 @@ create policy profiles_public_read_approved
 
 create policy profiles_user_read_own
   on public.profiles for select
-  using (auth.uid() = id);
+  using ((select auth.uid()) = id);
 
 create policy profiles_admin_read_all
   on public.profiles for select
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 create policy profiles_user_insert_own
   on public.profiles for insert
-  with check (auth.uid() = id);
+  with check ((select auth.uid()) = id);
 
 create policy profiles_user_update_own
   on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 create policy profiles_admin_update_all
   on public.profiles for update
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 revoke all on table public.profiles from anon, authenticated;
 
@@ -315,20 +369,20 @@ alter table public.portfolio_items enable row level security;
 
 create policy "Users can read own portfolio_items"
   on public.portfolio_items for select
-  using (auth.uid() = owner_id);
+  using ((select auth.uid()) = owner_id);
 
 create policy "Users can insert own portfolio_items"
   on public.portfolio_items for insert
-  with check (auth.uid() = owner_id);
+  with check ((select auth.uid()) = owner_id);
 
 create policy "Users can update own portfolio_items"
   on public.portfolio_items for update
-  using (auth.uid() = owner_id)
-  with check (auth.uid() = owner_id);
+  using ((select auth.uid()) = owner_id)
+  with check ((select auth.uid()) = owner_id);
 
 create policy "Users can delete own portfolio_items"
   on public.portfolio_items for delete
-  using (auth.uid() = owner_id);
+  using ((select auth.uid()) = owner_id);
 
 -- Public read for portfolio items (so approved profiles' portfolios are visible)
 create policy "Public can read portfolio_items"
@@ -351,8 +405,8 @@ alter table public.generation_jobs enable row level security;
 
 create policy "Users can manage own generation_jobs"
   on public.generation_jobs for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- -----------------------------
 -- weirdlings: RLS
@@ -361,8 +415,8 @@ alter table public.weirdlings enable row level security;
 
 create policy "Users can manage own weirdlings"
   on public.weirdlings for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- -----------------------------
 -- feed_connections: RLS
@@ -372,17 +426,17 @@ alter table public.feed_connections enable row level security;
 create policy "Users can read own connections"
   on public.feed_connections for select
   to authenticated
-  using (auth.uid() = feed_connections.user_id);
+  using ((select auth.uid()) = feed_connections.user_id);
 
 create policy "Users can insert own connections"
   on public.feed_connections for insert
   to authenticated
-  with check (auth.uid() = feed_connections.user_id);
+  with check ((select auth.uid()) = feed_connections.user_id);
 
 create policy "Users can delete own connections"
   on public.feed_connections for delete
   to authenticated
-  using (auth.uid() = feed_connections.user_id);
+  using ((select auth.uid()) = feed_connections.user_id);
 
 revoke all on table public.feed_connections from anon, authenticated;
 grant select, insert, delete on table public.feed_connections to authenticated;
@@ -394,17 +448,17 @@ alter table public.connection_requests enable row level security;
 
 create policy connection_requests_requester
   on public.connection_requests for all
-  using (auth.uid() = requester_id)
-  with check (auth.uid() = requester_id);
+  using ((select auth.uid()) = requester_id)
+  with check ((select auth.uid()) = requester_id);
 
 create policy connection_requests_recipient_select
   on public.connection_requests for select
-  using (auth.uid() = recipient_id);
+  using ((select auth.uid()) = recipient_id);
 
 create policy connection_requests_recipient_update
   on public.connection_requests for update
-  using (auth.uid() = recipient_id)
-  with check (auth.uid() = recipient_id);
+  using ((select auth.uid()) = recipient_id)
+  with check ((select auth.uid()) = recipient_id);
 
 revoke all on table public.connection_requests from anon;
 grant select, insert, update on table public.connection_requests to authenticated;
@@ -418,22 +472,22 @@ create policy "Users can read feed items from self or followees"
   on public.feed_items for select
   to authenticated
   using (
-    auth.uid() = feed_items.user_id
+    (select auth.uid()) = feed_items.user_id
     or exists (
       select 1 from public.feed_connections fc
-      where fc.user_id = auth.uid() and fc.connected_user_id = feed_items.user_id
+      where fc.user_id = (select auth.uid()) and fc.connected_user_id = feed_items.user_id
     )
   );
 
 create policy "Users can insert own feed items"
   on public.feed_items for insert
   to authenticated
-  with check (auth.uid() = feed_items.user_id);
+  with check ((select auth.uid()) = feed_items.user_id);
 
 create policy "Users can delete own feed items"
   on public.feed_items for delete
   to authenticated
-  using (auth.uid() = feed_items.user_id);
+  using ((select auth.uid()) = feed_items.user_id);
 
 revoke all on table public.feed_items from anon, authenticated;
 grant select, insert, delete on table public.feed_items to authenticated;
@@ -546,14 +600,14 @@ create policy "Users can read rooms they are members of"
   using (
     exists (
       select 1 from public.chat_room_members crm
-      where crm.room_id = chat_rooms.id and crm.user_id = auth.uid() and crm.left_at is null
+      where crm.room_id = chat_rooms.id and crm.user_id = (select auth.uid()) and crm.left_at is null
     )
   );
 
 create policy "Authenticated can create rooms"
   on public.chat_rooms for insert
   to authenticated
-  with check (auth.uid() = created_by);
+  with check ((select auth.uid()) = created_by);
 
 create policy "Admins can update room name (groups)"
   on public.chat_rooms for update
@@ -561,7 +615,7 @@ create policy "Admins can update room name (groups)"
   using (
     exists (
       select 1 from public.chat_room_members crm
-      where crm.room_id = chat_rooms.id and crm.user_id = auth.uid()
+      where crm.room_id = chat_rooms.id and crm.user_id = (select auth.uid())
         and crm.role = 'admin' and crm.left_at is null
     )
   )
@@ -586,8 +640,8 @@ create policy "Creators can insert self as first member"
   on public.chat_room_members for insert
   to authenticated
   with check (
-    auth.uid() = user_id
-    and exists (select 1 from public.chat_rooms r where r.id = room_id and r.created_by = auth.uid())
+    (select auth.uid()) = user_id
+    and exists (select 1 from public.chat_rooms r where r.id = room_id and r.created_by = (select auth.uid()))
   );
 
 create policy "Admins can update members (transfer, remove)"
@@ -598,8 +652,8 @@ create policy "Admins can update members (transfer, remove)"
 create policy "Users can leave (set left_at)"
   on public.chat_room_members for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 revoke all on table public.chat_rooms from anon, authenticated;
 grant select, insert on table public.chat_rooms to authenticated;
@@ -616,8 +670,8 @@ alter table public.chat_blocks enable row level security;
 create policy "Users can manage own blocks"
   on public.chat_blocks for all
   to authenticated
-  using (auth.uid() = blocker_id)
-  with check (auth.uid() = blocker_id);
+  using ((select auth.uid()) = blocker_id)
+  with check ((select auth.uid()) = blocker_id);
 
 revoke all on table public.chat_blocks from anon, authenticated;
 grant select, insert, delete on table public.chat_blocks to authenticated;
@@ -630,13 +684,13 @@ alter table public.chat_suspensions enable row level security;
 create policy "Moderators can manage chat suspensions"
   on public.chat_suspensions for all
   to authenticated
-  using (public.is_chat_moderator())
-  with check (public.is_chat_moderator());
+  using ((select public.is_chat_moderator()))
+  with check ((select public.is_chat_moderator()));
 
 create policy "Users can read own suspension"
   on public.chat_suspensions for select
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 revoke all on table public.chat_suspensions from anon, authenticated;
 grant select on table public.chat_suspensions to authenticated;
@@ -653,7 +707,7 @@ create policy "Members can read room messages"
   using (
     exists (
       select 1 from public.chat_room_members crm
-      where crm.room_id = chat_messages.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      where crm.room_id = chat_messages.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
     )
   );
 
@@ -661,22 +715,22 @@ create policy "Members can insert messages"
   on public.chat_messages for insert
   to authenticated
   with check (
-    auth.uid() = sender_id
-    and not exists (select 1 from public.chat_suspensions cs where cs.user_id = auth.uid())
-    and coalesce((select p.status from public.profiles p where p.id = auth.uid()), 'pending') != 'disabled'
-    and public.chat_can_message_in_room(chat_messages.room_id, auth.uid())
+    (select auth.uid()) = sender_id
+    and not exists (select 1 from public.chat_suspensions cs where cs.user_id = (select auth.uid()))
+    and coalesce((select p.status from public.profiles p where p.id = (select auth.uid())), 'pending') != 'disabled'
+    and public.chat_can_message_in_room(chat_messages.room_id, (select auth.uid()))
   );
 
 create policy "Senders can update own messages (edit, soft delete)"
   on public.chat_messages for update
   to authenticated
-  using (auth.uid() = sender_id)
-  with check (auth.uid() = sender_id);
+  using ((select auth.uid()) = sender_id)
+  with check ((select auth.uid()) = sender_id);
 
 create policy "Admins can delete messages (moderation)"
   on public.chat_messages for update
   to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 revoke all on table public.chat_messages from anon, authenticated;
 grant select, insert on table public.chat_messages to authenticated;
@@ -693,15 +747,15 @@ create policy "Members can manage reactions in own rooms"
   using (
     exists (
       select 1 from public.chat_messages cm
-      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
       where cm.id = chat_message_reactions.message_id
     )
   )
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and exists (
       select 1 from public.chat_messages cm
-      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
       where cm.id = chat_message_reactions.message_id
     )
   );
@@ -720,7 +774,7 @@ create policy "Members can read attachments in rooms"
   using (
     exists (
       select 1 from public.chat_messages cm
-      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
       where cm.id = chat_message_attachments.message_id
     )
   );
@@ -731,7 +785,7 @@ create policy "Members can insert attachments for own messages"
   with check (
     exists (
       select 1 from public.chat_messages cm
-      where cm.id = chat_message_attachments.message_id and cm.sender_id = auth.uid()
+      where cm.id = chat_message_attachments.message_id and cm.sender_id = (select auth.uid())
     )
   );
 
@@ -747,18 +801,18 @@ create policy "Members can manage receipts in rooms"
   on public.chat_read_receipts for all
   to authenticated
   using (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     or exists (
       select 1 from public.chat_messages cm
-      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
       where cm.id = chat_read_receipts.message_id
     )
   )
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and exists (
       select 1 from public.chat_messages cm
-      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = auth.uid() and crm.left_at is null
+      join public.chat_room_members crm on crm.room_id = cm.room_id and crm.user_id = (select auth.uid()) and crm.left_at is null
       where cm.id = chat_read_receipts.message_id
     )
   );
@@ -774,17 +828,17 @@ alter table public.chat_reports enable row level security;
 create policy "Users can insert reports"
   on public.chat_reports for insert
   to authenticated
-  with check (auth.uid() = reporter_id);
+  with check ((select auth.uid()) = reporter_id);
 
 create policy "Admins can read all reports"
   on public.chat_reports for select
   to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 create policy "Admins can update report status"
   on public.chat_reports for update
   to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 revoke all on table public.chat_reports from anon, authenticated;
 grant select, insert on table public.chat_reports to authenticated;
@@ -814,7 +868,7 @@ alter table public.chat_audit_log enable row level security;
 alter table public.chat_moderators enable row level security;
 create policy "Admins can manage chat_moderators"
   on public.chat_moderators for all
-  to authenticated using (public.is_admin()) with check (public.is_admin());
+  to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 revoke all on table public.chat_moderators from anon, authenticated;
 grant select, insert, delete on table public.chat_moderators to authenticated;
 
@@ -822,7 +876,7 @@ grant select, insert, delete on table public.chat_moderators to authenticated;
 create policy "Admins can read audit log"
   on public.chat_audit_log for select
   to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 revoke all on table public.chat_audit_log from anon, authenticated;
 grant select on table public.chat_audit_log to authenticated;
@@ -841,8 +895,8 @@ create policy feed_advertisers_public_read
 
 create policy feed_advertisers_admin_all
   on public.feed_advertisers for all
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 revoke all on table public.feed_advertisers from anon, authenticated;
 grant select on table public.feed_advertisers to authenticated;
@@ -859,12 +913,12 @@ drop policy if exists feed_ad_events_admin_read on public.feed_ad_events;
 create policy feed_ad_events_insert_own
   on public.feed_ad_events for insert
   to authenticated
-  with check (member_id is null or auth.uid() = member_id);
+  with check (member_id is null or (select auth.uid()) = member_id);
 
 create policy feed_ad_events_admin_read
   on public.feed_ad_events for select
   to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 revoke all on table public.feed_ad_events from anon, authenticated;
 grant insert, select on table public.feed_ad_events to authenticated;
@@ -883,8 +937,8 @@ create policy community_partners_public_read
 
 create policy community_partners_admin_all
   on public.community_partners for all
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 revoke all on table public.community_partners from anon, authenticated;
 grant select on table public.community_partners to anon, authenticated;
@@ -897,12 +951,12 @@ alter table public.notifications enable row level security;
 
 create policy notifications_recipient_select
   on public.notifications for select to authenticated
-  using (auth.uid() = recipient_id);
+  using ((select auth.uid()) = recipient_id);
 
 create policy notifications_recipient_update
   on public.notifications for update to authenticated
-  using (auth.uid() = recipient_id)
-  with check (auth.uid() = recipient_id);
+  using ((select auth.uid()) = recipient_id)
+  with check ((select auth.uid()) = recipient_id);
 
 revoke all on table public.notifications from anon, authenticated;
 grant select, update on table public.notifications to authenticated;
@@ -917,12 +971,12 @@ create policy events_select
 
 create policy events_insert_own
   on public.events for insert to authenticated
-  with check (auth.uid() = host_id);
+  with check ((select auth.uid()) = host_id);
 
 create policy events_update_own
   on public.events for update to authenticated
-  using (auth.uid() = host_id)
-  with check (auth.uid() = host_id);
+  using ((select auth.uid()) = host_id)
+  with check ((select auth.uid()) = host_id);
 
 revoke all on table public.events from anon, authenticated;
 grant select, insert, update on table public.events to authenticated;
@@ -937,16 +991,16 @@ create policy event_rsvps_select
 
 create policy event_rsvps_insert_own
   on public.event_rsvps for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy event_rsvps_update_own
   on public.event_rsvps for update to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 create policy event_rsvps_delete_own
   on public.event_rsvps for delete to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 revoke all on table public.event_rsvps from anon, authenticated;
 grant select, insert, update, delete on table public.event_rsvps to authenticated;
@@ -961,16 +1015,16 @@ alter table public.audit_log enable row level security;
 
 create policy content_submissions_insert_own
   on public.content_submissions for insert to authenticated
-  with check (auth.uid() = submitted_by);
+  with check ((select auth.uid()) = submitted_by);
 
 create policy content_submissions_select_own
   on public.content_submissions for select to authenticated
-  using (auth.uid() = submitted_by);
+  using ((select auth.uid()) = submitted_by);
 
 create policy content_submissions_admin_all
   on public.content_submissions for all to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 create policy playlists_select_public
   on public.playlists for select to anon
@@ -982,8 +1036,8 @@ create policy playlists_select_authenticated
 
 create policy playlists_admin_all
   on public.playlists for all to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 create policy playlist_items_select_public
   on public.playlist_items for select to anon
@@ -1000,19 +1054,19 @@ create policy playlist_items_select_authenticated
 
 create policy playlist_items_admin_all
   on public.playlist_items for all to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 create policy audit_log_select_admin
   on public.audit_log for select to authenticated
-  using (public.is_admin());
+  using ((select public.is_admin()));
 
 drop policy if exists "content_submissions_storage_insert" on storage.objects;
 create policy content_submissions_storage_insert
   on storage.objects for insert to authenticated
   with check (
     bucket_id = 'content-submissions'
-    and (string_to_array(name, '/'))[2] = auth.uid()::text
+    and (string_to_array(name, '/'))[2] = (select auth.uid())::text
   );
 
 drop policy if exists "content_submissions_storage_select" on storage.objects;
@@ -1020,6 +1074,90 @@ create policy content_submissions_storage_select
   on storage.objects for select to authenticated
   using (
     bucket_id = 'content-submissions'
-    and (string_to_array(name, '/'))[2] = auth.uid()::text
+    and (string_to_array(name, '/'))[2] = (select auth.uid())::text
   );
+
+-- -----------------------------
+-- Security Advisor hardening for unmanaged public objects
+-- -----------------------------
+-- Lock down any public tables not explicitly managed by this migration pair.
+-- This prevents orphaned/legacy tables from remaining exposed via PostgREST.
+do $$
+declare
+  t record;
+  p record;
+  managed_tables constant text[] := array[
+    'admin_allowlist',
+    'profiles',
+    'portfolio_items',
+    'generation_jobs',
+    'weirdlings',
+    'feed_connections',
+    'connection_requests',
+    'feed_items',
+    'chat_rooms',
+    'chat_room_members',
+    'chat_blocks',
+    'chat_suspensions',
+    'chat_messages',
+    'chat_message_reactions',
+    'chat_message_attachments',
+    'chat_read_receipts',
+    'chat_reports',
+    'chat_audit_log',
+    'chat_moderators',
+    'feed_advertisers',
+    'feed_ad_events',
+    'community_partners',
+    'notifications',
+    'events',
+    'event_rsvps',
+    'content_submissions',
+    'playlists',
+    'playlist_items',
+    'audit_log'
+  ];
+begin
+  for t in
+    select schemaname, tablename
+    from pg_tables
+    where schemaname = 'public'
+      and tablename <> all (managed_tables)
+  loop
+    execute format('alter table %I.%I enable row level security', t.schemaname, t.tablename);
+    execute format('revoke all on table %I.%I from anon, authenticated', t.schemaname, t.tablename);
+
+    -- Drop permissive legacy policies (e.g. USING (true)) on unmanaged tables.
+    for p in
+      select policyname
+      from pg_policies
+      where schemaname = t.schemaname
+        and tablename = t.tablename
+    loop
+      execute format('drop policy if exists %I on %I.%I', p.policyname, t.schemaname, t.tablename);
+    end loop;
+  end loop;
+end $$;
+
+-- Force deterministic function resolution for any public functions that were
+-- created without an explicit search_path, addressing advisor warnings.
+do $$
+declare
+  fn record;
+begin
+  for fn in
+    select p.oid::regprocedure as signature
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prokind = 'f'
+      and not exists (
+        select 1
+        from unnest(coalesce(p.proconfig, array[]::text[])) cfg
+        where cfg like 'search_path=%'
+      )
+  loop
+    execute format('alter function %s set search_path = public, pg_catalog', fn.signature);
+  end loop;
+end $$;
 

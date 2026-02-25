@@ -141,7 +141,10 @@ test.describe('Dashboard links and profile layout regressions', () => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.getByRole('button', { name: 'Edit Links' }).first().click();
+    await page
+      .getByRole('button', { name: 'Add or Edit Links' })
+      .first()
+      .click();
     await expect(page.getByText('ADD NEW LINK')).toBeVisible();
 
     const linksDialog = page

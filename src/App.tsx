@@ -137,9 +137,9 @@ const NotificationsPage = lazy(async () => {
   return { default: m.NotificationsPage };
 });
 
-const ForumsPage = lazy(async () => {
-  const m = await import('./pages/community/ForumsPage');
-  return { default: m.ForumsPage };
+const GroupsPage = lazy(async () => {
+  const m = await import('./pages/community/GroupsPage');
+  return { default: m.GroupsPage };
 });
 
 const SavedPage = lazy(async () => {
@@ -209,6 +209,11 @@ const AdminApp = lazy(async () => {
 const AdminDashboard = lazy(async () => {
   const m = await import('./pages/admin/AdminDashboard');
   return { default: m.AdminDashboard };
+});
+
+const AdminAuthCallbackHealthPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminAuthCallbackHealthPage');
+  return { default: m.AdminAuthCallbackHealthPage };
 });
 
 const AdminContentModerationPage = lazy(async () => {
@@ -341,7 +346,11 @@ const App = () => {
                     </RequireOnboarded>
                   }
                 />
-                <Route path="/forums" element={<ForumsPage />} />
+                <Route path="/groups" element={<GroupsPage />} />
+                <Route
+                  path="/forums"
+                  element={<Navigate to="/groups" replace />}
+                />
                 <Route path="/saved" element={<SavedPage />} />
                 <Route path="/advertise" element={<AdvertisePage />} />
                 <Route path="/games" element={<DivergencePage />} />
@@ -452,6 +461,10 @@ const App = () => {
                 {/* --- Administration --- */}
                 <Route path="/admin" element={<AdminApp />}>
                   <Route index element={<AdminDashboard />} />
+                  <Route
+                    path="auth-callback-health"
+                    element={<AdminAuthCallbackHealthPage />}
+                  />
                   <Route
                     path="moderation"
                     element={<Navigate to="/admin" replace />}

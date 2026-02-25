@@ -432,6 +432,14 @@ export type AdminResumeThumbnailRunDetails = {
   }>;
 };
 
+export type AdminAuthCallbackLog = {
+  id: string;
+  action: 'AUTH_CALLBACK_ERROR' | 'AUTH_CALLBACK_TIMEOUT_ALERT';
+  actorEmail: string | null;
+  createdAt: string;
+  meta: Record<string, unknown>;
+};
+
 export async function fetchAdminPlaylists(
   token: string,
 ): Promise<AdminPlaylist[]> {
@@ -452,6 +460,43 @@ export async function fetchAdminPlaylists(
       ),
     );
   return data.data ?? [];
+}
+
+export async function fetchAdminAuthCallbackLogs(
+  token: string,
+  limit = 10,
+): Promise<{ data: AdminAuthCallbackLog[]; total: number }> {
+  const qs = `?limit=${Math.max(1, Math.min(100, limit))}`;
+  const res = await fetch(`${API_BASE}/api/admin/auth-callback-logs${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: API_BASE ? 'omit' : 'include',
+  });
+  const data = await parseJson<{
+    ok: boolean;
+    data?: Array<{
+      id: string;
+      action: 'AUTH_CALLBACK_ERROR' | 'AUTH_CALLBACK_TIMEOUT_ALERT';
+      actorEmail: string | null;
+      createdAt: string;
+      meta: Record<string, unknown>;
+    }>;
+    meta?: { total?: number };
+    error?: string;
+    message?: string;
+  }>(res, '/api/admin/auth-callback-logs');
+  if (!res.ok) {
+    throw new Error(
+      messageFromApiResponse(
+        res.status,
+        data?.error,
+        (data as { message?: string })?.message,
+      ),
+    );
+  }
+  return {
+    data: data.data ?? [],
+    total: data.meta?.total ?? 0,
+  };
 }
 
 export async function fetchAdminResumeThumbnailSummary(

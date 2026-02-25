@@ -30,7 +30,7 @@ export const signupStepLabel = {
 } as const;
 
 export const signupStepSubtext = {
-  opacity: 0.8,
+  color: 'rgba(255,255,255,0.95)',
 } as const;
 
 export const signupLink = {
@@ -49,11 +49,11 @@ export const welcomeStepTitle = {
 } as const;
 
 export const welcomeStepSubtext = {
-  opacity: 0.8,
+  color: 'rgba(255,255,255,0.95)',
 } as const;
 
 export const welcomeStepDescription = {
-  opacity: 0.9,
+  color: 'rgba(255,255,255,0.96)',
 } as const;
 
 // JoinProgress
@@ -64,14 +64,14 @@ export const signupProgress = {
 
 export const signupProgressStepLabel = {
   ml: 1,
-  opacity: 0.7,
+  color: 'rgba(255,255,255,0.95)',
   fontSize: '0.875rem',
 } as const;
 
 export const signupProgressFooter = {
   mt: 2,
   textAlign: 'center',
-  '& span': { opacity: 0.7, fontSize: '0.875rem' },
+  '& span': { color: 'rgba(255,255,255,0.95)', fontSize: '0.875rem' },
 } as const;
 
 // IdentityStep
@@ -132,7 +132,7 @@ export const profileStepTitle = {
 } as const;
 
 export const profileStepSubtext = {
-  color: 'rgba(255,255,255,0.8)',
+  color: 'rgba(255,255,255,0.96)',
 } as const;
 
 export const profileStepAlert = {
@@ -153,16 +153,16 @@ export const profileStepTextField = {
     '&.Mui-error fieldset': { borderColor: '#f44336' },
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.96)',
     '&.Mui-focused': { color: '#4caf50' },
     '&.Mui-error': { color: '#f44336' },
   },
   '& .MuiInputBase-input::placeholder': {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.9)',
     opacity: 1,
   },
   '& .MuiFormHelperText-root': {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.95)',
     '&.Mui-error': { color: '#f44336' },
   },
 } as const;
@@ -176,7 +176,7 @@ export const profileStepTipBox = {
 } as const;
 
 export const profileStepTipText = {
-  color: 'rgba(255,255,255,0.8)',
+  color: 'rgba(255,255,255,0.96)',
 } as const;
 
 export const profileStepButtonRow = {
@@ -210,7 +210,7 @@ export const valuesStepSectionTitle = {
 
 export const valuesStepSectionSubtext = {
   mb: 2,
-  opacity: 0.8,
+  color: 'rgba(255,255,255,0.95)',
 } as const;
 
 export const valuesStepButtonRow = {
@@ -227,7 +227,7 @@ export const reviewStepTitle = {
 } as const;
 
 export const reviewStepSubtext = {
-  opacity: 0.8,
+  color: 'rgba(255,255,255,0.95)',
 } as const;
 
 export const reviewStepSection = {

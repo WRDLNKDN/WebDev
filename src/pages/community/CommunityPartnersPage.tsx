@@ -98,7 +98,7 @@ export const CommunityPartnersPage = () => {
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             Community Partners
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.primary">
             Partners shown here are managed in the Admin panel and published
             when active.
           </Typography>
@@ -136,7 +136,7 @@ export const CommunityPartnersPage = () => {
                       {partner.company_name}
                     </Typography>
                     {partner.title && (
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.primary">
                         {partner.title}
                       </Typography>
                     )}
@@ -161,7 +161,11 @@ export const CommunityPartnersPage = () => {
                           target: partner.url,
                         })
                       }
-                      sx={{ textTransform: 'none' }}
+                      sx={{
+                        textTransform: 'none',
+                        color: 'text.primary',
+                        fontWeight: 600,
+                      }}
                     >
                       Visit partner
                     </Button>
@@ -185,7 +189,7 @@ export const CommunityPartnersPage = () => {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.75 }}>
               No active partners yet
             </Typography>
-            <Typography color="text.secondary">
+            <Typography color="text.primary">
               We&apos;re preparing partner listings. Check back soon.
             </Typography>
           </Paper>

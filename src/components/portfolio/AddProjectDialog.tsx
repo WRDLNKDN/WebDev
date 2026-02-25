@@ -1,6 +1,7 @@
 import {
   AddPhotoAlternate as AddPhotoIcon,
   Close as CloseIcon,
+  InfoOutlined as InfoOutlinedIcon,
   Link as LinkIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
@@ -15,6 +16,7 @@ import {
   IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -48,6 +50,7 @@ const GLASS_MODAL = {
     zIndex: 1,
   },
 };
+const PROJECT_IMAGE_RATIO = '16 / 9';
 
 type AddProjectDialogProps = {
   open: boolean;
@@ -202,7 +205,9 @@ export const AddProjectDialog = ({
           <Grid size={{ xs: 12, md: 5 }}>
             <Box
               sx={{
-                height: 250,
+                width: '100%',
+                maxWidth: { xs: '100%', md: 320 },
+                aspectRatio: PROJECT_IMAGE_RATIO,
                 border: '2px dashed rgba(255,255,255,0.2)',
                 borderRadius: 2,
                 display: 'flex',
@@ -229,7 +234,7 @@ export const AddProjectDialog = ({
                     sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Upload Screenshot (optional)
+                    Upload an image (optional)
                   </Typography>
                 </>
               )}
@@ -241,6 +246,17 @@ export const AddProjectDialog = ({
                 onChange={handleFileSelect}
               />
             </Box>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+              sx={{ mt: 1, color: 'text.secondary' }}
+            >
+              <Typography variant="caption">Best ratio: 16:9</Typography>
+              <Tooltip title="Best size: 1600 x 900 pixels (or any 16:9 image).">
+                <InfoOutlinedIcon sx={{ fontSize: 14 }} />
+              </Tooltip>
+            </Stack>
           </Grid>
 
           {/* FORM COLUMN */}

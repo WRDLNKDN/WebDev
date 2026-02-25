@@ -68,7 +68,7 @@ test.describe('Join header guard and wordmark routing', () => {
     await expect(page).toHaveURL(/\/join/);
     await expect(page.getByRole('link', { name: 'WRDLNKDN' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Store' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Join' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Join' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
 
     await expect(page.getByRole('link', { name: 'Feed' })).toHaveCount(0);

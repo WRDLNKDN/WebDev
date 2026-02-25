@@ -43,6 +43,7 @@ const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const PAGE_SIZE = 25;
 const DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
 const DIRECTORY_CACHE_KEY_PREFIX = 'directory_cache_v1';
+const DIRECTORY_SEARCH_MAX_CHARS = 500;
 
 type DirectoryCachePayload = {
   rows: DirectoryMember[];
@@ -326,25 +327,51 @@ export const Directory = () => {
           <Stack spacing={2}>
             {/* Search + Sort: row on md+, column on mobile (consistent structure) */}
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <TextField
-                fullWidth
-                placeholder="Search by name, tagline, industry, location, skills..."
-                value={q}
-                onChange={(e) => updateUrl({ q: e.target.value })}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    bgcolor: 'rgba(0,0,0,0.3)',
-                    borderRadius: 2,
-                    '& fieldset': { border: '1px solid rgba(255,255,255,0.1)' },
-                  },
-                }}
-                sx={{ flex: { md: 1 } }}
-              />
+              <Box sx={{ flex: { md: 1 } }}>
+                <TextField
+                  fullWidth
+                  placeholder="Search by name, tagline, industry, location, skills..."
+                  value={q}
+                  onChange={(e) =>
+                    updateUrl({
+                      q: e.target.value.slice(0, DIRECTORY_SEARCH_MAX_CHARS),
+                    })
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                    inputProps: {
+                      maxLength: DIRECTORY_SEARCH_MAX_CHARS,
+                    },
+                    sx: {
+                      bgcolor: 'rgba(0,0,0,0.3)',
+                      borderRadius: 2,
+                      '& fieldset': {
+                        border: '1px solid rgba(255,255,255,0.1)',
+                      },
+                    },
+                  }}
+                />
+                {q.length >= 450 && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      mt: 0.5,
+                      display: 'block',
+                      textAlign: 'right',
+                      color:
+                        q.length >= DIRECTORY_SEARCH_MAX_CHARS
+                          ? 'warning.light'
+                          : 'text.secondary',
+                    }}
+                  >
+                    {q.length}/{DIRECTORY_SEARCH_MAX_CHARS}
+                  </Typography>
+                )}
+              </Box>
               <FormControl size="small" sx={{ minWidth: { md: 140 } }}>
                 <InputLabel>Sort</InputLabel>
                 <Select

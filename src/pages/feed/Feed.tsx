@@ -41,6 +41,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   MenuItem,
   Paper,
   Popover,
@@ -380,6 +381,7 @@ type FeedCardProps = {
   actions: FeedCardActions;
   isOwner: boolean;
   viewerUserId?: string;
+  viewerAvatarUrl?: string | null;
   commentsExpanded: boolean;
   comments: FeedComment[];
   commentsLoading: boolean;
@@ -512,6 +514,7 @@ const FeedCard = ({
   actions,
   isOwner,
   viewerUserId,
+  viewerAvatarUrl,
   commentsExpanded,
   comments,
   commentsLoading,
@@ -611,6 +614,10 @@ const FeedCard = ({
   const commentCount = item.comment_count ?? 0;
   const isPostEdited = Boolean(item.edited_at);
   const imageLightboxUrl = imagePreviewState.url;
+  const actorAvatar =
+    viewerUserId && item.user_id === viewerUserId
+      ? (viewerAvatarUrl ?? (item.actor?.avatar as string) ?? null)
+      : ((item.actor?.avatar as string) ?? null);
   const currentPreviewIndex = useMemo(
     () =>
       imageLightboxUrl
@@ -835,7 +842,7 @@ const FeedCard = ({
           alignItems="flex-start"
         >
           <ProfileAvatar
-            src={(item.actor?.avatar as string) ?? undefined}
+            src={actorAvatar ?? undefined}
             alt={displayName || '?'}
             size="small"
             component={handle ? RouterLink : 'div'}
@@ -2586,13 +2593,20 @@ export const Feed = () => {
                 </Typography>
               </Box>
               <List dense disablePadding sx={{ py: 0.5 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                <ListSubheader
+                  disableSticky
+                  sx={{
+                    px: 2,
+                    pt: 1.5,
+                    pb: 0.5,
+                    bgcolor: 'transparent',
+                    color: 'text.secondary',
+                    typography: 'caption',
+                    lineHeight: 1.66,
+                  }}
                 >
                   Community
-                </Typography>
+                </ListSubheader>
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
@@ -2616,7 +2630,7 @@ export const Feed = () => {
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
-                    to="/forums"
+                    to="/groups"
                     sx={{
                       minHeight: 40,
                       py: 0.5,
@@ -2633,13 +2647,20 @@ export const Feed = () => {
                     />
                   </ListItemButton>
                 </ListItem>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                <ListSubheader
+                  disableSticky
+                  sx={{
+                    px: 2,
+                    pt: 1.5,
+                    pb: 0.5,
+                    bgcolor: 'transparent',
+                    color: 'text.secondary',
+                    typography: 'caption',
+                    lineHeight: 1.66,
+                  }}
                 >
                   Your stuff
-                </Typography>
+                </ListSubheader>
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
@@ -2680,13 +2701,20 @@ export const Feed = () => {
                     />
                   </ListItemButton>
                 </ListItem>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                <ListSubheader
+                  disableSticky
+                  sx={{
+                    px: 2,
+                    pt: 1.5,
+                    pb: 0.5,
+                    bgcolor: 'transparent',
+                    color: 'text.secondary',
+                    typography: 'caption',
+                    lineHeight: 1.66,
+                  }}
                 >
                   Platform
-                </Typography>
+                </ListSubheader>
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
@@ -2729,13 +2757,20 @@ export const Feed = () => {
                     />
                   </ListItemButton>
                 </ListItem>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}
+                <ListSubheader
+                  disableSticky
+                  sx={{
+                    px: 2,
+                    pt: 1.5,
+                    pb: 0.5,
+                    bgcolor: 'transparent',
+                    color: 'text.secondary',
+                    typography: 'caption',
+                    lineHeight: 1.66,
+                  }}
                 >
                   Support
-                </Typography>
+                </ListSubheader>
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
@@ -2825,6 +2860,7 @@ export const Feed = () => {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
                     displayEmpty
+                    inputProps={{ 'aria-label': 'Sort feed posts' }}
                     sx={{ fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
                   >
                     <MenuItem value="recent">Sort by: Recent</MenuItem>
@@ -2938,6 +2974,7 @@ export const Feed = () => {
                         actions={feedCardActions}
                         isOwner={session?.user?.id === entry.item.user_id}
                         viewerUserId={session?.user?.id}
+                        viewerAvatarUrl={avatarUrl}
                         commentsExpanded={
                           expandedCommentsPostId === entry.item.id
                         }

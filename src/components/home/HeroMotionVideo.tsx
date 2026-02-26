@@ -3,6 +3,8 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import { Box, IconButton, Typography } from '@mui/material';
 import { useCallback, useRef, useState } from 'react';
 
+const DEFAULT_PLAYBACK_RATE = 1.5;
+
 /**
  * Hero motion element: "Greenling to Pinkling" video.
  * Top-left, plays once on load, muted by default. User can unmute.
@@ -36,6 +38,11 @@ export const HeroMotionVideo = () => {
     setMuted(false);
     setShowPlayWithAudio(false);
     void v.play();
+  }, []);
+
+  const handleLoadedMetadata = useCallback(() => {
+    const v = videoRef.current;
+    if (v) v.playbackRate = DEFAULT_PLAYBACK_RATE;
   }, []);
 
   if (loadFailed) {
@@ -83,6 +90,7 @@ export const HeroMotionVideo = () => {
         muted
         loop={false}
         autoPlay
+        onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         onError={() => setLoadFailed(true)}
         style={{

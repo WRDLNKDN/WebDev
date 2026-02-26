@@ -9,6 +9,7 @@ import {
   setProfileValidated,
 } from '../../lib/profile/profileValidatedCache';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { devLog, devWarn } from '../../lib/utils/devLog';
 
 type State = 'loading' | 'redirect' | 'allowed';
 const ENFORCED_INACTIVE_STATUSES = new Set(['disabled', 'suspended', 'banned']);
@@ -87,19 +88,19 @@ export const RequireOnboarded = ({
       }
 
       if (!data.session) {
-        console.log('🔴 RequireOnboarded: No session found after grace check');
+        devLog('🔴 RequireOnboarded: No session found after grace check');
         setState('redirect');
         return;
       }
 
       const userId = data.session.user.id;
-      console.log('🔵 RequireOnboarded: Session found for user', userId);
+      devLog('🔵 RequireOnboarded: Session found for user', userId);
 
       // sessionStorage fallback (Vercel: location.state can be lost during navigation)
       const cached = getProfileValidated(userId);
       const hasStickyOnboarded = hasProfileOnboardedSticky(userId);
       if (cached && isProfileOnboarded(cached)) {
-        console.log('✅ RequireOnboarded: Using cached profile');
+        devLog('✅ RequireOnboarded: Using cached profile');
         hasEverAllowedRef.current = true;
         setState('allowed');
         return;
@@ -115,7 +116,7 @@ export const RequireOnboarded = ({
           .maybeSingle();
 
         if (error) {
-          console.error('❌ RequireOnboarded: Profile fetch error:', error);
+          devWarn('❌ RequireOnboarded: Profile fetch error:', error);
         }
 
         return { profile, error };
@@ -125,7 +126,7 @@ export const RequireOnboarded = ({
       let profile = result.profile;
       let error = result.error;
 
-      console.log('🔍 RequireOnboarded: Fetch attempt 1', { profile, error });
+      devLog('🔍 RequireOnboarded: Fetch attempt 1', { profile, error });
 
       if (!profile) {
         await new Promise((r) => setTimeout(r, 600));
@@ -133,7 +134,7 @@ export const RequireOnboarded = ({
         result = await fetchProfile();
         profile = result.profile;
         error = result.error;
-        console.log('🔍 RequireOnboarded: Fetch attempt 2', { profile, error });
+        devLog('🔍 RequireOnboarded: Fetch attempt 2', { profile, error });
       }
       if (!profile) {
         await new Promise((r) => setTimeout(r, 800));
@@ -141,7 +142,7 @@ export const RequireOnboarded = ({
         result = await fetchProfile();
         profile = result.profile;
         error = result.error;
-        console.log('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
+        devLog('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
       }
 
       if (cancelled || runId !== checkRunRef.current) return;
@@ -154,9 +155,7 @@ export const RequireOnboarded = ({
           error.code === '42501' ||
           /permission denied/i.test(error.message ?? ''))
       ) {
-        console.warn(
-          '⚠️ RequireOnboarded: profile read blocked - allowing through',
-        );
+        devWarn('⚠️ RequireOnboarded: profile read blocked - allowing through');
         hasEverAllowedRef.current = true;
         setState('allowed');
         return;
@@ -174,14 +173,14 @@ export const RequireOnboarded = ({
           setState('allowed');
           return;
         }
-        console.log(
+        devLog(
           '🔴 RequireOnboarded: No profile after 3 attempts, redirecting to /join',
         );
         setState('redirect');
         return;
       }
 
-      console.log('🔍 RequireOnboarded: Profile data', {
+      devLog('🔍 RequireOnboarded: Profile data', {
         displayName: profile.display_name,
         joinReason: profile.join_reason,
         participationStyle: profile.participation_style,
@@ -201,12 +200,12 @@ export const RequireOnboarded = ({
       }
 
       if (!isProfileOnboarded(profile)) {
-        console.log('🔴 RequireOnboarded: Profile not onboarded');
+        devLog('🔴 RequireOnboarded: Profile not onboarded');
         setState('redirect');
         return;
       }
 
-      console.log('✅ RequireOnboarded: Profile valid, allowing through');
+      devLog('✅ RequireOnboarded: Profile valid, allowing through');
       setProfileValidated(userId, profile);
       hasEverAllowedRef.current = true;
       setState('allowed');

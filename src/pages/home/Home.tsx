@@ -129,11 +129,11 @@ export const Home = () => {
     setShowContent(true);
   };
 
-  // 1.35x playback reduces time-to-dialog; respect prefers-reduced-motion
+  // 1.5x playback improves pacing; respect prefers-reduced-motion
   const setPlaybackRate = useCallback(() => {
     const el = videoRef.current;
     if (el && !prefersReducedMotion) {
-      el.playbackRate = 1.35;
+      el.playbackRate = 1.5;
     }
   }, [prefersReducedMotion]);
 

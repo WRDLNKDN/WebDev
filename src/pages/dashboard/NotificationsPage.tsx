@@ -44,19 +44,7 @@ type NotificationRow = {
   connection_request_pending?: boolean;
 };
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffM = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffM / 60);
-  const diffD = Math.floor(diffH / 24);
-  if (diffM < 1) return 'Just now';
-  if (diffM < 60) return `${diffM}m ago`;
-  if (diffH < 24) return `${diffH}h ago`;
-  if (diffD < 7) return `${diffD}d ago`;
-  return d.toLocaleDateString();
-}
+import { formatPostTime } from '../../lib/post/formatPostTime';
 
 function getNotificationLabel(row: NotificationRow): string {
   const actor = row.actor_display_name || row.actor_handle || 'Someone';
@@ -492,7 +480,7 @@ export const NotificationsPage = () => {
                         secondary={
                           row.reference_exists === false
                             ? 'Content may no longer be available'
-                            : formatTime(row.created_at)
+                            : formatPostTime(row.created_at)
                         }
                         primaryTypographyProps={{
                           fontWeight: row.read_at ? 400 : 600,

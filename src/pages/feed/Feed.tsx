@@ -7,10 +7,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EventIcon from '@mui/icons-material/Event';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import MessageIcon from '@mui/icons-material/Message';
-import SearchIcon from '@mui/icons-material/Search';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -35,6 +35,7 @@ import {
   FormControl,
   Grid,
   IconButton,
+  Tooltip,
   InputBase,
   Link,
   List,
@@ -44,6 +45,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Menu,
   MenuItem,
   Paper,
   Popover,
@@ -98,12 +100,9 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
-import {
-  getTrendingChatGifs,
-  searchChatGifs,
-  type GifContentFilter,
-} from '../../lib/chat/gifApi';
+import { GifPickerDialog } from '../../components/chat/GifPickerDialog';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { formatPostTime } from '../../lib/post/formatPostTime';
 
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -120,6 +119,7 @@ import {
 } from '../../components/feed/FeedAdCard';
 
 const FEED_LIMIT = 20;
+const FEED_POST_IMAGE_MAX_BYTES = 6 * 1024 * 1024; // 6MB (match chat attachments)
 const AD_EVERY_N_POSTS = (() => {
   const raw = Number(import.meta.env.VITE_FEED_AD_EVERY_N_POSTS ?? 6);
   const value = Math.floor(raw);
@@ -140,20 +140,6 @@ type FeedCachePayload = {
   advertisers: FeedAdvertiser[];
   cachedAt: number;
 };
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffM = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffM / 60);
-  const diffD = Math.floor(diffH / 24);
-  if (diffM < 1) return 'Just now';
-  if (diffM < 60) return `${diffM}m`;
-  if (diffH < 24) return `${diffH}h`;
-  if (diffD < 7) return `${diffD}d`;
-  return d.toLocaleDateString();
-}
 
 /** Match URLs so we can render them as clickable links in post body. */
 const URL_REGEX = /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
@@ -540,12 +526,10 @@ const FeedCard = ({
     null,
   );
   const [commentGifPickerOpen, setCommentGifPickerOpen] = useState(false);
-  const [commentGifQuery, setCommentGifQuery] = useState('');
-  const [commentGifLoading, setCommentGifLoading] = useState(false);
-  const [commentGifResults, setCommentGifResults] = useState<
-    Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
-  >([]);
+  const [commentEmojiAnchor, setCommentEmojiAnchor] =
+    useState<HTMLElement | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const COMMENT_EMOJIS = ['😀', '😂', '😍', '🔥', '🙌', '🙏', '👍', '🎉', '💯'];
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editPostDraft, setEditPostDraft] = useState('');
   const [savingPostEdit, setSavingPostEdit] = useState(false);
@@ -799,46 +783,6 @@ const FeedCard = ({
     }
   };
 
-  const loadCommentGifs = useCallback(async () => {
-    setCommentGifLoading(true);
-    try {
-      const results = await getTrendingChatGifs(24, 'medium');
-      setCommentGifResults(results);
-    } catch {
-      /* non-blocking */
-    } finally {
-      setCommentGifLoading(false);
-    }
-  }, []);
-
-  const handleOpenCommentGifPicker = useCallback(async () => {
-    setCommentGifPickerOpen(true);
-    setCommentGifQuery('');
-    if (commentGifResults.length === 0) await loadCommentGifs();
-  }, [commentGifResults.length, loadCommentGifs]);
-
-  const handleCommentGifSearch = useCallback(
-    async (query: string, filter: GifContentFilter = 'medium') => {
-      setCommentGifLoading(true);
-      try {
-        const results = query.trim()
-          ? await searchChatGifs(query.trim(), 24, filter)
-          : await getTrendingChatGifs(24, filter);
-        setCommentGifResults(results);
-      } catch {
-        /* non-blocking */
-      } finally {
-        setCommentGifLoading(false);
-      }
-    },
-    [],
-  );
-
-  const handlePickCommentGif = useCallback((gifUrl: string) => {
-    setCommentSelectedGif(gifUrl);
-    setCommentGifPickerOpen(false);
-  }, []);
-
   const handleSavePostEdit = async () => {
     const nextBody = editPostDraft.trim();
     if (!nextBody || savingPostEdit) return;
@@ -942,7 +886,7 @@ const FeedCard = ({
                 </Typography>
               )}
               <Typography variant="body2" color="text.secondary">
-                • {formatTime(item.created_at)}
+                • {formatPostTime(item.created_at)}
               </Typography>
               {isPostEdited && (
                 <Typography variant="caption" color="text.secondary">
@@ -1125,21 +1069,40 @@ const FeedCard = ({
                 {label || url}
               </Typography>
             )}
-            <Stack
-              direction="row"
-              spacing={{ xs: 0.75, sm: 1 }}
+            {/* Post action bar: Like | Comment | Repost | Send (LinkedIn-style with vertical dividers) */}
+            <Box
               sx={{
                 mt: 1.5,
-                flexWrap: 'wrap',
-                justifyContent: 'flex-start',
-                gap: { xs: 0.5, sm: 0.375 },
-                alignItems: 'center',
-                width: 'fit-content',
-                maxWidth: '100%',
+                width: '100%',
+                display: 'flex',
+                borderTop: 1,
+                borderColor: 'divider',
+                flexDirection: { xs: 'row', sm: 'row' },
+                '& > *': {
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: { xs: 48, sm: 'auto' },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRight: 1,
+                  borderColor: 'divider',
+                  '&:last-of-type': { borderRight: 0 },
+                },
               }}
             >
               <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
-                <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: { xs: 0.25, sm: 0.5 },
+                    py: { xs: 1, sm: 0.75 },
+                    px: 0.5,
+                  }}
+                >
                   {(() => {
                     const current =
                       REACTION_OPTIONS.find((r) => r.type === viewerReaction) ??
@@ -1148,143 +1111,189 @@ const FeedCard = ({
                       ? current.Icon
                       : current.IconOutlined;
                     return (
-                      <Button
-                        size="small"
-                        startIcon={
+                      <>
+                        <Button
+                          size="small"
+                          onClick={(e) => {
+                            setReactionAnchor((prev) =>
+                              prev ? null : (e.currentTarget as HTMLElement),
+                            );
+                          }}
+                          sx={{
+                            textTransform: 'none',
+                            color: viewerReaction
+                              ? current.color
+                              : 'text.secondary',
+                            minWidth: 0,
+                            minHeight: 0,
+                            p: 0,
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            alignItems: 'center',
+                            gap: { xs: 0.25, sm: 0.5 },
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                              color: viewerReaction
+                                ? current.color
+                                : 'text.secondary',
+                            },
+                          }}
+                          aria-label={
+                            viewerReaction
+                              ? `${current.label} (click to remove)`
+                              : 'Like'
+                          }
+                          aria-haspopup="true"
+                          aria-expanded={Boolean(reactionAnchor)}
+                        >
                           <CurrentIcon
                             sx={{
+                              fontSize: { xs: 22, sm: 20 },
                               color: viewerReaction ? current.color : undefined,
                             }}
                           />
-                        }
-                        onClick={(e) => {
-                          setReactionAnchor((prev) =>
-                            prev ? null : (e.currentTarget as HTMLElement),
-                          );
-                        }}
-                        sx={{
-                          textTransform: 'none',
-                          color: viewerReaction
-                            ? current.color
-                            : 'text.secondary',
-                          minWidth: 0,
-                          minHeight: { xs: 40, sm: 32 },
-                          px: { xs: 1, sm: 0.75 },
-                        }}
-                        aria-label={
-                          viewerReaction
-                            ? `${current.label} (click to remove)`
-                            : 'Like'
-                        }
-                        aria-haspopup="true"
-                        aria-expanded={Boolean(reactionAnchor)}
-                      >
-                        {viewerReaction ? current.label : 'Like'}
-                      </Button>
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{
+                              color: 'inherit',
+                              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                            }}
+                          >
+                            {viewerReaction ? current.label : 'Like'}
+                            {totalReactions > 0 && ` · ${totalReactions}`}
+                          </Typography>
+                        </Button>
+                        <Popover
+                          open={Boolean(reactionAnchor)}
+                          anchorEl={reactionAnchor}
+                          onClose={() => setReactionAnchor(null)}
+                          anchorOrigin={{
+                            vertical: 'top',
+                            horizontal: 'left',
+                          }}
+                          transformOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                          }}
+                          slotProps={{
+                            paper: {
+                              sx: {
+                                borderRadius: 2,
+                                boxShadow: 2,
+                                p: 0.5,
+                              },
+                            },
+                          }}
+                        >
+                          <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
+                            {REACTION_OPTIONS.map(
+                              ({ type, label, Icon, color }) => (
+                                <IconButton
+                                  key={type}
+                                  size="small"
+                                  onClick={() => {
+                                    handleReaction(type);
+                                    setReactionAnchor(null);
+                                  }}
+                                  sx={{
+                                    color: 'text.secondary',
+                                    '&:hover': { color },
+                                  }}
+                                  aria-label={label}
+                                >
+                                  <Icon sx={{ fontSize: 24 }} />
+                                </IconButton>
+                              ),
+                            )}
+                          </Stack>
+                        </Popover>
+                      </>
                     );
                   })()}
-                  <Popover
-                    open={Boolean(reactionAnchor)}
-                    anchorEl={reactionAnchor}
-                    onClose={() => setReactionAnchor(null)}
-                    anchorOrigin={{
-                      vertical: 'top',
-                      horizontal: 'left',
-                    }}
-                    transformOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'left',
-                    }}
-                    slotProps={{
-                      paper: {
-                        sx: {
-                          borderRadius: 2,
-                          boxShadow: 2,
-                          p: 0.5,
-                        },
-                      },
-                    }}
-                  >
-                    <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
-                      {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
-                        <IconButton
-                          key={type}
-                          size="small"
-                          onClick={() => {
-                            handleReaction(type);
-                            setReactionAnchor(null);
-                          }}
-                          sx={{
-                            color: 'text.secondary',
-                            '&:hover': { color },
-                          }}
-                          aria-label={label}
-                        >
-                          <Icon sx={{ fontSize: 24 }} />
-                        </IconButton>
-                      ))}
-                    </Stack>
-                  </Popover>
-                  {totalReactions > 0 && (
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ ml: 0.25 }}
-                    >
-                      {totalReactions}
-                    </Typography>
-                  )}
                 </Box>
               </ClickAwayListener>
               <Button
                 size="small"
-                startIcon={<ChatBubbleOutlineOutlinedIcon />}
                 onClick={() => actions.onCommentToggle(item.id)}
                 sx={{
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
-                  minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1, sm: 0.75 },
+                  minHeight: 0,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 0.25, sm: 0.5 },
+                  py: { xs: 1, sm: 0.75 },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.secondary',
+                  },
                 }}
               >
-                Comment
-                {commentCount > 0 && (
-                  <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
-                    {commentCount}
-                  </Typography>
-                )}
+                <ChatBubbleOutlineOutlinedIcon
+                  sx={{ fontSize: { xs: 22, sm: 20 } }}
+                />
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                >
+                  Comment{commentCount > 0 ? ` · ${commentCount}` : ''}
+                </Typography>
               </Button>
               <Button
                 size="small"
-                startIcon={<RepeatOutlinedIcon />}
                 onClick={() => actions.onRepost(item)}
                 sx={{
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
-                  minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1, sm: 0.75 },
+                  minHeight: 0,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 0.25, sm: 0.5 },
+                  py: { xs: 1, sm: 0.75 },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.secondary',
+                  },
                 }}
               >
-                Repost
+                <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                >
+                  Repost
+                </Typography>
               </Button>
               <Button
                 size="small"
-                startIcon={<SendOutlinedIcon />}
                 onClick={() => actions.onSend(item)}
                 sx={{
                   textTransform: 'none',
                   color: 'text.secondary',
                   minWidth: 0,
-                  minHeight: { xs: 40, sm: 32 },
-                  px: { xs: 1, sm: 0.75 },
+                  minHeight: 0,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 0.25, sm: 0.5 },
+                  py: { xs: 1, sm: 0.75 },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.secondary',
+                  },
                 }}
               >
-                Send
+                <SendOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                >
+                  Send
+                </Typography>
               </Button>
-            </Stack>
+            </Box>
             {commentsExpanded && (
               <Box sx={{ mt: 2, pl: 0 }}>
                 {commentsLoading ? (
@@ -1432,7 +1441,7 @@ const FeedCard = ({
                                   display="block"
                                   color="text.secondary"
                                 >
-                                  {formatTime(c.created_at)}
+                                  {formatPostTime(c.created_at)}
                                 </Typography>
                                 <Stack
                                   direction="row"
@@ -1581,10 +1590,32 @@ const FeedCard = ({
                           }}
                           sx={{ flex: 1 }}
                         />
+                        <Tooltip title="Attach file (coming soon)">
+                          <span>
+                            <IconButton
+                              size="small"
+                              aria-label="Attach file"
+                              disabled
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              <AttachFileIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        <IconButton
+                          size="small"
+                          aria-label="Add emoji"
+                          onClick={(e) =>
+                            setCommentEmojiAnchor(e.currentTarget)
+                          }
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <EmojiEmotionsOutlinedIcon fontSize="small" />
+                        </IconButton>
                         <IconButton
                           size="small"
                           aria-label="Add GIF"
-                          onClick={() => void handleOpenCommentGifPicker()}
+                          onClick={() => setCommentGifPickerOpen(true)}
                           sx={{ color: 'text.secondary' }}
                         >
                           <GifBoxIcon fontSize="small" />
@@ -1609,103 +1640,34 @@ const FeedCard = ({
           </Box>
         </Stack>
       </CardContent>
-      <Dialog
+      <GifPickerDialog
         open={commentGifPickerOpen}
         onClose={() => setCommentGifPickerOpen(false)}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.1)',
-          },
-        }}
+        onPick={(url) => setCommentSelectedGif(url)}
+        showContentFilter={false}
+        maxHeight={280}
+        cellHeight={90}
+      />
+      <Menu
+        anchorEl={commentEmojiAnchor}
+        open={Boolean(commentEmojiAnchor)}
+        onClose={() => setCommentEmojiAnchor(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
-        <DialogContent>
-          <TextField
-            size="small"
-            fullWidth
-            value={commentGifQuery}
-            onChange={(e) => setCommentGifQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void handleCommentGifSearch(commentGifQuery);
-              }
+        {COMMENT_EMOJIS.map((emoji) => (
+          <MenuItem
+            key={emoji}
+            onClick={() => {
+              setCommentDraft((prev) => `${prev}${emoji}`);
+              setCommentEmojiAnchor(null);
             }}
-            placeholder="Search GIFs"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        void handleCommentGifSearch(commentGifQuery)
-                      }
-                      disabled={commentGifLoading}
-                    >
-                      Search
-                    </Button>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{ mb: 1.5 }}
-          />
-          {commentGifLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 1,
-                maxHeight: 280,
-                overflowY: 'auto',
-              }}
-            >
-              {commentGifResults.map((gif) => (
-                <Box
-                  key={gif.id}
-                  component="button"
-                  type="button"
-                  onClick={() => handlePickCommentGif(gif.gifUrl)}
-                  sx={{
-                    p: 0,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    bgcolor: 'black',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={gif.previewUrl}
-                    alt={gif.title || 'GIF'}
-                    sx={{
-                      width: '100%',
-                      height: 90,
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
+            sx={{ fontSize: 22, lineHeight: 1 }}
+          >
+            {emoji}
+          </MenuItem>
+        ))}
+      </Menu>
       <Dialog
         open={Boolean(imageLightboxUrl)}
         onClose={closeImageLightbox}
@@ -1872,13 +1834,6 @@ export const Feed = () => {
   const [composerValue, setComposerValue] = useState('');
   const [composerImages, setComposerImages] = useState<string[]>([]);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
-  const [gifQuery, setGifQuery] = useState('');
-  const [gifLoading, setGifLoading] = useState(false);
-  const [gifContentFilter, setGifContentFilter] =
-    useState<GifContentFilter>('medium');
-  const [gifResults, setGifResults] = useState<
-    Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
-  >([]);
   const [composerScheduledAt, setComposerScheduledAt] = useState<string | null>(
     null,
   );
@@ -2447,6 +2402,13 @@ export const Feed = () => {
       e.target.value = '';
       return;
     }
+    if (file.size > FEED_POST_IMAGE_MAX_BYTES) {
+      setSnack(
+        `Image too large (${Math.ceil(file.size / (1024 * 1024))}MB). Max is 6MB per file.`,
+      );
+      e.target.value = '';
+      return;
+    }
     setImageUploading(true);
     try {
       const extension =
@@ -2475,48 +2437,6 @@ export const Feed = () => {
       e.target.value = '';
     }
   };
-
-  const loadComposerGifs = useCallback(async () => {
-    setGifLoading(true);
-    try {
-      const results = await getTrendingChatGifs(24, gifContentFilter);
-      setGifResults(results);
-    } catch {
-      setSnack("We couldn't load GIFs right now. Please try again.");
-    } finally {
-      setGifLoading(false);
-    }
-  }, [gifContentFilter]);
-
-  const handleOpenGifPicker = useCallback(async () => {
-    setGifPickerOpen(true);
-    setGifQuery('');
-    if (gifResults.length === 0) {
-      await loadComposerGifs();
-    }
-  }, [gifResults.length, loadComposerGifs]);
-
-  const handleGifSearch = useCallback(
-    async (query: string, filter: GifContentFilter = gifContentFilter) => {
-      setGifLoading(true);
-      try {
-        const results = query.trim()
-          ? await searchChatGifs(query.trim(), 24, filter)
-          : await getTrendingChatGifs(24, filter);
-        setGifResults(results);
-      } catch {
-        setSnack("We couldn't search GIFs right now. Please try again.");
-      } finally {
-        setGifLoading(false);
-      }
-    },
-    [gifContentFilter],
-  );
-
-  const handlePickComposerGif = useCallback((gifUrl: string) => {
-    setComposerImages((prev) => [...prev, gifUrl]);
-    setGifPickerOpen(false);
-  }, []);
 
   const handleReaction = useCallback(
     async (postId: string, type: ReactionType) => {
@@ -3497,7 +3417,7 @@ export const Feed = () => {
               size="small"
               aria-label="Add GIF"
               sx={{ color: 'text.secondary' }}
-              onClick={() => void handleOpenGifPicker()}
+              onClick={() => setGifPickerOpen(true)}
             >
               <GifBoxIcon />
             </IconButton>
@@ -3555,152 +3475,11 @@ export const Feed = () => {
         </DialogActions>
       </Dialog>
 
-      {/* GIF picker for post composer */}
-      <Dialog
+      <GifPickerDialog
         open={gifPickerOpen}
         onClose={() => setGifPickerOpen(false)}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.1)',
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
-        <DialogContent>
-          <TextField
-            size="small"
-            fullWidth
-            value={gifQuery}
-            onChange={(e) => setGifQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void handleGifSearch(gifQuery);
-              }
-            }}
-            placeholder="Search GIFs"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Button
-                      size="small"
-                      onClick={() => void handleGifSearch(gifQuery)}
-                      disabled={gifLoading}
-                    >
-                      Search
-                    </Button>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{ mb: 1.5 }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Content:
-            </Typography>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'low' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('low');
-                void handleGifSearch(gifQuery, 'low');
-              }}
-            >
-              G
-            </Button>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'medium' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('medium');
-                void handleGifSearch(gifQuery, 'medium');
-              }}
-            >
-              PG-13
-            </Button>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'high' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('high');
-                void handleGifSearch(gifQuery, 'high');
-              }}
-            >
-              Strict
-            </Button>
-          </Box>
-          {gifLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 1,
-                maxHeight: 360,
-                overflowY: 'auto',
-              }}
-            >
-              {gifResults.map((gif) => (
-                <Box
-                  key={gif.id}
-                  component="button"
-                  type="button"
-                  onClick={() => handlePickComposerGif(gif.gifUrl)}
-                  sx={{
-                    p: 0,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    bgcolor: 'black',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={gif.previewUrl}
-                    alt={gif.title || 'GIF'}
-                    sx={{
-                      width: '100%',
-                      height: 110,
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 1, display: 'block' }}
-          >
-            Powered by{' '}
-            <Link
-              href="https://tenor.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ color: 'primary.main' }}
-            >
-              Tenor
-            </Link>
-          </Typography>
-        </DialogContent>
-      </Dialog>
+        onPick={(url) => setComposerImages((prev) => [...prev, url])}
+      />
 
       {/* Schedule post dialog */}
       <Dialog

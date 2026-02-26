@@ -32,6 +32,7 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
     const video = videoRef.current;
     if (!video || !autoPlay || hasStartedRef.current) return;
     hasStartedRef.current = true;
+    video.playbackRate = 1.5;
     try {
       await video.play();
     } catch {

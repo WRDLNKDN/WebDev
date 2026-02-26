@@ -105,10 +105,14 @@ export const Dashboard = () => {
       ? safeNerdCreds.resume_thumbnail_status
       : null;
 
-  const bio = safeStr(
-    safeNerdCreds.bio,
-    '"Building the Human OS. Prioritizing authenticity over engagement metrics."',
-  );
+  // Description: Join wizard About (additional_context) first, then Edit Profile bio
+  const descriptionFromJoin = safeStr(profile?.additional_context).trim();
+  const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
+  const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
+  const bio = hasDescription
+    ? descriptionFromJoin || descriptionFromBio
+    : 'Add a short About to your profile.';
+  const bioIsPlaceholder = !hasDescription;
   const selectedSkills =
     Array.isArray(safeNerdCreds.skills) &&
     safeNerdCreds.skills.every((skill) => typeof skill === 'string')
@@ -193,6 +197,7 @@ export const Dashboard = () => {
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
+          bioIsPlaceholder={bioIsPlaceholder}
           avatarUrl={avatarUrl}
           slotLeftOfAvatar={
             hasVisibleSocialLinks ? (
@@ -393,45 +398,22 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          {/* Action buttons: Portfolio only */}
-          <Box
-            sx={{
-              mb: 4,
-              display: 'grid',
-              gap: 2,
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                lg: 'repeat(3, minmax(0, 1fr))',
-              },
-              justifyItems: { xs: 'stretch', sm: 'center' },
-            }}
-          >
-            <Box
+          {/* Action buttons: compact, inline */}
+          <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mb: 3 }}>
+            <Button
               component="label"
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 20 }} />}
               sx={{
-                width: '100%',
-                maxWidth: 360,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 116,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                borderColor: 'rgba(255,255,255,0.3)',
                 color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
+                textTransform: 'none',
+                fontWeight: 600,
+                minHeight: 36,
               }}
             >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Resume
-              </Typography>
+              Resume
               <input
                 type="file"
                 hidden
@@ -441,37 +423,23 @@ export const Dashboard = () => {
                   if (f) handleResumeUpload(f);
                 }}
               />
-            </Box>
-            <Box
-              component="button"
-              type="button"
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 20 }} />}
               onClick={() => setIsAddProjectOpen(true)}
               sx={{
-                width: '100%',
-                maxWidth: 360,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 116,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                borderColor: 'rgba(255,255,255,0.3)',
                 color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
+                textTransform: 'none',
+                fontWeight: 600,
+                minHeight: 36,
               }}
             >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Add Project
-              </Typography>
-            </Box>
-          </Box>
+              Add Project
+            </Button>
+          </Stack>
 
           <Box
             sx={{
@@ -486,19 +454,21 @@ export const Dashboard = () => {
               alignItems: 'start',
             }}
           >
-            <ResumeCard
-              url={profile?.resume_url}
-              thumbnailUrl={resumeThumbnailUrl}
-              thumbnailStatus={resumeThumbnailStatus}
-              onUpload={handleResumeUpload}
-              onRetryThumbnail={() => {
-                void retryResumeThumbnail().catch((e) => {
-                  setSnack(toMessage(e));
-                });
-              }}
-              retryThumbnailBusy={updating}
-              isOwner
-            />
+            {profile?.resume_url && (
+              <ResumeCard
+                url={profile?.resume_url}
+                thumbnailUrl={resumeThumbnailUrl}
+                thumbnailStatus={resumeThumbnailStatus}
+                onUpload={handleResumeUpload}
+                onRetryThumbnail={() => {
+                  void retryResumeThumbnail().catch((e) => {
+                    setSnack(toMessage(e));
+                  });
+                }}
+                retryThumbnailBusy={updating}
+                isOwner
+              />
+            )}
 
             {orderedProjects.map((project, index) => (
               <ProjectCard

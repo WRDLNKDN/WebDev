@@ -12,6 +12,12 @@ import theme from './theme/theme';
 // Capture refresh for debugging odd behavior on reload
 initRefreshCapture();
 
+// Android UAT: prevent load-at-bottom (focus, layout shift, or scroll restoration).
+// Restore manual so we control initial scroll; scroll to top on first paint.
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
+
 // --- SYSTEM FIREWALL ---
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 

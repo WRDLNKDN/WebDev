@@ -1,17 +1,10 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import GifBoxIcon from '@mui/icons-material/GifBox';
-import SearchIcon from '@mui/icons-material/Search';
 import SendIcon from '@mui/icons-material/Send';
 import {
   Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   IconButton,
-  InputAdornment,
   Menu,
   MenuItem,
   TextField,
@@ -23,8 +16,7 @@ import {
   getChatAttachmentRejectionReason,
   normalizeChatAttachmentMime,
 } from '../../lib/chat/attachmentValidation';
-import { getTrendingChatGifs, searchChatGifs } from '../../lib/chat/gifApi';
-import type { GifContentFilter } from '../../lib/chat/gifApi';
+import { GifPickerDialog } from './GifPickerDialog';
 import {
   CHAT_ALLOWED_ACCEPT,
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
@@ -80,67 +72,16 @@ export const MessageInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
-  const [gifQuery, setGifQuery] = useState('');
-  const [gifLoading, setGifLoading] = useState(false);
-  const [addingGif, setAddingGif] = useState(false);
-  const [gifContentFilter, setGifContentFilter] =
-    useState<GifContentFilter>('medium');
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
-  const [gifResults, setGifResults] = useState<
-    Array<{
-      id: string;
-      title: string;
-      previewUrl: string;
-      gifUrl: string;
-    }>
-  >([]);
   const COMMON_EMOJIS = ['😀', '😂', '😍', '🔥', '🙌', '🙏', '👍', '🎉', '💯'];
 
-  const loadTrendingGifs = async () => {
-    setGifLoading(true);
-    try {
-      const results = await getTrendingChatGifs(24, gifContentFilter);
-      setGifResults(results);
-    } catch {
-      setError("We couldn't load GIFs right now. Please try again.");
-    } finally {
-      setGifLoading(false);
-    }
-  };
-
-  const handleOpenGifPicker = async () => {
-    setGifPickerOpen(true);
-    setGifQuery('');
-    if (gifResults.length === 0) {
-      await loadTrendingGifs();
-    }
-  };
-
-  const handleGifSearch = async (
-    query: string,
-    contentFilter: GifContentFilter = gifContentFilter,
-  ) => {
-    setGifLoading(true);
-    try {
-      const results = query.trim()
-        ? await searchChatGifs(query.trim(), 24, contentFilter)
-        : await getTrendingChatGifs(24, contentFilter);
-      setGifResults(results);
-    } catch {
-      setError("We couldn't search GIFs right now. Please try again.");
-    } finally {
-      setGifLoading(false);
-    }
-  };
-
-  const handlePickGif = async (gifUrl: string, title: string) => {
-    setAddingGif(true);
+  const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
     try {
       const res = await fetch(gifUrl);
       if (!res.ok) throw new Error('gif fetch failed');
       const blob = await res.blob();
-      const safeTitle = (title || 'gif')
+      const safeTitle = (title ?? 'gif')
         .replace(/[^a-zA-Z0-9_-]+/g, '-')
         .slice(0, 40);
       const file = new File([blob], `${safeTitle || 'gif'}.gif`, {
@@ -154,11 +95,8 @@ export const MessageInput = ({
       setPendingFiles((prev) =>
         [...prev, file].slice(0, CHAT_MAX_ATTACHMENTS_PER_MESSAGE),
       );
-      setGifPickerOpen(false);
     } catch {
       setError("We couldn't add that GIF. Please try another one.");
-    } finally {
-      setAddingGif(false);
     }
   };
 
@@ -336,7 +274,7 @@ export const MessageInput = ({
           <EmojiEmotionsOutlinedIcon />
         </IconButton>
         <IconButton
-          onClick={() => void handleOpenGifPicker()}
+          onClick={() => setGifPickerOpen(true)}
           disabled={disabled || uploading || pendingFiles.length >= 5}
           aria-label="Add GIF"
           sx={{
@@ -401,144 +339,11 @@ export const MessageInput = ({
         Press Enter to Send
       </Typography>
 
-      <Dialog
+      <GifPickerDialog
         open={gifPickerOpen}
         onClose={() => setGifPickerOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
-        <DialogContent>
-          <TextField
-            size="small"
-            fullWidth
-            value={gifQuery}
-            onChange={(e) => setGifQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void handleGifSearch(gifQuery);
-              }
-            }}
-            placeholder="Search GIFs"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Button
-                    size="small"
-                    onClick={() => void handleGifSearch(gifQuery)}
-                    disabled={gifLoading}
-                  >
-                    Search
-                  </Button>
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 1.5 }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Content:
-            </Typography>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'low' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('low');
-                void handleGifSearch(gifQuery, 'low');
-              }}
-            >
-              G
-            </Button>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'medium' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('medium');
-                void handleGifSearch(gifQuery, 'medium');
-              }}
-            >
-              PG-13
-            </Button>
-            <Button
-              size="small"
-              variant={gifContentFilter === 'high' ? 'contained' : 'text'}
-              onClick={() => {
-                setGifContentFilter('high');
-                void handleGifSearch(gifQuery, 'high');
-              }}
-            >
-              Strict
-            </Button>
-          </Box>
-          {gifLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 1,
-                maxHeight: 360,
-                overflowY: 'auto',
-              }}
-            >
-              {gifResults.map((gif) => (
-                <Box
-                  key={gif.id}
-                  component="button"
-                  type="button"
-                  onClick={() => void handlePickGif(gif.gifUrl, gif.title)}
-                  disabled={addingGif}
-                  sx={{
-                    p: 0,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    bgcolor: 'black',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={gif.previewUrl}
-                    alt={gif.title || 'GIF'}
-                    sx={{
-                      width: '100%',
-                      height: 110,
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 1, display: 'block' }}
-          >
-            Powered by{' '}
-            <Box
-              component="a"
-              href="https://tenor.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ color: 'primary.main' }}
-            >
-              Tenor
-            </Box>
-          </Typography>
-        </DialogContent>
-      </Dialog>
+        onPick={(url, title) => void handlePickGif(url, title)}
+      />
       <Menu
         anchorEl={emojiAnchor}
         open={Boolean(emojiAnchor)}

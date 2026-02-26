@@ -27,6 +27,8 @@ import {
 } from '../../theme/joinStyles';
 import { useJoin } from '../../context/useJoin';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
+import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
+import { POLICY_VERSION } from '../../types/join';
 
 const ProfileStep = () => {
   const navigate = useNavigate();
@@ -39,7 +41,6 @@ const ProfileStep = () => {
     submitting,
     submitError,
     clearSubmitError,
-    resetSignup,
   } = useJoin();
 
   const [displayName, setDisplayName] = useState(
@@ -81,18 +82,26 @@ const ProfileStep = () => {
     try {
       await submitRegistration(profileData);
       completeStep('profile');
-      resetSignup();
-      try {
-        // Warm Feed chunk before redirect to avoid transient lazy-load misses on slower environments.
-        await import('../../pages/feed/Feed');
-      } catch {
-        // Navigation still proceeds if prefetch fails.
+
+      // Cache validated profile so RequireOnboarded doesn't re-fetch (avoids signup loop)
+      if (state.identity?.userId) {
+        setProfileValidated(state.identity.userId, {
+          display_name: displayName.trim(),
+          join_reason: state.values?.joinReason ?? [],
+          participation_style: state.values?.participationStyle ?? [],
+          policy_version: POLICY_VERSION,
+        });
       }
+
+      // Warm Feed chunk in background (do not await — would yield and cause Join→Welcome flicker)
+      void import('../../pages/feed/Feed').catch(() => {});
+
       setJoinCompletionFlash();
       navigate(
-        { pathname: '/feed', search: '?join=complete' },
+        { pathname: '/bumper', search: '?from=join&next=/feed' },
         { replace: true },
       );
+      // resetSignup runs in BumperPage on mount (from=join) so we never render Join with reset state
     } catch {
       // submitError is shown below
     }

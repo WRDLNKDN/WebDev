@@ -24,6 +24,7 @@ import type { IdentityProvider } from '../../types/join';
 import { POLICY_VERSION } from '../../types/join';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
+import { devLog, devWarn } from '../../lib/utils/devLog';
 
 function mapSupabaseProvider(user: {
   identities?: { provider?: string }[];
@@ -165,9 +166,9 @@ export const AuthCallback = () => {
           );
         }
 
-        console.log('🔵 AuthCallback: Starting');
-        console.log('🔵 AuthCallback: next parameter =', next);
-        console.log('🔵 AuthCallback: Full URL =', window.location.href);
+        devLog('🔵 AuthCallback: Starting');
+        devLog('🔵 AuthCallback: next parameter =', next);
+        devLog('🔵 AuthCallback: Full URL =', window.location.href);
 
         // Give Supabase time to exchange code and establish session (UAT/slow networks)
         await new Promise((r) => setTimeout(r, 600));
@@ -190,7 +191,7 @@ export const AuthCallback = () => {
         if (!cancelled) {
           // --- LOGIC BRANCH: SIGNUP VS DIRECT ENTRY ---
           if (next === '/join') {
-            console.log('📝 AuthCallback: Setting up Join flow');
+            devLog('📝 AuthCallback: Setting up Join flow');
 
             const fetchProfile = async () => {
               const { data, error } = await supabase
@@ -257,7 +258,7 @@ export const AuthCallback = () => {
                   .eq('id', user.id)
                   .maybeSingle();
                 if (error) {
-                  console.warn('AuthCallback: profile fetch error', error);
+                  devWarn('AuthCallback: profile fetch error', error);
                   return { data: null, error };
                 }
                 return { data, error: null };
@@ -277,14 +278,14 @@ export const AuthCallback = () => {
               if (cancelled) return;
 
               if (profile) {
-                console.log(
+                devLog(
                   '🔵 AuthCallback: profile fetched',
                   !!profile.display_name,
                   !!profile.join_reason?.length,
                   !!profile.participation_style?.length,
                 );
               } else {
-                console.warn(
+                devWarn(
                   '🔵 AuthCallback: profile fetch returned null after retries → sending to /join',
                 );
               }
@@ -292,7 +293,7 @@ export const AuthCallback = () => {
               if (!profile && profileError) {
                 // If profile reads are temporarily blocked (RLS/deploy lag), do not
                 // force an existing member into the Join wizard.
-                console.warn(
+                devWarn(
                   '🔵 AuthCallback: profile read error; continuing to protected route',
                   profileError,
                 );

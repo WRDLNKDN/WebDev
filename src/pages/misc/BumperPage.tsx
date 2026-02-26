@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Bumper } from '../../components/bumper/Bumper';
 import { setBumperShown } from '../../lib/utils/bumperSession';
+import { useJoin } from '../../context/useJoin';
 
 /** How long to show the bumper after Join before redirect (ms). */
 const POST_JOIN_BUMPER_MS = 6000;
@@ -20,6 +21,13 @@ export const BumperPage = () => {
   const [searchParams] = useSearchParams();
   const fromJoin = searchParams.get('from') === 'join';
   const next = searchParams.get('next') ?? '/feed';
+  const { resetSignup } = useJoin();
+
+  // IF from=join: reset join state immediately (avoids flicker back to Welcome on Profile submit)
+  useEffect(() => {
+    if (!fromJoin) return;
+    resetSignup();
+  }, [fromJoin, resetSignup]);
 
   // IF from=join: after delay, mark bumper shown and redirect. ELSE: no redirect.
   useEffect(() => {

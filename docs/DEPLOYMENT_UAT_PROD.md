@@ -86,10 +86,11 @@ Supabase project your frontend uses.
 
 **Vercel** → UAT project → Settings → Environment Variables — add:
 
-| Variable                    | UAT value                                                     |
-| --------------------------- | ------------------------------------------------------------- |
-| `SUPABASE_URL`              | `https://lgxwseyzoefxggxijatp.supabase.co`                    |
-| `SUPABASE_SERVICE_ROLE_KEY` | UAT service_role key from Supabase Dashboard → Settings → API |
+| Variable                    | UAT value                                                                  |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | `https://lgxwseyzoefxggxijatp.supabase.co`                                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | UAT service_role key from Supabase Dashboard → Settings → API              |
+| `RESEND_API_KEY`            | Optional. For Advertiser Request form; if unset, form falls back to mailto |
 
 Get the service_role key: Supabase Dashboard → Project Settings → API →
 **service_role** (secret). **Never** expose this in frontend code.

@@ -256,6 +256,18 @@ const AuthBoot = () => {
     void supabase.auth.getSession();
   }, []);
 
+  // iPhone/Safari: refresh session when tab becomes visible (e.g. return from another app).
+  // Triggers onAuthStateChange so Navbar/RequireOnboarded stay in sync after iOS app switch.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void supabase.auth.refreshSession();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   return null;
 };
 
@@ -285,6 +297,11 @@ const App = () => {
 
   useEffect(() => {
     registerAnalyticsSinks();
+  }, []);
+
+  // Android UAT: scroll to top on initial load (history.scrollRestoration=manual set in main.tsx)
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   return (

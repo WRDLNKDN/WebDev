@@ -72,6 +72,7 @@ export const ValuesStep = () => {
         elevation={0}
         sx={{
           ...signupPaper,
+          p: { xs: 2, sm: 2.5, md: 4 },
           maxWidth: 640,
           mx: 'auto',
           overflow: 'hidden',
@@ -81,18 +82,24 @@ export const ValuesStep = () => {
           },
         }}
       >
-        <Stack spacing={{ xs: 2.25, md: 2.75 }}>
+        <Stack spacing={{ xs: 1.5, md: 2 }}>
           <Box>
-            <Typography variant="h5" sx={signupStepLabel}>
+            <Typography variant="h6" sx={{ ...signupStepLabel, mb: 0.5 }}>
               Your Intent
             </Typography>
-            <Typography variant="body2" sx={signupStepSubtext}>
+            <Typography
+              variant="body2"
+              sx={{ ...signupStepSubtext, fontSize: '0.875rem' }}
+            >
               Tell us why you&apos;re here and how you plan to show up.
             </Typography>
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={valuesStepSectionTitle}>
+            <Typography
+              variant="subtitle1"
+              sx={{ ...valuesStepSectionTitle, fontSize: '0.95rem', mb: 0.5 }}
+            >
               What brings you here?{' '}
               <Typography
                 component="span"
@@ -105,16 +112,16 @@ export const ValuesStep = () => {
                 (Required)
               </Typography>
             </Typography>
-            <Typography variant="body2" sx={valuesStepSectionSubtext}>
+            <Typography variant="caption" sx={valuesStepSectionSubtext}>
               Select at least one.
             </Typography>
 
             <FormGroup
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                columnGap: 2,
-                rowGap: 0.25,
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                columnGap: { xs: 1, md: 2 },
+                rowGap: 0,
               }}
             >
               {JOIN_REASONS.map((reason) => (
@@ -135,7 +142,10 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={valuesStepSectionTitle}>
+            <Typography
+              variant="subtitle1"
+              sx={{ ...valuesStepSectionTitle, fontSize: '0.95rem', mb: 0.5 }}
+            >
               How will you participate?{' '}
               <Typography
                 component="span"
@@ -148,16 +158,16 @@ export const ValuesStep = () => {
                 (Required)
               </Typography>
             </Typography>
-            <Typography variant="body2" sx={valuesStepSectionSubtext}>
+            <Typography variant="caption" sx={valuesStepSectionSubtext}>
               Select at least one.
             </Typography>
 
             <FormGroup
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                columnGap: 2,
-                rowGap: 0.25,
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                columnGap: { xs: 1, md: 2 },
+                rowGap: 0,
               }}
             >
               {PARTICIPATION_STYLES.map((style) => (
@@ -178,12 +188,15 @@ export const ValuesStep = () => {
           </Box>
 
           <Box>
-            <Typography variant="h6" sx={valuesStepSectionTitle}>
-              Anything else you&apos;d like us to know? (Optional)
+            <Typography
+              variant="subtitle1"
+              sx={{ ...valuesStepSectionTitle, fontSize: '0.95rem', mb: 0.5 }}
+            >
+              Anything else? (Optional)
             </Typography>
             <TextField
               multiline
-              rows={3}
+              rows={2}
               fullWidth
               placeholder={
                 "Tell us more about your interests, what you're working on, " +

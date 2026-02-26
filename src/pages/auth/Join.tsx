@@ -27,6 +27,7 @@ import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 
 const BG_SX = {
   minHeight: '100dvh',
+  maxHeight: '100dvh',
   position: 'relative' as const,
   display: 'flex',
   justifyContent: 'center',
@@ -35,6 +36,7 @@ const BG_SX = {
   py: { xs: 2, sm: 3, md: 6 },
   overflowX: 'hidden',
   overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch' as const, // iOS momentum scrolling
 };
 
 const CARD_SX = {
@@ -46,7 +48,7 @@ const CARD_SX = {
   bgcolor: 'rgba(16, 18, 24, 0.70)',
   backdropFilter: 'blur(12px)',
   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
-  p: { xs: 2, sm: 3, md: 5 },
+  p: { xs: 1.5, sm: 3, md: 5 },
   color: '#fff',
   minWidth: 0,
   overflow: 'hidden',

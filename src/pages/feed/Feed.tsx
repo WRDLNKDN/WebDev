@@ -7,8 +7,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EventIcon from '@mui/icons-material/Event';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import GifBoxIcon from '@mui/icons-material/GifBox';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import MessageIcon from '@mui/icons-material/Message';
+import SearchIcon from '@mui/icons-material/Search';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -96,6 +98,11 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
+import {
+  getTrendingChatGifs,
+  searchChatGifs,
+  type GifContentFilter,
+} from '../../lib/chat/gifApi';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -192,7 +199,13 @@ function extractBodyUrls(body: string): string[] {
 function isGifUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return /\.gif$/i.test(parsed.pathname);
+    if (/\.gif($|\?)/i.test(parsed.pathname + parsed.search)) return true;
+    const h = parsed.hostname.toLowerCase();
+    return (
+      h.includes('tenor.com') ||
+      h.includes('giphy.com') ||
+      h.includes('media.giphy.com')
+    );
   } catch {
     return false;
   }
@@ -523,6 +536,15 @@ const FeedCard = ({
   onDismissLinkPreview,
 }: FeedCardProps) => {
   const [commentDraft, setCommentDraft] = useState('');
+  const [commentSelectedGif, setCommentSelectedGif] = useState<string | null>(
+    null,
+  );
+  const [commentGifPickerOpen, setCommentGifPickerOpen] = useState(false);
+  const [commentGifQuery, setCommentGifQuery] = useState('');
+  const [commentGifLoading, setCommentGifLoading] = useState(false);
+  const [commentGifResults, setCommentGifResults] = useState<
+    Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
+  >([]);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editPostDraft, setEditPostDraft] = useState('');
@@ -759,11 +781,16 @@ const FeedCard = ({
 
   const handleAddComment = async () => {
     const text = commentDraft.trim();
-    if (!text || submittingComment) return;
+    const hasContent = text || commentSelectedGif;
+    if (!hasContent || submittingComment) return;
     setSubmittingComment(true);
     try {
-      await onAddComment(item.id, text);
+      const body = commentSelectedGif
+        ? `${text}\n${commentSelectedGif}`.trim()
+        : text;
+      await onAddComment(item.id, body);
       setCommentDraft('');
+      setCommentSelectedGif(null);
       actions.updateItem(item.id, {
         comment_count: (item.comment_count ?? 0) + 1,
       });
@@ -771,6 +798,46 @@ const FeedCard = ({
       setSubmittingComment(false);
     }
   };
+
+  const loadCommentGifs = useCallback(async () => {
+    setCommentGifLoading(true);
+    try {
+      const results = await getTrendingChatGifs(24, 'medium');
+      setCommentGifResults(results);
+    } catch {
+      /* non-blocking */
+    } finally {
+      setCommentGifLoading(false);
+    }
+  }, []);
+
+  const handleOpenCommentGifPicker = useCallback(async () => {
+    setCommentGifPickerOpen(true);
+    setCommentGifQuery('');
+    if (commentGifResults.length === 0) await loadCommentGifs();
+  }, [commentGifResults.length, loadCommentGifs]);
+
+  const handleCommentGifSearch = useCallback(
+    async (query: string, filter: GifContentFilter = 'medium') => {
+      setCommentGifLoading(true);
+      try {
+        const results = query.trim()
+          ? await searchChatGifs(query.trim(), 24, filter)
+          : await getTrendingChatGifs(24, filter);
+        setCommentGifResults(results);
+      } catch {
+        /* non-blocking */
+      } finally {
+        setCommentGifLoading(false);
+      }
+    },
+    [],
+  );
+
+  const handlePickCommentGif = useCallback((gifUrl: string) => {
+    setCommentSelectedGif(gifUrl);
+    setCommentGifPickerOpen(false);
+  }, []);
 
   const handleSavePostEdit = async () => {
     const nextBody = editPostDraft.trim();
@@ -1323,13 +1390,42 @@ const FeedCard = ({
                                     </Stack>
                                   </Stack>
                                 ) : (
-                                  <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ whiteSpace: 'pre-wrap' }}
-                                  >
-                                    {c.body}
-                                  </Typography>
+                                  <Stack spacing={0.5} component="span">
+                                    {(() => {
+                                      const cb = c.body ?? '';
+                                      const gifUrls =
+                                        extractBodyUrls(cb).filter(isGifUrl);
+                                      const textOnly =
+                                        removeGifUrlsFromBody(cb);
+                                      return (
+                                        <>
+                                          {textOnly && (
+                                            <Typography
+                                              variant="body2"
+                                              component="span"
+                                              sx={{ whiteSpace: 'pre-wrap' }}
+                                            >
+                                              {linkifyBody(textOnly)}
+                                            </Typography>
+                                          )}
+                                          {gifUrls.map((gifUrl) => (
+                                            <Box
+                                              key={gifUrl}
+                                              component="img"
+                                              src={gifUrl}
+                                              alt="GIF"
+                                              sx={{
+                                                maxWidth: 240,
+                                                maxHeight: 180,
+                                                objectFit: 'contain',
+                                                borderRadius: 1,
+                                              }}
+                                            />
+                                          ))}
+                                        </>
+                                      );
+                                    })()}
+                                  </Stack>
                                 )}
                                 <Typography
                                   variant="caption"
@@ -1446,33 +1542,65 @@ const FeedCard = ({
                         </ListItem>
                       ))}
                     </List>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{ mt: 1 }}
-                    >
-                      <TextField
-                        size="small"
-                        placeholder="Write a comment…"
-                        value={commentDraft}
-                        onChange={(e) => setCommentDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            void handleAddComment();
+                    <Stack spacing={1} sx={{ mt: 1 }}>
+                      {commentSelectedGif && (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <Box
+                            component="img"
+                            src={commentSelectedGif}
+                            alt="GIF preview"
+                            sx={{
+                              maxWidth: 120,
+                              maxHeight: 90,
+                              objectFit: 'contain',
+                              borderRadius: 1,
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => setCommentSelectedGif(null)}
+                            aria-label="Remove GIF"
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      )}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <TextField
+                          size="small"
+                          placeholder="Write a comment…"
+                          value={commentDraft}
+                          onChange={(e) => setCommentDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              void handleAddComment();
+                            }
+                          }}
+                          sx={{ flex: 1 }}
+                        />
+                        <IconButton
+                          size="small"
+                          aria-label="Add GIF"
+                          onClick={() => void handleOpenCommentGifPicker()}
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <GifBoxIcon fontSize="small" />
+                        </IconButton>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => void handleAddComment()}
+                          disabled={
+                            (!commentDraft.trim() && !commentSelectedGif) ||
+                            submittingComment
                           }
-                        }}
-                        sx={{ flex: 1 }}
-                      />
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() => void handleAddComment()}
-                        disabled={!commentDraft.trim() || submittingComment}
-                      >
-                        Post
-                      </Button>
+                        >
+                          Post
+                        </Button>
+                      </Stack>
                     </Stack>
                   </>
                 )}
@@ -1481,6 +1609,103 @@ const FeedCard = ({
           </Box>
         </Stack>
       </CardContent>
+      <Dialog
+        open={commentGifPickerOpen}
+        onClose={() => setCommentGifPickerOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
+        <DialogContent>
+          <TextField
+            size="small"
+            fullWidth
+            value={commentGifQuery}
+            onChange={(e) => setCommentGifQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void handleCommentGifSearch(commentGifQuery);
+              }
+            }}
+            placeholder="Search GIFs"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        void handleCommentGifSearch(commentGifQuery)
+                      }
+                      disabled={commentGifLoading}
+                    >
+                      Search
+                    </Button>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 1.5 }}
+          />
+          {commentGifLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 1,
+                maxHeight: 280,
+                overflowY: 'auto',
+              }}
+            >
+              {commentGifResults.map((gif) => (
+                <Box
+                  key={gif.id}
+                  component="button"
+                  type="button"
+                  onClick={() => handlePickCommentGif(gif.gifUrl)}
+                  sx={{
+                    p: 0,
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    bgcolor: 'black',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={gif.previewUrl}
+                    alt={gif.title || 'GIF'}
+                    sx={{
+                      width: '100%',
+                      height: 90,
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={Boolean(imageLightboxUrl)}
         onClose={closeImageLightbox}
@@ -1646,6 +1871,14 @@ export const Feed = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [composerValue, setComposerValue] = useState('');
   const [composerImages, setComposerImages] = useState<string[]>([]);
+  const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [gifQuery, setGifQuery] = useState('');
+  const [gifLoading, setGifLoading] = useState(false);
+  const [gifContentFilter, setGifContentFilter] =
+    useState<GifContentFilter>('medium');
+  const [gifResults, setGifResults] = useState<
+    Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
+  >([]);
   const [composerScheduledAt, setComposerScheduledAt] = useState<string | null>(
     null,
   );
@@ -1765,14 +1998,18 @@ export const Feed = () => {
         advertiser_name: advertiser.company_name,
         slot_index: slotIndex,
       });
-      void logFeedAdEvent({
-        advertiserId: advertiser.id,
-        memberId: session?.user?.id ?? null,
-        eventName: 'feed_ad_impression',
-        slotIndex,
-        pagePath:
-          typeof window !== 'undefined' ? window.location.pathname : null,
-      });
+      const adSource = (advertiser as FeedAdvertiser & { adSource?: string })
+        .adSource;
+      if (adSource !== 'partner') {
+        void logFeedAdEvent({
+          advertiserId: advertiser.id,
+          memberId: session?.user?.id ?? null,
+          eventName: 'feed_ad_impression',
+          slotIndex,
+          pagePath:
+            typeof window !== 'undefined' ? window.location.pathname : null,
+        });
+      }
     },
     [adImpressionStorageKey, session?.user?.id],
   );
@@ -1790,16 +2027,20 @@ export const Feed = () => {
         target: payload.target,
         url: payload.url,
       });
-      void logFeedAdEvent({
-        advertiserId: advertiser.id,
-        memberId: session?.user?.id ?? null,
-        eventName: 'feed_ad_click',
-        slotIndex,
-        target: payload.target,
-        url: payload.url,
-        pagePath:
-          typeof window !== 'undefined' ? window.location.pathname : null,
-      });
+      const adSource = (advertiser as FeedAdvertiser & { adSource?: string })
+        .adSource;
+      if (adSource !== 'partner') {
+        void logFeedAdEvent({
+          advertiserId: advertiser.id,
+          memberId: session?.user?.id ?? null,
+          eventName: 'feed_ad_click',
+          slotIndex,
+          target: payload.target,
+          url: payload.url,
+          pagePath:
+            typeof window !== 'undefined' ? window.location.pathname : null,
+        });
+      }
     },
     [session?.user?.id],
   );
@@ -2038,16 +2279,56 @@ export const Feed = () => {
   }, [session?.user?.id]);
 
   const fetchAdvertisers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('feed_advertisers')
-      .select(
-        'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
-      )
-      .eq('active', true)
-      .order('sort_order', { ascending: true });
+    const [adsRes, partnersRes] = await Promise.all([
+      supabase
+        .from('feed_advertisers')
+        .select(
+          'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
+        )
+        .eq('active', true)
+        .order('sort_order', { ascending: true }),
+      supabase
+        .from('community_partners')
+        .select(
+          'id,company_name,title,description,url,logo_url,image_url,links,active,sort_order',
+        )
+        .eq('active', true)
+        .eq('featured', true)
+        .order('sort_order', { ascending: true }),
+    ]);
 
-    if (error) return; // Non-fatal: feed still works without ads
-    setAdvertisers((data ?? []) as FeedAdvertiser[]);
+    if (adsRes.error) return; // Non-fatal: feed still works without ads
+    const ads = (adsRes.data ?? []) as Array<
+      FeedAdvertiser & { adSource?: 'advertiser' }
+    >;
+    ads.forEach((a) => {
+      (a as FeedAdvertiser & { adSource?: string }).adSource = 'advertiser';
+    });
+
+    const partners = (partnersRes.data ?? []).map(
+      (p: {
+        id: string;
+        company_name: string;
+        title?: string | null;
+        description?: string | null;
+        url: string;
+        logo_url?: string | null;
+        image_url?: string | null;
+        links?: unknown;
+        active?: boolean;
+        sort_order?: number;
+      }) =>
+        ({
+          ...p,
+          title: p.title ?? p.company_name,
+          description: p.description ?? '',
+          active: p.active ?? true,
+          sort_order: p.sort_order ?? 0,
+          adSource: 'partner' as const,
+        }) as FeedAdvertiser & { adSource: 'partner' },
+    );
+
+    setAdvertisers([...ads, ...partners] as FeedAdvertiser[]);
   }, []);
 
   useEffect(() => {
@@ -2064,18 +2345,25 @@ export const Feed = () => {
   }, [fetchAdvertisers]);
 
   useEffect(() => {
-    const channel = supabase
+    const ch1 = supabase
       .channel('feed-advertisers-live')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'feed_advertisers' },
-        () => {
-          void fetchAdvertisers();
-        },
+        () => void fetchAdvertisers(),
+      )
+      .subscribe();
+    const ch2 = supabase
+      .channel('community-partners-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'community_partners' },
+        () => void fetchAdvertisers(),
       )
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
     };
   }, [fetchAdvertisers]);
 
@@ -2187,6 +2475,48 @@ export const Feed = () => {
       e.target.value = '';
     }
   };
+
+  const loadComposerGifs = useCallback(async () => {
+    setGifLoading(true);
+    try {
+      const results = await getTrendingChatGifs(24, gifContentFilter);
+      setGifResults(results);
+    } catch {
+      setSnack("We couldn't load GIFs right now. Please try again.");
+    } finally {
+      setGifLoading(false);
+    }
+  }, [gifContentFilter]);
+
+  const handleOpenGifPicker = useCallback(async () => {
+    setGifPickerOpen(true);
+    setGifQuery('');
+    if (gifResults.length === 0) {
+      await loadComposerGifs();
+    }
+  }, [gifResults.length, loadComposerGifs]);
+
+  const handleGifSearch = useCallback(
+    async (query: string, filter: GifContentFilter = gifContentFilter) => {
+      setGifLoading(true);
+      try {
+        const results = query.trim()
+          ? await searchChatGifs(query.trim(), 24, filter)
+          : await getTrendingChatGifs(24, filter);
+        setGifResults(results);
+      } catch {
+        setSnack("We couldn't search GIFs right now. Please try again.");
+      } finally {
+        setGifLoading(false);
+      }
+    },
+    [gifContentFilter],
+  );
+
+  const handlePickComposerGif = useCallback((gifUrl: string) => {
+    setComposerImages((prev) => [...prev, gifUrl]);
+    setGifPickerOpen(false);
+  }, []);
 
   const handleReaction = useCallback(
     async (postId: string, type: ReactionType) => {
@@ -3033,6 +3363,7 @@ export const Feed = () => {
           setComposerOpen(false);
           setComposerImages([]);
           setComposerScheduledAt(null);
+          setGifPickerOpen(false);
         }}
         maxWidth="sm"
         fullWidth
@@ -3156,11 +3487,19 @@ export const Feed = () => {
               component="label"
               htmlFor="post-image-upload"
               size="small"
-              aria-label="Add image"
+              aria-label="Attach file"
               disabled={imageUploading}
               sx={{ color: 'text.secondary' }}
             >
-              <ImageOutlinedIcon />
+              <AttachFileIcon />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Add GIF"
+              sx={{ color: 'text.secondary' }}
+              onClick={() => void handleOpenGifPicker()}
+            >
+              <GifBoxIcon />
             </IconButton>
             {imageUploading && (
               <Stack direction="row" alignItems="center" spacing={0.75}>
@@ -3170,6 +3509,7 @@ export const Feed = () => {
                 </Typography>
               </Stack>
             )}
+            <Box sx={{ flex: 1 }} />
             <IconButton
               size="small"
               aria-label="Schedule post"
@@ -3201,7 +3541,6 @@ export const Feed = () => {
                 </IconButton>
               </Typography>
             )}
-            <Box sx={{ flex: 1 }} />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 2, pb: 2, pt: 0 }}>
@@ -3214,6 +3553,153 @@ export const Feed = () => {
             {posting ? 'Posting…' : 'Post'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* GIF picker for post composer */}
+      <Dialog
+        open={gifPickerOpen}
+        onClose={() => setGifPickerOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
+        <DialogContent>
+          <TextField
+            size="small"
+            fullWidth
+            value={gifQuery}
+            onChange={(e) => setGifQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void handleGifSearch(gifQuery);
+              }
+            }}
+            placeholder="Search GIFs"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      onClick={() => void handleGifSearch(gifQuery)}
+                      disabled={gifLoading}
+                    >
+                      Search
+                    </Button>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 1.5 }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Content:
+            </Typography>
+            <Button
+              size="small"
+              variant={gifContentFilter === 'low' ? 'contained' : 'text'}
+              onClick={() => {
+                setGifContentFilter('low');
+                void handleGifSearch(gifQuery, 'low');
+              }}
+            >
+              G
+            </Button>
+            <Button
+              size="small"
+              variant={gifContentFilter === 'medium' ? 'contained' : 'text'}
+              onClick={() => {
+                setGifContentFilter('medium');
+                void handleGifSearch(gifQuery, 'medium');
+              }}
+            >
+              PG-13
+            </Button>
+            <Button
+              size="small"
+              variant={gifContentFilter === 'high' ? 'contained' : 'text'}
+              onClick={() => {
+                setGifContentFilter('high');
+                void handleGifSearch(gifQuery, 'high');
+              }}
+            >
+              Strict
+            </Button>
+          </Box>
+          {gifLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 1,
+                maxHeight: 360,
+                overflowY: 'auto',
+              }}
+            >
+              {gifResults.map((gif) => (
+                <Box
+                  key={gif.id}
+                  component="button"
+                  type="button"
+                  onClick={() => handlePickComposerGif(gif.gifUrl)}
+                  sx={{
+                    p: 0,
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    bgcolor: 'black',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={gif.previewUrl}
+                    alt={gif.title || 'GIF'}
+                    sx={{
+                      width: '100%',
+                      height: 110,
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          )}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: 'block' }}
+          >
+            Powered by{' '}
+            <Link
+              href="https://tenor.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: 'primary.main' }}
+            >
+              Tenor
+            </Link>
+          </Typography>
+        </DialogContent>
       </Dialog>
 
       {/* Schedule post dialog */}

@@ -1,6 +1,7 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { trackEvent } from '../../lib/analytics/trackEvent';
 
 interface GuestViewProps {
   /** @deprecated OAuth removed; kept for backward compat, ignored */
@@ -94,11 +95,47 @@ export const GuestView = ({
         },
       };
 
-  // Hero (buttonsOnly): single primary CTA — OAuth selection happens on /join
+  const signInSx = highContrast
+    ? {
+        borderRadius: 20,
+        height: 56,
+        fontSize: '0.95rem',
+        textTransform: 'none' as const,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.5)',
+        color: 'rgba(255,255,255,0.9)',
+        bgcolor: 'transparent',
+        opacity: 0.9,
+        '&:hover': {
+          borderColor: 'rgba(255,255,255,0.75)',
+          bgcolor: 'rgba(255,255,255,0.06)',
+          opacity: 1,
+        },
+        '&:focus-visible': { boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' },
+      }
+    : {
+        borderRadius: 20,
+        height: 56,
+        fontSize: '0.95rem',
+        textTransform: 'none',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+        color: 'rgba(255,255,255,0.85)',
+        bgcolor: 'transparent',
+        opacity: 0.85,
+        '&:hover': {
+          borderColor: 'rgba(255,255,255,0.5)',
+          bgcolor: 'rgba(255,255,255,0.04)',
+          opacity: 1,
+        },
+        '&:focus-visible': { boxShadow: '0 0 0 2px rgba(255,255,255,0.35)' },
+      };
+
+  // Hero (buttonsOnly): primary CTA + secondary Sign In pill
   if (buttonsOnly) {
     return (
       <Stack
-        spacing={4}
+        spacing={2}
         sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
       >
         <Button
@@ -110,6 +147,20 @@ export const GuestView = ({
           sx={joinSx}
         >
           {joinLoading ? 'Opening Join…' : 'Join Us'}
+        </Button>
+        <Button
+          component={RouterLink}
+          to="/signin"
+          variant="outlined"
+          size="large"
+          fullWidth
+          sx={signInSx}
+          aria-label="Already a member? Sign In"
+          onClick={() =>
+            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
+          }
+        >
+          Already a member? Sign In
         </Button>
       </Stack>
     );

@@ -91,6 +91,21 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('feed-ad-images', 'feed-ad-images', true, 52428800, null)
 on conflict (id) do update set public = excluded.public, file_size_limit = 52428800, allowed_mime_types = null;
 
+-- Optional: advertiser-inquiry-assets bucket (idempotent; 5MB; PNG/SVG only; private)
+-- -----------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'advertiser-inquiry-assets',
+  'advertiser-inquiry-assets',
+  false,
+  5242880,
+  array['image/png', 'image/svg+xml']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 -- Optional: profiles status default + backfill (remove moderation)
 -- -----------------------------
 update public.profiles set status = 'approved' where status = 'pending';

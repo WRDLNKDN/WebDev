@@ -72,7 +72,7 @@ export const GifPickerDialog = ({
     if (open && results.length === 0) {
       void loadGifs('');
     }
-  }, [open, loadGifs]);
+  }, [open, loadGifs, results.length]);
 
   const handleSearch = useCallback(
     (q: string, filter?: GifContentFilter) => {

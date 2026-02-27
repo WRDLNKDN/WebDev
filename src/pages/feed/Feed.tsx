@@ -59,7 +59,7 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
-import { GifPickerDialog } from '../../components/chat/GifPickerDialog';
+import * as GifPicker from '../../components/chat/GifPickerDialog';
 import { logFeedAdEvent } from '../../lib/analytics/feedAdEvents';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import {
@@ -1444,7 +1444,7 @@ const FeedCard = ({
           </Box>
         )}
       </PostCard>
-      <GifPickerDialog
+      <GifPicker.GifPickerDialog
         open={commentGifPickerOpen}
         onClose={() => setCommentGifPickerOpen(false)}
         onPick={(url) => setCommentSelectedGif(url)}
@@ -3350,7 +3350,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         </DialogActions>
       </Dialog>
 
-      <GifPickerDialog
+      <GifPicker.GifPickerDialog
         open={gifPickerOpen}
         onClose={() => setGifPickerOpen(false)}
         onPick={(url) => setComposerImages((prev) => [...prev, url])}

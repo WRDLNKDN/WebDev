@@ -82,7 +82,6 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
-import { GifPickerDialog } from '../../components/chat/GifPickerDialog';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
   getOrCreateSessionAdSeed,

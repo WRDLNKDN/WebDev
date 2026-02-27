@@ -1,6 +1,9 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, Link, Stack, Typography } from '@mui/material';
-import { CATEGORY_ORDER } from '../../constants/platforms';
+import {
+  CATEGORY_ORDER,
+  getCategoryForPlatform,
+} from '../../constants/platforms';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
@@ -30,11 +33,11 @@ const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
     return link.category;
   }
 
-  const platform = (
-    link.platform?.trim() || detectPlatformFromUrl(link.url)
-  ).toLowerCase();
-  if (platform === 'linkedin' || platform === 'github') return 'Professional';
-  if (platform === 'instagram' || platform === 'facebook') return 'Social';
+  const platform =
+    link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
+  const inferred = getCategoryForPlatform(platform);
+  if (inferred === 'Professional') return 'Professional';
+  if (inferred === 'Social') return 'Social';
   return 'Other';
 };
 

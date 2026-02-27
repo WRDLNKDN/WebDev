@@ -13,6 +13,9 @@ connection-aware visibility are enforced server-side.
 - **Privacy:** Members choose `members_only` (visible to all signed-in members)
   or `connections_only` (visible only to mutual connections). Enforced via
   Supabase RLS and `get_directory_page` RPC.
+- **Who appears:** Only profiles with `status = 'approved'` are listed. If a
+  member does not appear, they may be pending approval or have
+  `profile_visibility = 'connections_only'` and no connection with the viewer.
 - **Rate limiting:** List (GET) 100/min, actions 30/min per user. 429 responses
   include `retryAfter` (seconds).
 

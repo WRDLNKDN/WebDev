@@ -45,6 +45,7 @@ export const GifPickerDialog = ({
 }: GifPickerDialogProps) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [contentFilter, setContentFilter] =
     useState<GifContentFilter>('medium');
   const [results, setResults] = useState<
@@ -54,13 +55,17 @@ export const GifPickerDialog = ({
   const loadGifs = useCallback(
     async (q: string, filter: GifContentFilter = contentFilter) => {
       setLoading(true);
+      setError(null);
       try {
         const gifs = q.trim()
           ? await searchChatGifs(q.trim(), 24, filter)
           : await getTrendingChatGifs(24, filter);
         setResults(gifs);
-      } catch {
+      } catch (e) {
         setResults([]);
+        setError(
+          e instanceof Error ? e.message : 'Could not load GIFs. Try again.',
+        );
       } finally {
         setLoading(false);
       }
@@ -182,6 +187,47 @@ export const GifPickerDialog = ({
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
             <CircularProgress size={24} />
+          </Box>
+        ) : error ? (
+          <Box
+            sx={{
+              py: 3,
+              px: 2,
+              textAlign: 'center',
+              bgcolor: 'action.hover',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleSearch(query)}
+            >
+              Try again
+            </Button>
+          </Box>
+        ) : results.length === 0 ? (
+          <Box
+            sx={{
+              py: 3,
+              px: 2,
+              textAlign: 'center',
+              color: 'text.secondary',
+              borderRadius: 2,
+              border: '1px dashed',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="body2">
+              {query.trim()
+                ? 'No results found. Try a different search.'
+                : 'No trending GIFs right now. Try searching above.'}
+            </Typography>
           </Box>
         ) : (
           <Box

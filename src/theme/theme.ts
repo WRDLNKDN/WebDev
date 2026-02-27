@@ -19,7 +19,7 @@ const PALETTE = {
   },
   text: {
     primary: '#ffffff', // 21:1 Contrast
-    secondary: '#e0e0e0', // 16:1 Contrast (Bumped from grey.500)
+    secondary: '#e8e8e8', // AAA: 7:1+ on #121212 (was #e0e0e0)
     disabled: '#9e9e9e',
   },
   error: {
@@ -219,7 +219,7 @@ const theme = createTheme({
           minHeight: 44, // Touch target safety
           '&::placeholder': {
             opacity: 1,
-            color: '#a0a0a0', // Fixes default low contrast placeholders
+            color: '#bdbdbd', // AAA 7:1 on #121212 (was #a0a0a0)
           },
         },
       },
@@ -244,7 +244,7 @@ const theme = createTheme({
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: '#e0e0e0', // Readable label
+          color: '#e8e8e8', // AAA 7:1 label
           '&.Mui-focused': { color: '#42a5f5' },
         },
         // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
@@ -257,7 +257,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           fontSize: '0.875rem', // Ensure error text isn't microscopic
-          color: '#e0e0e0',
+          color: '#e8e8e8', // AAA 7:1
         },
       },
     },
@@ -290,7 +290,7 @@ const theme = createTheme({
     },
     MuiSelect: {
       styleOverrides: {
-        icon: { color: '#e0e0e0' },
+        icon: { color: '#e8e8e8' },
       },
     },
 
@@ -393,13 +393,13 @@ const theme = createTheme({
     MuiStepLabel: {
       styleOverrides: {
         label: {
-          color: 'rgba(255,255,255,0.70)',
+          color: 'rgba(255,255,255,0.92)', // AAA 7:1 on dark (was 0.70)
           '&.Mui-active': {
             color: '#ffffff',
             fontWeight: 700,
           },
           '&.Mui-completed': {
-            color: 'rgba(255,255,255,0.85)',
+            color: 'rgba(255,255,255,0.97)',
             fontWeight: 600,
           },
         },
@@ -408,7 +408,7 @@ const theme = createTheme({
     MuiStepIcon: {
       styleOverrides: {
         root: {
-          color: 'rgba(255,255,255,0.35)',
+          color: 'rgba(255,255,255,0.55)', // AAA: slightly stronger inactive icon (was 0.35)
           '&.Mui-active': {
             color: PALETTE.primary.main, // Mapped to our Blue
           },

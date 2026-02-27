@@ -422,6 +422,19 @@ export const Directory = () => {
                 <Select
                   value={connectionStatus}
                   label="Connection"
+                  renderValue={(v) =>
+                    v === ''
+                      ? 'All'
+                      : v === 'not_connected'
+                        ? 'Not connected'
+                        : v === 'pending'
+                          ? 'Pending'
+                          : v === 'pending_received'
+                            ? 'Pending received'
+                            : v === 'connected'
+                              ? 'Connected'
+                              : v
+                  }
                   onChange={(e) =>
                     updateUrl({ connection_status: e.target.value })
                   }

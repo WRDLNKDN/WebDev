@@ -15,23 +15,21 @@ export const PortfolioFrame = ({ title, children }: PortfolioFrameProps) => (
       {title}
     </Typography>
     <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      spacing={3}
+      direction="row"
+      flexWrap="wrap"
+      spacing={2}
+      useFlexGap
       sx={{
-        overflowX: { md: 'auto' },
-        overflowY: 'visible',
         py: 4,
         px: { xs: 1, sm: 2 },
-        scrollSnapType: { md: 'x mandatory' },
-        '&::-webkit-scrollbar': { height: 8 },
-        '&::-webkit-scrollbar-thumb': {
-          bgcolor: 'rgba(255,255,255,0.2)',
-          borderRadius: 4,
-        },
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
         '& > *': {
-          flexShrink: 0,
-          minWidth: { md: 280 },
-          scrollSnapAlign: { md: 'start' },
+          flex: '1 1 auto',
+          minWidth: { xs: '100%', sm: 200, md: 220 },
+          maxWidth: { xs: '100%', sm: 280, md: 300 },
         },
       }}
     >

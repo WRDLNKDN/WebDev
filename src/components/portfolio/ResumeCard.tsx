@@ -12,6 +12,8 @@ interface ResumeCardProps {
   url?: string | null;
   thumbnailUrl?: string | null;
   thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
+  /** Server error message when thumbnail generation failed; shown inline so it persists until retry */
+  thumbnailError?: string | null;
   onUpload?: (file: File) => void;
   onRetryThumbnail?: () => void;
   retryThumbnailBusy?: boolean;
@@ -22,6 +24,7 @@ export const ResumeCard = ({
   url,
   thumbnailUrl,
   thumbnailStatus,
+  thumbnailError,
   onUpload: _onUpload,
   onRetryThumbnail,
   retryThumbnailBusy = false,
@@ -44,11 +47,11 @@ export const ResumeCard = ({
         // Spread the base style FIRST
         ...(hasResume ? CANDY_SUCCESS : CANDY_HAZARD),
 
-        // Instance-specific overrides
+        // Instance-specific overrides (compact for Dashboard)
         width: '100%',
-        maxWidth: 360,
-        minHeight: { xs: 280, md: 400 },
-        height: { xs: 280, md: 400 },
+        maxWidth: 240,
+        minHeight: { xs: 160, md: 200 },
+        height: { xs: 160, md: 200 },
         borderRadius: 3,
         scrollSnapAlign: 'start',
         position: 'relative',
@@ -58,8 +61,8 @@ export const ResumeCard = ({
         <Box
           sx={{
             width: '100%',
-            maxWidth: 300,
-            height: { xs: 170, md: 240 },
+            maxWidth: 260,
+            height: { xs: 120, md: 160 },
             borderRadius: 2,
             border: '1px solid rgba(255,255,255,0.25)',
             overflow: 'hidden',
@@ -107,6 +110,20 @@ export const ResumeCard = ({
                   <Typography variant="caption" color="text.secondary">
                     Preview failed. Open the document directly.
                   </Typography>
+                  {thumbnailError && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        mt: 1,
+                        display: 'block',
+                        maxWidth: 260,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {thumbnailError}
+                    </Typography>
+                  )}
                 </>
               ) : (
                 <>

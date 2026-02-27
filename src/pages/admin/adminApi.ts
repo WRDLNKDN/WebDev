@@ -163,20 +163,24 @@ export const disableProfiles = async (
   await updateStatus(token, ids, 'disabled');
 };
 
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+  '';
+
 export const deleteProfiles = async (
   token: string,
   ids: string[],
   hardDeleteAuthUsers = false,
 ): Promise<void> => {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=in.(${ids.join(',')})`;
-
+  const url = `${API_BASE}/api/admin/profiles/delete`;
   const res = await fetch(url, {
-    method: 'DELETE',
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      Prefer: 'return=minimal',
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ ids, hardDeleteAuthUsers }),
+    credentials: API_BASE ? 'omit' : 'include',
   });
 
   if (!res.ok) {
@@ -192,12 +196,5 @@ export const deleteProfiles = async (
         ? (data as { message: string }).message
         : undefined;
     throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
-
-  // If hardDeleteAuthUsers is true, also delete from auth.users
-  if (hardDeleteAuthUsers) {
-    // This requires service_role key and proper RPC function
-    // For now, just a placeholder - implement with proper RPC
-    console.warn('Hard delete auth users not implemented yet');
   }
 };

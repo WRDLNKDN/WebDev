@@ -34,7 +34,8 @@ Do **not** set `VITE_API_URL` in `.env` for local dev so the app uses the proxy.
   the same origin.
 
 Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and (optional) `ADMIN_TOKEN` in
-Vercel for the API.
+Vercel for the API. For one-click unsubscribe links in emails, set
+`UNSUBSCRIBE_SECRET` (same secret used when generating tokens).
 
 **Feed 500 errors:** If `/api/feeds` returns 500, the hosted Supabase project
 likely doesn’t have the feed schema. Run the migrations on your **hosted**

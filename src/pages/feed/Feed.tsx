@@ -1,32 +1,26 @@
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import EventIcon from '@mui/icons-material/Event';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
-import GifBoxIcon from '@mui/icons-material/GifBox';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import MessageIcon from '@mui/icons-material/Message';
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import EventIcon from '@mui/icons-material/Event';
 import ForumIcon from '@mui/icons-material/Forum';
+import GifBoxIcon from '@mui/icons-material/GifBox';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import MessageIcon from '@mui/icons-material/Message';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import {
   Box,
   Button,
-  Card,
-  InputAdornment,
-  CardContent,
-  ClickAwayListener,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -35,7 +29,7 @@ import {
   FormControl,
   Grid,
   IconButton,
-  Tooltip,
+  InputAdornment,
   InputBase,
   Link,
   List,
@@ -48,13 +42,13 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Popover,
   Select,
   Snackbar,
   Stack,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -65,23 +59,9 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
-import { shouldLoadMoreForDeepLink } from '../../lib/feed/deepLink';
-import {
-  getOrCreateSessionAdSeed,
-  interleaveWithAds,
-  seededShuffle,
-  type FeedDisplayItem,
-} from '../../lib/feed/adRotation';
-import {
-  createClosedImagePreviewState,
-  createOpeningImagePreviewState,
-  getWrappedPreviewIndex,
-  reduceImagePreviewErrored,
-  reduceImagePreviewLoaded,
-} from '../../lib/feed/imagePreviewState';
+import * as GifPicker from '../../components/chat/GifPickerDialog';
 import { logFeedAdEvent } from '../../lib/analytics/feedAdEvents';
 import { trackEvent } from '../../lib/analytics/trackEvent';
-import { toMessage } from '../../lib/utils/errors';
 import {
   addComment,
   createFeedPost,
@@ -93,30 +73,44 @@ import {
   fetchFeeds,
   removeReaction,
   repostPost,
+  saveFeedPost,
   setReaction,
+  unsaveFeedPost,
   updateFeedViewPreference,
   type FeedComment,
   type FeedItem,
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
-import { GifPickerDialog } from '../../components/chat/GifPickerDialog';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  getOrCreateSessionAdSeed,
+  interleaveWithAds,
+  seededShuffle,
+  type FeedDisplayItem,
+} from '../../lib/feed/adRotation';
+import { shouldLoadMoreForDeepLink } from '../../lib/feed/deepLink';
+import {
+  createClosedImagePreviewState,
+  createOpeningImagePreviewState,
+  getWrappedPreviewIndex,
+  reduceImagePreviewErrored,
+  reduceImagePreviewLoaded,
+} from '../../lib/feed/imagePreviewState';
 import { formatPostTime } from '../../lib/post/formatPostTime';
-
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
-import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
-import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
+import { toMessage } from '../../lib/utils/errors';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
-import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import {
+  FeedReactionBar,
+  PostCard,
+  REACTION_OPTIONS,
+} from '../../components/post';
 import {
   FeedAdCard,
   type FeedAdvertiser,
 } from '../../components/feed/FeedAdCard';
+import { useCurrentUserAvatar } from '../../context/AvatarContext';
 
 const FEED_LIMIT = 20;
 const FEED_POST_IMAGE_MAX_BYTES = 6 * 1024 * 1024; // 6MB (match chat attachments)
@@ -364,6 +358,8 @@ type FeedCardActions = {
   onCommentRemoveReaction: (commentId: string) => void;
   onRepost: (item: FeedItem) => void;
   onSend: (item: FeedItem) => void;
+  onSave: (postId: string) => void;
+  onUnsave: (postId: string) => void;
   onCommentToggle: (postId: string) => void;
   onDelete: (postId: string) => void;
   onEditPost: (postId: string, body: string) => Promise<void>;
@@ -471,43 +467,6 @@ const ShareDialog = ({
   );
 };
 
-const REACTION_OPTIONS: {
-  type: ReactionType;
-  label: string;
-  Icon: React.ComponentType<{ sx?: object }>;
-  IconOutlined: React.ComponentType<{ sx?: object }>;
-  color: string;
-}[] = [
-  {
-    type: 'like',
-    label: 'Like',
-    Icon: ThumbUpIcon,
-    IconOutlined: ThumbUpOutlinedIcon,
-    color: 'primary.main',
-  },
-  {
-    type: 'love',
-    label: 'Love',
-    Icon: FavoriteIcon,
-    IconOutlined: FavoriteBorderIcon,
-    color: 'error.main',
-  },
-  {
-    type: 'inspiration',
-    label: 'Insightful',
-    Icon: LightbulbIcon,
-    IconOutlined: LightbulbOutlinedIcon,
-    color: 'warning.main',
-  },
-  {
-    type: 'care',
-    label: 'Care',
-    Icon: VolunteerActivismIcon,
-    IconOutlined: VolunteerActivismOutlinedIcon,
-    color: 'success.main',
-  },
-];
-
 const FeedCard = ({
   item,
   actions,
@@ -540,9 +499,6 @@ const FeedCard = ({
     createClosedImagePreviewState,
   );
   const imageTouchStartXRef = useRef<number | null>(null);
-  const [reactionAnchor, setReactionAnchor] = useState<HTMLElement | null>(
-    null,
-  );
   const displayName =
     (item.actor?.display_name as string) || item.actor?.handle || 'Weirdling';
   const handle = (item.actor?.handle as string) || null;
@@ -615,7 +571,6 @@ const FeedCard = ({
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
   const careCount = item.care_count ?? 0;
-  const totalReactions = likeCount + loveCount + inspirationCount + careCount;
   const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
   const isPostEdited = Boolean(item.edited_at);
@@ -803,844 +758,692 @@ const FeedCard = ({
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{ borderRadius: 2, mb: 2, minWidth: 0, position: 'relative' }}
-    >
-      {isOwner && (
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-          }}
-        >
-          {item.kind === 'post' && !isEditingPost && (
-            <IconButton
-              size="small"
-              onClick={() => {
-                setEditPostDraft(body);
-                setIsEditingPost(true);
-              }}
-              aria-label="Edit post"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' },
-              }}
-            >
-              <EditOutlinedIcon fontSize="small" />
-            </IconButton>
-          )}
-          <IconButton
-            size="small"
-            onClick={() => actions.onDelete(item.id)}
-            aria-label="Delete post"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': { color: 'error.main' },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      )}
-      <CardContent sx={{ pt: 2, pb: 1, '&:last-child': { pb: 2 } }}>
-        <Stack
-          direction="row"
-          spacing={{ xs: 1, sm: 2 }}
-          alignItems="flex-start"
-        >
-          <ProfileAvatar
-            src={actorAvatar ?? undefined}
-            alt={displayName || '?'}
-            size="small"
-            component={handle ? RouterLink : 'div'}
-            to={handle ? `/profile/${handle}` : undefined}
-          />
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              flexWrap="wrap"
-              gap={0.5}
-            >
-              {handle ? (
-                <Typography
-                  component={RouterLink}
-                  to={`/profile/${handle}`}
-                  variant="subtitle1"
-                  fontWeight={600}
-                  sx={{
-                    color: 'text.primary',
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
-                  }}
-                >
-                  {displayName}
-                </Typography>
-              ) : (
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {displayName}
-                </Typography>
-              )}
-              <Typography variant="body2" color="text.secondary">
-                • {formatPostTime(item.created_at)}
-              </Typography>
-              {isPostEdited && (
-                <Typography variant="caption" color="text.secondary">
-                  • Edited
-                </Typography>
-              )}
-              {item.kind === 'repost' && (
-                <Stack direction="row" spacing={0.5} alignItems="center">
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block', mt: 0.25 }}
-                  >
-                    Reposted from
-                  </Typography>
-                  {repostOriginalHandle ? (
-                    <Typography
-                      component={RouterLink}
-                      to={`/profile/${repostOriginalHandle}`}
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                        textDecoration: 'underline',
-                        '&:hover': { color: 'text.primary' },
-                      }}
-                    >
-                      {repostOriginalName || `@${repostOriginalHandle}`}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">
-                      original member
-                    </Typography>
-                  )}
-                  {repostOriginalId && (
-                    <Typography
-                      component={RouterLink}
-                      to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                        textDecoration: 'underline',
-                        '&:hover': { color: 'text.primary' },
-                      }}
-                    >
-                      original post
-                    </Typography>
-                  )}
-                </Stack>
-              )}
-            </Stack>
-            {isEditingPost ? (
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                <TextField
-                  value={editPostDraft}
-                  onChange={(e) => setEditPostDraft(e.target.value)}
-                  multiline
-                  minRows={3}
-                  fullWidth
-                />
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => void handleSavePostEdit()}
-                    disabled={!editPostDraft.trim() || savingPostEdit}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setIsEditingPost(false);
-                      setEditPostDraft(body);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </Stack>
-              </Stack>
-            ) : (
-              (bodyTextWithoutGifUrls || bodyGifUrls.length > 0) && (
-                <>
-                  {bodyTextWithoutGifUrls && (
-                    <Typography
-                      variant="body1"
-                      component="span"
-                      sx={{
-                        mt: 0.5,
-                        whiteSpace: 'pre-wrap',
-                        display: 'block',
-                        overflowWrap: 'break-word',
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      {linkifyBody(bodyTextWithoutGifUrls)}
-                    </Typography>
-                  )}
-                  {bodyGifUrls.map((gifUrl) => (
-                    <Box
-                      key={gifUrl}
-                      component="img"
-                      src={gifUrl}
-                      alt=""
-                      loading="lazy"
-                      onClick={() => openImageLightbox(gifUrl, 'body_gif')}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          openImageLightbox(gifUrl, 'body_gif');
-                        }
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      aria-label="View image full screen"
-                      sx={{
-                        mt: 1,
-                        maxWidth: 320,
-                        width: '100%',
-                        maxHeight: 320,
-                        objectFit: 'contain',
-                        borderRadius: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        cursor: 'zoom-in',
-                      }}
-                    />
-                  ))}
-                </>
-              )
-            )}
-            {linkPreview?.url && !isLinkPreviewDismissed && (
-              <LinkPreviewCard
-                preview={linkPreview}
-                onDismiss={onDismissLinkPreview}
-              />
-            )}
-            {postAttachmentImages.length > 0 && (
+    <>
+      <PostCard
+        author={{
+          avatarUrl: actorAvatar,
+          displayName,
+          handle,
+          createdAt: item.created_at,
+          editedAt: isPostEdited ? item.edited_at : null,
+          formatTime: formatPostTime,
+          children:
+            item.kind === 'repost' ? (
               <Stack
                 direction="row"
                 spacing={0.5}
-                sx={{ mt: 1.5 }}
-                flexWrap="wrap"
+                alignItems="center"
+                sx={{ mt: 0.25 }}
               >
-                {postAttachmentImages.map((imgUrl) => (
-                  <Box
-                    key={imgUrl}
-                    component="img"
-                    src={imgUrl}
-                    alt=""
-                    onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openImageLightbox(imgUrl, 'post_attachment');
-                      }
-                    }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label="View image full screen"
+                <Typography variant="caption" color="text.secondary">
+                  Reposted from
+                </Typography>
+                {repostOriginalHandle ? (
+                  <Typography
+                    component={RouterLink}
+                    to={`/profile/${repostOriginalHandle}`}
+                    variant="caption"
                     sx={{
-                      maxWidth: 280,
-                      maxHeight: 280,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      cursor: 'zoom-in',
+                      color: 'text.secondary',
+                      textDecoration: 'underline',
+                      '&:hover': { color: 'text.primary' },
                     }}
-                  />
-                ))}
+                  >
+                    {repostOriginalName || `@${repostOriginalHandle}`}
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    original member
+                  </Typography>
+                )}
+                {repostOriginalId && (
+                  <Typography
+                    component={RouterLink}
+                    to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      textDecoration: 'underline',
+                      '&:hover': { color: 'text.primary' },
+                    }}
+                  >
+                    original post
+                  </Typography>
+                )}
               </Stack>
-            )}
-            {url && (
-              <Typography
-                variant="body2"
-                component="a"
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ mt: 0.5, color: 'primary.main', display: 'block' }}
+            ) : undefined,
+        }}
+        actionMenu={
+          isOwner
+            ? {
+                visible: !isEditingPost,
+                ariaLabel: 'Post options',
+                items: [
+                  ...(item.kind === 'post'
+                    ? [
+                        {
+                          label: 'Edit',
+                          onClick: () => {
+                            setEditPostDraft(body);
+                            setIsEditingPost(true);
+                          },
+                        },
+                      ]
+                    : []),
+                  {
+                    label: 'Delete',
+                    onClick: () => actions.onDelete(item.id),
+                    danger: true,
+                  },
+                ],
+              }
+            : null
+        }
+        sx={{ mb: 2 }}
+      >
+        {isEditingPost ? (
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <TextField
+              value={editPostDraft}
+              onChange={(e) => setEditPostDraft(e.target.value)}
+              multiline
+              minRows={3}
+              fullWidth
+            />
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => void handleSavePostEdit()}
+                disabled={!editPostDraft.trim() || savingPostEdit}
               >
-                {label || url}
-              </Typography>
-            )}
-            {/* Post action bar: Like | Comment | Repost | Send (LinkedIn-style with vertical dividers) */}
-            <Box
-              sx={{
-                mt: 1.5,
-                width: '100%',
-                display: 'flex',
-                borderTop: 1,
-                borderColor: 'divider',
-                flexDirection: { xs: 'row', sm: 'row' },
-                '& > *': {
-                  flex: 1,
-                  minWidth: 0,
-                  minHeight: { xs: 48, sm: 'auto' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRight: 1,
-                  borderColor: 'divider',
-                  '&:last-of-type': { borderRight: 0 },
-                },
-              }}
-            >
-              <ClickAwayListener onClickAway={() => setReactionAnchor(null)}>
-                <Box
+                Save
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  setIsEditingPost(false);
+                  setEditPostDraft(body);
+                }}
+              >
+                Cancel
+              </Button>
+            </Stack>
+          </Stack>
+        ) : (
+          (bodyTextWithoutGifUrls || bodyGifUrls.length > 0) && (
+            <>
+              {bodyTextWithoutGifUrls && (
+                <Typography
+                  variant="body1"
+                  component="span"
                   sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: { xs: 0.25, sm: 0.5 },
-                    py: { xs: 1, sm: 0.75 },
-                    px: 0.5,
+                    mt: 0.5,
+                    whiteSpace: 'pre-wrap',
+                    display: 'block',
+                    overflowWrap: 'break-word',
+                    wordBreak: 'break-word',
                   }}
                 >
-                  {(() => {
-                    const current =
-                      REACTION_OPTIONS.find((r) => r.type === viewerReaction) ??
-                      REACTION_OPTIONS[0];
-                    const CurrentIcon = viewerReaction
-                      ? current.Icon
-                      : current.IconOutlined;
-                    return (
-                      <>
-                        <Button
+                  {linkifyBody(bodyTextWithoutGifUrls)}
+                </Typography>
+              )}
+              {bodyGifUrls.map((gifUrl) => (
+                <Box
+                  key={gifUrl}
+                  component="img"
+                  src={gifUrl}
+                  alt=""
+                  loading="lazy"
+                  onClick={() => openImageLightbox(gifUrl, 'body_gif')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openImageLightbox(gifUrl, 'body_gif');
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="View image full screen"
+                  sx={{
+                    mt: 1,
+                    maxWidth: 320,
+                    width: '100%',
+                    maxHeight: 320,
+                    objectFit: 'contain',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    cursor: 'zoom-in',
+                  }}
+                />
+              ))}
+            </>
+          )
+        )}
+        {linkPreview?.url && !isLinkPreviewDismissed && (
+          <LinkPreviewCard
+            preview={linkPreview}
+            onDismiss={onDismissLinkPreview}
+          />
+        )}
+        {postAttachmentImages.length > 0 && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 1.5 }} flexWrap="wrap">
+            {postAttachmentImages.map((imgUrl) => (
+              <Box
+                key={imgUrl}
+                component="img"
+                src={imgUrl}
+                alt=""
+                onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openImageLightbox(imgUrl, 'post_attachment');
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label="View image full screen"
+                sx={{
+                  maxWidth: 280,
+                  maxHeight: 280,
+                  objectFit: 'cover',
+                  borderRadius: 1,
+                  cursor: 'zoom-in',
+                }}
+              />
+            ))}
+          </Stack>
+        )}
+        {url && (
+          <Typography
+            variant="body2"
+            component="a"
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ mt: 0.5, color: 'primary.main', display: 'block' }}
+          >
+            {label || url}
+          </Typography>
+        )}
+        {/* Post action bar: Like | Comment | Repost | Send (LinkedIn-style with vertical dividers) */}
+        <Box
+          sx={{
+            mt: 1.5,
+            width: '100%',
+            display: 'flex',
+            borderTop: 1,
+            borderColor: 'divider',
+            flexDirection: { xs: 'row', sm: 'row' },
+            '& > *': {
+              flex: 1,
+              minWidth: 0,
+              minHeight: { xs: 48, sm: 'auto' },
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRight: 1,
+              borderColor: 'divider',
+              '&:last-of-type': { borderRight: 0 },
+            },
+          }}
+        >
+          <FeedReactionBar
+            viewerReaction={viewerReaction}
+            likeCount={likeCount}
+            loveCount={loveCount}
+            inspirationCount={inspirationCount}
+            careCount={careCount}
+            onReaction={handleReaction}
+            onRemoveReaction={() => actions.onRemoveReaction(item.id)}
+          />
+          <Button
+            size="small"
+            onClick={() => actions.onCommentToggle(item.id)}
+            sx={{
+              textTransform: 'none',
+              color: 'text.secondary',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 0.25, sm: 0.5 },
+              py: { xs: 1, sm: 0.75 },
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: 'text.secondary',
+              },
+            }}
+          >
+            <ChatBubbleOutlineOutlinedIcon
+              sx={{ fontSize: { xs: 22, sm: 20 } }}
+            />
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+            >
+              Comment{commentCount > 0 ? ` · ${commentCount}` : ''}
+            </Typography>
+          </Button>
+          <Button
+            size="small"
+            onClick={() => actions.onRepost(item)}
+            sx={{
+              textTransform: 'none',
+              color: 'text.secondary',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 0.25, sm: 0.5 },
+              py: { xs: 1, sm: 0.75 },
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: 'text.secondary',
+              },
+            }}
+          >
+            <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+            >
+              Repost
+            </Typography>
+          </Button>
+          <Button
+            size="small"
+            onClick={() => actions.onSend(item)}
+            sx={{
+              textTransform: 'none',
+              color: 'text.secondary',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 0.25, sm: 0.5 },
+              py: { xs: 1, sm: 0.75 },
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: 'text.secondary',
+              },
+            }}
+          >
+            <SendOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+            >
+              Send
+            </Typography>
+          </Button>
+          <Button
+            size="small"
+            onClick={() =>
+              item.viewer_saved
+                ? actions.onUnsave(item.id)
+                : actions.onSave(item.id)
+            }
+            sx={{
+              textTransform: 'none',
+              color: item.viewer_saved ? 'primary.main' : 'text.secondary',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 0.25, sm: 0.5 },
+              py: { xs: 1, sm: 0.75 },
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: item.viewer_saved ? 'primary.main' : 'text.secondary',
+              },
+            }}
+            aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
+          >
+            {item.viewer_saved ? (
+              <BookmarkIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+            ) : (
+              <BookmarkBorderIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+            )}
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+            >
+              {item.viewer_saved ? 'Saved' : 'Save'}
+            </Typography>
+          </Button>
+        </Box>
+        {commentsExpanded && (
+          <Box sx={{ mt: 2, pl: 0 }}>
+            {commentsLoading ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ py: 1 }}
+              >
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading comments…
+                </Typography>
+              </Stack>
+            ) : (
+              <>
+                <List dense disablePadding>
+                  {comments.map((c) => (
+                    <ListItem
+                      key={c.id}
+                      alignItems="flex-start"
+                      disablePadding
+                      sx={{ py: 0.5 }}
+                    >
+                      <ListItemAvatar sx={{ minWidth: 48 }}>
+                        <ProfileAvatar
+                          src={c.actor?.avatar ?? undefined}
+                          alt={c.actor?.display_name || c.actor?.handle || '?'}
                           size="small"
-                          onClick={(e) => {
-                            setReactionAnchor((prev) =>
-                              prev ? null : (e.currentTarget as HTMLElement),
-                            );
-                          }}
-                          sx={{
-                            textTransform: 'none',
-                            color: viewerReaction
-                              ? current.color
-                              : 'text.secondary',
-                            minWidth: 0,
-                            minHeight: 0,
-                            p: 0,
-                            display: 'flex',
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            alignItems: 'center',
-                            gap: { xs: 0.25, sm: 0.5 },
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                              color: viewerReaction
-                                ? current.color
-                                : 'text.secondary',
-                            },
-                          }}
-                          aria-label={
-                            viewerReaction
-                              ? `${current.label} (click to remove)`
-                              : 'Like'
-                          }
-                          aria-haspopup="true"
-                          aria-expanded={Boolean(reactionAnchor)}
-                        >
-                          <CurrentIcon
-                            sx={{
-                              fontSize: { xs: 22, sm: 20 },
-                              color: viewerReaction ? current.color : undefined,
-                            }}
-                          />
-                          <Typography
-                            component="span"
-                            variant="caption"
-                            sx={{
-                              color: 'inherit',
-                              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                            }}
+                        />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            alignItems="center"
                           >
-                            {viewerReaction ? current.label : 'Like'}
-                            {totalReactions > 0 && ` · ${totalReactions}`}
-                          </Typography>
-                        </Button>
-                        <Popover
-                          open={Boolean(reactionAnchor)}
-                          anchorEl={reactionAnchor}
-                          onClose={() => setReactionAnchor(null)}
-                          anchorOrigin={{
-                            vertical: 'top',
-                            horizontal: 'left',
-                          }}
-                          transformOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'left',
-                          }}
-                          slotProps={{
-                            paper: {
-                              sx: {
-                                borderRadius: 2,
-                                boxShadow: 2,
-                                p: 0.5,
-                              },
-                            },
-                          }}
-                        >
-                          <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
-                            {REACTION_OPTIONS.map(
-                              ({ type, label, Icon, color }) => (
-                                <IconButton
-                                  key={type}
-                                  size="small"
-                                  onClick={() => {
-                                    handleReaction(type);
-                                    setReactionAnchor(null);
-                                  }}
-                                  sx={{
-                                    color: 'text.secondary',
-                                    '&:hover': { color },
-                                  }}
-                                  aria-label={label}
-                                >
-                                  <Icon sx={{ fontSize: 24 }} />
-                                </IconButton>
-                              ),
+                            <Typography variant="body2" fontWeight={600}>
+                              {c.actor?.display_name ||
+                                c.actor?.handle ||
+                                'Someone'}
+                            </Typography>
+                            {c.edited_at && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Edited
+                              </Typography>
                             )}
                           </Stack>
-                        </Popover>
-                      </>
-                    );
-                  })()}
-                </Box>
-              </ClickAwayListener>
-              <Button
-                size="small"
-                onClick={() => actions.onCommentToggle(item.id)}
-                sx={{
-                  textTransform: 'none',
-                  color: 'text.secondary',
-                  minWidth: 0,
-                  minHeight: 0,
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 0.25, sm: 0.5 },
-                  py: { xs: 1, sm: 0.75 },
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                    color: 'text.secondary',
-                  },
-                }}
-              >
-                <ChatBubbleOutlineOutlinedIcon
-                  sx={{ fontSize: { xs: 22, sm: 20 } }}
-                />
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
-                >
-                  Comment{commentCount > 0 ? ` · ${commentCount}` : ''}
-                </Typography>
-              </Button>
-              <Button
-                size="small"
-                onClick={() => actions.onRepost(item)}
-                sx={{
-                  textTransform: 'none',
-                  color: 'text.secondary',
-                  minWidth: 0,
-                  minHeight: 0,
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 0.25, sm: 0.5 },
-                  py: { xs: 1, sm: 0.75 },
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                    color: 'text.secondary',
-                  },
-                }}
-              >
-                <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
-                >
-                  Repost
-                </Typography>
-              </Button>
-              <Button
-                size="small"
-                onClick={() => actions.onSend(item)}
-                sx={{
-                  textTransform: 'none',
-                  color: 'text.secondary',
-                  minWidth: 0,
-                  minHeight: 0,
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 0.25, sm: 0.5 },
-                  py: { xs: 1, sm: 0.75 },
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                    color: 'text.secondary',
-                  },
-                }}
-              >
-                <SendOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
-                >
-                  Send
-                </Typography>
-              </Button>
-            </Box>
-            {commentsExpanded && (
-              <Box sx={{ mt: 2, pl: 0 }}>
-                {commentsLoading ? (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{ py: 1 }}
-                  >
-                    <CircularProgress size={20} />
-                    <Typography variant="body2" color="text.secondary">
-                      Loading comments…
-                    </Typography>
-                  </Stack>
-                ) : (
-                  <>
-                    <List dense disablePadding>
-                      {comments.map((c) => (
-                        <ListItem
-                          key={c.id}
-                          alignItems="flex-start"
-                          disablePadding
-                          sx={{ py: 0.5 }}
-                        >
-                          <ListItemAvatar sx={{ minWidth: 48 }}>
-                            <ProfileAvatar
-                              src={c.actor?.avatar ?? undefined}
-                              alt={
-                                c.actor?.display_name || c.actor?.handle || '?'
-                              }
-                              size="small"
-                            />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Stack
-                                direction="row"
-                                spacing={0.75}
-                                alignItems="center"
-                              >
-                                <Typography variant="body2" fontWeight={600}>
-                                  {c.actor?.display_name ||
-                                    c.actor?.handle ||
-                                    'Someone'}
-                                </Typography>
-                                {c.edited_at && (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
+                        }
+                        secondary={
+                          <>
+                            {editingCommentId === c.id ? (
+                              <Stack spacing={1} sx={{ mt: 0.5 }}>
+                                <TextField
+                                  size="small"
+                                  multiline
+                                  minRows={2}
+                                  value={editCommentDraft}
+                                  onChange={(e) =>
+                                    setEditCommentDraft(e.target.value)
+                                  }
+                                />
+                                <Stack direction="row" spacing={1}>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    onClick={() => {
+                                      void (async () => {
+                                        setSavingCommentEdit(true);
+                                        try {
+                                          await actions.onEditComment(
+                                            item.id,
+                                            c.id,
+                                            editCommentDraft,
+                                          );
+                                          setEditingCommentId(null);
+                                        } finally {
+                                          setSavingCommentEdit(false);
+                                        }
+                                      })();
+                                    }}
+                                    disabled={
+                                      savingCommentEdit ||
+                                      !editCommentDraft.trim()
+                                    }
                                   >
-                                    Edited
-                                  </Typography>
-                                )}
-                              </Stack>
-                            }
-                            secondary={
-                              <>
-                                {editingCommentId === c.id ? (
-                                  <Stack spacing={1} sx={{ mt: 0.5 }}>
-                                    <TextField
-                                      size="small"
-                                      multiline
-                                      minRows={2}
-                                      value={editCommentDraft}
-                                      onChange={(e) =>
-                                        setEditCommentDraft(e.target.value)
-                                      }
-                                    />
-                                    <Stack direction="row" spacing={1}>
-                                      <Button
-                                        size="small"
-                                        variant="contained"
-                                        onClick={() => {
-                                          void (async () => {
-                                            setSavingCommentEdit(true);
-                                            try {
-                                              await actions.onEditComment(
-                                                item.id,
-                                                c.id,
-                                                editCommentDraft,
-                                              );
-                                              setEditingCommentId(null);
-                                            } finally {
-                                              setSavingCommentEdit(false);
-                                            }
-                                          })();
-                                        }}
-                                        disabled={
-                                          savingCommentEdit ||
-                                          !editCommentDraft.trim()
-                                        }
-                                      >
-                                        Save
-                                      </Button>
-                                      <Button
-                                        size="small"
-                                        onClick={() =>
-                                          setEditingCommentId(null)
-                                        }
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </Stack>
-                                  </Stack>
-                                ) : (
-                                  <Stack spacing={0.5} component="span">
-                                    {(() => {
-                                      const cb = c.body ?? '';
-                                      const gifUrls =
-                                        extractBodyUrls(cb).filter(isGifUrl);
-                                      const textOnly =
-                                        removeGifUrlsFromBody(cb);
-                                      return (
-                                        <>
-                                          {textOnly && (
-                                            <Typography
-                                              variant="body2"
-                                              component="span"
-                                              sx={{ whiteSpace: 'pre-wrap' }}
-                                            >
-                                              {linkifyBody(textOnly)}
-                                            </Typography>
-                                          )}
-                                          {gifUrls.map((gifUrl) => (
-                                            <Box
-                                              key={gifUrl}
-                                              component="img"
-                                              src={gifUrl}
-                                              alt="GIF"
-                                              sx={{
-                                                maxWidth: 240,
-                                                maxHeight: 180,
-                                                objectFit: 'contain',
-                                                borderRadius: 1,
-                                              }}
-                                            />
-                                          ))}
-                                        </>
-                                      );
-                                    })()}
-                                  </Stack>
-                                )}
-                                <Typography
-                                  variant="caption"
-                                  display="block"
-                                  color="text.secondary"
-                                >
-                                  {formatPostTime(c.created_at)}
-                                </Typography>
-                                <Stack
-                                  direction="row"
-                                  spacing={{ xs: 0.75, sm: 1 }}
-                                  sx={{
-                                    flexWrap: 'wrap',
-                                    gap: { xs: 0.5, sm: 0 },
-                                  }}
-                                >
-                                  {REACTION_OPTIONS.map(
-                                    ({ type, Icon, IconOutlined, color }) => {
-                                      const active = c.viewer_reaction === type;
-                                      const count =
-                                        type === 'like'
-                                          ? (c.like_count ?? 0)
-                                          : type === 'love'
-                                            ? (c.love_count ?? 0)
-                                            : type === 'inspiration'
-                                              ? (c.inspiration_count ?? 0)
-                                              : (c.care_count ?? 0);
-                                      const CurrentIcon = active
-                                        ? Icon
-                                        : IconOutlined;
-                                      return (
-                                        <Button
-                                          key={`${c.id}-${type}`}
-                                          size="small"
-                                          onClick={() => {
-                                            if (active) {
-                                              actions.onCommentRemoveReaction(
-                                                c.id,
-                                              );
-                                            } else {
-                                              actions.onCommentReaction(
-                                                c.id,
-                                                type,
-                                              );
-                                            }
-                                          }}
-                                          sx={{
-                                            textTransform: 'none',
-                                            minWidth: 0,
-                                            px: { xs: 0.75, sm: 0.25 },
-                                            minHeight: { xs: 36, sm: 30 },
-                                            color: active
-                                              ? color
-                                              : 'text.secondary',
-                                          }}
-                                          startIcon={
-                                            <CurrentIcon
-                                              sx={{
-                                                fontSize: 16,
-                                                color: active
-                                                  ? color
-                                                  : undefined,
-                                              }}
-                                            />
-                                          }
-                                        >
-                                          {count > 0 ? count : ''}
-                                        </Button>
-                                      );
-                                    },
-                                  )}
-                                  {viewerUserId === c.user_id &&
-                                    editingCommentId !== c.id && (
-                                      <>
-                                        <Button
-                                          size="small"
-                                          onClick={() => {
-                                            setEditingCommentId(c.id);
-                                            setEditCommentDraft(c.body);
-                                          }}
-                                          sx={{
-                                            textTransform: 'none',
-                                            minWidth: 0,
-                                            px: { xs: 0.75, sm: 0 },
-                                            minHeight: { xs: 36, sm: 30 },
-                                          }}
-                                        >
-                                          Edit
-                                        </Button>
-                                        <Button
-                                          size="small"
-                                          color="error"
-                                          onClick={() =>
-                                            void actions.onDeleteComment(
-                                              item.id,
-                                              c.id,
-                                            )
-                                          }
-                                          sx={{
-                                            textTransform: 'none',
-                                            minWidth: 0,
-                                            px: { xs: 0.75, sm: 0 },
-                                            minHeight: { xs: 36, sm: 30 },
-                                          }}
-                                        >
-                                          Delete
-                                        </Button>
-                                      </>
-                                    )}
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    onClick={() => setEditingCommentId(null)}
+                                  >
+                                    Cancel
+                                  </Button>
                                 </Stack>
-                              </>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                    <Stack spacing={1} sx={{ mt: 1 }}>
-                      {commentSelectedGif && (
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <Box
-                            component="img"
-                            src={commentSelectedGif}
-                            alt="GIF preview"
-                            sx={{
-                              maxWidth: 120,
-                              maxHeight: 90,
-                              objectFit: 'contain',
-                              borderRadius: 1,
-                            }}
-                          />
-                          <IconButton
-                            size="small"
-                            onClick={() => setCommentSelectedGif(null)}
-                            aria-label="Remove GIF"
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      )}
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <TextField
-                          size="small"
-                          placeholder="Write a comment…"
-                          value={commentDraft}
-                          onChange={(e) => setCommentDraft(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              void handleAddComment();
-                            }
-                          }}
-                          sx={{ flex: 1 }}
-                        />
-                        <Tooltip title="Attach file (coming soon)">
-                          <span>
-                            <IconButton
-                              size="small"
-                              aria-label="Attach file"
-                              disabled
-                              sx={{ color: 'text.secondary' }}
+                              </Stack>
+                            ) : (
+                              <Stack spacing={0.5} component="span">
+                                {(() => {
+                                  const cb = c.body ?? '';
+                                  const gifUrls =
+                                    extractBodyUrls(cb).filter(isGifUrl);
+                                  const textOnly = removeGifUrlsFromBody(cb);
+                                  return (
+                                    <>
+                                      {textOnly && (
+                                        <Typography
+                                          variant="body2"
+                                          component="span"
+                                          sx={{ whiteSpace: 'pre-wrap' }}
+                                        >
+                                          {linkifyBody(textOnly)}
+                                        </Typography>
+                                      )}
+                                      {gifUrls.map((gifUrl) => (
+                                        <Box
+                                          key={gifUrl}
+                                          component="img"
+                                          src={gifUrl}
+                                          alt="GIF"
+                                          sx={{
+                                            maxWidth: 240,
+                                            maxHeight: 180,
+                                            objectFit: 'contain',
+                                            borderRadius: 1,
+                                          }}
+                                        />
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </Stack>
+                            )}
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="text.secondary"
                             >
-                              <AttachFileIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                              {formatPostTime(c.created_at)}
+                            </Typography>
+                            <Stack
+                              direction="row"
+                              spacing={{ xs: 0.75, sm: 1 }}
+                              sx={{
+                                flexWrap: 'wrap',
+                                gap: { xs: 0.5, sm: 0 },
+                              }}
+                            >
+                              {REACTION_OPTIONS.map(
+                                ({ type, Icon, IconOutlined, color }) => {
+                                  const active = c.viewer_reaction === type;
+                                  const count =
+                                    type === 'like'
+                                      ? (c.like_count ?? 0)
+                                      : type === 'love'
+                                        ? (c.love_count ?? 0)
+                                        : type === 'inspiration'
+                                          ? (c.inspiration_count ?? 0)
+                                          : (c.care_count ?? 0);
+                                  const CurrentIcon = active
+                                    ? Icon
+                                    : IconOutlined;
+                                  return (
+                                    <Button
+                                      key={`${c.id}-${type}`}
+                                      size="small"
+                                      onClick={() => {
+                                        if (active) {
+                                          actions.onCommentRemoveReaction(c.id);
+                                        } else {
+                                          actions.onCommentReaction(c.id, type);
+                                        }
+                                      }}
+                                      sx={{
+                                        textTransform: 'none',
+                                        minWidth: 0,
+                                        px: { xs: 0.75, sm: 0.25 },
+                                        minHeight: { xs: 36, sm: 30 },
+                                        color: active
+                                          ? color
+                                          : 'text.secondary',
+                                      }}
+                                      startIcon={
+                                        <CurrentIcon
+                                          sx={{
+                                            fontSize: 16,
+                                            color: active ? color : undefined,
+                                          }}
+                                        />
+                                      }
+                                    >
+                                      {count > 0 ? count : ''}
+                                    </Button>
+                                  );
+                                },
+                              )}
+                              {viewerUserId === c.user_id &&
+                                editingCommentId !== c.id && (
+                                  <>
+                                    <Button
+                                      size="small"
+                                      onClick={() => {
+                                        setEditingCommentId(c.id);
+                                        setEditCommentDraft(c.body);
+                                      }}
+                                      sx={{
+                                        textTransform: 'none',
+                                        minWidth: 0,
+                                        px: { xs: 0.75, sm: 0 },
+                                        minHeight: { xs: 36, sm: 30 },
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      color="error"
+                                      onClick={() =>
+                                        void actions.onDeleteComment(
+                                          item.id,
+                                          c.id,
+                                        )
+                                      }
+                                      sx={{
+                                        textTransform: 'none',
+                                        minWidth: 0,
+                                        px: { xs: 0.75, sm: 0 },
+                                        minHeight: { xs: 36, sm: 30 },
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </>
+                                )}
+                            </Stack>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  {commentSelectedGif && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        component="img"
+                        src={commentSelectedGif}
+                        alt="GIF preview"
+                        sx={{
+                          maxWidth: 120,
+                          maxHeight: 90,
+                          objectFit: 'contain',
+                          borderRadius: 1,
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => setCommentSelectedGif(null)}
+                        aria-label="Remove GIF"
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      size="small"
+                      placeholder="Write a comment…"
+                      value={commentDraft}
+                      onChange={(e) => setCommentDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          void handleAddComment();
+                        }
+                      }}
+                      sx={{ flex: 1 }}
+                    />
+                    <Tooltip title="Attach file (coming soon)">
+                      <span>
                         <IconButton
                           size="small"
-                          aria-label="Add emoji"
-                          onClick={(e) =>
-                            setCommentEmojiAnchor(e.currentTarget)
-                          }
+                          aria-label="Attach file"
+                          disabled
                           sx={{ color: 'text.secondary' }}
                         >
-                          <EmojiEmotionsOutlinedIcon fontSize="small" />
+                          <AttachFileIcon fontSize="small" />
                         </IconButton>
-                        <IconButton
-                          size="small"
-                          aria-label="Add GIF"
-                          onClick={() => setCommentGifPickerOpen(true)}
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          <GifBoxIcon fontSize="small" />
-                        </IconButton>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => void handleAddComment()}
-                          disabled={
-                            (!commentDraft.trim() && !commentSelectedGif) ||
-                            submittingComment
-                          }
-                        >
-                          Post
-                        </Button>
-                      </Stack>
-                    </Stack>
-                  </>
-                )}
-              </Box>
+                      </span>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      aria-label="Add emoji"
+                      onClick={(e) => setCommentEmojiAnchor(e.currentTarget)}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <EmojiEmotionsOutlinedIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label="Add GIF"
+                      onClick={() => setCommentGifPickerOpen(true)}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <GifBoxIcon fontSize="small" />
+                    </IconButton>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => void handleAddComment()}
+                      disabled={
+                        (!commentDraft.trim() && !commentSelectedGif) ||
+                        submittingComment
+                      }
+                    >
+                      Post
+                    </Button>
+                  </Stack>
+                </Stack>
+              </>
             )}
           </Box>
-        </Stack>
-      </CardContent>
-      <GifPickerDialog
+        )}
+      </PostCard>
+      <GifPicker.GifPickerDialog
         open={commentGifPickerOpen}
         onClose={() => setCommentGifPickerOpen(false)}
         onPick={(url) => setCommentSelectedGif(url)}
@@ -1808,11 +1611,13 @@ const FeedCard = ({
           </Typography>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 };
 
-export const Feed = () => {
+type FeedProps = { savedMode?: boolean };
+
+export const Feed = ({ savedMode = false }: FeedProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const postParam = searchParams.get('post');
@@ -1911,13 +1716,15 @@ export const Feed = () => {
   );
   const displayItems: LocalFeedDisplayItem[] = useMemo(
     () =>
-      interleaveWithAds(
-        sortedItems,
-        shuffledAdvertisers,
-        AD_EVERY_N_POSTS,
-        hasRenderableContent,
-      ),
-    [sortedItems, shuffledAdvertisers],
+      savedMode
+        ? sortedItems.map((item) => ({ kind: 'post' as const, item }))
+        : interleaveWithAds(
+            sortedItems,
+            shuffledAdvertisers,
+            AD_EVERY_N_POSTS,
+            hasRenderableContent,
+          ),
+    [savedMode, sortedItems, shuffledAdvertisers],
   );
 
   const handleDismissAd = useCallback((adId: string) => {
@@ -2023,8 +1830,10 @@ export const Feed = () => {
   const { avatarUrl } = useCurrentUserAvatar();
   const feedCacheKey = useMemo(
     () =>
-      session?.user?.id ? `${FEED_CACHE_KEY_PREFIX}:${session.user.id}` : null,
-    [session?.user?.id],
+      session?.user?.id
+        ? `${FEED_CACHE_KEY_PREFIX}:${session.user.id}${savedMode ? ':saved' : ''}`
+        : null,
+    [session?.user?.id, savedMode],
   );
 
   const handleDismissLinkPreview = useCallback((postId: string) => {
@@ -2150,6 +1959,7 @@ export const Feed = () => {
         const res = await fetchFeeds({
           limit: FEED_LIMIT,
           cursor,
+          saved: savedMode,
           accessToken: session.access_token,
         });
         if (append) {
@@ -2159,13 +1969,16 @@ export const Feed = () => {
         }
         setNextCursor(res.nextCursor);
       } catch (e) {
-        await handleAuthError(e, 'Failed to load feed');
+        await handleAuthError(
+          e,
+          savedMode ? 'Failed to load saved posts' : 'Failed to load feed',
+        );
       } finally {
         if (showInitialLoader) setLoading(false);
         setLoadingMore(false);
       }
     },
-    [handleAuthError, session?.access_token],
+    [handleAuthError, session?.access_token, savedMode],
   );
 
   useEffect(() => {
@@ -2488,6 +2301,36 @@ export const Feed = () => {
     setShareModalItem(item);
   }, []);
 
+  const handleSave = useCallback(
+    async (postId: string) => {
+      if (!session?.access_token) return;
+      try {
+        await saveFeedPost({ postId, accessToken: session.access_token });
+        updateItem(postId, { viewer_saved: true });
+      } catch (e) {
+        await handleAuthError(e, 'Failed to save post');
+      }
+    },
+    [session?.access_token, handleAuthError, updateItem],
+  );
+
+  const handleUnsave = useCallback(
+    async (postId: string) => {
+      if (!session?.access_token) return;
+      try {
+        await unsaveFeedPost({ postId, accessToken: session.access_token });
+        if (savedMode) {
+          setItems((prev) => prev.filter((i) => i.id !== postId));
+        } else {
+          updateItem(postId, { viewer_saved: false });
+        }
+      } catch (e) {
+        await handleAuthError(e, 'Failed to unsave post');
+      }
+    },
+    [session?.access_token, handleAuthError, updateItem, savedMode],
+  );
+
   const handleCommentToggle = useCallback(
     async (postId: string) => {
       if (expandedCommentsPostId === postId) {
@@ -2694,6 +2537,8 @@ export const Feed = () => {
       void handleCommentRemoveReaction(commentId),
     onRepost: handleRepost,
     onSend: handleSend,
+    onSave: (postId) => void handleSave(postId),
+    onUnsave: (postId) => void handleUnsave(postId),
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
     onEditPost: handleEditPost,
@@ -2790,15 +2635,16 @@ export const Feed = () => {
               mb: 1,
             }}
           >
-            Welcome to your Feed
+            {savedMode ? 'Saved' : 'Welcome to your Feed'}
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
             sx={{ maxWidth: 560 }}
           >
-            Where ideas, updates, and voices from the community come together.
-            Discover members by how they show up.
+            {savedMode
+              ? 'Posts you saved for later. Unsave from the card to remove.'
+              : 'Where ideas, updates, and voices from the community come together. Discover members by how they show up.'}
           </Typography>
         </Box>
 
@@ -3045,10 +2891,19 @@ export const Feed = () => {
             </Paper>
           </Grid>
 
-          {/* CENTER: Feed — expands now that right rail is removed */}
+          {/* CENTER: Feed — internal scroll so mouse wheel scrolls within container */}
           <Grid
             size={{ xs: 12, md: 10, lg: 10 }}
-            sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}
+            sx={{
+              order: { xs: 1, md: 2 },
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              maxHeight: { xs: 'none', md: 'calc(100dvh - 100px)' },
+              overflowY: { xs: 'visible', md: 'auto' },
+              overflowX: 'hidden',
+            }}
           >
             {/* Feed header: title + view toggle + Post + Sort */}
             <Paper
@@ -3120,159 +2975,178 @@ export const Feed = () => {
               </Stack>
             </Paper>
 
-            {/* Start a post — LinkedIn-style composer trigger */}
-            <Paper
-              variant="outlined"
-              component="button"
-              type="button"
-              onClick={() => setComposerOpen(true)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                width: '100%',
-                p: 2,
-                mb: 2,
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.12)',
-                bgcolor: 'rgba(36,38,41,0.6)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background-color 0.2s, border-color 0.2s',
-                '&:hover': {
-                  bgcolor: 'rgba(50,52,55,0.8)',
-                  borderColor: 'rgba(255,255,255,0.18)',
-                },
-              }}
-            >
-              <ProfileAvatar
-                src={avatarUrl ?? undefined}
-                alt={session?.user?.user_metadata?.full_name ?? 'You'}
-                size="small"
-                sx={{ flexShrink: 0, mr: 2 }}
-              />
-              <Box
-                sx={{
-                  flex: 1,
-                  py: 1,
-                  px: 2,
-                  borderRadius: '9999px',
-                  bgcolor: 'rgba(255,255,255,0.06)',
-                  color: 'text.secondary',
-                  fontSize: '0.95rem',
-                }}
-              >
-                Start a post
-              </Box>
-            </Paper>
-
-            {/* Feed list */}
-            {loading && items.length === 0 ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                <CircularProgress aria-label="Loading feed" />
-              </Box>
-            ) : items.length === 0 ? (
+            {/* Start a post — LinkedIn-style composer trigger (hidden on Saved page) */}
+            {!savedMode && (
               <Paper
                 variant="outlined"
+                component="button"
+                type="button"
+                onClick={() => setComposerOpen(true)}
                 sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '100%',
+                  p: 2,
+                  mb: 2,
                   borderRadius: 2,
-                  p: 4,
-                  textAlign: 'center',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  bgcolor: 'rgba(36,38,41,0.6)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background-color 0.2s, border-color 0.2s',
+                  '&:hover': {
+                    bgcolor: 'rgba(50,52,55,0.8)',
+                    borderColor: 'rgba(255,255,255,0.18)',
+                  },
                 }}
               >
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  color="text.primary"
-                  gutterBottom
+                <ProfileAvatar
+                  src={avatarUrl ?? undefined}
+                  alt={session?.user?.user_metadata?.full_name ?? 'You'}
+                  size="small"
+                  sx={{ flexShrink: 0, mr: 2 }}
+                />
+                <Box
+                  sx={{
+                    flex: 1,
+                    py: 1,
+                    px: 2,
+                    borderRadius: '9999px',
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                    color: 'text.secondary',
+                    fontSize: '0.95rem',
+                  }}
                 >
-                  Nothing here yet.
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Connect with Weirdlings to fill your feed.
-                </Typography>
-                <Button
-                  component={RouterLink}
-                  to="/directory"
-                  variant="contained"
-                  sx={{ textTransform: 'none', borderRadius: 2 }}
-                >
-                  Discover Members
-                </Button>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 2 }}
-                >
-                  Try searching for people or exploring events.
-                </Typography>
+                  Start a post
+                </Box>
               </Paper>
-            ) : (
-              <>
-                {displayItems.map((entry, index) =>
-                  entry.kind === 'post' ? (
-                    <Box
-                      key={entry.item.id}
-                      id={`post-${entry.item.id}`}
-                      component="section"
+            )}
+
+            {/* Feed list — scrolls inside this container so header/composer stay fixed */}
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {loading && items.length === 0 ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress aria-label="Loading feed" />
+                </Box>
+              ) : items.length === 0 ? (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    p: 4,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    color="text.primary"
+                    gutterBottom
+                  >
+                    {savedMode ? 'No saved posts yet' : 'Nothing here yet.'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    {savedMode
+                      ? 'Save posts from your feed to see them here.'
+                      : 'Connect with Weirdlings to fill your feed.'}
+                  </Typography>
+                  {!savedMode && (
+                    <Button
+                      component={RouterLink}
+                      to="/directory"
+                      variant="contained"
+                      sx={{ textTransform: 'none', borderRadius: 2 }}
                     >
-                      <FeedCard
-                        item={entry.item}
-                        actions={feedCardActions}
-                        isOwner={session?.user?.id === entry.item.user_id}
-                        viewerUserId={session?.user?.id}
-                        viewerAvatarUrl={avatarUrl}
-                        commentsExpanded={
-                          expandedCommentsPostId === entry.item.id
+                      Discover Members
+                    </Button>
+                  )}
+                  {!savedMode && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mt: 2 }}
+                    >
+                      Try searching for people or exploring events.
+                    </Typography>
+                  )}
+                </Paper>
+              ) : (
+                <>
+                  {displayItems.map((entry, index) =>
+                    entry.kind === 'post' ? (
+                      <Box
+                        key={entry.item.id}
+                        id={`post-${entry.item.id}`}
+                        component="section"
+                      >
+                        <FeedCard
+                          item={entry.item}
+                          actions={feedCardActions}
+                          isOwner={session?.user?.id === entry.item.user_id}
+                          viewerUserId={session?.user?.id}
+                          viewerAvatarUrl={avatarUrl}
+                          commentsExpanded={
+                            expandedCommentsPostId === entry.item.id
+                          }
+                          comments={commentsByPostId[entry.item.id] ?? []}
+                          commentsLoading={
+                            commentsLoadingPostId === entry.item.id
+                          }
+                          onAddComment={handleAddComment}
+                          isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
+                            entry.item.id,
+                          )}
+                          onDismissLinkPreview={() =>
+                            handleDismissLinkPreview(entry.item.id)
+                          }
+                        />
+                      </Box>
+                    ) : (
+                      <FeedAdCard
+                        key={`ad-${entry.advertiser.id}-${index}`}
+                        advertiser={entry.advertiser}
+                        onDismiss={() => handleDismissAd(entry.advertiser.id)}
+                        onImpression={() =>
+                          handleAdImpression(entry.advertiser, index)
                         }
-                        comments={commentsByPostId[entry.item.id] ?? []}
-                        commentsLoading={
-                          commentsLoadingPostId === entry.item.id
-                        }
-                        onAddComment={handleAddComment}
-                        isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
-                          entry.item.id,
-                        )}
-                        onDismissLinkPreview={() =>
-                          handleDismissLinkPreview(entry.item.id)
+                        onAdClick={(payload) =>
+                          handleAdClick(entry.advertiser, index, payload)
                         }
                       />
-                    </Box>
-                  ) : (
-                    <FeedAdCard
-                      key={`ad-${entry.advertiser.id}-${index}`}
-                      advertiser={entry.advertiser}
-                      onDismiss={() => handleDismissAd(entry.advertiser.id)}
-                      onImpression={() =>
-                        handleAdImpression(entry.advertiser, index)
-                      }
-                      onAdClick={(payload) =>
-                        handleAdClick(entry.advertiser, index, payload)
-                      }
-                    />
-                  ),
-                )}
-                {nextCursor && (
-                  <Box
-                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
-                  >
-                    <Button
-                      variant="outlined"
-                      disabled={loadingMore}
-                      onClick={() => void loadPage(nextCursor, true)}
-                      startIcon={
-                        loadingMore ? <CircularProgress size={16} /> : null
-                      }
+                    ),
+                  )}
+                  {nextCursor && (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
                     >
-                      {loadingMore ? 'Loading…' : 'Load more'}
-                    </Button>
-                  </Box>
-                )}
-              </>
-            )}
+                      <Button
+                        variant="outlined"
+                        disabled={loadingMore}
+                        onClick={() => void loadPage(nextCursor, true)}
+                        startIcon={
+                          loadingMore ? <CircularProgress size={16} /> : null
+                        }
+                      >
+                        {loadingMore ? 'Loading…' : 'Load more'}
+                      </Button>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
           </Grid>
         </Grid>
       </Box>
@@ -3475,7 +3349,7 @@ export const Feed = () => {
         </DialogActions>
       </Dialog>
 
-      <GifPickerDialog
+      <GifPicker.GifPickerDialog
         open={gifPickerOpen}
         onClose={() => setGifPickerOpen(false)}
         onPick={(url) => setComposerImages((prev) => [...prev, url])}

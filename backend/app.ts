@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
@@ -1092,13 +1093,14 @@ app.post(
   },
 );
 
-// GET /api/feeds — LinkedIn-inspired activity stream (authenticated, cursor pagination)
+// GET /api/feeds — LinkedIn-inspired activity stream (authenticated, cursor pagination). ?saved=true → saved feed.
 app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     if (!userId) return sendApiError(res, 401, 'Unauthorized');
 
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const savedOnly = req.query.saved === 'true';
     const cursorRaw =
       typeof req.query.cursor === 'string' ? req.query.cursor.trim() : null;
     let cursorCreatedAt: string | null = null;
@@ -1116,46 +1118,80 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const { data: prefRow } = await adminSupabase
-      .from('profiles')
-      .select('feed_view_preference')
-      .eq('id', userId)
-      .maybeSingle();
-
-    const feedView =
-      (prefRow as { feed_view_preference?: string } | null)
-        ?.feed_view_preference === 'connections'
-        ? 'connections'
-        : 'anyone';
-
-    const { data: rows, error } = await adminSupabase.rpc('get_feed_page', {
-      p_viewer_id: userId,
-      p_cursor_created_at: cursorCreatedAt,
-      p_cursor_id: cursorId,
-      p_limit: limit + 1,
-      p_feed_view: feedView,
-    });
-
-    if (error) {
-      console.error(
-        '[GET /api/feeds] Supabase RPC error:',
-        error.message,
-        error,
+    let rows: unknown[];
+    if (savedOnly) {
+      const { data: savedRows, error } = await adminSupabase.rpc(
+        'get_saved_feed_page',
+        {
+          p_viewer_id: userId,
+          p_cursor_created_at: cursorCreatedAt,
+          p_cursor_id: cursorId,
+          p_limit: limit + 1,
+        },
       );
-      return sendApiError(
-        res,
-        500,
-        'Feed could not be loaded. Ensure Supabase migrations are applied.',
-      );
+      if (error) {
+        console.error(
+          '[GET /api/feeds] get_saved_feed_page RPC error:',
+          error.message,
+          error,
+        );
+        return sendApiError(
+          res,
+          500,
+          'Saved feed could not be loaded. Ensure Supabase migrations are applied.',
+        );
+      }
+      rows = Array.isArray(savedRows) ? savedRows : [];
+    } else {
+      const { data: prefRow } = await adminSupabase
+        .from('profiles')
+        .select('feed_view_preference')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const feedView =
+        (prefRow as { feed_view_preference?: string } | null)
+          ?.feed_view_preference === 'connections'
+          ? 'connections'
+          : 'anyone';
+
+      const { data, error } = await adminSupabase.rpc('get_feed_page', {
+        p_viewer_id: userId,
+        p_cursor_created_at: cursorCreatedAt,
+        p_cursor_id: cursorId,
+        p_limit: limit + 1,
+        p_feed_view: feedView,
+      });
+
+      if (error) {
+        console.error(
+          '[GET /api/feeds] Supabase RPC error:',
+          error.message,
+          error,
+        );
+        return sendApiError(
+          res,
+          500,
+          'Feed could not be loaded. Ensure Supabase migrations are applied.',
+        );
+      }
+      rows = Array.isArray(data) ? data : [];
     }
 
-    const list = Array.isArray(rows) ? rows : [];
+    const list = rows as Record<string, unknown>[];
     const hasMore = list.length > limit;
     const page = hasMore ? list.slice(0, limit) : list;
     const last = page[page.length - 1] as
-      | { created_at?: string; scheduled_at?: string | null; id?: string }
+      | {
+          created_at?: string;
+          scheduled_at?: string | null;
+          id?: string;
+          saved_at?: string;
+        }
       | undefined;
-    const sortAt = last?.scheduled_at ?? last?.created_at;
+    const sortAt = savedOnly
+      ? last?.saved_at
+      : (last?.scheduled_at ?? last?.created_at);
     const nextCursor =
       hasMore && sortAt && last?.id
         ? Buffer.from(
@@ -1182,6 +1218,7 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         care_count?: number | string | null;
         viewer_reaction?: string | null;
         comment_count?: number | string | null;
+        viewer_saved?: boolean;
       }) => ({
         id: row.id,
         user_id: row.user_id,
@@ -1201,6 +1238,7 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         care_count: Number(row.care_count ?? 0),
         viewer_reaction: row.viewer_reaction ?? null,
         comment_count: Number(row.comment_count ?? 0),
+        viewer_saved: Boolean(row.viewer_saved),
       }),
     );
 
@@ -1502,6 +1540,48 @@ app.delete(
         'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
       );
     if (error) return sendApiError(res, 500, 'Server error');
+    return res.status(204).send();
+  },
+);
+
+// POST /api/feeds/items/:postId/save — save (bookmark) a feed item
+app.post(
+  '/api/feeds/items/:postId/save',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const postId =
+      typeof req.params.postId === 'string' ? req.params.postId.trim() : '';
+    if (!userId || !postId) return sendApiError(res, 400, 'Invalid post id');
+    const { error } = await adminSupabase.from('saved_feed_items').insert({
+      user_id: userId,
+      feed_item_id: postId,
+    });
+    if (error) {
+      if (error.code === '23503')
+        return sendApiError(res, 404, 'Post not found');
+      if (error.code === '23505') return res.status(204).send(); // already saved
+      return sendApiError(res, 500, 'Could not save post');
+    }
+    return res.status(204).send();
+  },
+);
+
+// DELETE /api/feeds/items/:postId/save — unsave (remove bookmark)
+app.delete(
+  '/api/feeds/items/:postId/save',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const postId =
+      typeof req.params.postId === 'string' ? req.params.postId.trim() : '';
+    if (!userId || !postId) return sendApiError(res, 400, 'Invalid post id');
+    const { error } = await adminSupabase
+      .from('saved_feed_items')
+      .delete()
+      .eq('user_id', userId)
+      .eq('feed_item_id', postId);
+    if (error) return sendApiError(res, 500, 'Could not unsave post');
     return res.status(204).send();
   },
 );
@@ -1850,6 +1930,89 @@ app.get('/api/directory', async (req: AuthRequest, res: Response) => {
   return res.json({ data, hasMore });
 });
 
+// GET /api/unsubscribe?token=... — one-click opt-out from email link (no auth)
+const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET?.trim() || '';
+const UNSUBSCRIBE_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+function verifyUnsubscribeToken(token: string): string | null {
+  if (!UNSUBSCRIBE_SECRET) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const [rawPayload, rawExpiry, rawSig] = parts;
+    const userId = Buffer.from(rawPayload, 'base64url').toString('utf8');
+    const expiry = parseInt(
+      Buffer.from(rawExpiry, 'base64url').toString('utf8'),
+      10,
+    );
+    if (!userId || userId.length > 128) return null;
+    if (!Number.isFinite(expiry) || Date.now() > expiry) return null;
+    const expected = crypto
+      .createHmac('sha256', UNSUBSCRIBE_SECRET)
+      .update(rawPayload + rawExpiry)
+      .digest('base64url');
+    if (expected !== rawSig) return null;
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
+function buildUnsubscribeToken(userId: string): string | null {
+  if (!UNSUBSCRIBE_SECRET) return null;
+  const expiry = Date.now() + UNSUBSCRIBE_TOKEN_TTL_MS;
+  const rawPayload = Buffer.from(userId, 'utf8').toString('base64url');
+  const rawExpiry = Buffer.from(String(expiry), 'utf8').toString('base64url');
+  const sig = crypto
+    .createHmac('sha256', UNSUBSCRIBE_SECRET)
+    .update(rawPayload + rawExpiry)
+    .digest('base64url');
+  return `${rawPayload}.${rawExpiry}.${sig}`;
+}
+
+app.get(
+  '/api/unsubscribe/token',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const token = buildUnsubscribeToken(userId);
+    if (!token)
+      return sendApiError(
+        res,
+        503,
+        'Unsubscribe links are not configured on this server.',
+      );
+    return res.json({ token });
+  },
+);
+
+app.get('/api/unsubscribe', async (req: Request, res: Response) => {
+  const token =
+    typeof req.query.token === 'string' ? req.query.token.trim() : '';
+  if (!token) return sendApiError(res, 400, 'Missing token');
+  const userId = verifyUnsubscribeToken(token);
+  if (!userId) {
+    return sendApiError(
+      res,
+      400,
+      'Invalid or expired link. Please sign in and use Settings → Email preferences to unsubscribe.',
+    );
+  }
+  const { error } = await adminSupabase
+    .from('profiles')
+    .update({
+      marketing_opt_in: false,
+      marketing_product_updates: false,
+      marketing_events: false,
+    })
+    .eq('id', userId)
+    .select('id')
+    .maybeSingle();
+  if (error) return sendApiError(res, 500, 'Server error');
+  return res.json({ ok: true });
+});
+
 // GET /api/link-preview?url=... — authenticated preview fetch for chat composer
 app.get(
   '/api/link-preview',
@@ -1976,6 +2139,38 @@ app.post('/api/directory/connect', async (req: AuthRequest, res: Response) => {
     }
 
     return res.status(200).json({ ok: true, autoAccepted: true });
+  }
+
+  // Allow re-connect after decline: if existing row is declined, update to pending
+  const { data: existing } = await adminSupabase
+    .from('connection_requests')
+    .select('id, status')
+    .eq('requester_id', userId)
+    .eq('recipient_id', targetId)
+    .maybeSingle();
+
+  if (existing) {
+    const status = (existing as { status?: string }).status;
+    if (status === 'accepted') return res.status(200).json({ ok: true });
+    if (status === 'pending') return res.status(200).json({ ok: true });
+    if (status === 'declined') {
+      const nowIso = new Date().toISOString();
+      const { error: updateErr } = await adminSupabase
+        .from('connection_requests')
+        .update({ status: 'pending', updated_at: nowIso })
+        .eq('requester_id', userId)
+        .eq('recipient_id', targetId);
+      if (updateErr) {
+        logDirectoryError({
+          method: 'POST',
+          path: '/api/directory/connect',
+          userId: userId ?? undefined,
+          error: updateErr.message,
+        });
+        return sendApiError(res, 500, 'Server error');
+      }
+      return res.status(201).json({ ok: true });
+    }
   }
 
   const { error } = await adminSupabase.from('connection_requests').insert({

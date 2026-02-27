@@ -3,7 +3,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
-  Avatar,
   Box,
   Card,
   CardContent,
@@ -194,17 +193,22 @@ export const FeedAdCard = ({
           spacing={{ xs: 1, sm: 2 }}
           alignItems="flex-start"
         >
-          <Avatar
-            src={advertiser.logo_url ?? undefined}
-            sx={{
-              width: 48,
-              height: 48,
-              bgcolor: 'primary.dark',
-              color: 'primary.contrastText',
-            }}
-          >
-            {advertiser.company_name.charAt(0).toUpperCase()}
-          </Avatar>
+          {/* Single identity: partner logo only (no fallback circle avatar) */}
+          {advertiser.logo_url ? (
+            <Box
+              component="img"
+              src={advertiser.logo_url}
+              alt=""
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 1,
+                objectFit: 'contain',
+                bgcolor: 'action.hover',
+                flexShrink: 0,
+              }}
+            />
+          ) : null}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Stack direction="row" alignItems="flex-start" gap={1}>
               <Box sx={{ minWidth: 0 }}>

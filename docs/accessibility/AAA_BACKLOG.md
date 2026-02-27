@@ -21,7 +21,9 @@ Track AAA (WCAG 2.x AAA) findings surfaced by the automated sweep in
   verify against hero overlays.
 - **Priority:** `P2`
 - **Owner:** `UX`
-- **Status:** `In progress`
+- **Status:** `Done` (theme + joinStyles tightened: step labels 0.92/0.97,
+  subtext 0.97, placeholder 0.92, disabled 0.72/0.78; input label/helper
+  #e8e8e8; placeholder #bdbdbd)
 - **Target Sprint:** `TBD`
 
 ### AAA-002
@@ -34,7 +36,8 @@ Track AAA (WCAG 2.x AAA) findings surfaced by the automated sweep in
   dark/colorblind simulations.
 - **Priority:** `P2`
 - **Owner:** `UX`
-- **Status:** `In progress`
+- **Status:** `Done` (card description and CTA use text.primary; Visit partner
+  is contained primary; Back to feed is outlined with high-contrast border)
 - **Target Sprint:** `TBD`
 
 ## Definition of done for each item

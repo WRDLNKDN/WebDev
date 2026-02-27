@@ -1,39 +1,8 @@
 -- supabase/migrations/20260121180000_tables.sql
--- All tables, functions, and triggers. Safe for fresh db reset.
-
--- -----------------------------
--- Drop functions first (no table refs)
--- -----------------------------
-drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int) cascade;
-drop function if exists public.get_feed_page(uuid, timestamptz, uuid, int, text) cascade;
-drop function if exists public.feed_items_update_last_active() cascade;
-drop function if exists public.set_updated_at() cascade;
-drop function if exists public.profiles_block_status_change() cascade;
-drop function if exists public.is_admin() cascade;
-drop function if exists public.set_generation_jobs_updated_at() cascade;
-drop function if exists public.are_chat_connections(uuid, uuid) cascade;
-drop function if exists public.chat_blocked(uuid, uuid) cascade;
-drop function if exists public.chat_can_message_in_room(uuid, uuid) cascade;
-drop function if exists public.is_chat_moderator() cascade;
-drop function if exists public.chat_is_room_member(uuid) cascade;
-drop function if exists public.chat_is_room_admin(uuid) cascade;
-drop function if exists public.chat_create_group(text, uuid[]) cascade;
-drop function if exists public.chat_set_original_admin() cascade;
-drop function if exists public.chat_on_member_removed() cascade;
-drop function if exists public.chat_on_suspension() cascade;
-drop function if exists public.chat_on_unsuspend() cascade;
-drop function if exists public.chat_rate_limit_check() cascade;
-drop function if exists public.chat_audit_on_message() cascade;
-drop function if exists public.chat_room_summaries(uuid[], uuid) cascade;
-drop function if exists public.chat_prune_audit_log() cascade;
-drop function if exists public.audit_prune_resume_backfill_lock_events() cascade;
-drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) cascade;
-drop function if exists public.notifications_on_feed_reaction() cascade;
-drop function if exists public.notifications_on_connection_request() cascade;
-drop function if exists public.notifications_on_chat_message() cascade;
-drop function if exists public.notifications_on_event_rsvp() cascade;
-drop function if exists public.notifications_on_mention() cascade;
-drop function if exists public.event_rsvps_block_suspended() cascade;
+-- All tables, functions, and triggers. Idempotent: does NOT drop tables or data.
+-- - Tables: CREATE TABLE IF NOT EXISTS only (never DROP TABLE).
+-- - Triggers: DROP TRIGGER IF EXISTS before CREATE TRIGGER (removes only the trigger, not the table).
+-- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; tables unchanged.
 
 -- Extensions used by schema/indexes
 create schema if not exists extensions;
@@ -52,42 +21,9 @@ begin
 end $$;
 
 -- -----------------------------
--- Drop tables (reverse dependency order)
--- -----------------------------
-drop table if exists public.chat_moderators cascade;
-drop table if exists public.chat_audit_log cascade;
-drop table if exists public.chat_read_receipts cascade;
-drop table if exists public.chat_message_reactions cascade;
-drop table if exists public.chat_message_attachments cascade;
-drop table if exists public.chat_reports cascade;
-drop table if exists public.chat_messages cascade;
-drop table if exists public.chat_room_members cascade;
-drop table if exists public.chat_blocks cascade;
-drop table if exists public.chat_suspensions cascade;
-drop table if exists public.chat_rooms cascade;
-drop table if exists public.feed_items cascade;
-drop table if exists public.feed_connections cascade;
-drop table if exists public.connection_requests cascade;
-drop table if exists public.portfolio_items cascade;
-drop table if exists public.weirdlings cascade;
-drop table if exists public.generation_jobs cascade;
-drop table if exists public.profiles cascade;
-drop table if exists public.admin_allowlist cascade;
-drop table if exists public.feed_advertisers cascade;
-drop table if exists public.feed_ad_events cascade;
-drop table if exists public.community_partners cascade;
-drop table if exists public.playlist_items cascade;
-drop table if exists public.playlists cascade;
-drop table if exists public.event_rsvps cascade;
-drop table if exists public.events cascade;
-drop table if exists public.notifications cascade;
-drop table if exists public.content_submissions cascade;
-drop table if exists public.audit_log cascade;
-
--- -----------------------------
 -- Admin allowlist (NO RLS; grants in rls.sql)
 -- -----------------------------
-create table public.admin_allowlist (
+create table if not exists public.admin_allowlist (
   email text primary key,
   created_at timestamptz not null default now(),
   created_by uuid references auth.users(id)
@@ -119,7 +55,7 @@ comment on function public.is_admin() is
 -- -----------------------------
 -- profiles table (RLS and grants in rls.sql)
 -- -----------------------------
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
 
   created_at timestamptz not null default now(),
@@ -194,31 +130,31 @@ comment on column public.profiles.marketing_product_updates is
 comment on column public.profiles.marketing_events is
   'Receive event/community notifications.';
 
-create unique index idx_profiles_handle_lower_unique
+create unique index if not exists idx_profiles_handle_lower_unique
   on public.profiles (lower(handle));
-create index idx_profiles_created_at on public.profiles (created_at);
-create index idx_profiles_status on public.profiles (status);
-create index idx_profiles_handle on public.profiles (handle);
-create index idx_profiles_email on public.profiles (email);
-create index idx_profiles_industry on public.profiles(industry) where industry is not null;
-create index idx_profiles_location on public.profiles(location) where location is not null;
-create index idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
-create index idx_profiles_display_name_trgm
+create index if not exists idx_profiles_created_at on public.profiles (created_at);
+create index if not exists idx_profiles_status on public.profiles (status);
+create index if not exists idx_profiles_handle on public.profiles (handle);
+create index if not exists idx_profiles_email on public.profiles (email);
+create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
+create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+create index if not exists idx_profiles_display_name_trgm
   on public.profiles using gin (lower(display_name) extensions.gin_trgm_ops)
   where display_name is not null;
-create index idx_profiles_handle_trgm
+create index if not exists idx_profiles_handle_trgm
   on public.profiles using gin (lower(handle) extensions.gin_trgm_ops)
   where handle is not null;
-create index idx_profiles_tagline_trgm
+create index if not exists idx_profiles_tagline_trgm
   on public.profiles using gin (lower(tagline) extensions.gin_trgm_ops)
   where tagline is not null;
-create index idx_profiles_industry_trgm
+create index if not exists idx_profiles_industry_trgm
   on public.profiles using gin (lower(industry) extensions.gin_trgm_ops)
   where industry is not null;
-create index idx_profiles_location_trgm
+create index if not exists idx_profiles_location_trgm
   on public.profiles using gin (lower(location) extensions.gin_trgm_ops)
   where location is not null;
-create index idx_profiles_bio_trgm
+create index if not exists idx_profiles_bio_trgm
   on public.profiles using gin (lower(coalesce(nerd_creds->>'bio', '')) extensions.gin_trgm_ops);
 
 -- -----------------------------
@@ -227,6 +163,7 @@ create index idx_profiles_bio_trgm
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -234,6 +171,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_profiles_updated_at on public.profiles;
 create trigger trg_profiles_updated_at
 before update on public.profiles
 for each row
@@ -271,6 +209,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_profiles_block_status_change on public.profiles;
 create trigger trg_profiles_block_status_change
 before update of status on public.profiles
 for each row
@@ -279,7 +218,7 @@ execute function public.profiles_block_status_change();
 -- -----------------------------
 -- portfolio_items (dashboard projects)
 -- -----------------------------
-create table public.portfolio_items (
+create table if not exists public.portfolio_items (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
@@ -291,11 +230,12 @@ create table public.portfolio_items (
   updated_at timestamptz not null default now()
 );
 
-create index idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
+create index if not exists idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
 
 comment on table public.portfolio_items is
   'User portfolio projects (dashboard).';
 
+drop trigger if exists trg_portfolio_items_updated_at on public.portfolio_items;
 create trigger trg_portfolio_items_updated_at
 before update on public.portfolio_items
 for each row
@@ -304,7 +244,7 @@ execute function public.set_updated_at();
 -- -----------------------------
 -- generation_jobs (Weirdling audit + idempotency)
 -- -----------------------------
-create table public.generation_jobs (
+create table if not exists public.generation_jobs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   status text not null default 'queued'
@@ -318,9 +258,9 @@ create table public.generation_jobs (
   updated_at timestamptz not null default now()
 );
 
-create index idx_generation_jobs_user_id on public.generation_jobs(user_id);
-create index idx_generation_jobs_status on public.generation_jobs(status);
-create index idx_generation_jobs_idempotency on public.generation_jobs(idempotency_key)
+create index if not exists idx_generation_jobs_user_id on public.generation_jobs(user_id);
+create index if not exists idx_generation_jobs_status on public.generation_jobs(status);
+create index if not exists idx_generation_jobs_idempotency on public.generation_jobs(idempotency_key)
   where idempotency_key is not null;
 
 comment on table public.generation_jobs is
@@ -329,7 +269,7 @@ comment on table public.generation_jobs is
 -- -----------------------------
 -- weirdlings (one active per user)
 -- -----------------------------
-create table public.weirdlings (
+create table if not exists public.weirdlings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   display_name text not null,
@@ -358,6 +298,7 @@ comment on table public.weirdlings is
 create or replace function public.set_generation_jobs_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -365,10 +306,12 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_generation_jobs_updated_at on public.generation_jobs;
 create trigger trg_generation_jobs_updated_at
   before update on public.generation_jobs
   for each row execute function public.set_generation_jobs_updated_at();
 
+drop trigger if exists trg_weirdlings_updated_at on public.weirdlings;
 create trigger trg_weirdlings_updated_at
   before update on public.weirdlings
   for each row execute function public.set_updated_at();
@@ -376,7 +319,7 @@ create trigger trg_weirdlings_updated_at
 -- -----------------------------
 -- Feed: connections (who follows whom) and activity stream
 -- -----------------------------
-create table public.feed_connections (
+create table if not exists public.feed_connections (
   user_id uuid not null references auth.users(id) on delete cascade,
   connected_user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -384,9 +327,9 @@ create table public.feed_connections (
   check (user_id != connected_user_id)
 );
 
-create index idx_feed_connections_user_id on public.feed_connections(user_id);
-create index idx_feed_connections_connected_user_id on public.feed_connections(connected_user_id);
-create index idx_feed_connections_connected_user_user
+create index if not exists idx_feed_connections_user_id on public.feed_connections(user_id);
+create index if not exists idx_feed_connections_connected_user_id on public.feed_connections(connected_user_id);
+create index if not exists idx_feed_connections_connected_user_user
   on public.feed_connections(connected_user_id, user_id);
 
 comment on table public.feed_connections is
@@ -395,7 +338,7 @@ comment on table public.feed_connections is
 -- -----------------------------
 -- connection_requests (Directory: Connect flow -> accept/decline -> mutual feed_connections)
 -- -----------------------------
-create table public.connection_requests (
+create table if not exists public.connection_requests (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid not null references auth.users(id) on delete cascade,
   recipient_id uuid not null references auth.users(id) on delete cascade,
@@ -407,19 +350,20 @@ create table public.connection_requests (
   check (requester_id != recipient_id)
 );
 
-create index idx_connection_requests_requester on public.connection_requests(requester_id);
-create index idx_connection_requests_recipient on public.connection_requests(recipient_id);
-create index idx_connection_requests_status on public.connection_requests(status) where status = 'pending';
-create index idx_connection_requests_pending_requester_recipient
+create index if not exists idx_connection_requests_requester on public.connection_requests(requester_id);
+create index if not exists idx_connection_requests_recipient on public.connection_requests(recipient_id);
+create index if not exists idx_connection_requests_status on public.connection_requests(status) where status = 'pending';
+create index if not exists idx_connection_requests_pending_requester_recipient
   on public.connection_requests(requester_id, recipient_id)
   where status = 'pending';
-create index idx_connection_requests_pending_recipient_requester
+create index if not exists idx_connection_requests_pending_recipient_requester
   on public.connection_requests(recipient_id, requester_id)
   where status = 'pending';
 
 comment on table public.connection_requests is
   'Connection requests: pending until accepted (creates mutual feed_connections) or declined.';
 
+drop trigger if exists trg_connection_requests_updated_at on public.connection_requests;
 create trigger trg_connection_requests_updated_at
   before update on public.connection_requests
   for each row execute function public.set_updated_at();
@@ -427,7 +371,7 @@ create trigger trg_connection_requests_updated_at
 -- -----------------------------
 -- feed_advertisers: Ads shown every 6th post in Feed. Admin-managed.
 -- -----------------------------
-create table public.feed_advertisers (
+create table if not exists public.feed_advertisers (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,
   title text not null,
@@ -442,10 +386,11 @@ create table public.feed_advertisers (
   updated_at timestamptz not null default now()
 );
 
-create index idx_feed_advertisers_active_order
+create index if not exists idx_feed_advertisers_active_order
   on public.feed_advertisers(active, sort_order)
   where active = true;
 
+drop trigger if exists trg_feed_advertisers_updated_at on public.feed_advertisers;
 create trigger trg_feed_advertisers_updated_at
   before update on public.feed_advertisers
   for each row execute function public.set_updated_at();
@@ -476,7 +421,7 @@ where not exists (select 1 from public.feed_advertisers limit 1);
 -- -----------------------------
 -- feed_ad_events: analytics sink for feed ad impressions/clicks
 -- -----------------------------
-create table public.feed_ad_events (
+create table if not exists public.feed_ad_events (
   id uuid primary key default gen_random_uuid(),
   advertiser_id uuid not null references public.feed_advertisers(id) on delete cascade,
   member_id uuid references auth.users(id) on delete set null,
@@ -488,9 +433,9 @@ create table public.feed_ad_events (
   created_at timestamptz not null default now()
 );
 
-create index idx_feed_ad_events_advertiser_created
+create index if not exists idx_feed_ad_events_advertiser_created
   on public.feed_ad_events(advertiser_id, created_at desc);
-create index idx_feed_ad_events_name_created
+create index if not exists idx_feed_ad_events_name_created
   on public.feed_ad_events(event_name, created_at desc);
 
 comment on table public.feed_ad_events is
@@ -499,7 +444,7 @@ comment on table public.feed_ad_events is
 -- -----------------------------
 -- community_partners: public partner listings (decoupled from ad inventory)
 -- -----------------------------
-create table public.community_partners (
+create table if not exists public.community_partners (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,
   title text,
@@ -515,10 +460,11 @@ create table public.community_partners (
   updated_at timestamptz not null default now()
 );
 
-create index idx_community_partners_active_order
+create index if not exists idx_community_partners_active_order
   on public.community_partners(active, featured desc, sort_order)
   where active = true;
 
+drop trigger if exists trg_community_partners_updated_at on public.community_partners;
 create trigger trg_community_partners_updated_at
   before update on public.community_partners
   for each row execute function public.set_updated_at();
@@ -545,7 +491,7 @@ where not exists (select 1 from public.community_partners limit 1);
 -- -----------------------------
 -- Feed items
 -- -----------------------------
-create table public.feed_items (
+create table if not exists public.feed_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   kind text not null check (kind in (
@@ -562,12 +508,12 @@ create table public.feed_items (
   scheduled_at timestamptz
 );
 
-create index idx_feed_items_user_id on public.feed_items(user_id);
-create index idx_feed_items_created_at on public.feed_items(created_at desc);
-create index idx_feed_items_kind on public.feed_items(kind);
-create index idx_feed_items_parent_id on public.feed_items(parent_id) where parent_id is not null;
+create index if not exists idx_feed_items_user_id on public.feed_items(user_id);
+create index if not exists idx_feed_items_created_at on public.feed_items(created_at desc);
+create index if not exists idx_feed_items_kind on public.feed_items(kind);
+create index if not exists idx_feed_items_parent_id on public.feed_items(parent_id) where parent_id is not null;
 
-create unique index idx_feed_items_reaction_user_post
+create unique index if not exists idx_feed_items_reaction_user_post
   on public.feed_items (parent_id, user_id)
   where kind = 'reaction'
     and payload->>'type' in ('like', 'love', 'inspiration', 'care');
@@ -598,6 +544,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_feed_items_update_last_active on public.feed_items;
 create trigger trg_feed_items_update_last_active
 after insert on public.feed_items
 for each row
@@ -606,9 +553,26 @@ execute function public.feed_items_update_last_active();
 comment on function public.feed_items_update_last_active() is
   'Updates profiles.last_active_at when user posts or reacts (Directory sort).';
 
+-- saved_feed_items (bookmarks for Feed / Saved page)
+create table if not exists public.saved_feed_items (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  feed_item_id uuid not null references public.feed_items(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, feed_item_id)
+);
+create index if not exists idx_saved_feed_items_user_created
+  on public.saved_feed_items(user_id, created_at desc);
+comment on table public.saved_feed_items is
+  'Member bookmarks for feed items; powers Saved page and Save action on Feed.';
+
 -- -----------------------------
 -- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts; scheduled posts)
 -- -----------------------------
+
+-- Required: drop before recreate if return type changed (prevents 42P13)
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, integer, text) cascade;
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, integer) cascade;
+
 create or replace function public.get_feed_page(
   p_viewer_id uuid,
   p_cursor_created_at timestamptz default null,
@@ -633,7 +597,8 @@ returns table (
   inspiration_count bigint,
   care_count bigint,
   viewer_reaction text,
-  comment_count bigint
+  comment_count bigint,
+  viewer_saved boolean
 )
 language plpgsql
 stable
@@ -677,7 +642,11 @@ begin
     coalesce(stats.inspiration_cnt, 0::bigint),
     coalesce(stats.care_cnt, 0::bigint),
     stats.viewer_reaction,
-    coalesce(stats.comment_cnt, 0::bigint)
+    coalesce(stats.comment_cnt, 0::bigint),
+    exists (
+      select 1 from public.saved_feed_items s
+      where s.feed_item_id = fi.id and s.user_id = p_viewer_id
+    ) as viewer_saved
   from public.feed_items fi
   left join public.profiles p on p.id = fi.user_id
   left join public.weirdlings w on w.user_id = fi.user_id and w.is_active = true
@@ -720,6 +689,102 @@ $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int, text) is
   'Returns feed items with reaction counts, scheduled filtering. scheduled_at null or passed.';
+
+-- get_saved_feed_page (Saved page: same row shape as get_feed_page, viewer_saved true)
+drop function if exists public.get_saved_feed_page(uuid, timestamptz, uuid, int) cascade;
+create or replace function public.get_saved_feed_page(
+  p_viewer_id uuid,
+  p_cursor_created_at timestamptz default null,
+  p_cursor_id uuid default null,
+  p_limit int default 21
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  kind text,
+  payload jsonb,
+  parent_id uuid,
+  created_at timestamptz,
+  edited_at timestamptz,
+  scheduled_at timestamptz,
+  actor_handle text,
+  actor_display_name text,
+  actor_avatar text,
+  like_count bigint,
+  love_count bigint,
+  inspiration_count bigint,
+  care_count bigint,
+  viewer_reaction text,
+  comment_count bigint,
+  viewer_saved boolean,
+  saved_at timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  return query
+  select
+    fi.id,
+    fi.user_id,
+    fi.kind,
+    fi.payload,
+    fi.parent_id,
+    fi.created_at,
+    fi.edited_at,
+    fi.scheduled_at,
+    p.handle::text as actor_handle,
+    p.display_name as actor_display_name,
+    (case
+      when p.use_weirdling_avatar = true and w.avatar_url is not null then w.avatar_url
+      else p.avatar
+    end)::text as actor_avatar,
+    coalesce(stats.like_cnt, 0::bigint),
+    coalesce(stats.love_cnt, 0::bigint),
+    coalesce(stats.inspiration_cnt, 0::bigint),
+    coalesce(stats.care_cnt, 0::bigint),
+    stats.viewer_reaction,
+    coalesce(stats.comment_cnt, 0::bigint),
+    true::boolean as viewer_saved,
+    s.created_at as saved_at
+  from public.saved_feed_items s
+  join public.feed_items fi on fi.id = s.feed_item_id
+  left join public.profiles p on p.id = fi.user_id
+  left join public.weirdlings w on w.user_id = fi.user_id and w.is_active = true
+  left join lateral (
+    select
+      count(*) filter (where r.payload->>'type' = 'like') as like_cnt,
+      count(*) filter (where r.payload->>'type' = 'love') as love_cnt,
+      count(*) filter (where r.payload->>'type' = 'inspiration') as inspiration_cnt,
+      count(*) filter (where r.payload->>'type' = 'care') as care_cnt,
+      count(*) filter (where r.payload->>'type' = 'comment') as comment_cnt,
+      (
+        select r2.payload->>'type'
+        from public.feed_items r2
+        where r2.parent_id = fi.id and r2.kind = 'reaction'
+          and r2.payload->>'type' in ('like','love','inspiration','care')
+          and r2.user_id = p_viewer_id
+        limit 1
+      ) as viewer_reaction
+    from public.feed_items r
+    where r.parent_id = fi.id and r.kind = 'reaction'
+  ) stats on true
+  where
+    s.user_id = p_viewer_id
+    and p.status = 'approved'
+    and (fi.scheduled_at is null or fi.scheduled_at <= now())
+    and (
+      p_cursor_created_at is null
+      or (s.created_at, s.feed_item_id) < (p_cursor_created_at, p_cursor_id)
+    )
+  order by s.created_at desc, s.feed_item_id desc
+  limit least(p_limit, 51);
+end;
+$$;
+comment on function public.get_saved_feed_page(uuid, timestamptz, uuid, int) is
+  'Returns saved feed items for the viewer (Saved page), same shape as get_feed_page.';
 
 -- -----------------------------
 -- get_directory_page (Directory: paginated, searchable, filterable, connection-aware)
@@ -914,14 +979,14 @@ comment on function public.get_directory_page is
 -- -----------------------------
 -- Chat: rooms, members, messages, reactions, attachments, blocks, reports
 -- -----------------------------
-create table public.chat_moderators (
+create table if not exists public.chat_moderators (
   email text primary key,
   created_at timestamptz not null default now()
 );
 
 revoke all on table public.chat_moderators from anon, authenticated;
 
-create table public.chat_rooms (
+create table if not exists public.chat_rooms (
   id uuid primary key default gen_random_uuid(),
   room_type text not null check (room_type in ('dm', 'group')),
   name text,
@@ -934,14 +999,14 @@ create table public.chat_rooms (
   )
 );
 
-create index idx_chat_rooms_original_admin_id on public.chat_rooms(original_admin_id);
+create index if not exists idx_chat_rooms_original_admin_id on public.chat_rooms(original_admin_id);
 
-create index idx_chat_rooms_created_by on public.chat_rooms(created_by);
-create index idx_chat_rooms_room_type on public.chat_rooms(room_type);
+create index if not exists idx_chat_rooms_created_by on public.chat_rooms(created_by);
+create index if not exists idx_chat_rooms_room_type on public.chat_rooms(room_type);
 
 comment on table public.chat_rooms is 'Chat rooms: 1:1 (dm) or invite-only group (max 100 members).';
 
-create table public.chat_room_members (
+create table if not exists public.chat_room_members (
   room_id uuid not null references public.chat_rooms(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   role text not null default 'member' check (role in ('admin', 'member')),
@@ -950,12 +1015,12 @@ create table public.chat_room_members (
   primary key (room_id, user_id)
 );
 
-create index idx_chat_room_members_user_id on public.chat_room_members(user_id);
-create index idx_chat_room_members_room_id on public.chat_room_members(room_id);
+create index if not exists idx_chat_room_members_user_id on public.chat_room_members(user_id);
+create index if not exists idx_chat_room_members_room_id on public.chat_room_members(room_id);
 
 comment on table public.chat_room_members is 'Membership: admin (creator for groups), member. left_at set when user leaves.';
 
-create table public.chat_blocks (
+create table if not exists public.chat_blocks (
   blocker_id uuid not null references auth.users(id) on delete cascade,
   blocked_user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -963,12 +1028,12 @@ create table public.chat_blocks (
   check (blocker_id != blocked_user_id)
 );
 
-create index idx_chat_blocks_blocker_id on public.chat_blocks(blocker_id);
-create index idx_chat_blocks_blocked_user_id on public.chat_blocks(blocked_user_id);
+create index if not exists idx_chat_blocks_blocker_id on public.chat_blocks(blocker_id);
+create index if not exists idx_chat_blocks_blocked_user_id on public.chat_blocks(blocked_user_id);
 
 comment on table public.chat_blocks is 'User blocks: disables chat contact both directions.';
 
-create table public.chat_suspensions (
+create table if not exists public.chat_suspensions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   suspended_by uuid not null references auth.users(id) on delete cascade,
@@ -976,11 +1041,11 @@ create table public.chat_suspensions (
   created_at timestamptz not null default now()
 );
 
-create index idx_chat_suspensions_user_id on public.chat_suspensions(user_id);
+create index if not exists idx_chat_suspensions_user_id on public.chat_suspensions(user_id);
 
 comment on table public.chat_suspensions is 'Chat-only suspension by moderator. Platform suspension via profiles.status.';
 
-create table public.chat_messages (
+create table if not exists public.chat_messages (
   id uuid primary key default gen_random_uuid(),
   room_id uuid not null references public.chat_rooms(id) on delete cascade,
   sender_id uuid references auth.users(id) on delete set null,
@@ -991,13 +1056,13 @@ create table public.chat_messages (
   created_at timestamptz not null default now()
 );
 
-create index idx_chat_messages_room_id on public.chat_messages(room_id);
-create index idx_chat_messages_room_created on public.chat_messages(room_id, created_at desc);
-create index idx_chat_messages_sender_id on public.chat_messages(sender_id);
+create index if not exists idx_chat_messages_room_id on public.chat_messages(room_id);
+create index if not exists idx_chat_messages_room_created on public.chat_messages(room_id, created_at desc);
+create index if not exists idx_chat_messages_sender_id on public.chat_messages(sender_id);
 
 comment on table public.chat_messages is 'Chat messages. is_deleted=true shows placeholder. sender_id null when anonymized.';
 
-create table public.chat_message_reactions (
+create table if not exists public.chat_message_reactions (
   message_id uuid not null references public.chat_messages(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   emoji text not null,
@@ -1005,9 +1070,9 @@ create table public.chat_message_reactions (
   primary key (message_id, user_id, emoji)
 );
 
-create index idx_chat_message_reactions_message_id on public.chat_message_reactions(message_id);
+create index if not exists idx_chat_message_reactions_message_id on public.chat_message_reactions(message_id);
 
-create table public.chat_message_attachments (
+create table if not exists public.chat_message_attachments (
   id uuid primary key default gen_random_uuid(),
   message_id uuid not null references public.chat_messages(id) on delete cascade,
   storage_path text not null,
@@ -1021,22 +1086,22 @@ create table public.chat_message_attachments (
   created_at timestamptz not null default now()
 );
 
-create index idx_chat_message_attachments_message_id on public.chat_message_attachments(message_id);
+create index if not exists idx_chat_message_attachments_message_id on public.chat_message_attachments(message_id);
 
 comment on table public.chat_message_attachments is 'Attachments: max 6MB per file, 5 per message, allowlist enforced in app and DB.';
 
-create table public.chat_read_receipts (
+create table if not exists public.chat_read_receipts (
   message_id uuid not null references public.chat_messages(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   read_at timestamptz not null default now(),
   primary key (message_id, user_id)
 );
 
-create index idx_chat_read_receipts_user_id on public.chat_read_receipts(user_id);
+create index if not exists idx_chat_read_receipts_user_id on public.chat_read_receipts(user_id);
 
 comment on table public.chat_read_receipts is 'Read receipts (1:1 rooms only per spec).';
 
-create table public.chat_reports (
+create table if not exists public.chat_reports (
   id uuid primary key default gen_random_uuid(),
   reporter_id uuid not null references auth.users(id) on delete cascade,
   reported_message_id uuid references public.chat_messages(id) on delete set null,
@@ -1054,8 +1119,8 @@ create table public.chat_reports (
   )
 );
 
-create index idx_chat_reports_reporter_id on public.chat_reports(reporter_id);
-create index idx_chat_reports_status on public.chat_reports(status);
+create index if not exists idx_chat_reports_reporter_id on public.chat_reports(reporter_id);
+create index if not exists idx_chat_reports_status on public.chat_reports(status);
 
 comment on table public.chat_reports is 'Reports: message or user; moderator workflow.';
 
@@ -1236,15 +1301,25 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_set_original_admin on public.chat_rooms;
 create trigger trg_chat_set_original_admin
 before insert on public.chat_rooms
 for each row
 execute function public.chat_set_original_admin();
 
--- Enable Realtime for chat_messages (presence, typing, live updates)
-alter publication supabase_realtime add table public.chat_messages;
+-- Enable Realtime for chat_messages (presence, typing, live updates). Idempotent.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'chat_messages'
+  ) then
+    alter publication supabase_realtime add table public.chat_messages;
+  end if;
+end $$;
 
 -- updated_at for chat_rooms
+drop trigger if exists trg_chat_rooms_updated_at on public.chat_rooms;
 create trigger trg_chat_rooms_updated_at
 before update on public.chat_rooms
 for each row
@@ -1266,6 +1341,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_on_member_removed on public.chat_room_members;
 create trigger trg_chat_on_member_removed
 after update of left_at on public.chat_room_members
 for each row
@@ -1306,6 +1382,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_on_suspension on public.chat_suspensions;
 create trigger trg_chat_on_suspension
 after insert on public.chat_suspensions
 for each row
@@ -1334,6 +1411,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_on_unsuspend on public.chat_suspensions;
 create trigger trg_chat_on_unsuspend
 after delete on public.chat_suspensions
 for each row
@@ -1367,6 +1445,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_messages_rate_limit on public.chat_messages;
 create trigger trg_chat_messages_rate_limit
 before insert on public.chat_messages
 for each row
@@ -1375,7 +1454,7 @@ execute function public.chat_rate_limit_check();
 -- -----------------------------
 -- Chat: audit log (90-day retention per spec)
 -- -----------------------------
-create table public.chat_audit_log (
+create table if not exists public.chat_audit_log (
   id uuid primary key default gen_random_uuid(),
   action text not null check (action in (
     'message_sent', 'message_edited', 'message_deleted',
@@ -1390,9 +1469,9 @@ create table public.chat_audit_log (
   created_at timestamptz not null default now()
 );
 
-create index idx_chat_audit_log_created_at on public.chat_audit_log(created_at);
-create index idx_chat_audit_log_actor_id on public.chat_audit_log(actor_id);
-create index idx_chat_audit_log_room_id on public.chat_audit_log(room_id);
+create index if not exists idx_chat_audit_log_created_at on public.chat_audit_log(created_at);
+create index if not exists idx_chat_audit_log_actor_id on public.chat_audit_log(actor_id);
+create index if not exists idx_chat_audit_log_room_id on public.chat_audit_log(room_id);
 
 comment on table public.chat_audit_log is '90-day retention. Prune via cron or scheduled job.';
 
@@ -1417,6 +1496,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_chat_audit_on_message on public.chat_messages;
 create trigger trg_chat_audit_on_message
 after insert or update on public.chat_messages
 for each row
@@ -1582,13 +1662,14 @@ create table if not exists public.content_submissions (
     check (type != 'upload' or storage_path is not null and trim(storage_path) != '')
 );
 
-create index idx_content_submissions_submitted_by on public.content_submissions(submitted_by);
-create index idx_content_submissions_status on public.content_submissions(status);
-create index idx_content_submissions_created_at on public.content_submissions(created_at desc);
+create index if not exists idx_content_submissions_submitted_by on public.content_submissions(submitted_by);
+create index if not exists idx_content_submissions_status on public.content_submissions(status);
+create index if not exists idx_content_submissions_created_at on public.content_submissions(created_at desc);
 
 comment on table public.content_submissions is
   'Community video submissions: YouTube links or uploaded files. Status: pending → approved/rejected/changes_requested → published.';
 
+drop trigger if exists trg_content_submissions_updated_at on public.content_submissions;
 create trigger trg_content_submissions_updated_at
 before update on public.content_submissions
 for each row
@@ -1606,8 +1687,8 @@ create table if not exists public.playlists (
   updated_at timestamptz not null default now()
 );
 
-create index idx_playlists_slug on public.playlists(slug);
-create index idx_playlists_is_public on public.playlists(is_public) where is_public = true;
+create index if not exists idx_playlists_slug on public.playlists(slug);
+create index if not exists idx_playlists_is_public on public.playlists(is_public) where is_public = true;
 
 comment on table public.playlists is
   'Curated playlists for WRDLNKDN YouTube channel. Admin-only management.';
@@ -1621,6 +1702,7 @@ values (
 )
 on conflict (slug) do nothing;
 
+drop trigger if exists trg_playlists_updated_at on public.playlists;
 create trigger trg_playlists_updated_at
 before update on public.playlists
 for each row
@@ -1635,8 +1717,8 @@ create table if not exists public.playlist_items (
   created_at timestamptz not null default now()
 );
 
-create index idx_playlist_items_playlist_id on public.playlist_items(playlist_id);
-create unique index idx_playlist_items_playlist_submission
+create index if not exists idx_playlist_items_playlist_id on public.playlist_items(playlist_id);
+create unique index if not exists idx_playlist_items_playlist_submission
   on public.playlist_items(playlist_id, submission_id);
 
 comment on table public.playlist_items is
@@ -1653,10 +1735,10 @@ create table if not exists public.audit_log (
   created_at timestamptz not null default now()
 );
 
-create index idx_audit_log_created_at on public.audit_log(created_at desc);
-create index idx_audit_log_actor_id on public.audit_log(actor_id);
-create index idx_audit_log_target on public.audit_log(target_type, target_id);
-create index idx_audit_log_target_action_created_at
+create index if not exists idx_audit_log_created_at on public.audit_log(created_at desc);
+create index if not exists idx_audit_log_actor_id on public.audit_log(actor_id);
+create index if not exists idx_audit_log_target on public.audit_log(target_type, target_id);
+create index if not exists idx_audit_log_target_action_created_at
   on public.audit_log(target_type, action, created_at desc);
 
 comment on table public.audit_log is
@@ -1786,7 +1868,7 @@ comment on function public.audit_prune_resume_backfill_lock_events is
 -- -----------------------------
 -- Notifications (in-app activity signals)
 -- -----------------------------
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   recipient_id uuid not null references auth.users(id) on delete cascade,
   actor_id uuid references auth.users(id) on delete set null,
@@ -1805,9 +1887,9 @@ create table public.notifications (
   read_at timestamptz
 );
 
-create index idx_notifications_recipient_created
+create index if not exists idx_notifications_recipient_created
   on public.notifications(recipient_id, created_at desc);
-create index idx_notifications_recipient_unread
+create index if not exists idx_notifications_recipient_unread
   on public.notifications(recipient_id, read_at)
   where read_at is null;
 
@@ -1884,6 +1966,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_notifications_on_feed_reaction on public.feed_items;
 create trigger trg_notifications_on_feed_reaction
   after insert on public.feed_items
   for each row
@@ -1948,6 +2031,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_notifications_on_connection_request on public.connection_requests;
 create trigger trg_notifications_on_connection_request
   after insert on public.connection_requests
   for each row
@@ -2000,6 +2084,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_notifications_on_chat_message on public.chat_messages;
 create trigger trg_notifications_on_chat_message
   after insert on public.chat_messages
   for each row
@@ -2131,6 +2216,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_notifications_on_mention on public.feed_items;
 create trigger trg_notifications_on_mention
   after insert on public.feed_items
   for each row
@@ -2139,7 +2225,7 @@ create trigger trg_notifications_on_mention
 -- -----------------------------
 -- Events (community gatherings)
 -- -----------------------------
-create table public.events (
+create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
@@ -2153,16 +2239,17 @@ create table public.events (
   updated_at timestamptz not null default now()
 );
 
-create index idx_events_start_at on public.events(start_at);
-create index idx_events_host_id on public.events(host_id);
+create index if not exists idx_events_start_at on public.events(start_at);
+create index if not exists idx_events_host_id on public.events(host_id);
 
+drop trigger if exists trg_events_updated_at on public.events;
 create trigger trg_events_updated_at
   before update on public.events
   for each row execute function public.set_updated_at();
 
 comment on table public.events is 'Community gatherings: AMAs, meetups, virtual sessions.';
 
-create table public.event_rsvps (
+create table if not exists public.event_rsvps (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.events(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -2172,9 +2259,10 @@ create table public.event_rsvps (
   unique (event_id, user_id)
 );
 
-create index idx_event_rsvps_event_id on public.event_rsvps(event_id);
-create index idx_event_rsvps_user_id on public.event_rsvps(user_id);
+create index if not exists idx_event_rsvps_event_id on public.event_rsvps(event_id);
+create index if not exists idx_event_rsvps_user_id on public.event_rsvps(user_id);
 
+drop trigger if exists trg_event_rsvps_updated_at on public.event_rsvps;
 create trigger trg_event_rsvps_updated_at
   before update on public.event_rsvps
   for each row execute function public.set_updated_at();
@@ -2198,6 +2286,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_event_rsvps_block_suspended on public.event_rsvps;
 create trigger trg_event_rsvps_block_suspended
   before insert on public.event_rsvps
   for each row execute function public.event_rsvps_block_suspended();

@@ -30,7 +30,7 @@ export const signupStepLabel = {
 } as const;
 
 export const signupStepSubtext = {
-  color: 'rgba(255,255,255,0.95)',
+  color: 'rgba(255,255,255,0.97)', // AAA 7:1 on dark overlay
 } as const;
 
 export const signupLink = {
@@ -49,11 +49,11 @@ export const welcomeStepTitle = {
 } as const;
 
 export const welcomeStepSubtext = {
-  color: 'rgba(255,255,255,0.95)',
+  color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const welcomeStepDescription = {
-  color: 'rgba(255,255,255,0.96)',
+  color: 'rgba(255,255,255,0.98)',
 } as const;
 
 // JoinProgress
@@ -64,14 +64,14 @@ export const signupProgress = {
 
 export const signupProgressStepLabel = {
   ml: 1,
-  color: 'rgba(255,255,255,0.95)',
+  color: 'rgba(255,255,255,0.97)',
   fontSize: '0.875rem',
 } as const;
 
 export const signupProgressFooter = {
   mt: 2,
   textAlign: 'center',
-  '& span': { color: 'rgba(255,255,255,0.95)', fontSize: '0.875rem' },
+  '& span': { color: 'rgba(255,255,255,0.97)', fontSize: '0.875rem' },
 } as const;
 
 // IdentityStep
@@ -132,14 +132,14 @@ export const profileStepTitle = {
 } as const;
 
 export const profileStepSubtext = {
-  color: 'rgba(255,255,255,0.96)',
+  color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const profileStepAlert = {
   bgcolor: 'rgba(211, 47, 47, 0.15)',
   border: '1px solid',
   borderColor: 'rgba(211, 47, 47, 0.3)',
-  color: 'rgba(255,255,255,0.9)',
+  color: 'rgba(255,255,255,0.97)',
   '& .MuiAlert-icon': { color: '#f44336' },
 } as const;
 
@@ -158,11 +158,11 @@ export const profileStepTextField = {
     '&.Mui-error': { color: '#f44336' },
   },
   '& .MuiInputBase-input::placeholder': {
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255,255,255,0.92)',
     opacity: 1,
   },
   '& .MuiFormHelperText-root': {
-    color: 'rgba(255,255,255,0.95)',
+    color: 'rgba(255,255,255,0.97)',
     '&.Mui-error': { color: '#f44336' },
   },
 } as const;
@@ -176,7 +176,7 @@ export const profileStepTipBox = {
 } as const;
 
 export const profileStepTipText = {
-  color: 'rgba(255,255,255,0.96)',
+  color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const profileStepButtonRow = {
@@ -185,8 +185,8 @@ export const profileStepButtonRow = {
 
 export const profileStepBackButton = {
   '&:disabled': {
-    borderColor: 'rgba(255,255,255,0.2)',
-    color: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    color: 'rgba(255,255,255,0.72)', // AAA: readable disabled state
   },
 } as const;
 
@@ -197,8 +197,8 @@ export const profileStepSubmitButton = {
   fontSize: '1.05rem',
   '&:hover': { bgcolor: '#45a049' },
   '&:disabled': {
-    bgcolor: 'rgba(76, 175, 80, 0.3)',
-    color: 'rgba(255,255,255,0.5)',
+    bgcolor: 'rgba(76, 175, 80, 0.35)',
+    color: 'rgba(255,255,255,0.78)', // AAA: readable disabled
   },
 } as const;
 
@@ -210,7 +210,7 @@ export const valuesStepSectionTitle = {
 
 export const valuesStepSectionSubtext = {
   mb: 2,
-  color: 'rgba(255,255,255,0.95)',
+  color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const valuesStepButtonRow = {
@@ -227,7 +227,7 @@ export const reviewStepTitle = {
 } as const;
 
 export const reviewStepSubtext = {
-  color: 'rgba(255,255,255,0.95)',
+  color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const reviewStepSection = {

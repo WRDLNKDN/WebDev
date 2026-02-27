@@ -1,6 +1,9 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, Link, Stack, Typography } from '@mui/material';
-import { CATEGORY_ORDER } from '../../constants/platforms';
+import {
+  CATEGORY_ORDER,
+  getCategoryForPlatform,
+} from '../../constants/platforms';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
@@ -18,23 +21,29 @@ interface ProfileLinksWidgetProps {
   grouped?: boolean;
 }
 
-type DisplayCategory = 'Professional' | 'Social' | 'Other';
+type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
 const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
   'Professional',
   'Social',
+  'Content',
   'Other',
 ];
 
 const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
-  if (link.category === 'Professional' || link.category === 'Social') {
+  if (
+    link.category === 'Professional' ||
+    link.category === 'Social' ||
+    link.category === 'Content'
+  ) {
     return link.category;
   }
-
-  const platform = (
-    link.platform?.trim() || detectPlatformFromUrl(link.url)
-  ).toLowerCase();
-  if (platform === 'linkedin' || platform === 'github') return 'Professional';
-  if (platform === 'instagram' || platform === 'facebook') return 'Social';
+  // Custom or unknown: infer from platform so we don't mis-group
+  const platform =
+    link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
+  const inferred = getCategoryForPlatform(platform);
+  if (inferred === 'Professional') return 'Professional';
+  if (inferred === 'Social') return 'Social';
+  if (inferred === 'Content') return 'Content';
   return 'Other';
 };
 
@@ -157,6 +166,7 @@ export const ProfileLinksWidget = ({
     {
       Professional: [],
       Social: [],
+      Content: [],
       Other: [],
     },
   );

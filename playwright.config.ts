@@ -10,9 +10,8 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 15_000 },
 
-  // Keep this deterministic. If you want retries/workers later,
-  // we can add them back after TS is happy.
   retries: 1,
+  workers: isCI ? 2 : 6,
 
   reporter: isCI
     ? [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']]
@@ -26,7 +25,8 @@ export default defineConfig({
   },
 
   webServer: {
-    command: 'npm run e2e:serve:ci',
+    // CI: Vite only (no backend env). Local: full stack so /api/* works.
+    command: isCI ? 'npm run e2e:serve:ci' : 'npm run e2e:serve',
     url: BASE_URL,
     reuseExistingServer: !isCI,
     timeout: 120_000,

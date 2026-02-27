@@ -1,4 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupportedOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -46,11 +47,11 @@ export const ProjectCard = ({
   return (
     <Paper
       sx={{
-        ...CANDY_BLUEY, // Spread first to ensure brand base
+        ...CANDY_BLUEY, // Spread first to ensure brand base (compact for Dashboard)
         width: '100%',
-        maxWidth: 360,
-        minHeight: { xs: 320, md: 400 },
-        height: { xs: 320, md: 400 },
+        maxWidth: 240,
+        minHeight: { xs: 160, md: 200 },
+        height: { xs: 160, md: 200 },
         borderRadius: 3,
         scrollSnapAlign: 'start',
         display: 'flex',
@@ -150,9 +151,28 @@ export const ProjectCard = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexDirection: 'column',
+              p: 2,
+              bgcolor: 'rgba(0,0,0,0.25)',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
             }}
+            aria-hidden
           >
-            <Typography variant="caption">No image</Typography>
+            <ImageNotSupportedOutlinedIcon
+              sx={{
+                fontSize: 40,
+                color: 'text.secondary',
+                opacity: 0.7,
+                mb: 1,
+              }}
+            />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textAlign: 'center' }}
+            >
+              Preview unavailable
+            </Typography>
           </Box>
         )}
       </Box>

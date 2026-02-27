@@ -41,3 +41,34 @@ export const CATEGORY_ORDER: LinkCategory[] = [
   'Content',
   'Custom',
 ];
+
+/** Valid link categories for persistence/display. */
+const VALID_LINK_CATEGORIES: LinkCategory[] = [
+  'Professional',
+  'Social',
+  'Content',
+  'Custom',
+];
+
+/** Map platform value (lowercase) → LinkCategory. Used when category is missing. */
+const PLATFORM_TO_CATEGORY = new Map<string, LinkCategory>(
+  PLATFORM_OPTIONS.map((p) => [p.value.toLowerCase(), p.category]),
+);
+
+/**
+ * Returns the canonical category for a platform. Use when stored category is
+ * missing or invalid so we never default to wrong group (e.g. Discord → Social).
+ */
+export function getCategoryForPlatform(platform: string): LinkCategory {
+  if (!platform || typeof platform !== 'string') return 'Custom';
+  const key = platform.trim().toLowerCase();
+  return PLATFORM_TO_CATEGORY.get(key) ?? 'Custom';
+}
+
+/** True if value is a valid stored category. */
+export function isValidLinkCategory(value: unknown): value is LinkCategory {
+  return (
+    typeof value === 'string' &&
+    VALID_LINK_CATEGORIES.includes(value as LinkCategory)
+  );
+}

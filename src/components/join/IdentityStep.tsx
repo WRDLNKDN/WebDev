@@ -49,8 +49,8 @@ const oauthButtonSx = {
     bgcolor: 'rgba(255,255,255,0.12)',
   },
   '&.Mui-disabled': {
-    borderColor: 'rgba(255,255,255,0.2)',
-    color: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    color: 'rgba(255,255,255,0.72)', // AAA readable disabled
   },
 };
 

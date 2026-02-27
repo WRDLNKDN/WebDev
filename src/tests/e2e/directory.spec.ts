@@ -11,31 +11,33 @@ test.describe('Directory Page', () => {
     });
   });
 
-  test('unauthenticated user redirects to join', async ({ page }) => {
+  test('unauthenticated user redirects to home', async ({ page }) => {
     await page.goto('/directory');
 
     await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
-    // Signed-out: RequireOnboarded redirects to /join
-    await expect(page).toHaveURL(/\/join/, { timeout: 10000 });
+    // Signed-out: RequireOnboarded redirects to /
+    await expect
+      .poll(() => new URL(page.url()).pathname === '/', { timeout: 15000 })
+      .toBe(true);
   });
 
-  test('directory does not crash; unauthenticated redirects to join', async ({
+  test('directory does not crash; unauthenticated redirects to home', async ({
     page,
   }) => {
-    // No auth fixture: RequireOnboarded redirects to /join
+    // No auth fixture: RequireOnboarded redirects to /
     await page.goto('/directory');
 
     await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
     // Wait for redirect (RequireOnboarded async check can take a few seconds)
-    await expect(page).toHaveURL(/\/join/, { timeout: 15000 });
+    await expect
+      .poll(() => new URL(page.url()).pathname === '/', { timeout: 15000 })
+      .toBe(true);
 
-    await expect(page.getByRole('button', { name: /Join/i })).toHaveCount(0);
+    // Home shows Join and Sign in for guests
     await expect(
-      page.getByRole('button', { name: /Sign in/i }).first(),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+      page.getByRole('link', { name: /Join|Sign in/i }).first(),
+    ).toBeVisible({ timeout: 10000 });
   });
 });

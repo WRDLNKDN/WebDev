@@ -38,6 +38,8 @@ export const RequireOnboarded = ({
   );
   const hasEverAllowedRef = useRef<boolean>(Boolean(hasValidatedFromState));
   const checkRunRef = useRef(0);
+  /** No session → /; not onboarded → /join */
+  const redirectToRef = useRef<'/' | '/join'>('/join');
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +91,7 @@ export const RequireOnboarded = ({
 
       if (!data.session) {
         devLog('🔴 RequireOnboarded: No session found after grace check');
+        redirectToRef.current = '/';
         setState('redirect');
         return;
       }
@@ -176,6 +179,7 @@ export const RequireOnboarded = ({
         devLog(
           '🔴 RequireOnboarded: No profile after 3 attempts, redirecting to /join',
         );
+        redirectToRef.current = '/join';
         setState('redirect');
         return;
       }
@@ -192,15 +196,16 @@ export const RequireOnboarded = ({
         typeof profile.status === 'string' &&
         ENFORCED_INACTIVE_STATUSES.has(profile.status)
       ) {
-        // Deterministic enforcement: revoke local session and block app surfaces.
         await supabase.auth.signOut({ scope: 'global' });
         hasEverAllowedRef.current = false;
+        redirectToRef.current = '/';
         setState('redirect');
         return;
       }
 
       if (!isProfileOnboarded(profile)) {
         devLog('🔴 RequireOnboarded: Profile not onboarded');
+        redirectToRef.current = '/join';
         setState('redirect');
         return;
       }
@@ -265,7 +270,9 @@ export const RequireOnboarded = ({
   }
 
   if (state === 'redirect') {
-    return <Navigate to="/join" replace state={{ from: location }} />;
+    return (
+      <Navigate to={redirectToRef.current} replace state={{ from: location }} />
+    );
   }
 
   return <>{children}</>;

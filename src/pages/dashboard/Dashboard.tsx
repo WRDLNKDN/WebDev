@@ -105,10 +105,14 @@ export const Dashboard = () => {
       ? safeNerdCreds.resume_thumbnail_status
       : null;
 
-  const bio = safeStr(
-    safeNerdCreds.bio,
-    '"Building the Human OS. Prioritizing authenticity over engagement metrics."',
-  );
+  // Description: Join wizard About (additional_context) first, then Edit Profile bio
+  const descriptionFromJoin = safeStr(profile?.additional_context).trim();
+  const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
+  const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
+  const bio = hasDescription
+    ? descriptionFromJoin || descriptionFromBio
+    : 'Add a short About to your profile.';
+  const bioIsPlaceholder = !hasDescription;
   const selectedSkills =
     Array.isArray(safeNerdCreds.skills) &&
     safeNerdCreds.skills.every((skill) => typeof skill === 'string')
@@ -193,6 +197,7 @@ export const Dashboard = () => {
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
+          bioIsPlaceholder={bioIsPlaceholder}
           avatarUrl={avatarUrl}
           slotLeftOfAvatar={
             hasVisibleSocialLinks ? (
@@ -372,12 +377,15 @@ export const Dashboard = () => {
           }
         />
 
-        {/* PORTFOLIO: Resume + Projects */}
+        {/* PORTFOLIO: Resume + Projects — no horizontal scroll; tiles wrap vertically */}
         <Paper
           elevation={0}
           sx={{
             ...GLASS_CARD,
             p: { xs: 2, md: 3 },
+            overflowX: 'hidden',
+            width: '100%',
+            maxWidth: '100%',
           }}
         >
           <Typography
@@ -393,45 +401,25 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          {/* Action buttons: Portfolio only */}
-          <Box
-            sx={{
-              mb: 4,
-              display: 'grid',
-              gap: 2,
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                lg: 'repeat(3, minmax(0, 1fr))',
-              },
-              justifyItems: { xs: 'stretch', sm: 'center' },
-            }}
-          >
-            <Box
+          {/* Action buttons: compact (~50% of previous size); only these when no resume */}
+          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+            <Button
               component="label"
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
               sx={{
-                width: '100%',
-                maxWidth: 360,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 116,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                borderColor: 'rgba(255,255,255,0.3)',
                 color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
+                textTransform: 'none',
+                fontWeight: 600,
+                minHeight: 28,
+                py: 0.5,
+                px: 1.5,
+                fontSize: '0.8125rem',
               }}
             >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Resume
-              </Typography>
+              Resume
               <input
                 type="file"
                 hidden
@@ -441,42 +429,31 @@ export const Dashboard = () => {
                   if (f) handleResumeUpload(f);
                 }}
               />
-            </Box>
-            <Box
-              component="button"
-              type="button"
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
               onClick={() => setIsAddProjectOpen(true)}
               sx={{
-                width: '100%',
-                maxWidth: 360,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 116,
-                bgcolor: 'rgba(45, 45, 50, 0.95)',
+                borderColor: 'rgba(255,255,255,0.3)',
                 color: 'white',
-                borderRadius: 2,
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                '&:hover': {
-                  bgcolor: 'rgba(60, 60, 65, 0.95)',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                },
+                textTransform: 'none',
+                fontWeight: 600,
+                minHeight: 28,
+                py: 0.5,
+                px: 1.5,
+                fontSize: '0.8125rem',
               }}
             >
-              <AddIcon sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Add Project
-              </Typography>
-            </Box>
-          </Box>
+              Add Project
+            </Button>
+          </Stack>
 
           <Box
             sx={{
               display: 'grid',
-              gap: 2.5,
+              gap: 1.5,
               gridTemplateColumns: {
                 xs: '1fr',
                 sm: 'repeat(2, minmax(0, 1fr))',
@@ -486,19 +463,27 @@ export const Dashboard = () => {
               alignItems: 'start',
             }}
           >
-            <ResumeCard
-              url={profile?.resume_url}
-              thumbnailUrl={resumeThumbnailUrl}
-              thumbnailStatus={resumeThumbnailStatus}
-              onUpload={handleResumeUpload}
-              onRetryThumbnail={() => {
-                void retryResumeThumbnail().catch((e) => {
-                  setSnack(toMessage(e));
-                });
-              }}
-              retryThumbnailBusy={updating}
-              isOwner
-            />
+            {/* Resume tile only when resume exists; "+ Resume" button above is the only CTA when none */}
+            {profile?.resume_url ? (
+              <ResumeCard
+                url={profile?.resume_url}
+                thumbnailUrl={resumeThumbnailUrl}
+                thumbnailStatus={resumeThumbnailStatus}
+                thumbnailError={
+                  typeof safeNerdCreds.resume_thumbnail_error === 'string'
+                    ? safeNerdCreds.resume_thumbnail_error
+                    : null
+                }
+                onUpload={handleResumeUpload}
+                onRetryThumbnail={() => {
+                  void retryResumeThumbnail().catch((e) => {
+                    setSnack(toMessage(e));
+                  });
+                }}
+                retryThumbnailBusy={updating}
+                isOwner
+              />
+            ) : null}
 
             {orderedProjects.map((project, index) => (
               <ProjectCard

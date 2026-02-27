@@ -229,6 +229,7 @@ declare
     'feed_connections',
     'connection_requests',
     'feed_items',
+    'saved_feed_items',
     'chat_rooms',
     'chat_room_members',
     'chat_blocks',
@@ -358,6 +359,7 @@ grant update (
   industry,
   location,
   profile_visibility,
+  feed_view_preference,
   last_active_at,
   socials,
   join_reason,
@@ -519,6 +521,25 @@ create policy "Users can delete own feed items"
 
 revoke all on table public.feed_items from anon, authenticated;
 grant select, insert, delete on table public.feed_items to authenticated;
+
+-- -----------------------------
+-- get_saved_feed_page(): execute grant
+-- -----------------------------
+grant execute on function public.get_saved_feed_page(uuid, timestamptz, uuid, int) to authenticated, service_role;
+
+-- -----------------------------
+-- saved_feed_items: RLS
+-- -----------------------------
+alter table public.saved_feed_items enable row level security;
+
+create policy "Users can manage own saved feed items"
+  on public.saved_feed_items for all
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+revoke all on table public.saved_feed_items from anon, authenticated;
+grant select, insert, delete on table public.saved_feed_items to authenticated;
 
 -- -----------------------------
 -- storage.objects: avatars bucket policies
@@ -1209,6 +1230,7 @@ declare
     'feed_connections',
     'connection_requests',
     'feed_items',
+    'saved_feed_items',
     'chat_rooms',
     'chat_room_members',
     'chat_blocks',

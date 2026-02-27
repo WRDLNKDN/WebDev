@@ -87,6 +87,7 @@ export type FeedItem = {
   care_count?: number;
   viewer_reaction?: ReactionType | null;
   comment_count?: number;
+  viewer_saved?: boolean;
   /** @deprecated Use viewer_reaction instead */
   viewer_liked?: boolean;
 };
@@ -152,12 +153,14 @@ export async function updateFeedViewPreference(params: {
 export async function fetchFeeds(options?: {
   limit?: number;
   cursor?: string;
+  saved?: boolean;
   accessToken?: string | null;
 }): Promise<FeedsResponse> {
   const params = new URLSearchParams();
   const limit = options?.limit ?? 20;
   params.set('limit', String(Math.min(50, Math.max(1, limit))));
   if (options?.cursor?.trim()) params.set('cursor', options.cursor.trim());
+  if (options?.saved === true) params.set('saved', 'true');
 
   const url = `${API_BASE}/api/feeds?${params.toString()}`;
   const res = await authedFetch(
@@ -354,6 +357,62 @@ export async function repostPost(params: {
     { kind: 'repost', original_id: originalId },
     params.accessToken ?? null,
   );
+}
+
+export async function saveFeedPost(params: {
+  postId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const postId = params.postId.trim();
+  if (!postId) throw new Error('Post id is required');
+  const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/save`;
+  const res = await authedFetch(
+    url,
+    { method: 'POST' },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      body = { error: undefined };
+    }
+    throw new Error(messageFromApiResponse(res.status, body.error));
+  }
+}
+
+export async function unsaveFeedPost(params: {
+  postId: string;
+  accessToken?: string | null;
+}): Promise<void> {
+  const postId = params.postId.trim();
+  if (!postId) throw new Error('Post id is required');
+  const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}/save`;
+  const res = await authedFetch(
+    url,
+    { method: 'DELETE' },
+    {
+      accessToken: params.accessToken ?? null,
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  if (!res.ok && res.status !== 204) {
+    let body: { error?: string };
+    try {
+      body = await parseJsonResponse<{ error?: string }>(res, url);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+      body = { error: undefined };
+    }
+    throw new Error(messageFromApiResponse(res.status, body.error));
+  }
 }
 
 export async function deleteFeedPost(params: {

@@ -324,7 +324,11 @@ export const LandingPage = () => {
           <IdentityHeader
             displayName={safeStr(profile.display_name)}
             tagline={profile.tagline ?? undefined}
-            bio={safeStr(creds.bio)}
+            bio={
+              safeStr(profile.additional_context).trim() ||
+              safeStr(creds.bio).trim()
+            }
+            bioIsPlaceholder={false}
             avatarUrl={
               viewer?.id === profile.id
                 ? (currentUserAvatarUrl ?? resolvedAvatarUrl ?? profile.avatar)

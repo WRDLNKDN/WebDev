@@ -141,7 +141,10 @@ export const CommunityPartnersPage = () => {
                       </Typography>
                     )}
                     {partner.description && (
-                      <Typography variant="body2" sx={{ mt: 1.25 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 1.25, color: 'text.primary' }}
+                      >
                         {partner.description}
                       </Typography>
                     )}
@@ -152,6 +155,8 @@ export const CommunityPartnersPage = () => {
                       href={partner.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      variant="contained"
+                      color="primary"
                       endIcon={<OpenInNewIcon />}
                       onClick={() =>
                         trackEvent('community_partner_outbound_click', {
@@ -163,7 +168,6 @@ export const CommunityPartnersPage = () => {
                       }
                       sx={{
                         textTransform: 'none',
-                        color: 'text.primary',
                         fontWeight: 600,
                       }}
                     >
@@ -198,8 +202,13 @@ export const CommunityPartnersPage = () => {
         <Button
           component={RouterLink}
           to="/feed"
-          variant="text"
-          sx={{ textTransform: 'none', mt: 3 }}
+          variant="outlined"
+          sx={{
+            textTransform: 'none',
+            mt: 3,
+            color: 'text.primary',
+            borderColor: 'rgba(255,255,255,0.5)',
+          }}
         >
           Back to feed
         </Button>

@@ -12,7 +12,9 @@ const RLS_SQL = readFileSync(
 
 describe('community partners schema governance', () => {
   it('defines dedicated community_partners table in tables migration', () => {
-    expect(TABLES_SQL).toContain('create table public.community_partners');
+    expect(TABLES_SQL).toMatch(
+      /create\s+table\s+if\s+not\s+exists\s+public\.community_partners/,
+    );
     expect(TABLES_SQL).toContain(
       'comment on table public.community_partners is',
     );

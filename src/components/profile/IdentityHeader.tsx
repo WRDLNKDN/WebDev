@@ -8,6 +8,8 @@ interface IdentityHeaderProps {
   displayName: string;
   tagline?: string;
   bio: string;
+  /** When true, bio is empty-state prompt (no quotes, muted style) */
+  bioIsPlaceholder?: boolean;
   avatarUrl?: string | null;
   statusEmoji?: string;
   statusMessage?: string;
@@ -34,6 +36,7 @@ export const IdentityHeader = ({
   displayName,
   tagline,
   bio,
+  bioIsPlaceholder = false,
   avatarUrl,
   slotLeftOfAvatar,
   slotUnderAvatarLabel,
@@ -160,35 +163,43 @@ export const IdentityHeader = ({
             {tagline}
           </Typography>
         )}
-        <Typography
-          variant="overline"
-          sx={{
-            letterSpacing: 1.5,
-            color: 'text.secondary',
-            fontWeight: 700,
-            fontSize: '0.72rem',
-            display: 'block',
-            mt: 0.5,
-          }}
-        >
-          Description
-        </Typography>
-        <Typography
-          component="blockquote"
-          variant="body1"
-          color="text.secondary"
-          sx={{
-            lineHeight: 1.6,
-            fontStyle: 'italic',
-            borderLeft: '3px solid',
-            borderColor: 'primary.main',
-            pl: 2,
-            my: 1,
-            maxWidth: 560,
-          }}
-        >
-          &ldquo;{bio}&rdquo;
-        </Typography>
+        {bio && (
+          <>
+            <Typography
+              variant="overline"
+              sx={{
+                letterSpacing: 1.5,
+                color: 'text.secondary',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                display: 'block',
+                mt: 0.5,
+              }}
+            >
+              Description
+            </Typography>
+            <Typography
+              component={bioIsPlaceholder ? 'p' : 'blockquote'}
+              variant="body1"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.6,
+                fontStyle: bioIsPlaceholder ? 'normal' : 'italic',
+                ...(bioIsPlaceholder
+                  ? { opacity: 0.7, fontSize: '0.9rem' }
+                  : {
+                      borderLeft: '3px solid',
+                      borderColor: 'primary.main',
+                      pl: 2,
+                    }),
+                my: 1,
+                maxWidth: 560,
+              }}
+            >
+              {bioIsPlaceholder ? bio : <>&ldquo;{bio}&rdquo;</>}
+            </Typography>
+          </>
+        )}
 
         {badges && (
           <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2, mb: 2 }}>

@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  getCategoryForPlatform,
+  isValidLinkCategory,
+} from '../constants/platforms';
 import { supabase } from '../lib/auth/supabaseClient';
 import { authedFetch } from '../lib/api/authFetch';
 import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
@@ -11,6 +15,9 @@ import type { Json } from '../types/supabase';
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
+
+/** Timeout for resume thumbnail generation request; after this we stop waiting and show error/retry. */
+const RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS = 120_000;
 
 export function useProfile() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
@@ -30,20 +37,29 @@ export function useProfile() {
             'url' in s &&
             typeof (s as { url: unknown }).url === 'string',
         )
-        .map((s, index) => ({
-          ...(s as SocialLink),
-          platform: (() => {
+        .map((s, index) => {
+          const url = (s as { url: string }).url;
+          const platform = (() => {
             const candidate = (s as { platform?: unknown }).platform;
             return typeof candidate === 'string' && candidate.trim()
               ? candidate
-              : detectPlatformFromUrl((s as { url: string }).url);
-          })(),
-          isVisible: (s as { isVisible?: boolean }).isVisible !== false,
-          order:
-            typeof (s as { order?: number }).order === 'number'
-              ? (s as { order: number }).order
-              : index,
-        }));
+              : detectPlatformFromUrl(url);
+          })();
+          const storedCategory = (s as { category?: unknown }).category;
+          const category = isValidLinkCategory(storedCategory)
+            ? storedCategory
+            : getCategoryForPlatform(platform);
+          return {
+            ...(s as SocialLink),
+            platform,
+            category,
+            isVisible: (s as { isVisible?: boolean }).isVisible !== false,
+            order:
+              typeof (s as { order?: number }).order === 'number'
+                ? (s as { order: number }).order
+                : index,
+          };
+        });
     }
 
     // Legacy shape support: { discord?: string, reddit?: string, github?: string }
@@ -238,6 +254,18 @@ export function useProfile() {
       const payload: Record<string, unknown> = { ...topLevelUpdates };
       if (updates.nerd_creds !== undefined) {
         payload.nerd_creds = mergedNerdCreds as unknown as Json;
+      }
+
+      // Persist socials with category and platform so save never overwrites with wrong defaults
+      if (Array.isArray(payload.socials)) {
+        payload.socials = (payload.socials as SocialLink[]).map((link) => {
+          const platform =
+            link.platform?.trim() || detectPlatformFromUrl(link.url);
+          const category = isValidLinkCategory(link.category)
+            ? link.category
+            : getCategoryForPlatform(platform);
+          return { ...link, platform, category };
+        }) as unknown as Json;
       }
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)
@@ -586,18 +614,25 @@ export function useProfile() {
       });
 
       if (ext === '.doc' || ext === '.docx') {
+        const thumbController = new AbortController();
+        const thumbTimeout = setTimeout(
+          () => thumbController.abort(),
+          RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
+        );
         try {
           const thumbResponse = await authedFetch(
             `${API_BASE}/api/resumes/generate-thumbnail`,
             {
               method: 'POST',
               body: JSON.stringify({ storagePath: fileName }),
+              signal: thumbController.signal,
             },
             {
               includeJsonContentType: true,
               credentials: API_BASE ? 'omit' : 'include',
             },
           );
+          clearTimeout(thumbTimeout);
 
           const thumbPayload = (await thumbResponse.json()) as
             | {
@@ -618,7 +653,18 @@ export function useProfile() {
             );
           }
         } catch (thumbnailError) {
+          clearTimeout(thumbTimeout);
           console.warn('Resume thumbnail generation failed:', thumbnailError);
+          // Backend may have set nerd_creds to failed; sync so UI shows failed state and Retry, not stuck pending
+          await fetchData();
+          if (
+            thumbnailError instanceof Error &&
+            thumbnailError.name === 'AbortError'
+          ) {
+            throw new Error(
+              'Preview generation timed out. You can try again from the resume card.',
+            );
+          }
         }
       }
 
@@ -652,41 +698,50 @@ export function useProfile() {
       }
 
       const storagePath = `${session.user.id}/resume.${ext.slice(1)}`;
-      setProfile((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          nerd_creds: {
-            ...(prev.nerd_creds as Record<string, unknown>),
-            resume_thumbnail_status: 'pending',
-            resume_thumbnail_error: null,
-          },
-        };
-      });
 
-      const res = await authedFetch(
-        `${API_BASE}/api/resumes/generate-thumbnail`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ storagePath }),
-        },
-        {
-          includeJsonContentType: true,
-          credentials: API_BASE ? 'omit' : 'include',
-        },
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
       );
-      const payload = (await res.json()) as
-        | { error?: string; message?: string }
-        | undefined;
-      if (!res.ok) {
-        throw new Error(
-          messageFromApiResponse(res.status, payload?.error, payload?.message),
+      let res: Response;
+      let payload: { error?: string; message?: string } | undefined;
+      try {
+        res = await authedFetch(
+          `${API_BASE}/api/resumes/generate-thumbnail`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ storagePath }),
+            signal: controller.signal,
+          },
+          {
+            includeJsonContentType: true,
+            credentials: API_BASE ? 'omit' : 'include',
+          },
         );
+        payload = (await res.json()) as
+          | { error?: string; message?: string }
+          | undefined;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
+      // Always sync with backend (it sets complete or failed); avoids stuck "Generating preview..."
       await fetchData();
+
+      if (!res!.ok) {
+        throw new Error(
+          messageFromApiResponse(res!.status, payload?.error, payload?.message),
+        );
+      }
     } catch (err) {
       console.error(err);
+      if (err instanceof Error && err.name === 'AbortError') {
+        await fetchData();
+        throw new Error(
+          'Preview generation timed out. You can try again from the resume card.',
+        );
+      }
       throw new Error(toMessage(err));
     } finally {
       setUpdating(false);

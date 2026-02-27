@@ -21,23 +21,29 @@ interface ProfileLinksWidgetProps {
   grouped?: boolean;
 }
 
-type DisplayCategory = 'Professional' | 'Social' | 'Other';
+type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
 const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
   'Professional',
   'Social',
+  'Content',
   'Other',
 ];
 
 const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
-  if (link.category === 'Professional' || link.category === 'Social') {
+  if (
+    link.category === 'Professional' ||
+    link.category === 'Social' ||
+    link.category === 'Content'
+  ) {
     return link.category;
   }
-
+  // Custom or unknown: infer from platform so we don't mis-group
   const platform =
     link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
   const inferred = getCategoryForPlatform(platform);
   if (inferred === 'Professional') return 'Professional';
   if (inferred === 'Social') return 'Social';
+  if (inferred === 'Content') return 'Content';
   return 'Other';
 };
 
@@ -160,6 +166,7 @@ export const ProfileLinksWidget = ({
     {
       Professional: [],
       Social: [],
+      Content: [],
       Other: [],
     },
   );

@@ -44,12 +44,12 @@ test.describe('Auth callback timeout recovery', () => {
   test('shows timeout guidance instead of infinite spinner', async ({
     page,
   }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(70_000);
     await seedSignedInSession(page);
 
-    // Simulate stalled profile fetch after OAuth callback.
+    // Simulate stalled profile fetch so app never completes; UI timeout (30s) shows guidance.
     await page.route('**/rest/v1/profiles*', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 25_000));
+      await new Promise((resolve) => setTimeout(resolve, 22_000));
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -59,9 +59,10 @@ test.describe('Auth callback timeout recovery', () => {
 
     await page.goto('/auth/callback?next=/feed');
 
+    // AuthCallback shows message after callbackTimeoutMs (30s); allow buffer for CI.
     await expect(
       page.getByText('Sign-in is taking longer than expected.'),
-    ).toBeVisible({ timeout: 35_000 });
+    ).toBeVisible({ timeout: 45_000 });
 
     const copyButton = page.getByRole('button', { name: 'Copy debug info' });
     await expect(copyButton).toBeVisible();

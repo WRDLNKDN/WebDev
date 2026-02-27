@@ -163,6 +163,7 @@ create index if not exists idx_profiles_bio_trgm
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -297,6 +298,7 @@ comment on table public.weirdlings is
 create or replace function public.set_generation_jobs_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -566,6 +568,11 @@ comment on table public.saved_feed_items is
 -- -----------------------------
 -- get_feed_page (cursor-based pagination; feed_view: anyone | connections; reaction counts; scheduled posts)
 -- -----------------------------
+
+-- Required: drop before recreate if return type changed (prevents 42P13)
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, integer, text) cascade;
+drop function if exists public.get_feed_page(uuid, timestamptz, uuid, integer) cascade;
+
 create or replace function public.get_feed_page(
   p_viewer_id uuid,
   p_cursor_created_at timestamptz default null,

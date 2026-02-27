@@ -46,9 +46,18 @@ const LayoutContent = () => {
           ...PAGE_BG,
         }}
       >
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </Box>
         <Footer />
       </Box>
       <MessengerOverlay />

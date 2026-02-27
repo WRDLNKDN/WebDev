@@ -1,6 +1,8 @@
 -- supabase/migrations/20260121180000_tables.sql
 -- All tables, functions, and triggers. Idempotent: does NOT drop tables or data.
--- Use CREATE TABLE IF NOT EXISTS and CREATE OR REPLACE so re-running preserves existing data.
+-- - Tables: CREATE TABLE IF NOT EXISTS only (never DROP TABLE).
+-- - Triggers: DROP TRIGGER IF EXISTS before CREATE TRIGGER (removes only the trigger, not the table).
+-- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; tables unchanged.
 
 -- Extensions used by schema/indexes
 create schema if not exists extensions;
@@ -359,6 +361,7 @@ create index if not exists idx_connection_requests_pending_recipient_requester
 comment on table public.connection_requests is
   'Connection requests: pending until accepted (creates mutual feed_connections) or declined.';
 
+drop trigger if exists trg_connection_requests_updated_at on public.connection_requests;
 create trigger trg_connection_requests_updated_at
   before update on public.connection_requests
   for each row execute function public.set_updated_at();
@@ -1309,6 +1312,7 @@ begin
 end $$;
 
 -- updated_at for chat_rooms
+drop trigger if exists trg_chat_rooms_updated_at on public.chat_rooms;
 create trigger trg_chat_rooms_updated_at
 before update on public.chat_rooms
 for each row

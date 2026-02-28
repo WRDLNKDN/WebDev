@@ -60,7 +60,7 @@ describe('getNotificationLink', () => {
     ).toBe('/feed');
   });
 
-  it('returns /chat/roomId for chat_message with room_id', () => {
+  it('returns /chat-full/roomId for chat_message with room_id', () => {
     expect(
       getNotificationLink(
         row({
@@ -68,16 +68,16 @@ describe('getNotificationLink', () => {
           payload: { room_id: 'room-xyz' },
         }),
       ),
-    ).toBe('/chat/room-xyz');
+    ).toBe('/chat-full/room-xyz');
   });
 
-  it('returns /chat when chat_message has no room_id', () => {
+  it('returns /chat-full when chat_message has no room_id', () => {
     expect(
       getNotificationLink(row({ type: 'chat_message', payload: {} })),
-    ).toBe('/chat');
+    ).toBe('/chat-full');
   });
 
-  it('returns /chat when chat_message reference is deleted', () => {
+  it('returns /chat-full when chat_message reference is deleted', () => {
     expect(
       getNotificationLink(
         row({
@@ -86,7 +86,7 @@ describe('getNotificationLink', () => {
           reference_exists: false,
         }),
       ),
-    ).toBe('/chat');
+    ).toBe('/chat-full');
   });
 
   it('returns /events/:id for event_rsvp with reference_id', () => {

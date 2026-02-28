@@ -162,10 +162,17 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_events') then
     alter table public.profiles add column marketing_events boolean not null default false;
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'secondary_industry') then
+    alter table public.profiles add column secondary_industry text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'niche_field') then
+    alter table public.profiles add column niche_field text;
+  end if;
 end $$;
 
 -- Directory indexes (idempotent)
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index if not exists idx_profiles_secondary_industry on public.profiles(secondary_industry) where secondary_industry is not null;
 create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
 create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
 
@@ -304,7 +311,8 @@ grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int, tex
 -- get_directory_page(): execute grant
 -- -----------------------------
 revoke all on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) from public;
-grant execute on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) to authenticated, service_role;
+revoke all on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) from public;
+grant execute on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) to authenticated, service_role;
 
 -- -----------------------------
 -- profiles: RLS
@@ -452,6 +460,12 @@ create policy "Users can read own connections"
   on public.feed_connections for select
   to authenticated
   using ((select auth.uid()) = feed_connections.user_id);
+
+-- Allow reading rows where current user is connected_user_id (so Start a chat can see mutual connections)
+create policy "Users can read connections where they are connected_user"
+  on public.feed_connections for select
+  to authenticated
+  using ((select auth.uid()) = feed_connections.connected_user_id);
 
 create policy "Users can insert own connections"
   on public.feed_connections for insert
@@ -618,6 +632,20 @@ create policy "Public read project-images"
   on storage.objects for select
   to public
   using (bucket_id = 'project-images');
+
+-- portfolio-thumbnails: worker/authenticated upload, public read. Additive only: new policies for new bucket.
+-- Does not modify portfolio_items or any other table RLS; no data touched.
+drop policy if exists "Authenticated can upload portfolio-thumbnails" on storage.objects;
+create policy "Authenticated can upload portfolio-thumbnails"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'portfolio-thumbnails');
+
+drop policy if exists "Public read portfolio-thumbnails" on storage.objects;
+create policy "Public read portfolio-thumbnails"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'portfolio-thumbnails');
 
 -- resumes: authenticated upload (own path), public read
 drop policy if exists "Authenticated can upload resumes" on storage.objects;

@@ -3,7 +3,7 @@
  */
 
 export const signupPaper = {
-  p: { xs: 3, md: 4 },
+  p: { xs: 2, md: 2.5 },
   borderRadius: 2,
   border: '1px solid',
   borderColor: 'divider',
@@ -11,7 +11,7 @@ export const signupPaper = {
 
 export const signupMain = {
   minHeight: '100vh',
-  py: 6,
+  py: 2,
   px: 2,
   display: 'flex',
   flexDirection: 'column',
@@ -21,12 +21,12 @@ export const signupMain = {
 export const signupProgressWrapper = {
   width: '100%',
   maxWidth: 900,
-  mb: 4,
+  mb: 1.5,
 } as const;
 
 export const signupStepLabel = {
   fontWeight: 700,
-  mb: 1,
+  mb: 0.5,
 } as const;
 
 export const signupStepSubtext = {
@@ -45,7 +45,7 @@ export const signupBackButton = {
 // WelcomeStep
 export const welcomeStepTitle = {
   fontWeight: 800,
-  mb: 1,
+  mb: 0.5,
 } as const;
 
 export const welcomeStepSubtext = {
@@ -59,7 +59,7 @@ export const welcomeStepDescription = {
 // JoinProgress
 export const signupProgress = {
   width: '100%',
-  mb: 4,
+  mb: 1.5,
 } as const;
 
 export const signupProgressStepLabel = {
@@ -69,7 +69,7 @@ export const signupProgressStepLabel = {
 } as const;
 
 export const signupProgressFooter = {
-  mt: 2,
+  mt: 1,
   textAlign: 'center',
   '& span': { color: 'rgba(255,255,255,0.97)', fontSize: '0.875rem' },
 } as const;
@@ -80,11 +80,11 @@ export const identityStepChecking = {
   alignItems: 'center',
   gap: 2,
   justifyContent: 'center',
-  py: 4,
+  py: 2,
 } as const;
 
 export const identityStepInfoBox = {
-  p: 2,
+  p: 1.5,
   bgcolor: 'rgba(255,255,255,0.06)',
   borderRadius: 1,
   border: '1px solid',
@@ -95,7 +95,7 @@ export const identityStepBtn = {
   textTransform: 'none' as const,
   fontWeight: 600,
   justifyContent: 'flex-start',
-  py: 1.5,
+  py: 1,
   px: 2,
 };
 
@@ -127,7 +127,7 @@ export const profileStep = {
 
 export const profileStepTitle = {
   fontWeight: 700,
-  mb: 1,
+  mb: 0.5,
   color: 'white',
 } as const;
 
@@ -168,7 +168,7 @@ export const profileStepTextField = {
 } as const;
 
 export const profileStepTipBox = {
-  p: 2,
+  p: 1.5,
   bgcolor: 'rgba(33, 150, 243, 0.1)',
   borderRadius: 1,
   border: '1px solid',
@@ -180,7 +180,7 @@ export const profileStepTipText = {
 } as const;
 
 export const profileStepButtonRow = {
-  pt: 2,
+  pt: 1.5,
 } as const;
 
 export const profileStepBackButton = {
@@ -204,17 +204,18 @@ export const profileStepSubmitButton = {
 
 // ValuesStep
 export const valuesStepSectionTitle = {
-  mb: 1,
+  mb: 0.5,
   fontWeight: 600,
 } as const;
 
 export const valuesStepSectionSubtext = {
-  mb: 2,
+  mb: 1,
   color: 'rgba(255,255,255,0.97)',
 } as const;
 
 export const valuesStepButtonRow = {
-  pt: 2,
+  pt: 1,
+  pb: 0.5,
 } as const;
 
 export const valuesStepContinueButton = {

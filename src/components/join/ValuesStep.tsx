@@ -72,19 +72,20 @@ export const ValuesStep = () => {
         elevation={0}
         sx={{
           ...signupPaper,
-          p: { xs: 2, sm: 2.5, md: 4 },
+          p: { xs: 1.5, sm: 2, md: 2.5 },
+          pb: { xs: 2, sm: 2.5 },
           maxWidth: 640,
           mx: 'auto',
-          overflow: 'hidden',
+          overflow: 'visible',
           '& .MuiFormControlLabel-root': {
             overflowWrap: 'break-word',
             wordBreak: 'break-word',
           },
         }}
       >
-        <Stack spacing={{ xs: 1.5, md: 2 }}>
+        <Stack spacing={{ xs: 0.75, md: 1 }}>
           <Box>
-            <Typography variant="h6" sx={{ ...signupStepLabel, mb: 0.5 }}>
+            <Typography variant="h6" sx={{ ...signupStepLabel, mb: 0.25 }}>
               Your Intent
             </Typography>
             <Typography
@@ -196,8 +197,10 @@ export const ValuesStep = () => {
             </Typography>
             <TextField
               multiline
-              rows={2}
+              minRows={1}
+              maxRows={2}
               fullWidth
+              size="small"
               placeholder={
                 "Tell us more about your interests, what you're working on, " +
                 'or what you hope to get from the community...'
@@ -206,12 +209,13 @@ export const ValuesStep = () => {
               onChange={(e) => setAdditionalContext(e.target.value)}
               inputProps={{ maxLength: 500 }}
               helperText={`${additionalContext.length}/500`}
+              sx={{ '& .MuiInputBase-root': { alignItems: 'flex-start' } }}
             />
           </Box>
 
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
+            spacing={1.5}
             sx={valuesStepButtonRow}
           >
             <Button

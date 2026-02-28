@@ -37,9 +37,9 @@ export function getNotificationLink(row: NotificationRowForLink): string {
   if (row.type === 'chat_message') {
     if (row.payload && 'room_id' in row.payload) {
       const roomId = row.payload.room_id;
-      if (roomId && !safe) return `/chat/${roomId}`;
+      if (roomId && !safe) return `/chat-full/${roomId}`;
     }
-    return '/chat';
+    return '/chat-full';
   }
 
   if (row.type === 'event_rsvp' && row.reference_id && !safe) {

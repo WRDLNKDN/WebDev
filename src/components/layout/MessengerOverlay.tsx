@@ -147,36 +147,39 @@ export const MessengerOverlay = () => {
 
   if (!session?.user?.id) return null;
 
+  const floatingChatButton =
+    messenger && !messenger.overlayOpen ? (
+      <Button
+        endIcon={!mobile ? <MessageIcon /> : undefined}
+        startIcon={mobile ? <MessageIcon /> : undefined}
+        onClick={openOverlay}
+        aria-label="Open messages"
+        size={mobile ? 'small' : 'medium'}
+        sx={{
+          position: 'fixed',
+          right: 28,
+          top: (mobile ? 88 : 80) + bannerOffsetPx,
+          zIndex: 1200,
+          bgcolor: 'background.paper',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '8px 0 0 8px',
+          borderRight: 'none',
+          boxShadow: 2,
+          color: 'text.primary',
+          textTransform: 'none',
+          minWidth: mobile ? 48 : 80,
+          py: mobile ? 0.75 : 1,
+          '&:hover': { bgcolor: 'action.hover' },
+        }}
+      >
+        {mobile ? '' : 'Chat'}
+      </Button>
+    ) : null;
+
   return (
     <>
-      {/* Floating chat tab */}
-      {messenger && !messenger.overlayOpen && (
-        <Button
-          endIcon={!mobile ? <MessageIcon /> : undefined}
-          startIcon={mobile ? <MessageIcon /> : undefined}
-          onClick={openOverlay}
-          aria-label="Open messages"
-          size={mobile ? 'small' : 'medium'}
-          sx={{
-            position: 'fixed',
-            right: 0,
-            top: (mobile ? 88 : 80) + bannerOffsetPx,
-            zIndex: 1200,
-            bgcolor: 'background.paper',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '8px 0 0 8px',
-            borderRight: 'none',
-            boxShadow: 2,
-            color: 'text.primary',
-            textTransform: 'none',
-            minWidth: mobile ? 48 : 80,
-            py: mobile ? 0.75 : 1,
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          {mobile ? '' : 'Chat'}
-        </Button>
-      )}
+      {/* Floating chat tab: portaled to body so it cannot extend layout / cause second scrollbar */}
+      {floatingChatButton && createPortal(floatingChatButton, document.body)}
 
       {messenger?.overlayOpen &&
         createPortal(

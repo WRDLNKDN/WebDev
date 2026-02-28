@@ -3,27 +3,32 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import { Box, Container, Grid, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 
 const steps = [
   {
     icon: TouchAppIcon,
     title: 'Join',
     body: 'Join with Google or Microsoft. No lengthy forms—just get in.',
+    to: '/join',
   },
   {
     icon: PsychologyIcon,
     title: 'Set your intent',
     body: 'Define your values and how you want to show up in the network.',
+    to: '/join',
   },
   {
     icon: PersonSearchIcon,
     title: 'Follow people',
     body: 'Discover and follow others who share your values and goals.',
+    to: '/directory',
   },
   {
     icon: GroupAddIcon,
     title: 'Show up',
     body: 'Participate: post, comment, and build real professional connections.',
+    to: '/feed',
   },
 ];
 
@@ -54,14 +59,24 @@ export const HowItWorks = () => {
           How It Works
         </Typography>
         <Grid container spacing={4}>
-          {steps.map(({ icon: Icon, title, body }) => (
+          {steps.map(({ icon: Icon, title, body, to }) => (
             <Grid size={{ xs: 12, sm: 6, md: 3 }} key={title}>
               <Box
+                component={RouterLink}
+                to={to}
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   textAlign: 'center',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  p: 2,
+                  borderRadius: 2,
+                  transition: 'background-color 0.2s',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                  },
                 }}
               >
                 <Box

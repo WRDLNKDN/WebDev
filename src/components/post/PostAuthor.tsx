@@ -2,6 +2,7 @@
  * PostAuthor — shared author line for Feed and Chat (avatar, name, handle, time, edited).
  * Used by FeedCard and MessageList (group messages).
  */
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import { Box, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
@@ -23,6 +24,8 @@ export type PostAuthorProps = {
   avatarSize?: 'small' | 'header';
   /** Formatter for createdAt (default: identity) */
   formatTime?: (iso: string) => string;
+  /** Show small "in" (LinkedIn-style) icon after time (chat UI) */
+  inIcon?: boolean;
   /** Optional extra content below the name row (e.g. "Reposted from ...") */
   children?: React.ReactNode;
 };
@@ -36,6 +39,7 @@ export const PostAuthor = ({
   compact = false,
   avatarSize = 'small',
   formatTime = (s) => s,
+  inIcon = false,
   children,
 }: PostAuthorProps) => {
   const timeStr = formatTime(createdAt);
@@ -49,7 +53,7 @@ export const PostAuthor = ({
   }
 
   return (
-    <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="flex-start">
+    <Stack direction="row" spacing={1} alignItems="flex-start">
       <ProfileAvatar
         src={avatarUrl ?? undefined}
         alt={displayName || '?'}
@@ -81,6 +85,12 @@ export const PostAuthor = ({
           <Typography variant="body2" color="text.secondary">
             • {timeStr}
           </Typography>
+          {inIcon && (
+            <LinkedInIcon
+              sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.8 }}
+              aria-hidden
+            />
+          )}
           {editedAt && (
             <Typography variant="caption" color="text.secondary">
               • Edited

@@ -204,11 +204,13 @@ export const Home = () => {
 
       <Box
         component="main"
+        data-testid="signed-out-landing"
         sx={{
           position: 'relative',
           minHeight: 'calc(100vh - 64px)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
           overflowX: 'hidden',
           overflowY: 'visible',
         }}
@@ -260,17 +262,22 @@ export const Home = () => {
             position: 'relative',
             zIndex: 2,
             opacity: showContent ? 1 : 0,
-            transition: showContent ? 'opacity 250ms ease-in' : 'none',
+            transform: showContent ? 'translateY(0)' : 'translateY(16px)',
+            transition: showContent
+              ? 'opacity 400ms ease-out, transform 400ms ease-out'
+              : 'none',
+            pt: { xs: 3, sm: 4, md: 5 },
+            pb: 1,
           }}
-          data-testid="signed-out-landing"
         >
           <Grid
             container
-            spacing={8}
+            spacing={4}
             alignItems="center"
             justifyContent="center"
             sx={{ textAlign: 'center' }}
           >
+            {/* Copy first: WRDLNKDN, pronunciation, tagline, description */}
             <Grid
               size={{ xs: 12 }}
               sx={{
@@ -288,17 +295,6 @@ export const Home = () => {
                   {error}
                 </Alert>
               )}
-              <GuestView buttonsOnly />
-            </Grid>
-
-            <Grid
-              size={{ xs: 12 }}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
               <Typography
                 component="h1"
                 variant="h1"
@@ -356,6 +352,18 @@ export const Home = () => {
                   For people who build, create, and think differently.
                 </Typography>
               </Stack>
+            </Grid>
+
+            {/* Join and Sign in under the copy */}
+            <Grid
+              size={{ xs: 12 }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <GuestView buttonsOnly />
             </Grid>
           </Grid>
         </Container>

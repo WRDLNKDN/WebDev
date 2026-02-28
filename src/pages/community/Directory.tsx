@@ -36,6 +36,7 @@ import {
   disconnect,
   fetchDirectory,
 } from '../../lib/api/directoryApi';
+import { INDUSTRY_OPTIONS } from '../../constants/industry';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -54,11 +55,17 @@ type DirectoryCachePayload = {
 export const Directory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') ?? '';
-  const industry = searchParams.get('industry') ?? '';
+  const primaryIndustry = searchParams.get('primary_industry') ?? '';
+  const secondaryIndustry = searchParams.get('secondary_industry') ?? '';
   const location = searchParams.get('location') ?? '';
   const skillsParam = searchParams.get('skills') ?? '';
   const connectionStatus = searchParams.get('connection_status') ?? '';
   const sort = (searchParams.get('sort') as DirectorySort) || 'recently_active';
+  const [showSecondaryIndustryFilter, setShowSecondaryIndustryFilter] =
+    useState(false);
+  useEffect(() => {
+    if (secondaryIndustry) setShowSecondaryIndustryFilter(true);
+  }, [secondaryIndustry]);
 
   const [rows, setRows] = useState<DirectoryMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,13 +88,22 @@ export const Directory = () => {
     () =>
       JSON.stringify({
         q: q.trim(),
-        industry,
+        primaryIndustry,
+        secondaryIndustry,
         location,
         skills,
         connectionStatus,
         sort,
       }),
-    [q, industry, location, skills, connectionStatus, sort],
+    [
+      q,
+      primaryIndustry,
+      secondaryIndustry,
+      location,
+      skills,
+      connectionStatus,
+      sort,
+    ],
   );
   const directoryCacheKey = useMemo(
     () =>
@@ -122,7 +138,8 @@ export const Directory = () => {
       try {
         const { data, hasMore: more } = await fetchDirectory(supabase, {
           q: q.trim() || undefined,
-          industry: industry || undefined,
+          primary_industry: primaryIndustry || undefined,
+          secondary_industry: secondaryIndustry || undefined,
           location: location || undefined,
           skills: skills.length ? skills : undefined,
           connection_status: (connectionStatus as ConnectionState) || undefined,
@@ -153,7 +170,16 @@ export const Directory = () => {
         setLoadingMore(false);
       }
     },
-    [session?.user?.id, q, industry, location, skills, connectionStatus, sort],
+    [
+      session?.user?.id,
+      q,
+      primaryIndustry,
+      secondaryIndustry,
+      location,
+      skills,
+      connectionStatus,
+      sort,
+    ],
   );
 
   useEffect(() => {
@@ -403,13 +429,83 @@ export const Directory = () => {
               >
                 Filters:
               </Typography>
-              <TextField
-                size="small"
-                placeholder="Industry"
-                value={industry}
-                onChange={(e) => updateUrl({ industry: e.target.value })}
-                sx={{ width: { xs: '100%', md: 120 } }}
-              />
+              <FormControl size="small" sx={{ width: { xs: '100%', md: 160 } }}>
+                <InputLabel id="dir-primary-industry">
+                  Primary Industry
+                </InputLabel>
+                <Select
+                  labelId="dir-primary-industry"
+                  value={primaryIndustry}
+                  label="Primary Industry"
+                  onChange={(e) =>
+                    updateUrl({
+                      primary_industry: e.target.value,
+                      ...(secondaryIndustry === e.target.value
+                        ? { secondary_industry: '' }
+                        : {}),
+                    })
+                  }
+                  displayEmpty
+                  renderValue={(v) => v || 'All'}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {!showSecondaryIndustryFilter ? (
+                <Button
+                  size="small"
+                  onClick={() => setShowSecondaryIndustryFilter(true)}
+                  sx={{
+                    textTransform: 'none',
+                    alignSelf: { xs: 'flex-start', md: 'center' },
+                  }}
+                >
+                  Add secondary filter
+                </Button>
+              ) : (
+                <FormControl
+                  size="small"
+                  sx={{ width: { xs: '100%', md: 160 } }}
+                >
+                  <InputLabel id="dir-secondary-industry">
+                    Secondary Industry
+                  </InputLabel>
+                  <Select
+                    labelId="dir-secondary-industry"
+                    value={secondaryIndustry}
+                    label="Secondary Industry"
+                    onChange={(e) =>
+                      updateUrl({ secondary_industry: e.target.value })
+                    }
+                    displayEmpty
+                    renderValue={(v) => v || 'All'}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {INDUSTRY_OPTIONS.filter(
+                      (opt) => opt !== primaryIndustry,
+                    ).map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      updateUrl({ secondary_industry: '' });
+                      setShowSecondaryIndustryFilter(false);
+                    }}
+                    sx={{ mt: 0.5 }}
+                  >
+                    Remove secondary
+                  </Button>
+                </FormControl>
+              )}
               <TextField
                 size="small"
                 placeholder="Location"
@@ -446,20 +542,23 @@ export const Directory = () => {
                   <MenuItem value="connected">Connected</MenuItem>
                 </Select>
               </FormControl>
-              {(!!industry ||
+              {(!!primaryIndustry ||
+                !!secondaryIndustry ||
                 !!location ||
                 !!connectionStatus ||
                 skills.length > 0) && (
                 <Button
                   size="small"
-                  onClick={() =>
+                  onClick={() => {
                     updateUrl({
-                      industry: '',
+                      primary_industry: '',
+                      secondary_industry: '',
                       location: '',
                       connection_status: '',
                       skills: '',
-                    })
-                  }
+                    });
+                    setShowSecondaryIndustryFilter(false);
+                  }}
                   sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
                 >
                   Clear filters
@@ -507,12 +606,20 @@ export const Directory = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-              {q || industry || location || skills.length
+              {q ||
+              primaryIndustry ||
+              secondaryIndustry ||
+              location ||
+              skills.length
                 ? 'No member found'
                 : 'No results'}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              {q || industry || location || skills.length
+              {q ||
+              primaryIndustry ||
+              secondaryIndustry ||
+              location ||
+              skills.length
                 ? q.trim()
                   ? `No member found with that name or filters. Try a different search or adjust your filters.`
                   : 'No members match your filters. Try adjusting them.'

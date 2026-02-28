@@ -1,3 +1,6 @@
+/** Server-generated thumbnail status. Thumbnail failure does not block saving. */
+export type ThumbnailStatus = 'pending' | 'generated' | 'failed';
+
 export interface PortfolioItem {
   id: string;
   owner_id: string;
@@ -7,6 +10,18 @@ export interface PortfolioItem {
   project_url: string | null;
   tech_stack: string[];
   created_at: string;
+  /** Explicit display order (lower first). Used for drag-and-drop reorder. */
+  sort_order?: number;
+  /** Canonical URL after provider normalization. */
+  normalized_url?: string | null;
+  /** URL used for iframe embed when different from project_url. */
+  embed_url?: string | null;
+  /** Detected link type (image, pdf, google_doc, etc.). */
+  resolved_type?: string | null;
+  /** Server-generated thumbnail in platform storage; used only when no manual image. */
+  thumbnail_url?: string | null;
+  /** pending = queued; generated = thumbnail_url set; failed = show fallback. */
+  thumbnail_status?: ThumbnailStatus | null;
 }
 
 export type NewProject = {

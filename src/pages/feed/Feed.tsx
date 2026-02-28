@@ -968,25 +968,67 @@ const FeedCard = ({
             {label || url}
           </Typography>
         )}
-        {/* Post action bar: Like | Comment | Repost | Send (LinkedIn-style with vertical dividers) */}
-        <Box
-          sx={{
-            mt: 1.5,
-            width: '100%',
-            display: 'flex',
-            borderTop: 1,
-            borderColor: 'divider',
-            flexDirection: { xs: 'row', sm: 'row' },
-            '& > *': {
-              flex: 1,
-              minWidth: 0,
-              minHeight: { xs: 48, sm: 'auto' },
+        {/* Engagement row (LinkedIn-style): X reactions · X comments above actions */}
+        {(likeCount + loveCount + inspirationCount + careCount > 0 ||
+          commentCount > 0) && (
+          <Box
+            sx={{
+              mt: 1,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              borderRight: 1,
-              borderColor: 'divider',
-              '&:last-of-type': { borderRight: 0 },
+              gap: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            {likeCount + loveCount + inspirationCount + careCount > 0 && (
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  cursor: 'default',
+                }}
+              >
+                {likeCount + loveCount + inspirationCount + careCount} reaction
+                {likeCount + loveCount + inspirationCount + careCount !== 1
+                  ? 's'
+                  : ''}
+              </Typography>
+            )}
+            {commentCount > 0 && (
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  cursor: 'default',
+                }}
+              >
+                {commentCount} comment{commentCount !== 1 ? 's' : ''}
+              </Typography>
+            )}
+          </Box>
+        )}
+        {/* Post action bar: Like | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
+        <Box
+          sx={{
+            mt: 0.5,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: { xs: 0.5, sm: 1 },
+            borderTop: 1,
+            borderColor: 'divider',
+            py: 0.25,
+            '& > *': {
+              minHeight: { xs: 40, sm: 36 },
+              display: 'flex',
+              alignItems: 'center',
             },
           }}
         >
@@ -1004,15 +1046,17 @@ const FeedCard = ({
             onClick={() => actions.onCommentToggle(item.id)}
             sx={{
               textTransform: 'none',
-              color: 'text.secondary',
+              color: 'info.main',
               minWidth: 0,
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 1, sm: 0.75 },
+              py: { xs: 0.75, sm: 0.5 },
+              px: 1,
+              borderRadius: 2,
               '&:hover': {
-                bgcolor: 'action.hover',
-                color: 'text.secondary',
+                bgcolor: 'rgba(41, 182, 246, 0.12)',
+                color: 'info.light',
               },
             }}
           >
@@ -1024,7 +1068,7 @@ const FeedCard = ({
               variant="caption"
               sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
             >
-              Comment{commentCount > 0 ? ` · ${commentCount}` : ''}
+              Comment
             </Typography>
           </Button>
           <Button
@@ -1032,15 +1076,17 @@ const FeedCard = ({
             onClick={() => actions.onRepost(item)}
             sx={{
               textTransform: 'none',
-              color: 'text.secondary',
+              color: 'success.main',
               minWidth: 0,
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 1, sm: 0.75 },
+              py: { xs: 0.75, sm: 0.5 },
+              px: 1,
+              borderRadius: 2,
               '&:hover': {
-                bgcolor: 'action.hover',
-                color: 'text.secondary',
+                bgcolor: 'rgba(102, 187, 106, 0.12)',
+                color: 'success.light',
               },
             }}
           >
@@ -1058,15 +1104,17 @@ const FeedCard = ({
             onClick={() => actions.onSend(item)}
             sx={{
               textTransform: 'none',
-              color: 'text.secondary',
+              color: 'primary.main',
               minWidth: 0,
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 1, sm: 0.75 },
+              py: { xs: 0.75, sm: 0.5 },
+              px: 1,
+              borderRadius: 2,
               '&:hover': {
-                bgcolor: 'action.hover',
-                color: 'text.secondary',
+                bgcolor: 'rgba(66, 165, 245, 0.12)',
+                color: 'primary.light',
               },
             }}
           >
@@ -1088,15 +1136,19 @@ const FeedCard = ({
             }
             sx={{
               textTransform: 'none',
-              color: item.viewer_saved ? 'primary.main' : 'text.secondary',
+              color: item.viewer_saved ? 'warning.main' : 'text.secondary',
               minWidth: 0,
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 1, sm: 0.75 },
+              py: { xs: 0.75, sm: 0.5 },
+              px: 1,
+              borderRadius: 2,
               '&:hover': {
-                bgcolor: 'action.hover',
-                color: item.viewer_saved ? 'primary.main' : 'text.secondary',
+                bgcolor: item.viewer_saved
+                  ? 'rgba(255, 183, 77, 0.12)'
+                  : 'rgba(255, 183, 77, 0.08)',
+                color: 'warning.light',
               },
             }}
             aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
@@ -1265,6 +1317,7 @@ const FeedCard = ({
                               sx={{
                                 flexWrap: 'wrap',
                                 gap: { xs: 0.5, sm: 0 },
+                                justifyContent: 'flex-start',
                               }}
                             >
                               {REACTION_OPTIONS.map(
@@ -1386,7 +1439,7 @@ const FeedCard = ({
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       size="small"
-                      placeholder="Write a comment…"
+                      placeholder="Add a comment…"
                       value={commentDraft}
                       onChange={(e) => setCommentDraft(e.target.value)}
                       onKeyDown={(e) => {
@@ -2891,7 +2944,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             </Paper>
           </Grid>
 
-          {/* CENTER: Feed — internal scroll so mouse wheel scrolls within container */}
+          {/* CENTER: Feed — scroll with page (single scroll at Layout) */}
           <Grid
             size={{ xs: 12, md: 10, lg: 10 }}
             sx={{
@@ -2899,10 +2952,6 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              minHeight: 0,
-              maxHeight: { xs: 'none', md: 'calc(100dvh - 100px)' },
-              overflowY: { xs: 'visible', md: 'auto' },
-              overflowX: 'hidden',
             }}
           >
             {/* Feed header: title + view toggle + Post + Sort */}
@@ -3022,17 +3071,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               </Paper>
             )}
 
-            {/* Feed list — scrolls inside this container so header/composer stay fixed */}
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            {/* Feed list — flows with page (single scroll at Layout) */}
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {loading && items.length === 0 ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                   <CircularProgress aria-label="Loading feed" />
@@ -3266,8 +3306,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           <Stack
             direction="row"
             alignItems="center"
-            spacing={1}
-            sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(255,255,255,0.08)' }}
+            spacing={0.75}
+            sx={{
+              mt: 2,
+              pt: 1.5,
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              flexWrap: 'wrap',
+              gap: 0.5,
+            }}
           >
             <input
               type="file"
@@ -3281,33 +3327,41 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               component="label"
               htmlFor="post-image-upload"
               size="small"
-              aria-label="Attach file"
+              aria-label="Attach image"
               disabled={imageUploading}
-              sx={{ color: 'text.secondary' }}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+              }}
             >
-              <AttachFileIcon />
+              <AttachFileIcon fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
               aria-label="Add GIF"
-              sx={{ color: 'text.secondary' }}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+              }}
               onClick={() => setGifPickerOpen(true)}
             >
-              <GifBoxIcon />
+              <GifBoxIcon fontSize="small" />
             </IconButton>
             {imageUploading && (
-              <Stack direction="row" alignItems="center" spacing={0.75}>
+              <Stack direction="row" alignItems="center" spacing={0.5}>
                 <CircularProgress size={14} />
                 <Typography variant="caption" color="text.secondary">
-                  Uploading image...
+                  Uploading…
                 </Typography>
               </Stack>
             )}
-            <Box sx={{ flex: 1 }} />
             <IconButton
               size="small"
               aria-label="Schedule post"
-              sx={{ color: 'text.secondary' }}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+              }}
               onClick={() => {
                 const d = new Date();
                 d.setDate(d.getDate() + 1);
@@ -3316,37 +3370,43 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 setScheduleDialogOpen(true);
               }}
             >
-              <ScheduleIcon />
+              <ScheduleIcon fontSize="small" />
             </IconButton>
             {composerScheduledAt && (
               <Typography
                 variant="caption"
                 color="primary.main"
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}
               >
-                Scheduled: {new Date(composerScheduledAt).toLocaleString()}
+                {new Date(composerScheduledAt).toLocaleString()}
                 <IconButton
                   size="small"
                   onClick={() => setComposerScheduledAt(null)}
                   aria-label="Clear schedule"
-                  sx={{ p: 0 }}
+                  sx={{ p: 0, ml: 0.25 }}
                 >
                   <CloseIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               </Typography>
             )}
+            <Box sx={{ flex: 1, minWidth: 8 }} />
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => void handleSubmitPost()}
+              disabled={posting || imageUploading || !composerValue.trim()}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '9999px',
+                px: 2.5,
+                py: 0.75,
+                '&:hover': { filter: 'brightness(1.08)' },
+              }}
+            >
+              {posting ? 'Posting…' : 'Post'}
+            </Button>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2, pt: 0 }}>
-          <Button
-            variant="contained"
-            onClick={() => void handleSubmitPost()}
-            disabled={posting || imageUploading || !composerValue.trim()}
-            sx={{ textTransform: 'none', borderRadius: '9999px', px: 3 }}
-          >
-            {posting ? 'Posting…' : 'Post'}
-          </Button>
-        </DialogActions>
       </Dialog>
 
       <GifPicker.GifPickerDialog

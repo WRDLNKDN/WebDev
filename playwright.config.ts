@@ -1,4 +1,4 @@
-// playwright.config.ts
+import os from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
@@ -7,11 +7,17 @@ const isCI = process.env.CI === 'true';
 
 export default defineConfig({
   testDir: './src/tests/e2e',
-  timeout: 30_000,
-  expect: { timeout: 15_000 },
+  fullyParallel: true, // run tests within a file in parallel, not just files
 
-  retries: 1,
-  workers: isCI ? 2 : 6,
+  timeout: 30_000, // fail faster on genuinely broken tests
+  expect: { timeout: 10_000 },
+
+  retries: isCI ? 2 : 0, // no local retries; instant feedback
+  workers: isCI
+    ? Math.max(1, Math.floor(os.cpus().length / 2)) // was hardcoded 2
+    : 12,
+
+  forbidOnly: isCI, // catches accidental test.only in PRs
 
   reporter: isCI
     ? [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']]
@@ -20,16 +26,17 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
-    video: 'retain-on-failure',
+    video: isCI ? 'retain-on-failure' : 'off', // video pipeline has overhead locally
     screenshot: 'only-on-failure',
+    actionTimeout: 8_000,
+    navigationTimeout: 30_000,
   },
 
   webServer: {
-    // CI: Vite only (no backend env). Local: full stack so /api/* works.
     command: isCI ? 'npm run e2e:serve:ci' : 'npm run e2e:serve',
     url: BASE_URL,
     reuseExistingServer: !isCI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 
   projects: [

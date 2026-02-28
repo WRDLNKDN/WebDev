@@ -326,6 +326,11 @@ const App = () => {
               />
 
               <Route element={<Layout />}>
+                {/* Redirect deprecated admin route first so it wins over path="/admin" */}
+                <Route
+                  path="admin/resume-thumbnails"
+                  element={<Navigate to="/admin" replace />}
+                />
                 {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
                 <Route path="/" element={<Home />} />
                 <Route path="/profile/:handle" element={<LandingPage />} />

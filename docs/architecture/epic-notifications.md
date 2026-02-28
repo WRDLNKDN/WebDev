@@ -94,6 +94,15 @@ Notifications provide signal, not dopamine loops.
 
 ---
 
+## 4.1 Future / Nice-to-have (not MVP 1.0 or Beta)
+
+- **Email when someone sends a connect invite** — Optional email notification so
+  the recipient knows they have a pending connection request. Not requisite for
+  MVP 1.0 or Beta; consider post-launch if it improves response rates or member
+  expectation.
+
+---
+
 ## 5. Dependencies
 
 - Feed reaction/comment schema

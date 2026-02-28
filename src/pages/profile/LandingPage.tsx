@@ -21,6 +21,7 @@ import type { User } from '@supabase/supabase-js';
 // MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
 import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
+import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
 import { ProjectCard } from '../../components/portfolio/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
 import { IdentityHeader } from '../../components/profile/IdentityHeader';
@@ -55,6 +56,9 @@ export const LandingPage = () => {
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [followCheckDone, setFollowCheckDone] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
+  const [previewProject, setPreviewProject] = useState<PortfolioItem | null>(
+    null,
+  );
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     null,
   );
@@ -179,7 +183,8 @@ export const LandingPage = () => {
           .from('portfolio_items')
           .select('*')
           .eq('owner_id', verifiedProfile.id)
-          .order('created_at', { ascending: false });
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
 
         if (projectsError) throw projectsError;
         setProjects((projectsData || []) as PortfolioItem[]);
@@ -235,10 +240,18 @@ export const LandingPage = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
-  const selectedIndustries = safeStr(profile.industry)
-    .split(',')
-    .map((industry) => industry.trim())
-    .filter(Boolean);
+  const primaryIndustry = safeStr(profile.industry);
+  const secondaryIndustry = safeStr(
+    (profile as unknown as { secondary_industry?: string }).secondary_industry,
+  );
+  const nicheField = safeStr(
+    (profile as unknown as { niche_field?: string }).niche_field,
+  );
+  const industryChips = [primaryIndustry, secondaryIndustry]
+    .filter(Boolean)
+    .map((label) => ({ label: `Industry: ${label}`, key: label }));
+  if (nicheField)
+    industryChips.push({ label: nicheField, key: `niche-${nicheField}` });
   const hasVisibleSocialLinks = Array.isArray(profile.socials)
     ? profile.socials.some((link) => link?.isVisible)
     : false;
@@ -337,13 +350,13 @@ export const LandingPage = () => {
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
             badges={
-              selectedSkills.length > 0 || selectedIndustries.length > 0 ? (
+              selectedSkills.length > 0 || industryChips.length > 0 ? (
                 <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {selectedIndustries.map((industry) => (
+                  {industryChips.map(({ label, key }) => (
                     <Chip
-                      key={`industry-${industry}`}
+                      key={key}
                       size="small"
-                      label={`Industry: ${industry}`}
+                      label={label}
                       sx={{
                         bgcolor: 'rgba(66,165,245,0.15)',
                         color: 'text.primary',
@@ -375,7 +388,11 @@ export const LandingPage = () => {
           />
 
           {/* 2. THE GRID LAYOUT */}
-          <Grid container spacing={{ xs: 3, md: 4 }} sx={{ mt: 2 }}>
+          <Grid
+            container
+            spacing={{ xs: 3, md: 4 }}
+            sx={{ mt: { xs: 4, md: 6 } }}
+          >
             {hasVisibleSocialLinks && (
               <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
                 <Paper
@@ -406,13 +423,22 @@ export const LandingPage = () => {
                 />
 
                 {projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onOpenPreview={setPreviewProject}
+                  />
                 ))}
               </PortfolioFrame>
             </Grid>
           </Grid>
         </Container>
       </Box>
+      <PortfolioPreviewModal
+        project={previewProject}
+        open={Boolean(previewProject)}
+        onClose={() => setPreviewProject(null)}
+      />
       <Snackbar
         open={Boolean(snack)}
         autoHideDuration={6000}

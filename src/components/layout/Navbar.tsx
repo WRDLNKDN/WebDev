@@ -69,9 +69,9 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
-  const forcePublicHeader = path === '/join';
+  const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
-  const isJoinActive = path === '/join';
+  const isJoinActive = path.startsWith('/join');
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
   const isDashboardActive =
@@ -141,19 +141,30 @@ export const Navbar = () => {
     // Retries when null: catches OAuth callback race where session recovery completes
     // before our listener was attached (SIGNED_IN fires, we miss it). UAT can be slow.
     const retries = [600, 1200];
-    const timers = retries.map((delay) =>
+    const retryTimers = retries.map((delay) =>
       setTimeout(async () => {
         const { data } = await supabase.auth.getSession();
-        if (!cancelled && data.session) {
-          setSession(data.session);
+        if (!cancelled) {
+          if (data.session) setSession(data.session);
           setSessionLoaded(true);
         }
       }, delay),
     );
 
+    // Guard: if getSession() hangs or is very slow, stop showing spinner and resolve state
+    const sessionGuardTimer = setTimeout(async () => {
+      if (cancelled) return;
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) {
+        setSession(data.session ?? null);
+        setSessionLoaded(true);
+      }
+    }, 2500);
+
     return () => {
       cancelled = true;
-      timers.forEach(clearTimeout);
+      retryTimers.forEach(clearTimeout);
+      clearTimeout(sessionGuardTimer);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -198,8 +209,18 @@ export const Navbar = () => {
       }
     };
     void checkOnboarding();
+
+    // Guard: if profile fetch hangs, stop showing spinner and treat as onboarded
+    const onboardingGuardTimer = setTimeout(() => {
+      if (!cancelled) {
+        setProfileOnboarded(true);
+        setOnboardingLoaded(true);
+      }
+    }, 4000);
+
     return () => {
       cancelled = true;
+      clearTimeout(onboardingGuardTimer);
     };
   }, [forcePublicHeader, session?.user?.id]);
 
@@ -396,7 +417,14 @@ export const Navbar = () => {
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <Toolbar sx={{ py: 0.5, px: { xs: 1, sm: 2 } }}>
+        <Toolbar
+          sx={{
+            py: 0.5,
+            px: { xs: 2, sm: 2 },
+            minHeight: 56,
+            gap: 1,
+          }}
+        >
           {/* Mobile: hamburger menu */}
           {isMobile && (
             <IconButton
@@ -409,56 +437,272 @@ export const Navbar = () => {
             </IconButton>
           )}
 
-          {/* Brand: single static logo (wrdlnkdn_logo.png); no cycling Weirdlings */}
-          <Box
-            component={RouterLink}
-            to="/"
+          {/* Left: logo (home) + search — full logo visible, generous gap */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textDecoration: 'none',
-              mr: isMobile ? 1 : 3,
-              height: '64px',
+              mr: isMobile ? 1 : 2,
+              minHeight: 48,
+              gap: 3,
+              overflow: 'visible',
             }}
           >
+            {/* Brand: logo links to home — full logo visible, no clipping */}
             <Box
-              component="img"
-              src="/assets/wrdlnkdn_logo.png"
-              alt="WRDLNKDN"
+              component={RouterLink}
+              to="/"
+              aria-label="Go to home"
               sx={{
-                height: { xs: 26, md: 32 },
-                width: 'auto',
-                transition: 'opacity 0.2s',
-                '&:hover': { opacity: 0.8 },
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                minWidth: 40,
+                height: 40,
+                flexShrink: 0,
+                borderRadius: 1,
+                py: 0.5,
+                px: 0.5,
+                bgcolor: 'rgba(0,0,0,0.35)',
+                transition: 'opacity 0.2s, background-color 0.2s',
+                overflow: 'visible',
+                '&:hover': { opacity: 0.9, bgcolor: 'rgba(0,0,0,0.5)' },
               }}
-            />
-          </Box>
+            >
+              <Box
+                component="img"
+                src="/assets/wrdlnkdn_logo.png"
+                alt=""
+                sx={{
+                  height: { xs: 22, md: 26 },
+                  width: 'auto',
+                  maxWidth: { xs: 140, sm: 180 },
+                  objectFit: 'contain',
+                }}
+              />
+            </Box>
+            {/* Search: recessed bar, placeholder "I'm looking for..." — hidden on /join (public header) */}
+            {!isMobile && !forcePublicHeader && (
+              <Box
+                ref={setSearchAnchorEl}
+                sx={{ position: 'relative', minWidth: 240 }}
+              >
+                <Box
+                  component="form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const query = searchQuery.trim();
+                    closeSearchDropdown();
+                    navigate(
+                      query
+                        ? `/directory?q=${encodeURIComponent(query)}`
+                        : '/directory',
+                    );
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: 40,
+                    minWidth: 220,
+                    maxWidth: 320,
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    transition: 'border-color 0.2s, background-color 0.2s',
+                    '&:focus-within': {
+                      bgcolor: 'rgba(255,255,255,0.08)',
+                      borderColor: 'rgba(255,255,255,0.18)',
+                    },
+                  }}
+                >
+                  <SearchIcon
+                    sx={{
+                      ml: 1.5,
+                      mr: 1,
+                      fontSize: 20,
+                      color: 'rgba(255,255,255,0.5)',
+                    }}
+                    aria-hidden
+                  />
+                  <InputBase
+                    placeholder="I'm looking for..."
+                    value={searchQuery}
+                    onChange={(e) =>
+                      setSearchQuery(
+                        e.target.value.slice(0, SEARCH_MAX_QUERY_CHARS),
+                      )
+                    }
+                    onFocus={() =>
+                      searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                      setSearchOpen(true)
+                    }
+                    inputProps={{
+                      'aria-label': 'Search for members',
+                      'aria-expanded': searchOpen,
+                      maxLength: SEARCH_MAX_QUERY_CHARS,
+                    }}
+                    fullWidth
+                    sx={{
+                      color: 'white',
+                      fontSize: '0.875rem',
+                      '& .MuiInputBase-input': {
+                        py: 1,
+                        px: 0,
+                        '&::placeholder': {
+                          color: 'rgba(255,255,255,0.5)',
+                          opacity: 1,
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+                <Popper
+                  open={
+                    searchOpen &&
+                    (searchMatches.length > 0 ||
+                      searchLoading ||
+                      (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                        !searchLoading))
+                  }
+                  anchorEl={searchAnchorEl}
+                  placement="bottom-start"
+                  sx={{ zIndex: 1300 }}
+                  modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
+                >
+                  <Paper
+                    ref={searchPopperRef}
+                    elevation={8}
+                    sx={{
+                      minWidth: searchAnchorEl?.offsetWidth ?? 280,
+                      maxWidth: 360,
+                      maxHeight: 320,
+                      overflow: 'auto',
+                      bgcolor: 'rgba(30,30,30,0.98)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    {searchLoading ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          py: 2,
+                        }}
+                      >
+                        <CircularProgress size={24} sx={{ color: 'white' }} />
+                      </Box>
+                    ) : searchMatches.length === 0 ? (
+                      <Box sx={{ px: 2, py: 2 }}>
+                        <Box
+                          sx={{
+                            color: 'rgba(255,255,255,0.7)',
+                            fontSize: '0.875rem',
+                            mb: 1,
+                          }}
+                        >
+                          No matches for &quot;{searchQuery.trim()}&quot;
+                        </Box>
+                        <Button
+                          component={RouterLink}
+                          to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
+                          size="small"
+                          onClick={closeSearchDropdown}
+                          sx={{
+                            color: 'primary.light',
+                            textTransform: 'none',
+                          }}
+                        >
+                          View all in Directory
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Stack
+                        component="ul"
+                        sx={{ listStyle: 'none', m: 0, p: 0.5 }}
+                      >
+                        {searchMatches.map((p) => {
+                          const handle = p.handle || p.id;
+                          const label = p.display_name || p.handle || handle;
+                          return (
+                            <MenuItem
+                              key={p.id}
+                              component={RouterLink}
+                              to={`/profile/${handle}`}
+                              onClick={() => {
+                                setSearchQuery('');
+                                closeSearchDropdown();
+                              }}
+                              sx={{
+                                color: 'white',
+                                '&:hover': {
+                                  bgcolor: 'rgba(255,255,255,0.08)',
+                                },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 36 }}>
+                                <PersonIcon
+                                  sx={{
+                                    color: 'rgba(255,255,255,0.6)',
+                                    fontSize: 20,
+                                  }}
+                                />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={label}
+                                secondary={
+                                  p.handle && p.handle !== label
+                                    ? `@${p.handle}`
+                                    : null
+                                }
+                                primaryTypographyProps={{ fontWeight: 600 }}
+                                secondaryTypographyProps={{
+                                  variant: 'caption',
+                                }}
+                              />
+                            </MenuItem>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </Paper>
+                </Popper>
+              </Box>
+            )}
+          </Stack>
 
-          {/* Desktop nav links: hidden on mobile (shown in drawer) */}
+          {/* Desktop nav links: Store, Feed, Directory, Events, Dashboard (no Home — logo = home) */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
-              {/* Store: external link (storeUrl from env or fallback) */}
               <Button
                 component="a"
                 href={storeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{ color: 'white', textDecoration: 'none' }}
+                sx={{
+                  color: 'rgba(255,255,255,0.85)',
+                  textDecoration: 'none',
+                  textTransform: 'none',
+                  fontSize: '0.875rem',
+                }}
               >
                 Store
               </Button>
-              {/* IF logged in: show Feed + Dashboard + Search; ELSE these are hidden */}
               {showAuthedHeader && (
                 <>
                   <Button
                     component={RouterLink}
                     to="/feed"
                     sx={{
-                      color: 'white',
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
                       ...(isFeedActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }),
                     }}
                   >
@@ -468,10 +712,14 @@ export const Navbar = () => {
                     component={RouterLink}
                     to="/directory"
                     sx={{
-                      color: 'white',
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
                       ...(isDirectoryActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }),
                     }}
                   >
@@ -481,10 +729,14 @@ export const Navbar = () => {
                     component={RouterLink}
                     to="/events"
                     sx={{
-                      color: 'white',
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
                       ...(isEventsActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }),
                     }}
                   >
@@ -494,216 +746,19 @@ export const Navbar = () => {
                     component={RouterLink}
                     to="/dashboard"
                     sx={{
-                      color: 'white',
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
                       ...(isDashboardActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }),
                     }}
                   >
                     Dashboard
                   </Button>
-                  <Box ref={setSearchAnchorEl} sx={{ position: 'relative' }}>
-                    <Box
-                      component="form"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const query = searchQuery.trim();
-                        closeSearchDropdown();
-                        navigate(
-                          query
-                            ? `/directory?q=${encodeURIComponent(query)}`
-                            : '/directory',
-                        );
-                      }}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        ml: 2,
-                        height: 36,
-                        minWidth: 200,
-                        maxWidth: 280,
-                        bgcolor: 'rgba(255,255,255,0.06)',
-                        borderRadius: 1,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        transition: 'border-color 0.2s, background-color 0.2s',
-                        '&:focus-within': {
-                          bgcolor: 'rgba(255,255,255,0.08)',
-                          borderColor: 'rgba(255,255,255,0.2)',
-                        },
-                      }}
-                    >
-                      <SearchIcon
-                        sx={{
-                          ml: 1.5,
-                          mr: 0.5,
-                          fontSize: 20,
-                          color: 'rgba(255,255,255,0.5)',
-                        }}
-                        aria-hidden
-                      />
-                      <InputBase
-                        placeholder="Search for members"
-                        value={searchQuery}
-                        onChange={(e) =>
-                          setSearchQuery(
-                            e.target.value.slice(0, SEARCH_MAX_QUERY_CHARS),
-                          )
-                        }
-                        onFocus={() =>
-                          searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                          setSearchOpen(true)
-                        }
-                        inputProps={{
-                          'aria-label': 'Search for members',
-                          'aria-expanded': searchOpen,
-                          maxLength: SEARCH_MAX_QUERY_CHARS,
-                        }}
-                        fullWidth
-                        sx={{
-                          color: 'white',
-                          fontSize: '0.875rem',
-                          '& .MuiInputBase-input': {
-                            py: 0.875,
-                            px: 0.5,
-                            '&::placeholder': {
-                              color: 'rgba(255,255,255,0.5)',
-                              opacity: 1,
-                            },
-                          },
-                        }}
-                      />
-                      <Button
-                        type="submit"
-                        size="small"
-                        sx={{
-                          color: 'rgba(255,255,255,0.8)',
-                          textTransform: 'none',
-                          mr: 0.5,
-                          minWidth: 56,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                        }}
-                      >
-                        Search
-                      </Button>
-                    </Box>
-                    <Popper
-                      open={
-                        searchOpen &&
-                        (searchMatches.length > 0 ||
-                          searchLoading ||
-                          (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                            !searchLoading))
-                      }
-                      anchorEl={searchAnchorEl}
-                      placement="bottom-start"
-                      sx={{ zIndex: 1300 }}
-                      modifiers={[
-                        { name: 'offset', options: { offset: [0, 4] } },
-                      ]}
-                    >
-                      <Paper
-                        ref={searchPopperRef}
-                        elevation={8}
-                        sx={{
-                          minWidth: searchAnchorEl?.offsetWidth ?? 280,
-                          maxWidth: 360,
-                          maxHeight: 320,
-                          overflow: 'auto',
-                          bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                        }}
-                      >
-                        {searchLoading ? (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'center',
-                              py: 2,
-                            }}
-                          >
-                            <CircularProgress
-                              size={24}
-                              sx={{ color: 'white' }}
-                            />
-                          </Box>
-                        ) : searchMatches.length === 0 ? (
-                          <Box sx={{ px: 2, py: 2 }}>
-                            <Box
-                              sx={{
-                                color: 'rgba(255,255,255,0.7)',
-                                fontSize: '0.875rem',
-                                mb: 1,
-                              }}
-                            >
-                              No matches for &quot;{searchQuery.trim()}&quot;
-                            </Box>
-                            <Button
-                              component={RouterLink}
-                              to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
-                              size="small"
-                              onClick={closeSearchDropdown}
-                              sx={{
-                                color: 'primary.light',
-                                textTransform: 'none',
-                              }}
-                            >
-                              View all in Directory
-                            </Button>
-                          </Box>
-                        ) : (
-                          <Stack
-                            component="ul"
-                            sx={{ listStyle: 'none', m: 0, p: 0.5 }}
-                          >
-                            {searchMatches.map((p) => {
-                              const handle = p.handle || p.id;
-                              const label =
-                                p.display_name || p.handle || handle;
-                              return (
-                                <MenuItem
-                                  key={p.id}
-                                  component={RouterLink}
-                                  to={`/profile/${handle}`}
-                                  onClick={() => {
-                                    setSearchQuery('');
-                                    closeSearchDropdown();
-                                  }}
-                                  sx={{
-                                    color: 'white',
-                                    '&:hover': {
-                                      bgcolor: 'rgba(255,255,255,0.08)',
-                                    },
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ minWidth: 36 }}>
-                                    <PersonIcon
-                                      sx={{
-                                        color: 'rgba(255,255,255,0.6)',
-                                        fontSize: 20,
-                                      }}
-                                    />
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary={label}
-                                    secondary={
-                                      p.handle && p.handle !== label
-                                        ? `@${p.handle}`
-                                        : null
-                                    }
-                                    primaryTypographyProps={{ fontWeight: 600 }}
-                                    secondaryTypographyProps={{
-                                      variant: 'caption',
-                                    }}
-                                  />
-                                </MenuItem>
-                              );
-                            })}
-                          </Stack>
-                        )}
-                      </Paper>
-                    </Popper>
-                  </Box>
                 </>
               )}
             </Box>
@@ -719,45 +774,39 @@ export const Navbar = () => {
                 <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
               ) : !showAuthedHeader ? (
                 <>
-                  {/* Guest: Join + Sign in */}
+                  {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
                   {!isJoinActive && (
-                    <Box
+                    <Button
                       component="button"
                       type="button"
                       onClick={() => void openJoin()}
                       sx={{
-                        background: 'none',
-                        border: 0,
-                        p: 0,
-                        font: 'inherit',
-                        cursor: 'pointer',
-                        color: 'text.secondary',
-                        textDecoration: 'none',
-                        '&:hover': { color: 'white' },
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontSize: '0.875rem',
+                        minWidth: 0,
+                        px: 1,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }}
                     >
                       Join
-                    </Box>
+                    </Button>
                   )}
-                  <Box
+                  <Button
                     component="button"
                     type="button"
                     onClick={() => void openSignIn()}
                     sx={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      color: 'text.secondary',
-                      font: 'inherit',
-                      '&:hover': { color: 'white' },
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 1,
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
+                      minWidth: 0,
+                      px: 1,
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                     }}
                   >
                     Sign in
-                  </Box>
+                  </Button>
                 </>
               ) : (
                 <>

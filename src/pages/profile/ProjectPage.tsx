@@ -1,5 +1,6 @@
 import EditIcon from '@mui/icons-material/Edit';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import {
   Box,
   Button,
@@ -12,6 +13,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
+import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
@@ -29,6 +31,7 @@ export const ProjectPage = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -199,7 +202,15 @@ export const ProjectPage = () => {
         </Typography>
 
         {projectUrl && (
-          <Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<VisibilityIcon />}
+              onClick={() => setPreviewOpen(true)}
+              sx={{ textTransform: 'none' }}
+            >
+              Preview
+            </Button>
             {isExternalUrl(projectUrl) ? (
               <Button
                 href={projectUrl}
@@ -242,6 +253,11 @@ export const ProjectPage = () => {
         onSubmit={handleUpdate}
         initialProject={project}
         projectId={project.id}
+      />
+      <PortfolioPreviewModal
+        project={project}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
       />
     </Container>
   );

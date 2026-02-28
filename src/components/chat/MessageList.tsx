@@ -11,6 +11,8 @@ import type { MessageWithExtras } from '../../hooks/useChat';
 import type { ChatRoomType } from '../../types/chat';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
+const CHAT_PANEL_BG = '#282C34';
+
 type MessageListProps = {
   messages: MessageWithExtras[];
   currentUserId: string;
@@ -26,6 +28,9 @@ type MessageListProps = {
   loadingOlder?: boolean;
   isAdmin?: boolean;
   compact?: boolean;
+  /** When true, show typing/presence avatar at bottom right (chat panel style) */
+  typingAvatarUrl?: string | null;
+  showTyping?: boolean;
 };
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -50,6 +55,8 @@ export const MessageList = ({
   loadingOlder = false,
   isAdmin,
   compact = false,
+  typingAvatarUrl,
+  showTyping = false,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const previousBoundaryRef = useRef<{
@@ -133,6 +140,8 @@ export const MessageList = ({
         flexDirection: 'column',
         gap: compact ? 1 : 1.5,
         p: compact ? 1.25 : 2,
+        bgcolor: CHAT_PANEL_BG,
+        position: 'relative',
       }}
     >
       {hasOlderMessages && onLoadOlder && (
@@ -170,10 +179,7 @@ export const MessageList = ({
 
         if (msg.is_deleted) {
           return (
-            <Box
-              key={msg.id}
-              sx={{ textAlign: isOwn ? 'right' : 'left', px: 1 }}
-            >
+            <Box key={msg.id} sx={{ textAlign: 'left', px: 1 }}>
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -197,8 +203,8 @@ export const MessageList = ({
             sx={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: isOwn ? 'flex-end' : 'flex-start',
-              maxWidth: '75%',
+              alignItems: 'flex-start',
+              maxWidth: '85%',
               position: 'relative',
               '&:hover .msg-reaction-bar': {
                 opacity: 1,
@@ -214,6 +220,7 @@ export const MessageList = ({
                 createdAt: msg.created_at,
                 editedAt: msg.edited_at ?? null,
                 formatTime: formatMessageTime,
+                inIcon: true,
               }}
               actionMenu={
                 canAct
@@ -479,6 +486,30 @@ export const MessageList = ({
           </Box>
         );
       })}
+
+      {showTyping && typingAvatarUrl && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 8,
+            right: 12,
+            zIndex: 1,
+          }}
+        >
+          <Box
+            component="img"
+            src={typingAvatarUrl}
+            alt=""
+            sx={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.2)',
+              objectFit: 'cover',
+            }}
+          />
+        </Box>
+      )}
 
       <div ref={bottomRef} />
     </Box>

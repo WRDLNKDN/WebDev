@@ -142,24 +142,40 @@ const theme = createTheme({
 
   // COMPONENT OVERRIDES: The Compliance Engine
   components: {
-    // 1. GLOBAL RESET
+    // 1. GLOBAL RESET — single scrollbar: html/body do not scroll; #root is the scroll container (Join overrides on its page)
     MuiCssBaseline: {
       styleOverrides: {
-        body: {
-          scrollbarColor: '#6b6b6b #2b2b2b',
-          '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
-            backgroundColor: '#2b2b2b',
+        '@global': {
+          html: {
+            overflow: 'hidden',
+            height: '100%',
           },
-          '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
-            borderRadius: 8,
-            backgroundColor: '#6b6b6b',
-            minHeight: 24,
-            border: '3px solid #2b2b2b',
+          body: {
+            overflowX: 'hidden',
+            overflowY: 'hidden',
+            height: '100%',
           },
-          '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus':
-            {
+          // #root does not scroll; Layout and Join use their own scroll container
+          '#root': {
+            height: '100%',
+            overflow: 'hidden',
+          },
+          // Single scroll container (Layout and Join use this class for scrollbar styling)
+          '.app-scroll-container': {
+            scrollbarColor: '#6b6b6b #2b2b2b',
+            '&::-webkit-scrollbar': {
+              backgroundColor: '#2b2b2b',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              borderRadius: 8,
+              backgroundColor: '#6b6b6b',
+              minHeight: 24,
+              border: '3px solid #2b2b2b',
+            },
+            '&::-webkit-scrollbar-thumb:focus': {
               backgroundColor: '#959595',
             },
+          },
         },
       },
     },

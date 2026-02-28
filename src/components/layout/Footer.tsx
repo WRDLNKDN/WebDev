@@ -4,13 +4,19 @@ import {
   Collapse,
   Container,
   Grid,
+  IconButton,
   Link,
   Stack,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import HeadsetIcon from '@mui/icons-material/Headset';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import TwitterIcon from '@mui/icons-material/Twitter';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
@@ -213,7 +219,7 @@ export const Footer = () => {
     >
       <Container maxWidth="lg">
         <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
-          <Grid size={{ xs: 12, md: 5 }}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Stack
               spacing={1.1}
               sx={{
@@ -227,6 +233,14 @@ export const Footer = () => {
                 spacing={{ xs: 0.6, md: 0.9 }}
                 alignItems="center"
               >
+                <EmojiEventsIcon
+                  sx={{
+                    fontSize: isDesktop ? 36 : 32,
+                    color: 'primary.main',
+                    opacity: 0.95,
+                  }}
+                  aria-hidden
+                />
                 <Box
                   component="img"
                   src="/assets/og_weirdlings/werdling1_transparent.png"
@@ -265,7 +279,7 @@ export const Footer = () => {
             </Stack>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 7 }}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Box
               aria-label="Footer navigation sections"
               sx={{
@@ -420,6 +434,73 @@ export const Footer = () => {
                 );
               })}
             </Box>
+          </Grid>
+
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{
+              display: 'flex',
+              alignItems: { xs: 'center', md: 'flex-start' },
+              justifyContent: { xs: 'center', md: 'flex-end' },
+              pt: { xs: 1, md: 0 },
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={0.5}
+              aria-label="Social and support links"
+            >
+              <IconButton
+                component={Link}
+                href="https://twitter.com/wrdlnkdn"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                <TwitterIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                component={Link}
+                href="https://www.facebook.com/wrdlnkdn"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                <FacebookIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                component={Link}
+                href="https://www.linkedin.com/company/wrdlnkdn"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                <LinkedInIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                component={Link}
+                href="/support"
+                aria-label="Support"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                <HeadsetIcon fontSize="small" />
+              </IconButton>
+            </Stack>
           </Grid>
         </Grid>
 

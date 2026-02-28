@@ -22,6 +22,7 @@ export interface DirectoryMember {
   tagline: string | null;
   pronouns: string | null;
   industry: string | null;
+  secondary_industry: string | null;
   location: string | null;
   skills: string[];
   bio_snippet: string | null;
@@ -31,7 +32,8 @@ export interface DirectoryMember {
 
 export interface DirectoryParams {
   q?: string;
-  industry?: string;
+  primary_industry?: string;
+  secondary_industry?: string;
   location?: string;
   skills?: string[];
   connection_status?: ConnectionState;
@@ -51,7 +53,10 @@ export async function fetchDirectory(
 ): Promise<DirectoryResponse> {
   const sp = new URLSearchParams();
   if (params.q) sp.set('q', params.q);
-  if (params.industry) sp.set('industry', params.industry);
+  if (params.primary_industry)
+    sp.set('primary_industry', params.primary_industry);
+  if (params.secondary_industry)
+    sp.set('secondary_industry', params.secondary_industry);
   if (params.location) sp.set('location', params.location);
   if (params.skills?.length) sp.set('skills', params.skills.join(','));
   if (params.connection_status)

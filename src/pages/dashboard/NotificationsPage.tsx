@@ -348,7 +348,7 @@ export const NotificationsPage = () => {
             gap: 1,
           }}
         >
-          <Typography variant="h5" fontWeight={600}>
+          <Typography component="h1" variant="h5" fontWeight={600}>
             Notifications
           </Typography>
           {unreadCount > 0 && (

@@ -62,7 +62,8 @@ export const PostCard = ({
     >
       <Box sx={{ minWidth: 0 }}>
         <PostAuthor {...author} />
-        {children}
+        {/* Align body/actions with right edge of avatar: 48px avatar + 8px gap = 56px */}
+        <Box sx={{ minWidth: 0, ml: 7 }}>{children}</Box>
       </Box>
     </CardContent>
   </Card>

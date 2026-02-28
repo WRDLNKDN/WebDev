@@ -22,6 +22,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { validatePortfolioUrl } from '../../lib/portfolio/linkValidation';
 import { toMessage } from '../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
 
@@ -132,8 +133,11 @@ export const AddProjectDialog = ({
   const handleSubmit = async () => {
     setSubmitError(null);
     const url = formData.project_url?.trim() ?? '';
-    if (!isExternalUrl(url)) {
-      setSubmitError('Project URL must be an external URL (e.g. https://...).');
+    const validation = await validatePortfolioUrl(url, {
+      checkAccessible: true,
+    });
+    if (!validation.ok) {
+      setSubmitError(validation.error);
       return;
     }
     try {
@@ -288,8 +292,8 @@ export const AddProjectDialog = ({
                   fullWidth
                   required
                   label="Project URL"
-                  placeholder="https://example.com/my-project"
-                  helperText="External URL only (e.g. https://...). Internal paths are not allowed."
+                  placeholder="https://example.com/file.pdf or Google Docs/Sheets/Slides link"
+                  helperText="Supported: images, PDF, Word, PowerPoint, Excel, text; or Google Docs/Sheets/Slides. Link must be publicly accessible."
                   value={formData.project_url}
                   onChange={handleChange('project_url')}
                   variant="filled"

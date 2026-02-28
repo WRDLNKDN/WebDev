@@ -11,7 +11,7 @@ export const WelcomeStep = () => {
   const { goToStep, markComplete } = useJoin();
 
   return (
-    <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+    <Box sx={{ width: '100%', minWidth: 0, overflow: 'visible' }}>
       <Paper
         elevation={0}
         sx={{
@@ -20,7 +20,7 @@ export const WelcomeStep = () => {
           mx: 'auto',
         }}
       >
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           <Box>
             <Typography variant="h5" sx={welcomeStepTitle}>
               Start with intent.

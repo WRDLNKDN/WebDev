@@ -113,6 +113,7 @@ test.describe('Navbar member search length guard', () => {
     await expect(page).toHaveURL(/\/feed/);
 
     const search = page.getByLabel('Search for members');
+    await expect(search).toBeVisible({ timeout: 15000 });
     const longQuery = 'x'.repeat(620);
 
     await search.fill(longQuery);

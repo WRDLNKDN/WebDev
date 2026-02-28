@@ -6,7 +6,7 @@ test.describe('Directory Page', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ avatarUrl: null }),
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
       });
     });
   });
@@ -14,12 +14,13 @@ test.describe('Directory Page', () => {
   test('unauthenticated user redirects to home', async ({ page }) => {
     await page.goto('/directory');
 
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-
     // Signed-out: RequireOnboarded redirects to /
     await expect
       .poll(() => new URL(page.url()).pathname === '/', { timeout: 15000 })
       .toBe(true);
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('directory does not crash; unauthenticated redirects to home', async ({
@@ -27,8 +28,6 @@ test.describe('Directory Page', () => {
   }) => {
     // No auth fixture: RequireOnboarded redirects to /
     await page.goto('/directory');
-
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
 
     // Wait for redirect (RequireOnboarded async check can take a few seconds)
     await expect

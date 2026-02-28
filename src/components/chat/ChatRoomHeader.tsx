@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
 
@@ -68,30 +69,28 @@ export const ChatRoomHeader = ({
         otherMember?.profile?.handle ||
         'Chat';
 
+  const avatarUrl =
+    room?.room_type === 'dm'
+      ? (otherMember?.profile?.avatar ?? undefined)
+      : undefined;
+  const avatarAlt = displayName || 'Chat';
+
   return (
     <Box
       sx={{
-        p: 2,
+        p: 1.5,
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
         alignItems: 'center',
         gap: 1,
       }}
     >
-      {closeIcon ? (
-        <IconButton
-          onClick={onBack}
-          aria-label="Close"
-          sx={{ color: 'rgba(255,255,255,0.7)' }}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      ) : (
+      {!closeIcon && (
         <Button
           size="small"
           startIcon={<ArrowBackIcon />}
           onClick={onBack ?? (() => navigate('/chat'))}
-          sx={{ color: 'white' }}
+          sx={{ color: 'white', minWidth: 0, mr: 0.5 }}
         >
           Back
         </Button>
@@ -101,121 +100,148 @@ export const ChatRoomHeader = ({
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          gap: 1.25,
+          minWidth: 0,
         }}
       >
-        <Typography variant="h6">{displayName}</Typography>
-        {room?.room_type === 'dm' && otherUserId && (
-          <OnlineIndicator
-            otherUserId={otherUserId}
-            onlineUsers={onlineUsers}
-            typingUsers={typingUsers}
-          />
-        )}
+        <ProfileAvatar
+          src={avatarUrl}
+          alt={avatarAlt}
+          size="small"
+          sx={{ flexShrink: 0 }}
+        />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={600} noWrap>
+            {displayName}
+          </Typography>
+          {room?.room_type === 'dm' && otherUserId && (
+            <OnlineIndicator
+              otherUserId={otherUserId}
+              onlineUsers={onlineUsers}
+              typingUsers={typingUsers}
+            />
+          )}
+        </Box>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+        <IconButton
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          aria-label="Chat options"
+          sx={{ color: 'rgba(255,255,255,0.75)' }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
         {onPopOut && (
           <IconButton
             onClick={onPopOut}
             aria-label="Open in new window"
-            sx={{ color: 'rgba(255,255,255,0.7)' }}
+            sx={{ color: 'rgba(255,255,255,0.75)' }}
             title="Pop out chat"
           >
             <OpenInNewIcon fontSize="small" />
           </IconButton>
         )}
-        {room?.room_type === 'dm' && otherUserId && (
+        {closeIcon && (
+          <IconButton
+            onClick={onBack}
+            aria-label="Close"
+            sx={{ color: 'rgba(255,255,255,0.75)' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        )}
+      </Box>
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={() => setMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        slotProps={{
+          root: { sx: { zIndex: 1500 } },
+          paper: { sx: { zIndex: 1500 } },
+        }}
+      >
+        {room?.room_type === 'dm' && (
           <>
-            <IconButton
-              onClick={() => void onLeave()}
-              aria-label="Leave conversation"
-              sx={{ color: 'rgba(255,255,255,0.7)' }}
-              title="Remove chat"
+            <MenuItem
+              onClick={() => {
+                void onLeave();
+                setMenuAnchor(null);
+              }}
             >
-              <LogoutIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              onClick={onBlock}
-              aria-label="Block user"
-              sx={{ color: 'rgba(255,255,255,0.7)' }}
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Leave conversation</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                onBlock();
+                setMenuAnchor(null);
+              }}
             >
-              <BlockIcon fontSize="small" />
-            </IconButton>
+              <ListItemIcon>
+                <BlockIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Block</ListItemText>
+            </MenuItem>
           </>
         )}
         {room?.room_type === 'group' && (
           <>
-            <IconButton
-              onClick={(e) => setMenuAnchor(e.currentTarget)}
-              aria-label="Room options"
-              sx={{ color: 'rgba(255,255,255,0.7)' }}
-            >
-              <MoreVertIcon />
-            </IconButton>
-            <Menu
-              anchorEl={menuAnchor}
-              open={Boolean(menuAnchor)}
-              onClose={() => setMenuAnchor(null)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              slotProps={{
-                root: { sx: { zIndex: 1500 } },
-                paper: { sx: { zIndex: 1500 } },
-              }}
-            >
-              {isRoomAdmin && (
-                <MenuItem
-                  onClick={() => {
-                    onInvite();
-                    setMenuAnchor(null);
-                  }}
-                >
-                  <ListItemIcon>
-                    <PersonAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Invite members</ListItemText>
-                </MenuItem>
-              )}
-              {isRoomAdmin && (
-                <MenuItem
-                  onClick={() => {
-                    onRename();
-                    setMenuAnchor(null);
-                  }}
-                >
-                  <ListItemIcon>
-                    <EditIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Rename group</ListItemText>
-                </MenuItem>
-              )}
-              {isRoomAdmin && (
-                <MenuItem
-                  onClick={() => {
-                    onManageMembers();
-                    setMenuAnchor(null);
-                  }}
-                >
-                  <ListItemIcon>
-                    <GroupAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Manage members</ListItemText>
-                </MenuItem>
-              )}
+            {isRoomAdmin && (
               <MenuItem
                 onClick={() => {
-                  void onLeave();
+                  onInvite();
                   setMenuAnchor(null);
                 }}
               >
                 <ListItemIcon>
-                  <LogoutIcon fontSize="small" />
+                  <PersonAddIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>Leave group</ListItemText>
+                <ListItemText>Invite members</ListItemText>
               </MenuItem>
-            </Menu>
+            )}
+            {isRoomAdmin && (
+              <MenuItem
+                onClick={() => {
+                  onRename();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <EditIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Rename group</ListItemText>
+              </MenuItem>
+            )}
+            {isRoomAdmin && (
+              <MenuItem
+                onClick={() => {
+                  onManageMembers();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <GroupAddIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Manage members</ListItemText>
+              </MenuItem>
+            )}
+            <MenuItem
+              onClick={() => {
+                void onLeave();
+                setMenuAnchor(null);
+              }}
+            >
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Leave group</ListItemText>
+            </MenuItem>
           </>
         )}
-      </Box>
+      </Menu>
     </Box>
   );
 };

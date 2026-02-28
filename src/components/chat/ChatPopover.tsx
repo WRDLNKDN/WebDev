@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from './ChatRoomHeader';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
+import { QuickReactions } from './QuickReactions';
 import { BlockConfirmDialog } from './BlockConfirmDialog';
 import { GroupActionsDialog } from './GroupActionsDialog';
 import { ReportDialog } from './ReportDialog';
@@ -126,9 +127,10 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
           flexDirection: 'column',
           overflow: 'hidden',
           boxSizing: 'border-box',
-          borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.14)',
-          boxShadow: '0 12px 38px rgba(0,0,0,0.45)',
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow:
+            '0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)',
           animation: 'popoverIn 0.25s cubic-bezier(0.32, 0, 0.37, 1)',
           '@keyframes popoverIn': {
             from: {
@@ -218,16 +220,32 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
             onMessagesViewed={markAsRead}
             isAdmin={isAdmin}
             compact
+            typingAvatarUrl={
+              room?.room_type === 'dm'
+                ? (otherMember?.profile?.avatar ?? null)
+                : undefined
+            }
+            showTyping={
+              room?.room_type === 'dm' &&
+              !!otherMember?.user_id &&
+              typingUsers.has(otherMember.user_id)
+            }
           />
         )}
 
         {!error && (
-          <MessageInput
-            onSend={sendMessage}
-            onTyping={startTyping}
-            onStopTyping={stopTyping}
-            disabled={sending}
-          />
+          <>
+            <QuickReactions
+              onSend={(text) => sendMessage(text)}
+              disabled={sending}
+            />
+            <MessageInput
+              onSend={sendMessage}
+              onTyping={startTyping}
+              onStopTyping={stopTyping}
+              disabled={sending}
+            />
+          </>
         )}
       </Box>
 

@@ -45,6 +45,10 @@ export const JoinProgress = ({
         activeStep={activeStepIndex}
         alternativeLabel={!isMobile}
         orientation={isMobile ? 'vertical' : 'horizontal'}
+        sx={{
+          '& .MuiStepLabel-root': { py: 0 },
+          '& .MuiStepContent-root': { pt: 0 },
+        }}
       >
         {STEP_ORDER.map((step, index) => {
           const isCompleted = completedSteps.includes(step);

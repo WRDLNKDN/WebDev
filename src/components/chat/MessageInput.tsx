@@ -1,6 +1,9 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import GifBoxIcon from '@mui/icons-material/GifBox';
+import ImageIcon from '@mui/icons-material/Image';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SendIcon from '@mui/icons-material/Send';
 import {
   Box,
@@ -25,6 +28,7 @@ import {
 import { toMessage } from '../../lib/utils/errors';
 
 const EXIF_STRIP_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+const INPUT_SEPARATOR_GREEN = '#1DB954';
 
 async function stripExifIfImage(file: File): Promise<Blob> {
   // Do not canvas-process GIFs; that strips animation.
@@ -73,6 +77,7 @@ export const MessageInput = ({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const COMMON_EMOJIS = ['😀', '😂', '😍', '🔥', '🙌', '🙏', '👍', '🎉', '💯'];
 
   const handlePickGif = async (gifUrl: string, title?: string) => {
@@ -200,9 +205,10 @@ export const MessageInput = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 1,
-        p: 2,
-        borderTop: '1px solid rgba(255,255,255,0.1)',
+        gap: 0.75,
+        borderTop: `2px solid ${INPUT_SEPARATOR_GREEN}`,
+        p: 1.25,
+        bgcolor: 'rgba(54,58,66,0.95)',
       }}
     >
       {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
@@ -234,60 +240,10 @@ export const MessageInput = ({
           ))}
         </Box>
       )}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: { xs: 1.25, sm: 1 },
-        }}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={CHAT_ALLOWED_ACCEPT}
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-        <IconButton
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || uploading}
-          aria-label="Attach file"
-          sx={{
-            color: 'rgba(255,255,255,0.75)',
-            minWidth: { xs: 40, sm: 36 },
-            minHeight: { xs: 40, sm: 36 },
-          }}
-        >
-          <AttachFileIcon />
-        </IconButton>
-        <IconButton
-          onClick={(e) => setEmojiAnchor(e.currentTarget)}
-          disabled={disabled || uploading}
-          aria-label="Add emoji"
-          sx={{
-            color: 'rgba(255,255,255,0.75)',
-            minWidth: { xs: 40, sm: 36 },
-            minHeight: { xs: 40, sm: 36 },
-          }}
-        >
-          <EmojiEmotionsOutlinedIcon />
-        </IconButton>
-        <IconButton
-          onClick={() => setGifPickerOpen(true)}
-          disabled={disabled || uploading || pendingFiles.length >= 5}
-          aria-label="Add GIF"
-          sx={{
-            color: 'rgba(255,255,255,0.75)',
-            minWidth: { xs: 40, sm: 36 },
-            minHeight: { xs: 40, sm: 36 },
-          }}
-        >
-          <GifBoxIcon />
-        </IconButton>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
         <TextField
           multiline
-          maxRows={4}
+          maxRows={expanded ? 6 : 2}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -300,44 +256,110 @@ export const MessageInput = ({
             }
           }}
           onBlur={() => onStopTyping?.()}
-          placeholder="Type a message…"
+          placeholder="Write a message…"
           disabled={disabled || uploading}
           size="small"
           fullWidth
           sx={{
             '& .MuiOutlinedInput-root': {
-              bgcolor: 'rgba(17,24,39,0.68)',
+              bgcolor: 'rgba(40,44,52,0.9)',
               color: 'white',
-              borderRadius: 2,
-              minHeight: { xs: 40, sm: 36 },
-              '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.35)' },
+              borderRadius: 1.5,
+              minHeight: 40,
+              '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
+              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
             },
           }}
           inputProps={{ 'aria-label': 'Message' }}
         />
         <IconButton
-          type="submit"
-          disabled={
-            disabled || uploading || (!text.trim() && pendingFiles.length === 0)
-          }
-          aria-label="Send message"
-          sx={{
-            color: 'primary.main',
-            minWidth: { xs: 40, sm: 36 },
-            minHeight: { xs: 40, sm: 36 },
-          }}
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          aria-label={expanded ? 'Collapse input' : 'Expand input'}
+          sx={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}
         >
-          <SendIcon />
+          <KeyboardArrowUpIcon fontSize="small" />
         </IconButton>
       </Box>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ alignSelf: 'flex-end', pr: 1 }}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 0.5,
+        }}
       >
-        Press Enter to Send
-      </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={CHAT_ALLOWED_ACCEPT}
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
+          <IconButton
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || uploading}
+            aria-label="Attach image"
+            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+          >
+            <ImageIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || uploading}
+            aria-label="Attach file"
+            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+          >
+            <AttachFileIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() => setGifPickerOpen(true)}
+            disabled={disabled || uploading || pendingFiles.length >= 5}
+            aria-label="Add GIF"
+            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+          >
+            <GifBoxIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={(e) => setEmojiAnchor(e.currentTarget)}
+            disabled={disabled || uploading}
+            aria-label="Add emoji"
+            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+          >
+            <EmojiEmotionsOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontSize: '0.7rem', opacity: 0.85 }}
+          >
+            Press Enter to Send
+          </Typography>
+          <IconButton
+            type="button"
+            aria-label="More options"
+            sx={{ color: 'rgba(255,255,255,0.65)', p: 0.5 }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            type="submit"
+            disabled={
+              disabled ||
+              uploading ||
+              (!text.trim() && pendingFiles.length === 0)
+            }
+            aria-label="Send message"
+            sx={{ color: INPUT_SEPARATOR_GREEN, p: 0.75 }}
+          >
+            <SendIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
 
       <GifPickerDialog
         open={gifPickerOpen}

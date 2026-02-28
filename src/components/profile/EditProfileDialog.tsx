@@ -4,7 +4,6 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
-  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -13,7 +12,9 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   IconButton,
+  InputLabel,
   MenuItem,
   Select,
   Snackbar,
@@ -56,21 +57,7 @@ const GLASS_MODAL = {
 const INPUT_HEIGHT = 32;
 const INPUT_PADDING = '4px 12px';
 
-const INDUSTRY_OPTIONS = [
-  'Technology',
-  'Healthcare',
-  'Education',
-  'Finance',
-  'Marketing',
-  'Design',
-  'Engineering',
-  'Consulting',
-  'Media',
-  'Nonprofit',
-  'Retail',
-  'Manufacturing',
-  'Other',
-];
+import { INDUSTRY_OPTIONS } from '../../constants/industry';
 
 const INPUT_STYLES = {
   '& .MuiFilledInput-root': {
@@ -149,9 +136,12 @@ export const EditProfileDialog = ({
     bio: '',
     skills: '',
     industry: '',
+    secondary_industry: '',
+    niche_field: '',
     location: '',
     profile_visibility: 'members_only' as 'members_only' | 'connections_only',
   });
+  const [showSecondaryIndustry, setShowSecondaryIndustry] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -179,11 +169,17 @@ export const EditProfileDialog = ({
               : '',
         ),
         industry: safeStr(prof.industry),
+        secondary_industry: safeStr(prof.secondary_industry),
+        niche_field: safeStr(prof.niche_field),
         location: safeStr(prof.location),
         profile_visibility: (prof.profile_visibility === 'connections_only'
           ? 'connections_only'
           : 'members_only') as 'members_only' | 'connections_only',
       });
+      setShowSecondaryIndustry(
+        Boolean((prof.secondary_industry as string)?.trim()) ||
+          Boolean((prof.niche_field as string)?.trim()),
+      );
       setUploadedAvatarUrl(null);
     }
   }, [open, profile]);
@@ -223,6 +219,11 @@ export const EditProfileDialog = ({
     if (handleAvailable === false || checkingHandle) {
       return;
     }
+    if (!formData.industry?.trim()) {
+      setToastMessage('Primary Industry is required.');
+      setShowToast(true);
+      return;
+    }
 
     try {
       setBusy(true);
@@ -235,6 +236,8 @@ export const EditProfileDialog = ({
         handle: formData.handle,
         pronouns: formData.pronouns,
         industry: formData.industry || null,
+        secondary_industry: formData.secondary_industry?.trim() || null,
+        niche_field: formData.niche_field?.trim() || null,
         location: formData.location || null,
         profile_visibility: formData.profile_visibility,
         nerd_creds: {
@@ -525,7 +528,7 @@ export const EditProfileDialog = ({
               </FormControl>
             </Box>
 
-            {/* Industry */}
+            {/* Primary Industry (required) */}
             <Box>
               <Typography
                 variant="overline"
@@ -537,42 +540,145 @@ export const EditProfileDialog = ({
                   mb: 0.5,
                 }}
               >
-                INDUSTRY
+                PRIMARY INDUSTRY
               </Typography>
-              <Autocomplete
-                multiple
-                freeSolo
-                options={INDUSTRY_OPTIONS}
-                value={formData.industry
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)}
-                onChange={(_, newValue: string[]) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    industry: newValue.join(', '),
-                  }));
-                }}
+              <FormControl
+                fullWidth
                 disabled={busy}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="filled"
-                    placeholder="Add industry or field"
-                    sx={INPUT_STYLES}
-                    helperText="Shown in Directory. E.g. Tech, Healthcare, Education."
-                  />
-                )}
-                sx={{
-                  '& .MuiAutocomplete-tag': {
-                    bgcolor: INPUT_BG,
-                    border: `1px solid ${BORDER_COLOR}`,
-                    color: 'white',
-                  },
-                  '& .MuiAutocomplete-input': { color: 'white' },
-                }}
-              />
+                variant="filled"
+                sx={INPUT_STYLES}
+              >
+                <InputLabel id="edit-profile-primary-industry">
+                  Primary Industry
+                </InputLabel>
+                <Select
+                  labelId="edit-profile-primary-industry"
+                  value={formData.industry}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      industry: e.target.value,
+                      ...(prev.secondary_industry === e.target.value
+                        ? { secondary_industry: '' }
+                        : {}),
+                    }))
+                  }
+                  label="Primary Industry"
+                  displayEmpty
+                  renderValue={(v) => v || 'Select primary industry'}
+                >
+                  <MenuItem value="">Select primary industry</MenuItem>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Used for Directory filtering.</FormHelperText>
+              </FormControl>
             </Box>
+
+            {/* Add another industry (progressive reveal) */}
+            {!showSecondaryIndustry ? (
+              <Box>
+                <Button
+                  size="small"
+                  onClick={() => setShowSecondaryIndustry(true)}
+                  sx={{ color: PURPLE_ACCENT, textTransform: 'none' }}
+                >
+                  Add another industry
+                </Button>
+              </Box>
+            ) : (
+              <>
+                <Box>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      letterSpacing: 2,
+                      fontWeight: 'bold',
+                      color: PURPLE_ACCENT,
+                      display: 'block',
+                      mb: 0.5,
+                    }}
+                  >
+                    SECONDARY INDUSTRY
+                  </Typography>
+                  <FormControl
+                    fullWidth
+                    disabled={busy}
+                    variant="filled"
+                    sx={INPUT_STYLES}
+                  >
+                    <InputLabel id="edit-profile-secondary-industry">
+                      Secondary Industry
+                    </InputLabel>
+                    <Select
+                      labelId="edit-profile-secondary-industry"
+                      value={formData.secondary_industry}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          secondary_industry: e.target.value,
+                        }))
+                      }
+                      label="Secondary Industry"
+                      displayEmpty
+                      renderValue={(v) => v || 'None'}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {INDUSTRY_OPTIONS.filter(
+                        (opt) => opt !== formData.industry,
+                      ).map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <FormHelperText>
+                      Used for Directory filtering.
+                    </FormHelperText>
+                  </FormControl>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        secondary_industry: '',
+                      }));
+                      setShowSecondaryIndustry(false);
+                    }}
+                    sx={{ mt: 0.5, color: 'text.secondary' }}
+                  >
+                    Remove secondary
+                  </Button>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      letterSpacing: 2,
+                      fontWeight: 'bold',
+                      color: PURPLE_ACCENT,
+                      display: 'block',
+                      mb: 0.5,
+                    }}
+                  >
+                    NICHE OR FIELD
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    placeholder="Example: DevSecOps in FinTech"
+                    value={formData.niche_field}
+                    onChange={handleChange('niche_field')}
+                    disabled={busy}
+                    variant="filled"
+                    sx={INPUT_STYLES}
+                    helperText="Used for search. Not used for filters."
+                  />
+                </Box>
+              </>
+            )}
 
             {/* Location */}
             <Box>

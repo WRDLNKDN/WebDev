@@ -131,20 +131,39 @@ export const GuestView = ({
         '&:focus-visible': { boxShadow: '0 0 0 2px rgba(255,255,255,0.35)' },
       };
 
-  // Hero (buttonsOnly): primary CTA + secondary Sign In pill
+  // Hero (buttonsOnly): primary CTA + secondary Sign In pill — more space, hover rollover
+  const heroButtonSx = {
+    maxWidth: 420,
+    mx: 'auto' as const,
+    width: '100%',
+    alignItems: 'stretch',
+  };
+  const heroRollover = {
+    transition:
+      'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+    },
+  };
+
   if (buttonsOnly) {
     return (
-      <Stack
-        spacing={2}
-        sx={{ maxWidth: 420, mx: 'auto', width: '100%', alignItems: 'stretch' }}
-      >
+      <Stack spacing={3} sx={heroButtonSx}>
         <Button
           onClick={() => void goToJoin()}
           variant="outlined"
           size="large"
           fullWidth
           disabled={joinLoading}
-          sx={joinSx}
+          sx={{
+            ...joinSx,
+            ...heroRollover,
+            '&:hover': {
+              ...(joinSx && '&:hover' in joinSx && joinSx['&:hover']),
+              ...heroRollover['&:hover'],
+            },
+          }}
         >
           {joinLoading ? 'Opening Join…' : 'Join Us'}
         </Button>
@@ -154,7 +173,14 @@ export const GuestView = ({
           variant="outlined"
           size="large"
           fullWidth
-          sx={signInSx}
+          sx={{
+            ...signInSx,
+            ...heroRollover,
+            '&:hover': {
+              ...(signInSx && '&:hover' in signInSx && signInSx['&:hover']),
+              ...heroRollover['&:hover'],
+            },
+          }}
           aria-label="Already a member? Sign In"
           onClick={() =>
             trackEvent('hero_sign_in_cta_click', { source: 'hero' })

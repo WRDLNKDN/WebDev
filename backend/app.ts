@@ -1870,9 +1870,13 @@ app.get('/api/directory', async (req: AuthRequest, res: Response) => {
 
   const search =
     typeof req.query.q === 'string' ? req.query.q.trim() || null : null;
-  const industry =
-    typeof req.query.industry === 'string'
-      ? req.query.industry.trim() || null
+  const primaryIndustry =
+    typeof req.query.primary_industry === 'string'
+      ? req.query.primary_industry.trim() || null
+      : null;
+  const secondaryIndustry =
+    typeof req.query.secondary_industry === 'string'
+      ? req.query.secondary_industry.trim() || null
       : null;
   const location =
     typeof req.query.location === 'string'
@@ -1904,7 +1908,8 @@ app.get('/api/directory', async (req: AuthRequest, res: Response) => {
   const { data: rows, error } = await adminSupabase.rpc('get_directory_page', {
     p_viewer_id: userId,
     p_search: search,
-    p_industry: industry,
+    p_primary_industry: primaryIndustry,
+    p_secondary_industry: secondaryIndustry,
     p_location: location,
     p_skills: skillsArr.length > 0 ? skillsArr : null,
     p_connection_status: connectionStatus,

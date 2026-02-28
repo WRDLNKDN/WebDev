@@ -7,6 +7,7 @@ import { supabase } from '../lib/auth/supabaseClient';
 import { authedFetch } from '../lib/api/authFetch';
 import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
+import { getLinkType, normalizeGoogleUrl } from '../lib/portfolio/linkUtils';
 import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
@@ -208,7 +209,8 @@ export function useProfile() {
           .from('portfolio_items')
           .select('*')
           .eq('owner_id', session.user.id)
-          .order('created_at', { ascending: false });
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
 
         if (!projectsError)
           setProjects((projectsData || []) as PortfolioItem[]);
@@ -424,22 +426,60 @@ export function useProfile() {
         finalImageUrl = publicUrl;
       }
 
+      const projectUrlTrimmed = newProject.project_url.trim();
+      const linkType = getLinkType(projectUrlTrimmed);
+      const normalizedUrl =
+        linkType === 'google_doc' ||
+        linkType === 'google_sheet' ||
+        linkType === 'google_slides'
+          ? normalizeGoogleUrl(projectUrlTrimmed)
+          : projectUrlTrimmed;
+      const embedUrl =
+        linkType === 'google_doc' ||
+        linkType === 'google_sheet' ||
+        linkType === 'google_slides'
+          ? normalizedUrl !== projectUrlTrimmed
+            ? normalizedUrl
+            : null
+          : null;
+      const hasManualImage = Boolean(finalImageUrl);
+      const thumbnailStatus = hasManualImage ? null : 'pending';
+
+      const maxOrder = projects.length
+        ? Math.max(
+            ...projects.map((p) =>
+              typeof p.sort_order === 'number' ? p.sort_order : 0,
+            ),
+          ) + 1
+        : 0;
+
       const { data, error: insertError } = await supabase
         .from('portfolio_items')
         .insert({
           owner_id: session.user.id,
           title: newProject.title,
           description: newProject.description,
-          project_url: newProject.project_url.trim(),
+          project_url: projectUrlTrimmed,
           image_url: finalImageUrl,
           tech_stack: newProject.tech_stack,
+          sort_order: maxOrder,
+          normalized_url: normalizedUrl,
+          embed_url: embedUrl ?? undefined,
+          resolved_type: linkType,
+          thumbnail_status: thumbnailStatus,
         })
         .select()
         .single();
 
       if (insertError) throw new Error(toMessage(insertError));
 
-      setProjects((prev) => [data as PortfolioItem, ...prev]);
+      setProjects((prev) =>
+        [...prev, data as PortfolioItem].sort(
+          (a, b) =>
+            (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        ),
+      );
     } catch (err) {
       console.error('Add Project Error:', err);
       throw new Error(toMessage(err));
@@ -469,6 +509,40 @@ export function useProfile() {
     } catch (err) {
       console.error('Delete Project Error:', err);
       throw new Error(toMessage(err));
+    }
+  };
+
+  const reorderProjects = async (orderedIds: string[]) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      throw new Error('You need to sign in to reorder projects.');
+    }
+    if (orderedIds.length === 0) return;
+    try {
+      setUpdating(true);
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase
+            .from('portfolio_items')
+            .update({ sort_order: index })
+            .eq('id', id)
+            .eq('owner_id', session.user.id),
+        ),
+      );
+      setProjects((prev) => {
+        const byId = new Map(prev.map((p) => [p.id, p]));
+        return orderedIds
+          .map((id) => byId.get(id))
+          .filter((p): p is PortfolioItem => Boolean(p))
+          .map((p, i) => ({ ...p, sort_order: i }));
+      });
+    } catch (err) {
+      console.error('Reorder Projects Error:', err);
+      throw new Error(toMessage(err));
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -513,14 +587,38 @@ export function useProfile() {
         finalImageUrl = publicUrl;
       }
 
+      const projectUrlTrimmed = updates.project_url.trim();
+      const linkType = getLinkType(projectUrlTrimmed);
+      const normalizedUrl =
+        linkType === 'google_doc' ||
+        linkType === 'google_sheet' ||
+        linkType === 'google_slides'
+          ? normalizeGoogleUrl(projectUrlTrimmed)
+          : projectUrlTrimmed;
+      const embedUrl =
+        linkType === 'google_doc' ||
+        linkType === 'google_sheet' ||
+        linkType === 'google_slides'
+          ? normalizedUrl !== projectUrlTrimmed
+            ? normalizedUrl
+            : null
+          : null;
+      const hasManualImage = Boolean(finalImageUrl);
+      const thumbnailStatus = hasManualImage ? null : 'pending';
+
       const { data, error: updateError } = await supabase
         .from('portfolio_items')
         .update({
           title: updates.title,
           description: updates.description,
-          project_url: updates.project_url.trim(),
+          project_url: projectUrlTrimmed,
           image_url: finalImageUrl,
           tech_stack: updates.tech_stack,
+          normalized_url: normalizedUrl,
+          embed_url: embedUrl ?? undefined,
+          resolved_type: linkType,
+          thumbnail_status: thumbnailStatus,
+          thumbnail_url: null,
         })
         .eq('id', projectId)
         .eq('owner_id', session.user.id)
@@ -780,6 +878,7 @@ export function useProfile() {
     addProject,
     updateProject,
     deleteProject,
+    reorderProjects,
     uploadResume,
     retryResumeThumbnail,
   };

@@ -1,14 +1,17 @@
+import SearchIcon from '@mui/icons-material/Search';
 import {
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  InputAdornment,
   List,
   ListItemButton,
+  TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 type ConnectionProfile = {
@@ -31,12 +34,25 @@ export const StartDmDialog = ({
 }: StartDmDialogProps) => {
   const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredConnections = useMemo(() => {
+    if (!searchQuery.trim()) return connections;
+    const q = searchQuery.trim().toLowerCase();
+    return connections.filter(
+      (c) =>
+        (c.display_name ?? '').toLowerCase().includes(q) ||
+        (c.handle ?? '').toLowerCase().includes(q),
+    );
+  }, [connections, searchQuery]);
 
   useEffect(() => {
     if (!open) return;
-
+    setSearchQuery('');
     let cancelled = false;
+    setLoadingList(true);
 
     const load = async () => {
       const {
@@ -89,12 +105,14 @@ export const StartDmDialog = ({
       if (cancelled) return;
 
       setConnections((profileData ?? []) as ConnectionProfile[]);
+      setLoadingList(false);
     };
 
     void load();
 
     return () => {
       cancelled = true;
+      setLoadingList(false);
     };
   }, [open]);
 
@@ -123,33 +141,64 @@ export const StartDmDialog = ({
             {error}
           </Typography>
         )}
-        <List>
-          {connections.map((c) => (
-            <ListItemButton
-              key={c.id}
-              onClick={() => void handleSelect(c.id)}
-              disabled={loading}
-            >
-              <Typography variant="body2">
-                {c.display_name || c.handle || c.id}
-              </Typography>
-              {c.handle && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  @{c.handle}
+        {connections.length > 0 && (
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search connections by name or handle…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ mb: 1 }}
+            inputProps={{ 'aria-label': 'Search connections' }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        )}
+        {loadingList ? (
+          <Typography variant="body2" color="text.secondary">
+            Loading connections…
+          </Typography>
+        ) : (
+          <List>
+            {filteredConnections.map((c) => (
+              <ListItemButton
+                key={c.id}
+                onClick={() => void handleSelect(c.id)}
+                disabled={loading}
+              >
+                <Typography variant="body2">
+                  {c.display_name || c.handle || c.id}
                 </Typography>
-              )}
-            </ListItemButton>
-          ))}
-        </List>
-        {connections.length === 0 && !loading && (
+                {c.handle && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
+                    @{c.handle}
+                  </Typography>
+                )}
+              </ListItemButton>
+            ))}
+          </List>
+        )}
+        {!loadingList && connections.length === 0 && (
           <Typography variant="body2" color="text.secondary">
             No connections yet. Connect with people from the Directory or Feed.
           </Typography>
         )}
+        {!loadingList &&
+          connections.length > 0 &&
+          filteredConnections.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              No connections match &quot;{searchQuery.trim()}&quot;.
+            </Typography>
+          )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

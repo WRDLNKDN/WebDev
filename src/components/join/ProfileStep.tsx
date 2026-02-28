@@ -117,22 +117,22 @@ const ProfileStep = () => {
 
   return (
     <Stack
-      spacing={4}
+      spacing={2}
       sx={{
         ...profileStep,
         width: '100%',
         minWidth: 0,
-        overflow: 'hidden',
+        overflow: 'visible',
         '& .MuiFormControl-root, .MuiAutocomplete-root': {
           minWidth: 0,
         },
       }}
     >
       <Box>
-        <Typography variant="h4" sx={profileStepTitle}>
+        <Typography variant="h5" sx={profileStepTitle}>
           Create your public profile
         </Typography>
-        <Typography variant="body1" sx={profileStepSubtext}>
+        <Typography variant="body2" sx={profileStepSubtext}>
           This is how you&apos;ll appear in the community.
         </Typography>
       </Box>
@@ -198,7 +198,7 @@ const ProfileStep = () => {
             .
           </Typography>
         }
-        sx={{ alignItems: 'flex-start', mt: 1 }}
+        sx={{ alignItems: 'flex-start', mt: 0.5 }}
       />
 
       <Box sx={profileStepTipBox}>

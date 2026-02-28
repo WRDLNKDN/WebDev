@@ -223,6 +223,7 @@ export type Database = {
           project_url: string | null
           image_url: string | null
           tech_stack: string[] | null
+          sort_order: number
           created_at: string
           updated_at: string | null
         }
@@ -234,6 +235,7 @@ export type Database = {
           project_url?: string | null
           image_url?: string | null
           tech_stack?: string[] | null
+          sort_order?: number
           created_at?: string
           updated_at?: string | null
         }
@@ -245,6 +247,7 @@ export type Database = {
           project_url?: string | null
           image_url?: string | null
           tech_stack?: string[] | null
+          sort_order?: number
           created_at?: string
           updated_at?: string | null
         }
@@ -626,6 +629,8 @@ export type Database = {
           resume_url: string | null
           pronouns: string | null
           industry: string | null
+          secondary_industry: string | null
+          niche_field: string | null
           location: string | null
           profile_visibility: string
           feed_view_preference: string
@@ -660,6 +665,8 @@ export type Database = {
           resume_url?: string | null
           pronouns?: string | null
           industry?: string | null
+          secondary_industry?: string | null
+          niche_field?: string | null
           location?: string | null
           profile_visibility?: string
           feed_view_preference?: string
@@ -694,6 +701,8 @@ export type Database = {
           resume_url?: string | null
           pronouns?: string | null
           industry?: string | null
+          secondary_industry?: string | null
+          niche_field?: string | null
           location?: string | null
           profile_visibility?: string
           feed_view_preference?: string

@@ -8,14 +8,16 @@ test.describe('Join mobile scroll', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ avatarUrl: null }),
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
       });
     });
 
     await page.goto('/join');
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-
-    await page.getByRole('button', { name: /Create your profile/i }).click();
+    const createProfileButton = page.getByRole('button', {
+      name: /Create your profile/i,
+    });
+    await expect(createProfileButton).toBeVisible({ timeout: 15000 });
+    await createProfileButton.click({ force: true });
     await expect(
       page.getByRole('heading', { name: /Sign in with intent/i }),
     ).toBeVisible();

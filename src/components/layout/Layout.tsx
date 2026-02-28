@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import {
   MessengerProvider,
   useMessenger,
@@ -21,7 +21,24 @@ const PAGE_BG = {
 };
 
 const LayoutContent = () => {
+  const { pathname } = useLocation();
   const messenger = useMessenger();
+  const isHome = pathname === '/';
+  const isJoin = pathname.startsWith('/join');
+
+  // Prevent double scrollbars: this layout owns the only scroll container (same pattern as Join)
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflowY;
+    const prevBodyOverflow = body.style.overflowY;
+    html.style.overflowY = 'hidden';
+    body.style.overflowY = 'hidden';
+    return () => {
+      html.style.overflowY = prevHtmlOverflow;
+      body.style.overflowY = prevBodyOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -33,33 +50,37 @@ const LayoutContent = () => {
   }, []);
 
   return (
-    <>
+    <Box
+      className="app-scroll-container"
+      data-testid="app-scroll-container"
+      sx={{
+        height: '100dvh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        ...PAGE_BG,
+      }}
+    >
       <Navbar />
       <UatBanner />
       <Box
         component="main"
+        data-testid="app-main"
         sx={{
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          minHeight: '100dvh',
           overflowX: 'hidden',
-          ...PAGE_BG,
+          overflowY: 'visible',
         }}
       >
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </Box>
-        <Footer />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </Box>
+      {!isHome && !isJoin && <Footer />}
       <MessengerOverlay />
       {messenger?.popoverRoomId && (
         <ChatPopover
@@ -67,7 +88,7 @@ const LayoutContent = () => {
           onClose={messenger.closePopover}
         />
       )}
-    </>
+    </Box>
   );
 };
 

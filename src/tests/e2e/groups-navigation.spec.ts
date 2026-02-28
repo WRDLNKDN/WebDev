@@ -104,6 +104,11 @@ test.describe('Groups navigation', () => {
     });
 
     await page.route('**/rest/v1/profiles*', async (route) => {
+      const reqUrl = route.request().url();
+      if (reqUrl.includes('select=feed_view_preference')) {
+        await fulfillPostgrest(route, [{ feed_view_preference: 'anyone' }]);
+        return;
+      }
       await fulfillPostgrest(route, [
         {
           id: USER_ID,
@@ -157,6 +162,14 @@ test.describe('Groups navigation', () => {
       ]);
     });
 
+    await page.route('**/rest/v1/feed_advertisers*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    });
+
     await page.route('**/rest/v1/chat_blocks*', async (route) => {
       await fulfillPostgrest(route, []);
     });
@@ -198,10 +211,17 @@ test.describe('Groups navigation', () => {
 
     await page.goto('/forums');
     await expect(page).toHaveURL(/\/groups/);
-    await expect(page.getByRole('heading', { name: 'Groups' })).toBeVisible();
-    await expect(page.getByText('Design Guild')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Groups' })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText('Design Guild')).toBeVisible({
+      timeout: 10000,
+    });
 
-    await page.getByRole('link', { name: 'Open Group' }).first().click();
+    await page
+      .getByRole('link', { name: /open group/i })
+      .first()
+      .click();
     await expect(page).toHaveURL(new RegExp(`/chat-full/${GROUP_ROOM_ID}$`));
   });
 });

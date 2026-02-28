@@ -230,7 +230,7 @@ export const IdentityStep = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+    <Box sx={{ width: '100%', minWidth: 0, overflow: 'visible' }}>
       <Paper
         elevation={0}
         sx={{
@@ -241,9 +241,9 @@ export const IdentityStep = () => {
           mx: 'auto',
         }}
       >
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           <Box>
-            <Typography variant="h5" sx={signupStepLabel}>
+            <Typography component="h1" variant="h5" sx={signupStepLabel}>
               Sign in with intent
             </Typography>
             <Typography variant="body2" sx={signupStepSubtext}>
@@ -259,11 +259,11 @@ export const IdentityStep = () => {
 
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: 600, mb: 1, display: 'block' }}
+            sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}
           >
             Before entering, please confirm:
           </Typography>
-          <Stack spacing={2} sx={{ mb: 3 }}>
+          <Stack spacing={1.5} sx={{ mb: 2 }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -312,7 +312,7 @@ export const IdentityStep = () => {
             />
           </Stack>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Button
               variant="outlined"
               size="large"
@@ -353,7 +353,7 @@ export const IdentityStep = () => {
             </Button>
           </Stack>
 
-          <Box sx={{ ...identityStepInfoBox, mt: 2 }}>
+          <Box sx={{ ...identityStepInfoBox, mt: 1.5 }}>
             <Typography variant="caption" sx={signupStepSubtext}>
               Secure OAuth authentication. We never store your credentials.
             </Typography>

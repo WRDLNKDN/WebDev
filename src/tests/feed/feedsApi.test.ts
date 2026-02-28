@@ -52,7 +52,6 @@ describe('feedsApi mutation routes', () => {
       { method: 'DELETE' },
       expect.objectContaining({
         accessToken: 'token-2',
-        includeJsonContentType: true,
       }),
     );
   });
@@ -88,7 +87,6 @@ describe('feedsApi mutation routes', () => {
       { method: 'DELETE' },
       expect.objectContaining({
         accessToken: 'token-4',
-        includeJsonContentType: true,
       }),
     );
   });

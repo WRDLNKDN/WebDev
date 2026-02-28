@@ -26,16 +26,19 @@ import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 
 const BG_SX = {
-  minHeight: '100dvh',
-  maxHeight: '100dvh',
-  position: 'relative' as const,
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: { xs: 'flex-start', md: 'center' },
-  px: { xs: 1.5, sm: 2 },
-  py: { xs: 2, sm: 3, md: 6 },
-  overflowX: 'hidden',
+  flex: 1,
+  minHeight: 0,
+  maxHeight: '100%',
   overflowY: 'auto',
+  overflowX: 'hidden',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  justifyContent: 'flex-start',
+  alignItems: { xs: 'stretch', md: 'center' },
+  position: 'relative' as const,
+  px: { xs: 1.5, sm: 2 },
+  py: { xs: 1, sm: 1.5, md: 2 },
+  pb: 3,
   WebkitOverflowScrolling: 'touch' as const, // iOS momentum scrolling
 };
 
@@ -48,10 +51,11 @@ const CARD_SX = {
   bgcolor: 'rgba(16, 18, 24, 0.70)',
   backdropFilter: 'blur(12px)',
   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
-  p: { xs: 1.5, sm: 3, md: 5 },
+  p: { xs: 1.5, sm: 2, md: 3 },
+  pb: { xs: 2.5, sm: 3, md: 3.5 },
   color: '#fff',
   minWidth: 0,
-  overflow: 'hidden',
+  overflow: 'visible',
 };
 
 export const Join = () => {
@@ -59,6 +63,20 @@ export const Join = () => {
   const { state, resetSignup, reconcileWithExistingProfile } = useJoin();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent double scrollbars by making this page own scrolling (same pattern as Layout)
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const originalHtmlOverflow = html.style.overflowY;
+    const originalBodyOverflow = body.style.overflowY;
+    html.style.overflowY = 'hidden';
+    body.style.overflowY = 'hidden';
+    return () => {
+      html.style.overflowY = originalHtmlOverflow;
+      body.style.overflowY = originalBodyOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -188,7 +206,11 @@ export const Join = () => {
 
   if (checking) {
     return (
-      <Box sx={BG_SX} data-testid="join-scroll-container">
+      <Box
+        className="app-scroll-container"
+        sx={BG_SX}
+        data-testid="join-scroll-container"
+      >
         <Container maxWidth="sm" sx={{ ...CARD_SX, p: 4, zIndex: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
             <CircularProgress size={20} thickness={5} aria-label="Loading" />
@@ -202,7 +224,11 @@ export const Join = () => {
   }
 
   return (
-    <Box sx={BG_SX} data-testid="join-scroll-container">
+    <Box
+      className="app-scroll-container"
+      sx={BG_SX}
+      data-testid="join-scroll-container"
+    >
       <Container
         maxWidth={
           state.currentStep === 'welcome' || state.currentStep === 'complete'
@@ -216,7 +242,7 @@ export const Join = () => {
         }}
       >
         {isFlowActive && (
-          <Box sx={{ mb: 3, width: '100%', minWidth: 0 }}>
+          <Box sx={{ mb: 1.5, width: '100%', minWidth: 0 }}>
             <JoinProgress
               currentStep={state.currentStep}
               completedSteps={state.completedSteps}

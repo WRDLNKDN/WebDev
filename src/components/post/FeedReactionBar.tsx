@@ -104,9 +104,9 @@ export const FeedReactionBar = ({
           display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           gap: { xs: 0.25, sm: 0.5 },
-          py: { xs: 1, sm: 0.75 },
+          py: { xs: 0.75, sm: 0.5 },
           px: 0.5,
           ...sx,
         }}
@@ -120,7 +120,7 @@ export const FeedReactionBar = ({
           }}
           sx={{
             textTransform: 'none',
-            color: viewerReaction ? current.color : 'text.secondary',
+            color: viewerReaction ? current.color : 'primary.main',
             minWidth: 0,
             minHeight: 0,
             p: 0,
@@ -128,9 +128,12 @@ export const FeedReactionBar = ({
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center',
             gap: { xs: 0.25, sm: 0.5 },
+            borderRadius: 2,
             '&:hover': {
-              bgcolor: 'action.hover',
-              color: viewerReaction ? current.color : 'text.secondary',
+              bgcolor: viewerReaction
+                ? 'rgba(66, 165, 245, 0.12)'
+                : 'rgba(66, 165, 245, 0.12)',
+              color: viewerReaction ? current.color : 'primary.light',
             },
           }}
           aria-label={

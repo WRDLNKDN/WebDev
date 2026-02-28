@@ -10,29 +10,36 @@
 html,
 body,
 #root {
-  min-height: 100%;
   margin: 0;
 }
 
-/* Prevent layout shift when modals/menus open (MUI locks scroll, scrollbar disappears) */
-html {
-  scrollbar-gutter: stable;
+html,
+body {
+  min-height: 100%;
 }
 
-/* Let MUI control layout — Poppins for all copy (loaded in index.html) */
+/* Site-wide: html and body do not scroll (same pattern as Join). One scroll container owns the scroll. */
+html {
+  overflow-y: hidden;
+  overflow-x: hidden;
+  height: 100%;
+}
+
 body {
   font-family: 'Poppins', 'Helvetica', 'Arial', sans-serif;
-
-  background-color: #f5f6f8; /* neutral admin background */
-  color: #1f2937; /* readable dark text */
-  overflow-x: hidden;
-  overflow-y: auto;
-
+  background-color: #f5f6f8;
+  color: #1f2937;
   line-height: 1.5;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  height: 100%;
 }
 
+/* #root does not scroll; Layout and Join each provide their own scroll container. */
 #root {
-  overflow: visible;
+  height: 100%;
+  overflow: hidden;
+  display: block;
 }
 
 /* Links */

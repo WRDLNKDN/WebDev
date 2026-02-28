@@ -49,7 +49,10 @@ test.describe('Auth callback timeout recovery', () => {
 
     // Simulate stalled profile fetch so app never completes; UI timeout (30s) shows guidance.
     await page.route('**/rest/v1/profiles*', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 22_000));
+      // Delay must exceed callbackTimeoutMs (30s) so the UI timeout fires first.
+      // At 22s the empty response landed before the timeout, causing the app to
+      // redirect away (no profile = unboarded) and the message never appeared.
+      await new Promise((resolve) => setTimeout(resolve, 40_000));
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -66,7 +69,7 @@ test.describe('Auth callback timeout recovery', () => {
 
     const copyButton = page.getByRole('button', { name: 'Copy debug info' });
     await expect(copyButton).toBeVisible();
-    await copyButton.click();
+    await copyButton.click({ force: true });
     await expect(
       page.getByText(/Debug info copied\.|Could not copy automatically\./),
     ).toBeVisible();

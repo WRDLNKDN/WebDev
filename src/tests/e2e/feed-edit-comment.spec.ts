@@ -102,7 +102,7 @@ test.describe('Feed post/comment edit persistence', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ avatarUrl: null }),
+          body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
         });
       });
 

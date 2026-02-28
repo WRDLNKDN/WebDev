@@ -50,13 +50,12 @@ test.describe('Header responsive integrity', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ avatarUrl: null }),
+        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
       });
     });
 
     await page.goto('/');
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByLabel('Open menu')).toBeVisible();
+    await expect(page.getByLabel('Open menu')).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('link', { name: 'Store' })).toHaveCount(0);
   });
 
@@ -80,8 +79,7 @@ test.describe('Header responsive integrity', () => {
     });
 
     await page.goto('/');
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByLabel('Open menu')).toBeVisible();
+    await expect(page.getByLabel('Open menu')).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Admin' })).toHaveCount(0);
   });
 });

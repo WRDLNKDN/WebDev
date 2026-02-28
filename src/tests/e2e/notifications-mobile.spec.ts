@@ -121,7 +121,7 @@ test.describe('Notifications mobile layout', () => {
     await page.goto('/dashboard/notifications');
     await expect(page).toHaveURL(/\/dashboard\/notifications/);
     const approveButton = page.getByRole('button', { name: 'Approve' });
-    await expect(approveButton).toBeVisible();
+    await expect(approveButton).toBeVisible({ timeout: 15000 });
 
     const buttonStack = approveButton.locator(
       'xpath=ancestor::*[contains(@class,"MuiStack-root")][1]',

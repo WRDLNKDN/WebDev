@@ -78,6 +78,8 @@ create table if not exists public.profiles (
   nerd_creds jsonb,
   pronouns text,
   industry text,
+  secondary_industry text,
+  niche_field text,
   location text,
   profile_visibility text not null default 'members_only'
     check (profile_visibility in ('members_only', 'connections_only')),
@@ -231,9 +233,33 @@ create table if not exists public.portfolio_items (
 );
 
 create index if not exists idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
+alter table if exists public.portfolio_items
+  add column if not exists sort_order integer not null default 0;
+create index if not exists idx_portfolio_items_owner_sort on public.portfolio_items(owner_id, sort_order);
+
+-- URL classification and thumbnail (Step 1 + Step 6). Additive only: ADD COLUMN IF NOT EXISTS.
+-- Existing rows keep all current data; new columns are null. No DROP, DELETE, or TRUNCATE.
+alter table public.portfolio_items
+  add column if not exists normalized_url text,
+  add column if not exists embed_url text,
+  add column if not exists resolved_type text,
+  add column if not exists thumbnail_url text,
+  add column if not exists thumbnail_status text check (thumbnail_status is null or thumbnail_status in ('pending', 'generated', 'failed'));
 
 comment on table public.portfolio_items is
   'User portfolio projects (dashboard).';
+comment on column public.portfolio_items.sort_order is
+  'Explicit order for display; lower first. Used for drag-and-drop reorder.';
+comment on column public.portfolio_items.normalized_url is
+  'Canonical URL after provider normalization (e.g. Google /preview).';
+comment on column public.portfolio_items.embed_url is
+  'URL used for iframe embed when different from project_url.';
+comment on column public.portfolio_items.resolved_type is
+  'Detected link type: image, pdf, document, presentation, spreadsheet, text, google_doc, google_sheet, google_slides.';
+comment on column public.portfolio_items.thumbnail_url is
+  'Server-generated thumbnail URL in platform storage; null when manual image or pending/failed.';
+comment on column public.portfolio_items.thumbnail_status is
+  'pending = generation queued; generated = thumbnail_url set; failed = fallback only. Thumbnail failure does not block saving.';
 
 drop trigger if exists trg_portfolio_items_updated_at on public.portfolio_items;
 create trigger trg_portfolio_items_updated_at
@@ -792,7 +818,8 @@ comment on function public.get_saved_feed_page(uuid, timestamptz, uuid, int) is
 create or replace function public.get_directory_page(
   p_viewer_id uuid,
   p_search text default null,
-  p_industry text default null,
+  p_primary_industry text default null,
+  p_secondary_industry text default null,
   p_location text default null,
   p_skills text[] default null,
   p_connection_status text default null,
@@ -808,6 +835,7 @@ returns table (
   tagline text,
   pronouns text,
   industry text,
+  secondary_industry text,
   location text,
   skills text[],
   bio_snippet text,
@@ -823,7 +851,8 @@ as $$
     select
       p_viewer_id as viewer_id,
       nullif(lower(trim(p_search)), '') as search_q,
-      nullif(lower(trim(p_industry)), '') as industry_q,
+      nullif(trim(p_primary_industry), '') as primary_industry_q,
+      nullif(trim(p_secondary_industry), '') as secondary_industry_q,
       nullif(lower(trim(p_location)), '') as location_q,
       coalesce(
         (select array_agg(lower(trim(s))) from unnest(coalesce(p_skills, '{}')) s where trim(s) <> ''),
@@ -875,6 +904,7 @@ as $$
       p.tagline,
       p.pronouns,
       p.industry,
+      p.secondary_industry,
       p.location,
       p.nerd_creds,
       p.created_at,
@@ -896,6 +926,8 @@ as $$
         or lower(coalesce(p.handle, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.tagline, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.industry, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.secondary_industry, '')) like '%' || pr.search_q || '%'
+        or lower(coalesce(p.niche_field, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.location, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.nerd_creds->>'bio', '')) like '%' || pr.search_q || '%'
         or exists (
@@ -903,7 +935,10 @@ as $$
           where lower(s) like '%' || pr.search_q || '%'
         )
       )
-      and (pr.industry_q is null or lower(coalesce(p.industry, '')) like '%' || pr.industry_q || '%')
+      and (
+        (pr.primary_industry_q is null or p.industry = pr.primary_industry_q or p.secondary_industry = pr.primary_industry_q)
+        or (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q)
+      )
       and (pr.location_q is null or lower(coalesce(p.location, '')) like '%' || pr.location_q || '%')
       and (
         array_length(pr.skills_q, 1) is null
@@ -935,6 +970,7 @@ as $$
     v.tagline,
     v.pronouns,
     v.industry,
+    v.secondary_industry,
     v.location,
     (
       select coalesce(array_agg(t.val), '{}')
@@ -1554,6 +1590,21 @@ values (
   true,
   5242880,
   array['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- portfolio-thumbnails (server-generated portfolio card thumbnails). Additive: new bucket only.
+-- ON CONFLICT DO UPDATE updates bucket metadata if it exists; no table data or existing objects touched.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'portfolio-thumbnails',
+  'portfolio-thumbnails',
+  true,
+  1048576,
+  array['image/png', 'image/jpeg', 'image/webp']
 )
 on conflict (id) do update set
   public = excluded.public,

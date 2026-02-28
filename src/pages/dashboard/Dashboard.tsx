@@ -16,7 +16,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
-import { ProjectCard } from '../../components/portfolio/ProjectCard';
+import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
+import { PortfolioSortableList } from '../../components/portfolio/PortfolioSortableList';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/IdentityHeader';
@@ -30,6 +31,7 @@ import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import type { NerdCreds } from '../../types/profile';
+import type { PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
 
 export const Dashboard = () => {
@@ -41,6 +43,9 @@ export const Dashboard = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
+  const [previewProject, setPreviewProject] = useState<PortfolioItem | null>(
+    null,
+  );
 
   useEffect(() => {
     const init = async () => {
@@ -71,6 +76,7 @@ export const Dashboard = () => {
     uploadAvatar,
     addProject,
     deleteProject,
+    reorderProjects,
     uploadResume,
     retryResumeThumbnail,
     updating,
@@ -125,56 +131,19 @@ export const Dashboard = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
-  const selectedIndustries = safeStr(profile?.industry)
-    .split(',')
-    .map((industry) => industry.trim())
-    .filter(Boolean);
+  const selectedIndustries = [
+    safeStr(profile?.industry),
+    safeStr(
+      (profile as unknown as { secondary_industry?: string })
+        ?.secondary_industry,
+    ),
+  ].filter(Boolean);
+  const nicheField = (
+    profile as unknown as { niche_field?: string }
+  )?.niche_field?.trim();
   const hasVisibleSocialLinks = (profile?.socials ?? []).some(
     (link) => link.isVisible,
   );
-  const orderedProjectIds =
-    Array.isArray(safeNerdCreds.project_order) &&
-    safeNerdCreds.project_order.every((id) => typeof id === 'string')
-      ? (safeNerdCreds.project_order as string[])
-      : [];
-  const projectLookup = new Map(
-    projects.map((project) => [project.id, project]),
-  );
-  const orderedProjects = [
-    ...orderedProjectIds
-      .map((id) => projectLookup.get(id))
-      .filter((project): project is (typeof projects)[number] =>
-        Boolean(project),
-      ),
-    ...projects.filter((project) => !orderedProjectIds.includes(project.id)),
-  ];
-
-  const persistProjectOrder = async (projectIds: string[]) => {
-    await updateProfile({
-      nerd_creds: {
-        project_order: projectIds,
-      } as Partial<NerdCreds>,
-    });
-    await refresh();
-  };
-
-  const moveProject = async (projectId: string, direction: 'up' | 'down') => {
-    const index = orderedProjects.findIndex(
-      (project) => project.id === projectId,
-    );
-    if (index < 0) return;
-    const swapIndex = direction === 'up' ? index - 1 : index + 1;
-    if (swapIndex < 0 || swapIndex >= orderedProjects.length) return;
-    const next = [...orderedProjects];
-    const [moving] = next.splice(index, 1);
-    next.splice(swapIndex, 0, moving);
-    try {
-      await persistProjectOrder(next.map((project) => project.id));
-    } catch (e) {
-      setSnack(toMessage(e));
-    }
-  };
-
   const handleResumeUpload = async (file: File) => {
     try {
       await uploadResume(file);
@@ -222,7 +191,9 @@ export const Dashboard = () => {
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
           badges={
-            selectedSkills.length > 0 || selectedIndustries.length > 0 ? (
+            selectedSkills.length > 0 ||
+            selectedIndustries.length > 0 ||
+            !!nicheField ? (
               <Stack spacing={1.25} sx={{ mt: 1 }}>
                 {selectedSkills.length > 0 && (
                   <Typography
@@ -260,7 +231,7 @@ export const Dashboard = () => {
                     ))}
                   </Stack>
                 )}
-                {selectedIndustries.length > 0 && (
+                {(selectedIndustries.length > 0 || nicheField) && (
                   <Typography
                     variant="caption"
                     sx={{
@@ -273,7 +244,7 @@ export const Dashboard = () => {
                     Industries
                   </Typography>
                 )}
-                {selectedIndustries.length > 0 && (
+                {(selectedIndustries.length > 0 || nicheField) && (
                   <Stack direction="row" flexWrap="wrap" gap={1}>
                     {selectedIndustries.map((industry) => (
                       <Box
@@ -294,6 +265,24 @@ export const Dashboard = () => {
                         {industry}
                       </Box>
                     ))}
+                    {nicheField && (
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          width: 'fit-content',
+                          maxWidth: '100%',
+                          whiteSpace: 'nowrap',
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 999,
+                          bgcolor: 'rgba(66,165,245,0.1)',
+                          border: '1px solid rgba(66,165,245,0.25)',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {nicheField}
+                      </Box>
+                    )}
                   </Stack>
                 )}
               </Stack>
@@ -485,32 +474,25 @@ export const Dashboard = () => {
               />
             ) : null}
 
-            {orderedProjects.map((project, index) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                isOwner
-                canMoveUp={index > 0}
-                canMoveDown={index < orderedProjects.length - 1}
-                onMoveUp={(id) => {
-                  void moveProject(id, 'up');
-                }}
-                onMoveDown={(id) => {
-                  void moveProject(id, 'down');
-                }}
-                onDelete={async (id) => {
-                  try {
-                    await deleteProject(id);
-                    const next = orderedProjects
-                      .filter((projectItem) => projectItem.id !== id)
-                      .map((projectItem) => projectItem.id);
-                    await persistProjectOrder(next);
-                  } catch (e) {
-                    setSnack(toMessage(e));
-                  }
-                }}
-              />
-            ))}
+            <PortfolioSortableList
+              projects={projects}
+              isOwner
+              onReorder={async (orderedIds) => {
+                try {
+                  await reorderProjects(orderedIds);
+                } catch (e) {
+                  setSnack(toMessage(e));
+                }
+              }}
+              onDelete={async (id) => {
+                try {
+                  await deleteProject(id);
+                } catch (e) {
+                  setSnack(toMessage(e));
+                }
+              }}
+              onOpenPreview={setPreviewProject}
+            />
           </Box>
         </Paper>
       </Container>
@@ -547,6 +529,11 @@ export const Dashboard = () => {
         open={isAddProjectOpen}
         onClose={() => setIsAddProjectOpen(false)}
         onSubmit={addProject}
+      />
+      <PortfolioPreviewModal
+        project={previewProject}
+        open={Boolean(previewProject)}
+        onClose={() => setPreviewProject(null)}
       />
 
       <Snackbar

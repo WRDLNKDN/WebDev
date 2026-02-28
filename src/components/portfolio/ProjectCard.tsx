@@ -5,6 +5,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Button, IconButton, Paper, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { getLinkType } from '../../lib/portfolio/linkUtils';
 import { CANDY_BLUEY } from '../../theme/candyStyles';
 import type { PortfolioItem } from '../../types/portfolio';
 
@@ -19,6 +20,11 @@ interface ProjectCardProps {
   /** When true, show delete button and call onDelete when removed */
   isOwner?: boolean;
   onDelete?: (projectId: string) => void | Promise<void>;
+  /** When provided, clicking the card/title opens this preview instead of navigating to project page */
+  onOpenPreview?: (project: PortfolioItem) => void;
+  /** When provided, shown as drag handle and arrow controls are hidden (reorder via DnD/keyboard on handle) */
+  dragHandle?: React.ReactNode;
+  /** Only used when dragHandle is not provided: move up/down callbacks for arrow buttons */
   onMoveUp?: (projectId: string) => void;
   onMoveDown?: (projectId: string) => void;
   canMoveUp?: boolean;
@@ -29,13 +35,32 @@ export const ProjectCard = ({
   project,
   isOwner,
   onDelete,
+  onOpenPreview,
+  dragHandle,
   onMoveUp,
   onMoveDown,
   canMoveUp = false,
   canMoveDown = false,
 }: ProjectCardProps) => {
+  const showArrowControls =
+    !dragHandle && (onMoveUp != null || onMoveDown != null);
   const url = project.project_url?.trim() ?? '';
   const external = url && isExternalUrl(url);
+  const openPreview = () => onOpenPreview?.(project);
+  const linkType = url ? getLinkType(url) : 'unsupported';
+  const resolvedType = (project.resolved_type as string) || linkType;
+  // Step 2 + Step 3: manual image > server-generated thumbnail > image URL > fallback
+  const hasManualImage = Boolean(project.image_url);
+  const thumbnailUrl = hasManualImage
+    ? project.image_url
+    : project.thumbnail_url || (resolvedType === 'image' ? url : null);
+  const thumbnailPending =
+    !hasManualImage && project.thumbnail_status === 'pending';
+  const thumbnailFailed =
+    !hasManualImage && project.thumbnail_status === 'failed';
+  const showThumbnailSkeleton = thumbnailPending && !thumbnailUrl;
+  const showFallbackIcon =
+    thumbnailFailed || (!thumbnailUrl && !showThumbnailSkeleton);
   const ctaSx = {
     alignSelf: 'flex-start',
     color: 'inherit',
@@ -46,6 +71,27 @@ export const ProjectCard = ({
 
   return (
     <Paper
+      {...(onOpenPreview ? { component: 'div' as const } : {})}
+      role={onOpenPreview ? 'button' : undefined}
+      tabIndex={onOpenPreview ? 0 : undefined}
+      onClick={
+        onOpenPreview
+          ? (e) => {
+              if (!(e.target as HTMLElement).closest('a, button'))
+                openPreview();
+            }
+          : undefined
+      }
+      onKeyDown={
+        onOpenPreview
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openPreview();
+              }
+            }
+          : undefined
+      }
       sx={{
         ...CANDY_BLUEY, // Spread first to ensure brand base (compact for Dashboard)
         width: '100%',
@@ -57,13 +103,15 @@ export const ProjectCard = ({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
+        ...(onOpenPreview ? { cursor: 'pointer' } : {}),
       }}
     >
-      {isOwner && onDelete && (
+      {isOwner && (
         <Box
           sx={{
             position: 'absolute',
             top: 8,
+            left: dragHandle ? 8 : undefined,
             right: 8,
             zIndex: 1,
             display: 'flex',
@@ -71,7 +119,8 @@ export const ProjectCard = ({
             alignItems: 'center',
           }}
         >
-          {onMoveUp && (
+          {dragHandle}
+          {showArrowControls && onMoveUp && (
             <IconButton
               size="small"
               aria-label={`Move project ${project.title} up`}
@@ -90,7 +139,7 @@ export const ProjectCard = ({
               <KeyboardArrowUpIcon fontSize="small" />
             </IconButton>
           )}
-          {onMoveDown && (
+          {showArrowControls && onMoveDown && (
             <IconButton
               size="small"
               aria-label={`Move project ${project.title} down`}
@@ -109,22 +158,24 @@ export const ProjectCard = ({
               <KeyboardArrowDownIcon fontSize="small" />
             </IconButton>
           )}
-          <IconButton
-            size="small"
-            aria-label={`Remove project ${project.title}`}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              void onDelete(project.id);
-            }}
-            sx={{
-              bgcolor: 'rgba(0,0,0,0.6)',
-              color: 'white',
-              '&:hover': { bgcolor: 'error.main', color: 'white' },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {onDelete && (
+            <IconButton
+              size="small"
+              aria-label={`Remove project ${project.title}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void onDelete(project.id);
+              }}
+              sx={{
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                '&:hover': { bgcolor: 'error.main', color: 'white' },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )}
       <Box
@@ -136,14 +187,50 @@ export const ProjectCard = ({
           overflow: 'hidden',
         }}
       >
-        {project.image_url ? (
+        {thumbnailUrl ? (
           <Box
             component="img"
-            src={project.image_url}
+            src={thumbnailUrl}
             alt={project.title}
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-        ) : (
+        ) : showThumbnailSkeleton ? (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              p: 2,
+              bgcolor: 'rgba(0,0,0,0.25)',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+            }}
+            aria-hidden
+          >
+            <Box
+              sx={{
+                width: '60%',
+                height: '50%',
+                borderRadius: 1,
+                bgcolor: 'rgba(255,255,255,0.08)',
+                animation: 'pulse 1.5s ease-in-out infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': { opacity: 0.6 },
+                  '50%': { opacity: 1 },
+                },
+              }}
+            />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, textAlign: 'center' }}
+            >
+              Thumbnail generating…
+            </Typography>
+          </Box>
+        ) : showFallbackIcon ? (
           <Box
             sx={{
               width: '100%',
@@ -174,7 +261,7 @@ export const ProjectCard = ({
               Preview unavailable
             </Typography>
           </Box>
-        )}
+        ) : null}
       </Box>
 
       <Box
@@ -185,20 +272,35 @@ export const ProjectCard = ({
           flexDirection: 'column',
         }}
       >
-        <Typography
-          component={RouterLink}
-          to={`/projects/${project.id}`}
-          variant="h6"
-          fontWeight={700}
-          noWrap
-          sx={{
-            color: 'inherit',
-            textDecoration: 'none',
-            '&:hover': { textDecoration: 'underline' },
-          }}
-        >
-          {project.title}
-        </Typography>
+        {onOpenPreview ? (
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            noWrap
+            component="span"
+            sx={{
+              color: 'inherit',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {project.title}
+          </Typography>
+        ) : (
+          <Typography
+            component={RouterLink}
+            to={`/projects/${project.id}`}
+            variant="h6"
+            fontWeight={700}
+            noWrap
+            sx={{
+              color: 'inherit',
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {project.title}
+          </Typography>
+        )}
         <Typography
           variant="body2"
           color="text.secondary"
@@ -225,6 +327,7 @@ export const ProjectCard = ({
               size="small"
               endIcon={<OpenInNewIcon />}
               sx={ctaSx}
+              onClick={(e) => e.stopPropagation()}
             >
               View Project
             </Button>
@@ -235,6 +338,7 @@ export const ProjectCard = ({
               to={url}
               size="small"
               sx={ctaSx}
+              onClick={(e) => e.stopPropagation()}
             >
               View Project
             </Button>

@@ -43,7 +43,7 @@ echo "----------------------------------------------------------------"
 echo "🚀 [HEALTH CHECK COMPLETE]: Launching the cockpit..."
 
 # 3. Cross-Platform Launch (The WSL 2 Special)
-if grep -qi microsoft /proc/version; then
+if [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
   # We are in WSL: Use Windows Explorer to bridge the OS gap
   explorer.exe "http://localhost:5173"
   explorer.exe "http://localhost:54323"

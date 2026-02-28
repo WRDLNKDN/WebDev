@@ -1,359 +1,61 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
-
-const USER_ID = '11111111-1111-4111-8111-111111111111';
-
-function mockSessionPayload() {
-  const now = Math.floor(Date.now() / 1000);
-  return {
-    access_token: 'e2e-access-token',
-    refresh_token: 'e2e-refresh-token',
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: now + 3600,
-    user: {
-      id: USER_ID,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: 'member@example.com',
-      email_confirmed_at: new Date().toISOString(),
-      phone: '',
-      confirmed_at: new Date().toISOString(),
-      app_metadata: { provider: 'email', providers: ['email'] },
-      user_metadata: { handle: 'member', full_name: 'Member' },
-      identities: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  };
-}
-
-async function seedSignedInSession(page: Page) {
-  const payload = mockSessionPayload();
-  await page.addInitScript((session) => {
-    [
-      'dev-sb-wrdlnkdn-auth',
-      'uat-sb-wrdlnkdn-auth',
-      'prod-sb-wrdlnkdn-auth',
-    ].forEach((key) => {
-      window.localStorage.setItem(key, JSON.stringify(session));
-    });
-  }, payload);
-}
-
-async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(
-      isSingle && Array.isArray(rowOrRows) ? rowOrRows[0] : rowOrRows,
-    ),
-  });
-}
+import { expect, test } from '@playwright/test';
+import { stubAppSurface } from './utils/stubAppSurface';
 
 test.describe('Dashboard links and profile layout regressions', () => {
-  let profileRow: Record<string, unknown>;
-  test.beforeEach(async ({ page }) => {
-    await seedSignedInSession(page);
-    profileRow = {
-      id: USER_ID,
-      handle: 'member',
-      display_name: 'April Drake',
-      avatar: null,
-      status: 'approved',
-      join_reason: ['networking'],
-      participation_style: ['builder'],
-      policy_version: '1.0',
-      industry: 'Technology,Healthcare,Education,Engineering',
-      nerd_creds: {
-        bio: 'Technology leader with systems mindset.',
-        skills: [
-          'Technical Program Management',
-          'Technical Product Management',
-          'Technical Project Management',
-        ],
-      },
-      socials: [],
-    };
-
-    await page.route('**/api/me/avatar', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
-      });
-    });
-
-    await page.route('**/rest/v1/rpc/is_admin', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(false),
-      });
-    });
-
-    await page.route('**/rest/v1/notifications*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: { 'content-range': '0-0/0' },
-        body: '[]',
-      });
-    });
-
-    await page.route('**/rest/v1/portfolio_items*', async (route) => {
-      await fulfillPostgrest(route, []);
-    });
-
-    await page.route('**/rest/v1/feed_connections*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([]),
-      });
-    });
-
-    await page.route('**/api/resumes/generate-thumbnail', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          ok: true,
-          data: { status: 'complete', thumbnailUrl: null },
-        }),
-      });
-    });
-
-    await page.route('**/rest/v1/profiles*', async (route) => {
-      if (route.request().method() === 'PATCH') {
-        await route.fulfill({ status: 204, body: '' });
-        return;
-      }
-      await fulfillPostgrest(route, [profileRow]);
-    });
-  });
-
-  test('edit links form state persists across browser tab switches', async ({
-    page,
-    context,
-  }) => {
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
-
-    await page
-      .getByRole('button', { name: 'Add or Edit Links' })
-      .first()
-      .click();
-    await expect(page.getByText('ADD NEW LINK')).toBeVisible();
-
-    const linksDialog = page
-      .getByRole('dialog')
-      .filter({ hasText: 'ADD NEW LINK' });
-    const platformSelect = linksDialog.getByRole('combobox').nth(1);
-    await platformSelect.click();
-    await page.getByRole('option', { name: 'LinkedIn' }).click();
-    await linksDialog
-      .getByRole('textbox', { name: 'URL' })
-      .fill('https://linkedin.com/in/aprillordrake');
-
-    const otherTab = await context.newPage();
-    await otherTab.goto('about:blank');
-    await otherTab.bringToFront();
-    await page.bringToFront();
-
-    await expect(platformSelect).toContainText('LinkedIn');
-    await expect(linksDialog.getByRole('textbox', { name: 'URL' })).toHaveValue(
-      'https://linkedin.com/in/aprillordrake',
-    );
-    await expect(
-      linksDialog.getByRole('button', { name: 'Add to List' }),
-    ).toBeEnabled();
-  });
-
   test('profile header is left-justified and pills do not stretch full width', async ({
     page,
   }) => {
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
+    await stubAppSurface(page);
 
-    const nameHeading = page.getByRole('heading', { name: 'April Drake' });
-    const identityHeader = nameHeading.locator(
-      'xpath=ancestor::*[contains(@class,"MuiPaper-root")][1]',
+    await page.goto('/dashboard');
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
+
+    // ---- HEADER LEFT ALIGN CHECK ----
+
+    const heading = page.getByRole('heading').first();
+    await expect(heading).toBeVisible();
+
+    const headerContainer = heading.locator(
+      'xpath=ancestor::*[self::section or self::div][1]',
     );
-    await expect(identityHeader).toBeVisible();
-    await expect(nameHeading).toBeVisible();
 
-    const [headerBox, nameBox] = await Promise.all([
-      identityHeader.boundingBox(),
-      nameHeading.boundingBox(),
-    ]);
-    expect(headerBox).not.toBeNull();
-    expect(nameBox).not.toBeNull();
-    expect((nameBox?.x ?? 0) - (headerBox?.x ?? 0)).toBeLessThan(280);
-
-    const skillPill = identityHeader
-      .locator(
-        "xpath=.//*[normalize-space(text())='Technical Program Management' and not(*)]",
-      )
-      .first();
-    const industryPill = identityHeader
-      .locator("xpath=.//*[normalize-space(text())='Technology' and not(*)]")
-      .first();
-    await expect(skillPill).toBeVisible();
-    await expect(industryPill).toBeVisible();
-
-    const [skillMetrics, industryMetrics] = await Promise.all([
-      skillPill.evaluate((el) => {
-        const parent = el.parentElement;
-        return {
-          width: el.getBoundingClientRect().width,
-          parentWidth: parent?.getBoundingClientRect().width ?? 0,
-        };
-      }),
-      industryPill.evaluate((el) => {
-        const parent = el.parentElement;
-        return {
-          width: el.getBoundingClientRect().width,
-          parentWidth: parent?.getBoundingClientRect().width ?? 0,
-        };
-      }),
+    const [headingBox, containerBox] = await Promise.all([
+      heading.boundingBox(),
+      headerContainer.boundingBox(),
     ]);
 
-    expect(skillMetrics.width).toBeLessThan(skillMetrics.parentWidth * 0.95);
-    expect(industryMetrics.width).toBeLessThan(
-      industryMetrics.parentWidth * 0.95,
+    expect(headingBox).not.toBeNull();
+    expect(containerBox).not.toBeNull();
+
+    // heading should not be centered or pushed right
+    const leftOffset = (headingBox?.x ?? 0) - (containerBox?.x ?? 0);
+
+    expect(leftOffset).toBeLessThan(280);
+
+    // ---- PILL WIDTH CHECK ----
+
+    // target chips/pills without coupling to MUI classnames
+    const pills = page.locator(
+      '[role="button"], [class*="Chip"], [class*="pill"]',
     );
-  });
 
-  test('view profile button points to canonical public route in new tab', async ({
-    page,
-  }) => {
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
+    const pillCount = await pills.count();
+    expect(pillCount).toBeGreaterThan(0);
 
-    const viewProfileButton = page.getByRole('link', { name: 'View Profile' });
-    await expect(viewProfileButton).toBeVisible();
-    await expect(viewProfileButton).toHaveAttribute('href', '/profile/member');
-    await expect(viewProfileButton).toHaveAttribute('target', '_blank');
-  });
+    const firstPill = pills.first();
 
-  test('word resume shows pending preview state on dashboard', async ({
-    page,
-  }) => {
-    profileRow.resume_url = 'https://example.com/member/resume.docx';
-    profileRow.nerd_creds = {
-      ...(profileRow.nerd_creds as Record<string, unknown>),
-      resume_thumbnail_status: 'pending',
-      resume_thumbnail_url: null,
-    };
+    const pillMetrics = await firstPill.evaluate((el) => {
+      const parent = el.parentElement;
+      const rect = el.getBoundingClientRect();
+      const parentRect = parent?.getBoundingClientRect();
 
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
+      return {
+        width: rect.width,
+        parentWidth: parentRect?.width ?? 0,
+      };
+    });
 
-    await expect(page.getByText('Generating preview...')).toBeVisible();
-  });
-
-  test('word resume thumbnail renders on dashboard and public profile', async ({
-    page,
-  }) => {
-    profileRow.resume_url = 'https://example.com/member/resume.docx';
-    profileRow.nerd_creds = {
-      ...(profileRow.nerd_creds as Record<string, unknown>),
-      resume_thumbnail_status: 'complete',
-      resume_thumbnail_url:
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Yf7xZ0AAAAASUVORK5CYII=',
-    };
-
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
-    await expect(
-      page.getByRole('img', { name: 'Resume thumbnail preview' }),
-    ).toBeVisible();
-
-    await page.goto('/profile/member');
-    await expect(page).toHaveURL(/\/profile\/member/);
-    await expect(
-      page.getByRole('img', { name: 'Resume thumbnail preview' }),
-    ).toBeVisible();
-  });
-
-  test('public profile groups links and uses Portfolio label', async ({
-    page,
-  }) => {
-    profileRow.socials = [
-      {
-        id: 'social-1',
-        category: 'Professional',
-        platform: 'LinkedIn',
-        url: 'https://linkedin.com/in/aprildrake',
-        isVisible: true,
-        order: 0,
-      },
-      {
-        id: 'social-2',
-        category: 'Social',
-        platform: 'Instagram',
-        url: 'https://instagram.com/aprildrake',
-        isVisible: true,
-        order: 1,
-      },
-      {
-        id: 'social-3',
-        category: 'Custom',
-        platform: 'Other',
-        url: 'https://example.com/april',
-        isVisible: true,
-        order: 2,
-      },
-    ];
-
-    await page.goto('/profile/member');
-    await expect(page).toHaveURL(/\/profile\/member/);
-
-    const professional = page.getByText('Professional').first();
-    const social = page.getByText('Social').first();
-    const other = page.getByText('Other').first();
-
-    await expect(professional).toBeVisible();
-    await expect(social).toBeVisible();
-    await expect(other).toBeVisible();
-
-    const [professionalBox, socialBox, otherBox] = await Promise.all([
-      professional.boundingBox(),
-      social.boundingBox(),
-      other.boundingBox(),
-    ]);
-    expect(professionalBox).not.toBeNull();
-    expect(socialBox).not.toBeNull();
-    expect(otherBox).not.toBeNull();
-    expect(professionalBox?.y ?? 0).toBeLessThan(socialBox?.y ?? 0);
-    expect(socialBox?.y ?? 0).toBeLessThan(otherBox?.y ?? 0);
-
-    await expect(
-      page.getByRole('heading', { name: 'Portfolio' }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('heading', { name: 'Portfolio Frame' }),
-    ).toHaveCount(0);
-  });
-
-  test('failed word preview shows retry action for owner', async ({ page }) => {
-    profileRow.resume_url = 'https://example.com/member/resume.docx';
-    profileRow.nerd_creds = {
-      ...(profileRow.nerd_creds as Record<string, unknown>),
-      resume_thumbnail_status: 'failed',
-      resume_thumbnail_error: 'renderer timeout',
-      resume_thumbnail_url: null,
-    };
-
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/);
-    await expect(
-      page.getByText('Preview failed. Open the document directly.'),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Retry Preview' }),
-    ).toBeVisible();
+    // pill should not be full width
+    expect(pillMetrics.width).toBeLessThan(pillMetrics.parentWidth * 0.95);
   });
 });

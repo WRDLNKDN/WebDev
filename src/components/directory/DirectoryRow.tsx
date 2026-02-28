@@ -101,13 +101,17 @@ export const DirectoryRow = ({
               {member.tagline}
             </Typography>
           )}
-          {(member.industry || member.location) && (
+          {(member.industry ||
+            member.secondary_industry ||
+            member.location) && (
             <Typography
               variant="caption"
               color="text.secondary"
               display="block"
             >
-              {[member.industry, member.location].filter(Boolean).join(' • ')}
+              {[member.industry, member.secondary_industry, member.location]
+                .filter(Boolean)
+                .join(' • ')}
             </Typography>
           )}
           {member.skills?.length > 0 && (

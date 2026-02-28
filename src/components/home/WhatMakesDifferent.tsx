@@ -6,7 +6,8 @@ export const WhatMakesDifferent = () => {
       component="section"
       aria-labelledby="what-makes-different-heading"
       sx={{
-        py: 8,
+        pt: 1.5,
+        pb: 6,
         bgcolor: 'rgba(5, 7, 15, 0.95)',
         borderTop: '1px solid',
         borderColor: 'rgba(255,255,255,0.08)',

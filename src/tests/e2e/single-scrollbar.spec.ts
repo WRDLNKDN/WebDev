@@ -135,12 +135,21 @@ test.describe('Single scrollbar regressions', () => {
   test('feed and profile avoid nested page-height scroll containers', async ({
     page,
   }) => {
+    // Allow exactly one scroll container: the app-scroll-container (Layout) or join-scroll-container (Join).
+    // app-main is the content wrapper and must not create a nested scroll.
     const getOffenders = async () =>
       page.evaluate(() => {
+        const allowedTestIds = [
+          'app-scroll-container',
+          'join-scroll-container',
+          'app-main',
+        ];
         return [...document.querySelectorAll<HTMLElement>('*')]
           .filter((el) => {
             if (el === document.body || el === document.documentElement)
               return false;
+            const testId = el.getAttribute('data-testid');
+            if (testId && allowedTestIds.includes(testId)) return false;
             const style = window.getComputedStyle(el);
             if (!['auto', 'scroll'].includes(style.overflowY)) return false;
             if (el.clientHeight < window.innerHeight * 0.4) return false;
@@ -156,34 +165,44 @@ test.describe('Single scrollbar regressions', () => {
 
     await page.goto('/feed');
     await expect(page).toHaveURL(/\/feed/);
+    await expect(page.getByTestId('app-scroll-container')).toBeVisible({
+      timeout: 15000,
+    });
     await expect(getOffenders()).resolves.toEqual([]);
 
     await page.goto('/profile/member');
     await expect(page).toHaveURL(/\/profile\/member/);
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
     await expect(getOffenders()).resolves.toEqual([]);
   });
 
   test('join uses only its dedicated scroll container', async ({ page }) => {
     await page.goto('/join');
     await expect(page).toHaveURL(/\/join/);
+    await expect(
+      page.locator('[data-testid="join-scroll-container"]'),
+    ).toBeVisible({ timeout: 15000 });
 
-    const joinOffenders = await page.evaluate(() => {
-      return [...document.querySelectorAll<HTMLElement>('*')]
-        .filter((el) => {
-          if (el === document.body || el === document.documentElement)
-            return false;
-          const style = window.getComputedStyle(el);
-          if (!['auto', 'scroll'].includes(style.overflowY)) return false;
-          if (el.clientHeight < window.innerHeight * 0.4) return false;
-          return el.scrollHeight > el.clientHeight + 1;
-        })
-        .map((el) => ({
-          testId: el.getAttribute('data-testid'),
-        }));
-    });
+    const getJoinOffenders = async () =>
+      page.evaluate(() => {
+        const allowedTestIds = [
+          'join-scroll-container',
+          'app-scroll-container',
+        ];
+        return [...document.querySelectorAll<HTMLElement>('*')]
+          .filter((el) => {
+            if (el === document.body || el === document.documentElement)
+              return false;
+            const testId = el.getAttribute('data-testid');
+            if (testId && allowedTestIds.includes(testId)) return false;
+            const style = window.getComputedStyle(el);
+            if (!['auto', 'scroll'].includes(style.overflowY)) return false;
+            if (el.clientHeight < window.innerHeight * 0.4) return false;
+            return el.scrollHeight > el.clientHeight + 1;
+          })
+          .map((el) => ({ testId: el.getAttribute('data-testid') }));
+      });
 
-    expect(
-      joinOffenders.every((el) => el.testId === 'join-scroll-container'),
-    ).toBe(true);
+    await expect(getJoinOffenders()).resolves.toEqual([]);
   });
 });

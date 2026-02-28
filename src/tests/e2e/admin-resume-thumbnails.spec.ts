@@ -5,8 +5,9 @@ import { stubAppSurface } from './utils/stubAppSurface';
 test.describe('Admin resume thumbnail surface deprecation', () => {
   test('admin no longer sees Resume Thumbnails nav and route redirects', async ({
     page,
+    context,
   }) => {
-    await seedSignedInSession(page, { isAdmin: true });
+    await seedSignedInSession(context, { isAdmin: true });
     await stubAppSurface(page);
 
     await page.goto('/admin');

@@ -24,11 +24,11 @@ import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const BG_SX = {
   minHeight: '100vh',
-  position: 'relative' as const,
   display: 'flex',
   flexDirection: 'column' as const,
   overflowX: 'hidden' as const,
   ...PAGE_BACKGROUND,
+  position: 'relative' as const,
   backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
 

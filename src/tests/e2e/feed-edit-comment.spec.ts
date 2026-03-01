@@ -125,6 +125,8 @@ test.describe('Feed post/comment edit persistence', () => {
                   love_count: 0,
                   inspiration_count: 0,
                   care_count: 0,
+                  laughing_count: 0,
+                  rage_count: 0,
                   viewer_reaction: null,
                   actor: {
                     handle: 'member',
@@ -185,6 +187,8 @@ test.describe('Feed post/comment edit persistence', () => {
                       love_count: 0,
                       inspiration_count: 0,
                       care_count: 0,
+                      laughing_count: 0,
+                      rage_count: 0,
                       viewer_reaction: null,
                       comment_count: 1,
                     },

@@ -1,5 +1,5 @@
 /**
- * FeedReactionBar — Like / Love / Insightful / Care reaction button + popover.
+ * FeedReactionBar — React (default) / Like / Love / Insightful / Care / Laughing / Rage.
  * Shared reaction UI for Feed (and any surface using feed-style reactions).
  */
 import {
@@ -19,6 +19,10 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined';
+import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied';
+import SentimentSatisfiedOutlinedIcon from '@mui/icons-material/SentimentSatisfiedOutlined';
+import MoodBadIcon from '@mui/icons-material/MoodBad';
+import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
 import type { ReactionType } from '../../lib/api/feedsApi';
 import { useState } from 'react';
 
@@ -58,6 +62,20 @@ export const REACTION_OPTIONS: {
     IconOutlined: VolunteerActivismOutlinedIcon,
     color: 'success.main',
   },
+  {
+    type: 'laughing',
+    label: 'Laughing',
+    Icon: SentimentSatisfiedIcon,
+    IconOutlined: SentimentSatisfiedOutlinedIcon,
+    color: 'info.main',
+  },
+  {
+    type: 'rage',
+    label: 'Rage',
+    Icon: MoodBadIcon,
+    IconOutlined: MoodBadOutlinedIcon,
+    color: 'error.dark',
+  },
 ];
 
 export type FeedReactionBarProps = {
@@ -66,6 +84,8 @@ export type FeedReactionBarProps = {
   loveCount: number;
   inspirationCount: number;
   careCount: number;
+  laughingCount: number;
+  rageCount: number;
   onReaction: (type: ReactionType) => void;
   onRemoveReaction: () => void;
   /** Optional: constrain width/layout to match feed action row */
@@ -78,12 +98,20 @@ export const FeedReactionBar = ({
   loveCount,
   inspirationCount,
   careCount,
+  laughingCount,
+  rageCount,
   onReaction,
   onRemoveReaction,
   sx,
 }: FeedReactionBarProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const totalReactions = likeCount + loveCount + inspirationCount + careCount;
+  const totalReactions =
+    likeCount +
+    loveCount +
+    inspirationCount +
+    careCount +
+    laughingCount +
+    rageCount;
   const current =
     REACTION_OPTIONS.find((r) => r.type === viewerReaction) ??
     REACTION_OPTIONS[0];
@@ -137,7 +165,7 @@ export const FeedReactionBar = ({
             },
           }}
           aria-label={
-            viewerReaction ? `${current.label} (click to remove)` : 'Like'
+            viewerReaction ? `${current.label} (click to remove)` : 'React'
           }
           aria-haspopup="true"
           aria-expanded={Boolean(anchorEl)}
@@ -156,7 +184,7 @@ export const FeedReactionBar = ({
               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
             }}
           >
-            {viewerReaction ? current.label : 'Like'}
+            {viewerReaction ? current.label : 'React'}
             {totalReactions > 0 ? ` · ${totalReactions}` : ''}
           </Typography>
         </Button>

@@ -622,6 +622,8 @@ returns table (
   love_count bigint,
   inspiration_count bigint,
   care_count bigint,
+  laughing_count bigint,
+  rage_count bigint,
   viewer_reaction text,
   comment_count bigint,
   viewer_saved boolean
@@ -667,6 +669,8 @@ begin
     coalesce(stats.love_cnt, 0::bigint),
     coalesce(stats.inspiration_cnt, 0::bigint),
     coalesce(stats.care_cnt, 0::bigint),
+    coalesce(stats.laughing_cnt, 0::bigint),
+    coalesce(stats.rage_cnt, 0::bigint),
     stats.viewer_reaction,
     coalesce(stats.comment_cnt, 0::bigint),
     exists (
@@ -682,12 +686,14 @@ begin
       count(*) filter (where r.payload->>'type' = 'love') as love_cnt,
       count(*) filter (where r.payload->>'type' = 'inspiration') as inspiration_cnt,
       count(*) filter (where r.payload->>'type' = 'care') as care_cnt,
+      count(*) filter (where r.payload->>'type' = 'laughing') as laughing_cnt,
+      count(*) filter (where r.payload->>'type' = 'rage') as rage_cnt,
       count(*) filter (where r.payload->>'type' = 'comment') as comment_cnt,
       (
         select r2.payload->>'type'
         from public.feed_items r2
         where r2.parent_id = fi.id and r2.kind = 'reaction'
-          and r2.payload->>'type' in ('like','love','inspiration','care')
+          and r2.payload->>'type' in ('like','love','inspiration','care','laughing','rage')
           and r2.user_id = p_viewer_id
         limit 1
       ) as viewer_reaction
@@ -740,6 +746,8 @@ returns table (
   love_count bigint,
   inspiration_count bigint,
   care_count bigint,
+  laughing_count bigint,
+  rage_count bigint,
   viewer_reaction text,
   comment_count bigint,
   viewer_saved boolean,
@@ -771,6 +779,8 @@ begin
     coalesce(stats.love_cnt, 0::bigint),
     coalesce(stats.inspiration_cnt, 0::bigint),
     coalesce(stats.care_cnt, 0::bigint),
+    coalesce(stats.laughing_cnt, 0::bigint),
+    coalesce(stats.rage_cnt, 0::bigint),
     stats.viewer_reaction,
     coalesce(stats.comment_cnt, 0::bigint),
     true::boolean as viewer_saved,
@@ -785,12 +795,14 @@ begin
       count(*) filter (where r.payload->>'type' = 'love') as love_cnt,
       count(*) filter (where r.payload->>'type' = 'inspiration') as inspiration_cnt,
       count(*) filter (where r.payload->>'type' = 'care') as care_cnt,
+      count(*) filter (where r.payload->>'type' = 'laughing') as laughing_cnt,
+      count(*) filter (where r.payload->>'type' = 'rage') as rage_cnt,
       count(*) filter (where r.payload->>'type' = 'comment') as comment_cnt,
       (
         select r2.payload->>'type'
         from public.feed_items r2
         where r2.parent_id = fi.id and r2.kind = 'reaction'
-          and r2.payload->>'type' in ('like','love','inspiration','care')
+          and r2.payload->>'type' in ('like','love','inspiration','care','laughing','rage')
           and r2.user_id = p_viewer_id
         limit 1
       ) as viewer_reaction
@@ -1981,7 +1993,7 @@ begin
   v_reaction_type := new.payload->>'type';
   v_is_comment := v_reaction_type = 'comment';
 
-  if not v_is_comment and v_reaction_type not in ('like', 'love', 'inspiration', 'care') then
+  if not v_is_comment and v_reaction_type not in ('like', 'love', 'inspiration', 'care', 'laughing', 'rage') then
     return new;
   end if;
 

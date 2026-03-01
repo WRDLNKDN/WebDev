@@ -353,9 +353,15 @@ const LinkPreviewCard = ({
 type FeedCardActions = {
   updateItem: (id: string, patch: Partial<FeedItem>) => void;
   onReaction: (postId: string, type: ReactionType) => void;
-  onRemoveReaction: (postId: string) => void;
+  onRemoveReaction: (
+    postId: string,
+    previousType?: ReactionType | null,
+  ) => void;
   onCommentReaction: (commentId: string, type: ReactionType) => void;
-  onCommentRemoveReaction: (commentId: string) => void;
+  onCommentRemoveReaction: (
+    commentId: string,
+    previousType?: ReactionType | null,
+  ) => void;
   onRepost: (item: FeedItem) => void;
   onSend: (item: FeedItem) => void;
   onSave: (postId: string) => void;
@@ -571,6 +577,8 @@ const FeedCard = ({
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
   const careCount = item.care_count ?? 0;
+  const laughingCount = item.laughing_count ?? 0;
+  const rageCount = item.rage_count ?? 0;
   const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
   const isPostEdited = Boolean(item.edited_at);
@@ -694,6 +702,9 @@ const FeedCard = ({
             ? Math.max(0, inspirationCount - 1)
             : inspirationCount,
         care_count: type === 'care' ? Math.max(0, careCount - 1) : careCount,
+        laughing_count:
+          type === 'laughing' ? Math.max(0, laughingCount - 1) : laughingCount,
+        rage_count: type === 'rage' ? Math.max(0, rageCount - 1) : rageCount,
       });
     } else {
       actions.onReaction(item.id, type);
@@ -714,6 +725,12 @@ const FeedCard = ({
         care_count:
           (type === 'care' ? 1 : 0) +
           (prevType === 'care' ? careCount - 1 : careCount),
+        laughing_count:
+          (type === 'laughing' ? 1 : 0) +
+          (prevType === 'laughing' ? laughingCount - 1 : laughingCount),
+        rage_count:
+          (type === 'rage' ? 1 : 0) +
+          (prevType === 'rage' ? rageCount - 1 : rageCount),
       });
     }
   };
@@ -969,7 +986,13 @@ const FeedCard = ({
           </Typography>
         )}
         {/* Engagement row (LinkedIn-style): X reactions · X comments above actions */}
-        {(likeCount + loveCount + inspirationCount + careCount > 0 ||
+        {(likeCount +
+          loveCount +
+          inspirationCount +
+          careCount +
+          laughingCount +
+          rageCount >
+          0 ||
           commentCount > 0) && (
           <Box
             sx={{
@@ -980,7 +1003,13 @@ const FeedCard = ({
               flexWrap: 'wrap',
             }}
           >
-            {likeCount + loveCount + inspirationCount + careCount > 0 && (
+            {likeCount +
+              loveCount +
+              inspirationCount +
+              careCount +
+              laughingCount +
+              rageCount >
+              0 && (
               <Typography
                 component="span"
                 variant="caption"
@@ -990,8 +1019,20 @@ const FeedCard = ({
                   cursor: 'default',
                 }}
               >
-                {likeCount + loveCount + inspirationCount + careCount} reaction
-                {likeCount + loveCount + inspirationCount + careCount !== 1
+                {likeCount +
+                  loveCount +
+                  inspirationCount +
+                  careCount +
+                  laughingCount +
+                  rageCount}{' '}
+                reaction
+                {likeCount +
+                  loveCount +
+                  inspirationCount +
+                  careCount +
+                  laughingCount +
+                  rageCount !==
+                1
                   ? 's'
                   : ''}
               </Typography>
@@ -1011,7 +1052,7 @@ const FeedCard = ({
             )}
           </Box>
         )}
-        {/* Post action bar: Like | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
+        {/* Post action bar: React | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
         <Box
           sx={{
             mt: 0.5,
@@ -1038,8 +1079,15 @@ const FeedCard = ({
             loveCount={loveCount}
             inspirationCount={inspirationCount}
             careCount={careCount}
+            laughingCount={laughingCount}
+            rageCount={rageCount}
             onReaction={handleReaction}
-            onRemoveReaction={() => actions.onRemoveReaction(item.id)}
+            onRemoveReaction={() =>
+              actions.onRemoveReaction(
+                item.id,
+                item.viewer_reaction ?? undefined,
+              )
+            }
           />
           <Button
             size="small"
@@ -1330,7 +1378,11 @@ const FeedCard = ({
                                         ? (c.love_count ?? 0)
                                         : type === 'inspiration'
                                           ? (c.inspiration_count ?? 0)
-                                          : (c.care_count ?? 0);
+                                          : type === 'care'
+                                            ? (c.care_count ?? 0)
+                                            : type === 'laughing'
+                                              ? (c.laughing_count ?? 0)
+                                              : (c.rage_count ?? 0);
                                   const CurrentIcon = active
                                     ? Icon
                                     : IconOutlined;
@@ -1340,7 +1392,10 @@ const FeedCard = ({
                                       size="small"
                                       onClick={() => {
                                         if (active) {
-                                          actions.onCommentRemoveReaction(c.id);
+                                          actions.onCommentRemoveReaction(
+                                            c.id,
+                                            c.viewer_reaction ?? undefined,
+                                          );
                                         } else {
                                           actions.onCommentReaction(c.id, type);
                                         }
@@ -2309,6 +2364,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       if (!session?.access_token) return;
       try {
         await setReaction({ postId, type, accessToken: session.access_token });
+        trackEvent('feed_reaction_set', {
+          post_id: postId,
+          reaction_type: type,
+        });
       } catch (e) {
         await handleAuthError(e, 'Failed to react');
         void loadPage();
@@ -2318,10 +2377,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   );
 
   const handleRemoveReaction = useCallback(
-    async (postId: string) => {
+    async (postId: string, previousType?: ReactionType | null) => {
       if (!session?.access_token) return;
       try {
         await removeReaction({ postId, accessToken: session.access_token });
+        trackEvent('feed_reaction_remove', {
+          post_id: postId,
+          ...(previousType != null && { reaction_type: previousType }),
+        });
       } catch (e) {
         await handleAuthError(e, 'Failed to remove reaction');
         void loadPage();
@@ -2499,6 +2562,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           type,
           accessToken: session.access_token,
         });
+        trackEvent('feed_comment_reaction_set', {
+          comment_id: commentId,
+          reaction_type: type,
+        });
         if (expandedCommentsPostId) {
           const { data } = await fetchComments({
             postId: expandedCommentsPostId,
@@ -2517,12 +2584,16 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   );
 
   const handleCommentRemoveReaction = useCallback(
-    async (commentId: string) => {
+    async (commentId: string, previousType?: ReactionType | null) => {
       if (!session?.access_token) return;
       try {
         await removeReaction({
           postId: commentId,
           accessToken: session.access_token,
+        });
+        trackEvent('feed_comment_reaction_remove', {
+          comment_id: commentId,
+          ...(previousType != null && { reaction_type: previousType }),
         });
         if (expandedCommentsPostId) {
           const { data } = await fetchComments({
@@ -2583,11 +2654,12 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const feedCardActions: FeedCardActions = {
     updateItem,
     onReaction: (postId, type) => void handleReaction(postId, type),
-    onRemoveReaction: (postId) => void handleRemoveReaction(postId),
+    onRemoveReaction: (postId, prevType) =>
+      void handleRemoveReaction(postId, prevType),
     onCommentReaction: (commentId, type) =>
       void handleCommentReaction(commentId, type),
-    onCommentRemoveReaction: (commentId) =>
-      void handleCommentRemoveReaction(commentId),
+    onCommentRemoveReaction: (commentId, prevType) =>
+      void handleCommentRemoveReaction(commentId, prevType),
     onRepost: handleRepost,
     onSend: handleSend,
     onSave: (postId) => void handleSave(postId),

@@ -57,7 +57,10 @@ const GLASS_MODAL = {
 const INPUT_HEIGHT = 32;
 const INPUT_PADDING = '4px 12px';
 
-import { INDUSTRY_OPTIONS } from '../../constants/industry';
+import {
+  getSecondaryOptionsForPrimary,
+  INDUSTRY_PRIMARY_OPTIONS,
+} from '../../constants/industryTaxonomy';
 
 const INPUT_STYLES = {
   '& .MuiFilledInput-root': {
@@ -528,8 +531,8 @@ export const EditProfileDialog = ({
               </FormControl>
             </Box>
 
-            {/* Primary Industry (required) */}
-            <Box>
+            {/* Primary Industry (required) — spacing to avoid overlapping label/placeholder/helper */}
+            <Box sx={{ mt: 2 }}>
               <Typography
                 variant="overline"
                 sx={{
@@ -537,7 +540,7 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 0.5,
+                  mb: 1,
                 }}
               >
                 PRIMARY INDUSTRY
@@ -546,7 +549,7 @@ export const EditProfileDialog = ({
                 fullWidth
                 disabled={busy}
                 variant="filled"
-                sx={INPUT_STYLES}
+                sx={{ ...INPUT_STYLES, mt: 0 }}
               >
                 <InputLabel id="edit-profile-primary-industry">
                   Primary Industry
@@ -554,27 +557,33 @@ export const EditProfileDialog = ({
                 <Select
                   labelId="edit-profile-primary-industry"
                   value={formData.industry}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const nextPrimary = e.target.value;
+                    const allowed = getSecondaryOptionsForPrimary(nextPrimary);
                     setFormData((prev) => ({
                       ...prev,
-                      industry: e.target.value,
-                      ...(prev.secondary_industry === e.target.value
-                        ? { secondary_industry: '' }
-                        : {}),
-                    }))
-                  }
+                      industry: nextPrimary,
+                      secondary_industry:
+                        prev.secondary_industry &&
+                        allowed.includes(prev.secondary_industry)
+                          ? prev.secondary_industry
+                          : '',
+                    }));
+                  }}
                   label="Primary Industry"
                   displayEmpty
                   renderValue={(v) => v || 'Select primary industry'}
                 >
                   <MenuItem value="">Select primary industry</MenuItem>
-                  {INDUSTRY_OPTIONS.map((opt) => (
+                  {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
                     <MenuItem key={opt} value={opt}>
                       {opt}
                     </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>Used for Directory filtering.</FormHelperText>
+                <FormHelperText sx={{ mt: 0.5 }}>
+                  Used for Directory filtering.
+                </FormHelperText>
               </FormControl>
             </Box>
 
@@ -627,13 +636,13 @@ export const EditProfileDialog = ({
                       renderValue={(v) => v || 'None'}
                     >
                       <MenuItem value="">None</MenuItem>
-                      {INDUSTRY_OPTIONS.filter(
-                        (opt) => opt !== formData.industry,
-                      ).map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
-                        </MenuItem>
-                      ))}
+                      {getSecondaryOptionsForPrimary(formData.industry).map(
+                        (opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ),
+                      )}
                     </Select>
                     <FormHelperText>
                       Used for Directory filtering.

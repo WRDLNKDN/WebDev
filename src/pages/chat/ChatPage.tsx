@@ -9,7 +9,6 @@ import { CreateGroupDialog } from '../../components/chat/CreateGroupDialog';
 import { GroupActionsDialog } from '../../components/chat/GroupActionsDialog';
 import { MessageInput } from '../../components/chat/MessageInput';
 import { MessageList } from '../../components/chat/MessageList';
-import { QuickReactions } from '../../components/chat/QuickReactions';
 import { ReportDialog } from '../../components/chat/ReportDialog';
 import { StartDmDialog } from '../../components/chat/StartDmDialog';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
@@ -270,10 +269,6 @@ export const ChatPage = () => {
                 />
               )}
 
-              <QuickReactions
-                onSend={(text) => sendMessage(text)}
-                disabled={sending || chatLoading}
-              />
               <MessageInput
                 onSend={sendMessage}
                 onTyping={startTyping}

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
 import { toMessage } from '../lib/utils/errors';
@@ -206,13 +212,17 @@ export function useChat(roomId: string | null) {
       const pageDesc = (msgData ?? []) as ChatMessage[];
       const pageAsc = [...pageDesc].reverse();
       const enriched = await enrichMessages(pageAsc);
-      setMessages(enriched);
 
       const oldest = pageAsc[0];
       oldestLoadedRef.current = oldest
         ? { created_at: oldest.created_at, id: oldest.id }
         : null;
-      setHasOlderMessages(pageDesc.length === CHAT_MESSAGES_PAGE_SIZE);
+
+      startTransition(() => {
+        setMessages(enriched);
+        setHasOlderMessages(pageDesc.length === CHAT_MESSAGES_PAGE_SIZE);
+        setLoading(false);
+      });
     },
     [enrichMessages],
   );
@@ -244,7 +254,10 @@ export function useChat(roomId: string | null) {
 
       const olderAsc = [...olderDesc].reverse();
       const enrichedOlder = await enrichMessages(olderAsc);
-      setMessages((prev) => [...enrichedOlder, ...prev]);
+
+      startTransition(() => {
+        setMessages((prev) => [...enrichedOlder, ...prev]);
+      });
 
       const oldest = olderAsc[0];
       oldestLoadedRef.current = oldest
@@ -278,8 +291,6 @@ export function useChat(roomId: string | null) {
         return;
       }
       await fetchMessages(roomId);
-      if (cancelled) return;
-      setLoading(false);
     })();
 
     return () => {
@@ -301,44 +312,44 @@ export function useChat(roomId: string | null) {
           table: 'chat_messages',
           filter: `room_id=eq.${roomId}`,
         },
-        async (payload) => {
+        (payload) => {
           const newRow = payload.new as ChatMessage;
-          const { data: fullMsg } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('id', newRow.id)
-            .single();
+          void (async () => {
+            const { data: fullMsg } = await supabase
+              .from('chat_messages')
+              .select('*')
+              .eq('id', newRow.id)
+              .single();
 
-          if (fullMsg) {
-            let senderProfile = null;
-            if (fullMsg.sender_id) {
-              const { data: p } = await supabase
-                .from('profiles')
-                .select('handle, display_name, avatar')
-                .eq('id', fullMsg.sender_id)
-                .maybeSingle();
-              senderProfile = p ?? null;
-            }
-            const [rRes, aRes] = await Promise.all([
-              supabase
-                .from('chat_message_reactions')
-                .select('message_id, user_id, emoji')
-                .eq('message_id', fullMsg.id),
-              supabase
-                .from('chat_message_attachments')
-                .select('id, message_id, storage_path, mime_type, file_size')
-                .eq('message_id', fullMsg.id),
-            ]);
-            setMessages((prev) => [
-              ...prev,
-              {
+            if (fullMsg) {
+              let senderProfile = null;
+              if (fullMsg.sender_id) {
+                const { data: p } = await supabase
+                  .from('profiles')
+                  .select('handle, display_name, avatar')
+                  .eq('id', fullMsg.sender_id)
+                  .maybeSingle();
+                senderProfile = p ?? null;
+              }
+              const [rRes, aRes] = await Promise.all([
+                supabase
+                  .from('chat_message_reactions')
+                  .select('message_id, user_id, emoji')
+                  .eq('message_id', fullMsg.id),
+                supabase
+                  .from('chat_message_attachments')
+                  .select('id, message_id, storage_path, mime_type, file_size')
+                  .eq('message_id', fullMsg.id),
+              ]);
+              const next = {
                 ...fullMsg,
                 sender_profile: senderProfile,
                 reactions: rRes.data ?? [],
                 attachments: aRes.data ?? [],
-              } as unknown as MessageWithExtras,
-            ]);
-          }
+              } as unknown as MessageWithExtras;
+              startTransition(() => setMessages((prev) => [...prev, next]));
+            }
+          })();
         },
       )
       .on(
@@ -351,8 +362,10 @@ export function useChat(roomId: string | null) {
         },
         (payload) => {
           const updated = payload.new as ChatMessage;
-          setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)),
+          startTransition(() =>
+            setMessages((prev) =>
+              prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)),
+            ),
           );
         },
       )
@@ -433,9 +446,11 @@ export function useChat(roomId: string | null) {
           await fetchMessages(roomId);
         }
       } catch {
-        setError('Your message could not be sent. Please try again.');
+        startTransition(() =>
+          setError('Your message could not be sent. Please try again.'),
+        );
       } finally {
-        setSending(false);
+        startTransition(() => setSending(false));
       }
     },
     [roomId, fetchMessages],

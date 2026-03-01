@@ -11,15 +11,16 @@ export const FILTER_CONTROL_MIN_HEIGHT = 40;
 
 const selectInputInnerSx = {
   minHeight: FILTER_CONTROL_MIN_HEIGHT,
-  paddingLeft: '14px',
+  paddingLeft: 14,
   paddingRight: '36px !important' as const,
   textOverflow: 'ellipsis' as const,
   overflow: 'hidden' as const,
   whiteSpace: 'nowrap' as const,
   maxWidth: '100%',
+  boxSizing: 'border-box' as const,
 };
 
-/** FormControl sx for Select so value text doesn't overlap arrow; long text truncates. */
+/** FormControl sx for Select: same width as filter buttons, min height 40, text truncates with ellipsis. */
 export const filterSelectSx = {
   width: { xs: '100%', md: FILTER_CONTROL_WIDTH },
   minWidth: { xs: 0, md: FILTER_CONTROL_WIDTH },

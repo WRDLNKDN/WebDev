@@ -408,12 +408,15 @@ export const Directory = () => {
                 )}
               </Box>
               <FormControl size="small" sx={filterSelectSx}>
-                <InputLabel id="dir-sort">Sort by</InputLabel>
+                <InputLabel id="dir-sort" shrink>
+                  Sort by
+                </InputLabel>
                 <Select
                   labelId="dir-sort"
                   value={sort}
                   label="Sort by"
                   displayEmpty
+                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   renderValue={(v) =>
                     v === 'recently_active'
@@ -457,7 +460,7 @@ export const Directory = () => {
                 Filters:
               </Typography>
               <FormControl size="small" sx={filterSelectSx}>
-                <InputLabel id="dir-primary-industry">
+                <InputLabel id="dir-primary-industry" shrink>
                   Primary Industry
                 </InputLabel>
                 <Select
@@ -465,6 +468,7 @@ export const Directory = () => {
                   value={primaryIndustry}
                   label="Primary Industry"
                   displayEmpty
+                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   onChange={(e) => {
                     const nextPrimary = e.target.value;
@@ -506,7 +510,7 @@ export const Directory = () => {
               ) : (
                 <>
                   <FormControl size="small" sx={filterSelectSx}>
-                    <InputLabel id="dir-secondary-industry">
+                    <InputLabel id="dir-secondary-industry" shrink>
                       Sub-industry
                     </InputLabel>
                     <Select
@@ -514,6 +518,7 @@ export const Directory = () => {
                       value={secondaryIndustry}
                       label="Sub-industry"
                       displayEmpty
+                      slotProps={{ inputLabel: { shrink: true } }}
                       MenuProps={filterSelectMenuProps}
                       onChange={(e) =>
                         updateUrl({ secondary_industry: e.target.value })
@@ -577,12 +582,15 @@ export const Directory = () => {
                 />
               </Box>
               <FormControl size="small" sx={filterSelectSx}>
-                <InputLabel id="dir-connection">Connection</InputLabel>
+                <InputLabel id="dir-connection" shrink>
+                  Connection
+                </InputLabel>
                 <Select
                   labelId="dir-connection"
                   value={connectionStatus}
                   label="Connection"
                   displayEmpty
+                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   renderValue={(v) =>
                     v === ''

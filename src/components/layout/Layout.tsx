@@ -67,39 +67,50 @@ const LayoutContent = () => {
     })();
   }, []);
 
+  // Navbar is outside the scroll container so iOS Safari does not treat taps on
+  // Sign in/Join as scroll gestures (single scroll container = content only).
   return (
     <Box
-      className="app-scroll-container"
-      data-testid="app-scroll-container"
       sx={{
         height: '100dvh',
-        overflowY: 'auto',
-        overflowX: 'hidden',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         ...PAGE_BG,
       }}
     >
       <Navbar />
-      <UatBanner />
       <Box
-        component="main"
-        data-testid="app-main"
-        tabIndex={0}
+        className="app-scroll-container"
+        data-testid="app-scroll-container"
         sx={{
           flex: 1,
           minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
+          overflowY: 'auto',
           overflowX: 'hidden',
-          overflowY: 'visible',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
+        <UatBanner />
+        <Box
+          component="main"
+          data-testid="app-main"
+          tabIndex={0}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowX: 'hidden',
+            overflowY: 'visible',
+          }}
+        >
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </Box>
+        {!isHome && !isJoin && <Footer showChatLink={Boolean(session?.user)} />}
       </Box>
-      {!isHome && !isJoin && <Footer showChatLink={Boolean(session?.user)} />}
       <MessengerOverlay />
       {session?.user && messenger?.popoverRoomId && (
         <ChatPopover

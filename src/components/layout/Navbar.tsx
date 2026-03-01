@@ -422,6 +422,7 @@ export const Navbar = () => {
           bgcolor: 'rgba(18, 18, 18, 0.9)', // Deep glass effect
           backdropFilter: 'blur(12px)',
           zIndex: 1100,
+          isolation: 'isolate',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
@@ -885,13 +886,19 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile: Join/Sign in — use RouterLink for reliable touch on mobile */}
+          {/* Mobile: Join/Sign in — real links + touch-action so iOS doesn't eat taps */}
           {isMobile && (
             <Stack
               direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ flexShrink: 0, position: 'relative', zIndex: 1 }}
+              sx={{
+                flexShrink: 0,
+                position: 'relative',
+                zIndex: 1,
+                pointerEvents: 'auto',
+                touchAction: 'manipulation',
+              }}
             >
               {path === '/auth/callback' ? null : !sessionLoaded ||
                 (session && !onboardingLoaded) ? (
@@ -914,6 +921,8 @@ export const Navbar = () => {
                         color: 'text.secondary',
                         textTransform: 'none',
                         fontSize: '0.875rem',
+                        touchAction: 'manipulation',
+                        pointerEvents: 'auto',
                         '&:hover': { color: 'white' },
                       }}
                     >
@@ -931,6 +940,8 @@ export const Navbar = () => {
                       color: 'text.secondary',
                       textTransform: 'none',
                       fontSize: '0.875rem',
+                      touchAction: 'manipulation',
+                      pointerEvents: 'auto',
                       '&:hover': { color: 'white' },
                     }}
                   >
@@ -1023,28 +1034,32 @@ export const Navbar = () => {
               <>
                 {!isJoinActive && (
                   <Button
-                    component="button"
-                    type="button"
-                    onClick={() => void openJoin()}
+                    component={RouterLink}
+                    to="/join"
+                    onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
                       color: 'white',
                       textTransform: 'none',
                       py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
                     }}
                   >
                     Join
                   </Button>
                 )}
                 <Button
-                  component="button"
-                  type="button"
-                  onClick={() => void openSignIn()}
+                  component={RouterLink}
+                  to="/signin"
+                  onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: 'white',
                     textTransform: 'none',
                     py: 1.5,
+                    minHeight: 44,
+                    touchAction: 'manipulation',
                   }}
                 >
                   Sign in

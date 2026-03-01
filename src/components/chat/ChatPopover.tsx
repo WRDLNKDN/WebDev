@@ -5,7 +5,6 @@ import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from './ChatRoomHeader';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
-import { QuickReactions } from './QuickReactions';
 import { BlockConfirmDialog } from './BlockConfirmDialog';
 import { GroupActionsDialog } from './GroupActionsDialog';
 import { ReportDialog } from './ReportDialog';
@@ -205,47 +204,45 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
             <CircularProgress />
           </Box>
         ) : error ? null : (
-          <MessageList
-            messages={messages}
-            currentUserId={uid}
-            roomType={room?.room_type ?? 'dm'}
-            otherUserId={otherMember?.user_id}
-            onLoadOlder={() => void loadOlderMessages()}
-            hasOlderMessages={hasOlderMessages}
-            loadingOlder={loadingOlder}
-            onEdit={editMessage}
-            onDelete={deleteMessage}
-            onReaction={toggleReaction}
-            onReport={handleReport}
-            onMessagesViewed={markAsRead}
-            isAdmin={isAdmin}
-            compact
-            typingAvatarUrl={
-              room?.room_type === 'dm'
-                ? (otherMember?.profile?.avatar ?? null)
-                : undefined
-            }
-            showTyping={
-              room?.room_type === 'dm' &&
-              !!otherMember?.user_id &&
-              typingUsers.has(otherMember.user_id)
-            }
-          />
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <MessageList
+              messages={messages}
+              currentUserId={uid}
+              roomType={room?.room_type ?? 'dm'}
+              otherUserId={otherMember?.user_id}
+              onLoadOlder={() => void loadOlderMessages()}
+              hasOlderMessages={hasOlderMessages}
+              loadingOlder={loadingOlder}
+              onEdit={editMessage}
+              onDelete={deleteMessage}
+              onReaction={toggleReaction}
+              onReport={handleReport}
+              onMessagesViewed={markAsRead}
+              isAdmin={isAdmin}
+              compact
+              typingAvatarUrl={
+                room?.room_type === 'dm'
+                  ? (otherMember?.profile?.avatar ?? null)
+                  : undefined
+              }
+              showTyping={
+                room?.room_type === 'dm' &&
+                !!otherMember?.user_id &&
+                typingUsers.has(otherMember.user_id)
+              }
+            />
+          </Box>
         )}
 
         {!error && (
-          <>
-            <QuickReactions
-              onSend={(text) => sendMessage(text)}
-              disabled={sending}
-            />
+          <Box sx={{ flexShrink: 0 }}>
             <MessageInput
               onSend={sendMessage}
               onTyping={startTyping}
               onStopTyping={stopTyping}
               disabled={sending}
             />
-          </>
+          </Box>
         )}
       </Box>
 

@@ -38,6 +38,10 @@ import {
   type ContentSubmissionRow,
 } from '../../lib/api/contentApi';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  FILTER_CONTROL_MIN_HEIGHT,
+  filterSelectInputSx,
+} from '../../theme/filterControls';
 import { useAdminSession } from './AdminSessionContext';
 
 const STATUS_OPTIONS = [
@@ -64,7 +68,7 @@ export const AdminContentModerationPage = () => {
   const [rows, setRows] = useState<ContentSubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [appliedQ, setAppliedQ] = useState('');
   const [offset, setOffset] = useState(0);
@@ -89,7 +93,7 @@ export const AdminContentModerationPage = () => {
     setError(null);
     try {
       const { data, meta } = await fetchAdminContentSubmissions(token, {
-        status: status === 'all' ? undefined : status,
+        status: status === '' || status === 'all' ? undefined : status,
         q: appliedQ.trim() || undefined,
         limit,
         offset,
@@ -208,16 +212,32 @@ export const AdminContentModerationPage = () => {
           alignItems={{ sm: 'center' }}
           flexWrap="wrap"
         >
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Status</InputLabel>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: '100%', sm: 180 },
+              ...filterSelectInputSx,
+            }}
+          >
+            <InputLabel id="admin-content-status">Status</InputLabel>
             <Select
+              labelId="admin-content-status"
               value={status}
               label="Status"
+              displayEmpty
+              renderValue={(v) =>
+                v === ''
+                  ? ''
+                  : (STATUS_OPTIONS.find((o) => o.value === v)?.label ?? v)
+              }
               onChange={(e) => {
                 setStatus(e.target.value);
                 setOffset(0);
               }}
             >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
               {STATUS_OPTIONS.map((o) => (
                 <MenuItem key={o.value} value={o.value}>
                   {o.label}
@@ -233,16 +253,21 @@ export const AdminContentModerationPage = () => {
             onKeyDown={(e) =>
               e.key === 'Enter' && (setAppliedQ(q), setOffset(0))
             }
-            sx={{ minWidth: 200, flex: 1 }}
+            sx={{
+              minWidth: { xs: '100%', sm: 200 },
+              flex: 1,
+              '& .MuiInputBase-root': { minHeight: FILTER_CONTROL_MIN_HEIGHT },
+            }}
           />
           <Button
+            size="small"
             variant="contained"
             onClick={() => {
               setAppliedQ(q);
               setOffset(0);
             }}
             disabled={loading}
-            sx={{ minWidth: 100 }}
+            sx={{ minHeight: FILTER_CONTROL_MIN_HEIGHT, minWidth: 100 }}
           >
             {loading ? <CircularProgress size={22} /> : 'Search'}
           </Button>

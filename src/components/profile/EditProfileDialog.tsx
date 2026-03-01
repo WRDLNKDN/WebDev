@@ -531,10 +531,13 @@ export const EditProfileDialog = ({
               </FormControl>
             </Box>
 
-            {/* Primary Industry (required) — spacing to avoid overlapping label/placeholder/helper */}
+            {/* Primary Industry (required) — section heading only; no InputLabel to avoid overlap with placeholder */}
             <Box sx={{ mt: 2 }}>
               <Typography
                 variant="overline"
+                component="label"
+                htmlFor="edit-profile-primary-industry-select"
+                id="edit-profile-primary-industry-label"
                 sx={{
                   letterSpacing: 2,
                   fontWeight: 'bold',
@@ -551,11 +554,9 @@ export const EditProfileDialog = ({
                 variant="filled"
                 sx={{ ...INPUT_STYLES, mt: 0 }}
               >
-                <InputLabel id="edit-profile-primary-industry">
-                  Primary Industry
-                </InputLabel>
                 <Select
-                  labelId="edit-profile-primary-industry"
+                  id="edit-profile-primary-industry-select"
+                  aria-labelledby="edit-profile-primary-industry-label"
                   value={formData.industry}
                   onChange={(e) => {
                     const nextPrimary = e.target.value;
@@ -570,7 +571,6 @@ export const EditProfileDialog = ({
                           : '',
                     }));
                   }}
-                  label="Primary Industry"
                   displayEmpty
                   renderValue={(v) => v || 'Select primary industry'}
                 >
@@ -620,7 +620,7 @@ export const EditProfileDialog = ({
                     sx={INPUT_STYLES}
                   >
                     <InputLabel id="edit-profile-secondary-industry">
-                      Secondary Industry
+                      Sub-industry
                     </InputLabel>
                     <Select
                       labelId="edit-profile-secondary-industry"
@@ -631,7 +631,7 @@ export const EditProfileDialog = ({
                           secondary_industry: e.target.value,
                         }))
                       }
-                      label="Secondary Industry"
+                      label="Sub-industry"
                       displayEmpty
                       renderValue={(v) => v || 'None'}
                     >
@@ -645,7 +645,7 @@ export const EditProfileDialog = ({
                       )}
                     </Select>
                     <FormHelperText>
-                      Used for Directory filtering.
+                      Same field as &quot;Sub-industry&quot; on the Directory.
                     </FormHelperText>
                   </FormControl>
                   <Button
@@ -659,7 +659,7 @@ export const EditProfileDialog = ({
                     }}
                     sx={{ mt: 0.5, color: 'text.secondary' }}
                   >
-                    Remove secondary
+                    Remove sub-industry
                   </Button>
                 </Box>
                 <Box>

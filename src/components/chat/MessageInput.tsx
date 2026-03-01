@@ -7,12 +7,17 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SendIcon from '@mui/icons-material/Send';
 import {
   Box,
+  Button,
+  Divider,
   IconButton,
-  Menu,
-  MenuItem,
+  Popover,
   TextField,
   Typography,
 } from '@mui/material';
+import EmojiPicker, {
+  Theme as EmojiTheme,
+  type EmojiClickData,
+} from 'emoji-picker-react';
 import { useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
@@ -29,6 +34,12 @@ import { toMessage } from '../../lib/utils/errors';
 
 const EXIF_STRIP_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const INPUT_SEPARATOR_GREEN = '#1DB954';
+
+const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
+  { content: '😊', label: '😊', ariaLabel: 'Send smile' },
+  { content: '👍', label: '👍', ariaLabel: 'Send thumbs up' },
+  { content: 'Thank you', label: 'Thank you', ariaLabel: 'Send thank you' },
+];
 
 async function stripExifIfImage(file: File): Promise<Blob> {
   // Do not canvas-process GIFs; that strips animation.
@@ -78,7 +89,6 @@ export const MessageInput = ({
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const COMMON_EMOJIS = ['😀', '😂', '😍', '🔥', '🙌', '🙏', '👍', '🎉', '💯'];
 
   const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
@@ -174,6 +184,10 @@ export const MessageInput = ({
     setText('');
   };
 
+  const handleEmojiClick = (data: EmojiClickData) => {
+    setText((prev) => `${prev}${data.emoji}`);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
@@ -252,7 +266,16 @@ export const MessageInput = ({
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              void handleSubmit(e as unknown as React.FormEvent);
+              const form = e.currentTarget.closest('form');
+              if (form) {
+                // Double-defer so submit runs in a separate macrotask from keydown (avoids violation)
+                setTimeout(() => form.requestSubmit(), 0);
+              } else {
+                setTimeout(
+                  () => void handleSubmit(e as unknown as React.FormEvent),
+                  0,
+                );
+              }
             }
           }}
           onBlur={() => onStopTyping?.()}
@@ -299,6 +322,7 @@ export const MessageInput = ({
             style={{ display: 'none' }}
           />
           <IconButton
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
             aria-label="Attach image"
@@ -307,6 +331,7 @@ export const MessageInput = ({
             <ImageIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
             aria-label="Attach file"
@@ -315,6 +340,7 @@ export const MessageInput = ({
             <AttachFileIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={() => setGifPickerOpen(true)}
             disabled={disabled || uploading || pendingFiles.length >= 5}
             aria-label="Add GIF"
@@ -323,6 +349,7 @@ export const MessageInput = ({
             <GifBoxIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={(e) => setEmojiAnchor(e.currentTarget)}
             disabled={disabled || uploading}
             aria-label="Add emoji"
@@ -366,26 +393,84 @@ export const MessageInput = ({
         onClose={() => setGifPickerOpen(false)}
         onPick={(url, title) => void handlePickGif(url, title)}
       />
-      <Menu
+      <Popover
         anchorEl={emojiAnchor}
         open={Boolean(emojiAnchor)}
         onClose={() => setEmojiAnchor(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
         transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              zIndex: 1500,
+              overflow: 'visible',
+              borderRadius: 2,
+              bgcolor: 'rgba(40,44,52,0.98)',
+            },
+          },
+        }}
+        sx={{ zIndex: 1500 }}
       >
-        {COMMON_EMOJIS.map((emoji) => (
-          <MenuItem
-            key={emoji}
-            onClick={() => {
-              setText((prev) => `${prev}${emoji}`);
-              setEmojiAnchor(null);
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box
+            sx={{
+              '& .EmojiPickerReact': {
+                '--epr-bg-color': 'rgba(40,44,52,0.98)',
+              },
             }}
-            sx={{ fontSize: 22, lineHeight: 1 }}
           >
-            {emoji}
-          </MenuItem>
-        ))}
-      </Menu>
+            <EmojiPicker
+              theme={EmojiTheme.DARK}
+              width={340}
+              height={380}
+              searchPlaceholder="Search emoji"
+              onEmojiClick={handleEmojiClick}
+              previewConfig={{ showPreview: false }}
+              lazyLoadEmojis
+            />
+          </Box>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+          <Box
+            sx={{
+              px: 1.5,
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ width: '100%', fontSize: '0.7rem' }}
+            >
+              Send as message
+            </Typography>
+            {QUICK_SEND.map(({ content, label, ariaLabel }) => (
+              <Button
+                key={content}
+                type="button"
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  if (!disabled) onSend(content);
+                  setEmojiAnchor(null);
+                }}
+                aria-label={ariaLabel}
+                sx={{
+                  minWidth: 0,
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'text.primary',
+                  textTransform: 'none',
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 };

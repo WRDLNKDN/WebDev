@@ -17,7 +17,7 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
@@ -74,6 +74,102 @@ export const ChatRoomHeader = ({
       ? (otherMember?.profile?.avatar ?? undefined)
       : undefined;
   const avatarAlt = displayName || 'Chat';
+
+  const menuItems = useMemo(() => {
+    if (room?.room_type === 'dm') {
+      return [
+        <MenuItem
+          key="leave-dm"
+          onClick={() => {
+            void onLeave();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Leave conversation</ListItemText>
+        </MenuItem>,
+        <MenuItem
+          key="block"
+          onClick={() => {
+            onBlock();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <BlockIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Block</ListItemText>
+        </MenuItem>,
+      ];
+    }
+    if (room?.room_type === 'group') {
+      return [
+        ...(isRoomAdmin
+          ? [
+              <MenuItem
+                key="invite"
+                onClick={() => {
+                  onInvite();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <PersonAddIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Invite members</ListItemText>
+              </MenuItem>,
+              <MenuItem
+                key="rename"
+                onClick={() => {
+                  onRename();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <EditIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Rename group</ListItemText>
+              </MenuItem>,
+              <MenuItem
+                key="manage"
+                onClick={() => {
+                  onManageMembers();
+                  setMenuAnchor(null);
+                }}
+              >
+                <ListItemIcon>
+                  <GroupAddIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Manage members</ListItemText>
+              </MenuItem>,
+            ]
+          : []),
+        <MenuItem
+          key="leave-group"
+          onClick={() => {
+            void onLeave();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Leave group</ListItemText>
+        </MenuItem>,
+      ];
+    }
+    return [];
+  }, [
+    room?.room_type,
+    isRoomAdmin,
+    onLeave,
+    onBlock,
+    onInvite,
+    onRename,
+    onManageMembers,
+  ]);
 
   return (
     <Box
@@ -161,86 +257,7 @@ export const ChatRoomHeader = ({
           paper: { sx: { zIndex: 1500 } },
         }}
       >
-        {room?.room_type === 'dm' && (
-          <>
-            <MenuItem
-              onClick={() => {
-                void onLeave();
-                setMenuAnchor(null);
-              }}
-            >
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Leave conversation</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                onBlock();
-                setMenuAnchor(null);
-              }}
-            >
-              <ListItemIcon>
-                <BlockIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Block</ListItemText>
-            </MenuItem>
-          </>
-        )}
-        {room?.room_type === 'group' && (
-          <>
-            {isRoomAdmin && (
-              <MenuItem
-                onClick={() => {
-                  onInvite();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <PersonAddIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Invite members</ListItemText>
-              </MenuItem>
-            )}
-            {isRoomAdmin && (
-              <MenuItem
-                onClick={() => {
-                  onRename();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <EditIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Rename group</ListItemText>
-              </MenuItem>
-            )}
-            {isRoomAdmin && (
-              <MenuItem
-                onClick={() => {
-                  onManageMembers();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <GroupAddIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Manage members</ListItemText>
-              </MenuItem>
-            )}
-            <MenuItem
-              onClick={() => {
-                void onLeave();
-                setMenuAnchor(null);
-              }}
-            >
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Leave group</ListItemText>
-            </MenuItem>
-          </>
-        )}
+        {...menuItems}
       </Menu>
     </Box>
   );

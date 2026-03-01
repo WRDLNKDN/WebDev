@@ -109,8 +109,12 @@ const LayoutContent = () => {
             <Outlet />
           </ErrorBoundary>
         </Box>
-        {!isHome && !isJoin && <Footer showChatLink={Boolean(session?.user)} />}
       </Box>
+      {!isHome && !isJoin && (
+        <Box component="footer" sx={{ flexShrink: 0 }}>
+          <Footer showChatLink={Boolean(session?.user)} />
+        </Box>
+      )}
       <MessengerOverlay />
       {session?.user && messenger?.popoverRoomId && (
         <ChatPopover

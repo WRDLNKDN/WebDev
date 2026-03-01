@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
 import { toMessage } from '../../lib/utils/errors';
+import { filterSelectInputSx } from '../../theme/filterControls';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
@@ -249,7 +250,11 @@ export const EditLinksDialog = ({
                 ADD NEW LINK
               </Typography>
               <Stack spacing={2}>
-                <Stack direction="row" spacing={2}>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{ '& .MuiFormControl-root': filterSelectInputSx }}
+                >
                   <FormControl fullWidth size="small" error={categoryError}>
                     <InputLabel id="add-link-category">Category</InputLabel>
                     <Select

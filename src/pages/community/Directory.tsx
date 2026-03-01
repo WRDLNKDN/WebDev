@@ -42,6 +42,12 @@ import {
 } from '../../constants/industryTaxonomy';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  FILTER_CONTROL_MIN_HEIGHT,
+  FILTER_CONTROL_WIDTH,
+  filterSelectMenuProps,
+  filterSelectSx,
+} from '../../theme/filterControls';
 
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 const PAGE_SIZE = 25;
@@ -63,7 +69,7 @@ export const Directory = () => {
   const location = searchParams.get('location') ?? '';
   const skillsParam = searchParams.get('skills') ?? '';
   const connectionStatus = searchParams.get('connection_status') ?? '';
-  const sort = (searchParams.get('sort') as DirectorySort) || 'recently_active';
+  const sort = searchParams.get('sort') ?? '';
   const [showSecondaryIndustryFilter, setShowSecondaryIndustryFilter] =
     useState(false);
   useEffect(() => {
@@ -96,7 +102,7 @@ export const Directory = () => {
         location,
         skills,
         connectionStatus,
-        sort,
+        sort: sort || 'recently_active',
       }),
     [
       q,
@@ -146,7 +152,7 @@ export const Directory = () => {
           location: location || undefined,
           skills: skills.length ? skills : undefined,
           connection_status: (connectionStatus as ConnectionState) || undefined,
-          sort,
+          sort: (sort || 'recently_active') as DirectorySort,
           offset,
           limit: PAGE_SIZE,
         });
@@ -401,15 +407,30 @@ export const Directory = () => {
                   </Typography>
                 )}
               </Box>
-              <FormControl size="small" sx={{ minWidth: { md: 140 } }}>
-                <InputLabel>Sort</InputLabel>
+              <FormControl size="small" sx={filterSelectSx}>
+                <InputLabel id="dir-sort" shrink>
+                  Sort by
+                </InputLabel>
                 <Select
+                  labelId="dir-sort"
                   value={sort}
-                  label="Sort"
-                  onChange={(e) =>
-                    updateUrl({ sort: e.target.value as DirectorySort })
+                  label="Sort by"
+                  displayEmpty
+                  MenuProps={filterSelectMenuProps}
+                  renderValue={(v) =>
+                    v === 'recently_active'
+                      ? 'Recently Active'
+                      : v === 'alphabetical'
+                        ? 'Alphabetical'
+                        : v === 'newest'
+                          ? 'Newest Members'
+                          : ''
                   }
+                  onChange={(e) => updateUrl({ sort: e.target.value })}
                 >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
                   <MenuItem value="recently_active">Recently Active</MenuItem>
                   <MenuItem value="alphabetical">Alphabetical</MenuItem>
                   <MenuItem value="newest">Newest Members</MenuItem>
@@ -417,29 +438,36 @@ export const Directory = () => {
               </FormControl>
             </Stack>
 
-            {/* Filters: row on md+, stacked on mobile with full-width controls */}
+            {/* Filters: row on md+, stacked on mobile; consistent control sizes */}
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={{ xs: 1.5, md: 1 }}
               flexWrap="wrap"
               alignItems={{ xs: 'stretch', md: 'center' }}
               useFlexGap
+              sx={{ overflow: 'visible' }}
             >
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ alignSelf: { md: 'center' }, pt: { xs: 0.5, md: 0 } }}
+                sx={{
+                  alignSelf: { md: 'center' },
+                  pt: { xs: 0.5, md: 0 },
+                  flexShrink: 0,
+                }}
               >
                 Filters:
               </Typography>
-              <FormControl size="small" sx={{ width: { xs: '100%', md: 160 } }}>
-                <InputLabel id="dir-primary-industry">
+              <FormControl size="small" sx={filterSelectSx}>
+                <InputLabel id="dir-primary-industry" shrink>
                   Primary Industry
                 </InputLabel>
                 <Select
                   labelId="dir-primary-industry"
                   value={primaryIndustry}
                   label="Primary Industry"
+                  displayEmpty
+                  MenuProps={filterSelectMenuProps}
                   onChange={(e) => {
                     const nextPrimary = e.target.value;
                     const allowed = getSecondaryOptionsForPrimary(nextPrimary);
@@ -450,10 +478,11 @@ export const Directory = () => {
                         : '',
                     });
                   }}
-                  displayEmpty
-                  renderValue={(v) => v || 'All'}
+                  renderValue={(v) => v || ''}
                 >
-                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
                   {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
                     <MenuItem key={opt} value={opt}>
                       {opt}
@@ -464,68 +493,104 @@ export const Directory = () => {
               {!showSecondaryIndustryFilter ? (
                 <Button
                   size="small"
+                  variant="outlined"
                   onClick={() => setShowSecondaryIndustryFilter(true)}
                   sx={{
                     textTransform: 'none',
-                    alignSelf: { xs: 'flex-start', md: 'center' },
+                    minHeight: FILTER_CONTROL_MIN_HEIGHT,
+                    minWidth: { xs: '100%', md: FILTER_CONTROL_WIDTH },
+                    borderColor: 'rgba(255,255,255,0.23)',
+                    color: 'text.primary',
                   }}
                 >
-                  Add secondary filter
+                  Add sub-industry filter
                 </Button>
               ) : (
-                <FormControl
-                  size="small"
-                  sx={{ width: { xs: '100%', md: 160 } }}
-                >
-                  <InputLabel id="dir-secondary-industry">
-                    Secondary Industry
-                  </InputLabel>
-                  <Select
-                    labelId="dir-secondary-industry"
-                    value={secondaryIndustry}
-                    label="Secondary Industry"
-                    onChange={(e) =>
-                      updateUrl({ secondary_industry: e.target.value })
-                    }
-                    displayEmpty
-                    renderValue={(v) => v || 'All'}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {getSecondaryOptionsForPrimary(primaryIndustry).map(
-                      (opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
+                <>
+                  <FormControl size="small" sx={filterSelectSx}>
+                    <InputLabel id="dir-secondary-industry" shrink>
+                      Sub-industry
+                    </InputLabel>
+                    <Select
+                      labelId="dir-secondary-industry"
+                      value={secondaryIndustry}
+                      label="Sub-industry"
+                      displayEmpty
+                      MenuProps={filterSelectMenuProps}
+                      onChange={(e) =>
+                        updateUrl({ secondary_industry: e.target.value })
+                      }
+                      renderValue={(v) => v || ''}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {getSecondaryOptionsForPrimary(primaryIndustry).map(
+                        (opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ),
+                      )}
+                    </Select>
+                  </FormControl>
                   <Button
                     size="small"
+                    variant="outlined"
                     onClick={() => {
                       updateUrl({ secondary_industry: '' });
                       setShowSecondaryIndustryFilter(false);
                     }}
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: FILTER_CONTROL_MIN_HEIGHT,
+                      minWidth: { xs: '100%', md: FILTER_CONTROL_WIDTH },
+                      borderColor: 'rgba(255,255,255,0.23)',
+                      color: 'text.primary',
+                    }}
                   >
-                    Remove secondary
+                    Remove sub-industry
                   </Button>
-                </FormControl>
+                </>
               )}
-              <TextField
-                size="small"
-                placeholder="Location"
-                value={location}
-                onChange={(e) => updateUrl({ location: e.target.value })}
-                sx={{ width: { xs: '100%', md: 140 } }}
-              />
-              <FormControl size="small" sx={{ width: { xs: '100%', md: 160 } }}>
-                <InputLabel>Connection</InputLabel>
+              <Box
+                sx={{
+                  width: { xs: '100%', md: FILTER_CONTROL_WIDTH },
+                  minWidth: { xs: 0, md: FILTER_CONTROL_WIDTH },
+                  flexShrink: 0,
+                }}
+              >
+                <TextField
+                  size="small"
+                  placeholder="Location"
+                  value={location}
+                  onChange={(e) => updateUrl({ location: e.target.value })}
+                  fullWidth
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      minHeight: FILTER_CONTROL_MIN_HEIGHT,
+                      height: FILTER_CONTROL_MIN_HEIGHT,
+                      boxSizing: 'border-box',
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255,255,255,0.23)',
+                    },
+                  }}
+                />
+              </Box>
+              <FormControl size="small" sx={filterSelectSx}>
+                <InputLabel id="dir-connection" shrink>
+                  Connection
+                </InputLabel>
                 <Select
+                  labelId="dir-connection"
                   value={connectionStatus}
                   label="Connection"
+                  displayEmpty
+                  MenuProps={filterSelectMenuProps}
                   renderValue={(v) =>
                     v === ''
-                      ? 'All'
+                      ? ''
                       : v === 'not_connected'
                         ? 'Not connected'
                         : v === 'pending'
@@ -540,7 +605,9 @@ export const Directory = () => {
                     updateUrl({ connection_status: e.target.value })
                   }
                 >
-                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
                   <MenuItem value="not_connected">Not connected</MenuItem>
                   <MenuItem value="pending">Pending</MenuItem>
                   <MenuItem value="pending_received">Pending received</MenuItem>
@@ -554,6 +621,7 @@ export const Directory = () => {
                 skills.length > 0) && (
                 <Button
                   size="small"
+                  variant="outlined"
                   onClick={() => {
                     updateUrl({
                       primary_industry: '',
@@ -564,7 +632,13 @@ export const Directory = () => {
                     });
                     setShowSecondaryIndustryFilter(false);
                   }}
-                  sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+                  sx={{
+                    textTransform: 'none',
+                    minHeight: FILTER_CONTROL_MIN_HEIGHT,
+                    minWidth: { xs: '100%', md: FILTER_CONTROL_WIDTH },
+                    borderColor: 'rgba(255,255,255,0.23)',
+                    color: 'text.primary',
+                  }}
                 >
                   Clear filters
                 </Button>

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 
 export function useChatPresence(
@@ -49,8 +55,10 @@ export function useChatPresence(
             }
           });
 
-        setOnlineUsers(online);
-        setTypingUsers(typing);
+        startTransition(() => {
+          setOnlineUsers(online);
+          setTypingUsers(typing);
+        });
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {

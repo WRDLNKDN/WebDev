@@ -71,6 +71,7 @@ export const MessageList = ({
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
+  const fetchedPreviewIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const nextFirst = messages[0]?.id ?? null;
@@ -107,9 +108,11 @@ export const MessageList = ({
       )
       .map((m) => ({ id: m.id, url: getFirstUrlFromText(m.content ?? '') }))
       .filter((x): x is { id: string; url: string } => Boolean(x.url))
-      .filter((x) => !(x.id in linkPreviews));
+      .filter((x) => !fetchedPreviewIds.current.has(x.id));
 
     if (nextTargets.length === 0) return;
+    // Mark as in-flight before the first await so concurrent renders don't re-queue them
+    nextTargets.forEach((t) => fetchedPreviewIds.current.add(t.id));
     let cancelled = false;
     void (async () => {
       for (const target of nextTargets) {
@@ -121,7 +124,9 @@ export const MessageList = ({
     return () => {
       cancelled = true;
     };
-  }, [messages, linkPreviews]);
+    // linkPreviews intentionally omitted from deps — fetchedPreviewIds ref deduplicates
+    // without causing this effect to re-run every time a preview resolves.
+  }, [messages]);
 
   const handleEditSubmit = () => {
     if (editingId && editText.trim() && onEdit) {

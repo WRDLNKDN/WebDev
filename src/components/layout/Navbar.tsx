@@ -431,6 +431,7 @@ export const Navbar = () => {
             px: { xs: 2, sm: 2 },
             minHeight: 56,
             gap: 1,
+            overflow: 'visible',
           }}
         >
           {/* Mobile: hamburger menu */}
@@ -445,7 +446,7 @@ export const Navbar = () => {
             </IconButton>
           )}
 
-          {/* Left: logo (home) + search — full logo visible, generous gap */}
+          {/* Left: logo (home) + search — shrink on mobile so Join/Sign in stay visible */}
           <Stack
             direction="row"
             alignItems="center"
@@ -455,6 +456,8 @@ export const Navbar = () => {
               minHeight: 48,
               gap: 3,
               overflow: 'visible',
+              flexShrink: isMobile ? 1 : 0,
+              minWidth: 0,
             }}
           >
             {/* Brand: logo links to home — full logo visible, no clipping */}
@@ -882,9 +885,14 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile: Join/Sign in always visible in navbar (or minimal auth) */}
+          {/* Mobile: Join/Sign in — use RouterLink for reliable touch on mobile */}
           {isMobile && (
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ flexShrink: 0, position: 'relative', zIndex: 1 }}
+            >
               {path === '/auth/callback' ? null : !sessionLoaded ||
                 (session && !onboardingLoaded) ? (
                 <CircularProgress
@@ -895,57 +903,39 @@ export const Navbar = () => {
               ) : !showAuthedHeader ? (
                 <>
                   {!isJoinActive && (
-                    <Box
-                      component="button"
-                      type="button"
-                      onClick={() => void openJoin()}
+                    <Button
+                      component={RouterLink}
+                      to="/join"
+                      onClick={() => setDrawerOpen(false)}
                       aria-label="Join"
                       sx={{
-                        background: 'none',
-                        border: 0,
-                        py: 1,
-                        px: 1.5,
                         minHeight: 44,
                         minWidth: 44,
-                        font: 'inherit',
-                        cursor: 'pointer',
                         color: 'text.secondary',
-                        textDecoration: 'none',
+                        textTransform: 'none',
                         fontSize: '0.875rem',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         '&:hover': { color: 'white' },
                       }}
                     >
                       Join
-                    </Box>
+                    </Button>
                   )}
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => void openSignIn()}
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
                     aria-label="Sign in"
                     sx={{
-                      background: 'none',
-                      border: 'none',
-                      py: 1,
-                      px: 1.5,
                       minHeight: 44,
                       minWidth: 44,
-                      cursor: 'pointer',
                       color: 'text.secondary',
-                      font: 'inherit',
+                      textTransform: 'none',
                       fontSize: '0.875rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1,
                       '&:hover': { color: 'white' },
                     }}
                   >
                     Sign in
-                  </Box>
+                  </Button>
                 </>
               ) : (
                 <>

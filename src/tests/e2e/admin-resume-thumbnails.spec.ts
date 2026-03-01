@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { seedSignedInSession } from './utils/auth';
 import { stubAppSurface } from './utils/stubAppSurface';
 

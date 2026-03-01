@@ -2,12 +2,42 @@ import type { Page } from '@playwright/test';
 import { USER_ID } from './auth';
 
 export async function stubAppSurface(page: Page) {
-  // ---- Catch ALL API calls first ----
+  // ---- Profiles stub FIRST so it wins over rest/v1 catch-all (dashboard pills need industry/skills) ----
+  await page.route('**/rest/v1/profiles*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: USER_ID,
+          handle: 'member',
+          display_name: 'Member',
+          status: 'approved',
+          join_reason: ['networking'],
+          participation_style: ['builder'],
+          policy_version: '1.0',
+          industry: 'Technology',
+          nerd_creds: { skills: ['Testing'] },
+        },
+      ]),
+    });
+  });
+
+  // ---- Notifications ----
+  await page.route('**/rest/v1/notifications*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-0/0' },
+      body: '[]',
+    });
+  });
+
+  // ---- Catch ALL API calls ----
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
     const method = route.request().method();
 
-    // Allow admin callback logs to be overridden per test
     if (url.includes('auth-callback-logs')) {
       return route.fallback();
     }
@@ -24,7 +54,7 @@ export async function stubAppSurface(page: Page) {
     });
   });
 
-  // ---- Supabase REST catch-all ----
+  // ---- Supabase REST catch-all (after specific routes so profiles/notifications win) ----
   await page.route('**/rest/v1/**', async (route) => {
     const method = route.request().method();
 
@@ -37,35 +67,6 @@ export async function stubAppSurface(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify([]),
-    });
-  });
-
-  // ---- Profiles stub (needed for layout boot) ----
-  await page.route('**/rest/v1/profiles*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'Member',
-          status: 'approved',
-          join_reason: ['networking'],
-          participation_style: ['builder'],
-          policy_version: '1.0',
-        },
-      ]),
-    });
-  });
-
-  // ---- Notifications ----
-  await page.route('**/rest/v1/notifications*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: { 'content-range': '0-0/0' },
-      body: '[]',
     });
   });
 }

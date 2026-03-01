@@ -591,7 +591,11 @@ export const Navbar = () => {
                           py: 2,
                         }}
                       >
-                        <CircularProgress size={24} sx={{ color: 'white' }} />
+                        <CircularProgress
+                          size={24}
+                          sx={{ color: 'white' }}
+                          aria-label="Loading search"
+                        />
                       </Box>
                     ) : searchMatches.length === 0 ? (
                       <Box sx={{ px: 2, py: 2 }}>
@@ -771,7 +775,11 @@ export const Navbar = () => {
             <Stack direction="row" spacing={2} alignItems="center">
               {path === '/auth/callback' ? null : !sessionLoaded ||
                 (session && !onboardingLoaded) ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
-                <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
+                <CircularProgress
+                  size={16}
+                  sx={{ color: 'text.secondary' }}
+                  aria-label="Loading"
+                />
               ) : !showAuthedHeader ? (
                 <>
                   {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
@@ -871,7 +879,11 @@ export const Navbar = () => {
             <Stack direction="row" spacing={1} alignItems="center">
               {path === '/auth/callback' ? null : !sessionLoaded ||
                 (session && !onboardingLoaded) ? (
-                <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
+                <CircularProgress
+                  size={16}
+                  sx={{ color: 'text.secondary' }}
+                  aria-label="Loading"
+                />
               ) : !showAuthedHeader ? (
                 <>
                   {!isJoinActive && (
@@ -1018,23 +1030,6 @@ export const Navbar = () => {
                 </Button>
                 <Button
                   component={RouterLink}
-                  to="/dashboard"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDashboardActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  component={RouterLink}
                   to="/directory"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
@@ -1049,6 +1044,40 @@ export const Navbar = () => {
                   }}
                 >
                   Directory
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/events"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isEventsActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Events
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isDashboardActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Dashboard
                 </Button>
               </>
             )}
@@ -1339,7 +1368,7 @@ export const Navbar = () => {
           gap: 1.25,
         }}
       >
-        <CircularProgress color="inherit" size={28} />
+        <CircularProgress color="inherit" size={28} aria-label="Opening Join" />
         <Box sx={{ fontSize: 14, opacity: 0.9 }}>Opening Join…</Box>
       </Backdrop>
     </>

@@ -814,7 +814,22 @@ comment on function public.get_saved_feed_page(uuid, timestamptz, uuid, int) is
 
 -- -----------------------------
 -- get_directory_page (Directory: paginated, searchable, filterable, connection-aware)
+-- Ensure profiles columns exist so the function body can reference them (idempotent).
 -- -----------------------------
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'secondary_industry') then
+    alter table public.profiles add column secondary_industry text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'niche_field') then
+    alter table public.profiles add column niche_field text;
+  end if;
+end $$;
+
+-- Drop all overloads so only one signature exists (avoids "function name is not unique").
+drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int);
+drop function if exists public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int);
+
 create or replace function public.get_directory_page(
   p_viewer_id uuid,
   p_search text default null,

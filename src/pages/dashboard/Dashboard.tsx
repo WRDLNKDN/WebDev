@@ -213,6 +213,7 @@ export const Dashboard = () => {
                     {selectedSkills.map((skill) => (
                       <Box
                         key={`skill-${skill}`}
+                        data-testid="dashboard-pill"
                         sx={{
                           display: 'inline-flex',
                           width: 'fit-content',
@@ -249,6 +250,7 @@ export const Dashboard = () => {
                     {selectedIndustries.map((industry) => (
                       <Box
                         key={`industry-${industry}`}
+                        data-testid="dashboard-pill"
                         sx={{
                           display: 'inline-flex',
                           width: 'fit-content',
@@ -267,6 +269,7 @@ export const Dashboard = () => {
                     ))}
                     {nicheField && (
                       <Box
+                        data-testid="dashboard-pill"
                         sx={{
                           display: 'inline-flex',
                           width: 'fit-content',

@@ -308,10 +308,13 @@ revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int, text) 
 grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int, text) to authenticated, service_role;
 
 -- -----------------------------
--- get_directory_page(): execute grant
+-- get_directory_page(): execute grant (single 10-arg overload; old 9-arg dropped in tables.sql)
 -- -----------------------------
-revoke all on function public.get_directory_page(uuid, text, text, text, text[], text, text, int, int) from public;
-revoke all on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) from public;
+do $$
+begin
+  revoke all on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) from public;
+exception when undefined_function then null;
+end $$;
 grant execute on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) to authenticated, service_role;
 
 -- -----------------------------

@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
-import { useEffect } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   MessengerProvider,
@@ -23,8 +24,25 @@ const PAGE_BG = {
 const LayoutContent = () => {
   const { pathname } = useLocation();
   const messenger = useMessenger();
+  const [session, setSession] = useState<Session | null>(null);
   const isHome = pathname === '/';
   const isJoin = pathname.startsWith('/join');
+
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setSession(data.session ?? null);
+    };
+    void init();
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
+      if (!cancelled) setSession(s ?? null);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   // Prevent double scrollbars: this layout owns the only scroll container (same pattern as Join)
   useEffect(() => {
@@ -67,6 +85,7 @@ const LayoutContent = () => {
       <Box
         component="main"
         data-testid="app-main"
+        tabIndex={0}
         sx={{
           flex: 1,
           minHeight: 0,
@@ -80,9 +99,9 @@ const LayoutContent = () => {
           <Outlet />
         </ErrorBoundary>
       </Box>
-      {!isHome && !isJoin && <Footer />}
+      {!isHome && !isJoin && <Footer showChatLink={Boolean(session?.user)} />}
       <MessengerOverlay />
-      {messenger?.popoverRoomId && (
+      {session?.user && messenger?.popoverRoomId && (
         <ChatPopover
           roomId={messenger.popoverRoomId}
           onClose={messenger.closePopover}

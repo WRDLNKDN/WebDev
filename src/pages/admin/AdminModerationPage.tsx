@@ -198,7 +198,7 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
             label="Status"
             value={status}
             displayEmpty
-            renderValue={(v) =>
+            renderValue={(v: ProfileStatus | 'all' | '') =>
               v === ''
                 ? ''
                 : v === 'all'
@@ -240,7 +240,7 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
             label="Sort"
             value={sort}
             displayEmpty
-            renderValue={(v) =>
+            renderValue={(v: 'created_at' | 'updated_at' | '') =>
               v === '' ? '' : v === 'created_at' ? 'Created' : 'Updated'
             }
             onChange={(e) =>
@@ -262,7 +262,7 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
             label="Order"
             value={order}
             displayEmpty
-            renderValue={(v) =>
+            renderValue={(v: 'asc' | 'desc' | '') =>
               v === '' ? '' : v === 'asc' ? 'Oldest' : 'Newest'
             }
             onChange={(e) => setOrder(e.target.value as 'asc' | 'desc' | '')}

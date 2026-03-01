@@ -416,7 +416,6 @@ export const Directory = () => {
                   value={sort}
                   label="Sort by"
                   displayEmpty
-                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   renderValue={(v) =>
                     v === 'recently_active'
@@ -468,7 +467,6 @@ export const Directory = () => {
                   value={primaryIndustry}
                   label="Primary Industry"
                   displayEmpty
-                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   onChange={(e) => {
                     const nextPrimary = e.target.value;
@@ -518,7 +516,6 @@ export const Directory = () => {
                       value={secondaryIndustry}
                       label="Sub-industry"
                       displayEmpty
-                      slotProps={{ inputLabel: { shrink: true } }}
                       MenuProps={filterSelectMenuProps}
                       onChange={(e) =>
                         updateUrl({ secondary_industry: e.target.value })
@@ -590,7 +587,6 @@ export const Directory = () => {
                   value={connectionStatus}
                   label="Connection"
                   displayEmpty
-                  slotProps={{ inputLabel: { shrink: true } }}
                   MenuProps={filterSelectMenuProps}
                   renderValue={(v) =>
                     v === ''

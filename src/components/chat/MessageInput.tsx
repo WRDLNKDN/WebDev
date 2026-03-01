@@ -14,7 +14,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, {
+  Theme as EmojiTheme,
+  type EmojiClickData,
+} from 'emoji-picker-react';
 import { useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
@@ -417,7 +420,7 @@ export const MessageInput = ({
             }}
           >
             <EmojiPicker
-              theme="dark"
+              theme={EmojiTheme.DARK}
               width={340}
               height={380}
               searchPlaceholder="Search emoji"

@@ -6,7 +6,10 @@ test.describe('Admin auth callback health page', () => {
     page,
     context,
   }) => {
-    await seedSignedInSession(context, { isAdmin: true });
+    const { stubAdminRpc } = await seedSignedInSession(context, {
+      isAdmin: true,
+    });
+    await stubAdminRpc(page);
 
     await page.route('**/api/admin/auth-callback-logs*', async (route) => {
       await route.fulfill({
@@ -22,8 +25,8 @@ test.describe('Admin auth callback health page', () => {
 
     await page.goto('/admin/auth-callback-health');
 
-    await expect(page.getByText(/auth callback/i)).toBeVisible({
-      timeout: 15000,
-    });
+    await expect(
+      page.getByTestId('admin-auth-callback-health-panel'),
+    ).toBeVisible({ timeout: 15000 });
   });
 });

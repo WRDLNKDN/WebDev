@@ -1,13 +1,17 @@
 import { expect, test } from '@playwright/test';
+import { seedSignedInSession } from './utils/auth';
 import { stubAppSurface } from './utils/stubAppSurface';
 
 test.describe('Dashboard links and profile layout regressions', () => {
   test('profile header is left-justified and pills do not stretch full width', async ({
     page,
+    context,
   }) => {
+    await seedSignedInSession(context);
     await stubAppSurface(page);
 
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { timeout: 20000 });
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
     await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
 
     // ---- HEADER LEFT ALIGN CHECK ----
@@ -36,7 +40,7 @@ test.describe('Dashboard links and profile layout regressions', () => {
 
     // Dashboard badge pills (skills/industries) have data-testid="dashboard-pill"
     const pills = page.getByTestId('dashboard-pill');
-
+    await expect(pills.first()).toBeVisible({ timeout: 10000 });
     const pillCount = await pills.count();
     expect(pillCount).toBeGreaterThan(0);
 

@@ -9,6 +9,25 @@ test.describe('Signed-in auth resilience + GIF flow', () => {
   }) => {
     await seedSignedInSession(context);
 
+    // ---- Profile (RequireOnboarded) ----
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: USER_ID,
+            handle: 'member',
+            display_name: 'Member',
+            status: 'approved',
+            join_reason: ['networking'],
+            participation_style: ['builder'],
+            policy_version: '1.0',
+          },
+        ]),
+      });
+    });
+
     // ---- Chat rooms ----
     await page.route('**/rest/v1/chat_rooms*', async (route) => {
       await route.fulfill({

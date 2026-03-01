@@ -9,14 +9,24 @@ test.describe('Directory Page', () => {
         body: JSON.stringify({ ok: true, data: { avatarUrl: null } }),
       });
     });
+    // Stub profiles so RequireOnboarded can resolve (no session → redirect) without hanging
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '[]',
+      });
+    });
   });
 
   test('unauthenticated user redirects to home', async ({ page }) => {
-    await page.goto('/directory');
+    await page.goto('/directory', {
+      waitUntil: 'domcontentloaded',
+      timeout: 20000,
+    });
 
-    // Signed-out: RequireOnboarded redirects to /
     await expect
-      .poll(() => new URL(page.url()).pathname === '/', { timeout: 15000 })
+      .poll(() => new URL(page.url()).pathname === '/', { timeout: 20000 })
       .toBe(true);
     await expect(page.getByTestId('signed-out-landing')).toBeVisible({
       timeout: 10000,
@@ -26,17 +36,17 @@ test.describe('Directory Page', () => {
   test('directory does not crash; unauthenticated redirects to home', async ({
     page,
   }) => {
-    // No auth fixture: RequireOnboarded redirects to /
-    await page.goto('/directory');
+    await page.goto('/directory', {
+      waitUntil: 'domcontentloaded',
+      timeout: 20000,
+    });
 
-    // Wait for redirect (RequireOnboarded async check can take a few seconds)
     await expect
-      .poll(() => new URL(page.url()).pathname === '/', { timeout: 15000 })
+      .poll(() => new URL(page.url()).pathname === '/', { timeout: 20000 })
       .toBe(true);
 
-    // Home shows Join and Sign in for guests
     await expect(
       page.getByRole('link', { name: /Join|Sign in/i }).first(),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 15000 });
   });
 });

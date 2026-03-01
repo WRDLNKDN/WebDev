@@ -85,6 +85,7 @@ const LayoutContent = () => {
       <Box
         component="main"
         data-testid="app-main"
+        tabIndex={0}
         sx={{
           flex: 1,
           minHeight: 0,

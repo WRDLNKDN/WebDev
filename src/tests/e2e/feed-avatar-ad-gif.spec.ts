@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
+import { seedSignedInSession } from './utils/auth';
 import { stubAppSurface } from './utils/stubAppSurface';
 
 test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
-  test('avatar change updates navbar avatar across site', async ({ page }) => {
+  test('avatar change updates navbar avatar across site', async ({
+    page,
+    context,
+  }) => {
+    await seedSignedInSession(context);
     await stubAppSurface(page);
 
     await page.goto('/dashboard');
@@ -17,7 +22,11 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
     await expect(page.locator('header img')).toHaveCount(1);
   });
 
-  test('GIF URL in post body renders inline once', async ({ page }) => {
+  test('GIF URL in post body renders inline once', async ({
+    page,
+    context,
+  }) => {
+    await seedSignedInSession(context);
     await stubAppSurface(page);
 
     const gifUrl = 'https://media.example.com/reaction.gif';
@@ -30,11 +39,19 @@ test.describe('Avatar, ad link refresh, and GIF URL rendering', () => {
           data: [
             {
               id: '1',
+              user_id: '11111111-1111-4111-8111-111111111111',
+              kind: 'post',
               payload: {
                 body: `Check ${gifUrl}`,
                 images: [gifUrl],
               },
-              actor: { display_name: 'Member' },
+              parent_id: null,
+              created_at: new Date().toISOString(),
+              actor: {
+                handle: 'member',
+                display_name: 'Member',
+                avatar: null,
+              },
             },
           ],
         }),

@@ -369,6 +369,7 @@ export const Navbar = () => {
       setJoinLoading(false);
       return;
     }
+    setDrawerOpen(false);
     setJoinLoading(true);
     try {
       // Warm the Join chunk so members get instant feedback.
@@ -382,6 +383,7 @@ export const Navbar = () => {
 
   const openSignIn = useCallback(async () => {
     if (path === '/signin') return;
+    setDrawerOpen(false);
     try {
       await import('../../pages/auth/SignIn');
     } catch {
@@ -394,6 +396,12 @@ export const Navbar = () => {
   useEffect(() => {
     if (path === '/join') {
       setJoinLoading(false);
+    }
+  }, [path]);
+
+  useEffect(() => {
+    if (path === '/signin' || path === '/join') {
+      setDrawerOpen(false);
     }
   }, [path]);
 
@@ -891,15 +899,22 @@ export const Navbar = () => {
                       component="button"
                       type="button"
                       onClick={() => void openJoin()}
+                      aria-label="Join"
                       sx={{
                         background: 'none',
                         border: 0,
-                        p: 0,
+                        py: 1,
+                        px: 1.5,
+                        minHeight: 44,
+                        minWidth: 44,
                         font: 'inherit',
                         cursor: 'pointer',
                         color: 'text.secondary',
                         textDecoration: 'none',
                         fontSize: '0.875rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         '&:hover': { color: 'white' },
                       }}
                     >
@@ -910,18 +925,23 @@ export const Navbar = () => {
                     component="button"
                     type="button"
                     onClick={() => void openSignIn()}
+                    aria-label="Sign in"
                     sx={{
                       background: 'none',
                       border: 'none',
-                      padding: 0,
+                      py: 1,
+                      px: 1.5,
+                      minHeight: 44,
+                      minWidth: 44,
                       cursor: 'pointer',
                       color: 'text.secondary',
                       font: 'inherit',
                       fontSize: '0.875rem',
-                      '&:hover': { color: 'white' },
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: 1,
+                      '&:hover': { color: 'white' },
                     }}
                   >
                     Sign in
@@ -1009,6 +1029,38 @@ export const Navbar = () => {
             >
               Store
             </Button>
+            {!showAuthedHeader && (
+              <>
+                {!isJoinActive && (
+                  <Button
+                    component="button"
+                    type="button"
+                    onClick={() => void openJoin()}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                    }}
+                  >
+                    Join
+                  </Button>
+                )}
+                <Button
+                  component="button"
+                  type="button"
+                  onClick={() => void openSignIn()}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                  }}
+                >
+                  Sign in
+                </Button>
+              </>
+            )}
             {showAuthedHeader && (
               <>
                 <Button

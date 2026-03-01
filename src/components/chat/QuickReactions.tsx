@@ -19,6 +19,7 @@ export const QuickReactions = ({ onSend, disabled }: QuickReactionsProps) => (
     }}
   >
     <Button
+      type="button"
       size="small"
       onClick={() => onSend('😊')}
       disabled={disabled}
@@ -37,6 +38,7 @@ export const QuickReactions = ({ onSend, disabled }: QuickReactionsProps) => (
       😊
     </Button>
     <Button
+      type="button"
       size="small"
       onClick={() => onSend('👍')}
       disabled={disabled}
@@ -55,6 +57,7 @@ export const QuickReactions = ({ onSend, disabled }: QuickReactionsProps) => (
       👍
     </Button>
     <Button
+      type="button"
       size="small"
       onClick={() => onSend('Thank you')}
       disabled={disabled}

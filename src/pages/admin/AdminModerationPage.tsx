@@ -38,6 +38,10 @@ import {
   rejectProfiles,
 } from './adminApi';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  FILTER_CONTROL_MIN_HEIGHT,
+  filterSelectInputSx,
+} from '../../theme/filterControls';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 import { useAdminSession } from './AdminSessionContext';
 
@@ -66,7 +70,7 @@ type ConfirmState = null | {
   action: (opts: { hardDeleteAuthUsers: boolean }) => Promise<void>;
 };
 
-export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
+export const AdminModerationPage = ({ initialStatus }: Props) => {
   const session = useAdminSession();
   const token = session?.access_token ?? '';
   const [rows, setRows] = useState<ProfileRow[]>([]);
@@ -74,12 +78,14 @@ export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<ProfileStatus | 'all'>(initialStatus);
+  const [status, setStatus] = useState<ProfileStatus | 'all' | ''>(
+    initialStatus ?? '',
+  );
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
-  const [sort, setSort] = useState<'created_at' | 'updated_at'>('created_at');
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [sort, setSort] = useState<'created_at' | 'updated_at' | ''>('');
+  const [order, setOrder] = useState<'asc' | 'desc' | ''>('');
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [details, setDetails] = useState<ProfileRow | null>(null);
@@ -100,12 +106,12 @@ export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
     setError(null);
     try {
       const { data, count: c } = await fetchProfiles(token, {
-        status,
+        status: status || 'all',
         q,
         limit,
         offset,
-        sort,
-        order,
+        sort: sort || 'created_at',
+        order: order || 'asc',
       });
       setRows(data);
       setCount(c);
@@ -172,26 +178,51 @@ export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
 
       <Divider sx={{ my: 2 }} />
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel>Status</InputLabel>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        alignItems={{ md: 'center' }}
+        flexWrap="wrap"
+        sx={{
+          mb: 2,
+          '& .MuiFormControl-root': filterSelectInputSx,
+          '& .MuiTextField-root .MuiInputBase-root': {
+            minHeight: FILTER_CONTROL_MIN_HEIGHT,
+          },
+        }}
+      >
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel id="admin-mod-status">Status</InputLabel>
           <Select
+            labelId="admin-mod-status"
             label="Status"
             value={status}
+            displayEmpty
+            renderValue={(v) =>
+              v === ''
+                ? ''
+                : v === 'all'
+                  ? 'All'
+                  : formatStatus(v as ProfileStatus).label
+            }
             onChange={(e) => {
               setOffset(0);
-              setStatus(e.target.value as ProfileStatus | 'all');
+              setStatus(e.target.value as ProfileStatus | 'all' | '');
             }}
           >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="pending">Pending</MenuItem>
             <MenuItem value="approved">Approved</MenuItem>
             <MenuItem value="rejected">Rejected</MenuItem>
             <MenuItem value="disabled">Disabled</MenuItem>
-            <MenuItem value="all">All</MenuItem>
           </Select>
         </FormControl>
 
         <TextField
+          size="small"
           label="Search"
           placeholder="handle or id"
           value={q}
@@ -199,38 +230,55 @@ export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
             setOffset(0);
             setQ(e.target.value);
           }}
-          sx={{ flexGrow: 1 }}
+          sx={{ flexGrow: 1, minWidth: 160 }}
         />
 
-        <FormControl sx={{ minWidth: 160 }}>
-          <InputLabel>Sort</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel id="admin-mod-sort">Sort</InputLabel>
           <Select
+            labelId="admin-mod-sort"
             label="Sort"
             value={sort}
+            displayEmpty
+            renderValue={(v) =>
+              v === '' ? '' : v === 'created_at' ? 'Created' : 'Updated'
+            }
             onChange={(e) =>
-              setSort(e.target.value as 'created_at' | 'updated_at')
+              setSort(e.target.value as 'created_at' | 'updated_at' | '')
             }
           >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
             <MenuItem value="created_at">Created</MenuItem>
             <MenuItem value="updated_at">Updated</MenuItem>
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: 140 }}>
-          <InputLabel>Order</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel id="admin-mod-order">Order</InputLabel>
           <Select
+            labelId="admin-mod-order"
             label="Order"
             value={order}
-            onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}
+            displayEmpty
+            renderValue={(v) =>
+              v === '' ? '' : v === 'asc' ? 'Oldest' : 'Newest'
+            }
+            onChange={(e) => setOrder(e.target.value as 'asc' | 'desc' | '')}
           >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
             <MenuItem value="asc">Oldest</MenuItem>
             <MenuItem value="desc">Newest</MenuItem>
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Page size</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel id="admin-mod-pagesize">Page size</InputLabel>
           <Select
+            labelId="admin-mod-pagesize"
             label="Page size"
             value={limit}
             onChange={(e) => {
@@ -245,9 +293,11 @@ export const AdminModerationPage = ({ initialStatus = 'pending' }: Props) => {
         </FormControl>
 
         <Button
+          size="small"
           variant="outlined"
           onClick={() => void load()}
           disabled={loading}
+          sx={{ minHeight: FILTER_CONTROL_MIN_HEIGHT }}
         >
           Refresh
         </Button>

@@ -252,7 +252,10 @@ export const MessageInput = ({
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              void handleSubmit(e as unknown as React.FormEvent);
+              // Defer submit so keydown handler returns immediately (avoids violation / unresponsive UI)
+              queueMicrotask(() => {
+                void handleSubmit(e as unknown as React.FormEvent);
+              });
             }
           }}
           onBlur={() => onStopTyping?.()}
@@ -299,6 +302,7 @@ export const MessageInput = ({
             style={{ display: 'none' }}
           />
           <IconButton
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
             aria-label="Attach image"
@@ -307,6 +311,7 @@ export const MessageInput = ({
             <ImageIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
             aria-label="Attach file"
@@ -315,6 +320,7 @@ export const MessageInput = ({
             <AttachFileIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={() => setGifPickerOpen(true)}
             disabled={disabled || uploading || pendingFiles.length >= 5}
             aria-label="Add GIF"
@@ -323,6 +329,7 @@ export const MessageInput = ({
             <GifBoxIcon fontSize="small" />
           </IconButton>
           <IconButton
+            type="button"
             onClick={(e) => setEmojiAnchor(e.currentTarget)}
             disabled={disabled || uploading}
             aria-label="Add emoji"
@@ -373,7 +380,7 @@ export const MessageInput = ({
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
         transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        {COMMON_EMOJIS.map((emoji) => (
+        {...COMMON_EMOJIS.map((emoji) => (
           <MenuItem
             key={emoji}
             onClick={() => {

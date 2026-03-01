@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -202,96 +203,101 @@ export const EventsPage = () => {
       minute: '2-digit',
     });
 
-  return (
-    <Box sx={{ py: 3, px: 2, maxWidth: 720, mx: 'auto' }}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 3 }}
-      >
-        <Typography variant="h4" fontWeight={700}>
-          Events
-        </Typography>
-        {session && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
-          >
-            Create Event
-          </Button>
-        )}
-      </Stack>
+  const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress aria-label="Loading events" />
-        </Box>
-      ) : (
-        <>
-          {upcoming.length > 0 && (
-            <Box sx={{ mb: 4 }}>
-              <Typography
-                variant="overline"
+  return (
+    <Box sx={{ flex: 1, pt: { xs: 2, md: 4 }, pb: 8 }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, md: 3 },
+            borderRadius: 4,
+            bgcolor: CARD_BG,
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            mb: 4,
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            justifyContent="space-between"
+            flexWrap="wrap"
+            gap={2}
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Events
+            </Typography>
+            {session && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateOpen(true)}
                 sx={{
-                  display: 'block',
-                  mb: 2,
-                  color: 'text.secondary',
-                  fontWeight: 600,
+                  textTransform: 'none',
+                  width: { xs: '100%', sm: 'auto' },
                 }}
               >
-                Upcoming
-              </Typography>
-              <Stack spacing={2}>
-                {upcoming.map((ev) => (
-                  <Card
-                    key={ev.id}
-                    variant="outlined"
-                    component={RouterLink}
-                    to={`/events/${ev.id}`}
+                Create Event
+              </Button>
+            )}
+          </Stack>
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress aria-label="Loading events" size={48} />
+            </Box>
+          ) : (
+            <>
+              {upcoming.length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                  <Typography
+                    variant="overline"
                     sx={{
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      borderRadius: 2,
-                      transition: 'border-color 0.2s, background-color 0.2s',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        bgcolor: 'action.hover',
-                      },
+                      display: 'block',
+                      mb: 2,
+                      color: 'text.secondary',
+                      fontWeight: 600,
                     }}
                   >
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography variant="h6" fontWeight={600}>
-                        {ev.title}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                        sx={{ mt: 1 }}
-                        flexWrap="wrap"
+                    Upcoming
+                  </Typography>
+                  <Stack spacing={2}>
+                    {upcoming.map((ev) => (
+                      <Card
+                        key={ev.id}
+                        variant="outlined"
+                        component={RouterLink}
+                        to={`/events/${ev.id}`}
+                        sx={{
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          borderRadius: 2,
+                          transition:
+                            'border-color 0.2s, background-color 0.2s',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            bgcolor: 'action.hover',
+                          },
+                        }}
                       >
-                        <PersonIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {ev.host_display_name || ev.host_handle || 'Host'}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          •
-                        </Typography>
-                        <EventIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(ev.start_at)}
-                        </Typography>
-                        {ev.location && (
-                          <>
+                        <CardContent sx={{ p: 2 }}>
+                          <Typography variant="h6" fontWeight={600}>
+                            {ev.title}
+                          </Typography>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={1}
+                            sx={{ mt: 1 }}
+                            flexWrap="wrap"
+                          >
+                            <PersonIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {ev.host_display_name || ev.host_handle || 'Host'}
+                            </Typography>
                             <Typography
                               component="span"
                               variant="body2"
@@ -299,124 +305,144 @@ export const EventsPage = () => {
                             >
                               •
                             </Typography>
-                            <LocationOnIcon fontSize="small" color="action" />
+                            <EventIcon fontSize="small" color="action" />
                             <Typography variant="body2" color="text.secondary">
-                              {ev.location}
+                              {formatDate(ev.start_at)}
                             </Typography>
-                          </>
-                        )}
-                      </Stack>
-                      {ev.yes_count !== undefined && ev.yes_count > 0 && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mt: 1 }}
-                        >
-                          {ev.yes_count} attending
-                        </Typography>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            </Box>
-          )}
+                            {ev.location && (
+                              <>
+                                <Typography
+                                  component="span"
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  •
+                                </Typography>
+                                <LocationOnIcon
+                                  fontSize="small"
+                                  color="action"
+                                />
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {ev.location}
+                                </Typography>
+                              </>
+                            )}
+                          </Stack>
+                          {ev.yes_count !== undefined && ev.yes_count > 0 && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', mt: 1 }}
+                            >
+                              {ev.yes_count} attending
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
 
-          {past.length > 0 && (
-            <Box>
-              <Typography
-                variant="overline"
-                sx={{
-                  display: 'block',
-                  mb: 2,
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                }}
-              >
-                Past Events
-              </Typography>
-              <Stack spacing={2}>
-                {past.map((ev) => (
-                  <Card
-                    key={ev.id}
-                    variant="outlined"
-                    component={RouterLink}
-                    to={`/events/${ev.id}`}
+              {past.length > 0 && (
+                <Box>
+                  <Typography
+                    variant="overline"
                     sx={{
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      opacity: 0.85,
-                      borderRadius: 2,
-                      '&:hover': {
-                        opacity: 1,
-                        borderColor: 'divider',
-                      },
+                      display: 'block',
+                      mb: 2,
+                      color: 'text.secondary',
+                      fontWeight: 600,
                     }}
                   >
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography variant="h6" fontWeight={600}>
-                        {ev.title}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                        sx={{ mt: 1 }}
-                        flexWrap="wrap"
+                    Past Events
+                  </Typography>
+                  <Stack spacing={2}>
+                    {past.map((ev) => (
+                      <Card
+                        key={ev.id}
+                        variant="outlined"
+                        component={RouterLink}
+                        to={`/events/${ev.id}`}
+                        sx={{
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          opacity: 0.85,
+                          borderRadius: 2,
+                          '&:hover': {
+                            opacity: 1,
+                            borderColor: 'divider',
+                          },
+                        }}
                       >
-                        <Typography variant="body2" color="text.secondary">
-                          {ev.host_display_name || ev.host_handle || 'Host'}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          •
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(ev.start_at)}
-                        </Typography>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            </Box>
-          )}
-
-          {upcoming.length === 0 && past.length === 0 && (
-            <Paper
-              variant="outlined"
-              sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}
-            >
-              <EventIcon
-                sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
-              />
-              <Typography variant="body1" color="text.secondary">
-                No events yet.
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                Create an event to bring the community together.
-              </Typography>
-              {session && (
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setCreateOpen(true)}
-                  sx={{ mt: 2, textTransform: 'none' }}
-                >
-                  Create Event
-                </Button>
+                        <CardContent sx={{ p: 2 }}>
+                          <Typography variant="h6" fontWeight={600}>
+                            {ev.title}
+                          </Typography>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={1}
+                            sx={{ mt: 1 }}
+                            flexWrap="wrap"
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {ev.host_display_name || ev.host_handle || 'Host'}
+                            </Typography>
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              color="text.secondary"
+                            >
+                              •
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {formatDate(ev.start_at)}
+                            </Typography>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                </Box>
               )}
-            </Paper>
+
+              {upcoming.length === 0 && past.length === 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 8,
+                    textAlign: 'center',
+                    borderRadius: 4,
+                    bgcolor: 'rgba(18, 18, 18, 0.8)',
+                    border: '2px dashed rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+                    No events yet
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mb: 2 }}>
+                    Create an event to bring the community together.
+                  </Typography>
+                  {session && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => setCreateOpen(true)}
+                      sx={{ mt: 2, textTransform: 'none' }}
+                    >
+                      Create Event
+                    </Button>
+                  )}
+                </Paper>
+              )}
+            </>
           )}
-        </>
-      )}
+        </Paper>
+      </Container>
 
       <Dialog
         open={createOpen}

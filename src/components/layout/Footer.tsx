@@ -163,7 +163,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      closeAllSections();
+      // Defer so keydown handler returns immediately (avoids long-task violation)
+      queueMicrotask(() => closeAllSections());
     };
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const node = footerRef.current;

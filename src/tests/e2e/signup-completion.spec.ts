@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test('admin route should be reachable and accessible', async ({ page }) => {

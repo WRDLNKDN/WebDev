@@ -1216,6 +1216,8 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         love_count?: number | string | null;
         inspiration_count?: number | string | null;
         care_count?: number | string | null;
+        laughing_count?: number | string | null;
+        rage_count?: number | string | null;
         viewer_reaction?: string | null;
         comment_count?: number | string | null;
         viewer_saved?: boolean;
@@ -1236,6 +1238,8 @@ app.get('/api/feeds', requireAuth, async (req: AuthRequest, res: Response) => {
         love_count: Number(row.love_count ?? 0),
         inspiration_count: Number(row.inspiration_count ?? 0),
         care_count: Number(row.care_count ?? 0),
+        laughing_count: Number(row.laughing_count ?? 0),
+        rage_count: Number(row.rage_count ?? 0),
         viewer_reaction: row.viewer_reaction ?? null,
         comment_count: Number(row.comment_count ?? 0),
         viewer_saved: Boolean(row.viewer_saved),
@@ -1664,6 +1668,8 @@ app.get(
         love_count: number;
         inspiration_count: number;
         care_count: number;
+        laughing_count: number;
+        rage_count: number;
         viewer_reaction: string | null;
       }
     > = {};
@@ -1676,6 +1682,8 @@ app.get(
           love_count: 0,
           inspiration_count: 0,
           care_count: 0,
+          laughing_count: 0,
+          rage_count: 0,
           viewer_reaction: null,
         };
       }
@@ -1684,6 +1692,8 @@ app.get(
       if (type === 'love') reactionMap[parentId].love_count += 1;
       if (type === 'inspiration') reactionMap[parentId].inspiration_count += 1;
       if (type === 'care') reactionMap[parentId].care_count += 1;
+      if (type === 'laughing') reactionMap[parentId].laughing_count += 1;
+      if (type === 'rage') reactionMap[parentId].rage_count += 1;
       if (type && row.user_id === req.userId) {
         reactionMap[parentId].viewer_reaction = type;
       }
@@ -1698,6 +1708,8 @@ app.get(
         love_count: 0,
         inspiration_count: 0,
         care_count: 0,
+        laughing_count: 0,
+        rage_count: 0,
         viewer_reaction: null,
       };
       return {
@@ -1710,6 +1722,8 @@ app.get(
         love_count: counts.love_count,
         inspiration_count: counts.inspiration_count,
         care_count: counts.care_count,
+        laughing_count: counts.laughing_count,
+        rage_count: counts.rage_count,
         viewer_reaction: counts.viewer_reaction,
         actor: {
           handle: p?.handle ?? null,

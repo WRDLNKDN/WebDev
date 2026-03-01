@@ -125,3 +125,12 @@ export function getShortLinkLabel(url: string): string {
     return url;
   }
 }
+
+/**
+ * Normalize URL for duplicate detection: lowercase, trim, strip trailing slash.
+ * Used by Edit Links modal and profile update validation.
+ */
+export function normalizeUrlForDedup(url: string): string {
+  const u = url.trim().toLowerCase();
+  return u.endsWith('/') && u.length > 1 ? u.slice(0, -1) : u;
+}

@@ -70,7 +70,13 @@ export type FeedItemActor = {
   avatar: string | null;
 };
 
-export type ReactionType = 'like' | 'love' | 'inspiration' | 'care';
+export type ReactionType =
+  | 'like'
+  | 'love'
+  | 'inspiration'
+  | 'care'
+  | 'laughing'
+  | 'rage';
 
 export type FeedItem = {
   id: string;
@@ -85,6 +91,8 @@ export type FeedItem = {
   love_count?: number;
   inspiration_count?: number;
   care_count?: number;
+  laughing_count?: number;
+  rage_count?: number;
   viewer_reaction?: ReactionType | null;
   comment_count?: number;
   viewer_saved?: boolean;
@@ -298,6 +306,8 @@ export type FeedComment = {
   love_count?: number;
   inspiration_count?: number;
   care_count?: number;
+  laughing_count?: number;
+  rage_count?: number;
   viewer_reaction?: ReactionType | null;
   actor: FeedItemActor;
 };

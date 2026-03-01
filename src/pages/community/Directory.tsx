@@ -36,7 +36,10 @@ import {
   disconnect,
   fetchDirectory,
 } from '../../lib/api/directoryApi';
-import { INDUSTRY_OPTIONS } from '../../constants/industry';
+import {
+  getSecondaryOptionsForPrimary,
+  INDUSTRY_PRIMARY_OPTIONS,
+} from '../../constants/industryTaxonomy';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 
@@ -437,19 +440,21 @@ export const Directory = () => {
                   labelId="dir-primary-industry"
                   value={primaryIndustry}
                   label="Primary Industry"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const nextPrimary = e.target.value;
+                    const allowed = getSecondaryOptionsForPrimary(nextPrimary);
                     updateUrl({
-                      primary_industry: e.target.value,
-                      ...(secondaryIndustry === e.target.value
-                        ? { secondary_industry: '' }
-                        : {}),
-                    })
-                  }
+                      primary_industry: nextPrimary,
+                      secondary_industry: allowed.includes(secondaryIndustry)
+                        ? secondaryIndustry
+                        : '',
+                    });
+                  }}
                   displayEmpty
                   renderValue={(v) => v || 'All'}
                 >
                   <MenuItem value="">All</MenuItem>
-                  {INDUSTRY_OPTIONS.map((opt) => (
+                  {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
                     <MenuItem key={opt} value={opt}>
                       {opt}
                     </MenuItem>
@@ -486,13 +491,13 @@ export const Directory = () => {
                     renderValue={(v) => v || 'All'}
                   >
                     <MenuItem value="">All</MenuItem>
-                    {INDUSTRY_OPTIONS.filter(
-                      (opt) => opt !== primaryIndustry,
-                    ).map((opt) => (
-                      <MenuItem key={opt} value={opt}>
-                        {opt}
-                      </MenuItem>
-                    ))}
+                    {getSecondaryOptionsForPrimary(primaryIndustry).map(
+                      (opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ),
+                    )}
                   </Select>
                   <Button
                     size="small"

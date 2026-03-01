@@ -5,7 +5,10 @@ import {
 } from '../constants/platforms';
 import { supabase } from '../lib/auth/supabaseClient';
 import { authedFetch } from '../lib/api/authFetch';
-import { detectPlatformFromUrl } from '../lib/utils/linkPlatform';
+import {
+  detectPlatformFromUrl,
+  normalizeUrlForDedup,
+} from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
 import { getLinkType, normalizeGoogleUrl } from '../lib/portfolio/linkUtils';
 import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
@@ -258,9 +261,21 @@ export function useProfile() {
         payload.nerd_creds = mergedNerdCreds as unknown as Json;
       }
 
-      // Persist socials with category and platform so save never overwrites with wrong defaults
+      // Persist socials with category and platform; enforce URL uniqueness (API layer)
       if (Array.isArray(payload.socials)) {
-        payload.socials = (payload.socials as SocialLink[]).map((link) => {
+        const socials = payload.socials as SocialLink[];
+        const seen = new Set<string>();
+        for (const link of socials) {
+          const norm = normalizeUrlForDedup(link.url);
+          if (!norm) continue;
+          if (seen.has(norm)) {
+            throw new Error(
+              'Duplicate URLs are not allowed. Each link must have a unique URL.',
+            );
+          }
+          seen.add(norm);
+        }
+        payload.socials = socials.map((link) => {
           const platform =
             link.platform?.trim() || detectPlatformFromUrl(link.url);
           const category = isValidLinkCategory(link.category)

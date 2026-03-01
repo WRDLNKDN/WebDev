@@ -221,20 +221,9 @@ export const FeedAdCard = ({
                 </Typography>
                 <Typography
                   variant="caption"
-                  component="a"
-                  href={advertiser.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    onAdClick?.({
-                      target: 'advertiser_domain',
-                      url: advertiser.url,
-                    })
-                  }
                   sx={{
                     color: 'text.secondary',
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
+                    display: 'block',
                   }}
                 >
                   {advertiser.url.replace(/^https?:\/\//, '')}
@@ -242,21 +231,12 @@ export const FeedAdCard = ({
               </Box>
             </Stack>
             <Typography
-              component="a"
-              href={advertiser.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() =>
-                onAdClick?.({ target: 'advertiser_title', url: advertiser.url })
-              }
               variant="subtitle1"
               fontWeight={600}
               sx={{
                 display: 'block',
                 mt: 0.5,
-                color: 'primary.main',
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' },
+                color: 'text.primary',
               }}
             >
               {advertiser.title}
@@ -268,57 +248,30 @@ export const FeedAdCard = ({
             >
               {advertiser.description}
             </Typography>
+            {/* Single canonical outbound link: CTA list if configured, else one "Learn more" to primary URL */}
             {links.length > 0 ? (
-              <Box component="nav" sx={{ mt: 1.25 }} aria-label="Ad links">
-                <Box
-                  component="ul"
+              <Box component="nav" sx={{ mt: 1.25 }} aria-label="Ad link">
+                <Link
+                  href={links[0].url || advertiser.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    onAdClick?.({
+                      target: 'cta_link_1',
+                      url: links[0].url || advertiser.url,
+                    })
+                  }
+                  variant="body2"
                   sx={{
-                    m: 0,
-                    pl: 1.75,
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, minmax(0, 1fr))',
-                    },
-                    columnGap: 1.5,
-                    rowGap: 0.35,
-                    color: 'text.secondary',
-                    '& li::marker': {
-                      color: 'text.disabled',
-                      fontSize: '0.62rem',
-                    },
+                    color: 'primary.main',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '2px',
                   }}
                 >
-                  {links.map((l, i) => (
-                    <Box
-                      component="li"
-                      key={`${l.label}-${i}`}
-                      sx={{ minWidth: 0, lineHeight: 1.1 }}
-                    >
-                      <Link
-                        href={l.url || advertiser.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          onAdClick?.({
-                            target: `cta_link_${i + 1}`,
-                            url: l.url || advertiser.url,
-                          })
-                        }
-                        variant="body2"
-                        sx={{
-                          color: 'primary.main',
-                          fontSize: '0.82rem',
-                          fontWeight: 400,
-                          textDecoration: 'underline',
-                          textUnderlineOffset: '2px',
-                        }}
-                      >
-                        {l.label}
-                      </Link>
-                    </Box>
-                  ))}
-                </Box>
+                  {links[0].label || 'Learn more'}
+                </Link>
               </Box>
             ) : (
               <Stack direction="row" sx={{ mt: 1.5 }}>
@@ -349,13 +302,6 @@ export const FeedAdCard = ({
           </Box>
           {heroImageUrl && (
             <Box
-              component="a"
-              href={advertiser.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() =>
-                onAdClick?.({ target: 'ad_image', url: advertiser.url })
-              }
               sx={{
                 display: 'block',
                 flexShrink: 0,

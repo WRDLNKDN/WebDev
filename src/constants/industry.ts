@@ -1,6 +1,6 @@
 /**
- * Controlled industry list for Profile (Primary/Secondary) and Directory filters.
- * Single source of truth for structured industry selection.
+ * @deprecated Use industryTaxonomy (INDUSTRY_PRIMARY_OPTIONS, getSecondaryOptionsForPrimary) instead.
+ * Profile Edit and Directory use the canonical taxonomy in constants/industryTaxonomy.ts.
  */
 export const INDUSTRY_OPTIONS = [
   'Technology',

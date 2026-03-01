@@ -32,15 +32,17 @@ type FooterSection = {
   links: FooterLink[];
 };
 
+const PLATFORM_LINKS: FooterLink[] = [
+  { label: 'Feed', href: '/feed' },
+  { label: 'Chat', href: '/chat-full' },
+  { label: 'Notifications', href: '/dashboard/notifications' },
+  { label: 'Directory', href: '/directory' },
+];
+
 const sections: FooterSection[] = [
   {
     title: 'Platform',
-    links: [
-      { label: 'Feed', href: '/feed' },
-      { label: 'Chat', href: '/chat-full' },
-      { label: 'Notifications', href: '/dashboard/notifications' },
-      { label: 'Directory', href: '/directory' },
-    ],
+    links: PLATFORM_LINKS,
   },
   {
     title: 'Company',
@@ -65,7 +67,12 @@ const sections: FooterSection[] = [
   },
 ];
 
-export const Footer = () => {
+type FooterProps = {
+  /** When false, Chat link is hidden (e.g. when not logged in). */
+  showChatLink?: boolean;
+};
+
+export const Footer = ({ showChatLink = false }: FooterProps) => {
   const theme = useTheme();
   const location = useLocation();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -292,6 +299,10 @@ export const Footer = () => {
               }}
             >
               {sections.map((section) => {
+                const links =
+                  section.title === 'Platform' && !showChatLink
+                    ? section.links.filter((l) => l.label !== 'Chat')
+                    : section.links;
                 const open = Boolean(expanded[section.title]);
                 const panelId = `footer-panel-${section.title.toLowerCase()}`;
                 return (
@@ -384,7 +395,7 @@ export const Footer = () => {
                           },
                         }}
                       >
-                        {section.links.map((link) => {
+                        {links.map((link) => {
                           const active = isActiveLink(link.href, link.external);
                           const commonSx = {
                             display: 'inline-flex',

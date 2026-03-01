@@ -34,10 +34,8 @@ test.describe('Dashboard links and profile layout regressions', () => {
 
     // ---- PILL WIDTH CHECK ----
 
-    // target chips/pills without coupling to MUI classnames
-    const pills = page.locator(
-      '[role="button"], [class*="Chip"], [class*="pill"]',
-    );
+    // Dashboard badge pills (skills/industries) have data-testid="dashboard-pill"
+    const pills = page.getByTestId('dashboard-pill');
 
     const pillCount = await pills.count();
     expect(pillCount).toBeGreaterThan(0);

@@ -1018,23 +1018,6 @@ export const Navbar = () => {
                 </Button>
                 <Button
                   component={RouterLink}
-                  to="/dashboard"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDashboardActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  component={RouterLink}
                   to="/directory"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
@@ -1049,6 +1032,40 @@ export const Navbar = () => {
                   }}
                 >
                   Directory
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/events"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isEventsActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Events
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isDashboardActive && {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    }),
+                  }}
+                >
+                  Dashboard
                 </Button>
               </>
             )}

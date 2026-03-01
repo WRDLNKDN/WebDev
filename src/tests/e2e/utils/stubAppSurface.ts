@@ -40,7 +40,7 @@ export async function stubAppSurface(page: Page) {
     });
   });
 
-  // ---- Profiles stub (needed for layout boot) ----
+  // ---- Profiles stub (needed for layout boot; include skills/industry so dashboard pills render) ----
   await page.route('**/rest/v1/profiles*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -54,6 +54,8 @@ export async function stubAppSurface(page: Page) {
           join_reason: ['networking'],
           participation_style: ['builder'],
           policy_version: '1.0',
+          industry: 'Technology',
+          nerd_creds: { skills: ['Testing'] },
         },
       ]),
     });

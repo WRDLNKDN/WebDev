@@ -55,8 +55,13 @@ export const AuthCallback = () => {
     'unknown',
   );
 
-  // Default post-login destination: Feed
-  const next = params.get('next') || '/feed';
+  // Default post-login destination: Feed. Read from URL so we don't lose it on mobile redirects.
+  const next =
+    params.get('next') ||
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('next')
+      : null) ||
+    '/feed';
   const appEnv =
     (import.meta.env.VITE_APP_ENV as string | undefined)
       ?.trim()
@@ -359,6 +364,23 @@ export const AuthCallback = () => {
       clearTimeout(timeoutId);
     };
   }, [callbackTimeoutMs, navigate, next, setIdentity, goToStep]);
+
+  // Fallback: on some mobile browsers React Router navigate() may not leave the callback URL.
+  // If we're still on /auth/callback after a delay (and no OAuth error in URL), force redirect to /feed.
+  const nextRef = useRef(next);
+  nextRef.current = next;
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const { pathname, search, hash } = window.location;
+      const hasOAuthError =
+        search?.includes('error') || hash?.includes('error');
+      if (pathname === '/auth/callback' && !hasOAuthError) {
+        const target = nextRef.current || '/feed';
+        window.location.replace(target);
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!error) return;

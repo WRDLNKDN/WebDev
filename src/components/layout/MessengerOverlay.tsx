@@ -21,7 +21,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
@@ -39,7 +38,6 @@ const DRAWER_WIDTH = 360;
 export const MessengerOverlay = () => {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
   const [startDmOpen, setStartDmOpen] = useState(false);
@@ -149,18 +147,18 @@ export const MessengerOverlay = () => {
 
   if (!session?.user?.id) return null;
 
+  /* On mobile, Chat is in the hamburger menu; no floating button */
   const floatingChatButton =
-    messenger && !messenger.overlayOpen ? (
+    messenger && !messenger.overlayOpen && !mobile ? (
       <Button
-        endIcon={!mobile ? <MessageIcon /> : undefined}
-        startIcon={mobile ? <MessageIcon /> : undefined}
-        onClick={mobile ? () => navigate('/chat-full') : openOverlay}
+        endIcon={<MessageIcon />}
+        onClick={openOverlay}
         aria-label="Open messages"
-        size={mobile ? 'small' : 'medium'}
+        size="medium"
         sx={{
           position: 'fixed',
           right: 28,
-          top: (mobile ? 88 : 80) + bannerOffsetPx,
+          top: 80 + bannerOffsetPx,
           zIndex: 1200,
           bgcolor: 'background.paper',
           border: '1px solid rgba(255,255,255,0.12)',
@@ -169,12 +167,12 @@ export const MessengerOverlay = () => {
           boxShadow: 2,
           color: 'text.primary',
           textTransform: 'none',
-          minWidth: mobile ? 48 : 80,
-          py: mobile ? 0.75 : 1,
+          minWidth: 80,
+          py: 1,
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        {mobile ? '' : 'Chat'}
+        Chat
       </Button>
     ) : null;
 

@@ -1147,6 +1147,25 @@ export const Navbar = () => {
                 >
                   Dashboard
                 </Button>
+                <Button
+                  component={RouterLink}
+                  to="/chat-full"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(path === '/chat-full' || path.startsWith('/chat-full/')
+                      ? {
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        }
+                      : {}),
+                  }}
+                >
+                  Chat
+                </Button>
               </>
             )}
           </Stack>

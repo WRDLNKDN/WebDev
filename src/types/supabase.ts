@@ -174,6 +174,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          key: string
+          enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feed_items: {
         Row: {
           id: string

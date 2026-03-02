@@ -912,11 +912,12 @@ export function useChatRooms() {
             : toMessage(error),
         );
       }
+      const raw: unknown = roomId;
       const id =
-        typeof roomId === 'string'
-          ? roomId
-          : Array.isArray(roomId) && roomId.length > 0
-            ? roomId[0]
+        typeof raw === 'string'
+          ? raw
+          : Array.isArray(raw) && raw.length > 0
+            ? raw[0]
             : null;
       if (!id) return null;
 

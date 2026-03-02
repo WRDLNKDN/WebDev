@@ -73,6 +73,8 @@ const LayoutContent = () => {
     <Box
       sx={{
         height: '100dvh',
+        minHeight:
+          '100vh' /* fallback when dvh is 0 or wrong on some mobile browsers */,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',

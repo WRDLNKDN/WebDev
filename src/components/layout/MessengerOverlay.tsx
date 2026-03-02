@@ -21,6 +21,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
@@ -38,6 +39,7 @@ const DRAWER_WIDTH = 360;
 export const MessengerOverlay = () => {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
   const [startDmOpen, setStartDmOpen] = useState(false);
@@ -152,7 +154,7 @@ export const MessengerOverlay = () => {
       <Button
         endIcon={!mobile ? <MessageIcon /> : undefined}
         startIcon={mobile ? <MessageIcon /> : undefined}
-        onClick={openOverlay}
+        onClick={mobile ? () => navigate('/chat-full') : openOverlay}
         aria-label="Open messages"
         size={mobile ? 'small' : 'medium'}
         sx={{

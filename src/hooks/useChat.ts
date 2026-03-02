@@ -314,42 +314,51 @@ export function useChat(roomId: string | null) {
         },
         (payload) => {
           const newRow = payload.new as ChatMessage;
-          void (async () => {
-            const { data: fullMsg } = await supabase
-              .from('chat_messages')
-              .select('*')
-              .eq('id', newRow.id)
-              .single();
+          // Defer heavy work so the realtime "message" handler returns quickly (avoids 160ms+ violation).
+          setTimeout(() => {
+            void (async () => {
+              const { data: fullMsg } = await supabase
+                .from('chat_messages')
+                .select('*')
+                .eq('id', newRow.id)
+                .single();
 
-            if (fullMsg) {
-              let senderProfile = null;
-              if (fullMsg.sender_id) {
-                const { data: p } = await supabase
-                  .from('profiles')
-                  .select('handle, display_name, avatar')
-                  .eq('id', fullMsg.sender_id)
-                  .maybeSingle();
-                senderProfile = p ?? null;
+              if (fullMsg) {
+                let senderProfile = null;
+                if (fullMsg.sender_id) {
+                  const { data: p } = await supabase
+                    .from('profiles')
+                    .select('handle, display_name, avatar')
+                    .eq('id', fullMsg.sender_id)
+                    .maybeSingle();
+                  senderProfile = p ?? null;
+                }
+                const [rRes, aRes] = await Promise.all([
+                  supabase
+                    .from('chat_message_reactions')
+                    .select('message_id, user_id, emoji')
+                    .eq('message_id', fullMsg.id),
+                  supabase
+                    .from('chat_message_attachments')
+                    .select(
+                      'id, message_id, storage_path, mime_type, file_size',
+                    )
+                    .eq('message_id', fullMsg.id),
+                ]);
+                const next = {
+                  ...fullMsg,
+                  sender_profile: senderProfile,
+                  reactions: rRes.data ?? [],
+                  attachments: aRes.data ?? [],
+                } as unknown as MessageWithExtras;
+                startTransition(() =>
+                  setMessages((prev) =>
+                    prev.some((m) => m.id === next.id) ? prev : [...prev, next],
+                  ),
+                );
               }
-              const [rRes, aRes] = await Promise.all([
-                supabase
-                  .from('chat_message_reactions')
-                  .select('message_id, user_id, emoji')
-                  .eq('message_id', fullMsg.id),
-                supabase
-                  .from('chat_message_attachments')
-                  .select('id, message_id, storage_path, mime_type, file_size')
-                  .eq('message_id', fullMsg.id),
-              ]);
-              const next = {
-                ...fullMsg,
-                sender_profile: senderProfile,
-                reactions: rRes.data ?? [],
-                attachments: aRes.data ?? [],
-              } as unknown as MessageWithExtras;
-              startTransition(() => setMessages((prev) => [...prev, next]));
-            }
-          })();
+            })();
+          }, 0);
         },
       )
       .on(
@@ -410,6 +419,17 @@ export function useChat(roomId: string | null) {
 
         if (insertErr) throw insertErr;
 
+        const currentProfile = room?.members?.find(
+          (m) => m.user_id === session.user.id,
+        )?.profile;
+        const optimistic: MessageWithExtras = {
+          ...(msg as ChatMessage),
+          sender_profile: currentProfile ?? null,
+          reactions: [],
+          attachments: [],
+        };
+        startTransition(() => setMessages((prev) => [...prev, optimistic]));
+
         if (attachmentPaths && attachmentPaths.length > 0 && msg) {
           for (const p of attachmentPaths) {
             const pathParts = p.split('/');
@@ -445,15 +465,18 @@ export function useChat(roomId: string | null) {
           }
           await fetchMessages(roomId);
         }
-      } catch {
+      } catch (err) {
+        const message = toMessage(err);
         startTransition(() =>
-          setError('Your message could not be sent. Please try again.'),
+          setError(
+            message || 'Your message could not be sent. Please try again.',
+          ),
         );
       } finally {
         startTransition(() => setSending(false));
       }
     },
-    [roomId, fetchMessages],
+    [roomId, room?.members, fetchMessages],
   );
 
   const editMessage = useCallback(
@@ -652,8 +675,13 @@ export function useChat(roomId: string | null) {
     blockUser,
     refresh: () => {
       if (roomId) {
-        void fetchRoom(roomId);
-        void fetchMessages(roomId);
+        setError(null);
+        setLoading(true);
+        void (async () => {
+          const ok = await fetchRoom(roomId);
+          if (ok) await fetchMessages(roomId);
+          else setLoading(false);
+        })();
       }
     },
   };
@@ -770,10 +798,16 @@ export function useChatRooms() {
 
     // Fetch last message + unread count per room
     if (withMembers.length > 0) {
-      const { data: summaries } = await supabase.rpc('chat_room_summaries', {
-        p_room_ids: withMembers.map((rm) => rm.id),
-        p_user_id: session.user.id,
-      });
+      const { data: summaries, error: summariesError } = await supabase.rpc(
+        'chat_room_summaries',
+        {
+          p_room_ids: withMembers.map((rm) => rm.id),
+          p_user_id: session.user.id,
+        },
+      );
+      if (summariesError) {
+        console.warn('chat_room_summaries failed:', summariesError.message);
+      }
 
       type SummaryRow = {
         room_id: string;
@@ -847,42 +881,21 @@ export function useChatRooms() {
       } = await supabase.auth.getSession();
       if (!session?.user) return null;
 
-      const { data: blocked } = await supabase.rpc('chat_blocked', {
-        a: session.user.id,
-        b: otherUserId,
+      const { data: roomId, error } = await supabase.rpc('chat_create_dm', {
+        p_other_user_id: otherUserId,
       });
-      if (blocked) {
-        throw new Error('You cannot message this member.');
-      }
-
-      const { data: conn } = await supabase.rpc('are_chat_connections', {
-        a: session.user.id,
-        b: otherUserId,
-      });
-      if (!conn) {
-        throw new Error('You can only start 1:1 chats with Connections.');
-      }
-
-      const { data: room, error } = await supabase
-        .from('chat_rooms')
-        .insert({
-          room_type: 'dm',
-          name: null,
-          created_by: session.user.id,
-        })
-        .select()
-        .single();
 
       if (error) throw error;
-      if (!room) return null;
-
-      await supabase.from('chat_room_members').insert([
-        { room_id: room.id, user_id: session.user.id, role: 'admin' },
-        { room_id: room.id, user_id: otherUserId, role: 'member' },
-      ]);
+      const id =
+        typeof roomId === 'string'
+          ? roomId
+          : Array.isArray(roomId) && roomId.length > 0
+            ? roomId[0]
+            : null;
+      if (!id) return null;
 
       await fetchRooms();
-      return room.id;
+      return id;
     },
     [fetchRooms],
   );

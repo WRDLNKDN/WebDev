@@ -4,6 +4,7 @@ import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ForumIcon from '@mui/icons-material/Forum';
 import GavelIcon from '@mui/icons-material/Gavel';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
@@ -24,6 +25,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Menu,
   MenuItem,
   Paper,
   Popper,
@@ -39,7 +41,9 @@ import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
+import { FEATURE_EVENTS_ENABLED } from '../../lib/featureFlags';
 import { toMessage } from '../../lib/utils/errors';
+import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { consumeJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
@@ -95,16 +99,18 @@ export const Navbar = () => {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const showAuthedHeader =
     Boolean(session) && profileOnboarded && !forcePublicHeader;
-  const showUnreadNotifications = showAuthedHeader && notificationsUnread > 0;
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -340,22 +346,12 @@ export const Navbar = () => {
     };
   }, [searchQuery, showAuthedHeader]);
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     setBusy(true);
-
     try {
-      // Navigate away from protected routes first so RequireOnboarded
-      // doesn't redirect to /join when it sees SIGNED_OUT
-      navigate('/');
+      await signOut();
       setSession(null);
-
-      await supabase.auth.signOut();
-      // Clear all env-prefixed auth keys (uat-, prod-, dev-)
-      [
-        'uat-sb-wrdlnkdn-auth',
-        'prod-sb-wrdlnkdn-auth',
-        'dev-sb-wrdlnkdn-auth',
-      ].forEach((k) => localStorage.removeItem(k));
+      navigate('/', { replace: true });
     } catch (error) {
       console.error(error);
       setSnack(toMessage(error));
@@ -488,9 +484,9 @@ export const Navbar = () => {
                 src="/assets/wrdlnkdn_logo.png"
                 alt=""
                 sx={{
-                  height: { xs: 18, sm: 22, md: 26 },
+                  height: { xs: 22, sm: 26, md: 30 },
                   width: 'auto',
-                  maxWidth: { xs: 90, sm: 140, md: 180 },
+                  maxWidth: { xs: 110, sm: 160, md: 200 },
                   objectFit: 'contain',
                 }}
               />
@@ -533,7 +529,7 @@ export const Navbar = () => {
                     sx={{
                       ml: 1.5,
                       mr: 1,
-                      fontSize: 20,
+                      fontSize: 22,
                       color: 'rgba(255,255,255,0.5)',
                     }}
                     aria-hidden
@@ -558,7 +554,7 @@ export const Navbar = () => {
                     fullWidth
                     sx={{
                       color: 'white',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       '& .MuiInputBase-input': {
                         py: 1,
                         px: 0,
@@ -614,7 +610,7 @@ export const Navbar = () => {
                         <Box
                           sx={{
                             color: 'rgba(255,255,255,0.7)',
-                            fontSize: '0.875rem',
+                            fontSize: '1rem',
                             mb: 1,
                           }}
                         >
@@ -688,83 +684,31 @@ export const Navbar = () => {
             )}
           </Stack>
 
-          {/* Desktop nav links: Store, Feed, Directory, Events, Dashboard (no Home — logo = home) */}
+          {/* Desktop nav links: alpha order Admin, Dashboard, Directory, Events, Feed, Store */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
-              <Button
-                component="a"
-                href={storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: 'rgba(255,255,255,0.85)',
-                  textDecoration: 'none',
-                  textTransform: 'none',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Store
-              </Button>
+              {isAdmin && (
+                <Button
+                  component={RouterLink}
+                  to="/admin"
+                  sx={{
+                    color: 'warning.main',
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                  }}
+                >
+                  Admin
+                </Button>
+              )}
               {showAuthedHeader && (
                 <>
-                  <Button
-                    component={RouterLink}
-                    to="/feed"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '0.875rem',
-                      ...(isFeedActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Feed
-                  </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/directory"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '0.875rem',
-                      ...(isDirectoryActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Directory
-                  </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/events"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '0.875rem',
-                      ...(isEventsActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Events
-                  </Button>
                   <Button
                     component={RouterLink}
                     to="/dashboard"
                     sx={{
                       color: 'rgba(255,255,255,0.85)',
                       textTransform: 'none',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       ...(isDashboardActive && {
                         color: 'white',
                         borderBottom: '2px solid rgba(255,255,255,0.6)',
@@ -775,8 +719,75 @@ export const Navbar = () => {
                   >
                     Dashboard
                   </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/directory"
+                    sx={{
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      ...(isDirectoryActive && {
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                      }),
+                    }}
+                  >
+                    Directory
+                  </Button>
+                  {FEATURE_EVENTS_ENABLED && (
+                    <Button
+                      component={RouterLink}
+                      to="/events"
+                      sx={{
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        ...(isEventsActive && {
+                          color: 'white',
+                          borderBottom: '2px solid rgba(255,255,255,0.6)',
+                          borderRadius: 0,
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        }),
+                      }}
+                    >
+                      Events
+                    </Button>
+                  )}
+                  <Button
+                    component={RouterLink}
+                    to="/feed"
+                    sx={{
+                      color: 'rgba(255,255,255,0.85)',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      ...(isFeedActive && {
+                        color: 'white',
+                        borderBottom: '2px solid rgba(255,255,255,0.6)',
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                      }),
+                    }}
+                  >
+                    Feed
+                  </Button>
                 </>
               )}
+              <Button
+                component="a"
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: 'rgba(255,255,255,0.85)',
+                  textDecoration: 'none',
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                }}
+              >
+                Store
+              </Button>
             </Box>
           )}
 
@@ -803,7 +814,7 @@ export const Navbar = () => {
                       sx={{
                         color: 'rgba(255,255,255,0.85)',
                         textTransform: 'none',
-                        fontSize: '0.875rem',
+                        fontSize: '1rem',
                         minWidth: 0,
                         px: 1,
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
@@ -819,7 +830,7 @@ export const Navbar = () => {
                     sx={{
                       color: 'rgba(255,255,255,0.85)',
                       textTransform: 'none',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       minWidth: 0,
                       px: 1,
                       '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
@@ -830,57 +841,104 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  {showUnreadNotifications && (
+                  {showAuthedHeader && (
                     <IconButton
                       component={RouterLink}
                       to="/dashboard/notifications"
-                      aria-label={`${notificationsUnread} unread notifications`}
+                      aria-label={
+                        notificationsUnread > 0
+                          ? `${notificationsUnread} unread notifications`
+                          : 'Notifications'
+                      }
                       sx={{
-                        color: 'white',
+                        color: 'rgba(255,255,255,0.85)',
                         ...(path === '/dashboard/notifications' && {
+                          color: 'white',
                           bgcolor: 'rgba(255,255,255,0.12)',
                           '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
                         }),
                       }}
                     >
-                      <Badge badgeContent={notificationsUnread} color="error">
-                        <NotificationsIcon />
+                      <Badge
+                        badgeContent={
+                          notificationsUnread > 0
+                            ? notificationsUnread
+                            : undefined
+                        }
+                        color="error"
+                      >
+                        <NotificationsIcon sx={{ fontSize: 22 }} />
                       </Badge>
                     </IconButton>
                   )}
-                  <Box
-                    component={RouterLink}
-                    to="/dashboard"
+                  <IconButton
+                    type="button"
+                    onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                    aria-label="Account menu"
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(avatarMenuAnchor)}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      textDecoration: 'none',
+                      gap: 0.25,
+                      p: 0.25,
                       color: 'inherit',
+                      borderRadius: 9999,
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                     }}
                   >
-                    <ProfileAvatar
-                      src={avatarUrl ?? undefined}
-                      alt={session?.user?.user_metadata?.full_name || 'User'}
-                      size="small"
-                    />
-                  </Box>
-                  {isAdmin && (
-                    <Button
-                      component={RouterLink}
-                      to="/admin"
-                      sx={{ color: 'warning.main' }}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.4)',
+                        p: '1px',
+                        flexShrink: 0,
+                      }}
                     >
-                      Admin
-                    </Button>
-                  )}
-
-                  <Button
-                    sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
-                    onClick={() => void signOut()}
-                    disabled={busy}
+                      <ProfileAvatar
+                        src={avatarUrl ?? undefined}
+                        alt={session?.user?.user_metadata?.full_name || 'User'}
+                        size="small"
+                        sx={{ width: 24, height: 24 }}
+                      />
+                    </Box>
+                    <KeyboardArrowDownIcon
+                      sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
+                    />
+                  </IconButton>
+                  <Menu
+                    anchorEl={avatarMenuAnchor}
+                    open={Boolean(avatarMenuAnchor)}
+                    onClose={() => setAvatarMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1.5,
+                          minWidth: 180,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(30,30,30,0.98)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                        },
+                      },
+                    }}
                   >
-                    Sign Out
-                  </Button>
+                    <MenuItem
+                      onClick={() => {
+                        setAvatarMenuAnchor(null);
+                        setDrawerOpen(false);
+                        void handleSignOut();
+                      }}
+                      disabled={busy}
+                      sx={{ color: 'text.secondary', py: 1.25 }}
+                    >
+                      Sign Out
+                    </MenuItem>
+                  </Menu>
                 </>
               )}
             </Stack>
@@ -922,7 +980,7 @@ export const Navbar = () => {
                         px: 1.25,
                         color: 'text.secondary',
                         textTransform: 'none',
-                        fontSize: '0.8125rem',
+                        fontSize: '0.9375rem',
                         touchAction: 'manipulation',
                         pointerEvents: 'auto',
                         '&:hover': { color: 'white' },
@@ -943,7 +1001,7 @@ export const Navbar = () => {
                       px: 1.25,
                       color: 'text.secondary',
                       textTransform: 'none',
-                      fontSize: '0.8125rem',
+                      fontSize: '0.9375rem',
                       touchAction: 'manipulation',
                       pointerEvents: 'auto',
                       '&:hover': { color: 'white' },
@@ -954,11 +1012,15 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  {showUnreadNotifications && (
+                  {showAuthedHeader && (
                     <IconButton
                       component={RouterLink}
                       to="/dashboard/notifications"
-                      aria-label={`${notificationsUnread} unread notifications`}
+                      aria-label={
+                        notificationsUnread > 0
+                          ? `${notificationsUnread} unread notifications`
+                          : 'Notifications'
+                      }
                       sx={{
                         color: 'white',
                         ...(path === '/dashboard/notifications' && {
@@ -967,43 +1029,56 @@ export const Navbar = () => {
                         }),
                       }}
                     >
-                      <Badge badgeContent={notificationsUnread} color="error">
-                        <NotificationsIcon />
+                      <Badge
+                        badgeContent={
+                          notificationsUnread > 0
+                            ? notificationsUnread
+                            : undefined
+                        }
+                        color="error"
+                      >
+                        <NotificationsIcon sx={{ fontSize: 22 }} />
                       </Badge>
                     </IconButton>
                   )}
-                  <Box
-                    component={RouterLink}
-                    to="/dashboard"
-                    onClick={() => setDrawerOpen(false)}
+                  <IconButton
+                    type="button"
+                    onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                    aria-label="Account menu"
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(avatarMenuAnchor)}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      textDecoration: 'none',
+                      gap: 0.25,
+                      p: 0.25,
                       color: 'inherit',
+                      borderRadius: 9999,
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                     }}
                   >
-                    <ProfileAvatar
-                      src={avatarUrl ?? undefined}
-                      alt={session?.user?.user_metadata?.full_name || 'User'}
-                      size="small"
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.4)',
+                        p: '1px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ProfileAvatar
+                        src={avatarUrl ?? undefined}
+                        alt={session?.user?.user_metadata?.full_name || 'User'}
+                        size="small"
+                        sx={{ width: 24, height: 24 }}
+                      />
+                    </Box>
+                    <KeyboardArrowDownIcon
+                      sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
                     />
-                  </Box>
-                  <Button
-                    size="small"
-                    sx={{
-                      color: 'text.secondary',
-                      whiteSpace: 'nowrap',
-                      minHeight: 40,
-                      minWidth: 'auto',
-                      px: 1,
-                      fontSize: '0.8125rem',
-                    }}
-                    onClick={() => void signOut()}
-                    disabled={busy}
-                  >
-                    Sign Out
-                  </Button>
+                  </IconButton>
                 </>
               )}
             </Stack>
@@ -1026,21 +1101,21 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            <Button
-              component="a"
-              href={storeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setDrawerOpen(false)}
-              sx={{
-                justifyContent: 'flex-start',
-                color: 'white',
-                textTransform: 'none',
-                py: 1.5,
-              }}
-            >
-              Store
-            </Button>
+            {isAdmin && (
+              <Button
+                component={RouterLink}
+                to="/admin"
+                onClick={() => setDrawerOpen(false)}
+                sx={{
+                  justifyContent: 'flex-start',
+                  color: 'warning.main',
+                  textTransform: 'none',
+                  py: 1.5,
+                }}
+              >
+                Admin
+              </Button>
+            )}
             {!showAuthedHeader && (
               <>
                 {!isJoinActive && (
@@ -1075,26 +1150,41 @@ export const Navbar = () => {
                 >
                   Sign in
                 </Button>
-              </>
-            )}
-            {showAuthedHeader && (
-              <>
                 <Button
-                  component={RouterLink}
-                  to="/feed"
+                  component="a"
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: 'white',
                     textTransform: 'none',
                     py: 1.5,
-                    ...(isFeedActive && {
+                  }}
+                >
+                  Store
+                </Button>
+              </>
+            )}
+            {showAuthedHeader && (
+              <>
+                <Button
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    color: 'white',
+                    textTransform: 'none',
+                    py: 1.5,
+                    ...(isDashboardActive && {
                       bgcolor: 'rgba(255,255,255,0.12)',
                       '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
                     }),
                   }}
                 >
-                  Feed
+                  Dashboard
                 </Button>
                 <Button
                   component={RouterLink}
@@ -1113,39 +1203,56 @@ export const Navbar = () => {
                 >
                   Directory
                 </Button>
+                {FEATURE_EVENTS_ENABLED && (
+                  <Button
+                    component={RouterLink}
+                    to="/events"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                      ...(isEventsActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Events
+                  </Button>
+                )}
                 <Button
                   component={RouterLink}
-                  to="/events"
+                  to="/feed"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: 'white',
                     textTransform: 'none',
                     py: 1.5,
-                    ...(isEventsActive && {
+                    ...(isFeedActive && {
                       bgcolor: 'rgba(255,255,255,0.12)',
                       '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
                     }),
                   }}
                 >
-                  Events
+                  Feed
                 </Button>
                 <Button
-                  component={RouterLink}
-                  to="/dashboard"
+                  component="a"
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: 'white',
                     textTransform: 'none',
                     py: 1.5,
-                    ...(isDashboardActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
                   }}
                 >
-                  Dashboard
+                  Store
                 </Button>
                 <Button
                   component={RouterLink}
@@ -1201,20 +1308,22 @@ export const Navbar = () => {
               >
                 Community
               </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/events"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <EventIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Events"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
+              {FEATURE_EVENTS_ENABLED && (
+                <ListItemButton
+                  component={RouterLink}
+                  to="/events"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{ minHeight: 40, py: 0.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <EventIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Events"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              )}
               <ListItemButton
                 component={RouterLink}
                 to="/groups"
@@ -1399,44 +1508,6 @@ export const Navbar = () => {
               />
             </ListItemButton>
           </List>
-
-          {showAuthedHeader && (
-            <Box sx={{ pt: 2, px: 2 }}>
-              {isAdmin && (
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'warning.main',
-                    textTransform: 'none',
-                    py: 1,
-                    px: 1,
-                  }}
-                >
-                  Admin
-                </Button>
-              )}
-              <Button
-                sx={{
-                  justifyContent: 'flex-start',
-                  color: 'text.secondary',
-                  textTransform: 'none',
-                  py: 1,
-                  px: 1,
-                  whiteSpace: 'nowrap',
-                }}
-                onClick={() => {
-                  setDrawerOpen(false);
-                  void signOut();
-                }}
-                disabled={busy}
-              >
-                Sign Out
-              </Button>
-            </Box>
-          )}
         </Box>
       </Drawer>
       <Snackbar

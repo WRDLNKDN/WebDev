@@ -2,6 +2,7 @@
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import { HomeSkeleton } from '../../components/home/HomeSkeleton';
@@ -9,8 +10,9 @@ import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 import { trackEvent } from '../../lib/analytics/trackEvent';
-import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import { toMessage } from '../../lib/utils/errors';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
@@ -23,6 +25,9 @@ export const Home = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<{ id: string } | null>(null);
+  /** When session exists, we only redirect to /feed if onboarded; otherwise stay on home. */
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -45,24 +50,39 @@ export const Home = () => {
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
-  // AUTH: initialize once; home remains canonical even when signed in.
+  // AUTH: session + onboarding. Redirect to /feed only when onboarded; else stay on home.
   useEffect(() => {
     let mounted = true;
 
     const checkSession = async () => {
       try {
-        const { error: sessionError } = await supabase.auth.getSession();
+        const { data, error: sessionError } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         if (sessionError)
           console.warn('Session check warning:', sessionError.message);
 
+        const user = data.session?.user;
+        setSession(user ? { id: user.id } : null);
+        if (!user) {
+          setOnboarded(null);
+          setIsLoading(false);
+          return;
+        }
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, join_reason, participation_style')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!mounted) return;
+        setOnboarded(profile ? isProfileOnboarded(profile) : false);
         setIsLoading(false);
       } catch (err) {
         console.error('Session check failed:', err);
         if (mounted) {
           setError(toMessage(err));
+          setOnboarded(null);
           setIsLoading(false);
         }
       }
@@ -70,9 +90,14 @@ export const Home = () => {
 
     void checkSession();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      if (mounted) setIsLoading(false);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (!mounted) return;
+        setSession(newSession?.user ? { id: newSession.user.id } : null);
+        if (!newSession?.user) setOnboarded(null);
+        setIsLoading(false);
+      },
+    );
 
     const safetyTimer = setTimeout(() => {
       if (mounted && isLoading) setIsLoading(false);
@@ -84,6 +109,24 @@ export const Home = () => {
       sub.subscription.unsubscribe();
     };
   }, [isLoading]);
+
+  // When session exists but onboarded is still null (e.g. auth state changed), resolve onboarding.
+  useEffect(() => {
+    if (!session?.id || onboarded !== null) return;
+    let mounted = true;
+    void (async () => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, join_reason, participation_style')
+        .eq('id', session.id)
+        .maybeSingle();
+      if (!mounted) return;
+      setOnboarded(profile ? isProfileOnboarded(profile) : false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [session?.id, onboarded]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -169,6 +212,11 @@ export const Home = () => {
     return <HomeSkeleton />;
   }
 
+  // Signed-in and onboarded → Feed. Signed-in but not onboarded → stay on home (first-time joiners).
+  if (session && onboarded === true) {
+    return <Navigate to="/feed" replace />;
+  }
+
   return (
     <>
       <Helmet>
@@ -233,7 +281,7 @@ export const Home = () => {
             height: '100%',
             objectFit: 'cover',
             zIndex: 0,
-            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0.15 : 1,
+            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0 : 1,
             transition:
               heroPhase === 'dimmed' && !prefersReducedMotion
                 ? 'opacity 1s ease-out'

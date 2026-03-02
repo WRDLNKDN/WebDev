@@ -82,6 +82,7 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
+import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
   getOrCreateSessionAdSeed,
@@ -97,6 +98,7 @@ import {
   reduceImagePreviewErrored,
   reduceImagePreviewLoaded,
 } from '../../lib/feed/imagePreviewState';
+import { FEATURE_EVENTS_ENABLED } from '../../lib/featureFlags';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import { toMessage } from '../../lib/utils/errors';
 
@@ -1987,7 +1989,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       if (isSupabaseAuthError) {
         console.warn('🔴 Feed: Supabase auth error, signing out:', raw);
         try {
-          await supabase.auth.signOut();
+          await signOut();
         } catch {
           // ignore sign-out failures here
         }
@@ -2831,26 +2833,28 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 >
                   Community
                 </ListSubheader>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/events"
-                    sx={{
-                      minHeight: 40,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <EventIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Events"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                {FEATURE_EVENTS_ENABLED && (
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      component={RouterLink}
+                      to="/events"
+                      sx={{
+                        minHeight: 40,
+                        py: 0.5,
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <EventIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Events"
+                        primaryTypographyProps={{ variant: 'body2' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )}
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}

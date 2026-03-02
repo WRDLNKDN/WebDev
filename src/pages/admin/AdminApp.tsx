@@ -2,16 +2,16 @@ import {
   Alert,
   Box,
   Button,
-  Container,
   CircularProgress,
+  Container,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 import { AdminGate } from './AdminGate';
 import { AdminLayout } from './AdminLayout';
 import { AdminSessionProvider } from './AdminSessionContext';

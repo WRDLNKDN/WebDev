@@ -22,6 +22,7 @@ export const ChatPage = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [startDmOpen, setStartDmOpen] = useState(false);
+  const [startDmError, setStartDmError] = useState<string | null>(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
@@ -62,6 +63,7 @@ export const ChatPage = () => {
     transferAdmin,
     inviteMembers,
     blockUser,
+    refresh,
   } = useChat(roomId ?? null);
 
   const { submitReport } = useReportMessage();
@@ -96,8 +98,22 @@ export const ChatPage = () => {
   }, [session]);
 
   const handleStartDm = async (userId: string) => {
-    const id = await createDm(userId);
-    if (id) navigate(`/chat-full/${id}`);
+    setStartDmError(null);
+    try {
+      const id = await createDm(userId);
+      if (id) {
+        setStartDmOpen(false);
+        navigate(`/chat-full/${id}`);
+      } else {
+        setStartDmError('Could not start chat. Please try again.');
+      }
+    } catch (err) {
+      setStartDmError(
+        err instanceof Error
+          ? err.message
+          : 'Could not start chat. Please try again.',
+      );
+    }
   };
 
   const handleCreateGroup = async (name: string, memberIds: string[]) => {
@@ -225,9 +241,27 @@ export const ChatPage = () => {
               />
 
               {error && (
-                <Typography color="error" variant="body2" sx={{ px: 2, py: 1 }}>
-                  {error}
-                </Typography>
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Typography color="error" variant="body2">
+                    {error}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void refresh()}
+                  >
+                    Try again
+                  </Button>
+                </Box>
               )}
 
               {chatLoading ? (
@@ -313,8 +347,12 @@ export const ChatPage = () => {
 
       <StartDmDialog
         open={startDmOpen}
-        onClose={() => setStartDmOpen(false)}
+        onClose={() => {
+          setStartDmOpen(false);
+          setStartDmError(null);
+        }}
         onSelect={handleStartDm}
+        startError={startDmError}
       />
       <CreateGroupDialog
         open={createGroupOpen}

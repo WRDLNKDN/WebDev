@@ -256,7 +256,7 @@ export const Join = () => {
           </Alert>
         )}
 
-        {renderStep()}
+        <Box key={state.currentStep}>{renderStep()}</Box>
       </Container>
     </Box>
   );

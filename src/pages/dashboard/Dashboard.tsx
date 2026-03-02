@@ -1,17 +1,27 @@
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
   Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Link,
+  Menu,
+  MenuItem,
   Paper,
   Snackbar,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
@@ -46,6 +56,14 @@ export const Dashboard = () => {
   const [previewProject, setPreviewProject] = useState<PortfolioItem | null>(
     null,
   );
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareTokenError, setShareTokenError] = useState<string | null>(null);
+  const [shareTokenLoading, setShareTokenLoading] = useState(false);
+  const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] =
+    useState<HTMLElement | null>(null);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -66,6 +84,41 @@ export const Dashboard = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [state?.openEditDialog, navigate, location.pathname]);
+
+  // Load or create profile share token for "Share my profile"
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    setShareTokenError(null);
+    const load = async () => {
+      setShareTokenLoading(true);
+      const { data, error } = await supabase.rpc(
+        'get_or_create_profile_share_token',
+      );
+      if (cancelled) return;
+      if (error) {
+        setShareToken(null);
+        const err = error as { code?: string; message?: string };
+        const isRpcMissing =
+          err.code === 'PGRST301' ||
+          (typeof err.message === 'string' &&
+            (err.message.includes('404') || err.message.includes('not found')));
+        setShareTokenError(
+          isRpcMissing
+            ? "Share link isn't set up yet. Run: supabase db reset (or apply migrations), then try again."
+            : toMessage(error),
+        );
+      } else {
+        setShareToken(typeof data === 'string' ? data : null);
+        setShareTokenError(null);
+      }
+      setShareTokenLoading(false);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   const {
     profile,
@@ -293,83 +346,169 @@ export const Dashboard = () => {
           }
           slotBetweenContentAndActions={undefined}
           actions={
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              flexWrap="wrap"
-              spacing={1}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
-            >
-              <Button
-                variant="contained"
-                onClick={() => navigate('/feed')}
-                size="small"
-                sx={{
-                  width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: 36, sm: 32 },
-                  fontSize: '0.8rem',
-                  px: 1.5,
-                }}
-              >
-                Back to Feed
-              </Button>
+            <>
               <Button
                 variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={() => setIsEditOpen(true)}
+                size="small"
+                onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+                endIcon={<KeyboardArrowDownIcon />}
                 disabled={loading}
-                size="small"
+                aria-label="Profile menu"
+                aria-haspopup="true"
+                aria-expanded={Boolean(profileMenuAnchor)}
                 sx={{
                   borderColor: 'rgba(255,255,255,0.3)',
                   color: 'white',
-                  width: { xs: '100%', sm: 'auto' },
                   minHeight: { xs: 36, sm: 32 },
                   fontSize: '0.8rem',
                   px: 1.5,
                 }}
               >
-                Edit Profile
+                Profile
               </Button>
-              <Button
-                variant="outlined"
-                onClick={() => setIsLinksOpen(true)}
-                size="small"
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  width: { xs: '100%', sm: 'auto' },
-                  minHeight: { xs: 36, sm: 32 },
-                  fontSize: '0.8rem',
-                  px: 1.5,
+              <Menu
+                anchorEl={profileMenuAnchor}
+                open={Boolean(profileMenuAnchor)}
+                onClose={() => setProfileMenuAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      mt: 1.5,
+                      minWidth: 200,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(30,30,30,0.98)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    },
+                  },
                 }}
               >
-                Add or Edit Links
-              </Button>
-              {profile?.handle && (
-                <Button
-                  variant="outlined"
-                  component="a"
-                  href={`/profile/${profile.handle}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  startIcon={<OpenInNewIcon />}
-                  size="small"
-                  sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    width: { xs: '100%', sm: 'auto' },
-                    minHeight: { xs: 36, sm: 32 },
-                    fontSize: '0.8rem',
-                    px: 1.5,
+                <MenuItem
+                  onClick={() => {
+                    setProfileMenuAnchor(null);
+                    setIsLinksOpen(true);
                   }}
+                  sx={{ py: 1.25 }}
                 >
-                  View Profile
-                </Button>
-              )}
-            </Stack>
+                  Add or Edit Links
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setProfileMenuAnchor(null);
+                    setIsEditOpen(true);
+                  }}
+                  sx={{ py: 1.25 }}
+                >
+                  Edit Profile
+                </MenuItem>
+                {profile?.handle && (
+                  <MenuItem
+                    component="a"
+                    href={`/profile/${profile.handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setProfileMenuAnchor(null)}
+                    sx={{ py: 1.25 }}
+                  >
+                    View Profile
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
           }
         />
 
-        {/* PORTFOLIO: Resume + Projects — no horizontal scroll; tiles wrap vertically */}
+        {/* Share my profile: tokenized public link */}
+        <Paper
+          elevation={0}
+          sx={{
+            ...GLASS_CARD,
+            p: { xs: 2, md: 3 },
+            mt: { xs: 2, md: 3 },
+            width: '100%',
+          }}
+        >
+          <Typography
+            variant="overline"
+            sx={{
+              display: 'block',
+              mb: 1.5,
+              letterSpacing: 2,
+              color: 'text.secondary',
+              fontWeight: 600,
+            }}
+          >
+            Share my profile
+          </Typography>
+          {shareTokenLoading ? (
+            <Typography variant="body2" color="text.secondary">
+              Loading link…
+            </Typography>
+          ) : shareToken ? (
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                Anyone with this link can view a read-only version of your
+                profile. Your handle is not in the URL.
+              </Typography>
+              <TextField
+                size="small"
+                fullWidth
+                value={`https://wrdlnkdn.com/p/${shareToken}`}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                  },
+                }}
+                InputProps={{ readOnly: true }}
+                inputProps={{ 'aria-label': 'Public profile URL' }}
+              />
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={async () => {
+                    const url = `https://wrdlnkdn.com/p/${shareToken}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setSnack('Link copied to clipboard.');
+                    } catch {
+                      setSnack('Could not copy link.');
+                    }
+                  }}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    textTransform: 'none',
+                  }}
+                >
+                  Copy link
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<RefreshIcon />}
+                  onClick={() => setRegenerateConfirmOpen(true)}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    textTransform: 'none',
+                  }}
+                >
+                  Regenerate link
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {shareTokenError ?? 'Unable to load share link. Try refreshing.'}
+            </Typography>
+          )}
+        </Paper>
+
+        {/* PORTFOLIO: Resume + Projects — empty state or grid */}
         <Paper
           elevation={0}
           sx={{
@@ -393,112 +532,232 @@ export const Dashboard = () => {
             PORTFOLIO
           </Typography>
 
-          {/* Action buttons: compact (~50% of previous size); only these when no resume */}
-          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
-            <Button
-              component="label"
-              variant="outlined"
-              size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: 'white',
-                textTransform: 'none',
-                fontWeight: 600,
-                minHeight: 28,
-                py: 0.5,
-                px: 1.5,
-                fontSize: '0.8125rem',
-              }}
-            >
-              Resume
-              <input
-                type="file"
-                hidden
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleResumeUpload(f);
-                }}
-              />
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={() => setIsAddProjectOpen(true)}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: 'white',
-                textTransform: 'none',
-                fontWeight: 600,
-                minHeight: 28,
-                py: 0.5,
-                px: 1.5,
-                fontSize: '0.8125rem',
-              }}
-            >
-              Add Project
-            </Button>
-          </Stack>
+          {!profile?.resume_url && projects.length === 0 ? (
+            /* Empty state: message + primary CTA + secondary link */
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Your profile is empty.
+              </Typography>
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                alignItems="center"
+                gap={1}
+                sx={{ alignItems: 'center' }}
+              >
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setIsAddProjectOpen(true)}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    color: 'white',
+                    background:
+                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                    '&:hover': {
+                      background:
+                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                    },
+                  }}
+                >
+                  Add your first project
+                </Button>
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  or
+                </Typography>
+                <input
+                  ref={resumeFileInputRef}
+                  type="file"
+                  hidden
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleResumeUpload(f);
+                  }}
+                />
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => resumeFileInputRef.current?.click()}
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  Upload a resume
+                </Link>
+              </Stack>
+            </>
+          ) : (
+            <>
+              {/* Action buttons when portfolio has content */}
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    minHeight: 28,
+                    py: 0.5,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                  }}
+                >
+                  Resume
+                  <input
+                    type="file"
+                    hidden
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleResumeUpload(f);
+                    }}
+                  />
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setIsAddProjectOpen(true)}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    minHeight: 28,
+                    py: 0.5,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                  }}
+                >
+                  Add Project
+                </Button>
+              </Stack>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gap: 1.5,
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                lg: 'repeat(3, minmax(0, 1fr))',
-              },
-              justifyItems: { xs: 'stretch', sm: 'center' },
-              alignItems: 'start',
-            }}
-          >
-            {/* Resume tile only when resume exists; "+ Resume" button above is the only CTA when none */}
-            {profile?.resume_url ? (
-              <ResumeCard
-                url={profile?.resume_url}
-                thumbnailUrl={resumeThumbnailUrl}
-                thumbnailStatus={resumeThumbnailStatus}
-                thumbnailError={
-                  typeof safeNerdCreds.resume_thumbnail_error === 'string'
-                    ? safeNerdCreds.resume_thumbnail_error
-                    : null
-                }
-                onUpload={handleResumeUpload}
-                onRetryThumbnail={() => {
-                  void retryResumeThumbnail().catch((e) => {
-                    setSnack(toMessage(e));
-                  });
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 1.5,
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    lg: 'repeat(3, minmax(0, 1fr))',
+                  },
+                  justifyItems: { xs: 'stretch', sm: 'center' },
+                  alignItems: 'start',
                 }}
-                retryThumbnailBusy={updating}
-                isOwner
-              />
-            ) : null}
+              >
+                {profile?.resume_url ? (
+                  <ResumeCard
+                    url={profile?.resume_url}
+                    thumbnailUrl={resumeThumbnailUrl}
+                    thumbnailStatus={resumeThumbnailStatus}
+                    thumbnailError={
+                      typeof safeNerdCreds.resume_thumbnail_error === 'string'
+                        ? safeNerdCreds.resume_thumbnail_error
+                        : null
+                    }
+                    onUpload={handleResumeUpload}
+                    onRetryThumbnail={() => {
+                      void retryResumeThumbnail().catch((e) => {
+                        setSnack(toMessage(e));
+                      });
+                    }}
+                    retryThumbnailBusy={updating}
+                    isOwner
+                  />
+                ) : null}
 
-            <PortfolioSortableList
-              projects={projects}
-              isOwner
-              onReorder={async (orderedIds) => {
-                try {
-                  await reorderProjects(orderedIds);
-                } catch (e) {
-                  setSnack(toMessage(e));
-                }
-              }}
-              onDelete={async (id) => {
-                try {
-                  await deleteProject(id);
-                } catch (e) {
-                  setSnack(toMessage(e));
-                }
-              }}
-              onOpenPreview={setPreviewProject}
-            />
-          </Box>
+                <PortfolioSortableList
+                  projects={projects}
+                  isOwner
+                  onReorder={async (orderedIds) => {
+                    try {
+                      await reorderProjects(orderedIds);
+                    } catch (e) {
+                      setSnack(toMessage(e));
+                    }
+                  }}
+                  onDelete={async (id) => {
+                    try {
+                      await deleteProject(id);
+                    } catch (e) {
+                      setSnack(toMessage(e));
+                    }
+                  }}
+                  onOpenPreview={setPreviewProject}
+                />
+              </Box>
+            </>
+          )}
         </Paper>
       </Container>
+
+      <Dialog
+        open={regenerateConfirmOpen}
+        onClose={() => !regenerating && setRegenerateConfirmOpen(false)}
+        aria-labelledby="regenerate-share-link-title"
+        aria-describedby="regenerate-share-link-description"
+      >
+        <DialogTitle id="regenerate-share-link-title">
+          Regenerate share link?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="regenerate-share-link-description">
+            Regenerating will break previously shared links. Anyone with the old
+            link will no longer be able to view your profile. You can share the
+            new link afterward.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setRegenerateConfirmOpen(false)}
+            disabled={regenerating}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              setRegenerating(true);
+              try {
+                const { data, error } = await supabase.rpc(
+                  'regenerate_profile_share_token',
+                );
+                if (error) {
+                  setSnack(toMessage(error));
+                  return;
+                }
+                setShareToken(typeof data === 'string' ? data : null);
+                setRegenerateConfirmOpen(false);
+                setSnack('New link generated. Previous link no longer works.');
+              } catch (e) {
+                setSnack(toMessage(e));
+              } finally {
+                setRegenerating(false);
+              }
+            }}
+            variant="contained"
+            color="primary"
+            disabled={regenerating}
+          >
+            {regenerating ? 'Regenerating…' : 'Regenerate link'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <EditProfileDialog
         open={isEditOpen}

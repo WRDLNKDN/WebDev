@@ -24,8 +24,7 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import type { IdentityProvider } from '../../types/join';
 import {
   identityStepChecking,
-  identityStepInfoBox,
-  signupBackButton,
+  identityStepOAuthNote,
   signupLink,
   signupPaper,
   signupStepLabel,
@@ -209,10 +208,6 @@ export const IdentityStep = () => {
     }
   };
 
-  const handleBack = () => {
-    goToStep('welcome');
-  };
-
   if (checkingAuth) {
     return (
       <Box sx={{ width: '100%' }}>
@@ -263,7 +258,7 @@ export const IdentityStep = () => {
           >
             Before entering, please confirm:
           </Typography>
-          <Stack spacing={1.5} sx={{ mb: 2 }}>
+          <Stack spacing={0.25} sx={{ mb: 2 }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -273,7 +268,7 @@ export const IdentityStep = () => {
                 />
               }
               label={
-                <Typography variant="body2">
+                <Typography variant="body2" component="span" sx={{ m: 0 }}>
                   I agree to the{' '}
                   <Typography
                     component="a"
@@ -296,7 +291,7 @@ export const IdentityStep = () => {
                 />
               }
               label={
-                <Typography variant="body2">
+                <Typography variant="body2" component="span" sx={{ m: 0 }}>
                   I agree to follow the{' '}
                   <Typography
                     component="a"
@@ -311,6 +306,63 @@ export const IdentityStep = () => {
               }
             />
           </Stack>
+
+          <Box
+            sx={{
+              ...identityStepOAuthNote,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.25,
+              py: 1,
+              px: 1.5,
+              bgcolor: 'rgba(0, 200, 255, 0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderLeft: '4px solid #4ade80',
+              borderRadius: '8px',
+            }}
+          >
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                bgcolor: 'rgba(74, 222, 128, 0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: '1rem',
+              }}
+              aria-hidden
+            >
+              🔒
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.25,
+                minWidth: 0,
+              }}
+            >
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.9375rem',
+                  color: 'rgba(255,255,255,0.95)',
+                }}
+              >
+                Secure OAuth authentication
+              </Typography>
+              <Typography
+                component="span"
+                sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.65)' }}
+              >
+                We never store your credentials.
+              </Typography>
+            </Box>
+          </Box>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Button
@@ -352,34 +404,6 @@ export const IdentityStep = () => {
                 : 'Sign in with Microsoft'}
             </Button>
           </Stack>
-
-          <Box sx={{ ...identityStepInfoBox, mt: 1.5 }}>
-            <Typography variant="caption" sx={signupStepSubtext}>
-              Secure OAuth authentication. We never store your credentials.
-            </Typography>
-          </Box>
-
-          <Button
-            variant="outlined"
-            onClick={handleBack}
-            disabled={loading}
-            sx={{
-              ...signupBackButton,
-              borderWidth: 1.5,
-              borderColor: 'rgba(255,255,255,0.6)',
-              color: '#fff',
-              '&:hover': {
-                borderColor: 'rgba(255,255,255,0.85)',
-                bgcolor: 'rgba(255,255,255,0.08)',
-              },
-              '&.Mui-disabled': {
-                borderColor: 'rgba(255,255,255,0.35)',
-                color: 'rgba(255,255,255,0.6)',
-              },
-            }}
-          >
-            Back
-          </Button>
         </Stack>
       </Paper>
     </Box>

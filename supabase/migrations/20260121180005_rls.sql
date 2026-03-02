@@ -168,7 +168,15 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'niche_field') then
     alter table public.profiles add column niche_field text;
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_share_token') then
+    alter table public.profiles add column profile_share_token text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_share_token_created_at') then
+    alter table public.profiles add column profile_share_token_created_at timestamptz;
+  end if;
 end $$;
+
+create unique index if not exists idx_profiles_profile_share_token on public.profiles(profile_share_token) where profile_share_token is not null;
 
 -- Directory indexes (idempotent)
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
@@ -368,6 +376,8 @@ grant update (
   nerd_creds,
   pronouns,
   industry,
+  secondary_industry,
+  niche_field,
   location,
   profile_visibility,
   feed_view_preference,
@@ -459,22 +469,26 @@ create policy "Users can manage own weirdlings"
 -- -----------------------------
 alter table public.feed_connections enable row level security;
 
+drop policy if exists "Users can read own connections" on public.feed_connections;
 create policy "Users can read own connections"
   on public.feed_connections for select
   to authenticated
   using ((select auth.uid()) = feed_connections.user_id);
 
 -- Allow reading rows where current user is connected_user_id (so Start a chat can see mutual connections)
+drop policy if exists "Users can read connections where they are connected_user" on public.feed_connections;
 create policy "Users can read connections where they are connected_user"
   on public.feed_connections for select
   to authenticated
   using ((select auth.uid()) = feed_connections.connected_user_id);
 
+drop policy if exists "Users can insert own connections" on public.feed_connections;
 create policy "Users can insert own connections"
   on public.feed_connections for insert
   to authenticated
   with check ((select auth.uid()) = feed_connections.user_id);
 
+drop policy if exists "Users can delete own connections" on public.feed_connections;
 create policy "Users can delete own connections"
   on public.feed_connections for delete
   to authenticated
@@ -674,6 +688,7 @@ create policy "Public read resumes"
 -- -----------------------------
 alter table public.chat_rooms enable row level security;
 
+drop policy if exists "Users can read rooms they are members of" on public.chat_rooms;
 create policy "Users can read rooms they are members of"
   on public.chat_rooms for select
   to authenticated
@@ -684,11 +699,13 @@ create policy "Users can read rooms they are members of"
     )
   );
 
+drop policy if exists "Authenticated can create rooms" on public.chat_rooms;
 create policy "Authenticated can create rooms"
   on public.chat_rooms for insert
   to authenticated
   with check ((select auth.uid()) = created_by);
 
+drop policy if exists "Admins can update room name (groups)" on public.chat_rooms;
 create policy "Admins can update room name (groups)"
   on public.chat_rooms for update
   to authenticated
@@ -700,11 +717,13 @@ create policy "Admins can update room name (groups)"
 -- -----------------------------
 alter table public.chat_room_members enable row level security;
 
+drop policy if exists "Members can read room membership" on public.chat_room_members;
 create policy "Members can read room membership"
   on public.chat_room_members for select
   to authenticated
   using (public.chat_is_room_member(chat_room_members.room_id));
 
+drop policy if exists "Members can insert/invite room membership" on public.chat_room_members;
 create policy "Members can insert/invite room membership"
   on public.chat_room_members for insert
   to authenticated
@@ -719,6 +738,7 @@ create policy "Members can insert/invite room membership"
     )
   );
 
+drop policy if exists "Members can update room membership" on public.chat_room_members;
 create policy "Members can update room membership"
   on public.chat_room_members for update
   to authenticated
@@ -790,6 +810,7 @@ grant insert, update, delete on table public.chat_suspensions to authenticated;
 -- -----------------------------
 alter table public.chat_messages enable row level security;
 
+drop policy if exists "Members can read room messages" on public.chat_messages;
 create policy "Members can read room messages"
   on public.chat_messages for select
   to authenticated
@@ -800,6 +821,7 @@ create policy "Members can read room messages"
     )
   );
 
+drop policy if exists "Members can insert messages" on public.chat_messages;
 create policy "Members can insert messages"
   on public.chat_messages for insert
   to authenticated
@@ -810,6 +832,7 @@ create policy "Members can insert messages"
     and public.chat_can_message_in_room(chat_messages.room_id, (select auth.uid()))
   );
 
+drop policy if exists "Senders/admins can update messages (edit/delete/moderate)" on public.chat_messages;
 create policy "Senders/admins can update messages (edit/delete/moderate)"
   on public.chat_messages for update
   to authenticated

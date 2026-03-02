@@ -8,6 +8,7 @@ import {
   hasProfileOnboardedSticky,
   setProfileValidated,
 } from '../../lib/profile/profileValidatedCache';
+import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { devLog, devWarn } from '../../lib/utils/devLog';
 
@@ -196,7 +197,7 @@ export const RequireOnboarded = ({
         typeof profile.status === 'string' &&
         ENFORCED_INACTIVE_STATUSES.has(profile.status)
       ) {
-        await supabase.auth.signOut({ scope: 'global' });
+        await signOut();
         hasEverAllowedRef.current = false;
         redirectToRef.current = '/';
         setState('redirect');
@@ -221,8 +222,10 @@ export const RequireOnboarded = ({
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       if (event === 'SIGNED_OUT') {
-        // UAT hardening: SIGNED_OUT can be emitted transiently during token
-        // churn. Re-verify/refresh before forcing redirect.
+        // Ensure sign-out always sends user home, not /join (avoid race with in-flight check()).
+        hasEverAllowedRef.current = false;
+        redirectToRef.current = '/';
+        // UAT hardening: re-verify session is really gone before redirecting.
         void (async () => {
           const { data: current } = await supabase.auth.getSession();
           if (cancelled) return;
@@ -236,7 +239,6 @@ export const RequireOnboarded = ({
             void check();
             return;
           }
-          hasEverAllowedRef.current = false;
           setState('redirect');
         })();
         return;

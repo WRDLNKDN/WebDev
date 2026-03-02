@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { FEATURE_EVENTS_ENABLED } from '../../lib/featureFlags';
 
 const navItem = (
   to: string,
@@ -81,26 +82,28 @@ export const ExploreSidebar = () => {
         >
           Community
         </ListSubheader>
-        <ListItem disablePadding>
-          <ListItemButton
-            component={RouterLink}
-            to="/events"
-            sx={{
-              minHeight: 40,
-              py: 0.5,
-              borderRadius: 0,
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <EventIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Events"
-              primaryTypographyProps={{ variant: 'body2' }}
-            />
-          </ListItemButton>
-        </ListItem>
+        {FEATURE_EVENTS_ENABLED && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component={RouterLink}
+              to="/events"
+              sx={{
+                minHeight: 40,
+                py: 0.5,
+                borderRadius: 0,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <EventIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Events"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
         <ListItem disablePadding>
           <ListItemButton
             component={RouterLink}

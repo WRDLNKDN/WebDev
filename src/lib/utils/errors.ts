@@ -127,6 +127,11 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
       'Database table not found. Run migrations (e.g. supabase db reset) or contact your administrator.',
   },
   {
+    pattern: /unrecognized encoding|function.*does not exist/i,
+    friendly:
+      'Share link feature needs a database update. Run: supabase db reset (or apply migrations), then try again.',
+  },
+  {
     pattern: /permission denied for (table|relation)/i,
     friendly:
       "You don't have permission to access that. Sign in again or check with an administrator.",

@@ -440,18 +440,42 @@ export const NotificationsPage = () => {
                             void handleConnectionDecision(row, 'accept')
                           }
                           disabled={actingRequestId === row.id}
-                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                          sx={{
+                            width: { xs: '100%', sm: 'auto' },
+                            bgcolor: 'success.main',
+                            color: '#000',
+                            '&:hover': {
+                              bgcolor: 'success.dark',
+                              color: '#000',
+                            },
+                            '&.Mui-disabled': {
+                              bgcolor: 'action.disabledBackground',
+                              color: 'action.disabled',
+                            },
+                          }}
                         >
                           Approve
                         </Button>
                         <Button
                           size="small"
-                          variant="outlined"
+                          variant="contained"
                           onClick={() =>
                             void handleConnectionDecision(row, 'decline')
                           }
                           disabled={actingRequestId === row.id}
-                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                          sx={{
+                            width: { xs: '100%', sm: 'auto' },
+                            bgcolor: 'error.main',
+                            color: '#000',
+                            '&:hover': {
+                              bgcolor: 'error.dark',
+                              color: '#000',
+                            },
+                            '&.Mui-disabled': {
+                              bgcolor: 'action.disabledBackground',
+                              color: 'action.disabled',
+                            },
+                          }}
                         >
                           Decline
                         </Button>

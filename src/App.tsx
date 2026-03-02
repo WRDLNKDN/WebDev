@@ -17,7 +17,9 @@ import { useKonamiCode } from './hooks/useKonamiCode';
 // LAYOUT & UTILS
 import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
+import { clearAuthStorage } from './lib/auth/signOut';
 import { supabase } from './lib/auth/supabaseClient';
+import { FEATURE_EVENTS_ENABLED } from './lib/featureFlags';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
 
 /**
@@ -113,6 +115,12 @@ const PlaylistDetailPage = lazy(async () => {
 const ProjectPage = lazy(async () => {
   const m = await import('./pages/profile/ProjectPage');
   return { default: m.ProjectPage };
+});
+
+/** Public profile by share token: minimal frame, no Layout/nav. */
+const PublicProfilePage = lazy(async () => {
+  const m = await import('./pages/profile/PublicProfilePage');
+  return { default: m.PublicProfilePage };
 });
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
@@ -253,7 +261,11 @@ const Loading = () => (
 
 const AuthBoot = () => {
   useEffect(() => {
-    void supabase.auth.getSession();
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) clearAuthStorage();
+    };
+    void init();
   }, []);
 
   // iPhone/Safari: refresh session when tab becomes visible (e.g. return from another app).
@@ -325,6 +337,9 @@ const App = () => {
                 }
               />
 
+              {/* Public profile by share token: read-only, minimal frame, no handle in URL. */}
+              <Route path="/p/:shareToken" element={<PublicProfilePage />} />
+
               {/* Auth routes outside Layout: no Navbar, no scroll lock. Fixes mobile login and callback. */}
               <Route path="/signin" element={<SignIn />} />
               <Route path="/join" element={<Join />} />
@@ -365,17 +380,25 @@ const App = () => {
                 <Route
                   path="/events"
                   element={
-                    <RequireOnboarded>
-                      <EventsPage />
-                    </RequireOnboarded>
+                    FEATURE_EVENTS_ENABLED ? (
+                      <RequireOnboarded>
+                        <EventsPage />
+                      </RequireOnboarded>
+                    ) : (
+                      <Navigate to="/feed" replace />
+                    )
                   }
                 />
                 <Route
                   path="/events/:id"
                   element={
-                    <RequireOnboarded>
-                      <EventDetailPage />
-                    </RequireOnboarded>
+                    FEATURE_EVENTS_ENABLED ? (
+                      <RequireOnboarded>
+                        <EventDetailPage />
+                      </RequireOnboarded>
+                    ) : (
+                      <Navigate to="/feed" replace />
+                    )
                   }
                 />
                 <Route path="/groups" element={<GroupsPage />} />

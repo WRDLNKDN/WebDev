@@ -57,7 +57,7 @@ export const AdminGate = ({ children }: Props) => {
         };
 
         if (rpcError) {
-          setError("You don't have permission to view this page.");
+          setError(toMessage(rpcError));
           setIsAdmin(false);
           return;
         }

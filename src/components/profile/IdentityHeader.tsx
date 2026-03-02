@@ -107,15 +107,25 @@ export const IdentityHeader = ({
           spacing={1.5}
           sx={{ order: { xs: 1, md: 2 } }}
         >
-          <ProfileAvatar
-            src={avatarUrl || undefined}
-            alt={displayName}
-            size="header"
+          <Box
             sx={{
-              border: '4px solid rgba(255,255,255,0.1)',
+              width: 168,
+              height: 168,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              border: '4px solid rgba(66,165,245,0.45)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             }}
-          />
+          >
+            <ProfileAvatar
+              src={avatarUrl || undefined}
+              alt={displayName}
+              size="header"
+              sx={{ border: 'none', boxShadow: 'none' }}
+            />
+          </Box>
           {slotUnderAvatarLabel && (
             <Typography
               variant="overline"

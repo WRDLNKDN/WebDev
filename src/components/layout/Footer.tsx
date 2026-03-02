@@ -14,9 +14,8 @@ import {
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
-import HeadsetIcon from '@mui/icons-material/Headset';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import TwitterIcon from '@mui/icons-material/Twitter';
+import YouTubeIcon from '@mui/icons-material/YouTube';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
@@ -248,21 +247,6 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
             <Stack direction="row" spacing={0.25} aria-label="Social links">
               <IconButton
                 component={Link}
-                href="https://twitter.com/wrdlnkdn"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Twitter"
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  p: 0.5,
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                <TwitterIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-              <IconButton
-                component={Link}
                 href="https://www.facebook.com/wrdlnkdn"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -293,8 +277,10 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
               </IconButton>
               <IconButton
                 component={Link}
-                href="/support"
-                aria-label="Support"
+                href="https://www.youtube.com/@WRDLNKDN"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
                 size="small"
                 sx={{
                   color: 'text.secondary',
@@ -302,7 +288,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   '&:hover': { color: 'primary.main' },
                 }}
               >
-                <HeadsetIcon sx={{ fontSize: 18 }} />
+                <YouTubeIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Stack>
           </Stack>
@@ -578,19 +564,6 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 >
                   <IconButton
                     component={Link}
-                    href="https://twitter.com/wrdlnkdn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Twitter"
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    <TwitterIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    component={Link}
                     href="https://www.facebook.com/wrdlnkdn"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -617,14 +590,16 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   </IconButton>
                   <IconButton
                     component={Link}
-                    href="/support"
-                    aria-label="Support"
+                    href="https://www.youtube.com/@WRDLNKDN"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="YouTube"
                     sx={{
                       color: 'text.secondary',
                       '&:hover': { color: 'primary.main' },
                     }}
                   >
-                    <HeadsetIcon fontSize="small" />
+                    <YouTubeIcon fontSize="small" />
                   </IconButton>
                 </Stack>
               </Grid>

@@ -25,12 +25,15 @@ type StartDmDialogProps = {
   open: boolean;
   onClose: () => void;
   onSelect: (userId: string) => Promise<void>;
+  /** Shown when starting the chat failed (e.g. createDm failed). */
+  startError?: string | null;
 };
 
 export const StartDmDialog = ({
   open,
   onClose,
   onSelect,
+  startError,
 }: StartDmDialogProps) => {
   const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,61 +54,87 @@ export const StartDmDialog = ({
   useEffect(() => {
     if (!open) return;
     setSearchQuery('');
+    setError(null);
     let cancelled = false;
     setLoadingList(true);
 
     const load = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user || cancelled) return;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user || cancelled) {
+          setConnections([]);
+          return;
+        }
 
-      const { data: myConns } = await supabase
-        .from('feed_connections')
-        .select('connected_user_id')
-        .eq('user_id', session.user.id);
+        const { data: myConns, error: connErr } = await supabase
+          .from('feed_connections')
+          .select('connected_user_id')
+          .eq('user_id', session.user.id);
 
-      if (!myConns?.length || cancelled) {
-        setConnections([]);
-        return;
-      }
+        if (cancelled) return;
+        if (connErr) {
+          setError('Could not load connections. Try again.');
+          setConnections([]);
+          return;
+        }
+        if (!myConns?.length) {
+          setConnections([]);
+          return;
+        }
 
-      const connIds = myConns.map((c) => c.connected_user_id);
+        const connIds = myConns.map((c) => c.connected_user_id);
 
-      const { data: mutualConns } = await supabase
-        .from('feed_connections')
-        .select('user_id')
-        .eq('connected_user_id', session.user.id)
-        .in('user_id', connIds);
+        const { data: mutualConns, error: mutualErr } = await supabase
+          .from('feed_connections')
+          .select('user_id')
+          .eq('connected_user_id', session.user.id)
+          .in('user_id', connIds);
 
-      const mutualIds = new Set((mutualConns ?? []).map((m) => m.user_id));
+        if (cancelled) return;
+        if (mutualErr) {
+          setError('Could not load connections. Try again.');
+          setConnections([]);
+          return;
+        }
 
-      const { data: blocks } = await supabase
-        .from('chat_blocks')
-        .select('blocker_id, blocked_user_id')
-        .or(
-          `blocker_id.eq.${session.user.id},blocked_user_id.eq.${session.user.id}`,
+        const mutualIds = new Set((mutualConns ?? []).map((m) => m.user_id));
+
+        const { data: blocks } = await supabase
+          .from('chat_blocks')
+          .select('blocker_id, blocked_user_id')
+          .or(
+            `blocker_id.eq.${session.user.id},blocked_user_id.eq.${session.user.id}`,
+          );
+
+        const blockedSet = new Set<string>();
+        (blocks ?? []).forEach((b) => {
+          if (b.blocker_id === session.user.id)
+            blockedSet.add(b.blocked_user_id);
+          else blockedSet.add(b.blocker_id);
+        });
+
+        const allowedIds = Array.from(mutualIds).filter(
+          (id) => !blockedSet.has(id),
         );
 
-      const blockedSet = new Set<string>();
-      (blocks ?? []).forEach((b) => {
-        if (b.blocker_id === session.user.id) blockedSet.add(b.blocked_user_id);
-        else blockedSet.add(b.blocker_id);
-      });
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, handle, display_name, avatar')
+          .in('id', allowedIds);
 
-      const allowedIds = Array.from(mutualIds).filter(
-        (id) => !blockedSet.has(id),
-      );
+        if (cancelled) return;
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, handle, display_name, avatar')
-        .in('id', allowedIds);
-
-      if (cancelled) return;
-
-      setConnections((profileData ?? []) as ConnectionProfile[]);
-      setLoadingList(false);
+        setConnections((profileData ?? []) as ConnectionProfile[]);
+      } catch {
+        if (!cancelled) {
+          setError('Could not load connections. Try again.');
+          setConnections([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingList(false);
+      }
     };
 
     void load();
@@ -122,8 +151,14 @@ export const StartDmDialog = ({
     try {
       await onSelect(userId);
       onClose();
-    } catch {
-      setError("We couldn't start a chat with this member. Please try again.");
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : typeof (e as { message?: string })?.message === 'string'
+            ? (e as { message: string }).message
+            : "We couldn't start a chat with this member. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -136,9 +171,9 @@ export const StartDmDialog = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Only your connections can receive 1:1 messages.
         </Typography>
-        {error && (
+        {(error || startError) && (
           <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-            {error}
+            {error || startError}
           </Typography>
         )}
         {connections.length > 0 && (
@@ -148,7 +183,14 @@ export const StartDmDialog = ({
             placeholder="Search connections by name or handle…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mb: 1 }}
+            sx={{
+              mb: 1,
+              '& .MuiInputBase-root': {
+                minHeight: 40,
+                height: 40,
+                alignItems: 'center',
+              },
+            }}
             inputProps={{ 'aria-label': 'Search connections' }}
             InputProps={{
               startAdornment: (
@@ -164,12 +206,13 @@ export const StartDmDialog = ({
             Loading connections…
           </Typography>
         ) : (
-          <List>
+          <List dense disablePadding>
             {filteredConnections.map((c) => (
               <ListItemButton
                 key={c.id}
                 onClick={() => void handleSelect(c.id)}
                 disabled={loading}
+                sx={{ py: 0.75 }}
               >
                 <Typography variant="body2">
                   {c.display_name || c.handle || c.id}

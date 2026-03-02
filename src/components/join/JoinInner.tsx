@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
 import { supabase } from '../../lib/auth/supabaseClient';
-
 import { signupMain, signupProgressWrapper } from '../../theme/joinStyles';
 import { IdentityStep } from './IdentityStep';
 import { ProfileStep } from './ProfileStep';
@@ -15,7 +14,6 @@ export const JoinInner = () => {
   const navigate = useNavigate();
   const { state, resetSignup } = useJoin();
 
-  // Check if user already has a profile
   useEffect(() => {
     const checkExistingProfile = async () => {
       const {
@@ -30,7 +28,6 @@ export const JoinInner = () => {
           .maybeSingle();
 
         if (profile) {
-          // User already has profile — go straight to feed, never re-enter wizard
           resetSignup();
           navigate('/feed', { replace: true });
           return;
@@ -42,8 +39,6 @@ export const JoinInner = () => {
             error.code === 'PGRST116' ||
             /permission denied/i.test(error.message ?? ''))
         ) {
-          // If profile reads are blocked during policy rollout, do not strand
-          // signed-in members in the join wizard.
           resetSignup();
           navigate('/feed', { replace: true });
         }
@@ -70,11 +65,24 @@ export const JoinInner = () => {
 
   const showProgress =
     state.currentStep !== 'welcome' && state.currentStep !== 'complete';
+  // ProfileStep gets a wider layout since it's a full-page hero design
+  const isProfileStep = state.currentStep === 'profile';
 
   return (
-    <Box component="main" sx={signupMain}>
+    <Box
+      component="main"
+      sx={{
+        ...signupMain,
+        // Give profile step room to breathe with a wider max constraint on the progress bar
+      }}
+    >
       {showProgress && (
-        <Box sx={signupProgressWrapper}>
+        <Box
+          sx={{
+            ...signupProgressWrapper,
+            maxWidth: isProfileStep ? 560 : 640,
+          }}
+        >
           <JoinProgress
             currentStep={state.currentStep}
             completedSteps={state.completedSteps}
@@ -82,11 +90,12 @@ export const JoinInner = () => {
         </Box>
       )}
 
-      {renderStep()}
+      <Box sx={{ width: '100%', maxWidth: isProfileStep ? 560 : 640 }}>
+        {renderStep()}
+      </Box>
     </Box>
   );
 };
 
-// Backward-compatible alias during Join naming migration.
 export const SignupInner = JoinInner;
 export default JoinInner;

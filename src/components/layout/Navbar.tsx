@@ -429,9 +429,9 @@ export const Navbar = () => {
         <Toolbar
           sx={{
             py: 0.5,
-            px: { xs: 2, sm: 2 },
-            minHeight: 56,
-            gap: 1,
+            px: { xs: 1, sm: 2 },
+            minHeight: { xs: 48, sm: 56 },
+            gap: { xs: 0.5, sm: 1 },
             overflow: 'visible',
           }}
         >
@@ -441,9 +441,9 @@ export const Navbar = () => {
               color="inherit"
               aria-label="Open menu"
               onClick={() => setDrawerOpen(true)}
-              sx={{ mr: 1 }}
+              sx={{ mr: 0.5 }}
             >
-              <MenuIcon />
+              <MenuIcon fontSize="small" />
             </IconButton>
           )}
 
@@ -453,15 +453,15 @@ export const Navbar = () => {
             alignItems="center"
             spacing={0}
             sx={{
-              mr: isMobile ? 1 : 2,
-              minHeight: 48,
+              mr: isMobile ? 0.5 : 2,
+              minHeight: { xs: 40, sm: 48 },
               gap: 3,
               overflow: 'visible',
               flexShrink: isMobile ? 1 : 0,
               minWidth: 0,
             }}
           >
-            {/* Brand: logo links to home — full logo visible, no clipping */}
+            {/* Brand: logo links to home — compact on mobile to avoid squishing nav */}
             <Box
               component={RouterLink}
               to="/"
@@ -471,15 +471,15 @@ export const Navbar = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 textDecoration: 'none',
-                minWidth: 40,
-                height: 40,
-                flexShrink: 0,
+                height: { xs: 36, sm: 40 },
+                flexShrink: isMobile ? 1 : 0,
+                minWidth: 0,
                 borderRadius: 1,
                 py: 0.5,
                 px: 0.5,
                 bgcolor: 'rgba(0,0,0,0.35)',
                 transition: 'opacity 0.2s, background-color 0.2s',
-                overflow: 'visible',
+                overflow: 'hidden',
                 '&:hover': { opacity: 0.9, bgcolor: 'rgba(0,0,0,0.5)' },
               }}
             >
@@ -488,9 +488,9 @@ export const Navbar = () => {
                 src="/assets/wrdlnkdn_logo.png"
                 alt=""
                 sx={{
-                  height: { xs: 22, md: 26 },
+                  height: { xs: 18, sm: 22, md: 26 },
                   width: 'auto',
-                  maxWidth: { xs: 140, sm: 180 },
+                  maxWidth: { xs: 90, sm: 140, md: 180 },
                   objectFit: 'contain',
                 }}
               />
@@ -890,7 +890,7 @@ export const Navbar = () => {
           {isMobile && (
             <Stack
               direction="row"
-              spacing={1}
+              spacing={0.5}
               alignItems="center"
               sx={{
                 flexShrink: 0,
@@ -915,12 +915,14 @@ export const Navbar = () => {
                       to="/join"
                       onClick={() => setDrawerOpen(false)}
                       aria-label="Join"
+                      size="small"
                       sx={{
-                        minHeight: 44,
-                        minWidth: 44,
+                        minHeight: 40,
+                        minWidth: 'auto',
+                        px: 1.25,
                         color: 'text.secondary',
                         textTransform: 'none',
-                        fontSize: '0.875rem',
+                        fontSize: '0.8125rem',
                         touchAction: 'manipulation',
                         pointerEvents: 'auto',
                         '&:hover': { color: 'white' },
@@ -934,12 +936,14 @@ export const Navbar = () => {
                     to="/signin"
                     onClick={() => setDrawerOpen(false)}
                     aria-label="Sign in"
+                    size="small"
                     sx={{
-                      minHeight: 44,
-                      minWidth: 44,
+                      minHeight: 40,
+                      minWidth: 'auto',
+                      px: 1.25,
                       color: 'text.secondary',
                       textTransform: 'none',
-                      fontSize: '0.875rem',
+                      fontSize: '0.8125rem',
                       touchAction: 'manipulation',
                       pointerEvents: 'auto',
                       '&:hover': { color: 'white' },
@@ -987,7 +991,14 @@ export const Navbar = () => {
                   </Box>
                   <Button
                     size="small"
-                    sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
+                    sx={{
+                      color: 'text.secondary',
+                      whiteSpace: 'nowrap',
+                      minHeight: 40,
+                      minWidth: 'auto',
+                      px: 1,
+                      fontSize: '0.8125rem',
+                    }}
                     onClick={() => void signOut()}
                     disabled={busy}
                   >

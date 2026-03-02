@@ -52,7 +52,12 @@ export const PostCard = ({
     )}
     <CardContent
       sx={[
-        { pt: 2, pb: 1, '&:last-child': { pb: 2 } },
+        {
+          pt: { xs: 1.25, sm: 2 },
+          pb: { xs: 0.75, sm: 1 },
+          '&:last-child': { pb: { xs: 1.25, sm: 2 } },
+          px: { xs: 1.5, sm: 2 },
+        },
         ...(Array.isArray(contentSx)
           ? contentSx
           : contentSx
@@ -62,8 +67,8 @@ export const PostCard = ({
     >
       <Box sx={{ minWidth: 0 }}>
         <PostAuthor {...author} />
-        {/* Align body/actions with right edge of avatar: 48px avatar + 8px gap = 56px */}
-        <Box sx={{ minWidth: 0, ml: 7 }}>{children}</Box>
+        {/* Align body/actions with right edge of avatar */}
+        <Box sx={{ minWidth: 0, ml: { xs: 6, sm: 7 } }}>{children}</Box>
       </Box>
     </CardContent>
   </Card>

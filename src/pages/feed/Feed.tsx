@@ -2733,21 +2733,23 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         position: 'relative',
         flex: 1,
         width: '100%',
+        minWidth: 0,
+        overflowX: 'hidden',
       }}
     >
       <Box
         sx={{
           maxWidth: 1200,
           mx: 'auto',
-          py: 3,
-          px: { xs: 1.5, md: 2 },
+          py: { xs: 2, md: 3 },
+          px: { xs: 1, sm: 1.5, md: 2 },
         }}
       >
         {/* Page header: Welcome to your Feed + subtext (search is in navbar) */}
         <Box
           sx={{
-            mb: 3,
-            pb: 2,
+            mb: { xs: 2, md: 3 },
+            pb: { xs: 1.5, md: 2 },
             borderBottom: '1px solid rgba(255,255,255,0.08)',
           }}
         >
@@ -2758,6 +2760,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               fontWeight: 600,
               color: 'text.primary',
               mb: 1,
+              fontSize: { xs: '1.25rem', sm: '1.5rem', md: 'inherit' },
             }}
           >
             {savedMode ? 'Saved' : 'Welcome to your Feed'}
@@ -2765,7 +2768,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{ maxWidth: 560 }}
+            sx={{ maxWidth: 560, fontSize: { xs: '0.875rem', md: 'inherit' } }}
           >
             {savedMode
               ? 'Posts you saved for later. Unsave from the card to remove.'
@@ -2775,7 +2778,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
         <Grid
           container
-          spacing={2}
+          spacing={{ xs: 1.5, md: 2 }}
           sx={{
             alignItems: 'flex-start',
           }}
@@ -3031,8 +3034,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               variant="outlined"
               sx={{
                 borderRadius: 2,
-                mb: 2,
-                p: { xs: 1.5, sm: 2 },
+                mb: { xs: 1.5, md: 2 },
+                p: { xs: 1.25, sm: 1.5, md: 2 },
               }}
             >
               <Stack

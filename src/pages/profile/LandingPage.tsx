@@ -328,8 +328,10 @@ export const LandingPage = () => {
         component="main"
         sx={{
           position: 'relative',
-          py: { xs: 4, md: 8 },
-          px: { xs: 2, md: 3 },
+          minWidth: 0,
+          overflowX: 'hidden',
+          py: { xs: 2, sm: 4, md: 8 },
+          px: { xs: 1.25, sm: 2, md: 3 },
         }}
       >
         <Container maxWidth="lg" disableGutters>
@@ -390,8 +392,8 @@ export const LandingPage = () => {
           {/* 2. THE GRID LAYOUT */}
           <Grid
             container
-            spacing={{ xs: 3, md: 4 }}
-            sx={{ mt: { xs: 4, md: 6 } }}
+            spacing={{ xs: 2, sm: 3, md: 4 }}
+            sx={{ mt: { xs: 2, sm: 4, md: 6 } }}
           >
             {hasVisibleSocialLinks && (
               <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>

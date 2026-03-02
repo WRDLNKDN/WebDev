@@ -210,9 +210,9 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
       sx={{
         borderTop: '1px solid',
         borderColor: dividerColor,
-        mt: { xs: 6, md: 8 },
-        pt: { xs: 4, md: 5 },
-        pb: { xs: 3, md: 4 },
+        mt: { xs: 3, md: 8 },
+        pt: { xs: 2, md: 5 },
+        pb: { xs: 2, md: 4 },
         backgroundColor:
           theme.palette.mode === 'dark'
             ? alpha(theme.palette.background.default, 0.92)
@@ -225,11 +225,11 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
           : 'opacity 360ms ease, transform 360ms ease',
       }}
     >
-      <Container maxWidth="lg">
-        <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 2 } }}>
+        <Grid container spacing={{ xs: 1.5, md: 3.5 }}>
           <Grid size={{ xs: 12, md: 4 }}>
             <Stack
-              spacing={1.1}
+              spacing={{ xs: 0.5, md: 1.1 }}
               sx={{
                 pr: { md: 3 },
                 alignItems: { xs: 'center', md: 'flex-start' },
@@ -238,12 +238,12 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
             >
               <Stack
                 direction="row"
-                spacing={{ xs: 0.6, md: 0.9 }}
+                spacing={{ xs: 0.4, md: 0.9 }}
                 alignItems="center"
               >
                 <EmojiEventsIcon
                   sx={{
-                    fontSize: isDesktop ? 36 : 32,
+                    fontSize: isDesktop ? 36 : { xs: 24, sm: 32 },
                     color: 'primary.main',
                     opacity: 0.95,
                   }}
@@ -253,10 +253,10 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   component="img"
                   src="/assets/og_weirdlings/werdling1_transparent.png"
                   alt="WRDLNKDN Weirdling logo"
-                  width={isDesktop ? 70 : 58}
-                  height={isDesktop ? 70 : 58}
                   sx={{
                     display: 'block',
+                    width: isDesktop ? 70 : { xs: 36, sm: 58 },
+                    height: isDesktop ? 70 : { xs: 36, sm: 58 },
                     objectFit: 'contain',
                     objectPosition: 'center',
                     p: 0,
@@ -267,9 +267,9 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   component="img"
                   src="/assets/wrdlnkdn_logo.png"
                   alt="WRDLNKDN wordmark"
-                  width={isDesktop ? 236 : 192}
                   sx={{
                     display: 'block',
+                    width: isDesktop ? 236 : { xs: 100, sm: 192 },
                     maxWidth: '100%',
                     objectFit: 'contain',
                     objectPosition: 'left center',
@@ -278,10 +278,18 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   }}
                 />
               </Stack>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ display: { xs: 'none', sm: 'block' } }}
+              >
                 Business, but weirder.
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: { xs: 'none', md: 'block' } }}
+              >
                 Build signal-first connections with humans, not vanity metrics.
               </Typography>
             </Stack>
@@ -296,7 +304,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   xs: '1fr',
                   md: 'repeat(3, minmax(0, 1fr))',
                 },
-                gap: 1.25,
+                gap: { xs: 0.75, md: 1.25 },
               }}
             >
               {sections.map((section) => {
@@ -333,8 +341,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         width: '100%',
-                        px: { xs: 1.5, md: 2 },
-                        py: { xs: 1.1, md: 1.2 },
+                        px: { xs: 1.25, md: 2 },
+                        py: { xs: 0.9, md: 1.2 },
                         cursor: 'pointer',
                         boxSizing: 'border-box',
                         '&:focus-visible': {
@@ -344,7 +352,11 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         },
                       }}
                     >
-                      <Typography variant="subtitle2" fontWeight={700}>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={700}
+                        sx={{ fontSize: { xs: '0.8125rem', md: 'inherit' } }}
+                      >
                         {section.title}
                       </Typography>
                       <Box
@@ -374,7 +386,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           listStyle: 'none',
                           m: 0,
                           py: 0.25,
-                          px: { xs: 1.5, md: 2 },
+                          px: { xs: 1.25, md: 2 },
                           borderTop: '1px solid',
                           borderColor: dividerColor,
                           gap: 0.25,
@@ -401,7 +413,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           const commonSx = {
                             display: 'inline-flex',
                             alignItems: 'center',
-                            py: 0.75,
+                            py: { xs: 0.5, md: 0.75 },
                             color: active ? 'primary.main' : 'text.secondary',
                             fontWeight: active ? 700 : 500,
                             textDecoration: active ? 'underline' : 'none',
@@ -454,7 +466,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
               display: 'flex',
               alignItems: { xs: 'center', md: 'flex-start' },
               justifyContent: { xs: 'center', md: 'flex-end' },
-              pt: { xs: 1, md: 0 },
+              pt: { xs: 0.5, md: 0 },
             }}
           >
             <Stack
@@ -518,14 +530,18 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
 
         <Box
           sx={{
-            mt: { xs: 3.5, md: 4 },
-            pt: { xs: 2, md: 2.5 },
+            mt: { xs: 2, md: 4 },
+            pt: { xs: 1.5, md: 2.5 },
             borderTop: '1px solid',
             borderColor: dividerColor,
             textAlign: 'center',
           }}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}
+          >
             © {new Date().getFullYear()} WRDLNKDN. All rights reserved.
           </Typography>
         </Box>

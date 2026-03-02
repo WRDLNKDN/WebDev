@@ -181,6 +181,38 @@ for each row
 execute function public.set_updated_at();
 
 -- -----------------------------
+-- feature_flags: admin-toggled site features (RLS in rls.sql)
+-- -----------------------------
+create table if not exists public.feature_flags (
+  key text primary key,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_feature_flags_updated_at on public.feature_flags;
+create trigger trg_feature_flags_updated_at
+  before update on public.feature_flags
+  for each row execute function public.set_updated_at();
+
+comment on table public.feature_flags is
+  'Site feature toggles. Admin can enable/disable in Admin panel. App reads for nav and routing.';
+
+-- Seed known feature keys (idempotent: only if missing)
+insert into public.feature_flags (key, enabled)
+values
+  ('events', true),
+  ('store', true),
+  ('directory', true),
+  ('groups', true),
+  ('chat', true),
+  ('advertise', true),
+  ('games', true),
+  ('community_partners', true),
+  ('saved', true),
+  ('help', true)
+on conflict (key) do nothing;
+
+-- -----------------------------
 -- Block status changes unless admin or service_role
 -- -----------------------------
 create or replace function public.profiles_block_status_change()

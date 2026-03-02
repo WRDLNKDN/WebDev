@@ -1,8 +1,9 @@
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LogoutIcon from '@mui/icons-material/Logout';
 import CampaignIcon from '@mui/icons-material/Campaign';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FlagIcon from '@mui/icons-material/Flag';
 import HandshakeIcon from '@mui/icons-material/Handshake';
+import LogoutIcon from '@mui/icons-material/Logout';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -17,9 +18,9 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
+import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import type { Session } from '@supabase/supabase-js';
 import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const BG_SX = {
@@ -66,6 +67,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Community Partners',
     to: '/admin/community-partners',
     icon: <HandshakeIcon />,
+  },
+  {
+    label: 'Feature Flags',
+    to: '/admin/feature-flags',
+    icon: <FlagIcon />,
   },
 ];
 

@@ -7,7 +7,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import {
   Avatar,
   Box,
-  Button,
   IconButton,
   InputAdornment,
   List,
@@ -26,6 +25,7 @@ import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { CreateGroupDialog } from '../chat/CreateGroupDialog';
 import { StartDmDialog } from '../chat/StartDmDialog';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -49,6 +49,7 @@ export const MessengerOverlay = () => {
   const bannerOffsetPx = useUatBannerOffset();
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
+  const chatEnabled = useFeatureFlag('chat');
 
   const {
     rooms,
@@ -148,34 +149,31 @@ export const MessengerOverlay = () => {
 
   if (!session?.user?.id) return null;
 
-  /* On mobile, Chat is in the hamburger menu; no floating button */
-  const floatingChatButton =
-    messenger && !messenger.overlayOpen && !mobile ? (
-      <Button
-        endIcon={<MessageIcon />}
-        onClick={openOverlay}
-        aria-label="Open messages"
-        size="medium"
-        sx={{
-          position: 'fixed',
-          right: 28,
-          top: 80 + bannerOffsetPx,
-          zIndex: 1200,
-          bgcolor: 'background.paper',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '8px 0 0 8px',
-          borderRight: 'none',
-          boxShadow: 2,
-          color: 'text.primary',
-          textTransform: 'none',
-          minWidth: 80,
-          py: 1,
-          '&:hover': { bgcolor: 'action.hover' },
-        }}
-      >
-        Chat
-      </Button>
-    ) : null;
+  /* Desktop: always show floating button when overlay closed. Mobile: show floating button when chat is disabled (nav link hidden). */
+  const showFloatingChat =
+    messenger && !messenger.overlayOpen && (!mobile || !chatEnabled);
+  const floatingChatButton = showFloatingChat ? (
+    <IconButton
+      onClick={openOverlay}
+      aria-label="Open messages"
+      size="medium"
+      sx={{
+        position: 'fixed',
+        right: 28,
+        top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
+        zIndex: 1200,
+        bgcolor: 'background.paper',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '8px 0 0 8px',
+        borderRight: 'none',
+        boxShadow: 2,
+        color: 'text.primary',
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+    >
+      <MessageIcon />
+    </IconButton>
+  ) : null;
 
   return (
     <>

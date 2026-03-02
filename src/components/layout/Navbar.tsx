@@ -1,12 +1,12 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import EventIcon from '@mui/icons-material/Event';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import ForumIcon from '@mui/icons-material/Forum';
 import GavelIcon from '@mui/icons-material/Gavel';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import MenuIcon from '@mui/icons-material/Menu';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -37,16 +37,16 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
-import { ProfileAvatar } from '../avatar/ProfileAvatar';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
-import { FEATURE_EVENTS_ENABLED } from '../../lib/featureFlags';
-import { toMessage } from '../../lib/utils/errors';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { consumeJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import { toMessage } from '../../lib/utils/errors';
+import { ProfileAvatar } from '../avatar/ProfileAvatar';
 
 /**
  * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback
@@ -78,6 +78,10 @@ export const Navbar = () => {
   const isJoinActive = path.startsWith('/join');
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
+  const eventsEnabled = useFeatureFlag('events');
+  const directoryEnabled = useFeatureFlag('directory');
+  const storeEnabled = useFeatureFlag('store');
+  const chatEnabled = useFeatureFlag('chat');
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
 
@@ -719,24 +723,26 @@ export const Navbar = () => {
                   >
                     Dashboard
                   </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/directory"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      ...(isDirectoryActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Directory
-                  </Button>
-                  {FEATURE_EVENTS_ENABLED && (
+                  {directoryEnabled && (
+                    <Button
+                      component={RouterLink}
+                      to="/directory"
+                      sx={{
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        ...(isDirectoryActive && {
+                          color: 'white',
+                          borderBottom: '2px solid rgba(255,255,255,0.6)',
+                          borderRadius: 0,
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        }),
+                      }}
+                    >
+                      Directory
+                    </Button>
+                  )}
+                  {eventsEnabled && (
                     <Button
                       component={RouterLink}
                       to="/events"
@@ -774,20 +780,22 @@ export const Navbar = () => {
                   </Button>
                 </>
               )}
-              <Button
-                component="a"
-                href={storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: 'rgba(255,255,255,0.85)',
-                  textDecoration: 'none',
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                }}
-              >
-                Store
-              </Button>
+              {storeEnabled && (
+                <Button
+                  component="a"
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    textDecoration: 'none',
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                  }}
+                >
+                  Store
+                </Button>
+              )}
             </Box>
           )}
 
@@ -1186,24 +1194,26 @@ export const Navbar = () => {
                 >
                   Dashboard
                 </Button>
-                <Button
-                  component={RouterLink}
-                  to="/directory"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDirectoryActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Directory
-                </Button>
-                {FEATURE_EVENTS_ENABLED && (
+                {directoryEnabled && (
+                  <Button
+                    component={RouterLink}
+                    to="/directory"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                      ...(isDirectoryActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Directory
+                  </Button>
+                )}
+                {eventsEnabled && (
                   <Button
                     component={RouterLink}
                     to="/events"
@@ -1239,40 +1249,45 @@ export const Navbar = () => {
                 >
                   Feed
                 </Button>
-                <Button
-                  component="a"
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                  }}
-                >
-                  Store
-                </Button>
-                <Button
-                  component={RouterLink}
-                  to="/chat-full"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(path === '/chat-full' || path.startsWith('/chat-full/')
-                      ? {
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                        }
-                      : {}),
-                  }}
-                >
-                  Chat
-                </Button>
+                {storeEnabled && (
+                  <Button
+                    component="a"
+                    href={storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                    }}
+                  >
+                    Store
+                  </Button>
+                )}
+                {chatEnabled && (
+                  <Button
+                    component={RouterLink}
+                    to="/chat-full"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                      ...(path === '/chat-full' ||
+                      path.startsWith('/chat-full/')
+                        ? {
+                            bgcolor: 'rgba(255,255,255,0.12)',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                          }
+                        : {}),
+                    }}
+                  >
+                    Chat
+                  </Button>
+                )}
               </>
             )}
           </Stack>
@@ -1308,7 +1323,7 @@ export const Navbar = () => {
               >
                 Community
               </ListSubheader>
-              {FEATURE_EVENTS_ENABLED && (
+              {eventsEnabled && (
                 <ListItemButton
                   component={RouterLink}
                   to="/events"
@@ -1403,7 +1418,7 @@ export const Navbar = () => {
               </ListItemButton>
               <ListItemButton
                 component="a"
-                href="https://phuzzle.vercel.app/"
+                href="https://phuzzle.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setDrawerOpen(false)}

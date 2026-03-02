@@ -1,4 +1,5 @@
 import CampaignIcon from '@mui/icons-material/Campaign';
+import FlagIcon from '@mui/icons-material/Flag';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
@@ -54,6 +55,13 @@ const SECTIONS: SectionCard[] = [
       'Review recent callback timeout and error diagnostics in a dedicated health view.',
     to: '/admin/auth-callback-health',
     icon: <MonitorHeartIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'Feature Flags',
+    description:
+      'Turn site features on or off (Events, Store, Directory, Groups, Chat, etc.).',
+    to: '/admin/feature-flags',
+    icon: <FlagIcon sx={{ fontSize: 40 }} />,
   },
 ];
 

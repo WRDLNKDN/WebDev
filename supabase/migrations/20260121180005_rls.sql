@@ -237,6 +237,7 @@ declare
   p record;
   managed_tables constant text[] := array[
     'admin_allowlist',
+    'feature_flags',
     'profiles',
     'portfolio_items',
     'generation_jobs',
@@ -303,6 +304,28 @@ grant select, insert, update, delete on table public.admin_allowlist to authenti
 -- -----------------------------
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
+
+-- -----------------------------
+-- feature_flags: read by all, update by admin only
+-- -----------------------------
+alter table public.feature_flags enable row level security;
+
+drop policy if exists feature_flags_select on public.feature_flags;
+create policy feature_flags_select
+  on public.feature_flags for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists feature_flags_update_admin on public.feature_flags;
+create policy feature_flags_update_admin
+  on public.feature_flags for update
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+revoke all on table public.feature_flags from anon, authenticated;
+grant select on table public.feature_flags to anon, authenticated;
+grant update on table public.feature_flags to authenticated;
 
 -- -----------------------------
 -- get_feed_page(): execute grant (5-param)
@@ -1277,6 +1300,7 @@ declare
   p record;
   managed_tables constant text[] := array[
     'admin_allowlist',
+    'feature_flags',
     'profiles',
     'portfolio_items',
     'generation_jobs',

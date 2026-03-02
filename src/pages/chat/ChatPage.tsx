@@ -97,12 +97,12 @@ export const ChatPage = () => {
 
   const handleStartDm = async (userId: string) => {
     const id = await createDm(userId);
-    if (id) navigate(`/chat/${id}`);
+    if (id) navigate(`/chat-full/${id}`);
   };
 
   const handleCreateGroup = async (name: string, memberIds: string[]) => {
     const id = await createGroup(name, memberIds);
-    if (id) navigate(`/chat/${id}`);
+    if (id) navigate(`/chat-full/${id}`);
   };
 
   const handleReport = (messageId?: string, userId?: string) => {
@@ -117,18 +117,18 @@ export const ChatPage = () => {
   const handleBlock = async () => {
     if (!otherMember?.user_id) return;
     await blockUser(otherMember.user_id);
-    navigate('/chat');
+    navigate('/chat-full');
   };
 
   const handleLeave = async () => {
     await leaveRoom();
     await fetchRooms();
-    navigate('/chat');
+    navigate('/chat-full');
   };
 
   const handleRemoveChat = async (targetRoomId: string) => {
     await removeChat(targetRoomId);
-    if (roomId === targetRoomId) navigate('/chat');
+    if (roomId === targetRoomId) navigate('/chat-full');
   };
 
   const handleReportSubmit = async (
@@ -187,6 +187,7 @@ export const ChatPage = () => {
             onStartDm={() => setStartDmOpen(true)}
             onCreateGroup={() => setCreateGroupOpen(true)}
             onRemoveChat={handleRemoveChat}
+            chatPathPrefix="/chat-full"
           />
         </Box>
 
@@ -220,6 +221,7 @@ export const ChatPage = () => {
                   setGroupDialogMode('manage');
                   setGroupDialogOpen(true);
                 }}
+                onBack={() => navigate('/chat-full')}
               />
 
               {error && (

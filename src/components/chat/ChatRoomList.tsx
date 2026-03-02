@@ -18,7 +18,11 @@ type ChatRoomListProps = {
   onCreateGroup?: () => void;
   onStartDm?: () => void;
   onRemoveChat?: (roomId: string) => void;
+  /** Base path for room links (e.g. /chat-full so room clicks stay on full chat page). Default /chat. */
+  chatPathPrefix?: string;
 };
+
+const DEFAULT_CHAT_PREFIX = '/chat';
 
 export const ChatRoomList = ({
   rooms,
@@ -27,9 +31,11 @@ export const ChatRoomList = ({
   onCreateGroup,
   onStartDm,
   onRemoveChat,
+  chatPathPrefix = DEFAULT_CHAT_PREFIX,
 }: ChatRoomListProps) => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
+  const base = chatPathPrefix.replace(/\/$/, '');
 
   const getRoomLabel = (room: ChatRoomWithMembers) => {
     if (room.room_type === 'group' && room.name) return room.name;
@@ -92,7 +98,7 @@ export const ChatRoomList = ({
             <ListItemButton
               key={room.id}
               selected={roomId === room.id}
-              onClick={() => navigate(`/chat/${room.id}`)}
+              onClick={() => navigate(`${base}/${room.id}`)}
               sx={{
                 ...(roomId === room.id ? GLASS_CARD : {}),
                 borderBottom: '1px solid rgba(255,255,255,0.06)',

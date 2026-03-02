@@ -216,7 +216,7 @@ export const HelpPage = () => {
                 size="small"
                 startIcon={<ChatIcon />}
                 component={RouterLink}
-                to="/chat"
+                to="/chat-full"
                 sx={{
                   textTransform: 'none',
                   width: { xs: '100%', sm: 'auto' },

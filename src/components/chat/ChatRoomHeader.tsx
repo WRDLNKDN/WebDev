@@ -34,7 +34,7 @@ type ChatRoomHeaderProps = {
   onInvite: () => void;
   onRename: () => void;
   onManageMembers: () => void;
-  /** When provided, used instead of navigate('/chat') for Back button */
+  /** When provided, used instead of navigate('/chat-full') for Back button */
   onBack?: () => void;
   /** When true, show X icon instead of Back button (for popover) */
   closeIcon?: boolean;
@@ -185,7 +185,7 @@ export const ChatRoomHeader = ({
         <Button
           size="small"
           startIcon={<ArrowBackIcon />}
-          onClick={onBack ?? (() => navigate('/chat'))}
+          onClick={onBack ?? (() => navigate('/chat-full'))}
           sx={{ color: 'white', minWidth: 0, mr: 0.5 }}
         >
           Back

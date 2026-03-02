@@ -912,10 +912,16 @@ export function useChatRooms() {
             : toMessage(error),
         );
       }
-      if (!roomId) return null;
+      const id =
+        typeof roomId === 'string'
+          ? roomId
+          : Array.isArray(roomId) && roomId.length > 0
+            ? roomId[0]
+            : null;
+      if (!id) return null;
 
       await fetchRooms();
-      return roomId as string;
+      return id as string;
     },
     [fetchRooms],
   );

@@ -325,6 +325,11 @@ const App = () => {
                 }
               />
 
+              {/* Auth routes outside Layout: no Navbar, no scroll lock. Fixes mobile login and callback. */}
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/join" element={<Join />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+
               <Route element={<Layout />}>
                 {/* Redirect deprecated admin route first so it wins over path="/admin" */}
                 <Route
@@ -467,14 +472,11 @@ const App = () => {
                   element={<PlaylistDetailPage />}
                 />
 
-                {/* --- Authentication --- */}
+                {/* --- Authentication (login redirect only; signin/join/callback are above, outside Layout) --- */}
                 <Route
                   path="/login"
                   element={<Navigate to="/signin" replace />}
                 />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/join" element={<Join />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
 
                 {/* --- Legal --- */}
                 <Route path="/guidelines" element={<Guidelines />} />

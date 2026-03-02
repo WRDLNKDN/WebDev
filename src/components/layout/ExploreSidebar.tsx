@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 
 const navItem = (
   to: string,
@@ -40,6 +41,8 @@ const YOUR_STUFF_ITEMS = [
 export const ExploreSidebar = () => {
   const location = useLocation();
   const path = location.pathname;
+  const eventsEnabled = useFeatureFlag('events');
+  const chatEnabled = useFeatureFlag('chat');
 
   return (
     <Paper
@@ -81,26 +84,28 @@ export const ExploreSidebar = () => {
         >
           Community
         </ListSubheader>
-        <ListItem disablePadding>
-          <ListItemButton
-            component={RouterLink}
-            to="/events"
-            sx={{
-              minHeight: 40,
-              py: 0.5,
-              borderRadius: 0,
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <EventIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Events"
-              primaryTypographyProps={{ variant: 'body2' }}
-            />
-          </ListItemButton>
-        </ListItem>
+        {eventsEnabled && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component={RouterLink}
+              to="/events"
+              sx={{
+                minHeight: 40,
+                py: 0.5,
+                borderRadius: 0,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <EventIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Events"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
         <ListItem disablePadding>
           <ListItemButton
             component={RouterLink}
@@ -135,7 +140,9 @@ export const ExploreSidebar = () => {
         >
           Your stuff
         </ListSubheader>
-        {YOUR_STUFF_ITEMS.map(({ to, primary, Icon }) => (
+        {YOUR_STUFF_ITEMS.filter(
+          (item) => item.to !== '/chat-full' || chatEnabled,
+        ).map(({ to, primary, Icon }) => (
           <ListItem key={to} disablePadding>
             <ListItemButton
               component={RouterLink}
@@ -197,7 +204,7 @@ export const ExploreSidebar = () => {
         <ListItem disablePadding>
           <ListItemButton
             component="a"
-            href="https://phuzzle.vercel.app/"
+            href="https://phuzzle.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             sx={{

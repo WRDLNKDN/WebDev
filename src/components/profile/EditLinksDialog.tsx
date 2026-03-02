@@ -23,7 +23,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
 import { toMessage } from '../../lib/utils/errors';
-import { filterSelectInputSx } from '../../theme/filterControls';
+import {
+  dialogSelectSx,
+  dialogTextFieldSx,
+  filterSelectMenuProps,
+} from '../../theme/filterControls';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
@@ -250,11 +254,7 @@ export const EditLinksDialog = ({
                 ADD NEW LINK
               </Typography>
               <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  sx={{ '& .MuiFormControl-root': filterSelectInputSx }}
-                >
+                <Stack direction="row" spacing={2}>
                   <FormControl fullWidth size="small" error={categoryError}>
                     <InputLabel id="add-link-category">Category</InputLabel>
                     <Select
@@ -263,6 +263,8 @@ export const EditLinksDialog = ({
                       label="Category"
                       displayEmpty
                       renderValue={(v) => v || 'Choose Category'}
+                      MenuProps={filterSelectMenuProps}
+                      sx={dialogSelectSx}
                       onChange={(e) => {
                         setNewCategory(e.target.value as LinkCategory | '');
                         setNewPlatform('');
@@ -293,6 +295,8 @@ export const EditLinksDialog = ({
                       label="Platform"
                       displayEmpty
                       renderValue={(v) => v || 'Select platform'}
+                      MenuProps={filterSelectMenuProps}
+                      sx={dialogSelectSx}
                       onChange={(e) => setNewPlatform(e.target.value)}
                     >
                       <MenuItem value="">Select platform</MenuItem>
@@ -336,6 +340,7 @@ export const EditLinksDialog = ({
                         ? 'Please enter a valid URL.'
                         : undefined
                   }
+                  sx={dialogTextFieldSx}
                 />
 
                 {/* Conditional Label Input (Only for Custom links) */}
@@ -347,6 +352,7 @@ export const EditLinksDialog = ({
                     fullWidth
                     value={newLabel}
                     onChange={(e) => setNewLabel(e.target.value)}
+                    sx={dialogTextFieldSx}
                   />
                 )}
 

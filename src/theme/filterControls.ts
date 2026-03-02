@@ -59,6 +59,60 @@ export const filterSelectInputSx = {
   '& .MuiSelect-select': selectInputInnerSx,
 };
 
+const DIALOG_CONTROL_HEIGHT = 40;
+
+/** Select sx for dialogs: same height, border, bg, and focus as Directory dropdowns. Apply to Select, not FormControl. */
+export const dialogSelectSx = {
+  height: DIALOG_CONTROL_HEIGHT,
+  minHeight: DIALOG_CONTROL_HEIGHT,
+  borderRadius: 2,
+  bgcolor: 'rgba(255,255,255,0.05)',
+  color: 'rgba(255,255,255,0.85)',
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: '1.5px',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#3b82f6',
+    borderWidth: '1.5px',
+  },
+  '& .MuiSelect-select': {
+    ...selectInputInnerSx,
+    py: '9px',
+    pl: 1.75,
+    pr: '32px !important',
+  },
+  '& .MuiSelect-icon': {
+    color: 'rgba(255,255,255,0.5)',
+    right: 8,
+  },
+};
+
+/** TextField root styling for dialogs: match Select height and border/bg. */
+export const dialogTextFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    height: DIALOG_CONTROL_HEIGHT,
+    minHeight: DIALOG_CONTROL_HEIGHT,
+    borderRadius: 2,
+    bgcolor: 'rgba(255,255,255,0.05)',
+    color: 'rgba(255,255,255,0.85)',
+    '& fieldset': {
+      borderColor: 'rgba(255,255,255,0.18)',
+      borderWidth: '1.5px',
+    },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '1.5px' },
+    '& .MuiOutlinedInput-input': {
+      py: '9px',
+      px: 1.75,
+      boxSizing: 'border-box',
+    },
+  },
+};
+
 /** FormControl sx for filter Selects with fixed width (e.g. admin 180px). */
 export function filterSelectSxCustomWidth(
   width: number | { xs?: string; sm?: number; md?: number },

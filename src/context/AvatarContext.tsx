@@ -67,11 +67,24 @@ export const AvatarProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       return;
     }
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (typeof session.expires_at === 'number' && session.expires_at < nowSec) {
+      setAvatarUrl(null);
+      setLoading(false);
+      void supabase.auth.signOut();
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/me/avatar`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
         credentials: 'include',
       });
+      if (res.status === 401) {
+        setAvatarUrl(null);
+        setLoading(false);
+        void supabase.auth.signOut();
+        return;
+      }
       const json = (await res.json()) as {
         ok?: boolean;
         data?: { avatarUrl?: string | null };

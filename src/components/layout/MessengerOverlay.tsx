@@ -7,7 +7,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import {
   Avatar,
   Box,
-  Button,
   IconButton,
   InputAdornment,
   List,
@@ -26,6 +25,7 @@ import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { CreateGroupDialog } from '../chat/CreateGroupDialog';
 import { StartDmDialog } from '../chat/StartDmDialog';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -45,9 +45,11 @@ export const MessengerOverlay = () => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [messageTab, setMessageTab] = useState<'focused' | 'other'>('focused');
   const bannerOffsetPx = useUatBannerOffset();
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
+  const chatEnabled = useFeatureFlag('chat');
 
   const {
     rooms,
@@ -147,34 +149,31 @@ export const MessengerOverlay = () => {
 
   if (!session?.user?.id) return null;
 
-  /* On mobile, Chat is in the hamburger menu; no floating button */
-  const floatingChatButton =
-    messenger && !messenger.overlayOpen && !mobile ? (
-      <Button
-        endIcon={<MessageIcon />}
-        onClick={openOverlay}
-        aria-label="Open messages"
-        size="medium"
-        sx={{
-          position: 'fixed',
-          right: 28,
-          top: 80 + bannerOffsetPx,
-          zIndex: 1200,
-          bgcolor: 'background.paper',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '8px 0 0 8px',
-          borderRight: 'none',
-          boxShadow: 2,
-          color: 'text.primary',
-          textTransform: 'none',
-          minWidth: 80,
-          py: 1,
-          '&:hover': { bgcolor: 'action.hover' },
-        }}
-      >
-        Chat
-      </Button>
-    ) : null;
+  /* Desktop: always show floating button when overlay closed. Mobile: show floating button when chat is disabled (nav link hidden). */
+  const showFloatingChat =
+    messenger && !messenger.overlayOpen && (!mobile || !chatEnabled);
+  const floatingChatButton = showFloatingChat ? (
+    <IconButton
+      onClick={openOverlay}
+      aria-label="Open messages"
+      size="medium"
+      sx={{
+        position: 'fixed',
+        right: 28,
+        top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
+        zIndex: 1200,
+        bgcolor: 'background.paper',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '8px 0 0 8px',
+        borderRight: 'none',
+        boxShadow: 2,
+        color: 'text.primary',
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+    >
+      <MessageIcon />
+    </IconButton>
+  ) : null;
 
   return (
     <>
@@ -285,30 +284,79 @@ export const MessengerOverlay = () => {
                   </IconButton>
                 </Box>
 
-                {/* Search bar */}
+                {/* Search bar — compact, LinkedIn-style */}
                 <TextField
                   size="small"
-                  placeholder="Search conversations"
+                  placeholder="Search messages"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
                     startAdornment: (
-                      <InputAdornment position="start">
+                      <InputAdornment position="start" sx={{ mr: 0 }}>
                         <SearchIcon
-                          sx={{ color: 'text.secondary', fontSize: 20 }}
+                          sx={{ color: 'text.secondary', fontSize: 18 }}
                         />
                       </InputAdornment>
                     ),
-                    sx: { py: 0.75, pl: 1 },
+                    sx: {
+                      py: 0.5,
+                      pl: 1,
+                      pr: 1,
+                      fontSize: '0.875rem',
+                      '& input': { py: 0.5 },
+                    },
                   }}
                   sx={{
                     m: 1,
+                    mt: 0.5,
                     '& .MuiOutlinedInput-root': {
+                      minHeight: 36,
                       bgcolor: 'action.hover',
+                      borderRadius: 1,
                       '& fieldset': { borderColor: 'transparent' },
                     },
                   }}
                 />
+
+                {/* Focused / Other tabs — LinkedIn-style */}
+                <Stack direction="row" sx={{ px: 1, pb: 0 }}>
+                  {(
+                    [
+                      { id: 'focused' as const, label: 'Focused' },
+                      { id: 'other' as const, label: 'Other' },
+                    ] as const
+                  ).map(({ id, label }) => {
+                    const active = messageTab === id;
+                    return (
+                      <Typography
+                        key={id}
+                        component="button"
+                        type="button"
+                        onClick={() => setMessageTab(id)}
+                        sx={{
+                          border: 0,
+                          background: 'none',
+                          cursor: 'pointer',
+                          font: 'inherit',
+                          fontWeight: 600,
+                          fontSize: '0.875rem',
+                          color: active ? '#00a660' : 'text.secondary',
+                          pb: 0.75,
+                          pr: 2,
+                          mr: 1,
+                          borderBottom: '2px solid',
+                          borderBottomColor: active ? '#00a660' : 'transparent',
+                          borderRadius: 0,
+                          '&:hover': {
+                            color: active ? '#00a660' : 'text.primary',
+                          },
+                        }}
+                      >
+                        {label}
+                      </Typography>
+                    );
+                  })}
+                </Stack>
 
                 <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
                   {roomsLoading ? (
@@ -328,13 +376,33 @@ export const MessengerOverlay = () => {
                     </ListItemButton>
                   ) : (
                     (() => {
-                      const filtered = rooms.filter(
+                      const bySearch = rooms.filter(
                         (r) =>
                           !searchQuery.trim() ||
                           getRoomLabel(r)
                             .toLowerCase()
                             .includes(searchQuery.trim().toLowerCase()),
                       );
+                      const filtered =
+                        messageTab === 'focused'
+                          ? bySearch.filter((r) => (r.unread_count ?? 0) > 0)
+                          : bySearch;
+                      if (
+                        messageTab === 'focused' &&
+                        filtered.length === 0 &&
+                        bySearch.length > 0
+                      ) {
+                        return (
+                          <ListItemButton disabled>
+                            <ListItemText
+                              primary="No focused conversations"
+                              secondary="Conversations with new messages appear here"
+                              primaryTypographyProps={{ variant: 'body2' }}
+                              secondaryTypographyProps={{ variant: 'caption' }}
+                            />
+                          </ListItemButton>
+                        );
+                      }
                       if (filtered.length === 0) {
                         return (
                           <ListItemButton disabled>

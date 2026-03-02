@@ -56,3 +56,21 @@ export function hasProfileOnboardedSticky(userId: string): boolean {
     return false;
   }
 }
+
+/**
+ * Clear profile validation and onboarded caches (e.g. on sign out).
+ * Prevents stale "onboarded" state for a different user or after logout.
+ */
+export function clearProfileValidationCache(): void {
+  try {
+    sessionStorage.removeItem(KEY);
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(ONBOARDED_KEY_PREFIX)) toRemove.push(k);
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // ignore (private mode, etc.)
+  }
+}

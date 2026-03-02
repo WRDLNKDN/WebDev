@@ -11,14 +11,16 @@ import {
 
 // HOOKS & CONTEXT
 import { AvatarProvider } from './context/AvatarContext';
+import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
 import { JoinProvider } from './context/JoinProvider';
 import { useKonamiCode } from './hooks/useKonamiCode';
 
 // LAYOUT & UTILS
+import { RequireFeatureFlag } from './components/auth/RequireFeatureFlag';
 import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
-import { supabase } from './lib/auth/supabaseClient';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
+import { supabase } from './lib/auth/supabaseClient';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
@@ -241,6 +243,11 @@ const AdminPartnersPage = lazy(async () => {
   return { default: m.AdminPartnersPage };
 });
 
+const AdminFeatureFlagsPage = lazy(async () => {
+  const m = await import('./pages/admin/AdminFeatureFlagsPage');
+  return { default: m.AdminFeatureFlagsPage };
+});
+
 // 5. System Components
 const Loading = () => (
   <Box
@@ -310,238 +317,260 @@ const App = () => {
 
       <JoinProvider>
         <AvatarProvider>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              {/* Bumper: full-screen, no nav/footer (for recording) */}
-              <Route path="/bumper" element={<BumperPage />} />
+          <FeatureFlagsProvider>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                {/* Bumper: full-screen, no nav/footer (for recording) */}
+                <Route path="/bumper" element={<BumperPage />} />
 
-              {/* Popout chat: standalone window (LinkedIn-style) */}
-              <Route
-                path="/chat-popup/:roomId"
-                element={
-                  <RequireOnboarded>
-                    <ChatPopupPage />
-                  </RequireOnboarded>
-                }
-              />
-
-              {/* Auth routes outside Layout: no Navbar, no scroll lock. Fixes mobile login and callback. */}
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/join" element={<Join />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-
-              <Route element={<Layout />}>
-                {/* Redirect deprecated admin route first so it wins over path="/admin" */}
+                {/* Popout chat: standalone window (LinkedIn-style) */}
                 <Route
-                  path="admin/resume-thumbnails"
-                  element={<Navigate to="/admin" replace />}
-                />
-                {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
-                <Route path="/" element={<Home />} />
-                <Route path="/profile/:handle" element={<LandingPage />} />
-                <Route path="/projects/:id" element={<ProjectPage />} />
-                <Route path="/u/:handle" element={<RedirectUToProfile />} />
-                <Route path="/home" element={<Home />} />
-                <Route
-                  path="/directory"
+                  path="/chat-popup/:roomId"
                   element={
                     <RequireOnboarded>
-                      <Directory />
+                      <ChatPopupPage />
                     </RequireOnboarded>
                   }
-                />
-                <Route
-                  path="/feed"
-                  element={
-                    <RequireOnboarded>
-                      <Feed />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route path="/store" element={<Store />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/platform" element={<Platform />} />
-                <Route
-                  path="/events"
-                  element={
-                    <RequireOnboarded>
-                      <EventsPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/events/:id"
-                  element={
-                    <RequireOnboarded>
-                      <EventDetailPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route path="/groups" element={<GroupsPage />} />
-                <Route
-                  path="/forums"
-                  element={<Navigate to="/groups" replace />}
-                />
-                <Route path="/saved" element={<SavedPage />} />
-                <Route path="/advertise" element={<AdvertisePage />} />
-                <Route path="/games" element={<DivergencePage />} />
-                <Route path="/help" element={<HelpPage />} />
-                <Route
-                  path="/community-partners"
-                  element={<CommunityPartnersPage />}
                 />
 
-                {/* --- Authenticated User Zone --- */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <RequireOnboarded>
-                      <Dashboard />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/dashboard/profile"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="/dashboard/activity"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="/dashboard/intent"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="/dashboard/notifications"
-                  element={
-                    <RequireOnboarded>
-                      <NotificationsPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/dashboard/settings"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-                <Route
-                  path="/chat"
-                  element={
-                    <RequireOnboarded>
-                      <ChatRedirect />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/chat/:roomId"
-                  element={
-                    <RequireOnboarded>
-                      <ChatRedirect />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/chat-full"
-                  element={
-                    <RequireOnboarded>
-                      <ChatPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route
-                  path="/chat-full/:roomId"
-                  element={
-                    <RequireOnboarded>
-                      <ChatPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route path="/weirdling/create" element={<WeirdlingCreate />} />
-                <Route
-                  path="/submit"
-                  element={
-                    <RequireOnboarded>
-                      <ContentSubmitPage />
-                    </RequireOnboarded>
-                  }
-                />
-                <Route path="/playlists" element={<PlaylistsPage />} />
-                <Route
-                  path="/playlists/:slug"
-                  element={<PlaylistDetailPage />}
-                />
+                {/* Auth routes outside Layout: no Navbar, no scroll lock. Fixes mobile login and callback. */}
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/join" element={<Join />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
 
-                {/* --- Authentication (login redirect only; signin/join/callback are above, outside Layout) --- */}
-                <Route
-                  path="/login"
-                  element={<Navigate to="/signin" replace />}
-                />
-
-                {/* --- Legal --- */}
-                <Route path="/guidelines" element={<Guidelines />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/unsubscribe" element={<UnsubscribePage />} />
-
-                {/* --- Administration --- */}
-                <Route path="/admin" element={<AdminApp />}>
-                  <Route index element={<AdminDashboard />} />
+                <Route element={<Layout />}>
+                  {/* Redirect deprecated admin route first so it wins over path="/admin" */}
                   <Route
-                    path="auth-callback-health"
-                    element={<AdminAuthCallbackHealthPage />}
-                  />
-                  <Route
-                    path="moderation"
+                    path="admin/resume-thumbnails"
                     element={<Navigate to="/admin" replace />}
                   />
+                  {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/profile/:handle" element={<LandingPage />} />
+                  <Route path="/projects/:id" element={<ProjectPage />} />
+                  <Route path="/u/:handle" element={<RedirectUToProfile />} />
+                  <Route path="/home" element={<Home />} />
                   <Route
-                    path="content"
-                    element={<AdminContentModerationPage />}
-                  />
-                  <Route path="chat-reports" element={<ChatReportsPage />} />
-                  <Route
-                    path="advertisers"
-                    element={<AdminAdvertisersPage />}
-                  />
-                  <Route
-                    path="community-partners"
-                    element={<AdminPartnersPage />}
-                  />
-                  <Route
-                    path="resume-thumbnails"
-                    element={<Navigate to="/admin" replace />}
-                  />
-                  <Route
-                    path="partners"
+                    path="/directory"
                     element={
-                      <Navigate to="/admin/community-partners" replace />
+                      <RequireFeatureFlag flagKey="directory">
+                        <RequireOnboarded>
+                          <Directory />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
                     }
                   />
+                  <Route
+                    path="/feed"
+                    element={
+                      <RequireOnboarded>
+                        <Feed />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/store"
+                    element={
+                      <RequireFeatureFlag flagKey="store">
+                        <Store />
+                      </RequireFeatureFlag>
+                    }
+                  />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/community" element={<Community />} />
+                  <Route path="/platform" element={<Platform />} />
+                  <Route
+                    path="/events"
+                    element={
+                      <RequireFeatureFlag flagKey="events">
+                        <RequireOnboarded>
+                          <EventsPage />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
+                    }
+                  />
+                  <Route
+                    path="/events/:id"
+                    element={
+                      <RequireFeatureFlag flagKey="events">
+                        <RequireOnboarded>
+                          <EventDetailPage />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
+                    }
+                  />
+                  <Route path="/groups" element={<GroupsPage />} />
+                  <Route
+                    path="/forums"
+                    element={<Navigate to="/groups" replace />}
+                  />
+                  <Route path="/saved" element={<SavedPage />} />
+                  <Route path="/advertise" element={<AdvertisePage />} />
+                  <Route path="/games" element={<DivergencePage />} />
+                  <Route path="/help" element={<HelpPage />} />
+                  <Route
+                    path="/community-partners"
+                    element={<CommunityPartnersPage />}
+                  />
+
+                  {/* --- Authenticated User Zone --- */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <RequireOnboarded>
+                        <Dashboard />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/profile"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                  <Route
+                    path="/dashboard/activity"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                  <Route
+                    path="/dashboard/intent"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                  <Route
+                    path="/dashboard/notifications"
+                    element={
+                      <RequireOnboarded>
+                        <NotificationsPage />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/settings"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                  <Route
+                    path="/chat"
+                    element={
+                      <RequireOnboarded>
+                        <ChatRedirect />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/chat/:roomId"
+                    element={
+                      <RequireOnboarded>
+                        <ChatRedirect />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/chat-full"
+                    element={
+                      <RequireOnboarded>
+                        <ChatPage />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/chat-full/:roomId"
+                    element={
+                      <RequireOnboarded>
+                        <ChatPage />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route
+                    path="/weirdling/create"
+                    element={<WeirdlingCreate />}
+                  />
+                  <Route
+                    path="/submit"
+                    element={
+                      <RequireOnboarded>
+                        <ContentSubmitPage />
+                      </RequireOnboarded>
+                    }
+                  />
+                  <Route path="/playlists" element={<PlaylistsPage />} />
+                  <Route
+                    path="/playlists/:slug"
+                    element={<PlaylistDetailPage />}
+                  />
+
+                  {/* --- Authentication (login redirect only; signin/join/callback are above, outside Layout) --- */}
+                  <Route
+                    path="/login"
+                    element={<Navigate to="/signin" replace />}
+                  />
+
+                  {/* --- Legal --- */}
+                  <Route path="/guidelines" element={<Guidelines />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                  {/* --- Administration --- */}
+                  <Route path="/admin" element={<AdminApp />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route
+                      path="auth-callback-health"
+                      element={<AdminAuthCallbackHealthPage />}
+                    />
+                    <Route
+                      path="moderation"
+                      element={<Navigate to="/admin" replace />}
+                    />
+                    <Route
+                      path="content"
+                      element={<AdminContentModerationPage />}
+                    />
+                    <Route path="chat-reports" element={<ChatReportsPage />} />
+                    <Route
+                      path="advertisers"
+                      element={<AdminAdvertisersPage />}
+                    />
+                    <Route
+                      path="community-partners"
+                      element={<AdminPartnersPage />}
+                    />
+                    <Route
+                      path="feature-flags"
+                      element={<AdminFeatureFlagsPage />}
+                    />
+                    <Route
+                      path="resume-thumbnails"
+                      element={<Navigate to="/admin" replace />}
+                    />
+                    <Route
+                      path="partners"
+                      element={
+                        <Navigate to="/admin/community-partners" replace />
+                      }
+                    />
+                  </Route>
+                  <Route
+                    path="/admin/pending"
+                    element={<Navigate to="/admin" replace />}
+                  />
+                  <Route
+                    path="/admin/approved"
+                    element={<Navigate to="/admin" replace />}
+                  />
+                  <Route
+                    path="/admin/review/:id"
+                    element={<Navigate to="/admin" replace />}
+                  />
+
+                  {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
+
+                  {/* 1. The Game (Konami Code Target) */}
+                  <Route path="/divergence" element={<DivergencePage />} />
+
+                  {/* 2. The Professional 404 (Catch-All) */}
+                  <Route path="*" element={<NotFoundPage />} />
                 </Route>
-                <Route
-                  path="/admin/pending"
-                  element={<Navigate to="/admin" replace />}
-                />
-                <Route
-                  path="/admin/approved"
-                  element={<Navigate to="/admin" replace />}
-                />
-                <Route
-                  path="/admin/review/:id"
-                  element={<Navigate to="/admin" replace />}
-                />
-
-                {/* --- SYSTEM UPGRADE: SEPARATION OF CONCERNS --- */}
-
-                {/* 1. The Game (Konami Code Target) */}
-                <Route path="/divergence" element={<DivergencePage />} />
-
-                {/* 2. The Professional 404 (Catch-All) */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </FeatureFlagsProvider>
         </AvatarProvider>
       </JoinProvider>
     </>

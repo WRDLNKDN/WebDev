@@ -174,6 +174,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          key: string
+          enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feed_items: {
         Row: {
           id: string
@@ -754,6 +772,10 @@ export type Database = {
         Args: { p_name: string; p_member_ids: string[] }
         Returns: string
       }
+      chat_create_dm: {
+        Args: { p_other_user_id: string }
+        Returns: string
+      }
       chat_room_summaries: {
         Args: { p_room_ids: string[]; p_user_id: string }
         Returns: {
@@ -767,6 +789,22 @@ export type Database = {
       chat_prune_audit_log: {
         Args: Record<string, never>
         Returns: number
+      }
+      get_own_profile_by_handle: {
+        Args: { p_handle: string }
+        Returns: Database['public']['Tables']['profiles']['Row'] | null
+      }
+      get_public_profile_by_share_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      get_or_create_profile_share_token: {
+        Args: Record<string, never>
+        Returns: string
+      }
+      regenerate_profile_share_token: {
+        Args: Record<string, never>
+        Returns: string
       }
     }
     Enums: {

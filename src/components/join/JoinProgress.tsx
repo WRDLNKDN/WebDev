@@ -1,16 +1,5 @@
-import {
-  Box,
-  Step,
-  StepLabel,
-  Stepper,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import {
-  signupProgress,
-  signupProgressFooter,
-  signupProgressStepLabel,
-} from '../../theme/joinStyles';
+import { Box, Typography } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { JoinStep } from '../../types/join';
 
 interface JoinProgressProps {
@@ -18,10 +7,8 @@ interface JoinProgressProps {
   completedSteps: JoinStep[];
 }
 
-// Only the steps that actually appear in the progress UI
 const STEP_ORDER: JoinStep[] = ['welcome', 'identity', 'values', 'profile'];
 
-// Labels for every possible step in the union (including "complete")
 const STEP_LABELS: Record<JoinStep, string> = {
   welcome: 'Welcome',
   identity: 'Sign in',
@@ -34,51 +21,123 @@ export const JoinProgress = ({
   currentStep,
   completedSteps,
 }: JoinProgressProps) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const activeStepIndex = STEP_ORDER.indexOf(currentStep);
+  const activeIndex = STEP_ORDER.indexOf(currentStep);
 
   return (
-    <Box sx={signupProgress}>
-      <Stepper
-        activeStep={activeStepIndex}
-        alternativeLabel={!isMobile}
-        orientation={isMobile ? 'vertical' : 'horizontal'}
+    <Box
+      sx={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        mb: 2,
+      }}
+    >
+      <Box
         sx={{
-          '& .MuiStepLabel-root': { py: 0 },
-          '& .MuiStepContent-root': { pt: 0 },
+          display: 'flex',
+          alignItems: 'flex-start',
+          width: '100%',
+          maxWidth: 560,
         }}
       >
-        {STEP_ORDER.map((step, index) => {
+        {STEP_ORDER.map((step, i) => {
           const isCompleted = completedSteps.includes(step);
           const isActive = step === currentStep;
 
           return (
-            <Step key={step} completed={isCompleted}>
-              <StepLabel>
-                {STEP_LABELS[step]}
-                {isMobile && isActive && (
-                  <Box component="span" sx={signupProgressStepLabel}>
-                    (Step {index + 1} of {STEP_ORDER.length})
+            <Box
+              key={step}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                flex: i < STEP_ORDER.length - 1 ? 1 : 0,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                {isCompleted ? (
+                  <CheckCircleIcon sx={{ fontSize: 28, color: '#4ade80' }} />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      border: isActive
+                        ? '2.5px solid #3b82f6'
+                        : '2px solid rgba(255,255,255,0.22)',
+                      bgcolor: isActive
+                        ? 'rgba(59,130,246,0.15)'
+                        : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {isActive && (
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          bgcolor: '#3b82f6',
+                        }}
+                      />
+                    )}
                   </Box>
                 )}
-              </StepLabel>
-            </Step>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: '0.72rem',
+                    fontWeight: isActive ? 700 : 500,
+                    whiteSpace: 'nowrap',
+                    color: isCompleted
+                      ? '#4ade80'
+                      : isActive
+                        ? '#fff'
+                        : 'rgba(255,255,255,0.4)',
+                  }}
+                >
+                  {STEP_LABELS[step]}
+                </Typography>
+              </Box>
+
+              {i < STEP_ORDER.length - 1 && (
+                <Box
+                  sx={{
+                    flex: 1,
+                    height: '1.5px',
+                    mx: 0.75,
+                    mt: '13px',
+                    bgcolor: completedSteps.includes(step)
+                      ? 'rgba(74,222,128,0.45)'
+                      : 'rgba(255,255,255,0.1)',
+                    alignSelf: 'flex-start',
+                  }}
+                />
+              )}
+            </Box>
           );
         })}
-      </Stepper>
+      </Box>
 
-      {!isMobile && (
-        <Box sx={signupProgressFooter}>
-          <Box component="span">
-            Step {activeStepIndex + 1} of {STEP_ORDER.length}
-          </Box>
-        </Box>
-      )}
+      <Typography
+        variant="caption"
+        sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}
+      >
+        Step {activeIndex + 1} of {STEP_ORDER.length}
+      </Typography>
     </Box>
   );
 };
 
-// Backward-compatible alias during Join naming migration.
 export const SignupProgress = JoinProgress;

@@ -148,23 +148,33 @@ export const LandingPage = () => {
     }
   }, [viewer, profile]);
 
+  // /profile/:handle is owner-only. Non-owners get 404 (no leak). Use RPC so only owner can load by handle.
   useEffect(() => {
-    const fetchPublicData = async () => {
-      if (isSecretHandle) {
+    const fetchOwnerProfile = async () => {
+      if (isSecretHandle || !handle?.trim()) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq(handle ? 'handle' : 'id', handle || '')
-          .maybeSingle();
-
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session?.user) {
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        const { data: rows, error: profileError } = await supabase.rpc(
+          'get_own_profile_by_handle',
+          { p_handle: handle.trim() },
+        );
         if (profileError) throw profileError;
-        if (!profileData) return;
+        const profileData = Array.isArray(rows) ? rows[0] : rows;
+        if (!profileData) {
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
 
         const verifiedProfile = profileData as unknown as DashboardProfile;
         const safeNerdCreds =
@@ -174,9 +184,6 @@ export const LandingPage = () => {
             : ({} as NerdCreds);
 
         setProfile({ ...verifiedProfile, nerd_creds: safeNerdCreds });
-
-        // For own profile, useCurrentUserAvatar provides resolved avatar.
-        // For others, profile.avatar only (weirdlings RLS blocks client read).
         setResolvedAvatarUrl(verifiedProfile.avatar ?? null);
 
         const { data: projectsData, error: projectsError } = await supabase
@@ -189,13 +196,14 @@ export const LandingPage = () => {
         if (projectsError) throw projectsError;
         setProjects((projectsData || []) as PortfolioItem[]);
       } catch (err) {
-        console.error('Public Data Load Error:', err);
+        console.error('Profile load error:', err);
         setSnack(toMessage(err));
+        setProfile(null);
       } finally {
         setLoading(false);
       }
     };
-    void fetchPublicData();
+    void fetchOwnerProfile();
   }, [handle, isSecretHandle]);
 
   if (loading) return <LandingPageSkeleton />;

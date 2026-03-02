@@ -1,0 +1,97 @@
+/**
+ * FeatureFlagsContext — reads feature_flags from Supabase; admin can toggle in Admin panel.
+ * Use useFeatureFlag(key) to gate nav and routes. Defaults to true while loading so UI does not flash.
+ */
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { supabase } from '../lib/auth/supabaseClient';
+
+export type FeatureFlagsMap = Record<string, boolean>;
+
+export interface FeatureFlagsContextValue {
+  flags: FeatureFlagsMap;
+  loading: boolean;
+  setFlag: (key: string, enabled: boolean) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+const FeatureFlagsContext = createContext<FeatureFlagsContextValue | null>(
+  null,
+);
+
+export const FeatureFlagsProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [flags, setFlags] = useState<FeatureFlagsMap>({});
+  const [loading, setLoading] = useState(true);
+
+  const fetchFlags = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feature_flags')
+        .select('key, enabled');
+      if (error) {
+        console.warn('[FeatureFlags] fetch error:', error.message);
+        setFlags({});
+        return;
+      }
+      const map: FeatureFlagsMap = {};
+      for (const row of data ?? []) {
+        map[row.key] = row.enabled === true;
+      }
+      setFlags(map);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchFlags();
+  }, [fetchFlags]);
+
+  const setFlag = useCallback(async (key: string, enabled: boolean) => {
+    const { error } = await supabase
+      .from('feature_flags')
+      .update({ enabled })
+      .eq('key', key);
+    if (error) throw error;
+    setFlags((prev) => ({ ...prev, [key]: enabled }));
+  }, []);
+
+  const value: FeatureFlagsContextValue = {
+    flags,
+    loading,
+    setFlag,
+    refetch: fetchFlags,
+  };
+
+  return (
+    <FeatureFlagsContext.Provider value={value}>
+      {children}
+    </FeatureFlagsContext.Provider>
+  );
+};
+
+export function useFeatureFlags(): FeatureFlagsContextValue {
+  const ctx = useContext(FeatureFlagsContext);
+  if (!ctx) {
+    throw new Error('useFeatureFlags must be used within FeatureFlagsProvider');
+  }
+  return ctx;
+}
+
+/**
+ * Returns true if the feature is enabled. While loading or if key is missing, returns true (safe default).
+ */
+export function useFeatureFlag(key: string): boolean {
+  const { flags, loading } = useFeatureFlags();
+  if (loading) return true;
+  return flags[key] !== false;
+}

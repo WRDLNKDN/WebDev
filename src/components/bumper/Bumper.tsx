@@ -5,7 +5,9 @@
 
 import './bumperKeyframes.css';
 
-import { Box, Stack, Typography } from '@mui/material';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { Box, IconButton, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
@@ -20,11 +22,21 @@ export type BumperProps = {
   /** Run typing + pop on mount (default true) */
   autoPlay?: boolean;
   className?: string;
+  /** After signup: try playing with sound once (best-effort; may still need user tap) */
+  postJoinMode?: boolean;
+  /** Notify when user enables/disables sound (e.g. so parent can avoid cutting off playback) */
+  onSoundChange?: (soundOn: boolean) => void;
 };
 
-export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
+export const Bumper = ({
+  autoPlay = true,
+  className,
+  postJoinMode = false,
+  onSoundChange,
+}: BumperProps) => {
   const [typed, setTyped] = useState('');
   const [popVisible, setPopVisible] = useState(!autoPlay);
+  const [soundOn, setSoundOn] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasStartedRef = useRef(false);
 
@@ -32,18 +44,50 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
     const video = videoRef.current;
     if (!video || !autoPlay || hasStartedRef.current) return;
     hasStartedRef.current = true;
+
+    if (postJoinMode) {
+      try {
+        video.muted = false;
+        video.playbackRate = 1.5;
+        await video.play();
+        setSoundOn(true);
+        onSoundChange?.(true);
+        return;
+      } catch {
+        // Unmuted autoplay usually blocked; fall back to muted
+      }
+    }
+
+    video.muted = true;
     video.playbackRate = 1.5;
     try {
       await video.play();
+      setSoundOn(false);
+      onSoundChange?.(false);
     } catch {
-      // Ignore autoplay failures (e.g. user gesture required)
+      // Ignore autoplay failures
     }
-  }, [autoPlay]);
+  }, [autoPlay, postJoinMode, onSoundChange]);
+
+  const handlePlayWithSound = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.currentTime = 0;
+    video.playbackRate = 1.5;
+    try {
+      await video.play();
+      setSoundOn(true);
+      onSoundChange?.(true);
+    } catch {
+      // Ignore if still blocked
+    }
+  }, [onSoundChange]);
 
   useEffect(() => {
     if (!autoPlay) return;
 
-    const video = videoRef.current;
+    const videoEl = videoRef.current;
     const popTimer = setTimeout(() => setPopVisible(true), POP_DELAY_MS);
 
     const taglineTimer = setTimeout(() => {
@@ -59,7 +103,7 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
     return () => {
       clearTimeout(popTimer);
       clearTimeout(taglineTimer);
-      video?.pause();
+      videoEl?.pause();
     };
   }, [autoPlay]);
 
@@ -77,13 +121,13 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
         backgroundColor: '#000',
       }}
     >
-      {/* Voiceover video: audio-only (hidden). Playback starts only when canplaythrough to avoid clipping "Business". */}
+      {/* Voiceover video (hidden). Starts muted so autoplay works; user can tap "Sound on" for voiceover. */}
       <Box
         component="video"
         ref={videoRef}
         src={CONCEPT_BUMPER_VIDEO}
         preload="auto"
-        muted={false}
+        muted
         loop
         playsInline
         onCanPlayThrough={handleCanPlayThrough}
@@ -98,6 +142,45 @@ export const Bumper = ({ autoPlay = true, className }: BumperProps) => {
           pointerEvents: 'none',
         }}
       />
+
+      {/* Sound on: restore bumper voiceover (browsers block unmuted autoplay) */}
+      {!soundOn && (
+        <IconButton
+          onClick={() => void handlePlayWithSound()}
+          aria-label="Play bumper with sound"
+          sx={{
+            position: 'absolute',
+            bottom: 24,
+            right: 24,
+            zIndex: 2,
+            color: 'rgba(255,255,255,0.85)',
+            bgcolor: 'rgba(0,0,0,0.4)',
+            '&:hover': {
+              bgcolor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+            },
+          }}
+        >
+          <VolumeOffIcon sx={{ fontSize: 28 }} />
+        </IconButton>
+      )}
+      {soundOn && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 24,
+            right: 24,
+            zIndex: 2,
+            color: 'rgba(0,200,140,0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+          }}
+          aria-hidden
+        >
+          <VolumeUpIcon sx={{ fontSize: 20 }} />
+        </Box>
+      )}
 
       {/* Centered stack: WRDLNKDN → phonetic → tagline → character */}
       <Stack

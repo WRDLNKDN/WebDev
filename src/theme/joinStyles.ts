@@ -91,6 +91,18 @@ export const identityStepInfoBox = {
   borderColor: 'rgba(255,255,255,0.12)',
 } as const;
 
+/** OAuth security note: informational only, not button-like */
+export const identityStepOAuthNote = {
+  mt: 1.5,
+  py: 1,
+  px: 0,
+  bgcolor: 'transparent',
+  border: 'none',
+  color: 'rgb(80, 200, 160)',
+  fontWeight: 700,
+  fontSize: '0.8125rem',
+} as const;
+
 export const identityStepBtn = {
   textTransform: 'none' as const,
   fontWeight: 600,
@@ -154,6 +166,8 @@ export const profileStepTextField = {
   },
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.96)',
+    fontWeight: 600,
+    fontSize: '0.9375rem',
     '&.Mui-focused': { color: '#4caf50' },
     '&.Mui-error': { color: '#f44336' },
   },
@@ -181,6 +195,8 @@ export const profileStepTipText = {
 
 export const profileStepButtonRow = {
   pt: 1.5,
+  justifyContent: 'space-between',
+  alignItems: { xs: 'stretch', sm: 'center' },
 } as const;
 
 export const profileStepBackButton = {
@@ -191,10 +207,14 @@ export const profileStepBackButton = {
 } as const;
 
 export const profileStepSubmitButton = {
-  flex: 1,
+  flex: '0 1 auto',
+  minWidth: 160,
+  py: 1.25,
+  px: 3,
+  fontSize: '1rem',
+  fontWeight: 600,
   bgcolor: '#4caf50',
   color: '#fff',
-  fontSize: '1.05rem',
   '&:hover': { bgcolor: '#45a049' },
   '&:disabled': {
     bgcolor: 'rgba(76, 175, 80, 0.35)',
@@ -216,10 +236,12 @@ export const valuesStepSectionSubtext = {
 export const valuesStepButtonRow = {
   pt: 1,
   pb: 0.5,
+  justifyContent: 'space-between',
+  alignItems: { xs: 'stretch', sm: 'center' },
 } as const;
 
 export const valuesStepContinueButton = {
-  flex: 1,
+  flex: '0 1 auto',
 } as const;
 
 // ReviewStep

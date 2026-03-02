@@ -11,14 +11,15 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, Navigate } from 'react-router-dom';
 import {
   getErrorMessage,
   toMessage,
   MICROSOFT_SIGNIN_NOT_CONFIGURED,
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 export const SignIn = () => {
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,23 @@ export const SignIn = () => {
     'google' | 'azure' | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setSession(!!data.session);
+    };
+    void check();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!cancelled) setSession(!!s);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     setLoading(true);
@@ -54,6 +72,18 @@ export const SignIn = () => {
       setLoadingProvider(null);
     }
   };
+
+  if (session === true) {
+    return <Navigate to="/feed" replace />;
+  }
+
+  if (session === null) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress aria-label="Checking sign-in status" />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ py: 6 }}>

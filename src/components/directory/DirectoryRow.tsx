@@ -156,9 +156,11 @@ export const DirectoryRow = ({
           alignItems={{ xs: 'stretch', sm: 'center' }}
           sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
-          <Typography variant="caption" color="text.secondary">
-            {connectionStateLabel[member.connection_state]}
-          </Typography>
+          {member.connection_state === 'pending_received' && (
+            <Typography variant="caption" sx={{ color: 'warning.main' }}>
+              {connectionStateLabel[member.connection_state]}
+            </Typography>
+          )}
           {member.connection_state === 'not_connected' && (
             <Button
               variant="outlined"
@@ -180,9 +182,13 @@ export const DirectoryRow = ({
               variant="outlined"
               size="small"
               disabled
-              sx={{ minHeight: { xs: 40, sm: 32 } }}
+              sx={{
+                minHeight: { xs: 40, sm: 32 },
+                color: 'warning.main',
+                borderColor: 'warning.main',
+              }}
             >
-              Pending
+              Pending approval
             </Button>
           )}
           {member.connection_state === 'pending_received' && (

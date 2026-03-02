@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -63,6 +63,7 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
     transferAdmin,
     inviteMembers,
     blockUser,
+    refresh,
   } = useChat(roomId);
   const { submitReport } = useReportMessage();
   const { onlineUsers, typingUsers, startTyping, stopTyping } = useChatPresence(
@@ -177,18 +178,23 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
               justifyContent: 'center',
               p: 2,
               textAlign: 'center',
+              gap: 1.5,
             }}
           >
             <Typography color="error" variant="body2" fontWeight={500}>
               {error}
             </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
+            <Typography variant="caption" color="text.secondary">
               This conversation may have been removed.
             </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => void refresh()}
+              sx={{ mt: 0.5 }}
+            >
+              Try again
+            </Button>
           </Box>
         )}
 

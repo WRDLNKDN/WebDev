@@ -1,4 +1,5 @@
-import { Box, Button, Typography } from '@mui/material';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import { Box, Button, IconButton, Menu, Typography } from '@mui/material';
 import React, { useRef, useEffect, useState } from 'react';
 import { PostCard } from '../post';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -68,6 +69,11 @@ export const MessageList = ({
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [reactionMenuAnchor, setReactionMenuAnchor] =
+    useState<HTMLElement | null>(null);
+  const [reactionMenuMessageId, setReactionMenuMessageId] = useState<
+    string | null
+  >(null);
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
@@ -211,10 +217,6 @@ export const MessageList = ({
               alignItems: 'flex-start',
               maxWidth: '85%',
               position: 'relative',
-              '&:hover .msg-reaction-bar': {
-                opacity: 1,
-                pointerEvents: 'auto',
-              },
             }}
           >
             <PostCard
@@ -415,7 +417,7 @@ export const MessageList = ({
                   </Box>
                 </Box>
               )}
-              {/* Reactions: compact pills under message, only show quick-add on hover */}
+              {/* Reactions: existing pills + one emoji icon that opens popup menu (like message input) */}
               <Box
                 sx={{
                   display: 'flex',
@@ -457,40 +459,82 @@ export const MessageList = ({
                   </Box>
                 )}
                 {canAct && (
-                  <Box
-                    className="msg-reaction-bar"
+                  <IconButton
+                    type="button"
+                    size="small"
+                    onClick={(e) => {
+                      setReactionMenuAnchor(e.currentTarget);
+                      setReactionMenuMessageId(msg.id);
+                    }}
+                    aria-label="Add reaction"
                     sx={{
-                      display: 'flex',
-                      gap: 0.25,
-                      opacity: 0,
-                      transition: 'opacity 0.15s',
-                      pointerEvents: 'none',
+                      color: 'rgba(255,255,255,0.7)',
+                      p: 0.25,
+                      '&:hover': {
+                        color: 'rgba(255,255,255,0.9)',
+                        bgcolor: 'rgba(255,255,255,0.06)',
+                      },
                     }}
                   >
-                    {COMMON_EMOJIS.map((emoji) => (
-                      <Typography
-                        key={emoji}
-                        component="button"
-                        variant="caption"
-                        onClick={() => onReaction?.(msg.id, emoji)}
-                        sx={{
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          p: 0.25,
-                          borderRadius: 0.5,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                        }}
-                      >
-                        {emoji}
-                      </Typography>
-                    ))}
-                  </Box>
+                    <EmojiEmotionsOutlinedIcon sx={{ fontSize: '1rem' }} />
+                  </IconButton>
                 )}
               </Box>
             </PostCard>
           </Box>
         );
       })}
+
+      <Menu
+        anchorEl={reactionMenuAnchor}
+        open={Boolean(reactionMenuAnchor)}
+        onClose={() => {
+          setReactionMenuAnchor(null);
+          setReactionMenuMessageId(null);
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              bgcolor: 'rgba(40,44,52,0.98)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              py: 0.5,
+              px: 0.5,
+            },
+          },
+        }}
+        MenuListProps={{
+          sx: { display: 'flex', gap: 0.25, flexWrap: 'wrap', maxWidth: 220 },
+        }}
+      >
+        {COMMON_EMOJIS.map((emoji) => (
+          <Box
+            key={emoji}
+            component="button"
+            type="button"
+            onClick={() => {
+              if (reactionMenuMessageId)
+                onReaction?.(reactionMenuMessageId, emoji);
+              setReactionMenuAnchor(null);
+              setReactionMenuMessageId(null);
+            }}
+            sx={{
+              cursor: 'pointer',
+              fontSize: '1.25rem',
+              p: 0.75,
+              borderRadius: 1,
+              border: 'none',
+              bgcolor: 'transparent',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
+            {emoji}
+          </Box>
+        ))}
+      </Menu>
 
       {showTyping && typingAvatarUrl && (
         <Box

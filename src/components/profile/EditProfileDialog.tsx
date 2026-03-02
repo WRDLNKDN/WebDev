@@ -57,6 +57,9 @@ const GLASS_MODAL = {
 const INPUT_HEIGHT = 32;
 const INPUT_PADDING = '4px 12px';
 
+/** Debounce handle availability check so we don't hit the DB on every keystroke (fixes typing lag). */
+const HANDLE_CHECK_DEBOUNCE_MS = 400;
+
 import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
@@ -132,6 +135,10 @@ export const EditProfileDialog = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const latestHandleRef = useRef<string>('');
 
   const [formData, setFormData] = useState({
     handle: '',
@@ -157,11 +164,17 @@ export const EditProfileDialog = ({
 
   useEffect(() => {
     if (open && profile) {
+      if (handleCheckTimeoutRef.current != null) {
+        clearTimeout(handleCheckTimeoutRef.current);
+        handleCheckTimeoutRef.current = null;
+      }
       const creds = (profile.nerd_creds as Record<string, unknown>) || {};
 
       const prof = profile as unknown as Record<string, unknown>;
+      const handle = safeStr(profile.handle);
+      latestHandleRef.current = handle;
       setFormData({
-        handle: safeStr(profile.handle),
+        handle,
         pronouns: safeStr(profile.pronouns),
         bio: safeStr(creds.bio),
         skills: safeStr(
@@ -186,6 +199,15 @@ export const EditProfileDialog = ({
       setUploadedAvatarUrl(null);
     }
   }, [open, profile]);
+
+  useEffect(() => {
+    return () => {
+      if (handleCheckTimeoutRef.current != null) {
+        clearTimeout(handleCheckTimeoutRef.current);
+        handleCheckTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const handleChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,9 +234,10 @@ export const EditProfileDialog = ({
         .eq('handle', val)
         .maybeSingle();
 
+      if (latestHandleRef.current !== val) return;
       setHandleAvailable(!data);
     } finally {
-      setCheckingHandle(false);
+      if (latestHandleRef.current === val) setCheckingHandle(false);
     }
   };
 
@@ -474,8 +497,19 @@ export const EditProfileDialog = ({
                   const val = e.target.value
                     .toLowerCase()
                     .replace(/[^a-z0-9-]/g, '');
+                  latestHandleRef.current = val;
                   setFormData((prev) => ({ ...prev, handle: val }));
-                  checkHandle(val);
+                  if (handleCheckTimeoutRef.current != null) {
+                    clearTimeout(handleCheckTimeoutRef.current);
+                  }
+                  if (val.length < 3) {
+                    setHandleAvailable(null);
+                    return;
+                  }
+                  handleCheckTimeoutRef.current = setTimeout(() => {
+                    handleCheckTimeoutRef.current = null;
+                    void checkHandle(val);
+                  }, HANDLE_CHECK_DEBOUNCE_MS);
                 }}
               />
             </Box>
@@ -546,7 +580,7 @@ export const EditProfileDialog = ({
                   mb: 1,
                 }}
               >
-                PRIMARY INDUSTRY
+                PRIMARY INDUSTRY *
               </Typography>
               <FormControl
                 fullWidth

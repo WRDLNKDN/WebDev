@@ -4,8 +4,9 @@
 -- - Triggers: DROP TRIGGER IF EXISTS before CREATE TRIGGER (removes only the trigger, not the table).
 -- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; tables unchanged.
 
--- Extensions used by schema/indexes
+-- Extensions used by schema/indexes and functions
 create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pg_trgm with schema extensions;
 do $$
 begin
@@ -180,6 +181,38 @@ for each row
 execute function public.set_updated_at();
 
 -- -----------------------------
+-- feature_flags: admin-toggled site features (RLS in rls.sql)
+-- -----------------------------
+create table if not exists public.feature_flags (
+  key text primary key,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_feature_flags_updated_at on public.feature_flags;
+create trigger trg_feature_flags_updated_at
+  before update on public.feature_flags
+  for each row execute function public.set_updated_at();
+
+comment on table public.feature_flags is
+  'Site feature toggles. Admin can enable/disable in Admin panel. App reads for nav and routing.';
+
+-- Seed known feature keys (idempotent: only if missing)
+insert into public.feature_flags (key, enabled)
+values
+  ('events', true),
+  ('store', true),
+  ('directory', true),
+  ('groups', true),
+  ('chat', true),
+  ('advertise', true),
+  ('games', true),
+  ('community_partners', true),
+  ('saved', true),
+  ('help', true)
+on conflict (key) do nothing;
+
+-- -----------------------------
 -- Block status changes unless admin or service_role
 -- -----------------------------
 create or replace function public.profiles_block_status_change()
@@ -216,6 +249,153 @@ create trigger trg_profiles_block_status_change
 before update of status on public.profiles
 for each row
 execute function public.profiles_block_status_change();
+
+-- -----------------------------
+-- Profile share (obfuscated public link)
+-- -----------------------------
+-- Owner-only: return profile by handle only when requester is the owner. Used for /profile/:handle.
+create or replace function public.get_own_profile_by_handle(p_handle text)
+returns setof public.profiles
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select p.*
+  from public.profiles p
+  where lower(p.handle) = lower(nullif(trim(p_handle), ''))
+    and p.id = auth.uid();
+$$;
+
+-- Public share: return read-only profile + portfolio for valid token. Returns single row or empty.
+create or replace function public.get_public_profile_by_share_token(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+declare
+  v_profile_id uuid;
+  v_row jsonb;
+begin
+  if nullif(trim(p_token), '') is null then
+    return null;
+  end if;
+  select id into v_profile_id
+  from public.profiles
+  where profile_share_token = p_token
+    and status = 'approved';
+  if v_profile_id is null then
+    return null;
+  end if;
+  select jsonb_build_object(
+    'profile', jsonb_build_object(
+      'id', p.id,
+      'display_name', p.display_name,
+      'tagline', p.tagline,
+      'avatar', p.avatar,
+      'handle', p.handle,
+      'nerd_creds', p.nerd_creds,
+      'socials', p.socials,
+      'resume_url', p.resume_url,
+      'industry', p.industry,
+      'secondary_industry', p.secondary_industry,
+      'niche_field', p.niche_field,
+      'location', p.location,
+      'pronouns', p.pronouns
+    ),
+    'portfolio', (
+      select coalesce(jsonb_agg(
+        jsonb_build_object(
+          'id', pi.id,
+          'title', pi.title,
+          'description', pi.description,
+          'project_url', pi.project_url,
+          'image_url', pi.image_url,
+          'tech_stack', pi.tech_stack,
+          'sort_order', pi.sort_order,
+          'normalized_url', pi.normalized_url,
+          'embed_url', pi.embed_url,
+          'resolved_type', pi.resolved_type,
+          'thumbnail_url', pi.thumbnail_url,
+          'thumbnail_status', pi.thumbnail_status
+        ) order by pi.sort_order asc, pi.created_at asc
+      ), '[]'::jsonb)
+      from public.portfolio_items pi
+      where pi.owner_id = v_profile_id
+    )
+  ) into v_row
+  from public.profiles p
+  where p.id = v_profile_id;
+  return v_row;
+end;
+$$;
+
+-- Return current user's share token; create one if missing.
+create or replace function public.get_or_create_profile_share_token()
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_token text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  select profile_share_token into v_token
+  from public.profiles
+  where id = v_uid;
+  if v_token is not null then
+    return v_token;
+  end if;
+  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
+  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
+  update public.profiles
+  set profile_share_token = v_token,
+      profile_share_token_created_at = now()
+  where id = v_uid;
+  return v_token;
+end;
+$$;
+
+-- Regenerate share token; previous token is invalidated immediately.
+create or replace function public.regenerate_profile_share_token()
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_token text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
+  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
+  update public.profiles
+  set profile_share_token = v_token,
+      profile_share_token_created_at = now()
+  where id = v_uid;
+  return v_token;
+end;
+$$;
+
+revoke all on function public.get_own_profile_by_handle(text) from public;
+grant execute on function public.get_own_profile_by_handle(text) to authenticated;
+revoke all on function public.get_public_profile_by_share_token(text) from public;
+grant execute on function public.get_public_profile_by_share_token(text) to anon, authenticated;
+revoke all on function public.get_or_create_profile_share_token() from public;
+grant execute on function public.get_or_create_profile_share_token() to authenticated;
+revoke all on function public.regenerate_profile_share_token() from public;
+grant execute on function public.regenerate_profile_share_token() to authenticated;
 
 -- -----------------------------
 -- portfolio_items (dashboard projects)
@@ -1350,6 +1530,49 @@ $$;
 
 revoke all on function public.chat_create_group(text, uuid[]) from public;
 grant execute on function public.chat_create_group(text, uuid[]) to authenticated;
+
+-- chat_create_dm: Create 1:1 room + both members (SECURITY DEFINER so RLS doesn't block insert)
+create or replace function public.chat_create_dm(p_other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_room_id uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_other_user_id is null or p_other_user_id = v_uid then
+    raise exception 'Invalid other user for DM';
+  end if;
+  if not public.are_chat_connections(v_uid, p_other_user_id) then
+    raise exception 'You can only start 1:1 chats with Connections.';
+  end if;
+  if public.chat_blocked(v_uid, p_other_user_id) then
+    raise exception 'You cannot message this member.';
+  end if;
+
+  insert into public.chat_rooms (room_type, name, created_by)
+  values ('dm', null, v_uid)
+  returning id into v_room_id;
+
+  if v_room_id is null then
+    raise exception 'Could not create room';
+  end if;
+
+  insert into public.chat_room_members (room_id, user_id, role)
+  values (v_room_id, v_uid, 'admin'), (v_room_id, p_other_user_id, 'member');
+
+  return v_room_id;
+end;
+$$;
+
+revoke all on function public.chat_create_dm(uuid) from public;
+grant execute on function public.chat_create_dm(uuid) to authenticated;
 
 -- Set original_admin_id on group create
 create or replace function public.chat_set_original_admin()

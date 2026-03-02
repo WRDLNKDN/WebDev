@@ -1,6 +1,6 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -82,7 +82,9 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
+import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import {
   getOrCreateSessionAdSeed,
   interleaveWithAds,
@@ -102,14 +104,14 @@ import { toMessage } from '../../lib/utils/errors';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import {
+  FeedAdCard,
+  type FeedAdvertiser,
+} from '../../components/feed/FeedAdCard';
+import {
   FeedReactionBar,
   PostCard,
   REACTION_OPTIONS,
 } from '../../components/post';
-import {
-  FeedAdCard,
-  type FeedAdvertiser,
-} from '../../components/feed/FeedAdCard';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 
 const FEED_LIMIT = 20;
@@ -1729,6 +1731,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const postParam = searchParams.get('post');
+  const eventsEnabled = useFeatureFlag('events');
+  const chatEnabled = useFeatureFlag('chat');
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const itemsRef = useRef<FeedItem[]>([]);
@@ -1987,7 +1991,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       if (isSupabaseAuthError) {
         console.warn('🔴 Feed: Supabase auth error, signing out:', raw);
         try {
-          await supabase.auth.signOut();
+          await signOut();
         } catch {
           // ignore sign-out failures here
         }
@@ -2831,26 +2835,28 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 >
                   Community
                 </ListSubheader>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/events"
-                    sx={{
-                      minHeight: 40,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <EventIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Events"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                {eventsEnabled && (
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      component={RouterLink}
+                      to="/events"
+                      sx={{
+                        minHeight: 40,
+                        py: 0.5,
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <EventIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Events"
+                        primaryTypographyProps={{ variant: 'body2' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )}
                 <ListItem disablePadding>
                   <ListItemButton
                     component={RouterLink}
@@ -2905,26 +2911,28 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     />
                   </ListItemButton>
                 </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/chat-full"
-                    sx={{
-                      minHeight: 40,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <MessageIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Messages"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                {chatEnabled && (
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      component={RouterLink}
+                      to="/chat-full"
+                      sx={{
+                        minHeight: 40,
+                        py: 0.5,
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <MessageIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Messages"
+                        primaryTypographyProps={{ variant: 'body2' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )}
                 <ListSubheader
                   disableSticky
                   sx={{
@@ -2962,7 +2970,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 <ListItem disablePadding>
                   <ListItemButton
                     component="a"
-                    href="https://phuzzle.vercel.app/"
+                    href="https://phuzzle.vercel.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{

@@ -341,27 +341,43 @@ export const Directory = () => {
   return (
     <Box
       data-testid="directory-page"
-      sx={{ flex: 1, pt: { xs: 2, md: 4 }, pb: 8 }}
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        overflowX: 'hidden',
+        pt: { xs: 1.5, md: 4 },
+        pb: { xs: 4, md: 8 },
+      }}
     >
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1.25, sm: 2, md: 3 } }}>
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 2, md: 3 },
+            p: { xs: 1.5, sm: 2, md: 3 },
             borderRadius: 4,
             bgcolor: CARD_BG,
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255,255,255,0.1)',
-            mb: 4,
+            mb: { xs: 2, md: 4 },
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: { xs: 1.5, md: 2 },
+              fontSize: { xs: '1.25rem', sm: '1.5rem', md: 'inherit' },
+            }}
+          >
             Discover Members
           </Typography>
 
-          <Stack spacing={2}>
+          <Stack spacing={{ xs: 1.5, md: 2 }}>
             {/* Search + Sort: row on md+, column on mobile (consistent structure) */}
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={{ xs: 1.25, md: 2 }}
+            >
               <Box sx={{ flex: { md: 1 } }}>
                 <TextField
                   fullWidth
@@ -714,7 +730,7 @@ export const Directory = () => {
             </Button>
           </Paper>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={{ xs: 1.25, md: 2 }}>
             {rows.map((member) => (
               <DirectoryRow
                 key={member.id}

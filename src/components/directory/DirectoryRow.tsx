@@ -45,15 +45,16 @@ export const DirectoryRow = ({
     <Paper
       elevation={0}
       sx={{
-        p: 2,
+        p: { xs: 1.25, md: 2 },
         borderRadius: 2,
         bgcolor: CARD_BG,
         border: '1px solid rgba(255,255,255,0.08)',
+        overflow: 'hidden',
       }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
-        spacing={2}
+        spacing={{ xs: 1.5, md: 2 }}
         alignItems="flex-start"
       >
         <Box

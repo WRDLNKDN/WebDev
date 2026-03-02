@@ -51,14 +51,15 @@ export const IdentityHeader = ({
   <Paper
     elevation={0}
     sx={{
-      p: { xs: 2, md: 4 },
+      p: { xs: 1.5, sm: 2, md: 4 },
       borderRadius: 4,
       bgcolor: CARD_BG,
       backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255,255,255,0.12)',
       boxShadow: BANNER_GLOW,
-      mb: { xs: 3, md: 4 },
+      mb: { xs: 2, sm: 3, md: 4 },
       position: 'relative',
+      overflow: 'hidden',
     }}
   >
     {actions && (
@@ -68,9 +69,9 @@ export const IdentityHeader = ({
         alignItems={{ xs: 'stretch', sm: 'center' }}
         flexWrap="wrap"
         useFlexGap
-        spacing={2}
+        spacing={{ xs: 1.25, sm: 2 }}
         sx={{
-          mb: 2,
+          mb: { xs: 1.5, md: 2 },
           '& .MuiButton-root': { minWidth: 0 },
         }}
       >
@@ -80,15 +81,15 @@ export const IdentityHeader = ({
 
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      spacing={{ xs: 3, md: 4 }}
+      spacing={{ xs: 2, sm: 3, md: 4 }}
       alignItems="flex-start"
-      sx={{ textAlign: 'left' }}
+      sx={{ textAlign: 'left', minWidth: 0 }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
-        spacing={2}
+        spacing={{ xs: 1.5, md: 2 }}
         alignItems="flex-start"
-        sx={{ flexShrink: 0 }}
+        sx={{ flexShrink: 0, minWidth: 0 }}
       >
         {slotLeftOfAvatar && (
           <Box
@@ -146,7 +147,9 @@ export const IdentityHeader = ({
             fontWeight: 700,
             mb: 0.5,
             letterSpacing: -0.5,
-            fontSize: { xs: '1.5rem', md: '2.125rem' },
+            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
           }}
         >
           {displayName}
@@ -190,10 +193,12 @@ export const IdentityHeader = ({
                   : {
                       borderLeft: '3px solid',
                       borderColor: 'primary.main',
-                      pl: 2,
+                      pl: { xs: 1.5, md: 2 },
                     }),
                 my: 1,
                 maxWidth: 560,
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             >
               {bioIsPlaceholder ? bio : <>&ldquo;{bio}&rdquo;</>}

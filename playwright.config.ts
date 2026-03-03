@@ -1,4 +1,3 @@
-import os from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
@@ -13,9 +12,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 0, // no local retries; instant feedback
-  workers: isCI
-    ? Math.max(1, Math.floor(os.cpus().length / 2)) // was hardcoded 2
-    : 12,
+  workers: 12,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 
@@ -43,6 +40,15 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        actionTimeout: 15_000,
+        navigationTimeout: 45_000,
+      },
+      timeout: 45_000,
     },
   ],
 });

@@ -24,7 +24,7 @@ import SentimentSatisfiedOutlinedIcon from '@mui/icons-material/SentimentSatisfi
 import MoodBadIcon from '@mui/icons-material/MoodBad';
 import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
 import type { ReactionType } from '../../lib/api/feedsApi';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 /** Exported for comment reaction bars in Feed */
 export const REACTION_OPTIONS: {
@@ -60,14 +60,14 @@ export const REACTION_OPTIONS: {
     label: 'Care',
     Icon: VolunteerActivismIcon,
     IconOutlined: VolunteerActivismOutlinedIcon,
-    color: 'success.main',
+    color: '#9c27b0', // Purple (design token: Care)
   },
   {
     type: 'laughing',
-    label: 'Laughing',
+    label: 'Happy',
     Icon: SentimentSatisfiedIcon,
     IconOutlined: SentimentSatisfiedOutlinedIcon,
-    color: 'info.main',
+    color: '#66bb6a', // Green (design token: Happy)
   },
   {
     type: 'rage',
@@ -105,6 +105,20 @@ export const FeedReactionBar = ({
   sx,
 }: FeedReactionBarProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const hoverOpenRef = useRef<number | null>(null);
+  const hoverCloseRef = useRef<number | null>(null);
+
+  const clearHoverTimers = () => {
+    if (hoverOpenRef.current) {
+      clearTimeout(hoverOpenRef.current);
+      hoverOpenRef.current = null;
+    }
+    if (hoverCloseRef.current) {
+      clearTimeout(hoverCloseRef.current);
+      hoverCloseRef.current = null;
+    }
+  };
+
   const totalReactions =
     likeCount +
     loveCount +
@@ -126,7 +140,12 @@ export const FeedReactionBar = ({
   };
 
   return (
-    <ClickAwayListener onClickAway={() => setAnchorEl(null)}>
+    <ClickAwayListener
+      onClickAway={() => {
+        clearHoverTimers();
+        setAnchorEl(null);
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -138,9 +157,32 @@ export const FeedReactionBar = ({
           px: 0.5,
           ...sx,
         }}
+        onMouseLeave={() => {
+          clearHoverTimers();
+          hoverCloseRef.current = window.setTimeout(
+            () => setAnchorEl(null),
+            150,
+          ) as unknown as number;
+        }}
       >
         <Button
           size="small"
+          onMouseEnter={(e) => {
+            if (hoverCloseRef.current) {
+              clearTimeout(hoverCloseRef.current);
+              hoverCloseRef.current = null;
+            }
+            hoverOpenRef.current = window.setTimeout(() => {
+              setAnchorEl(e.currentTarget as HTMLElement);
+              hoverOpenRef.current = null;
+            }, 200) as unknown as number;
+          }}
+          onMouseLeave={() => {
+            if (hoverOpenRef.current) {
+              clearTimeout(hoverOpenRef.current);
+              hoverOpenRef.current = null;
+            }
+          }}
           onClick={(e) => {
             setAnchorEl((prev) =>
               prev ? null : (e.currentTarget as HTMLElement),
@@ -198,22 +240,37 @@ export const FeedReactionBar = ({
             paper: { sx: { borderRadius: 2, boxShadow: 2, p: 0.5 } },
           }}
         >
-          <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
-            {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
-              <IconButton
-                key={type}
-                size="small"
-                onClick={() => {
-                  handleReaction(type);
-                  setAnchorEl(null);
-                }}
-                sx={{ color, '&:hover': { bgcolor: 'action.hover', color } }}
-                aria-label={label}
-              >
-                <Icon sx={{ fontSize: 24, color: 'inherit' }} />
-              </IconButton>
-            ))}
-          </Stack>
+          <Box
+            onMouseEnter={() => {
+              if (hoverCloseRef.current) {
+                clearTimeout(hoverCloseRef.current);
+                hoverCloseRef.current = null;
+              }
+            }}
+            onMouseLeave={() => {
+              hoverCloseRef.current = window.setTimeout(
+                () => setAnchorEl(null),
+                150,
+              ) as unknown as number;
+            }}
+          >
+            <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
+              {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
+                <IconButton
+                  key={type}
+                  size="small"
+                  onClick={() => {
+                    handleReaction(type);
+                    setAnchorEl(null);
+                  }}
+                  sx={{ color, '&:hover': { bgcolor: 'action.hover', color } }}
+                  aria-label={label}
+                >
+                  <Icon sx={{ fontSize: 24, color: 'inherit' }} />
+                </IconButton>
+              ))}
+            </Stack>
+          </Box>
         </Popover>
       </Box>
     </ClickAwayListener>

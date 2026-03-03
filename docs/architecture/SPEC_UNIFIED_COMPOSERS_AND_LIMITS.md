@@ -70,14 +70,14 @@ messages).
 
 | Context          | Limit per file                  | Limit per item | Types                                    |
 | ---------------- | ------------------------------- | -------------- | ---------------------------------------- |
-| Chat attachments | 6 MB                            | 5 per message  | JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, TXT |
+| Chat attachments | 2 MB (MVP)                      | 1 per message  | JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, TXT |
 | Feed post images | None (storage)                  | Multiple       | JPG, PNG, GIF, WebP                      |
 | Avatar           | 6 MB upload → 1 MB after resize | 1              | Images                                   |
 
 **Recommendations:**
 
 - **Feed post images:** Add 6 MB per file, align with chat.
-- **Chat:** Already has 6 MB and validation.
+- **Chat:** 2 MB per file, 1 per message (MVP); validation in app and DB.
 
 ---
 

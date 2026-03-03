@@ -63,6 +63,7 @@ export const Dashboard = () => {
   const [regenerating, setRegenerating] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] =
     useState<HTMLElement | null>(null);
+  const [editFocusBio, setEditFocusBio] = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -105,7 +106,7 @@ export const Dashboard = () => {
             (err.message.includes('404') || err.message.includes('not found')));
         setShareTokenError(
           isRpcMissing
-            ? "Share link isn't set up yet. Run: supabase db reset (or apply migrations), then try again."
+            ? "Share link isn't available right now. Please try again later."
             : toMessage(error),
         );
       } else {
@@ -164,13 +165,11 @@ export const Dashboard = () => {
       ? safeNerdCreds.resume_thumbnail_status
       : null;
 
-  // Description: Join wizard About (additional_context) first, then Edit Profile bio
+  // Bio: Join wizard About (additional_context) first, then Edit Profile bio
   const descriptionFromJoin = safeStr(profile?.additional_context).trim();
   const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
   const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
-  const bio = hasDescription
-    ? descriptionFromJoin || descriptionFromBio
-    : 'Add a short About to your profile.';
+  const bio = hasDescription ? descriptionFromJoin || descriptionFromBio : '';
   const bioIsPlaceholder = !hasDescription;
   const selectedSkills =
     Array.isArray(safeNerdCreds.skills) &&
@@ -220,6 +219,15 @@ export const Dashboard = () => {
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           bioIsPlaceholder={bioIsPlaceholder}
+          onAddBio={
+            bioIsPlaceholder
+              ? () => {
+                  setProfileMenuAnchor(null);
+                  setEditFocusBio(true);
+                  setIsEditOpen(true);
+                }
+              : undefined
+          }
           avatarUrl={avatarUrl}
           slotLeftOfAvatar={
             hasVisibleSocialLinks ? (
@@ -347,25 +355,47 @@ export const Dashboard = () => {
           slotBetweenContentAndActions={undefined}
           actions={
             <>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
-                endIcon={<KeyboardArrowDownIcon />}
-                disabled={loading}
-                aria-label="Profile menu"
-                aria-haspopup="true"
-                aria-expanded={Boolean(profileMenuAnchor)}
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  minHeight: { xs: 36, sm: 32 },
-                  fontSize: '0.8rem',
-                  px: 1.5,
-                }}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                sx={{ flexWrap: 'wrap' }}
               >
-                Profile
-              </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  disabled={loading}
+                  aria-label="Profile menu"
+                  aria-haspopup="true"
+                  aria-expanded={Boolean(profileMenuAnchor)}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    minHeight: { xs: 36, sm: 32 },
+                    fontSize: '0.8rem',
+                    px: 1.5,
+                  }}
+                >
+                  Profile
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => navigate('/dashboard/settings')}
+                  disabled={loading}
+                  aria-label="Settings"
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    minHeight: { xs: 36, sm: 32 },
+                    fontSize: '0.8rem',
+                    px: 1.5,
+                  }}
+                >
+                  Settings
+                </Button>
+              </Stack>
               <Menu
                 anchorEl={profileMenuAnchor}
                 open={Boolean(profileMenuAnchor)}
@@ -763,10 +793,12 @@ export const Dashboard = () => {
         open={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
+          setEditFocusBio(false);
           void refresh();
           void refreshAvatar();
         }}
         profile={profile}
+        focusBioOnOpen={editFocusBio}
         avatarFallback={
           session?.user?.user_metadata?.avatar_url as string | undefined
         }

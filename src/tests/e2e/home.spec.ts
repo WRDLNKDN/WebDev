@@ -3,11 +3,12 @@ import { expect, test } from './fixtures';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test('admin route should be reachable and accessible', async ({ page }) => {
-    await page.goto('/admin');
-    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
+    test.setTimeout(60_000);
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
 
     const results = await new AxeBuilder({ page })
-      .include('main')
+      .include('[data-testid="app-main"]')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze();
 

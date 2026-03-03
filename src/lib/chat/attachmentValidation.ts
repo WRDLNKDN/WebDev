@@ -41,7 +41,7 @@ export function getChatAttachmentRejectionReason(file: {
   name: string;
 }): string | null {
   if (file.size > CHAT_MAX_FILE_BYTES) {
-    return `File too large (${Math.ceil(file.size / (1024 * 1024))}MB). Max is 6MB.`;
+    return 'File must be 2MB or smaller.';
   }
   const normalized = normalizeChatAttachmentMime(file);
   if (!normalized) {

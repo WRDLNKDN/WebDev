@@ -4,6 +4,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import {
+  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -29,7 +30,11 @@ import { AvatarReplacementBox } from '../avatar/AvatarReplacementBox';
 import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
-import type { DashboardProfile, NerdCreds } from '../../types/profile';
+import type {
+  DashboardProfile,
+  IndustryGroup,
+  NerdCreds,
+} from '../../types/profile';
 
 // Brand colors matching the screenshot
 const GRADIENT_START = '#00C4CC'; // Blue-teal
@@ -64,6 +69,7 @@ import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
 } from '../../constants/industryTaxonomy';
+import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
 
 const INPUT_STYLES = {
   '& .MuiFilledInput-root': {
@@ -114,6 +120,8 @@ type EditProfileDialogProps = {
   onUpload: (file: File) => Promise<string | undefined>;
   /** Called when avatar changes (e.g. preset selected) for reactive UI update */
   onAvatarChanged?: () => void;
+  /** When true, focus or scroll to the Bio field when dialog opens (e.g. from "Add bio"). */
+  focusBioOnOpen?: boolean;
 };
 
 const safeStr = (val: unknown, fallback: string = ''): string => {
@@ -129,12 +137,13 @@ export const EditProfileDialog = ({
   avatarFallback,
   currentResolvedAvatarUrl,
   onUpdate,
-  onUpload,
   onAvatarChanged,
+  focusBioOnOpen = false,
 }: EditProfileDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bioInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const handleCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -145,13 +154,11 @@ export const EditProfileDialog = ({
     pronouns: '',
     bio: '',
     skills: '',
-    industry: '',
-    secondary_industry: '',
+    industries: [{ industry: '', sub_industries: [] }] as IndustryGroup[],
     niche_field: '',
     location: '',
     profile_visibility: 'members_only' as 'members_only' | 'connections_only',
   });
-  const [showSecondaryIndustry, setShowSecondaryIndustry] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -161,6 +168,18 @@ export const EditProfileDialog = ({
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!open || !focusBioOnOpen) return;
+    const t = setTimeout(() => {
+      const el = bioInputRef.current;
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
+    return () => clearTimeout(t);
+  }, [open, focusBioOnOpen]);
 
   useEffect(() => {
     if (open && profile) {
@@ -173,6 +192,26 @@ export const EditProfileDialog = ({
       const prof = profile as unknown as Record<string, unknown>;
       const handle = safeStr(profile.handle);
       latestHandleRef.current = handle;
+      const rawIndustries = prof.industries as IndustryGroup[] | undefined;
+      const industries: IndustryGroup[] =
+        Array.isArray(rawIndustries) && rawIndustries.length > 0
+          ? rawIndustries.map((g) => ({
+              industry: typeof g?.industry === 'string' ? g.industry : '',
+              sub_industries: Array.isArray(g?.sub_industries)
+                ? (g.sub_industries as string[]).filter(
+                    (s): s is string => typeof s === 'string',
+                  )
+                : [],
+            }))
+          : [
+              {
+                industry: safeStr(prof.industry),
+                sub_industries: (prof.secondary_industry as string)?.trim()
+                  ? [safeStr(prof.secondary_industry)]
+                  : [],
+              },
+            ];
+
       setFormData({
         handle,
         pronouns: safeStr(profile.pronouns),
@@ -184,18 +223,13 @@ export const EditProfileDialog = ({
               ? creds.skills
               : '',
         ),
-        industry: safeStr(prof.industry),
-        secondary_industry: safeStr(prof.secondary_industry),
+        industries,
         niche_field: safeStr(prof.niche_field),
         location: safeStr(prof.location),
         profile_visibility: (prof.profile_visibility === 'connections_only'
           ? 'connections_only'
           : 'members_only') as 'members_only' | 'connections_only',
       });
-      setShowSecondaryIndustry(
-        Boolean((prof.secondary_industry as string)?.trim()) ||
-          Boolean((prof.niche_field as string)?.trim()),
-      );
       setUploadedAvatarUrl(null);
     }
   }, [open, profile]);
@@ -245,11 +279,19 @@ export const EditProfileDialog = ({
     if (handleAvailable === false || checkingHandle) {
       return;
     }
-    if (!formData.industry?.trim()) {
-      setToastMessage('Primary Industry is required.');
+
+    const filled = formData.industries.filter((g) => g.industry?.trim());
+    const validation = validateIndustryGroups(formData.industries);
+    if (!validation.ok) {
+      setToastMessage(validation.message);
       setShowToast(true);
       return;
     }
+    const industriesToSave: IndustryGroup[] = filled.map((g) => ({
+      industry: g.industry.trim(),
+      sub_industries: g.sub_industries.slice(0, 8),
+    }));
+    const first = industriesToSave[0];
 
     try {
       setBusy(true);
@@ -261,8 +303,9 @@ export const EditProfileDialog = ({
       await onUpdate({
         handle: formData.handle,
         pronouns: formData.pronouns,
-        industry: formData.industry || null,
-        secondary_industry: formData.secondary_industry?.trim() || null,
+        industry: first?.industry ?? null,
+        secondary_industry: first?.sub_industries?.[0]?.trim() || null,
+        industries: industriesToSave,
         niche_field: formData.niche_field?.trim() || null,
         location: formData.location || null,
         profile_visibility: formData.profile_visibility,
@@ -565,13 +608,10 @@ export const EditProfileDialog = ({
               </FormControl>
             </Box>
 
-            {/* Primary Industry (required) — section heading only; no InputLabel to avoid overlap with placeholder */}
+            {/* Industry groups (repeatable): Industry + Sub-Industry, max 5 groups, max 8 sub per group */}
             <Box sx={{ mt: 2 }}>
               <Typography
                 variant="overline"
-                component="label"
-                htmlFor="edit-profile-primary-industry-select"
-                id="edit-profile-primary-industry-label"
                 sx={{
                   letterSpacing: 2,
                   fontWeight: 'bold',
@@ -580,148 +620,179 @@ export const EditProfileDialog = ({
                   mb: 1,
                 }}
               >
-                PRIMARY INDUSTRY *
+                INDUSTRY
               </Typography>
-              <FormControl
-                fullWidth
-                disabled={busy}
-                variant="filled"
-                sx={{ ...INPUT_STYLES, mt: 0 }}
-              >
-                <Select
-                  id="edit-profile-primary-industry-select"
-                  aria-labelledby="edit-profile-primary-industry-label"
-                  value={formData.industry}
-                  onChange={(e) => {
-                    const nextPrimary = e.target.value;
-                    const allowed = getSecondaryOptionsForPrimary(nextPrimary);
-                    setFormData((prev) => ({
-                      ...prev,
-                      industry: nextPrimary,
-                      secondary_industry:
-                        prev.secondary_industry &&
-                        allowed.includes(prev.secondary_industry)
-                          ? prev.secondary_industry
-                          : '',
-                    }));
-                  }}
-                  displayEmpty
-                  renderValue={(v) => v || 'Select primary industry'}
-                >
-                  <MenuItem value="">Select primary industry</MenuItem>
-                  {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText sx={{ mt: 0.5 }}>
-                  Used for Directory filtering.
-                </FormHelperText>
-              </FormControl>
-            </Box>
-
-            {/* Add another industry (progressive reveal) */}
-            {!showSecondaryIndustry ? (
-              <Box>
-                <Button
-                  size="small"
-                  onClick={() => setShowSecondaryIndustry(true)}
-                  sx={{ color: PURPLE_ACCENT, textTransform: 'none' }}
-                >
-                  Add another industry
-                </Button>
-              </Box>
-            ) : (
-              <>
-                <Box>
-                  <Typography
-                    variant="overline"
+              <FormHelperText sx={{ mb: 1 }}>
+                Add up to 5 industries. Each can have up to 8 sub-industries.
+              </FormHelperText>
+              <Stack spacing={2}>
+                {formData.industries.map((group, idx) => (
+                  <Box
+                    key={idx}
                     sx={{
-                      letterSpacing: 2,
-                      fontWeight: 'bold',
-                      color: PURPLE_ACCENT,
-                      display: 'block',
-                      mb: 0.5,
+                      pl: { xs: 0, sm: 1 },
+                      borderLeft: { sm: '2px solid rgba(255,255,255,0.1)' },
+                      py: 1,
                     }}
                   >
-                    SECONDARY INDUSTRY
-                  </Typography>
-                  <FormControl
-                    fullWidth
-                    disabled={busy}
-                    variant="filled"
-                    sx={INPUT_STYLES}
-                  >
-                    <InputLabel id="edit-profile-secondary-industry">
-                      Sub-industry
-                    </InputLabel>
-                    <Select
-                      labelId="edit-profile-secondary-industry"
-                      value={formData.secondary_industry}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          secondary_industry: e.target.value,
-                        }))
-                      }
-                      label="Sub-industry"
-                      displayEmpty
-                      renderValue={(v) => v || 'None'}
+                    <FormControl
+                      fullWidth
+                      disabled={busy}
+                      variant="filled"
+                      sx={{ ...INPUT_STYLES, mb: 1 }}
                     >
-                      <MenuItem value="">None</MenuItem>
-                      {getSecondaryOptionsForPrimary(formData.industry).map(
-                        (opt) => (
+                      <InputLabel id={`edit-industry-${idx}`} shrink>
+                        Industry
+                      </InputLabel>
+                      <Select
+                        labelId={`edit-industry-${idx}`}
+                        value={group.industry}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setFormData((prev) => ({
+                            ...prev,
+                            industries: prev.industries.map((g, i) =>
+                              i === idx
+                                ? {
+                                    industry: next,
+                                    sub_industries: [],
+                                  }
+                                : g,
+                            ),
+                          }));
+                        }}
+                        label="Industry"
+                        displayEmpty
+                        renderValue={(v) => v || 'Select industry'}
+                      >
+                        <MenuItem value="">Select industry</MenuItem>
+                        {INDUSTRY_PRIMARY_OPTIONS.filter(
+                          (opt) =>
+                            opt === group.industry ||
+                            !formData.industries.some(
+                              (g, i) => i !== idx && g.industry === opt,
+                            ),
+                        ).map((opt) => (
                           <MenuItem key={opt} value={opt}>
                             {opt}
                           </MenuItem>
-                        ),
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Autocomplete
+                      multiple
+                      disabled={busy || !group.industry}
+                      options={getSecondaryOptionsForPrimary(group.industry)}
+                      value={group.sub_industries}
+                      onChange={(_, next) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          industries: prev.industries.map((g, i) =>
+                            i === idx
+                              ? { ...g, sub_industries: next.slice(0, 8) }
+                              : g,
+                          ),
+                        }));
+                      }}
+                      getOptionLabel={(o) => o}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          variant="filled"
+                          label="Sub-Industry"
+                          placeholder={
+                            group.industry
+                              ? 'Select up to 8'
+                              : 'Select an industry first'
+                          }
+                          InputLabelProps={{ shrink: true }}
+                          sx={INPUT_STYLES}
+                        />
                       )}
-                    </Select>
-                    <FormHelperText>
-                      Same field as &quot;Sub-industry&quot; on the Directory.
-                    </FormHelperText>
-                  </FormControl>
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        secondary_industry: '',
-                      }));
-                      setShowSecondaryIndustry(false);
-                    }}
-                    sx={{ mt: 0.5, color: 'text.secondary' }}
-                  >
-                    Remove sub-industry
-                  </Button>
-                </Box>
-                <Box>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      letterSpacing: 2,
-                      fontWeight: 'bold',
-                      color: PURPLE_ACCENT,
-                      display: 'block',
-                      mb: 0.5,
-                    }}
-                  >
-                    NICHE OR FIELD
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    placeholder="Example: DevSecOps in FinTech"
-                    value={formData.niche_field}
-                    onChange={handleChange('niche_field')}
-                    disabled={busy}
-                    variant="filled"
-                    sx={INPUT_STYLES}
-                    helperText="Used for search. Not used for filters."
-                  />
-                </Box>
-              </>
-            )}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            bgcolor: INPUT_BG,
+                            border: `1px solid ${BORDER_COLOR}`,
+                          },
+                        },
+                      }}
+                      sx={{ mb: 0.5 }}
+                    />
+                    {group.sub_industries.length > 8 ? (
+                      <FormHelperText error>
+                        Max 8 sub-industries. Remove{' '}
+                        {group.sub_industries.length - 8} to save.
+                      </FormHelperText>
+                    ) : null}
+                    {formData.industries.length > 1 && (
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            industries: prev.industries.filter(
+                              (_, i) => i !== idx,
+                            ),
+                          }));
+                        }}
+                        sx={{ mt: 0.5, color: 'text.secondary' }}
+                      >
+                        Remove this industry
+                      </Button>
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+              {formData.industries.length < 5 && (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      industries: [
+                        ...prev.industries,
+                        { industry: '', sub_industries: [] },
+                      ],
+                    }));
+                  }}
+                  sx={{ mt: 1, color: PURPLE_ACCENT, textTransform: 'none' }}
+                >
+                  Add Another Industry
+                </Button>
+              )}
+              {formData.industries.length >= 5 && (
+                <FormHelperText sx={{ mt: 0.5 }}>
+                  Maximum 5 industries. Remove one to add another.
+                </FormHelperText>
+              )}
+            </Box>
+
+            {/* Niche or field */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 'bold',
+                  color: PURPLE_ACCENT,
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                NICHE OR FIELD
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Example: DevSecOps in FinTech"
+                value={formData.niche_field}
+                onChange={handleChange('niche_field')}
+                disabled={busy}
+                variant="filled"
+                sx={INPUT_STYLES}
+                helperText="Used for search. Not used for filters."
+              />
+            </Box>
 
             {/* Location */}
             <Box>
@@ -863,6 +934,7 @@ export const EditProfileDialog = ({
                 onChange={handleChange('bio')}
                 disabled={busy}
                 variant="filled"
+                inputRef={bioInputRef}
                 sx={{
                   ...INPUT_STYLES,
                   '& .MuiFilledInput-root': {

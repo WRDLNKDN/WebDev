@@ -73,6 +73,13 @@ profile routes (IA), Directory, footer, and Dashboard.
 - [ ] **Directory card**  
        Click a card → go to `/profile/{handle}`.
 
+- [ ] **Connected card: Manage menu**  
+       For a connected member, "Manage" button opens a menu with Disconnect and
+      Block. Clicking outside closes the menu. Disconnect opens a confirmation
+      dialog; Confirm removes the connection and list updates. Block opens a
+      confirmation dialog; Confirm blocks the member (they disappear from your
+      Directory list and connection is removed).
+
 - [ ] **Authenticated stability (no flicker redirect)**  
        While signed in, open `/directory` from nav, direct URL, and refresh. You
       remain on `/directory` without flickering to `/join`.
@@ -134,6 +141,23 @@ profile routes (IA), Directory, footer, and Dashboard.
 
 - [ ] **Edit Profile / Settings**  
        Buttons still open the correct dialogs.
+
+- [ ] **Bio section**  
+       When you have a bio, only the bio text is shown (no “Description” label).
+      When you have no bio, a single “Add bio” button is shown; it opens the
+      Edit Profile modal and focuses the Bio field.
+
+- [ ] **Edit Profile: Industry groups**  
+       Edit Profile shows repeatable Industry + Sub-Industry (up to 5 groups, 8
+      sub-industries per group). "Add Another Industry" adds a group; no
+      duplicate industries across groups. Saved industries appear in Directory
+      filter matching and on profile/dashboard.
+
+- [ ] **Discover Members: Manage / Disconnect / Block**  
+       Connected members show a Manage button; menu has Disconnect and Block.
+      Disconnect confirmation: title "Disconnect from [name]", body about
+      reconnecting later. Block confirmation: title "Block", body about Settings
+      for unblocking. Both use Confirm/Cancel.
 
 ---
 
@@ -233,3 +257,5 @@ profile routes (IA), Directory, footer, and Dashboard.
 | Feed        | Layout per wireframe; no search on page               |
 | Dashboard   | No MVP badge                                          |
 | Footer      | Contact → Agreements #contact; email mailto           |
+
+For a full list of Vitest and e2e specs, see [Testing (index)](./README.md).

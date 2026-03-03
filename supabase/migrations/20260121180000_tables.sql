@@ -1016,7 +1016,24 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'niche_field') then
     alter table public.profiles add column niche_field text;
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'industries') then
+    alter table public.profiles add column industries jsonb not null default '[]'::jsonb;
+  end if;
 end $$;
+
+-- Backfill industries from industry + secondary_industry (one group per profile)
+update public.profiles
+set industries = jsonb_build_array(
+  jsonb_build_object(
+    'industry', nullif(trim(industry), ''),
+    'sub_industries', case
+      when secondary_industry is not null and trim(secondary_industry) <> '' then jsonb_build_array(trim(secondary_industry))
+      else '[]'::jsonb
+    end
+  )
+)
+where (industry is not null and trim(industry) <> '')
+  and (industries is null or industries = '[]'::jsonb);
 
 -- Drop all overloads so only one signature exists (avoids "function name is not unique").
 drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int);
@@ -1143,7 +1160,10 @@ as $$
         )
       )
       and (
-        (pr.primary_industry_q is null or p.industry = pr.primary_industry_q or p.secondary_industry = pr.primary_industry_q)
+        (pr.primary_industry_q is null or p.industry = pr.primary_industry_q or p.secondary_industry = pr.primary_industry_q
+          or (p.industries is not null and jsonb_array_length(p.industries) > 0 and exists (
+            select 1 from jsonb_array_elements(p.industries) g where (g->>'industry') = pr.primary_industry_q
+          )))
         or (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q)
       )
       and (pr.location_q is null or lower(coalesce(p.location, '')) like '%' || pr.location_q || '%')
@@ -1325,13 +1345,17 @@ create table if not exists public.chat_message_attachments (
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
   )),
-  file_size bigint not null check (file_size > 0 and file_size <= 6291456),
+  file_size bigint not null check (file_size > 0 and file_size <= 2097152),
   created_at timestamptz not null default now()
 );
 
 create index if not exists idx_chat_message_attachments_message_id on public.chat_message_attachments(message_id);
 
-comment on table public.chat_message_attachments is 'Attachments: max 6MB per file, 5 per message, allowlist enforced in app and DB.';
+comment on table public.chat_message_attachments is 'Attachments: max 2MB per file, 1 per message (MVP); allowlist enforced in app and DB.';
+
+-- Enforce 2MB cap on existing deployments (idempotent)
+alter table public.chat_message_attachments drop constraint if exists chat_message_attachments_file_size_check;
+alter table public.chat_message_attachments add constraint chat_message_attachments_file_size_check check (file_size > 0 and file_size <= 2097152);
 
 create table if not exists public.chat_read_receipts (
   message_id uuid not null references public.chat_messages(id) on delete cascade,
@@ -1903,13 +1927,13 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- chat-attachments (6MB, allowlist: jpg, png, webp, gif, pdf, doc, docx, txt)
+-- chat-attachments (2MB MVP cap, allowlist: jpg, png, webp, gif, pdf, doc, docx, txt)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'chat-attachments',
   'chat-attachments',
   false,
-  6291456,
+  2097152,
   array[
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'application/pdf', 'application/msword',

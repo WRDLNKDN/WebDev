@@ -35,14 +35,14 @@ describe('chat attachment validation', () => {
     ).toContain('Unsupported type');
   });
 
-  it('rejects file larger than 6mb', () => {
+  it('rejects file larger than 2MB', () => {
     expect(
       getChatAttachmentRejectionReason({
         name: 'big.pdf',
         type: 'application/pdf',
-        size: 7 * 1024 * 1024,
+        size: 3 * 1024 * 1024,
       }),
-    ).toContain('File too large');
+    ).toBe('File must be 2MB or smaller.');
   });
 
   it('accepts allowed file under size limit', () => {

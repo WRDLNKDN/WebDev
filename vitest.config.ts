@@ -6,6 +6,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['vitest.setup.ts'],
     include: ['src/tests/**/*.{test,spec}.ts'],
+    pool: 'forks',
+    maxWorkers: 12,
+    minWorkers: 1,
     exclude: [
       'src/tests/rls/**',
       '**/node_modules/**',

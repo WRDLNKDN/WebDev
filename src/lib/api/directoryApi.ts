@@ -47,24 +47,15 @@ export interface DirectoryResponse {
   hasMore: boolean;
 }
 
+import { buildDirectoryQueryString } from './directoryQueryParams';
+
+export { buildDirectoryQueryString };
+
 export async function fetchDirectory(
   supabase: SupabaseClient,
   params: DirectoryParams,
 ): Promise<DirectoryResponse> {
-  const sp = new URLSearchParams();
-  if (params.q) sp.set('q', params.q);
-  if (params.primary_industry)
-    sp.set('primary_industry', params.primary_industry);
-  if (params.secondary_industry)
-    sp.set('secondary_industry', params.secondary_industry);
-  if (params.location) sp.set('location', params.location);
-  if (params.skills?.length) sp.set('skills', params.skills.join(','));
-  if (params.connection_status)
-    sp.set('connection_status', params.connection_status);
-  if (params.sort) sp.set('sort', params.sort);
-  if (params.offset != null) sp.set('offset', String(params.offset));
-  if (params.limit != null) sp.set('limit', String(params.limit));
-  const qs = sp.toString();
+  const qs = buildDirectoryQueryString(params);
   const url = `/api/directory${qs ? `?${qs}` : ''}`;
   const res = await authedFetch(url, { method: 'GET' }, { client: supabase });
   let data: Record<string, unknown>;

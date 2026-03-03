@@ -96,6 +96,15 @@ jobs:
           path: playwright-report
           retention-days: 7
 
+      - name: 📎 Upload test-results (screenshots/traces on failure)
+        if: steps.e2e.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
       # Optional: UI mode (manual only, run locally — no display in CI)
       - name: 🎭 Playwright UI mode (manual only, local use)
         if:

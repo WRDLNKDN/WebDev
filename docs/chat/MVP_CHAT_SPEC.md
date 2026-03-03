@@ -20,7 +20,7 @@ chats (max 100 members) with admin-controlled governance.
 - Read receipts (1:1 only)
 - Typing indicators
 - Online presence (green indicator only)
-- 6MB attachments (strict allowlist)
+- 2MB attachments, 1 per message (strict allowlist; MVP)
 - GIFs
 - Reporting (message + user)
 - Role-based moderation
@@ -78,8 +78,8 @@ chats (max 100 members) with admin-controlled governance.
 
 ## 6. Attachments & Media
 
-- Max 6MB per file
-- Max 5 attachments per message
+- Max 2MB per file (MVP cap)
+- 1 attachment per message (MVP)
 - **Allowed:** jpg, jpeg, png, webp, gif, pdf, doc, docx, txt
 - **Disallowed:** Archives (zip, rar, 7z), executables and scripts
 - Client-side validation required (size + MIME + extension fallback)
@@ -178,7 +178,7 @@ chats (max 100 members) with admin-controlled governance.
 │ ├─ Unlimited delete (placeholder)
 │ ├─ Emoji reactions
 │ ├─ Reporting (message + user)
-│ ├─ Max 6MB attachments, allowed file types enforced
+│ ├─ Max 2MB, 1 attachment per message (MVP); allowed file types enforced
 │ └─ GIF support
 │
 ├─ Role-Based Moderation
@@ -196,14 +196,18 @@ chats (max 100 members) with admin-controlled governance.
 
 ## Work Item Order
 
-| #   | Title                            | Status |
-| --- | -------------------------------- | ------ |
-| 228 | Supabase Chat Schema & RLS       | Done   |
-| 229 | Core Messaging (1:1, Group)      | Done   |
-| 230 | Edit, Delete, Reactions          | Done   |
-| 231 | Attachments (6MB, EXIF, Storage) | Done   |
-| 232 | Presence, Typing, Receipts       | Done   |
-| 234 | NFR: Storage & Backup            | Done   |
-| 236 | Reporting & Moderation           | Done   |
-| 237 | NFR: Audit Logging               | Done   |
-| 238 | NFR: Monitoring                  | Done   |
+<!-- markdownlint-disable MD060 -->
+
+| #   | Title                                    | Status |
+| --- | ---------------------------------------- | ------ |
+| 228 | Supabase Chat Schema & RLS               | Done   |
+| 229 | Core Messaging (1:1, Group)              | Done   |
+| 230 | Edit, Delete, Reactions                  | Done   |
+| 231 | Attachments (2MB, 1/file, EXIF, Storage) | Done   |
+| 232 | Presence, Typing, Receipts               | Done   |
+| 234 | NFR: Storage & Backup                    | Done   |
+| 236 | Reporting & Moderation                   | Done   |
+| 237 | NFR: Audit Logging                       | Done   |
+| 238 | NFR: Monitoring                          | Done   |
+
+<!-- markdownlint-enable MD060 -->

@@ -25,6 +25,8 @@ import { toMessage } from '../../lib/utils/errors';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { supabase } from '../../lib/auth/supabaseClient';
 
+const POST_PREVIEW_MAX_LENGTH = 180;
+
 type NotificationRow = {
   id: string;
   recipient_id: string;
@@ -42,6 +44,10 @@ type NotificationRow = {
   reference_exists?: boolean;
   /** True when this notification points to a still-pending connection request. */
   connection_request_pending?: boolean;
+  /** For post-related notifications: snippet of post body (140–200 chars), or null if N/A. */
+  post_snippet?: string | null;
+  /** For post-related notifications: first image URL from post media, or null if N/A. */
+  post_thumbnail?: string | null;
 };
 
 import { formatPostTime } from '../../lib/post/formatPostTime';
@@ -55,6 +61,8 @@ function getNotificationLabel(row: NotificationRow): string {
       return `${actor} commented on your post`;
     case 'mention':
       return `${actor} mentioned you`;
+    case 'repost':
+      return `${actor} shared your post`;
     case 'chat_message':
       return `${actor} sent you a message`;
     case 'connection_request':
@@ -182,12 +190,40 @@ export const NotificationsPage = () => {
     let roomExists: Set<string> = new Set();
     let pendingConnectionRequestIds: Set<string> = new Set();
 
+    const feedSnippets: Record<string, string> = {};
+    const feedThumbnails: Record<string, string> = {};
     if (feedRefs.length > 0) {
       const { data: feedRows } = await supabase
         .from('feed_items')
-        .select('id')
+        .select('id, payload')
         .in('id', feedRefs);
-      feedExists = new Set((feedRows ?? []).map((x) => x.id));
+      const feedList = feedRows ?? [];
+      feedExists = new Set(feedList.map((x) => x.id));
+      for (const row of feedList as {
+        id: string;
+        payload?: {
+          body?: string;
+          text?: string;
+          images?: string[];
+          snapshot?: { url?: string };
+        };
+      }[]) {
+        const raw = row.payload?.body ?? row.payload?.text ?? '';
+        const text = typeof raw === 'string' ? raw.trim() : '';
+        if (text) {
+          feedSnippets[row.id] =
+            text.length <= POST_PREVIEW_MAX_LENGTH
+              ? text
+              : `${text.slice(0, POST_PREVIEW_MAX_LENGTH)}\u2026`;
+        }
+        const firstImage =
+          Array.isArray(row.payload?.images) && row.payload.images.length > 0
+            ? row.payload.images[0]
+            : row.payload?.snapshot?.url;
+        if (typeof firstImage === 'string' && firstImage.trim()) {
+          feedThumbnails[row.id] = firstImage.trim();
+        }
+      }
     }
     if (eventRefs.length > 0) {
       const { data: evRows } = await supabase
@@ -233,19 +269,40 @@ export const NotificationsPage = () => {
       return true;
     };
 
+    const postRelatedTypes = new Set([
+      'comment',
+      'reaction',
+      'mention',
+      'repost',
+    ]);
     const enriched: NotificationRow[] = list.map((r) => {
       const a = r.actor_id ? actors[r.actor_id] : null;
+      const refExistsVal = refExists(r);
+      const isPostRelated =
+        r.reference_type === 'feed_item' &&
+        r.reference_id != null &&
+        postRelatedTypes.has(r.type);
+      const post_snippet =
+        isPostRelated && refExistsVal && r.reference_id
+          ? (feedSnippets[r.reference_id] ?? null)
+          : undefined;
+      const post_thumbnail =
+        isPostRelated && r.reference_id
+          ? (feedThumbnails[r.reference_id] ?? null)
+          : undefined;
       return {
         ...r,
         payload: (r.payload ?? {}) as NotificationPayload,
         actor_handle: a?.handle ?? null,
         actor_display_name: a?.display_name ?? null,
         actor_avatar: a?.avatar ?? null,
-        reference_exists: refExists(r),
+        reference_exists: refExistsVal,
         connection_request_pending:
           r.type === 'connection_request' && r.reference_id != null
             ? pendingConnectionRequestIds.has(r.reference_id)
             : undefined,
+        post_snippet: isPostRelated ? (post_snippet ?? null) : undefined,
+        post_thumbnail: isPostRelated ? (post_thumbnail ?? null) : undefined,
       };
     });
 
@@ -307,18 +364,7 @@ export const NotificationsPage = () => {
         } else {
           await declineRequest(supabase, row.actor_id);
         }
-        const nowIso = new Date().toISOString();
-        setRows((prev) =>
-          prev.map((r) =>
-            r.id === row.id
-              ? {
-                  ...r,
-                  connection_request_pending: false,
-                  read_at: r.read_at ?? nowIso,
-                }
-              : r,
-          ),
-        );
+        setRows((prev) => prev.filter((r) => r.id !== row.id));
       } catch (e) {
         setError(toMessage(e));
       } finally {
@@ -394,138 +440,211 @@ export const NotificationsPage = () => {
             sx={{ borderRadius: 2, overflow: 'hidden' }}
           >
             <List disablePadding>
-              {rows.map((row) => (
-                <ListItem key={row.id} disablePadding divider>
-                  {row.type === 'connection_request' &&
-                  row.connection_request_pending ? (
-                    <Box
-                      sx={{
-                        width: '100%',
-                        py: 1.5,
-                        px: 2,
-                        bgcolor: row.read_at ? undefined : 'action.hover',
-                        display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        alignItems: { xs: 'flex-start', sm: 'center' },
-                        gap: 2,
-                      }}
-                    >
-                      <ProfileAvatar
-                        src={row.actor_avatar ?? undefined}
-                        alt={row.actor_display_name || row.actor_handle || '?'}
-                        size="small"
-                      />
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <ListItemText
-                          primary={getNotificationLabel(row)}
-                          secondary="Approve or decline this connection request"
-                          primaryTypographyProps={{
-                            fontWeight: row.read_at ? 400 : 600,
-                          }}
-                          secondaryTypographyProps={{
-                            variant: 'caption',
-                          }}
-                          sx={{ m: 0 }}
-                        />
-                      </Box>
-                      <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={1}
-                        sx={{ width: { xs: '100%', sm: 'auto' } }}
+              {rows
+                .filter(
+                  (row) =>
+                    !(
+                      row.type === 'connection_request' &&
+                      row.connection_request_pending === false
+                    ),
+                )
+                .map((row) => (
+                  <ListItem key={row.id} disablePadding divider>
+                    {row.type === 'connection_request' &&
+                    row.connection_request_pending ? (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          py: 1.5,
+                          px: 2,
+                          bgcolor: row.read_at ? undefined : 'action.hover',
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          gap: 2,
+                        }}
                       >
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() =>
-                            void handleConnectionDecision(row, 'accept')
+                        <ProfileAvatar
+                          src={row.actor_avatar ?? undefined}
+                          alt={
+                            row.actor_display_name || row.actor_handle || '?'
                           }
-                          disabled={actingRequestId === row.id}
-                          sx={{
-                            width: { xs: '100%', sm: 'auto' },
-                            bgcolor: 'success.main',
-                            color: '#000',
-                            '&:hover': {
-                              bgcolor: 'success.dark',
-                              color: '#000',
-                            },
-                            '&.Mui-disabled': {
-                              bgcolor: 'action.disabledBackground',
-                              color: 'action.disabled',
-                            },
-                          }}
-                        >
-                          Approve
-                        </Button>
-                        <Button
                           size="small"
-                          variant="contained"
-                          onClick={() =>
-                            void handleConnectionDecision(row, 'decline')
-                          }
-                          disabled={actingRequestId === row.id}
-                          sx={{
-                            width: { xs: '100%', sm: 'auto' },
-                            bgcolor: 'error.main',
-                            color: '#000',
-                            '&:hover': {
-                              bgcolor: 'error.dark',
-                              color: '#000',
-                            },
-                            '&.Mui-disabled': {
-                              bgcolor: 'action.disabledBackground',
-                              color: 'action.disabled',
-                            },
-                          }}
-                        >
-                          Decline
-                        </Button>
-                      </Stack>
-                    </Box>
-                  ) : (
-                    <ListItemButton
-                      component={RouterLink}
-                      to={getNotificationLink(row)}
-                      sx={{
-                        py: 1.5,
-                        bgcolor: row.read_at ? undefined : 'action.hover',
-                      }}
-                      onClick={() => {
-                        if (!row.read_at) void markAsRead(row.id);
-                      }}
-                    >
-                      <ProfileAvatar
-                        src={row.actor_avatar ?? undefined}
-                        alt={row.actor_display_name || row.actor_handle || '?'}
-                        size="small"
-                        sx={{ mr: 2 }}
-                      />
-                      <ListItemText
-                        primary={getNotificationLabel(row)}
-                        secondary={
-                          row.reference_exists === false
-                            ? 'Content may no longer be available'
-                            : formatPostTime(row.created_at)
-                        }
-                        primaryTypographyProps={{
-                          fontWeight: row.read_at ? 400 : 600,
-                        }}
-                        secondaryTypographyProps={{
-                          variant: 'caption',
-                          color:
-                            row.reference_exists === false
-                              ? 'text.secondary'
-                              : undefined,
-                        }}
-                      />
-                      {!row.read_at && (
-                        <NotificationsActiveIcon
-                          sx={{ fontSize: 16, color: 'primary.main', ml: 1 }}
                         />
-                      )}
-                    </ListItemButton>
-                  )}
-                </ListItem>
-              ))}
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <ListItemText
+                            primary={getNotificationLabel(row)}
+                            secondary="Approve or decline this connection request"
+                            primaryTypographyProps={{
+                              fontWeight: row.read_at ? 400 : 600,
+                            }}
+                            secondaryTypographyProps={{
+                              variant: 'caption',
+                            }}
+                            sx={{ m: 0 }}
+                          />
+                        </Box>
+                        <Stack
+                          direction={{ xs: 'column', sm: 'row' }}
+                          spacing={1}
+                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() =>
+                              void handleConnectionDecision(row, 'accept')
+                            }
+                            disabled={actingRequestId === row.id}
+                            sx={{
+                              width: { xs: '100%', sm: 'auto' },
+                              bgcolor: 'success.main',
+                              color: '#000',
+                              '&:hover': {
+                                bgcolor: 'success.dark',
+                                color: '#000',
+                              },
+                              '&.Mui-disabled': {
+                                bgcolor: 'action.disabledBackground',
+                                color: 'action.disabled',
+                              },
+                            }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() =>
+                              void handleConnectionDecision(row, 'decline')
+                            }
+                            disabled={actingRequestId === row.id}
+                            sx={{
+                              width: { xs: '100%', sm: 'auto' },
+                              bgcolor: 'error.main',
+                              color: '#000',
+                              '&:hover': {
+                                bgcolor: 'error.dark',
+                                color: '#000',
+                              },
+                              '&.Mui-disabled': {
+                                bgcolor: 'action.disabledBackground',
+                                color: 'action.disabled',
+                              },
+                            }}
+                          >
+                            Decline
+                          </Button>
+                        </Stack>
+                      </Box>
+                    ) : (
+                      <ListItemButton
+                        component={RouterLink}
+                        to={getNotificationLink(row)}
+                        sx={{
+                          py: 1.5,
+                          bgcolor: row.read_at ? undefined : 'action.hover',
+                          flexDirection: 'column',
+                          alignItems: 'stretch',
+                        }}
+                        onClick={() => {
+                          if (!row.read_at) void markAsRead(row.id);
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            width: '100%',
+                          }}
+                        >
+                          <ProfileAvatar
+                            src={row.actor_avatar ?? undefined}
+                            alt={
+                              row.actor_display_name || row.actor_handle || '?'
+                            }
+                            size="small"
+                            sx={{ mr: 2, flexShrink: 0 }}
+                          />
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <ListItemText
+                              primary={getNotificationLabel(row)}
+                              secondary={formatPostTime(row.created_at)}
+                              primaryTypographyProps={{
+                                fontWeight: row.read_at ? 400 : 600,
+                              }}
+                              secondaryTypographyProps={{
+                                variant: 'caption',
+                              }}
+                              sx={{ m: 0 }}
+                            />
+                            {row.reference_type === 'feed_item' &&
+                              (row.type === 'comment' ||
+                                row.type === 'reaction' ||
+                                row.type === 'mention' ||
+                                row.type === 'repost') && (
+                                <Box
+                                  sx={{
+                                    mt: 1,
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    bgcolor: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    display: 'flex',
+                                    gap: 1.5,
+                                    alignItems: 'flex-start',
+                                  }}
+                                >
+                                  {row.post_thumbnail && (
+                                    <Box
+                                      component="img"
+                                      src={row.post_thumbnail}
+                                      alt=""
+                                      sx={{
+                                        width: 56,
+                                        height: 56,
+                                        borderRadius: 1,
+                                        objectFit: 'cover',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
+                                  <Typography
+                                    variant="caption"
+                                    component="span"
+                                    sx={{
+                                      color: 'text.secondary',
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'normal',
+                                      flex: 1,
+                                      minWidth: 0,
+                                    }}
+                                  >
+                                    {row.reference_exists === false
+                                      ? 'This post is no longer available or not available to you.'
+                                      : (row.post_snippet ?? '\u2014')}
+                                  </Typography>
+                                </Box>
+                              )}
+                          </Box>
+                          {!row.read_at && (
+                            <NotificationsActiveIcon
+                              sx={{
+                                fontSize: 16,
+                                color: 'primary.main',
+                                ml: 1,
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </ListItemButton>
+                    )}
+                  </ListItem>
+                ))}
             </List>
           </Paper>
         )}

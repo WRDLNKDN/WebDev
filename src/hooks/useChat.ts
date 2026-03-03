@@ -6,9 +6,11 @@ import {
   useState,
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { resolveAttachmentMetaForSend } from '../lib/chat/attachmentMeta';
 import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
 import { toMessage } from '../lib/utils/errors';
 import type {
+  ChatAttachmentMeta,
   ChatMessage,
   ChatMessageAttachment,
   ChatMessageReaction,
@@ -389,7 +391,11 @@ export function useChat(roomId: string | null) {
   }, [roomId]);
 
   const sendMessage = useCallback(
-    async (content: string, attachmentPaths?: string[]) => {
+    async (
+      content: string,
+      attachmentPaths?: string[],
+      attachmentMeta?: ChatAttachmentMeta[],
+    ) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -430,38 +436,32 @@ export function useChat(roomId: string | null) {
         };
         startTransition(() => setMessages((prev) => [...prev, optimistic]));
 
-        if (attachmentPaths && attachmentPaths.length > 0 && msg) {
-          for (const p of attachmentPaths) {
+        if (msg && attachmentPaths && attachmentPaths.length > 0) {
+          const resolved = resolveAttachmentMetaForSend(
+            attachmentPaths,
+            attachmentMeta,
+          );
+          for (let i = 0; i < attachmentPaths.length; i++) {
+            const p = attachmentPaths[i];
             const pathParts = p.split('/');
             const fileName = pathParts[pathParts.length - 1];
-            const { data: obj } = await supabase.storage
-              .from('chat-attachments')
-              .list(pathParts[0], { search: fileName });
-
-            if (obj?.[0]) {
-              const mimeType =
-                obj[0].metadata?.mimetype ?? 'application/octet-stream';
-              const fileSize =
-                typeof obj[0].metadata?.size === 'number'
-                  ? obj[0].metadata.size
-                  : 0;
-              const normalizedMime = normalizeChatAttachmentMime({
-                name: fileName,
-                type: mimeType,
-              });
-              if (!normalizedMime) {
-                throw new Error('Unsupported attachment type');
-              }
-              if (fileSize > CHAT_MAX_FILE_BYTES) {
-                throw new Error('Attachment exceeds 6MB limit');
-              }
-              await supabase.from('chat_message_attachments').insert({
-                message_id: msg.id,
-                storage_path: p,
-                mime_type: normalizedMime,
-                file_size: fileSize,
-              });
+            const { mime: mimeType, size: fileSize } = resolved[i];
+            const normalizedMime = normalizeChatAttachmentMime({
+              name: fileName,
+              type: mimeType,
+            });
+            if (!normalizedMime) {
+              throw new Error('Unsupported attachment type');
             }
+            if (fileSize > CHAT_MAX_FILE_BYTES) {
+              throw new Error('Attachment exceeds 2MB limit');
+            }
+            await supabase.from('chat_message_attachments').insert({
+              message_id: msg.id,
+              storage_path: p,
+              mime_type: normalizedMime,
+              file_size: fileSize,
+            });
           }
           await fetchMessages(roomId);
         }

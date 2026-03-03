@@ -13,6 +13,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    pool: 'forks',
+    maxWorkers: 12,
+    minWorkers: 1,
 
     // Only run RLS tests
     include: ['src/tests/rls/**/*.{test,spec}.ts'],

@@ -18,7 +18,7 @@ export const BlockConfirmDialog = ({
   open,
   onClose,
   onConfirm,
-  displayName = 'this user',
+  displayName = 'this member',
 }: BlockConfirmDialogProps) => {
   const handleConfirm = async () => {
     await onConfirm();
@@ -27,10 +27,11 @@ export const BlockConfirmDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Block user</DialogTitle>
+      <DialogTitle>Block {displayName}</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Block {displayName}? You will not be able to message each other.
+          Blocking will remove your connection with {displayName} and prevent
+          future interactions. You can unblock later in Settings.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -40,7 +41,7 @@ export const BlockConfirmDialog = ({
           color="error"
           variant="contained"
         >
-          Block
+          Confirm
         </Button>
       </DialogActions>
     </Dialog>

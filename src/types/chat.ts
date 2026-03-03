@@ -109,6 +109,9 @@ export const CHAT_ALLOWED_ACCEPT = [
   ...CHAT_ALLOWED_EXTENSIONS,
 ].join(',');
 
-export const CHAT_MAX_FILE_BYTES = 6 * 1024 * 1024; // 6MB
-export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 5;
+export const CHAT_MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB MVP cap
+export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 1;
 export const CHAT_MAX_GROUP_MEMBERS = 100;
+
+/** Metadata for a chat attachment passed from upload step to send (avoids storage.list). */
+export type ChatAttachmentMeta = { path: string; mime: string; size: number };

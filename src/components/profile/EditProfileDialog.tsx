@@ -137,6 +137,7 @@ export const EditProfileDialog = ({
   avatarFallback,
   currentResolvedAvatarUrl,
   onUpdate,
+  onUpload,
   onAvatarChanged,
   focusBioOnOpen = false,
 }: EditProfileDialogProps) => {

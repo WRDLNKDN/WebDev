@@ -58,7 +58,7 @@ export interface IndustryGroup {
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 export interface DashboardProfile
-  extends Omit<ProfileRow, 'nerd_creds' | 'socials'> {
+  extends Omit<ProfileRow, 'nerd_creds' | 'socials' | 'industries'> {
   // Override generic 'Json' with specific schemas
   nerd_creds: NerdCreds;
 
@@ -67,5 +67,5 @@ export interface DashboardProfile
   socials: SocialLink[];
 
   /** Multiple industry groups (DB: profiles.industries jsonb). */
-  industries?: IndustryGroup[] | null;
+  industries: IndustryGroup[] | null;
 }

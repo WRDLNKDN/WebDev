@@ -353,14 +353,32 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   >
                     Business, but weirder.
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: { xs: 'none', md: 'block' } }}
+                  <Link
+                    href="https://pay.weirdlinked.in/e8779a0c-57d5-401f-b361-b22"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Donate to WRDLNKDN"
+                    sx={{
+                      display: { xs: 'none', sm: 'inline-block' },
+                      mt: 0.5,
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      textDecoration: 'none',
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        color: 'primary.dark',
+                      },
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: 2,
+                        borderRadius: 0.5,
+                      },
+                    }}
                   >
-                    Build signal-first connections with humans, not vanity
-                    metrics.
-                  </Typography>
+                    Donate Now
+                  </Link>
                 </Stack>
               </Grid>
 

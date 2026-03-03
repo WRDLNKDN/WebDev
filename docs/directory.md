@@ -102,7 +102,9 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
    "Needs your approval") → B can Accept or Decline.
 3. **Auto-accept path:** If B already sent A a pending request, A clicking
    Connect auto-accepts the relationship immediately.
-4. **Connected** → Either can open Chat or Disconnect.
+4. **Connected** → Either can open Chat or use Manage (Disconnect or Block).
+   Block adds the member to `chat_blocks`, removes the connection if present,
+   and excludes them from Directory results for the blocker.
 
 ## Frontend
 
@@ -111,16 +113,26 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 - **Page:** `src/pages/community/Directory.tsx` — list view, search, filters
   (URL-persisted), sort, pagination, connection actions.
 - **Row:** `src/components/directory/DirectoryRow.tsx` — displays member and
-  actions per connection state.
+  actions per connection state (Connect, Accept/Decline, or Chat + Manage with
+  Disconnect/Block for connected).
 
 ## Database
 
-- **Tables:** `connection_requests`, `profiles` (columns: industry, location,
-  profile_visibility, last_active_at).
-- **RPC:** `get_directory_page` — search, filter, connection state, privacy.
+- **Tables:** `connection_requests`, `profiles` (columns: industry,
+  secondary_industry, industries, location, profile_visibility, last_active_at).
+  - `industries` (jsonb): repeatable industry groups; each entry has `industry`
+    and `sub_industries[]`. Used for Directory filtering (match any group) and
+    Edit Profile (up to 5 groups, 8 sub-industries per group). Legacy `industry`
+    / `secondary_industry` are kept in sync from the first group.
+- **RPC:** `get_directory_page` — search, filter (including multi-industry match
+  via `industries`), connection state, privacy.
 - **Migrations:**
   [`supabase/migrations/20260121180000_tables.sql`](../supabase/migrations/20260121180000_tables.sql),
   [`20260121180005_rls.sql`](../supabase/migrations/20260121180005_rls.sql).
+  After adding the `industries` column (and backfill from `industry` /
+  `secondary_industry`), run your usual migration path (e.g. `supabase db push`
+  or apply the tables migration then RLS) so Edit Profile and Directory filter
+  use the new shape.
 
 ## See also
 

@@ -5,7 +5,7 @@
 ## Storage
 
 - **Chat attachments:** Supabase Storage bucket `chat-attachments`
-  - 6MB per file limit
+  - 2MB per file limit (MVP)
   - Allowed types: jpg, png, webp, gif, pdf, doc, docx, txt
   - Private bucket; access via signed URLs (RLS enforces authenticated)
   - Path structure: `{user_id}/{timestamp}_{index}.{ext}`

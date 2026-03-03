@@ -648,6 +648,7 @@ export type Database = {
           pronouns: string | null
           industry: string | null
           secondary_industry: string | null
+          industries: Json | null
           niche_field: string | null
           location: string | null
           profile_visibility: string
@@ -659,6 +660,10 @@ export type Database = {
           marketing_product_updates: boolean
           marketing_events: boolean
           last_active_at: string | null
+          push_enabled: boolean
+          email_notifications_enabled: boolean
+          marketing_push_enabled: boolean
+          consent_updated_at: string | null
           status: string
           socials: Json | null
           nerd_creds: Json | null
@@ -684,6 +689,7 @@ export type Database = {
           pronouns?: string | null
           industry?: string | null
           secondary_industry?: string | null
+          industries?: Json | null
           niche_field?: string | null
           location?: string | null
           profile_visibility?: string
@@ -695,6 +701,10 @@ export type Database = {
           marketing_product_updates?: boolean
           marketing_events?: boolean
           last_active_at?: string | null
+          push_enabled?: boolean
+          email_notifications_enabled?: boolean
+          marketing_push_enabled?: boolean
+          consent_updated_at?: string | null
           status?: string
           use_weirdling_avatar?: boolean
           socials?: Json | null
@@ -720,6 +730,7 @@ export type Database = {
           pronouns?: string | null
           industry?: string | null
           secondary_industry?: string | null
+          industries?: Json | null
           niche_field?: string | null
           location?: string | null
           profile_visibility?: string
@@ -731,6 +742,10 @@ export type Database = {
           marketing_product_updates?: boolean
           marketing_events?: boolean
           last_active_at?: string | null
+          push_enabled?: boolean
+          email_notifications_enabled?: boolean
+          marketing_push_enabled?: boolean
+          consent_updated_at?: string | null
           status?: string
           socials?: Json | null
           nerd_creds?: Json | null

@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { BlockConfirmDialog } from '../../components/chat/BlockConfirmDialog';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type {
   ConnectionState,
@@ -143,6 +144,10 @@ export const Directory = () => {
   const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [busy, setBusy] = useState(false);
   const [disconnectTarget, setDisconnectTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [blockTarget, setBlockTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -367,6 +372,31 @@ export const Directory = () => {
       await disconnect(supabase, disconnectTarget.id);
       setDisconnectTarget(null);
       await load(false);
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleBlockClick = (member: DirectoryMember) => {
+    setBlockTarget({
+      id: member.id,
+      name: member.display_name || member.handle || 'this member',
+    });
+  };
+
+  const handleBlockConfirm = async () => {
+    if (!blockTarget || !session?.user?.id) return;
+    setBusy(true);
+    try {
+      await supabase.from('chat_blocks').insert({
+        blocker_id: session.user.id,
+        blocked_user_id: blockTarget.id,
+      });
+      await disconnect(supabase, blockTarget.id);
+      setRows((prev) => prev.filter((r) => r.id !== blockTarget.id));
+      setBlockTarget(null);
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -880,6 +910,7 @@ export const Directory = () => {
                 onAccept={handleAccept}
                 onDecline={handleDecline}
                 onDisconnect={handleDisconnectClick}
+                onBlock={handleBlockClick}
                 onSkillClick={handleSkillClick}
                 busy={busy}
               />
@@ -916,11 +947,10 @@ export const Directory = () => {
         open={Boolean(disconnectTarget)}
         onClose={() => setDisconnectTarget(null)}
       >
-        <DialogTitle>Disconnect?</DialogTitle>
+        <DialogTitle>Disconnect from {disconnectTarget?.name}</DialogTitle>
         <DialogContent>
           <Typography>
-            Remove your connection with {disconnectTarget?.name}? You can send a
-            new request later.
+            This will remove your connection. You can reconnect later.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -930,10 +960,17 @@ export const Directory = () => {
             variant="contained"
             onClick={() => void handleDisconnectConfirm()}
           >
-            Disconnect
+            Confirm
           </Button>
         </DialogActions>
       </Dialog>
+
+      <BlockConfirmDialog
+        open={Boolean(blockTarget)}
+        onClose={() => setBlockTarget(null)}
+        onConfirm={handleBlockConfirm}
+        displayName={blockTarget?.name}
+      />
     </Box>
   );
 };

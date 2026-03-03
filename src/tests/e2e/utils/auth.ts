@@ -39,13 +39,13 @@ export async function seedSignedInSession(
   };
 
   await context.addInitScript((payload) => {
-    // Find actual supabase auth storage key dynamically
-    const existingKeys = Object.keys(localStorage);
-    const sbKey =
-      existingKeys.find((k) => k.includes('sb-') && k.includes('auth')) ||
-      'sb-e2e-auth';
-
-    localStorage.setItem(sbKey, JSON.stringify(payload));
+    const sessionStr = JSON.stringify(payload);
+    const keys = [
+      'dev-sb-wrdlnkdn-auth',
+      'uat-sb-wrdlnkdn-auth',
+      'prod-sb-wrdlnkdn-auth',
+    ];
+    keys.forEach((key) => localStorage.setItem(key, sessionStr));
   }, session);
 
   return {

@@ -76,12 +76,16 @@ Central index for WRDLNKDN WebDev documentation.
   for non-blocking AAA findings from nightly accessibility sweeps.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix
   everything; pre-commit and commands.
+- [Testing (index)](./testing/README.md) — Inventory of Vitest and Playwright
+  tests; commands and which docs reference them.
 - [PR testing steps](./testing/pr-testing-steps.md) — Checklist for pre-merge
   testing.
 - [Android sign-in smoke test](./testing/android-signin-smoke.md) — Manual
   callback and recovery verification on Android Chrome/webview.
 - [Beta notes](./BETA_NOTES.md) — Current Beta-scope adjustments and temporary
   decisions.
+- [Feature follow-ups](./FEATURE_FOLLOWUPS.md) — Planned follow-up features
+  (e.g. Unblock in Settings) referenced from UI or acceptance criteria.
 
 ## Governance (API & Data Layer)
 

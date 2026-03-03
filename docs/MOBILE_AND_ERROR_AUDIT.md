@@ -67,8 +67,7 @@ Audit of main screens and error handling across the frontend.
   try again."
 - **ReportDialog:** Fixed to "Your report could not be submitted. Please try
   again."
-- **MessageInput file size:** Fixed to "This file is too large. Maximum size is
-  6MB."
+- **MessageInput file size:** Fixed to "File must be 2MB or smaller."
 - **MessageInput file type:** Fixed to "This file type is not supported. Please
   choose an image or document."
 - **LandingPage follow:** Fixed to "Could not connect. Please try again."

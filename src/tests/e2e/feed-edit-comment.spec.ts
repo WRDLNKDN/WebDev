@@ -1,44 +1,5 @@
-import { expect, test, type Page, type Route } from './fixtures';
-
-const USER_ID = '11111111-1111-4111-8111-111111111111';
-
-function mockSessionPayload() {
-  const now = Math.floor(Date.now() / 1000);
-  return {
-    access_token: 'e2e-access-token',
-    refresh_token: 'e2e-refresh-token',
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: now + 3600,
-    user: {
-      id: USER_ID,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: 'member@example.com',
-      email_confirmed_at: new Date().toISOString(),
-      phone: '',
-      confirmed_at: new Date().toISOString(),
-      app_metadata: { provider: 'email', providers: ['email'] },
-      user_metadata: { handle: 'member' },
-      identities: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  };
-}
-
-async function seedSignedInSession(page: Page) {
-  const payload = mockSessionPayload();
-  await page.addInitScript((session) => {
-    [
-      'dev-sb-wrdlnkdn-auth',
-      'uat-sb-wrdlnkdn-auth',
-      'prod-sb-wrdlnkdn-auth',
-    ].forEach((key) => {
-      window.localStorage.setItem(key, JSON.stringify(session));
-    });
-  }, payload);
-}
+import { expect, test, type Route } from './fixtures';
+import { seedSignedInSession, USER_ID } from './utils/auth';
 
 async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
   const accept = route.request().headers()['accept'] || '';
@@ -53,12 +14,13 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Feed post/comment edit persistence', () => {
-  // Skipped: complex feed+comments mock and menu flow still flaky; re-enable when debugged.
+  // Requires feed request to be intercepted (same-origin or stub wins). Re-enable when e2e env uses same-origin API or stub is verified.
   test.fixme(
     'author can edit post and comment with Edited persisting after reload',
     async ({ page }) => {
       test.setTimeout(120_000);
-      await seedSignedInSession(page);
+      const { stubAdminRpc } = await seedSignedInSession(page.context());
+      await stubAdminRpc(page);
 
       const postState = {
         id: 'post-1',
@@ -160,9 +122,14 @@ test.describe('Feed post/comment edit persistence', () => {
 
       // General feed handler: never fallback so we never hit real API and hang.
       await page.route('**/api/feeds**', async (route) => {
-        const url = new URL(route.request().url());
+        const reqUrl = route.request().url();
+        const url = new URL(reqUrl);
         const method = route.request().method();
-        if (method === 'GET' && url.pathname === '/api/feeds') {
+        // Match GET feed list (pathname is /api/feeds regardless of origin).
+        if (
+          method === 'GET' &&
+          (url.pathname === '/api/feeds' || url.pathname.endsWith('/api/feeds'))
+        ) {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -225,21 +192,16 @@ test.describe('Feed post/comment edit persistence', () => {
 
       await page.goto('/feed');
       await expect(page).toHaveURL(/\/feed/, { timeout: 30_000 });
-      // Wait for feed list response so mock has been used and post is rendered.
-      await page.waitForResponse(
-        (res) =>
-          res.request().method() === 'GET' &&
-          res.url().includes('/api/feeds') &&
-          res.url().includes('limit='),
-        { timeout: 20_000 },
-      );
+      // Wait for feed to render the mocked post.
       await expect(page.getByText('Original post body')).toBeVisible({
-        timeout: 20_000,
+        timeout: 25_000,
       });
 
       // Edit is inside the post action menu (three-dot); open it then click Edit.
       await page.getByRole('button', { name: 'Post options' }).first().click();
-      await page.getByRole('menuitem', { name: 'Edit' }).click();
+      await page
+        .getByRole('menuitem', { name: 'Edit' })
+        .click({ timeout: 10_000 });
       const postEditor = page.locator('textarea').first();
       await postEditor.fill('Updated post body');
       await page.getByRole('button', { name: 'Save' }).first().click();
@@ -280,14 +242,18 @@ test.describe('Feed post/comment edit persistence', () => {
       await expect(page.getByText('Updated comment body')).toBeVisible({
         timeout: 15_000,
       });
-      await expect(page.getByText(/Edited/)).toHaveCount(2);
+      await expect(page.getByText(/Edited/)).toHaveCount(2, {
+        timeout: 10_000,
+      });
 
       page.once('dialog', async (dialog) => {
         expect(dialog.message()).toContain('Delete this post');
         await dialog.accept();
       });
       await page.getByRole('button', { name: 'Post options' }).first().click();
-      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await page
+        .getByRole('menuitem', { name: 'Delete' })
+        .click({ timeout: 10_000 });
       await expect(page.getByText('Updated post body')).not.toBeVisible({
         timeout: 10_000,
       });

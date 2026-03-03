@@ -17,6 +17,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Divider,
   Drawer,
   IconButton,
   InputBase,
@@ -935,6 +936,29 @@ export const Navbar = () => {
                       },
                     }}
                   >
+                    <MenuItem
+                      component={RouterLink}
+                      to="/dashboard"
+                      onClick={() => {
+                        setAvatarMenuAnchor(null);
+                        setDrawerOpen(false);
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      Profile
+                    </MenuItem>
+                    <MenuItem
+                      component={RouterLink}
+                      to="/dashboard/settings"
+                      onClick={() => {
+                        setAvatarMenuAnchor(null);
+                        setDrawerOpen(false);
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      Settings
+                    </MenuItem>
+                    <Divider sx={{ my: 0.5 }} />
                     <MenuItem
                       onClick={() => {
                         setAvatarMenuAnchor(null);

@@ -44,17 +44,28 @@ export interface NerdCreds {
   [key: string]: unknown;
 }
 
-// --- SECTOR 3: THE DASHBOARD PROFILE ---
+// --- SECTOR 3: INDUSTRY GROUPS (Edit Profile) ---
+
+/** One industry group: single Industry + optional Sub-Industries (max 8). */
+export interface IndustryGroup {
+  industry: string;
+  sub_industries: string[];
+}
+
+// --- SECTOR 4: THE DASHBOARD PROFILE ---
 
 // The "Hard Columns" directly from Supabase
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 export interface DashboardProfile
-  extends Omit<ProfileRow, 'nerd_creds' | 'socials'> {
+  extends Omit<ProfileRow, 'nerd_creds' | 'socials' | 'industries'> {
   // Override generic 'Json' with specific schemas
   nerd_creds: NerdCreds;
 
   // The new Links Module structure
   // If null in DB, we treat it as an empty array in the hooks
   socials: SocialLink[];
+
+  /** Multiple industry groups (DB: profiles.industries jsonb). */
+  industries: IndustryGroup[] | null;
 }

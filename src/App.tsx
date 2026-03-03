@@ -139,6 +139,21 @@ const NotificationsPage = lazy(async () => {
   return { default: m.NotificationsPage };
 });
 
+const SettingsLayout = lazy(async () => {
+  const m = await import('./pages/dashboard/SettingsLayout');
+  return { default: m.SettingsLayout };
+});
+
+const SettingsNotificationsPage = lazy(async () => {
+  const m = await import('./pages/dashboard/SettingsNotificationsPage');
+  return { default: m.SettingsNotificationsPage };
+});
+
+const SettingsPrivacyPage = lazy(async () => {
+  const m = await import('./pages/dashboard/SettingsPrivacyPage');
+  return { default: m.SettingsPrivacyPage };
+});
+
 const GroupsPage = lazy(async () => {
   const m = await import('./pages/community/GroupsPage');
   return { default: m.GroupsPage };
@@ -444,8 +459,27 @@ const App = () => {
                   />
                   <Route
                     path="/dashboard/settings"
-                    element={<Navigate to="/dashboard" replace />}
-                  />
+                    element={
+                      <RequireOnboarded>
+                        <SettingsLayout />
+                      </RequireOnboarded>
+                    }
+                  >
+                    <Route
+                      index
+                      element={
+                        <Navigate
+                          to="/dashboard/settings/notifications"
+                          replace
+                        />
+                      }
+                    />
+                    <Route
+                      path="notifications"
+                      element={<SettingsNotificationsPage />}
+                    />
+                    <Route path="privacy" element={<SettingsPrivacyPage />} />
+                  </Route>
                   <Route
                     path="/chat"
                     element={

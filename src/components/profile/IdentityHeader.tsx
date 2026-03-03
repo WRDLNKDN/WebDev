@@ -1,6 +1,6 @@
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PsychologyIcon from '@mui/icons-material/Psychology';
-import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import React from 'react';
 
@@ -26,6 +26,8 @@ interface IdentityHeaderProps {
   slotBetweenContentAndActions?: React.ReactNode;
   /** Edit Profile / Settings buttons */
   actions?: React.ReactNode;
+  /** When set and bio is empty, show "Add bio" button that calls this (Dashboard only). */
+  onAddBio?: () => void;
 }
 
 const CARD_BG = 'rgba(30, 30, 30, 0.65)';
@@ -45,6 +47,7 @@ export const IdentityHeader = ({
   slotBetweenContentAndActionsLabel,
   slotBetweenContentAndActions,
   actions,
+  onAddBio,
   statusEmoji: _statusEmoji,
   statusMessage: _statusMessage,
 }: IdentityHeaderProps) => (
@@ -176,45 +179,48 @@ export const IdentityHeader = ({
             {tagline}
           </Typography>
         )}
-        {bio && (
-          <>
-            <Typography
-              variant="overline"
-              sx={{
-                letterSpacing: 1.5,
-                color: 'text.secondary',
-                fontWeight: 700,
-                fontSize: '0.72rem',
-                display: 'block',
-                mt: 0.5,
-              }}
-            >
-              Description
-            </Typography>
-            <Typography
-              component={bioIsPlaceholder ? 'p' : 'blockquote'}
-              variant="body1"
-              color="text.secondary"
-              sx={{
-                lineHeight: 1.6,
-                fontStyle: bioIsPlaceholder ? 'normal' : 'italic',
-                ...(bioIsPlaceholder
-                  ? { opacity: 0.7, fontSize: '0.9rem' }
-                  : {
-                      borderLeft: '3px solid',
-                      borderColor: 'primary.main',
-                      pl: { xs: 1.5, md: 2 },
-                    }),
-                my: 1,
-                maxWidth: 560,
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
-              }}
-            >
-              {bioIsPlaceholder ? bio : <>&ldquo;{bio}&rdquo;</>}
-            </Typography>
-          </>
-        )}
+        {bioIsPlaceholder && onAddBio ? (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onAddBio()}
+            aria-label="Add bio"
+            sx={{
+              mt: 0.5,
+              my: 1,
+              borderColor: 'rgba(255,255,255,0.3)',
+              color: 'white',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.5)',
+                bgcolor: 'rgba(255,255,255,0.06)',
+              },
+            }}
+          >
+            Add bio
+          </Button>
+        ) : !bioIsPlaceholder && bio ? (
+          <Typography
+            component="blockquote"
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              lineHeight: 1.6,
+              fontStyle: 'italic',
+              borderLeft: '3px solid',
+              borderColor: 'primary.main',
+              pl: { xs: 1.5, md: 2 },
+              my: 1,
+              mt: 0.5,
+              maxWidth: 560,
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+            }}
+          >
+            &ldquo;{bio}&rdquo;
+          </Typography>
+        ) : null}
 
         {badges && (
           <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2, mb: 2 }}>

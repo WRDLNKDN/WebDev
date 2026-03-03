@@ -26,8 +26,8 @@ import {
 } from '../../lib/chat/attachmentValidation';
 import { GifPickerDialog } from './GifPickerDialog';
 import {
+  type ChatAttachmentMeta,
   CHAT_ALLOWED_ACCEPT,
-  CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
   CHAT_MAX_FILE_BYTES,
 } from '../../types/chat';
 import { toMessage } from '../../lib/utils/errors';
@@ -41,35 +41,52 @@ const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
   { content: 'Thank you', label: 'Thank you', ariaLabel: 'Send thank you' },
 ];
 
+const STRIP_EXIF_TIMEOUT_MS = 10_000;
+
 async function stripExifIfImage(file: File): Promise<Blob> {
   // Do not canvas-process GIFs; that strips animation.
   if (!EXIF_STRIP_MIMES.includes(file.type)) return file;
   return new Promise((resolve) => {
+    let settled = false;
+    const done = (blob: Blob) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(url);
+      resolve(blob);
+    };
     const img = new Image();
     const url = URL.createObjectURL(file);
+    const timeoutId = window.setTimeout(
+      () => done(file),
+      STRIP_EXIF_TIMEOUT_MS,
+    );
     img.onload = () => {
-      URL.revokeObjectURL(url);
+      window.clearTimeout(timeoutId);
       const canvas = document.createElement('canvas');
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        resolve(file);
+        done(file);
         return;
       }
       ctx.drawImage(img, 0, 0);
-      canvas.toBlob((blob) => resolve(blob ?? file), file.type, 0.92);
+      canvas.toBlob((blob) => done(blob ?? file), file.type, 0.92);
     };
     img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(file);
+      window.clearTimeout(timeoutId);
+      done(file);
     };
     img.src = url;
   });
 }
 
 type MessageInputProps = {
-  onSend: (content: string, attachmentPaths?: string[]) => void;
+  onSend: (
+    content: string,
+    attachmentPaths?: string[],
+    attachmentMeta?: ChatAttachmentMeta[],
+  ) => void;
   onTyping?: () => void;
   onStopTyping?: () => void;
   disabled?: boolean;
@@ -107,9 +124,7 @@ export const MessageInput = ({
         setError(rejectionReason);
         return;
       }
-      setPendingFiles((prev) =>
-        [...prev, file].slice(0, CHAT_MAX_ATTACHMENTS_PER_MESSAGE),
-      );
+      setPendingFiles([file]);
     } catch {
       setError("We couldn't add that GIF. Please try another one.");
     }
@@ -121,66 +136,63 @@ export const MessageInput = ({
 
     setError(null);
     const paths: string[] = [];
+    const meta: ChatAttachmentMeta[] = [];
 
     if (pendingFiles.length > 0) {
-      setUploading(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setError('You need to sign in to upload attachments.');
-        setUploading(false);
+      const f = pendingFiles[0];
+      const rejectionReason = getChatAttachmentRejectionReason(f);
+      if (rejectionReason) {
+        setError(rejectionReason);
+        return;
+      }
+      const mime = normalizeChatAttachmentMime(f);
+      if (!mime) {
+        setError(
+          'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
+        );
         return;
       }
 
-      const basePath = `${session.user.id}/${Date.now()}`;
+      setUploading(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) {
+          setError('You need to sign in to upload attachments.');
+          return;
+        }
 
-      for (
-        let i = 0;
-        i < Math.min(pendingFiles.length, CHAT_MAX_ATTACHMENTS_PER_MESSAGE);
-        i++
-      ) {
-        const f = pendingFiles[i];
-        const rejectionReason = getChatAttachmentRejectionReason(f);
-        if (rejectionReason) {
-          setError(rejectionReason);
-          setUploading(false);
-          return;
-        }
-        const mime = normalizeChatAttachmentMime(f);
-        if (!mime) {
-          setError(
-            'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
-          );
-          setUploading(false);
-          return;
-        }
+        const basePath = `${session.user.id}/${Date.now()}`;
+
         const blob = await stripExifIfImage(f);
         if (blob.size > CHAT_MAX_FILE_BYTES) {
-          setError(
-            'File too large after processing. Maximum size is 6MB per file.',
-          );
-          setUploading(false);
+          setError('File must be 2MB or smaller.');
           return;
         }
         const ext = f.name.split('.').pop() || 'bin';
-        const path = `${basePath}_${i}.${ext}`;
+        const path = `${basePath}_0.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from('chat-attachments')
           .upload(path, blob, { contentType: mime });
 
         if (uploadErr) {
           setError(toMessage(uploadErr));
-          setUploading(false);
           return;
         }
         paths.push(path);
+        meta.push({ path, mime, size: blob.size });
+        setPendingFiles([]);
+      } finally {
+        setUploading(false);
       }
-      setPendingFiles([]);
-      setUploading(false);
     }
 
-    onSend(text.trim(), paths.length > 0 ? paths : undefined);
+    onSend(
+      text.trim(),
+      paths.length > 0 ? paths : undefined,
+      meta.length > 0 ? meta : undefined,
+    );
     setText('');
   };
 
@@ -192,23 +204,20 @@ export const MessageInput = ({
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
 
-    const valid: File[] = [];
-    const rejectedReasons: string[] = [];
-    files.forEach((f) => {
-      const rejectionReason = getChatAttachmentRejectionReason(f);
-      if (rejectionReason) {
-        rejectedReasons.push(`${f.name}: ${rejectionReason}`);
-        return;
-      }
-      valid.push(f);
-    });
-
-    if (rejectedReasons.length > 0) {
-      setError(rejectedReasons[0]);
+    if (files.length > 1) {
+      setError('Only one file per message.');
+      e.target.value = '';
+      return;
     }
-    setPendingFiles((prev) =>
-      [...prev, ...valid].slice(0, CHAT_MAX_ATTACHMENTS_PER_MESSAGE),
-    );
+
+    const f = files[0];
+    const rejectionReason = getChatAttachmentRejectionReason(f);
+    if (rejectionReason) {
+      setError(rejectionReason);
+      e.target.value = '';
+      return;
+    }
+    setPendingFiles([f]);
     e.target.value = '';
   };
 
@@ -316,7 +325,6 @@ export const MessageInput = ({
           <input
             ref={fileInputRef}
             type="file"
-            multiple
             accept={CHAT_ALLOWED_ACCEPT}
             onChange={handleFileSelect}
             style={{ display: 'none' }}
@@ -342,7 +350,7 @@ export const MessageInput = ({
           <IconButton
             type="button"
             onClick={() => setGifPickerOpen(true)}
-            disabled={disabled || uploading || pendingFiles.length >= 5}
+            disabled={disabled || uploading || pendingFiles.length >= 1}
             aria-label="Add GIF"
             sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
           >

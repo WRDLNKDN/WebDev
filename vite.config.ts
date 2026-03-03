@@ -42,7 +42,14 @@ export default defineConfig({
           if (id.includes('@mui')) return 'mui';
           if (id.includes('@emotion')) return 'emotion';
           if (id.includes('@supabase')) return 'supabase';
-          // Keep react, react-router, and other libs in vendor to avoid circular chunks
+          if (
+            id.includes('react-dom') ||
+            id.includes('/react/') ||
+            id.includes('react-router') ||
+            id.includes('scheduler')
+          ) {
+            return 'react-vendor';
+          }
           return 'vendor';
         },
       },

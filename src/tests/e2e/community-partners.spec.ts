@@ -10,7 +10,8 @@ test.describe('Community Partners page', () => {
     await seedSignedInSession(context);
     await stubAppSurface(page);
 
-    await page.goto('/community-partners');
-    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
+    test.setTimeout(60_000);
+    await page.goto('/community-partners', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
   });
 });

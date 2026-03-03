@@ -174,6 +174,19 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_share_token_created_at') then
     alter table public.profiles add column profile_share_token_created_at timestamptz;
   end if;
+  -- Settings: notification and marketing preferences
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'push_enabled') then
+    alter table public.profiles add column push_enabled boolean not null default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'email_notifications_enabled') then
+    alter table public.profiles add column email_notifications_enabled boolean not null default true;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_push_enabled') then
+    alter table public.profiles add column marketing_push_enabled boolean not null default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'consent_updated_at') then
+    alter table public.profiles add column consent_updated_at timestamptz;
+  end if;
 end $$;
 
 create unique index if not exists idx_profiles_profile_share_token on public.profiles(profile_share_token) where profile_share_token is not null;
@@ -400,6 +413,7 @@ grant update (
   pronouns,
   industry,
   secondary_industry,
+  industries,
   niche_field,
   location,
   profile_visibility,

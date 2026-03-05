@@ -35,7 +35,7 @@ jobs:
         run: npm ci
 
       - name: 🎭 Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
 
       - name: ♿ Run accessibility suite
         run: npm run test:e2e -- src/tests/e2e/accessibility.spec.ts

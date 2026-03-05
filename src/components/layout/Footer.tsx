@@ -31,18 +31,7 @@ type FooterSection = {
   links: FooterLink[];
 };
 
-const PLATFORM_LINKS: FooterLink[] = [
-  { label: 'Feed', href: '/feed' },
-  { label: 'Chat', href: '/chat-full' },
-  { label: 'Notifications', href: '/dashboard/notifications' },
-  { label: 'Directory', href: '/directory' },
-];
-
 const sections: FooterSection[] = [
-  {
-    title: 'Platform',
-    links: PLATFORM_LINKS,
-  },
   {
     title: 'Company',
     links: [
@@ -57,7 +46,7 @@ const sections: FooterSection[] = [
     ],
   },
   {
-    title: 'Legal',
+    title: 'Documentation',
     links: [
       { label: 'Terms of Service', href: '/terms' },
       { label: 'Privacy Policy', href: '/privacy' },
@@ -66,21 +55,11 @@ const sections: FooterSection[] = [
   },
 ];
 
-type FooterProps = {
-  /** When false, Chat link is hidden (e.g. when not logged in). */
-  showChatLink?: boolean;
-};
-
-export const Footer = ({ showChatLink = false }: FooterProps) => {
+export const Footer = () => {
   const theme = useTheme();
   const location = useLocation();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    Platform: false,
-    Company: false,
-    Legal: false,
-  });
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
 
@@ -142,21 +121,11 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
   }, [reduceMotion]);
 
   const toggleSection = (title: string) => {
-    setExpanded((prev) => {
-      const shouldOpen = !prev[title];
-      const next: Record<string, boolean> = {};
-      for (const key of Object.keys(prev)) next[key] = false;
-      next[title] = shouldOpen;
-      return next;
-    });
+    setExpandedSection((prev) => (prev === title ? null : title));
   };
 
   const closeAllSections = () => {
-    setExpanded((prev) => {
-      const next = { ...prev };
-      for (const key of Object.keys(next)) next[key] = false;
-      return next;
-    });
+    setExpandedSection(null);
   };
 
   useEffect(() => {
@@ -201,8 +170,6 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
     closeAllSections();
   };
 
-  const isMobileFooter = useMediaQuery(theme.breakpoints.down('sm'));
-
   return (
     <Box
       ref={footerRef}
@@ -211,9 +178,13 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
       sx={{
         borderTop: '1px solid',
         borderColor: dividerColor,
-        mt: { xs: 1.5, sm: 3, md: 8 },
-        pt: { xs: 1, sm: 2, md: 5 },
-        pb: { xs: 1, sm: 2, md: 4 },
+        mt: { xs: 1, sm: 2, md: 4 },
+        pt: { xs: 1, sm: 1.5, md: 2.5 },
+        pb: {
+          xs: 'calc(0.85rem + env(safe-area-inset-bottom, 0px))',
+          sm: 1.5,
+          md: 2,
+        },
         backgroundColor:
           theme.palette.mode === 'dark'
             ? alpha(theme.palette.background.default, 0.92)
@@ -226,422 +197,335 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
           : 'opacity 360ms ease, transform 360ms ease',
       }}
     >
-      <Container maxWidth="lg" sx={{ px: { xs: 1.25, sm: 2 } }}>
-        {isMobileFooter ? (
-          /* Mobile: single compact row — copyright + socials only */
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            flexWrap="wrap"
-            gap={1}
-            useFlexGap
-          >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: '0.65rem' }}
-            >
-              © {new Date().getFullYear()} WRDLNKDN
-            </Typography>
-            <Stack direction="row" spacing={0.25} aria-label="Social links">
-              <IconButton
-                component={Link}
-                href="https://www.facebook.com/wrdlnkdn"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  p: 0.5,
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                <FacebookIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-              <IconButton
-                component={Link}
-                href="https://www.linkedin.com/company/wrdlnkdn"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  p: 0.5,
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                <LinkedInIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-              <IconButton
-                component={Link}
-                href="https://www.youtube.com/@WRDLNKDN"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube"
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  p: 0.5,
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                <YouTubeIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Stack>
-          </Stack>
-        ) : (
-          <>
-            <Grid container spacing={{ xs: 1.5, md: 3.5 }}>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Stack
-                  spacing={{ xs: 0.5, md: 1.1 }}
-                  sx={{
-                    pr: { md: 3 },
-                    alignItems: { xs: 'center', md: 'flex-start' },
-                    textAlign: { xs: 'center', md: 'left' },
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={{ xs: 0.4, md: 0.9 }}
-                    alignItems="center"
-                  >
-                    <EmojiEventsIcon
-                      sx={{
-                        fontSize: isDesktop ? 36 : { xs: 24, sm: 32 },
-                        color: 'primary.main',
-                        opacity: 0.95,
-                      }}
-                      aria-hidden
-                    />
-                    <Box
-                      component="img"
-                      src="/assets/og_weirdlings/werdling1_transparent.png"
-                      alt="WRDLNKDN Weirdling logo"
-                      sx={{
-                        display: 'block',
-                        width: isDesktop ? 70 : { xs: 36, sm: 58 },
-                        height: isDesktop ? 70 : { xs: 36, sm: 58 },
-                        objectFit: 'contain',
-                        objectPosition: 'center',
-                        p: 0,
-                        m: 0,
-                      }}
-                    />
-                    <Box
-                      component="img"
-                      src="/assets/wrdlnkdn_logo.png"
-                      alt="WRDLNKDN wordmark"
-                      sx={{
-                        display: 'block',
-                        width: isDesktop ? 236 : { xs: 100, sm: 192 },
-                        maxWidth: '100%',
-                        objectFit: 'contain',
-                        objectPosition: 'left center',
-                        p: 0,
-                        m: 0,
-                      }}
-                    />
-                  </Stack>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ display: { xs: 'none', sm: 'block' } }}
-                  >
-                    Business, but weirder.
-                  </Typography>
-                  <Link
-                    href="https://pay.weirdlinked.in/e8779a0c-57d5-401f-b361-b22"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Donate to WRDLNKDN"
-                    sx={{
-                      display: { xs: 'none', sm: 'inline-block' },
-                      mt: 0.5,
-                      fontWeight: 600,
-                      color: 'primary.main',
-                      textDecoration: 'none',
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        textDecoration: 'underline',
-                        color: 'primary.dark',
-                      },
-                      '&:focus-visible': {
-                        outline: '2px solid',
-                        outlineColor: 'primary.main',
-                        outlineOffset: 2,
-                        borderRadius: 0.5,
-                      },
-                    }}
-                  >
-                    Donate Now
-                  </Link>
-                </Stack>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Box
-                  aria-label="Footer navigation sections"
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      md: 'repeat(3, minmax(0, 1fr))',
-                    },
-                    gap: { xs: 0.75, md: 1.25 },
-                  }}
-                >
-                  {sections.map((section) => {
-                    const links =
-                      section.title === 'Platform' && !showChatLink
-                        ? section.links.filter((l) => l.label !== 'Chat')
-                        : section.links;
-                    const open = Boolean(expanded[section.title]);
-                    const panelId = `footer-panel-${section.title.toLowerCase()}`;
-                    return (
-                      <Box
-                        key={section.title}
-                        sx={{
-                          border: '1px solid',
-                          borderColor: dividerColor,
-                          borderRadius: 1.5,
-                          overflow: { xs: 'hidden', md: 'visible' },
-                          position: 'relative',
-                          backgroundColor: alpha(
-                            theme.palette.background.paper,
-                            0.2,
-                          ),
-                        }}
-                      >
-                        <Box
-                          component="button"
-                          type="button"
-                          onClick={() => toggleSection(section.title)}
-                          aria-expanded={open}
-                          aria-controls={panelId}
-                          sx={{
-                            all: 'unset',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            width: '100%',
-                            px: { xs: 1.25, md: 2 },
-                            py: { xs: 0.9, md: 1.2 },
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
-                            '&:focus-visible': {
-                              outline: '2px solid',
-                              outlineColor: 'primary.main',
-                              outlineOffset: '-2px',
-                            },
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            fontWeight={700}
-                            sx={{
-                              fontSize: { xs: '0.8125rem', md: 'inherit' },
-                            }}
-                          >
-                            {section.title}
-                          </Typography>
-                          <Box
-                            component="span"
-                            aria-hidden
-                            sx={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 24,
-                              height: 24,
-                              transition: reduceMotion
-                                ? 'none'
-                                : 'transform 180ms ease',
-                              transform: open
-                                ? 'rotate(180deg)'
-                                : 'rotate(0deg)',
-                            }}
-                          >
-                            <ExpandMoreIcon fontSize="small" />
-                          </Box>
-                        </Box>
-
-                        <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
-                          <Stack
-                            id={panelId}
-                            component="ul"
-                            sx={{
-                              listStyle: 'none',
-                              m: 0,
-                              py: 0.25,
-                              px: { xs: 1.25, md: 2 },
-                              borderTop: '1px solid',
-                              borderColor: dividerColor,
-                              gap: 0.25,
-                              position: { xs: 'static', md: 'absolute' },
-                              top: { md: 'calc(100% + 8px)' },
-                              left: { md: 0 },
-                              right: { md: 0 },
-                              zIndex: { md: 4 },
-                              border: { md: '1px solid' },
-                              borderRadius: { md: 1.5 },
-                              boxShadow: {
-                                md: '0 10px 28px rgba(0,0,0,0.28)',
-                              },
-                              backgroundColor: {
-                                md:
-                                  theme.palette.mode === 'dark'
-                                    ? alpha(
-                                        theme.palette.background.paper,
-                                        0.96,
-                                      )
-                                    : alpha(
-                                        theme.palette.background.paper,
-                                        0.98,
-                                      ),
-                              },
-                            }}
-                          >
-                            {links.map((link) => {
-                              const active = isActiveLink(
-                                link.href,
-                                link.external,
-                              );
-                              const commonSx = {
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                py: { xs: 0.5, md: 0.75 },
-                                color: active
-                                  ? 'primary.main'
-                                  : 'text.secondary',
-                                fontWeight: active ? 700 : 500,
-                                textDecoration: active ? 'underline' : 'none',
-                                textUnderlineOffset: '3px',
-                                transition: reduceMotion
-                                  ? 'none'
-                                  : 'color 160ms ease, text-decoration-color 160ms ease',
-                                '&:hover': {
-                                  color: 'text.primary',
-                                  textDecoration: 'underline',
-                                  textUnderlineOffset: '3px',
-                                },
-                              } as const;
-                              return (
-                                <Box component="li" key={link.label}>
-                                  {link.external ? (
-                                    <Link
-                                      href={link.href}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={() =>
-                                        handleFooterLinkClick(link)
-                                      }
-                                      sx={commonSx}
-                                    >
-                                      {link.label}
-                                    </Link>
-                                  ) : (
-                                    <Link
-                                      component={RouterLink}
-                                      to={link.href}
-                                      onClick={() =>
-                                        handleFooterLinkClick(link)
-                                      }
-                                      sx={commonSx}
-                                    >
-                                      {link.label}
-                                    </Link>
-                                  )}
-                                </Box>
-                              );
-                            })}
-                          </Stack>
-                        </Collapse>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              </Grid>
-
-              <Grid
-                size={{ xs: 12, md: 3 }}
-                sx={{
-                  display: 'flex',
-                  alignItems: { xs: 'center', md: 'flex-start' },
-                  justifyContent: { xs: 'center', md: 'flex-end' },
-                  pt: { xs: 0.5, md: 0 },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  aria-label="Social and support links"
-                >
-                  <IconButton
-                    component={Link}
-                    href="https://www.facebook.com/wrdlnkdn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Facebook"
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    <FacebookIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    component={Link}
-                    href="https://www.linkedin.com/company/wrdlnkdn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="LinkedIn"
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    <LinkedInIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    component={Link}
-                    href="https://www.youtube.com/@WRDLNKDN"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="YouTube"
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    <YouTubeIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              </Grid>
-            </Grid>
-
-            <Box
+      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
+        <Grid container spacing={{ xs: 1.1, sm: 1.5, md: 2.1 }}>
+          <Grid size={{ xs: 7, md: 3 }} sx={{ order: { xs: 1, md: 1 } }}>
+            <Stack
+              spacing={0.45}
               sx={{
-                mt: { xs: 2, md: 4 },
-                pt: { xs: 1.5, md: 2.5 },
-                borderTop: '1px solid',
-                borderColor: dividerColor,
-                textAlign: 'center',
+                alignItems: { xs: 'flex-start', md: 'flex-start' },
+                textAlign: 'left',
+                pr: { md: 1.5 },
               }}
             >
+              <Stack direction="row" spacing={0.45} alignItems="center">
+                <EmojiEventsIcon
+                  sx={{
+                    display: { xs: 'none', sm: 'inline-flex' },
+                    fontSize: { xs: 22, sm: 24, md: 27 },
+                    color: 'primary.main',
+                    opacity: 0.95,
+                  }}
+                  aria-hidden
+                />
+                <Box
+                  component="img"
+                  src="/assets/og_weirdlings/werdling1_transparent.png"
+                  alt="WRDLNKDN Weirdling logo"
+                  sx={{
+                    display: { xs: 'none', sm: 'block' },
+                    width: { xs: 30, sm: 34, md: 38 },
+                    height: { xs: 30, sm: 34, md: 38 },
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                  }}
+                />
+                <Box
+                  component="img"
+                  src="/assets/wrdlnkdn_logo.png"
+                  alt="WRDLNKDN wordmark"
+                  sx={{
+                    display: 'block',
+                    width: { xs: 114, sm: 148, md: 172 },
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    objectPosition: 'left center',
+                  }}
+                />
+              </Stack>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  display: { xs: 'none', sm: 'block' },
+                  fontSize: { sm: '0.76rem', md: '0.82rem' },
+                }}
+              >
+                Business, but weirder.
+              </Typography>
+            </Stack>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }} sx={{ order: { xs: 3, md: 2 } }}>
+            <Box
+              aria-label="Footer navigation sections"
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(2, minmax(0, 1fr))',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                },
+                gap: { xs: 0.5, sm: 0.85, md: 1 },
+              }}
+            >
+              {sections.map((section) => {
+                const open = expandedSection === section.title;
+                const panelId = `footer-panel-${section.title.toLowerCase()}`;
+                return (
+                  <Box
+                    key={section.title}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: dividerColor,
+                      borderRadius: 1.25,
+                      overflow: { xs: 'hidden', md: 'visible' },
+                      position: 'relative',
+                      backgroundColor: alpha(
+                        theme.palette.background.paper,
+                        0.2,
+                      ),
+                    }}
+                  >
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => toggleSection(section.title)}
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      sx={{
+                        all: 'unset',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        px: { xs: 0.9, sm: 1.25, md: 1.5 },
+                        py: { xs: 0.62, sm: 0.8, md: 0.88 },
+                        cursor: 'pointer',
+                        boxSizing: 'border-box',
+                        '&:focus-visible': {
+                          outline: '2px solid',
+                          outlineColor: 'primary.main',
+                          outlineOffset: '-2px',
+                        },
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={700}
+                        sx={{ fontSize: { xs: '0.74rem', md: '0.82rem' } }}
+                      >
+                        {section.title}
+                      </Typography>
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 22,
+                          height: 22,
+                          transition: reduceMotion
+                            ? 'none'
+                            : 'transform 180ms ease',
+                          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }}
+                      >
+                        <ExpandMoreIcon fontSize="small" />
+                      </Box>
+                    </Box>
+
+                    <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+                      <Stack
+                        id={panelId}
+                        component="ul"
+                        sx={{
+                          listStyle: 'none',
+                          m: 0,
+                          py: 0.2,
+                          px: { xs: 0.9, sm: 1.25, md: 1.5 },
+                          borderTop: '1px solid',
+                          borderColor: dividerColor,
+                          gap: 0.15,
+                          position: { xs: 'static', md: 'absolute' },
+                          top: { md: 'calc(100% + 6px)' },
+                          left: { md: 0 },
+                          right: { md: 0 },
+                          zIndex: { md: 4 },
+                          border: { md: '1px solid' },
+                          borderRadius: { md: 1.25 },
+                          boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
+                          backgroundColor: {
+                            md:
+                              theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.background.paper, 0.96)
+                                : alpha(theme.palette.background.paper, 0.98),
+                          },
+                        }}
+                      >
+                        {section.links.map((link) => {
+                          const active = isActiveLink(link.href, link.external);
+                          const commonSx = {
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            py: { xs: 0.45, md: 0.65 },
+                            fontSize: { xs: '0.74rem', md: '0.83rem' },
+                            color: active ? 'primary.main' : 'text.secondary',
+                            fontWeight: active ? 700 : 500,
+                            textDecoration: active ? 'underline' : 'none',
+                            textUnderlineOffset: '3px',
+                            transition: reduceMotion
+                              ? 'none'
+                              : 'color 160ms ease, text-decoration-color 160ms ease',
+                            '&:hover': {
+                              color: 'text.primary',
+                              textDecoration: 'underline',
+                              textUnderlineOffset: '3px',
+                            },
+                          } as const;
+                          return (
+                            <Box component="li" key={link.label}>
+                              {link.external ? (
+                                <Link
+                                  href={link.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => handleFooterLinkClick(link)}
+                                  sx={commonSx}
+                                >
+                                  {link.label}
+                                </Link>
+                              ) : (
+                                <Link
+                                  component={RouterLink}
+                                  to={link.href}
+                                  onClick={() => handleFooterLinkClick(link)}
+                                  sx={commonSx}
+                                >
+                                  {link.label}
+                                </Link>
+                              )}
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+
+              <Box
+                sx={{
+                  gridColumn: { xs: '1 / 2', sm: '1 / 2' },
+                  justifySelf: 'start',
+                }}
+              >
+                <Link
+                  href="https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Donate to WRDLNKDN"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    fontWeight: 700,
+                    color: 'primary.main',
+                    textDecoration: 'none',
+                    fontSize: { xs: '0.78rem', md: '0.88rem' },
+                    mt: { xs: 0.05, sm: 0.28 },
+                    '&:hover': {
+                      textDecoration: 'underline',
+                      color: 'primary.dark',
+                    },
+                    '&:focus-visible': {
+                      outline: '2px solid',
+                      outlineColor: 'primary.main',
+                      outlineOffset: 2,
+                      borderRadius: 0.5,
+                    },
+                  }}
+                >
+                  Donate Now
+                </Link>
+              </Box>
+            </Box>
+          </Grid>
+
+          <Grid
+            size={{ xs: 5, md: 3 }}
+            sx={{
+              order: { xs: 2, md: 3 },
+              display: 'flex',
+              alignItems: { xs: 'flex-start', md: 'flex-start' },
+              justifyContent: { xs: 'flex-end', md: 'flex-end' },
+            }}
+          >
+            <Stack
+              spacing={0.35}
+              alignItems={{ xs: 'flex-end', md: 'flex-end' }}
+              sx={{ pt: { xs: 0, md: 0.15 } }}
+            >
+              <Stack
+                direction="row"
+                spacing={0.35}
+                aria-label="Social and support links"
+              >
+                <IconButton
+                  component={Link}
+                  href="https://www.facebook.com/wrdlnkdn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    p: { xs: 0.4, md: 0.55 },
+                    '&:hover': { color: 'primary.main' },
+                  }}
+                >
+                  <FacebookIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
+                </IconButton>
+                <IconButton
+                  component={Link}
+                  href="https://www.linkedin.com/company/wrdlnkdn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn"
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    p: { xs: 0.4, md: 0.55 },
+                    '&:hover': { color: 'primary.main' },
+                  }}
+                >
+                  <LinkedInIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
+                </IconButton>
+                <IconButton
+                  component={Link}
+                  href="https://www.youtube.com/@WRDLNKDN"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="YouTube"
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    p: { xs: 0.4, md: 0.55 },
+                    '&:hover': { color: 'primary.main' },
+                  }}
+                >
+                  <YouTubeIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
+                </IconButton>
+              </Stack>
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}
+                sx={{ fontSize: { xs: '0.62rem', md: '0.72rem' } }}
               >
                 © {new Date().getFullYear()} WRDLNKDN. All rights reserved.
               </Typography>
-            </Box>
-          </>
-        )}
+            </Stack>
+          </Grid>
+        </Grid>
       </Container>
 
       <script

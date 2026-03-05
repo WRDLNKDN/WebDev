@@ -117,7 +117,7 @@ const LayoutContent = () => {
       </Box>
       {!isHome && !isJoin && !isAdmin && (
         <Box component="footer" sx={{ flexShrink: 0 }}>
-          <Footer showChatLink={Boolean(session?.user) && chatEnabled} />
+          <Footer />
         </Box>
       )}
       {!isAdmin && chatEnabled && <MessengerOverlay />}

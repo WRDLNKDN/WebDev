@@ -471,7 +471,6 @@ export const AuthCallback = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  fontFamily: 'monospace',
                   opacity: 0.4,
                   letterSpacing: 2,
                 }}

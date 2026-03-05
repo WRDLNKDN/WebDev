@@ -66,21 +66,6 @@ export const AdminApp = () => {
     }
   };
 
-  const signOut = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await supabase.auth.signOut({ scope: 'global' });
-      localStorage.removeItem('wrdlnkdn-auth');
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = '/';
-    } catch (e: unknown) {
-      setError(toMessage(e));
-      setBusy(false);
-    }
-  };
-
   if (loading) {
     return (
       <AdminGate>
@@ -151,11 +136,7 @@ export const AdminApp = () => {
             </Box>
           </Box>
         ) : (
-          <AdminLayout
-            session={session}
-            onSignOut={() => void signOut()}
-            signOutBusy={busy}
-          >
+          <AdminLayout>
             <Outlet />
           </AdminLayout>
         )}

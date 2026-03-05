@@ -487,7 +487,6 @@ export const Dashboard = () => {
                 value={`https://wrdlnkdn.com/p/${shareToken}`}
                 sx={{
                   '& .MuiInputBase-input': {
-                    fontFamily: 'monospace',
                     fontSize: '0.875rem',
                   },
                 }}

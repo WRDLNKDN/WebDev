@@ -86,6 +86,7 @@ create table if not exists public.profiles (
     check (profile_visibility in ('members_only', 'connections_only')),
   feed_view_preference text not null default 'anyone'
     check (feed_view_preference in ('anyone', 'connections')),
+  marketing_email_enabled boolean not null default false,
   marketing_opt_in boolean not null default false,
   marketing_opt_in_timestamp timestamptz,
   marketing_opt_in_ip text,
@@ -120,8 +121,10 @@ comment on column public.profiles.resume_url is
   'Public URL of the user resume (e.g. from storage bucket resumes)';
 comment on column public.profiles.feed_view_preference is
   'Feed visibility: anyone = all approved members; connections = self + followees only.';
+comment on column public.profiles.marketing_email_enabled is
+  'Primary marketing email consent; must be explicit opt-in.';
 comment on column public.profiles.marketing_opt_in is
-  'Main email marketing consent; must be explicit opt-in.';
+  'Legacy mirror for email marketing consent (kept for compatibility).';
 comment on column public.profiles.marketing_opt_in_timestamp is
   'When user opted in (audit trail).';
 comment on column public.profiles.marketing_opt_in_ip is
@@ -200,6 +203,8 @@ comment on table public.feature_flags is
 -- Seed known feature keys (idempotent: only if missing)
 insert into public.feature_flags (key, enabled)
 values
+  ('feed', true),
+  ('dashboard', true),
   ('events', true),
   ('store', true),
   ('directory', true),
@@ -209,7 +214,8 @@ values
   ('games', true),
   ('community_partners', true),
   ('saved', true),
-  ('help', true)
+  ('help', true),
+  ('settings_privacy_marketing_consent', true)
 on conflict (key) do nothing;
 
 -- -----------------------------
@@ -2635,4 +2641,3 @@ begin
     alter publication supabase_realtime add table public.notifications;
   end if;
 end $$;
-

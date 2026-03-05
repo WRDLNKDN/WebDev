@@ -2,13 +2,11 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FlagIcon from '@mui/icons-material/Flag';
 import HandshakeIcon from '@mui/icons-material/Handshake';
-import LogoutIcon from '@mui/icons-material/Logout';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
   Box,
-  Button,
   Container,
   List,
   ListItem,
@@ -18,13 +16,12 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
-import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const BG_SX = {
-  minHeight: '100vh',
+  minHeight: '100%',
   display: 'flex',
   flexDirection: 'column' as const,
   overflowX: 'hidden' as const,
@@ -77,21 +74,11 @@ const NAV_ITEMS: NavItem[] = [
 
 type Props = {
   children: ReactNode;
-  session: Session | null;
-  onSignOut: () => void;
-  signOutBusy: boolean;
   title?: string;
   subtitle?: string;
 };
 
-export const AdminLayout = ({
-  children,
-  session,
-  onSignOut,
-  signOutBusy,
-  title,
-  subtitle,
-}: Props) => {
+export const AdminLayout = ({ children, title, subtitle }: Props) => {
   const location = useLocation();
 
   const sidebar = (
@@ -158,28 +145,6 @@ export const AdminLayout = ({
               }}
             >
               {sidebar}
-              {session && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={signOutBusy ? null : <LogoutIcon />}
-                  onClick={onSignOut}
-                  disabled={signOutBusy}
-                  fullWidth
-                  sx={{
-                    mt: 2,
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: '#fff',
-                    justifyContent: 'flex-start',
-                    '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(255,255,255,0.08)',
-                    },
-                  }}
-                >
-                  {signOutBusy ? 'Signing out…' : 'Sign out'}
-                </Button>
-              )}
             </Box>
 
             {/* Main content */}

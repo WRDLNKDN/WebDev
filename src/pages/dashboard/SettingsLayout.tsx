@@ -18,7 +18,9 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG } from '../../lib/featureFlags/keys';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const NAV_ITEMS = [
@@ -38,6 +40,13 @@ export const SettingsLayout = () => {
   const [session, setSession] = useState<Session | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const privacyEnabled = useFeatureFlag(
+    SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG,
+  );
+
+  const navItems = privacyEnabled
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.to !== '/dashboard/settings/privacy');
 
   useEffect(() => {
     const init = async () => {
@@ -50,6 +59,15 @@ export const SettingsLayout = () => {
     };
     void init();
   }, [navigate]);
+
+  useEffect(() => {
+    if (
+      !privacyEnabled &&
+      location.pathname.startsWith('/dashboard/settings/privacy')
+    ) {
+      navigate('/dashboard/settings/notifications', { replace: true });
+    }
+  }, [location.pathname, navigate, privacyEnabled]);
 
   if (!session) return null;
 
@@ -87,7 +105,7 @@ export const SettingsLayout = () => {
             }}
           >
             <List disablePadding>
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const isActive = location.pathname === item.to;
                 return (
                   <ListItemButton

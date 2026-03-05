@@ -16,16 +16,22 @@ export const SettingsNotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user?.id) return;
-    const { data } = await supabase
+    if (!session.session?.user?.id) {
+      setLoading(false);
+      return;
+    }
+    const { data, error } = await supabase
       .from('profiles')
       .select('push_enabled, email_notifications_enabled')
       .eq('id', session.session.user.id)
       .maybeSingle();
-    if (data) {
+    if (error) {
+      setPushError(toMessage(error));
+    } else if (data) {
       setPushEnabled(Boolean(data.push_enabled));
       setEmailEnabled(Boolean(data.email_notifications_enabled));
     }
@@ -38,6 +44,7 @@ export const SettingsNotificationsPage = () => {
 
   const handlePushChange = useCallback(async (checked: boolean) => {
     setPushError(null);
+    setEmailError(null);
     if (checked) {
       if (!('Notification' in window)) {
         setPushError('Push notifications are not supported in this browser.');
@@ -60,6 +67,7 @@ export const SettingsNotificationsPage = () => {
     setSaving(true);
     const { data: session } = await supabase.auth.getSession();
     if (!session.session?.user?.id) {
+      setPushError('You need to sign in to update preferences.');
       setSaving(false);
       return;
     }
@@ -76,9 +84,12 @@ export const SettingsNotificationsPage = () => {
   }, []);
 
   const handleEmailChange = useCallback(async (checked: boolean) => {
+    setEmailError(null);
+    setPushError(null);
     setSaving(true);
     const { data: session } = await supabase.auth.getSession();
     if (!session.session?.user?.id) {
+      setEmailError('You need to sign in to update preferences.');
       setSaving(false);
       return;
     }
@@ -87,7 +98,11 @@ export const SettingsNotificationsPage = () => {
       .update({ email_notifications_enabled: checked })
       .eq('id', session.session.user.id);
     setSaving(false);
-    if (!error) setEmailEnabled(checked);
+    if (error) {
+      setEmailError(toMessage(error));
+      return;
+    }
+    setEmailEnabled(checked);
   }, []);
 
   if (loading) {
@@ -164,6 +179,15 @@ export const SettingsNotificationsPage = () => {
           Receive emails for comments, reactions, mentions, and connection
           requests. Critical account and security emails are always sent.
         </Typography>
+        {emailError && (
+          <Alert
+            severity="info"
+            sx={{ mt: 1 }}
+            onClose={() => setEmailError(null)}
+          >
+            {emailError}
+          </Alert>
+        )}
       </Box>
     </Stack>
   );

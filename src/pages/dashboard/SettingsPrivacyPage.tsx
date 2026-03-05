@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   FormControlLabel,
   Stack,
@@ -7,23 +8,37 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  buildMarketingEmailConsentUpdate,
+  buildMarketingPushConsentUpdate,
+  resolveMarketingEmailEnabled,
+} from '../../lib/settings/privacyConsent';
+import { toMessage } from '../../lib/utils/errors';
 
 export const SettingsPrivacyPage = () => {
   const [marketingEmail, setMarketingEmail] = useState(false);
   const [marketingPush, setMarketingPush] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user?.id) return;
-    const { data } = await supabase
+    if (!session.session?.user?.id) {
+      setLoading(false);
+      return;
+    }
+    const { data, error: loadError } = await supabase
       .from('profiles')
-      .select('marketing_opt_in, marketing_push_enabled')
+      .select(
+        'marketing_email_enabled, marketing_opt_in, marketing_push_enabled',
+      )
       .eq('id', session.session.user.id)
       .maybeSingle();
-    if (data) {
-      setMarketingEmail(Boolean(data.marketing_opt_in));
+    if (loadError) {
+      setError(toMessage(loadError));
+    } else if (data) {
+      setMarketingEmail(resolveMarketingEmailEnabled(data));
       setMarketingPush(Boolean(data.marketing_push_enabled));
     }
     setLoading(false);
@@ -34,40 +49,45 @@ export const SettingsPrivacyPage = () => {
   }, [load]);
 
   const handleMarketingEmailChange = useCallback(async (checked: boolean) => {
+    setError(null);
     setSaving(true);
     const { data: session } = await supabase.auth.getSession();
     if (!session.session?.user?.id) {
+      setError('You need to sign in to update preferences.');
       setSaving(false);
       return;
     }
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        marketing_opt_in: checked,
-        marketing_opt_in_timestamp: checked ? new Date().toISOString() : null,
-        consent_updated_at: new Date().toISOString(),
-      })
+      .update(buildMarketingEmailConsentUpdate(checked))
       .eq('id', session.session.user.id);
     setSaving(false);
-    if (!error) setMarketingEmail(checked);
+    if (updateError) {
+      setError(toMessage(updateError));
+      return;
+    }
+    setMarketingEmail(checked);
   }, []);
 
   const handleMarketingPushChange = useCallback(async (checked: boolean) => {
+    setError(null);
     setSaving(true);
     const { data: session } = await supabase.auth.getSession();
     if (!session.session?.user?.id) {
+      setError('You need to sign in to update preferences.');
       setSaving(false);
       return;
     }
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        marketing_push_enabled: checked,
-        consent_updated_at: new Date().toISOString(),
-      })
+      .update(buildMarketingPushConsentUpdate(checked))
       .eq('id', session.session.user.id);
     setSaving(false);
-    if (!error) setMarketingPush(checked);
+    if (updateError) {
+      setError(toMessage(updateError));
+      return;
+    }
+    setMarketingPush(checked);
   }, []);
 
   if (loading) {
@@ -84,9 +104,16 @@ export const SettingsPrivacyPage = () => {
         Marketing Communications
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        Control promotional and product marketing. Account and security
-        communications (e.g. password reset, verification) are unaffected.
+        Marketing includes promotional and product update messages. Account and
+        security communications (password reset, security alerts, account
+        verification, and non-marketing account activity) are not affected by
+        these settings.
       </Typography>
+      {error && (
+        <Alert severity="info" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       <Box>
         <FormControlLabel
@@ -98,10 +125,10 @@ export const SettingsPrivacyPage = () => {
                 void handleMarketingEmailChange(checked)
               }
               color="primary"
-              inputProps={{ 'aria-label': 'Marketing emails' }}
+              inputProps={{ 'aria-label': 'Toggle marketing emails' }}
             />
           }
-          label="Marketing emails"
+          label="Marketing Emails"
         />
         <Typography
           variant="caption"
@@ -121,10 +148,12 @@ export const SettingsPrivacyPage = () => {
               disabled={saving}
               onChange={(_, checked) => void handleMarketingPushChange(checked)}
               color="primary"
-              inputProps={{ 'aria-label': 'Marketing push notifications' }}
+              inputProps={{
+                'aria-label': 'Toggle marketing push notifications',
+              }}
             />
           }
-          label="Marketing push notifications"
+          label="Marketing Push Notifications"
         />
         <Typography
           variant="caption"

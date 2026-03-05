@@ -92,7 +92,6 @@ export const NotFoundPage = () => {
             <Typography
               variant="caption"
               sx={{
-                fontFamily: 'monospace',
                 opacity: 0.3,
                 letterSpacing: 2,
               }}

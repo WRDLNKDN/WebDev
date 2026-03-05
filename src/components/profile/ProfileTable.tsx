@@ -70,7 +70,7 @@ export const ProfileTable = ({
                 />
               </TableCell>
 
-              <TableCell sx={{ fontFamily: 'monospace' }}>{r.handle}</TableCell>
+              <TableCell>{r.handle}</TableCell>
 
               <TableCell>
                 <StatusBadge status={r.status} />

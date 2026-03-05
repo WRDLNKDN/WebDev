@@ -9,6 +9,7 @@ import { HomeSkeleton } from '../../components/home/HomeSkeleton';
 import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
@@ -19,6 +20,8 @@ import { toMessage } from '../../lib/utils/errors';
  * Always render as the canonical "/" destination.
  */
 export const Home = () => {
+  const feedEnabled = useFeatureFlag('feed');
+  const dashboardEnabled = useFeatureFlag('dashboard');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scrollMilestonesSeenRef = useRef<Set<number>>(new Set());
   const belowFoldTrackedRef = useRef(false);
@@ -212,9 +215,15 @@ export const Home = () => {
     return <HomeSkeleton />;
   }
 
-  // Signed-in and onboarded → Feed. Signed-in but not onboarded → stay on home (first-time joiners).
+  const postAuthPath = feedEnabled
+    ? '/feed'
+    : dashboardEnabled
+      ? '/dashboard'
+      : '/';
+
+  // Signed-in and onboarded users go to the primary enabled surface.
   if (session && onboarded === true) {
-    return <Navigate to="/feed" replace />;
+    return <Navigate to={postAuthPath} replace />;
   }
 
   return (

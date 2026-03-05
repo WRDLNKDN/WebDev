@@ -587,268 +587,302 @@ export const Directory = () => {
             </FormControl>
           </Stack>
 
-          {/* Filter chips row */}
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            alignItems="center"
-            gap={1}
-            data-testid="directory-filters"
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'rgba(255,255,255,0.4)',
-                fontWeight: 600,
-                mr: 0.25,
-                flexShrink: 0,
-              }}
-            >
-              Filters:
-            </Typography>
-
-            {/* Primary industry chip-select */}
-            <Select
-              value={primaryIndustry}
-              displayEmpty
-              renderValue={(v) => v || 'Primary Industry'}
-              onChange={(e) => {
-                const nextPrimary = e.target.value;
-                const allowed = getSecondaryOptionsForPrimary(nextPrimary);
-                updateUrl({
-                  primary_industry: nextPrimary,
-                  secondary_industry: allowed.includes(secondaryIndustry)
-                    ? secondaryIndustry
-                    : '',
-                });
-              }}
-              MenuProps={filterSelectMenuProps}
-              IconComponent={KeyboardArrowDownIcon}
-              sx={{
-                ...chipSelectSx,
-                '& .MuiSelect-select': {
-                  ...chipSelectSx['& .MuiSelect-select'],
-                  fontWeight: primaryIndustry ? 600 : 500,
-                  color: primaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
-                  minWidth: 110,
-                },
-                ...(primaryIndustry
-                  ? {
-                      borderColor: '#3b82f6',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#3b82f6 !important',
-                      },
-                    }
-                  : {}),
-              }}
-            >
-              <MenuItem value="">
-                <em>Any industry</em>
-              </MenuItem>
-              {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
-                <MenuItem key={opt} value={opt}>
-                  {opt}
-                </MenuItem>
-              ))}
-            </Select>
-
-            {/* Sub-industry: only show if primary is set OR already active */}
-            {primaryIndustry || showSecondaryIndustryFilter ? (
-              <Select
-                value={secondaryIndustry}
-                displayEmpty
-                renderValue={(v) => v || 'Sub-industry'}
-                onChange={(e) =>
-                  updateUrl({ secondary_industry: e.target.value })
-                }
-                MenuProps={filterSelectMenuProps}
-                IconComponent={KeyboardArrowDownIcon}
-                sx={{
-                  ...chipSelectSx,
-                  '& .MuiSelect-select': {
-                    ...chipSelectSx['& .MuiSelect-select'],
-                    fontWeight: secondaryIndustry ? 600 : 500,
-                    color: secondaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
-                    minWidth: 100,
-                  },
-                  ...(secondaryIndustry
-                    ? {
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#3b82f6 !important',
-                        },
-                      }
-                    : {}),
-                }}
-              >
-                <MenuItem value="">
-                  <em>Any sub-industry</em>
-                </MenuItem>
-                {getSecondaryOptionsForPrimary(primaryIndustry).map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            ) : (
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
-                onClick={() => setShowSecondaryIndustryFilter(true)}
-                sx={filterChipSx}
-              >
-                Add secondary filter
-              </Button>
-            )}
-
-            {/* Location — inline text input styled as a chip */}
-            <Box
-              component="form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                updateUrl({ location: locationInput });
-              }}
-              sx={{ display: 'flex', alignItems: 'center' }}
-            >
-              <TextField
-                size="small"
-                placeholder="Location"
-                value={locationInput}
-                onChange={(e) => setLocationInput(e.target.value)}
-                onBlur={() => updateUrl({ location: locationInput })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...chipSelectSx,
-                    height: FILTER_CONTROL_HEIGHT,
-                    minHeight: FILTER_CONTROL_HEIGHT,
-                    color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
-                    '& fieldset': {
-                      borderColor: locationInput
-                        ? '#3b82f6'
-                        : 'rgba(255,255,255,0.18)',
-                      borderWidth: '1.5px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255,255,255,0.3)',
-                    },
-                    '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
-                    '& input': {
-                      py: '9px',
-                      px: 1.5,
-                      minWidth: 80,
-                      maxWidth: 140,
-                      fontWeight: locationInput ? 600 : 500,
-                      boxSizing: 'border-box',
-                    },
-                    '& input::placeholder': {
-                      color: 'rgba(255,255,255,0.5)',
-                      opacity: 1,
-                      fontSize: '0.8rem',
-                    },
-                  },
-                }}
-              />
-            </Box>
-
-            {/* Connection status chip-select */}
-            <Select
-              value={connectionStatus}
-              displayEmpty
-              renderValue={(v) =>
-                v ? (CONNECTION_LABEL[v] ?? v) : 'Connection'
-              }
-              onChange={(e) => updateUrl({ connection_status: e.target.value })}
-              MenuProps={filterSelectMenuProps}
-              IconComponent={KeyboardArrowDownIcon}
-              sx={{
-                ...chipSelectSx,
-                '& .MuiSelect-select': {
-                  ...chipSelectSx['& .MuiSelect-select'],
-                  fontWeight: connectionStatus ? 600 : 500,
-                  color: connectionStatus ? '#fff' : 'rgba(255,255,255,0.7)',
-                  minWidth: 95,
-                },
-                ...(connectionStatus
-                  ? {
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#3b82f6 !important',
-                      },
-                    }
-                  : {}),
-              }}
-            >
-              <MenuItem value="">
-                <em>Any</em>
-              </MenuItem>
-              <MenuItem value="not_connected">Not connected</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="pending_received">Pending received</MenuItem>
-              <MenuItem value="connected">Connected</MenuItem>
-            </Select>
-
-            {/* Active filter chips (search query + skills) */}
-            {q.trim() && (
-              <Chip
-                size="small"
-                label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
-                onDelete={() => updateUrl({ q: '' })}
-                sx={{
-                  bgcolor: 'rgba(59,130,246,0.15)',
-                  border: '1px solid rgba(59,130,246,0.35)',
-                  color: '#93c5fd',
-                  height: 28,
-                }}
-              />
-            )}
-            {skills.map((s) => (
-              <Chip
-                key={s}
-                size="small"
-                label={s}
-                onDelete={() =>
-                  updateUrl({ skills: skills.filter((x) => x !== s).join(',') })
-                }
-                sx={{
-                  bgcolor: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'rgba(255,255,255,0.75)',
-                  height: 28,
-                }}
-              />
-            ))}
-
-            {/* Clear all */}
-            {hasActiveFilters && (
-              <Button
-                size="small"
-                variant="text"
-                onClick={() => {
-                  updateUrl({
-                    q: '',
-                    primary_industry: '',
-                    secondary_industry: '',
-                    location: '',
-                    connection_status: '',
-                    skills: '',
-                  });
-                  setShowSecondaryIndustryFilter(false);
-                }}
+          <Box data-testid="directory-filters">
+            {/* Filter controls row: dropdowns together, location on far right */}
+            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
+              <Typography
+                variant="caption"
                 sx={{
                   color: 'rgba(255,255,255,0.4)',
-                  textTransform: 'none',
-                  fontSize: '0.78rem',
                   fontWeight: 600,
-                  px: 0.5,
-                  '&:hover': {
-                    color: 'rgba(255,255,255,0.7)',
-                    bgcolor: 'transparent',
-                  },
+                  mr: 0.25,
+                  flexShrink: 0,
                 }}
               >
-                Clear all
-              </Button>
+                Filters:
+              </Typography>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: 1,
+                  minWidth: 0,
+                }}
+              >
+                {/* Primary industry chip-select */}
+                <Select
+                  value={primaryIndustry}
+                  displayEmpty
+                  renderValue={(v) => v || 'Primary Industry'}
+                  onChange={(e) => {
+                    const nextPrimary = e.target.value;
+                    const allowed = getSecondaryOptionsForPrimary(nextPrimary);
+                    updateUrl({
+                      primary_industry: nextPrimary,
+                      secondary_industry: allowed.includes(secondaryIndustry)
+                        ? secondaryIndustry
+                        : '',
+                    });
+                  }}
+                  MenuProps={filterSelectMenuProps}
+                  IconComponent={KeyboardArrowDownIcon}
+                  sx={{
+                    ...chipSelectSx,
+                    '& .MuiSelect-select': {
+                      ...chipSelectSx['& .MuiSelect-select'],
+                      fontWeight: primaryIndustry ? 600 : 500,
+                      color: primaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
+                      minWidth: 110,
+                    },
+                    ...(primaryIndustry
+                      ? {
+                          borderColor: '#3b82f6',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#3b82f6 !important',
+                          },
+                        }
+                      : {}),
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>Any industry</em>
+                  </MenuItem>
+                  {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt}
+                    </MenuItem>
+                  ))}
+                </Select>
+
+                {/* Sub-industry: only show if primary is set OR already active */}
+                {primaryIndustry || showSecondaryIndustryFilter ? (
+                  <Select
+                    value={secondaryIndustry}
+                    displayEmpty
+                    renderValue={(v) => v || 'Sub-industry'}
+                    onChange={(e) =>
+                      updateUrl({ secondary_industry: e.target.value })
+                    }
+                    MenuProps={filterSelectMenuProps}
+                    IconComponent={KeyboardArrowDownIcon}
+                    sx={{
+                      ...chipSelectSx,
+                      '& .MuiSelect-select': {
+                        ...chipSelectSx['& .MuiSelect-select'],
+                        fontWeight: secondaryIndustry ? 600 : 500,
+                        color: secondaryIndustry
+                          ? '#fff'
+                          : 'rgba(255,255,255,0.7)',
+                        minWidth: 100,
+                      },
+                      ...(secondaryIndustry
+                        ? {
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#3b82f6 !important',
+                            },
+                          }
+                        : {}),
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>Any sub-industry</em>
+                    </MenuItem>
+                    {getSecondaryOptionsForPrimary(primaryIndustry).map(
+                      (opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ),
+                    )}
+                  </Select>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={
+                      <AddIcon sx={{ fontSize: '0.9rem !important' }} />
+                    }
+                    onClick={() => setShowSecondaryIndustryFilter(true)}
+                    sx={filterChipSx}
+                  >
+                    Add secondary filter
+                  </Button>
+                )}
+
+                {/* Connection status chip-select */}
+                <Select
+                  value={connectionStatus}
+                  displayEmpty
+                  renderValue={(v) =>
+                    v ? (CONNECTION_LABEL[v] ?? v) : 'Connection'
+                  }
+                  onChange={(e) =>
+                    updateUrl({ connection_status: e.target.value })
+                  }
+                  MenuProps={filterSelectMenuProps}
+                  IconComponent={KeyboardArrowDownIcon}
+                  sx={{
+                    ...chipSelectSx,
+                    '& .MuiSelect-select': {
+                      ...chipSelectSx['& .MuiSelect-select'],
+                      fontWeight: connectionStatus ? 600 : 500,
+                      color: connectionStatus
+                        ? '#fff'
+                        : 'rgba(255,255,255,0.7)',
+                      minWidth: 95,
+                    },
+                    ...(connectionStatus
+                      ? {
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#3b82f6 !important',
+                          },
+                        }
+                      : {}),
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>Any</em>
+                  </MenuItem>
+                  <MenuItem value="not_connected">Not connected</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="pending_received">Pending received</MenuItem>
+                  <MenuItem value="connected">Connected</MenuItem>
+                </Select>
+              </Box>
+
+              {/* Location — pushed to the right on wider screens */}
+              <Box
+                component="form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateUrl({ location: locationInput });
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  ml: { md: 'auto' },
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
+                <TextField
+                  size="small"
+                  placeholder="Location"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onBlur={() => updateUrl({ location: locationInput })}
+                  sx={{
+                    width: { xs: '100%', sm: 'auto' },
+                    '& .MuiOutlinedInput-root': {
+                      ...chipSelectSx,
+                      height: FILTER_CONTROL_HEIGHT,
+                      minHeight: FILTER_CONTROL_HEIGHT,
+                      color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
+                      '& fieldset': {
+                        borderColor: locationInput
+                          ? '#3b82f6'
+                          : 'rgba(255,255,255,0.18)',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(255,255,255,0.3)',
+                      },
+                      '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                      '& input': {
+                        py: '9px',
+                        px: 1.5,
+                        minWidth: 80,
+                        maxWidth: { xs: '100%', sm: 180 },
+                        fontWeight: locationInput ? 600 : 500,
+                        boxSizing: 'border-box',
+                      },
+                      '& input::placeholder': {
+                        color: 'rgba(255,255,255,0.5)',
+                        opacity: 1,
+                        fontSize: '0.8rem',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Stack>
+
+            {/* Active filter chips row (query + skills + clear all) */}
+            {(q.trim() || skills.length > 0 || hasActiveFilters) && (
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                alignItems="center"
+                gap={1}
+                sx={{ mt: 1.25 }}
+              >
+                {q.trim() && (
+                  <Chip
+                    size="small"
+                    label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
+                    onDelete={() => updateUrl({ q: '' })}
+                    sx={{
+                      bgcolor: 'rgba(59,130,246,0.15)',
+                      border: '1px solid rgba(59,130,246,0.35)',
+                      color: '#93c5fd',
+                      height: 28,
+                    }}
+                  />
+                )}
+                {skills.map((s) => (
+                  <Chip
+                    key={s}
+                    size="small"
+                    label={s}
+                    onDelete={() =>
+                      updateUrl({
+                        skills: skills.filter((x) => x !== s).join(','),
+                      })
+                    }
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: 'rgba(255,255,255,0.75)',
+                      height: 28,
+                    }}
+                  />
+                ))}
+
+                {/* Clear all */}
+                {hasActiveFilters && (
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => {
+                      updateUrl({
+                        q: '',
+                        primary_industry: '',
+                        secondary_industry: '',
+                        location: '',
+                        connection_status: '',
+                        skills: '',
+                      });
+                      setShowSecondaryIndustryFilter(false);
+                    }}
+                    sx={{
+                      color: 'rgba(255,255,255,0.4)',
+                      textTransform: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      px: 0.5,
+                      '&:hover': {
+                        color: 'rgba(255,255,255,0.7)',
+                        bgcolor: 'transparent',
+                      },
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </Stack>
             )}
-          </Stack>
+          </Box>
         </Paper>
 
         {error && (

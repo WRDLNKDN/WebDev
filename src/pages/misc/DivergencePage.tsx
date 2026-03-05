@@ -24,7 +24,6 @@ export const DivergencePage = () => {
               fontWeight: 800,
               color: '#f06292',
               mb: 1,
-              fontFamily: 'monospace',
             }}
           >
             DIVERGENCE_PROTOCOL
@@ -34,7 +33,6 @@ export const DivergencePage = () => {
             sx={{
               color: 'rgba(255,255,255,0.7)',
               mb: 4,
-              fontFamily: 'monospace',
             }}
           >
             Restricted Sector Access Granted.

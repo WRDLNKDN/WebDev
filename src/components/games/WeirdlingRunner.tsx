@@ -436,16 +436,12 @@ export const WeirdlingRunner = () => {
           variant="h6"
           sx={{
             color: '#f06292',
-            fontFamily: 'monospace',
             textShadow: '0 0 10px #f06292',
           }}
         >
           INTEGRITY: {score}
         </Typography>
-        <Typography
-          variant="h6"
-          sx={{ color: '#ffeb3b', fontFamily: 'monospace' }}
-        >
+        <Typography variant="h6" sx={{ color: '#ffeb3b' }}>
           PEAK_STATE: {highScore}
         </Typography>
       </Stack>
@@ -466,10 +462,7 @@ export const WeirdlingRunner = () => {
         }}
       />
 
-      <Typography
-        variant="caption"
-        sx={{ mt: 1, color: 'text.secondary', fontFamily: 'monospace' }}
-      >
+      <Typography variant="caption" sx={{ mt: 1, color: 'text.secondary' }}>
         [SPACE/TAP] TO DODGE MANAGERS & LEGACY PAPERWORK
       </Typography>
 
@@ -481,7 +474,6 @@ export const WeirdlingRunner = () => {
               color: '#ff4d4d',
               mb: 1,
               fontWeight: 800,
-              fontFamily: 'monospace',
             }}
           >
             [SYSTEM_CRASH]

@@ -2021,9 +2021,11 @@ app.get('/api/unsubscribe', async (req: Request, res: Response) => {
   const { error } = await adminSupabase
     .from('profiles')
     .update({
+      marketing_email_enabled: false,
       marketing_opt_in: false,
       marketing_product_updates: false,
       marketing_events: false,
+      consent_updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
     .select('id')
@@ -3894,7 +3896,7 @@ app.post(
     // Advertise form sends to admin only (not user-facing). For any future
     // user-facing emails (notification digests, marketing), check preferences:
     // docs/architecture/notification-and-marketing-preferences.md —
-    // email_notifications_enabled (non-critical), marketing_opt_in, marketing_push_enabled.
+    // email_notifications_enabled (non-critical), marketing_email_enabled, marketing_push_enabled.
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) {
       console.warn(

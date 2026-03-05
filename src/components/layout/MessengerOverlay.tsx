@@ -147,11 +147,10 @@ export const MessengerOverlay = () => {
     [session?.user?.id],
   );
 
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id || !chatEnabled) return null;
 
-  /* Desktop: always show floating button when overlay closed. Mobile: show floating button when chat is disabled (nav link hidden). */
-  const showFloatingChat =
-    messenger && !messenger.overlayOpen && (!mobile || !chatEnabled);
+  /* Show floating button when overlay is closed. */
+  const showFloatingChat = Boolean(messenger && !messenger.overlayOpen);
   const floatingChatButton = showFloatingChat ? (
     <IconButton
       onClick={openOverlay}

@@ -133,6 +133,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
     participation_style: string[] | null;
     additional_context: string | null;
     policy_version: string | null;
+    marketing_email_enabled?: boolean;
     marketing_opt_in?: boolean;
     marketing_source?: string | null;
   };
@@ -174,7 +175,9 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       const profileData: ProfileData = {
         displayName: profile.display_name ?? undefined,
         tagline: profile.tagline ?? undefined,
-        marketingOptIn: Boolean(profile.marketing_opt_in),
+        marketingOptIn: Boolean(
+          profile.marketing_email_enabled ?? profile.marketing_opt_in,
+        ),
       };
 
       const completedSteps: JoinStep[] = ['identity'];
@@ -373,6 +376,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
               participation_style: state.values.participationStyle || [],
               additional_context:
                 state.values.additionalContext?.trim() || null,
+              marketing_email_enabled: Boolean(profile.marketingOptIn),
               marketing_opt_in: Boolean(profile.marketingOptIn),
               marketing_opt_in_timestamp: profile.marketingOptIn
                 ? new Date().toISOString()
@@ -414,6 +418,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
               tagline: profile.tagline?.trim() || null,
               join_reason: state.values.joinReason || [],
               participation_style: state.values.participationStyle || [],
+              marketing_email_enabled: Boolean(profile.marketingOptIn),
               marketing_opt_in: Boolean(profile.marketingOptIn),
               marketing_opt_in_timestamp: profile.marketingOptIn
                 ? new Date().toISOString()

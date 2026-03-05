@@ -106,7 +106,7 @@ export const Join = () => {
           const { data: profile, error: profileErr } = await supabase
             .from('profiles')
             .select(
-              'display_name, tagline, join_reason, participation_style, additional_context, policy_version, marketing_opt_in, marketing_source',
+              'display_name, tagline, join_reason, participation_style, additional_context, policy_version, marketing_email_enabled, marketing_opt_in, marketing_source',
             )
             .eq('id', session.user.id)
             .maybeSingle();

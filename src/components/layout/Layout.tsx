@@ -6,6 +6,7 @@ import {
   MessengerProvider,
   useMessenger,
 } from '../../context/MessengerContext';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { ChatPopover } from '../chat/ChatPopover';
@@ -27,6 +28,8 @@ const LayoutContent = () => {
   const [session, setSession] = useState<Session | null>(null);
   const isHome = pathname === '/';
   const isJoin = pathname.startsWith('/join');
+  const isAdmin = pathname.startsWith('/admin');
+  const chatEnabled = useFeatureFlag('chat');
 
   useEffect(() => {
     let cancelled = false;
@@ -112,13 +115,13 @@ const LayoutContent = () => {
           </ErrorBoundary>
         </Box>
       </Box>
-      {!isHome && !isJoin && (
+      {!isHome && !isJoin && !isAdmin && (
         <Box component="footer" sx={{ flexShrink: 0 }}>
-          <Footer showChatLink={Boolean(session?.user)} />
+          <Footer showChatLink={Boolean(session?.user) && chatEnabled} />
         </Box>
       )}
-      <MessengerOverlay />
-      {session?.user && messenger?.popoverRoomId && (
+      {!isAdmin && chatEnabled && <MessengerOverlay />}
+      {!isAdmin && chatEnabled && session?.user && messenger?.popoverRoomId && (
         <ChatPopover
           roomId={messenger.popoverRoomId}
           onClose={messenger.closePopover}

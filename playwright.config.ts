@@ -12,7 +12,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 0, // no local retries; instant feedback
-  workers: 12,
+  workers: isCI ? 4 : 12,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 

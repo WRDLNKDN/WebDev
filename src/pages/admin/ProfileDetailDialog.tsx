@@ -29,9 +29,7 @@ export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
             <Typography variant="caption" sx={{ opacity: 0.7 }}>
               ID
             </Typography>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-              {profile.id}
-            </Typography>
+            <Typography variant="body2">{profile.id}</Typography>
           </Box>
 
           <Divider sx={{ my: 2 }} />

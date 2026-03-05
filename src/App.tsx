@@ -4,6 +4,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -21,6 +22,11 @@ import { RequireOnboarded } from './components/auth/RequireOnboarded';
 import { Layout } from './components/layout/Layout';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
 import { supabase } from './lib/auth/supabaseClient';
+import {
+  DASHBOARD_FLAG,
+  FEED_FLAG,
+  SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG,
+} from './lib/featureFlags/keys';
 
 /**
  * All pages are lazy-loaded to keep the main bundle small.
@@ -301,6 +307,7 @@ const RedirectUToProfile = () => {
 
 const App = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   // --- SYSTEM SECRET: KONAMI CODE LISTENER ---
@@ -316,6 +323,21 @@ const App = () => {
       navigate('/divergence');
     }
   }, [searchParams, navigate]);
+
+  // Normalize accidental repeated slashes in the URL path (e.g. //dashboard//settings).
+  useEffect(() => {
+    const normalizedPath = location.pathname.replace(/\/{2,}/g, '/');
+    if (normalizedPath !== location.pathname) {
+      navigate(
+        {
+          pathname: normalizedPath,
+          search: location.search,
+          hash: location.hash,
+        },
+        { replace: true },
+      );
+    }
+  }, [location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     registerAnalyticsSinks();
@@ -378,9 +400,11 @@ const App = () => {
                   <Route
                     path="/feed"
                     element={
-                      <RequireOnboarded>
-                        <Feed />
-                      </RequireOnboarded>
+                      <RequireFeatureFlag flagKey={FEED_FLAG} fallbackTo="/">
+                        <RequireOnboarded>
+                          <Feed />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
                     }
                   />
                   <Route
@@ -421,7 +445,14 @@ const App = () => {
                   />
                   <Route path="/saved" element={<SavedPage />} />
                   <Route path="/advertise" element={<AdvertisePage />} />
-                  <Route path="/games" element={<DivergencePage />} />
+                  <Route
+                    path="/games"
+                    element={
+                      <RequireFeatureFlag flagKey="games">
+                        <DivergencePage />
+                      </RequireFeatureFlag>
+                    }
+                  />
                   <Route path="/help" element={<HelpPage />} />
                   <Route
                     path="/community-partners"
@@ -432,9 +463,14 @@ const App = () => {
                   <Route
                     path="/dashboard"
                     element={
-                      <RequireOnboarded>
-                        <Dashboard />
-                      </RequireOnboarded>
+                      <RequireFeatureFlag
+                        flagKey={DASHBOARD_FLAG}
+                        fallbackTo="/"
+                      >
+                        <RequireOnboarded>
+                          <Dashboard />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
                     }
                   />
                   <Route
@@ -452,17 +488,27 @@ const App = () => {
                   <Route
                     path="/dashboard/notifications"
                     element={
-                      <RequireOnboarded>
-                        <NotificationsPage />
-                      </RequireOnboarded>
+                      <RequireFeatureFlag
+                        flagKey={DASHBOARD_FLAG}
+                        fallbackTo="/"
+                      >
+                        <RequireOnboarded>
+                          <NotificationsPage />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
                     }
                   />
                   <Route
                     path="/dashboard/settings"
                     element={
-                      <RequireOnboarded>
-                        <SettingsLayout />
-                      </RequireOnboarded>
+                      <RequireFeatureFlag
+                        flagKey={DASHBOARD_FLAG}
+                        fallbackTo="/"
+                      >
+                        <RequireOnboarded>
+                          <SettingsLayout />
+                        </RequireOnboarded>
+                      </RequireFeatureFlag>
                     }
                   >
                     <Route
@@ -478,7 +524,17 @@ const App = () => {
                       path="notifications"
                       element={<SettingsNotificationsPage />}
                     />
-                    <Route path="privacy" element={<SettingsPrivacyPage />} />
+                    <Route
+                      path="privacy"
+                      element={
+                        <RequireFeatureFlag
+                          flagKey={SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG}
+                          fallbackTo="/dashboard/settings/notifications"
+                        >
+                          <SettingsPrivacyPage />
+                        </RequireFeatureFlag>
+                      }
+                    />
                   </Route>
                   <Route
                     path="/chat"

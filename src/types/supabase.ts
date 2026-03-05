@@ -653,6 +653,7 @@ export type Database = {
           location: string | null
           profile_visibility: string
           feed_view_preference: string
+          marketing_email_enabled: boolean
           marketing_opt_in: boolean
           marketing_opt_in_timestamp: string | null
           marketing_opt_in_ip: string | null
@@ -694,6 +695,7 @@ export type Database = {
           location?: string | null
           profile_visibility?: string
           feed_view_preference?: string
+          marketing_email_enabled?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_timestamp?: string | null
           marketing_opt_in_ip?: string | null
@@ -735,6 +737,7 @@ export type Database = {
           location?: string | null
           profile_visibility?: string
           feed_view_preference?: string
+          marketing_email_enabled?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_timestamp?: string | null
           marketing_opt_in_ip?: string | null

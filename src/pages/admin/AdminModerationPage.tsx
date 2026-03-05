@@ -425,9 +425,7 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
                     />
                   </TableCell>
 
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {r.handle}
-                  </TableCell>
+                  <TableCell>{r.handle}</TableCell>
 
                   <TableCell>
                     <Chip size="small" label={s.label} color={s.color} />

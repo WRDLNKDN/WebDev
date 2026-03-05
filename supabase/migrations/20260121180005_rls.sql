@@ -144,6 +144,12 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'feed_view_preference') then
     alter table public.profiles add column feed_view_preference text not null default 'anyone' check (feed_view_preference in ('anyone', 'connections'));
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_email_enabled') then
+    alter table public.profiles add column marketing_email_enabled boolean not null default false;
+    -- Backfill only this newly added column from legacy consent field.
+    update public.profiles
+    set marketing_email_enabled = coalesce(marketing_opt_in, false);
+  end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in') then
     alter table public.profiles add column marketing_opt_in boolean not null default false;
   end if;
@@ -319,7 +325,7 @@ revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
 
 -- -----------------------------
--- feature_flags: read by all, update by admin only
+-- feature_flags: read by all, write by admin only
 -- -----------------------------
 alter table public.feature_flags enable row level security;
 
@@ -336,9 +342,16 @@ create policy feature_flags_update_admin
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 
+drop policy if exists feature_flags_insert_admin on public.feature_flags;
+create policy feature_flags_insert_admin
+  on public.feature_flags for insert
+  to authenticated
+  with check ((select public.is_admin()));
+
 revoke all on table public.feature_flags from anon, authenticated;
 grant select on table public.feature_flags to anon, authenticated;
 grant update on table public.feature_flags to authenticated;
+grant insert on table public.feature_flags to authenticated;
 
 -- -----------------------------
 -- get_feed_page(): execute grant (5-param)

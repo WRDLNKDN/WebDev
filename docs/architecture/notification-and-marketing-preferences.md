@@ -9,8 +9,8 @@ must respect user preferences stored on `profiles`.
   send non-critical account activity emails to this user.
 - **`push_enabled`** (boolean, default false) — User has opted in to push
   notifications (browser permission + preference).
-- **`marketing_opt_in`** (boolean, default false) — When false, do not send
-  marketing emails.
+- **`marketing_email_enabled`** (boolean, default false) — When false, do not
+  send marketing emails.
 - **`marketing_push_enabled`** (boolean, default false) — When false, do not
   send marketing push notifications.
 - **`consent_updated_at`** (timestamptz) — Set when user changes marketing or
@@ -41,8 +41,8 @@ preferences in one query.
 
 Before sending **marketing email** to a user:
 
-1. Check `profiles.marketing_opt_in`.
-2. If `marketing_opt_in === false`, do **not** send.
+1. Check `profiles.marketing_email_enabled`.
+2. If `marketing_email_enabled === false`, do **not** send.
 
 Before sending **marketing push notification** to a user:
 
@@ -57,6 +57,10 @@ Marketing must not affect:
 
 When the user changes marketing or consent preferences, update
 `consent_updated_at` (e.g. to `now()`) for auditability.
+
+Compatibility note: `marketing_opt_in` is a legacy mirror field. Keep it in sync
+during transition, but all outbound marketing checks must use
+`marketing_email_enabled`.
 
 ## Push notifications (non-marketing)
 

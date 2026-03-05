@@ -57,12 +57,15 @@ export const FeatureFlagsProvider = ({
   }, [fetchFlags]);
 
   const setFlag = useCallback(async (key: string, enabled: boolean) => {
-    const { error } = await supabase
+    // Upsert ensures missing keys are created (important for newly introduced flags).
+    const { data, error } = await supabase
       .from('feature_flags')
-      .update({ enabled })
-      .eq('key', key);
+      .upsert({ key, enabled }, { onConflict: 'key' })
+      .select('key, enabled')
+      .single();
     if (error) throw error;
-    setFlags((prev) => ({ ...prev, [key]: enabled }));
+    if (!data) throw new Error('No feature flag row returned after save.');
+    setFlags((prev) => ({ ...prev, [data.key]: data.enabled === true }));
   }, []);
 
   const value: FeatureFlagsContextValue = {

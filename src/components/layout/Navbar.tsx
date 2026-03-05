@@ -83,6 +83,9 @@ export const Navbar = () => {
   const directoryEnabled = useFeatureFlag('directory');
   const storeEnabled = useFeatureFlag('store');
   const chatEnabled = useFeatureFlag('chat');
+  const gamesEnabled = useFeatureFlag('games');
+  const feedEnabled = useFeatureFlag('feed');
+  const dashboardEnabled = useFeatureFlag('dashboard');
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
 
@@ -707,23 +710,25 @@ export const Navbar = () => {
               )}
               {showAuthedHeader && (
                 <>
-                  <Button
-                    component={RouterLink}
-                    to="/dashboard"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      ...(isDashboardActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Dashboard
-                  </Button>
+                  {dashboardEnabled && (
+                    <Button
+                      component={RouterLink}
+                      to="/dashboard"
+                      sx={{
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        ...(isDashboardActive && {
+                          color: 'white',
+                          borderBottom: '2px solid rgba(255,255,255,0.6)',
+                          borderRadius: 0,
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        }),
+                      }}
+                    >
+                      Dashboard
+                    </Button>
+                  )}
                   {directoryEnabled && (
                     <Button
                       component={RouterLink}
@@ -762,23 +767,25 @@ export const Navbar = () => {
                       Events
                     </Button>
                   )}
-                  <Button
-                    component={RouterLink}
-                    to="/feed"
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      ...(isFeedActive && {
-                        color: 'white',
-                        borderBottom: '2px solid rgba(255,255,255,0.6)',
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                      }),
-                    }}
-                  >
-                    Feed
-                  </Button>
+                  {feedEnabled && (
+                    <Button
+                      component={RouterLink}
+                      to="/feed"
+                      sx={{
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        ...(isFeedActive && {
+                          color: 'white',
+                          borderBottom: '2px solid rgba(255,255,255,0.6)',
+                          borderRadius: 0,
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        }),
+                      }}
+                    >
+                      Feed
+                    </Button>
+                  )}
                 </>
               )}
               {storeEnabled && (
@@ -850,7 +857,7 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  {showAuthedHeader && (
+                  {showAuthedHeader && dashboardEnabled && (
                     <IconButton
                       component={RouterLink}
                       to="/dashboard/notifications"
@@ -936,29 +943,33 @@ export const Navbar = () => {
                       },
                     }}
                   >
-                    <MenuItem
-                      component={RouterLink}
-                      to="/dashboard"
-                      onClick={() => {
-                        setAvatarMenuAnchor(null);
-                        setDrawerOpen(false);
-                      }}
-                      sx={{ py: 1.25 }}
-                    >
-                      Profile
-                    </MenuItem>
-                    <MenuItem
-                      component={RouterLink}
-                      to="/dashboard/settings"
-                      onClick={() => {
-                        setAvatarMenuAnchor(null);
-                        setDrawerOpen(false);
-                      }}
-                      sx={{ py: 1.25 }}
-                    >
-                      Settings
-                    </MenuItem>
-                    <Divider sx={{ my: 0.5 }} />
+                    {dashboardEnabled && (
+                      <MenuItem
+                        component={RouterLink}
+                        to="/dashboard"
+                        onClick={() => {
+                          setAvatarMenuAnchor(null);
+                          setDrawerOpen(false);
+                        }}
+                        sx={{ py: 1.25 }}
+                      >
+                        Profile
+                      </MenuItem>
+                    )}
+                    {dashboardEnabled && (
+                      <MenuItem
+                        component={RouterLink}
+                        to="/dashboard/settings"
+                        onClick={() => {
+                          setAvatarMenuAnchor(null);
+                          setDrawerOpen(false);
+                        }}
+                        sx={{ py: 1.25 }}
+                      >
+                        Settings
+                      </MenuItem>
+                    )}
+                    {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
                     <MenuItem
                       onClick={() => {
                         setAvatarMenuAnchor(null);
@@ -1044,7 +1055,7 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  {showAuthedHeader && (
+                  {showAuthedHeader && dashboardEnabled && (
                     <IconButton
                       component={RouterLink}
                       to="/dashboard/notifications"
@@ -1201,23 +1212,25 @@ export const Navbar = () => {
             )}
             {showAuthedHeader && (
               <>
-                <Button
-                  component={RouterLink}
-                  to="/dashboard"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDashboardActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Dashboard
-                </Button>
+                {dashboardEnabled && (
+                  <Button
+                    component={RouterLink}
+                    to="/dashboard"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                      ...(isDashboardActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+                )}
                 {directoryEnabled && (
                   <Button
                     component={RouterLink}
@@ -1256,23 +1269,25 @@ export const Navbar = () => {
                     Events
                   </Button>
                 )}
-                <Button
-                  component={RouterLink}
-                  to="/feed"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isFeedActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                    }),
-                  }}
-                >
-                  Feed
-                </Button>
+                {feedEnabled && (
+                  <Button
+                    component={RouterLink}
+                    to="/feed"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      py: 1.5,
+                      ...(isFeedActive && {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      }),
+                    }}
+                  >
+                    Feed
+                  </Button>
+                )}
                 {storeEnabled && (
                   <Button
                     component="a"
@@ -1440,22 +1455,24 @@ export const Navbar = () => {
                   primaryTypographyProps={{ variant: 'body2' }}
                 />
               </ListItemButton>
-              <ListItemButton
-                component="a"
-                href="https://phuzzle.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <SportsEsportsIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Games"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
+              {gamesEnabled && (
+                <ListItemButton
+                  component="a"
+                  href="https://phuzzle.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{ minHeight: 40, py: 0.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <SportsEsportsIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Games"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              )}
               <ListSubheader
                 component="div"
                 sx={{

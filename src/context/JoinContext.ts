@@ -53,6 +53,7 @@ export type JoinContextValue = {
       participation_style: string[] | null;
       additional_context: string | null;
       policy_version: string | null;
+      marketing_email_enabled?: boolean;
       marketing_opt_in?: boolean;
       marketing_source?: string | null;
     },

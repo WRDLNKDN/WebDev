@@ -24,6 +24,7 @@ const GLASS_MODAL = {
 };
 
 type MarketingPrefs = {
+  marketing_email_enabled: boolean;
   marketing_opt_in: boolean;
   marketing_product_updates: boolean;
   marketing_events: boolean;
@@ -39,6 +40,7 @@ export const EmailPreferencesDialog = ({
   onClose,
 }: EmailPreferencesDialogProps) => {
   const [prefs, setPrefs] = useState<MarketingPrefs>({
+    marketing_email_enabled: false,
     marketing_opt_in: false,
     marketing_product_updates: false,
     marketing_events: false,
@@ -51,10 +53,16 @@ export const EmailPreferencesDialog = ({
     if (!session?.session?.user?.id) return;
     const { data } = await supabase
       .from('profiles')
-      .select('marketing_opt_in, marketing_product_updates, marketing_events')
+      .select(
+        'marketing_email_enabled, marketing_opt_in, marketing_product_updates, marketing_events',
+      )
       .eq('id', session.session.user.id)
       .maybeSingle();
     setPrefs({
+      marketing_email_enabled: Boolean(
+        (data as MarketingPrefs | null)?.marketing_email_enabled ??
+          (data as MarketingPrefs | null)?.marketing_opt_in,
+      ),
       marketing_opt_in: Boolean(
         (data as MarketingPrefs | null)?.marketing_opt_in,
       ),
@@ -81,14 +89,20 @@ export const EmailPreferencesDialog = ({
       setSaving(true);
       try {
         const next = { ...prefs, [key]: value };
+        if (key === 'marketing_email_enabled') {
+          next.marketing_opt_in = value;
+        }
         setPrefs(next);
         await supabase
           .from('profiles')
           .update({
+            marketing_email_enabled: next.marketing_email_enabled,
             marketing_opt_in: next.marketing_opt_in,
             marketing_product_updates: next.marketing_product_updates,
             marketing_events: next.marketing_events,
-            ...(key === 'marketing_opt_in' &&
+            consent_updated_at: new Date().toISOString(),
+            ...((key === 'marketing_email_enabled' ||
+              key === 'marketing_opt_in') &&
               value && {
                 marketing_opt_in_timestamp: new Date().toISOString(),
                 marketing_source: 'settings',
@@ -138,9 +152,9 @@ export const EmailPreferencesDialog = ({
             <FormControlLabel
               control={
                 <Switch
-                  checked={prefs.marketing_opt_in}
+                  checked={prefs.marketing_email_enabled}
                   onChange={(e) =>
-                    handleChange('marketing_opt_in', e.target.checked)
+                    handleChange('marketing_email_enabled', e.target.checked)
                   }
                   disabled={saving}
                   color="primary"

@@ -125,7 +125,11 @@ export const UnsubscribePage = () => {
       }
       const { error } = await supabase
         .from('profiles')
-        .update({ marketing_opt_in: false })
+        .update({
+          marketing_email_enabled: false,
+          marketing_opt_in: false,
+          consent_updated_at: new Date().toISOString(),
+        })
         .eq('id', session.session.user.id);
       if (error) throw error;
       setStatus('done');

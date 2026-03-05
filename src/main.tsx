@@ -6,6 +6,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
+import './index.css';
 import { initRefreshCapture } from './lib/utils/refreshCapture';
 import theme from './theme/theme';
 

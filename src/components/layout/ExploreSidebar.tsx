@@ -43,6 +43,7 @@ export const ExploreSidebar = () => {
   const path = location.pathname;
   const eventsEnabled = useFeatureFlag('events');
   const chatEnabled = useFeatureFlag('chat');
+  const gamesEnabled = useFeatureFlag('games');
 
   return (
     <Paper
@@ -201,28 +202,30 @@ export const ExploreSidebar = () => {
             />
           </ListItemButton>
         </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton
-            component="a"
-            href="https://phuzzle.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              minHeight: 40,
-              py: 0.5,
-              borderRadius: 0,
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <SportsEsportsIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Games"
-              primaryTypographyProps={{ variant: 'body2' }}
-            />
-          </ListItemButton>
-        </ListItem>
+        {gamesEnabled && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component="a"
+              href="https://phuzzle.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                minHeight: 40,
+                py: 0.5,
+                borderRadius: 0,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <SportsEsportsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Games"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
         <ListSubheader
           disableSticky
           sx={{

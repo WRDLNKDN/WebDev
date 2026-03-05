@@ -149,11 +149,13 @@ const theme = createTheme({
           html: {
             overflow: 'hidden',
             height: '100%',
+            fontFamily: FONT_FAMILY,
           },
           body: {
             overflowX: 'hidden',
             overflowY: 'hidden',
             height: '100%',
+            fontFamily: FONT_FAMILY,
           },
           // #root does not scroll; Layout and Join use their own scroll container
           '#root': {
@@ -175,6 +177,9 @@ const theme = createTheme({
             '&::-webkit-scrollbar-thumb:focus': {
               backgroundColor: '#959595',
             },
+          },
+          'input, textarea, button, select': {
+            fontFamily: FONT_FAMILY,
           },
         },
       },

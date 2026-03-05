@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, Navigate } from 'react-router-dom';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import {
   getErrorMessage,
   toMessage,
@@ -22,6 +23,8 @@ import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 export const SignIn = () => {
+  const feedEnabled = useFeatureFlag('feed');
+  const dashboardEnabled = useFeatureFlag('dashboard');
   const [loading, setLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<
     'google' | 'azure' | null
@@ -45,6 +48,12 @@ export const SignIn = () => {
     };
   }, []);
 
+  const postAuthPath = feedEnabled
+    ? '/feed'
+    : dashboardEnabled
+      ? '/dashboard'
+      : '/';
+
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     setLoading(true);
     setLoadingProvider(provider);
@@ -52,7 +61,7 @@ export const SignIn = () => {
 
     try {
       const { data, error: authError } = await signInWithOAuth(provider, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/feed`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(postAuthPath)}`,
       });
 
       if (authError) throw authError;
@@ -74,7 +83,7 @@ export const SignIn = () => {
   };
 
   if (session === true) {
-    return <Navigate to="/feed" replace />;
+    return <Navigate to={postAuthPath} replace />;
   }
 
   if (session === null) {

@@ -563,7 +563,11 @@ export const AdminAdvertisersPage = () => {
                     size="small"
                     onClick={() => void handleDelete(row.id)}
                     aria-label="Delete"
-                    color="error"
+                    sx={{
+                      bgcolor: 'rgba(0,0,0,0.6)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'error.main', color: 'white' },
+                    }}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
@@ -801,6 +805,11 @@ export const AdminAdvertisersPage = () => {
                       }))
                     }
                     aria-label="Remove link"
+                    sx={{
+                      bgcolor: 'rgba(0,0,0,0.6)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'error.main', color: 'white' },
+                    }}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>

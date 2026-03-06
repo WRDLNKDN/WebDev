@@ -1,6 +1,6 @@
 /**
  * Shared GIF picker dialog for Posts, Comments, and Chat.
- * Uses Tenor API via gifApi.
+ * Uses GIPHY API via gifApi.
  */
 
 import CloseIcon from '@mui/icons-material/Close';

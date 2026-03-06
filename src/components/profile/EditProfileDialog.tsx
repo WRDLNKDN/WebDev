@@ -560,25 +560,19 @@ export const EditProfileDialog = ({
 
             {/* Pronouns */}
             <Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'rgba(255,255,255,0.6)',
-                  display: 'block',
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Pronouns
-              </Typography>
               <FormControl
                 fullWidth
                 variant="filled"
                 disabled={busy}
                 sx={INPUT_STYLES}
               >
+                <InputLabel id="edit-profile-pronouns" shrink>
+                  Pronouns
+                </InputLabel>
                 <Select
+                  labelId="edit-profile-pronouns"
                   value={formData.pronouns || ''}
+                  label="Pronouns"
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -586,6 +580,7 @@ export const EditProfileDialog = ({
                     }))
                   }
                   displayEmpty
+                  renderValue={(v) => v || 'Select pronouns'}
                   sx={{
                     '& .MuiSelect-select': { padding: INPUT_PADDING },
                     '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },

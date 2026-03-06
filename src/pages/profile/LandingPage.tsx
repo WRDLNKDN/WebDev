@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Container,
   Grid,
-  Paper,
   Snackbar,
   Stack,
 } from '@mui/material';
@@ -40,8 +39,8 @@ const DivergencePage = lazy(async () => {
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { toMessage } from '../../lib/utils/errors';
+import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { GLASS_CARD } from '../../theme/candyStyles';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
@@ -260,9 +259,7 @@ export const LandingPage = () => {
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
   if (nicheField)
     industryChips.push({ label: nicheField, key: `niche-${nicheField}` });
-  const hasVisibleSocialLinks = Array.isArray(profile.socials)
-    ? profile.socials.some((link) => link?.isVisible)
-    : false;
+  const showLinksInIdentity = hasVisibleSocialLinks(profile.socials);
 
   const ownerActions = isOwner ? (
     <Button
@@ -359,6 +356,16 @@ export const LandingPage = () => {
             }
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
+            slotLeftOfAvatar={
+              showLinksInIdentity ? (
+                <ProfileLinksWidget
+                  socials={profile.socials || []}
+                  grouped
+                  collapsible
+                  defaultExpanded={true}
+                />
+              ) : undefined
+            }
             badges={
               selectedSkills.length > 0 || industryChips.length > 0 ? (
                 <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -397,34 +404,13 @@ export const LandingPage = () => {
             }
           />
 
-          {/* 2. THE GRID LAYOUT */}
+          {/* 2. PORTFOLIO SECTION */}
           <Grid
             container
             spacing={{ xs: 2, sm: 3, md: 4 }}
             sx={{ mt: { xs: 2, sm: 4, md: 6 } }}
           >
-            {hasVisibleSocialLinks && (
-              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    ...GLASS_CARD,
-                    p: { xs: 2, md: 3 },
-                    mb: 4,
-                    position: { md: 'sticky' },
-                    top: { md: 24 },
-                  }}
-                >
-                  <ProfileLinksWidget socials={profile.socials || []} grouped />
-                </Paper>
-              </Grid>
-            )}
-
-            {/* RIGHT COLUMN: The "Main Content" Sector */}
-            <Grid
-              size={{ xs: 12, md: hasVisibleSocialLinks ? 8 : 12 }}
-              sx={{ minWidth: 0 }}
-            >
+            <Grid size={12} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={profile.resume_url}

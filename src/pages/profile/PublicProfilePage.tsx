@@ -4,7 +4,6 @@ import {
   CircularProgress,
   Container,
   Grid,
-  Paper,
   Stack,
   Typography,
 } from '@mui/material';
@@ -19,7 +18,7 @@ import { IdentityHeader } from '../../components/profile/IdentityHeader';
 import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
 import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { NerdCreds } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
@@ -153,7 +152,7 @@ export const PublicProfilePage = () => {
   const socials = rawSocials.filter((l) => l?.isVisible) as Parameters<
     typeof ProfileLinksWidget
   >[0]['socials'];
-  const hasVisibleSocialLinks = socials.length > 0;
+  const showLinksInIdentity = hasVisibleSocialLinks(p.socials);
 
   const projects: PortfolioItem[] = (portfolio ?? []).map((item) => ({
     id: item.id,
@@ -212,6 +211,16 @@ export const PublicProfilePage = () => {
             avatarUrl={p.avatar ?? undefined}
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
+            slotLeftOfAvatar={
+              showLinksInIdentity ? (
+                <ProfileLinksWidget
+                  socials={socials}
+                  grouped
+                  collapsible
+                  defaultExpanded={true}
+                />
+              ) : undefined
+            }
             badges={
               selectedSkills.length > 0 || industryChips.length > 0 ? (
                 <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -249,24 +258,7 @@ export const PublicProfilePage = () => {
             spacing={{ xs: 2, md: 4 }}
             sx={{ mt: { xs: 2, md: 4 } }}
           >
-            {hasVisibleSocialLinks && (
-              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 0 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    ...GLASS_CARD,
-                    p: { xs: 2, md: 3 },
-                    mb: 4,
-                  }}
-                >
-                  <ProfileLinksWidget socials={socials} grouped />
-                </Paper>
-              </Grid>
-            )}
-            <Grid
-              size={{ xs: 12, md: hasVisibleSocialLinks ? 8 : 12 }}
-              sx={{ minWidth: 0 }}
-            >
+            <Grid size={12} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={p.resume_url ?? undefined}

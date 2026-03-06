@@ -22,4 +22,53 @@ test.describe('Share profile route', () => {
     await page.goto('/p/invalid-test-token', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('404')).toBeVisible({ timeout: 25_000 });
   });
+
+  test('public profile with socials shows LINKS in Identity (collapsible)', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const payload = {
+      profile: {
+        id: '11111111-1111-4111-8111-111111111111',
+        display_name: 'Test Member',
+        tagline: null,
+        avatar: null,
+        nerd_creds: {},
+        socials: [
+          {
+            id: 'link-1',
+            category: 'Professional',
+            platform: 'LinkedIn',
+            url: 'https://linkedin.com/in/test',
+            isVisible: true,
+            order: 0,
+          },
+        ],
+        resume_url: null,
+      },
+      portfolio: [],
+    };
+    await page.route(
+      '**/rest/v1/rpc/get_public_profile_by_share_token*',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(payload),
+        });
+      },
+    );
+    await page.goto('/p/valid-token-with-links', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByText('Test Member')).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText('LINKS')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('heading', { name: /portfolio/i })).toBeVisible(
+      {
+        timeout: 5_000,
+      },
+    );
+  });
 });

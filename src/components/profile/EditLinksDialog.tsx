@@ -36,6 +36,9 @@ import {
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
+/** Button label for adding a link; single "Add to List" (no duplicate plus). */
+export const ADD_TO_LIST_BUTTON_LABEL = 'Add to List';
+
 interface EditLinksDialogProps {
   open: boolean;
   onClose: () => void;
@@ -256,7 +259,9 @@ export const EditLinksDialog = ({
               <Stack spacing={2}>
                 <Stack direction="row" spacing={2}>
                   <FormControl fullWidth size="small" error={categoryError}>
-                    <InputLabel id="add-link-category">Category</InputLabel>
+                    <InputLabel id="add-link-category" shrink>
+                      Category
+                    </InputLabel>
                     <Select
                       labelId="add-link-category"
                       value={newCategory}
@@ -288,7 +293,9 @@ export const EditLinksDialog = ({
                     error={platformError}
                     disabled={!newCategory}
                   >
-                    <InputLabel id="add-link-platform">Platform</InputLabel>
+                    <InputLabel id="add-link-platform" shrink>
+                      Platform
+                    </InputLabel>
                     <Select
                       labelId="add-link-platform"
                       value={newPlatform}
@@ -363,7 +370,7 @@ export const EditLinksDialog = ({
                   disabled={!canAddLink}
                   sx={{ alignSelf: 'flex-start' }}
                 >
-                  + Add to List
+                  {ADD_TO_LIST_BUTTON_LABEL}
                 </Button>
               </Stack>
             </Box>

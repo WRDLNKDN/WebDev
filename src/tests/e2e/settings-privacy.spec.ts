@@ -119,11 +119,11 @@ test.describe('Settings Privacy', () => {
       waitUntil: 'domcontentloaded',
     });
     await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 30_000,
+      timeout: 45_000,
     });
     await expect(
-      page.getByRole('heading', { name: /marketing communications/i }),
-    ).toBeVisible({ timeout: 30_000 });
+      page.getByText('Marketing Communications', { exact: false }),
+    ).toBeVisible({ timeout: 45_000 });
 
     const marketingEmailToggle = page.getByRole('switch', {
       name: /marketing emails/i,

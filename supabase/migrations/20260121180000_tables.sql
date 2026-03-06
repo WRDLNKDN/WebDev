@@ -1,8 +1,8 @@
 -- supabase/migrations/20260121180000_tables.sql
 -- All tables, functions, and triggers. Idempotent: does NOT drop tables or data.
--- - Tables: CREATE TABLE IF NOT EXISTS only (never DROP TABLE).
+-- - Tables: CREATE TABLE IF NOT EXISTS only (never DROP TABLE). No TRUNCATE, no DELETE without WHERE.
 -- - Triggers: DROP TRIGGER IF EXISTS before CREATE TRIGGER (removes only the trigger, not the table).
--- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; tables unchanged.
+-- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; table data unchanged.
 
 -- Extensions used by schema/indexes and functions
 create schema if not exists extensions;
@@ -1070,7 +1070,8 @@ returns table (
   skills text[],
   bio_snippet text,
   connection_state text,
-  use_weirdling_avatar boolean
+  use_weirdling_avatar boolean,
+  profile_share_token text
 )
 language sql
 stable
@@ -1140,6 +1141,7 @@ as $$
       p.created_at,
       p.last_active_at,
       p.use_weirdling_avatar,
+      p.profile_share_token,
       w.avatar_url as weirdling_avatar
     from public.profiles p
     join params pr on true
@@ -1215,7 +1217,8 @@ as $$
     ) as skills,
     left(coalesce(v.nerd_creds->>'bio', ''), 120) as bio_snippet,
     cs.state as connection_state,
-    coalesce(v.use_weirdling_avatar, false) as use_weirdling_avatar
+    coalesce(v.use_weirdling_avatar, false) as use_weirdling_avatar,
+    v.profile_share_token
   from visible v
   join conn_state cs on cs.id = v.id
   where (p_connection_status is null or cs.state = p_connection_status)
@@ -1243,7 +1246,7 @@ as $$
 $$;
 
 comment on function public.get_directory_page is
-  'Directory listing: searchable, filterable, connection-aware, privacy-respecting.';
+  'Directory listing: searchable, filterable, connection-aware, privacy-respecting. Returns profile_share_token for /p/:token links.';
 
 -- -----------------------------
 -- Chat: rooms, members, messages, reactions, attachments, blocks, reports

@@ -3,7 +3,14 @@ import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupported
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Box, Button, IconButton, Paper, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Paper,
+  Typography,
+} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { getLinkType } from '../../lib/portfolio/linkUtils';
 import { CANDY_BLUEY } from '../../theme/candyStyles';
@@ -68,6 +75,10 @@ export const ProjectCard = ({
     textTransform: 'none',
     fontWeight: 600,
   } as const;
+  const categories = (project.tech_stack ?? [])
+    .map((tag) => String(tag).trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
   return (
     <Paper
@@ -300,6 +311,34 @@ export const ProjectCard = ({
           >
             {project.title}
           </Typography>
+        )}
+        {categories.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 0.5,
+              mb: 1,
+            }}
+          >
+            {categories.map((tag) => (
+              <Chip
+                key={`${project.id}-tag-${tag}`}
+                size="small"
+                label={tag}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  color: 'text.secondary',
+                  maxWidth: '100%',
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  },
+                }}
+              />
+            ))}
+          </Box>
         )}
         <Typography
           variant="body2"

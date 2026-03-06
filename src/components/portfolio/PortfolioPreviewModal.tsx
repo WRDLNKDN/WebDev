@@ -225,6 +225,27 @@ export const PortfolioPreviewModal = ({
             {project.description}
           </Typography>
         )}
+        {Array.isArray(project?.tech_stack) &&
+          project.tech_stack.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
+              {project.tech_stack
+                .map((tag) => String(tag).trim())
+                .filter(Boolean)
+                .slice(0, 8)
+                .map((tag) => (
+                  <Chip
+                    key={`preview-tag-${tag}`}
+                    label={tag}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.08)',
+                      color: 'text.secondary',
+                      border: '1px solid rgba(255,255,255,0.16)',
+                    }}
+                  />
+                ))}
+            </Box>
+          )}
         {renderPreview()}
       </DialogContent>
     </Dialog>

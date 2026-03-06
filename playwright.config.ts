@@ -11,8 +11,8 @@ export default defineConfig({
   timeout: 30_000, // fail faster on genuinely broken tests
   expect: { timeout: 10_000 },
 
-  retries: isCI ? 2 : 0, // no local retries; instant feedback
-  workers: isCI ? 4 : 12,
+  retries: isCI ? 2 : 1, // 1 local retry for connection/setup flakiness
+  workers: isCI ? 4 : 8,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 

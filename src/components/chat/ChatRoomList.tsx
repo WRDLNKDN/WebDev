@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
   Button,
@@ -124,9 +124,15 @@ export const ChatRoomList = ({
                     e.stopPropagation();
                     onRemoveChat(room.id);
                   }}
-                  sx={{ color: 'text.secondary', ml: 0.5 }}
+                  sx={{
+                    ml: 'auto',
+                    flexShrink: 0,
+                    bgcolor: 'rgba(0,0,0,0.6)',
+                    color: 'white',
+                    '&:hover': { bgcolor: 'error.main', color: 'white' },
+                  }}
                 >
-                  <DeleteOutlineIcon fontSize="small" />
+                  <DeleteIcon fontSize="small" />
                 </IconButton>
               )}
             </ListItemButton>

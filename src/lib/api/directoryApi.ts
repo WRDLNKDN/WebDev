@@ -28,6 +28,8 @@ export interface DirectoryMember {
   bio_snippet: string | null;
   connection_state: ConnectionState;
   use_weirdling_avatar: boolean;
+  /** When set, link to public profile via /p/:profile_share_token to avoid 404. */
+  profile_share_token?: string | null;
 }
 
 export interface DirectoryParams {
@@ -47,9 +49,11 @@ export interface DirectoryResponse {
   hasMore: boolean;
 }
 
+import { getProfileLink } from '../directory/profileLink';
 import { buildDirectoryQueryString } from './directoryQueryParams';
 
 export { buildDirectoryQueryString };
+export { getProfileLink };
 
 export async function fetchDirectory(
   supabase: SupabaseClient,

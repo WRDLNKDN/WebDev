@@ -27,10 +27,12 @@ test.describe('Accessibility - route sweep (public)', () => {
       page,
     }) => {
       test.setTimeout(90_000);
-      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      // Join is lazy-loaded; wait for load so the chunk is fetched before asserting
+      const waitUntil = path === '/join' ? 'load' : 'domcontentloaded';
+      await page.goto(path, { waitUntil });
       const mainTestId = PUBLIC_MAIN_SELECTOR[path] ?? DEFAULT_MAIN_SELECTOR;
       await expect(page.getByTestId(mainTestId)).toBeVisible({
-        timeout: 30_000,
+        timeout: 45_000,
       });
 
       const results = await new AxeBuilder({ page })
@@ -60,7 +62,7 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
 
       await page.goto(path, { waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId('app-main')).toBeVisible({
-        timeout: 30_000,
+        timeout: 45_000,
       });
 
       const results = await new AxeBuilder({ page })

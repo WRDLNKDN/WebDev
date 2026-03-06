@@ -236,6 +236,8 @@ export const Dashboard = () => {
               <ProfileLinksWidget
                 socials={profile?.socials ?? []}
                 grouped
+                collapsible
+                defaultExpanded={true}
                 isOwner
                 onRemove={async (linkId) => {
                   const next = (profile?.socials ?? []).filter(

@@ -1,5 +1,5 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
   Button,
@@ -72,19 +72,43 @@ export const ResumeCard = ({
           // Instance-specific overrides (compact for Dashboard)
           width: '100%',
           maxWidth: 240,
-          minHeight: { xs: 160, md: 200 },
-          height: { xs: 160, md: 200 },
+          minHeight: { xs: 240, md: 320 },
+          height: { xs: 240, md: 320 },
           borderRadius: 3,
           scrollSnapAlign: 'start',
           position: 'relative',
         }}
       >
         <>
+          {isOwner && onDelete && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                zIndex: 1,
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={handleDeleteClick}
+                disabled={deleteBusy || retryThumbnailBusy}
+                aria-label="Delete resume"
+                sx={{
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'error.main', color: 'white' },
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
           <Box
             sx={{
               width: '100%',
               maxWidth: 260,
-              height: { xs: 120, md: 160 },
+              height: { xs: 200, md: 260 },
               borderRadius: 2,
               border: '1px solid rgba(255,255,255,0.25)',
               overflow: 'hidden',
@@ -158,34 +182,9 @@ export const ResumeCard = ({
               </Box>
             )}
           </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 0.5,
-              flexWrap: 'nowrap',
-            }}
-          >
-            <Typography variant="h6" fontWeight={800} letterSpacing={1}>
-              RESUME
-            </Typography>
-            {isOwner && onDelete && (
-              <IconButton
-                size="small"
-                onClick={handleDeleteClick}
-                disabled={deleteBusy || retryThumbnailBusy}
-                aria-label="Delete resume"
-                sx={{
-                  color: 'inherit',
-                  opacity: 0.85,
-                  '&:hover': { opacity: 1 },
-                }}
-              >
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
+          <Typography variant="h6" fontWeight={800} letterSpacing={1}>
+            RESUME
+          </Typography>
           <Button
             variant="outlined"
             size="small"

@@ -1,6 +1,6 @@
 import EditIcon from '@mui/icons-material/Edit';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
   Button,
@@ -119,7 +119,7 @@ export const WeirdlingCard = ({
                 '&:hover': { bgcolor: 'error.main', color: 'white' },
               }}
             >
-              <DeleteOutlineIcon fontSize="small" />
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
           <Typography variant="subtitle1" fontWeight={600}>

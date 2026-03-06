@@ -16,7 +16,10 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import type { DirectoryMember } from '../../lib/api/directoryApi';
+import {
+  getProfileLink,
+  type DirectoryMember,
+} from '../../lib/api/directoryApi';
 import { connectionStateLabel } from '../../lib/directory/connectionState';
 import { CARD_BG } from '../../theme/candyStyles';
 
@@ -42,9 +45,7 @@ export const DirectoryRow = ({
   busy = false,
 }: DirectoryRowProps) => {
   const [manageAnchor, setManageAnchor] = useState<HTMLElement | null>(null);
-  const profileLink = member.handle
-    ? `/profile/${member.handle}`
-    : `/profile/${member.id}`;
+  const profileLink = getProfileLink(member);
   const displayName = member.display_name || member.handle || '(Anonymous)';
 
   const avatarUrl = member.avatar;

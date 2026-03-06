@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommentIcon from '@mui/icons-material/AddComment';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import MessageIcon from '@mui/icons-material/Message';
@@ -471,9 +471,18 @@ export const MessengerOverlay = () => {
                             aria-label="Remove chat"
                             size="small"
                             onClick={(e) => handleRemoveChat(e, r.id)}
-                            sx={{ color: 'text.secondary', ml: 0.5 }}
+                            sx={{
+                              ml: 'auto',
+                              flexShrink: 0,
+                              bgcolor: 'rgba(0,0,0,0.6)',
+                              color: 'white',
+                              '&:hover': {
+                                bgcolor: 'error.main',
+                                color: 'white',
+                              },
+                            }}
                           >
-                            <DeleteOutlineIcon fontSize="small" />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </ListItemButton>
                       ));

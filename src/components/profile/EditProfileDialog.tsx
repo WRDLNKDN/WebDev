@@ -118,6 +118,8 @@ type EditProfileDialogProps = {
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
   onUpload: (file: File) => Promise<string | undefined>;
+  /** Open links editor for profile/directory links */
+  onManageLinks?: () => void;
   /** Called when avatar changes (e.g. preset selected) for reactive UI update */
   onAvatarChanged?: () => void;
   /** When true, focus or scroll to the Bio field when dialog opens (e.g. from "Add bio"). */
@@ -138,6 +140,7 @@ export const EditProfileDialog = ({
   currentResolvedAvatarUrl,
   onUpdate,
   onUpload,
+  onManageLinks,
   onAvatarChanged,
   focusBioOnOpen = false,
 }: EditProfileDialogProps) => {
@@ -879,6 +882,49 @@ export const EditProfileDialog = ({
                 Controls who can find you in the Directory.
               </Typography>
             </Box>
+
+            {onManageLinks && (
+              <Box>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    letterSpacing: 2,
+                    fontWeight: 'bold',
+                    color: PURPLE_ACCENT,
+                    display: 'block',
+                    mb: 0.5,
+                  }}
+                >
+                  DIRECTORY LINKS
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    mb: 1,
+                    color: 'rgba(255,255,255,0.6)',
+                  }}
+                >
+                  Add links shown on your profile and in Directory views.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    onClose();
+                    onManageLinks();
+                  }}
+                  disabled={busy}
+                  sx={{
+                    textTransform: 'none',
+                    borderColor: BORDER_COLOR,
+                    color: 'white',
+                    '&:hover': { borderColor: PURPLE_ACCENT },
+                  }}
+                >
+                  Add or Edit Links
+                </Button>
+              </Box>
+            )}
 
             {/* Skills */}
             <Box>

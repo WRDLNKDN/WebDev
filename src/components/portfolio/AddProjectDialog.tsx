@@ -22,6 +22,10 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import {
+  formatProjectCategories,
+  parseProjectCategories,
+} from '../../lib/portfolio/categoryUtils';
 import { validatePortfolioUrl } from '../../lib/portfolio/linkValidation';
 import { toMessage } from '../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
@@ -86,6 +90,7 @@ export const AddProjectDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<NewProject>(emptyForm);
+  const [categoryInput, setCategoryInput] = useState('');
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
@@ -107,9 +112,13 @@ export const AddProjectDialog = ({
         project_url: initialProject.project_url ?? '',
         tech_stack: initialProject.tech_stack ?? [],
       });
+      setCategoryInput(
+        formatProjectCategories(initialProject.tech_stack ?? []),
+      );
       setPreviewUrl(initialProject.image_url ?? null);
     } else if (open && !initialProject) {
       setFormData(emptyForm);
+      setCategoryInput('');
       setPreviewUrl(null);
       setSelectedFile(undefined);
     }
@@ -142,13 +151,15 @@ export const AddProjectDialog = ({
     }
     try {
       setBusy(true);
+      const parsedCategories = parseProjectCategories(categoryInput);
       await onSubmit(
-        { ...formData, tech_stack: formData.tech_stack ?? [] },
+        { ...formData, tech_stack: parsedCategories },
         selectedFile,
         projectId,
       );
       if (!isEdit) {
         setFormData(emptyForm);
+        setCategoryInput('');
         setPreviewUrl(null);
         setSelectedFile(undefined);
       }
@@ -283,6 +294,23 @@ export const AddProjectDialog = ({
                 rows={3}
                 value={formData.description}
                 onChange={handleChange('description')}
+                variant="filled"
+              />
+
+              <TextField
+                fullWidth
+                label="Categories"
+                placeholder="Case Study, DevOps, UI Design"
+                helperText="Optional. Comma-separated tags shown on your portfolio/profile cards."
+                value={categoryInput}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setCategoryInput(next);
+                  setFormData((prev) => ({
+                    ...prev,
+                    tech_stack: parseProjectCategories(next),
+                  }));
+                }}
                 variant="filled"
               />
 

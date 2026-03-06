@@ -367,6 +367,22 @@ export const Dashboard = () => {
                 <Button
                   variant="outlined"
                   size="small"
+                  onClick={() => setIsLinksOpen(true)}
+                  disabled={loading}
+                  aria-label="Directory links"
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    minHeight: { xs: 36, sm: 32 },
+                    fontSize: '0.8rem',
+                    px: 1.5,
+                  }}
+                >
+                  Links
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
                   onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
                   endIcon={<KeyboardArrowDownIcon />}
                   disabled={loading}
@@ -817,6 +833,11 @@ export const Dashboard = () => {
         currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
         onUpdate={updateProfile}
         onUpload={uploadAvatar}
+        onManageLinks={() => {
+          setEditFocusBio(false);
+          setIsEditOpen(false);
+          setIsLinksOpen(true);
+        }}
         onAvatarChanged={() => {
           void refresh();
           void refreshAvatar();

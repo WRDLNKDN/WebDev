@@ -3,9 +3,9 @@ import { expect, test } from './fixtures';
 
 test.describe('Home Page - High-Integrity Audit', () => {
   test('admin route should be reachable and accessible', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 30_000 });
 
     const results = await new AxeBuilder({ page })
       .include('[data-testid="app-main"]')

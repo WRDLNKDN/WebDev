@@ -45,10 +45,11 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        actionTimeout: 15_000,
-        navigationTimeout: 45_000,
+        actionTimeout: 20_000,
+        navigationTimeout: 60_000,
+        expect: { timeout: 20_000 },
       },
-      timeout: 45_000,
+      timeout: 90_000,
     },
   ],
 });

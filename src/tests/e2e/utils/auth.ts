@@ -2,21 +2,15 @@ import type { BrowserContext, Page } from '@playwright/test';
 
 export const USER_ID = '11111111-1111-4111-8111-111111111111';
 
-export async function seedSignedInSession(
-  context: BrowserContext,
-  {
-    email = 'member@example.com',
-    handle = 'member',
-    isAdmin = false,
-  }: {
+export function getStubSession(
+  opts: {
     email?: string;
     handle?: string;
-    isAdmin?: boolean;
   } = {},
 ) {
+  const { email = 'member@example.com', handle = 'member' } = opts;
   const now = Math.floor(Date.now() / 1000);
-
-  const session = {
+  return {
     access_token: 'e2e-access-token',
     refresh_token: 'e2e-refresh-token',
     token_type: 'bearer',
@@ -37,6 +31,18 @@ export async function seedSignedInSession(
       updated_at: new Date().toISOString(),
     },
   };
+}
+
+export async function seedSignedInSession(
+  context: BrowserContext,
+  opts: {
+    email?: string;
+    handle?: string;
+    isAdmin?: boolean;
+  } = {},
+) {
+  const { isAdmin = false } = opts;
+  const session = getStubSession(opts);
 
   await context.addInitScript((payload) => {
     const sessionStr = JSON.stringify(payload);
@@ -49,14 +55,17 @@ export async function seedSignedInSession(
   }, session);
 
   return {
-    stubAdminRpc: async (page: Page) => {
-      await page.route('**/rest/v1/rpc/is_admin', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(isAdmin),
-        });
-      });
-    },
+    stubAdminRpc: (p: Page) => stubAdminRpc(p, isAdmin),
   };
+}
+
+/** Stub is_admin RPC so Navbar/guards treat the user as (non-)admin. Use with or without seedSignedInSession. */
+export async function stubAdminRpc(page: Page, isAdmin = false): Promise<void> {
+  await page.route('**/rest/v1/rpc/is_admin', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(isAdmin),
+    });
+  });
 }

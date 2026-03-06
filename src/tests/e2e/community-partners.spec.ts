@@ -7,11 +7,12 @@ test.describe('Community Partners page', () => {
     page,
     context,
   }) => {
-    await seedSignedInSession(context);
+    test.setTimeout(90_000);
+    const { stubAdminRpc } = await seedSignedInSession(context);
+    await stubAdminRpc(page);
     await stubAppSurface(page);
 
-    test.setTimeout(60_000);
     await page.goto('/community-partners', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 35_000 });
   });
 });

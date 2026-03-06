@@ -37,6 +37,7 @@ import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget'
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
+import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
@@ -485,11 +486,7 @@ export const Dashboard = () => {
               <TextField
                 size="small"
                 fullWidth
-                value={
-                  typeof window !== 'undefined'
-                    ? `${window.location.origin}/p/${shareToken}`
-                    : `/p/${shareToken}`
-                }
+                value={buildShareProfileUrl(shareToken)}
                 sx={{
                   '& .MuiInputBase-input': {
                     fontSize: '0.875rem',
@@ -504,10 +501,7 @@ export const Dashboard = () => {
                   size="small"
                   startIcon={<ContentCopyIcon />}
                   onClick={async () => {
-                    const url =
-                      typeof window !== 'undefined'
-                        ? `${window.location.origin}/p/${shareToken}`
-                        : `${shareToken}`;
+                    const url = buildShareProfileUrl(shareToken);
                     try {
                       await navigator.clipboard.writeText(url);
                       setSnack('Link copied to clipboard.');

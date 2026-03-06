@@ -134,7 +134,7 @@ async function fetchGiphy(
 }
 
 /** User-facing message when GIPHY/API key/rate-limit errors should not be shown raw. */
-export function normalizeGifErrorMessage(message: string): string {
+export const normalizeGifErrorMessage = (message: string): string => {
   const lower = message.toLowerCase();
   if (
     lower.includes('api key') ||
@@ -152,7 +152,7 @@ export function normalizeGifErrorMessage(message: string): string {
     return 'GIF search is temporarily unavailable. You’ve hit the hourly limit—try again later.';
   }
   return message;
-}
+};
 
 /** User-facing message when Tenor/API key errors should not be shown raw. */
 export function normalizeGifErrorMessage(message: string): string {

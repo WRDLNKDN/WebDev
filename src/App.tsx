@@ -123,6 +123,11 @@ const ProjectPage = lazy(async () => {
   return { default: m.ProjectPage };
 });
 
+const PublicProfilePage = lazy(async () => {
+  const m = await import('./pages/profile/PublicProfilePage');
+  return { default: m.PublicProfilePage };
+});
+
 // --- SYSTEM UPGRADE: THE DIVERGENCE SECTOR ---
 // The dedicated Game Page (Easter Egg)
 const DivergencePage = lazy(async () => {
@@ -384,6 +389,10 @@ const App = () => {
                   {/* --- Public Access (see docs/architecture/information-architecture.md) --- */}
                   <Route path="/" element={<Home />} />
                   <Route path="/profile/:handle" element={<LandingPage />} />
+                  <Route
+                    path="/p/:shareToken"
+                    element={<PublicProfilePage />}
+                  />
                   <Route path="/projects/:id" element={<ProjectPage />} />
                   <Route path="/u/:handle" element={<RedirectUToProfile />} />
                   <Route path="/home" element={<Home />} />

@@ -132,6 +132,7 @@ export const Dashboard = () => {
     deleteProject,
     reorderProjects,
     uploadResume,
+    deleteResume,
     retryResumeThumbnail,
     updating,
   } = useProfile();
@@ -484,7 +485,11 @@ export const Dashboard = () => {
               <TextField
                 size="small"
                 fullWidth
-                value={`https://wrdlnkdn.com/p/${shareToken}`}
+                value={
+                  typeof window !== 'undefined'
+                    ? `${window.location.origin}/p/${shareToken}`
+                    : `/p/${shareToken}`
+                }
                 sx={{
                   '& .MuiInputBase-input': {
                     fontSize: '0.875rem',
@@ -499,7 +504,10 @@ export const Dashboard = () => {
                   size="small"
                   startIcon={<ContentCopyIcon />}
                   onClick={async () => {
-                    const url = `https://wrdlnkdn.com/p/${shareToken}`;
+                    const url =
+                      typeof window !== 'undefined'
+                        ? `${window.location.origin}/p/${shareToken}`
+                        : `${shareToken}`;
                     try {
                       await navigator.clipboard.writeText(url);
                       setSnack('Link copied to clipboard.');
@@ -706,6 +714,15 @@ export const Dashboard = () => {
                       });
                     }}
                     retryThumbnailBusy={updating}
+                    onDelete={async () => {
+                      try {
+                        await deleteResume();
+                        void refresh();
+                      } catch (e) {
+                        setSnack(toMessage(e));
+                      }
+                    }}
+                    deleteBusy={updating}
                     isOwner
                   />
                 ) : null}

@@ -154,20 +154,6 @@ export const normalizeGifErrorMessage = (message: string): string => {
   return message;
 };
 
-/** User-facing message when Tenor/API key errors should not be shown raw. */
-export function normalizeGifErrorMessage(message: string): string {
-  const lower = message.toLowerCase();
-  if (
-    lower.includes('api key') ||
-    lower.includes('apikey') ||
-    lower.includes('invalid key') ||
-    lower.includes('not valid')
-  ) {
-    return 'GIF search is unavailable right now.';
-  }
-  return message;
-}
-
 export async function getTrendingChatGifs(
   limit = 24,
   contentFilter: GifContentFilter = 'medium',

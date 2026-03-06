@@ -907,32 +907,74 @@ export const Directory = () => {
               bgcolor: 'rgba(18,22,36,0.7)',
               border: '1px dashed rgba(255,255,255,0.1)',
             }}
+            data-testid="directory-empty-state"
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5 }}>
               {hasActiveFilters ? 'No members found' : 'No results'}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 3 }}>
               {hasActiveFilters
-                ? 'No members match your filters. Try adjusting them.'
+                ? 'No members match your filters.'
                 : 'The directory is empty.'}
             </Typography>
-            <Button
-              component={RouterLink}
-              to="/join"
-              variant="contained"
-              size="large"
-              sx={{
-                bgcolor: '#3b82f6',
-                fontWeight: 700,
-                textTransform: 'none',
-                px: 4,
-                py: 1.25,
-                borderRadius: 2,
-                '&:hover': { bgcolor: '#2563eb' },
-              }}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              justifyContent="center"
+              alignItems="center"
+              flexWrap="wrap"
             >
-              Join the Community
-            </Button>
+              {hasActiveFilters && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => {
+                    updateUrl({
+                      q: '',
+                      primary_industry: '',
+                      secondary_industry: '',
+                      location: '',
+                      connection_status: '',
+                      skills: '',
+                    });
+                    setShowSecondaryIndustryFilter(false);
+                  }}
+                  sx={{
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    px: 4,
+                    py: 1.25,
+                    borderRadius: 2,
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'rgba(255,255,255,0.9)',
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      bgcolor: 'rgba(255,255,255,0.06)',
+                    },
+                  }}
+                  data-testid="directory-clear-filters"
+                >
+                  Clear filters
+                </Button>
+              )}
+              <Button
+                component={RouterLink}
+                to="/join"
+                variant="contained"
+                size="large"
+                sx={{
+                  bgcolor: '#3b82f6',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  px: 4,
+                  py: 1.25,
+                  borderRadius: 2,
+                  '&:hover': { bgcolor: '#2563eb' },
+                }}
+              >
+                Join the Community
+              </Button>
+            </Stack>
           </Paper>
         ) : (
           <Stack spacing={{ xs: 1.25, md: 1.75 }}>

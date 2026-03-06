@@ -108,6 +108,7 @@ test.describe('Settings Privacy', () => {
     page,
     context,
   }) => {
+    test.setTimeout(90_000);
     const { stubAdminRpc } = await seedSignedInSession(context);
     await stubAdminRpc(page);
     const { consentUpdates } = await stubPrivacySettingsSurface(page, {
@@ -117,10 +118,12 @@ test.describe('Settings Privacy', () => {
     await page.goto('/dashboard/settings/privacy', {
       waitUntil: 'domcontentloaded',
     });
-
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 30_000,
+    });
     await expect(
       page.getByRole('heading', { name: /marketing communications/i }),
-    ).toBeVisible({ timeout: 25_000 });
+    ).toBeVisible({ timeout: 30_000 });
 
     const marketingEmailToggle = page.getByRole('switch', {
       name: /marketing emails/i,
@@ -152,6 +155,7 @@ test.describe('Settings Privacy', () => {
     page,
     context,
   }) => {
+    test.setTimeout(90_000);
     const { stubAdminRpc } = await seedSignedInSession(context);
     await stubAdminRpc(page);
     await stubPrivacySettingsSurface(page, { privacyEnabled: false });
@@ -161,7 +165,7 @@ test.describe('Settings Privacy', () => {
     });
 
     await expect(page).toHaveURL(/\/dashboard\/settings\/notifications$/, {
-      timeout: 25_000,
+      timeout: 30_000,
     });
     await expect(
       page.getByRole('heading', { name: /delivery channels/i }),

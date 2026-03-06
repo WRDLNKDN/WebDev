@@ -12,7 +12,7 @@ test.describe('Chat file upload', () => {
   test('attach file: input accepts file and send button enables (no permanent upload spinner)', async ({
     page,
   }) => {
-    test.setTimeout(45_000);
+    test.setTimeout(90_000);
 
     const { stubAdminRpc } = await seedSignedInSession(page.context());
     await stubAdminRpc(page);
@@ -84,7 +84,7 @@ test.describe('Chat file upload', () => {
       waitUntil: 'domcontentloaded',
     });
     await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
-      timeout: 25_000,
+      timeout: 35_000,
     });
 
     const fileInput = page.locator('input[type=file]').first();

@@ -11,6 +11,7 @@ import {
 } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
 import { getLinkType, normalizeGoogleUrl } from '../lib/portfolio/linkUtils';
+import { getResumeStoragePathFromPublicUrl } from '../lib/portfolio/resumeStorage';
 import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
@@ -790,6 +791,49 @@ export function useProfile() {
     }
   };
 
+  /** Remove resume from storage and clear profile. Fails with deterministic message on error. */
+  const deleteResume = async () => {
+    try {
+      setUpdating(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('You need to sign in to delete your resume.');
+      }
+      const resumeUrl =
+        typeof profile?.resume_url === 'string' ? profile.resume_url : '';
+      if (!resumeUrl) {
+        throw new Error('No resume found to delete.');
+      }
+      // Storage path: "userId/resume.ext" (see uploadResume)
+      const storagePath = getResumeStoragePathFromPublicUrl(resumeUrl);
+      if (storagePath) {
+        const { error } = await supabase.storage
+          .from('resumes')
+          .remove([storagePath]);
+        if (error) throw error;
+      }
+      const currentCreds = profile?.nerd_creds ?? {};
+      await updateProfile({
+        resume_url: null,
+        nerd_creds: {
+          ...currentCreds,
+          resume_thumbnail_url: undefined,
+          resume_thumbnail_status: undefined,
+          resume_thumbnail_error: null,
+          resume_thumbnail_updated_at: undefined,
+          resume_thumbnail_source_extension: undefined,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      throw new Error('Unable to delete resume. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const retryResumeThumbnail = async () => {
     try {
       setUpdating(true);
@@ -895,6 +939,7 @@ export function useProfile() {
     deleteProject,
     reorderProjects,
     uploadResume,
+    deleteResume,
     retryResumeThumbnail,
   };
 }

@@ -3,6 +3,7 @@
  * Uses Tenor API via gifApi.
  */
 
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   Box,
@@ -11,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   InputAdornment,
   Link,
   TextField,
@@ -19,6 +21,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import {
   getTrendingChatGifs,
+  normalizeGifErrorMessage,
   searchChatGifs,
   type GifContentFilter,
 } from '../../lib/chat/gifApi';
@@ -63,9 +66,9 @@ export const GifPickerDialog = ({
         setResults(gifs);
       } catch (e) {
         setResults([]);
-        setError(
-          e instanceof Error ? e.message : 'Could not load GIFs. Try again.',
-        );
+        const raw =
+          e instanceof Error ? e.message : 'Could not load GIFs. Try again.';
+        setError(normalizeGifErrorMessage(raw));
       } finally {
         setLoading(false);
       }
@@ -101,6 +104,12 @@ export const GifPickerDialog = ({
       fullWidth
       maxWidth="sm"
       fullScreen={false}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
       PaperProps={{
         sx: {
           bgcolor: 'background.paper',
@@ -111,7 +120,24 @@ export const GifPickerDialog = ({
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>Choose a GIF</DialogTitle>
+      <DialogTitle
+        sx={{
+          pb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span>Choose a GIF</span>
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          size="small"
+          sx={{ ml: 1 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>
         <TextField
           size="small"

@@ -1,5 +1,21 @@
 import type { Page } from '@playwright/test';
-import { USER_ID } from './auth';
+import { getStubSession, USER_ID } from './auth';
+
+// Stub auth token (refresh) so client doesn't clear session on refresh
+async function stubAuthToken(page: Page) {
+  const session = getStubSession();
+  await page.route('**/auth/v1/token**', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(session),
+    });
+  });
+}
 
 const STUB_PROFILE = {
   id: USER_ID,
@@ -15,7 +31,9 @@ const STUB_PROFILE = {
 };
 
 export async function stubAppSurface(page: Page) {
-  // ---- Notifications (before rest catch-all so it wins) ----
+  // Register specific routes FIRST so they win (Playwright: first matching route wins).
+  await stubAuthToken(page);
+
   await page.route('**/rest/v1/notifications*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -25,53 +43,15 @@ export async function stubAppSurface(page: Page) {
     });
   });
 
-  // ---- Catch ALL API calls ----
-  await page.route('**/api/**', async (route) => {
-    const url = route.request().url();
-    const method = route.request().method();
-
-    if (url.includes('auth-callback-logs')) {
-      return route.fallback();
-    }
-
-    if (method !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, data: [] }),
-    });
-  });
-
-  // ---- Supabase REST catch-all ----
-  await page.route('**/rest/v1/**', async (route) => {
-    const method = route.request().method();
-
-    if (method !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([]),
-    });
-  });
-
-  // ---- Profiles stub (RequireOnboarded, dashboard) ----
   await page.route('**/rest/v1/profiles*', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: { 'content-range': '0-0/1' },
       body: JSON.stringify([STUB_PROFILE]),
     });
   });
 
-  // ---- Feature flags LAST so it wins (RequireFeatureFlag allows directory, etc.) ----
   await page.route('**/rest/v1/feature_flags*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -82,6 +62,46 @@ export async function stubAppSurface(page: Page) {
         { key: 'store', enabled: false },
         { key: 'chat', enabled: false },
       ]),
+    });
+  });
+
+  await page.route('**/rest/v1/**', async (route) => {
+    const method = route.request().method();
+    const url = route.request().url();
+    if (method !== 'GET') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    if (url.includes('profiles')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-0/1' },
+        body: JSON.stringify([STUB_PROFILE]),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
+  await page.route('**/api/**', async (route) => {
+    const url = route.request().url();
+    const method = route.request().method();
+    if (url.includes('auth-callback-logs')) {
+      return route.fallback();
+    }
+    if (method !== 'GET') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, data: [] }),
     });
   });
 }

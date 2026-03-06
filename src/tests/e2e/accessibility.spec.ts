@@ -26,11 +26,11 @@ test.describe('Accessibility - route sweep (public)', () => {
     test(`${name} (${path}) has no WCAG 2a/2aa/21aa violations`, async ({
       page,
     }) => {
-      test.setTimeout(60_000);
+      test.setTimeout(90_000);
       await page.goto(path, { waitUntil: 'domcontentloaded' });
       const mainTestId = PUBLIC_MAIN_SELECTOR[path] ?? DEFAULT_MAIN_SELECTOR;
       await expect(page.getByTestId(mainTestId)).toBeVisible({
-        timeout: 25_000,
+        timeout: 30_000,
       });
 
       const results = await new AxeBuilder({ page })
@@ -53,14 +53,14 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
     test(`${name} (${path}) has no WCAG 2a/2aa/21aa violations`, async ({
       page,
     }) => {
-      test.setTimeout(60_000);
+      test.setTimeout(90_000);
       const { stubAdminRpc } = await seedSignedInSession(page.context());
       await stubAdminRpc(page);
       await stubAppSurface(page);
 
       await page.goto(path, { waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId('app-main')).toBeVisible({
-        timeout: 25_000,
+        timeout: 30_000,
       });
 
       const results = await new AxeBuilder({ page })

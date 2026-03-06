@@ -37,6 +37,7 @@ import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget'
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
+import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
@@ -132,6 +133,7 @@ export const Dashboard = () => {
     deleteProject,
     reorderProjects,
     uploadResume,
+    deleteResume,
     retryResumeThumbnail,
     updating,
   } = useProfile();
@@ -484,7 +486,7 @@ export const Dashboard = () => {
               <TextField
                 size="small"
                 fullWidth
-                value={`https://wrdlnkdn.com/p/${shareToken}`}
+                value={buildShareProfileUrl(shareToken)}
                 sx={{
                   '& .MuiInputBase-input': {
                     fontSize: '0.875rem',
@@ -499,7 +501,7 @@ export const Dashboard = () => {
                   size="small"
                   startIcon={<ContentCopyIcon />}
                   onClick={async () => {
-                    const url = `https://wrdlnkdn.com/p/${shareToken}`;
+                    const url = buildShareProfileUrl(shareToken);
                     try {
                       await navigator.clipboard.writeText(url);
                       setSnack('Link copied to clipboard.');
@@ -706,6 +708,15 @@ export const Dashboard = () => {
                       });
                     }}
                     retryThumbnailBusy={updating}
+                    onDelete={async () => {
+                      try {
+                        await deleteResume();
+                        void refresh();
+                      } catch (e) {
+                        setSnack(toMessage(e));
+                      }
+                    }}
+                    deleteBusy={updating}
                     isOwner
                   />
                 ) : null}

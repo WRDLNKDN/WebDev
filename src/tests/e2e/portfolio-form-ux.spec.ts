@@ -78,7 +78,10 @@ test.describe('Add Project dialog UX', () => {
 
     const nameField = dialog.getByPlaceholder('Enter project name');
     await nameField.hover();
-    await expect(nameField).toHaveAttribute('title', /enter project name/i);
+    await expect(nameField).toHaveAttribute(
+      'title',
+      /internal title shown on your profile card/i,
+    );
 
     const urlField = dialog.getByPlaceholder(
       /https:\/\/example\.com\/file\.pdf/i,
@@ -86,7 +89,7 @@ test.describe('Add Project dialog UX', () => {
     await urlField.hover();
     await expect(urlField).toHaveAttribute(
       'title',
-      /https:\/\/example\.com\/file\.pdf/i,
+      /public link to your artifact/i,
     );
   });
 
@@ -107,7 +110,7 @@ test.describe('Add Project dialog UX', () => {
       /https:\/\/example\.com\/file\.pdf/i,
     );
     const urlHelper = dialog.getByText(
-      /Supported: image, PDF, document, spreadsheet, text, or Google Docs\/Sheets\/Slides links\./i,
+      /Use any public URL \(https:\/\/ or http:\/\/\)\. We verify accessibility when saving\./i,
     );
 
     const categoriesFieldBox = await categoriesField.boundingBox();

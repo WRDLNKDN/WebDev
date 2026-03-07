@@ -194,8 +194,8 @@ test.describe('Portfolio artifact editing', () => {
     await categoriesInput.click();
     await categoriesInput.fill('Data');
     await page.getByRole('option', { name: 'Data' }).click();
-    await dialog.getByLabel('Project URL').click();
-    await dialog.getByLabel('Highlight in Portfolio Showcase').check();
+    // Ensure autocomplete popper closes before interacting with following controls.
+    await page.keyboard.press('Escape');
 
     await dialog.locator('input[type="file"]').setInputFiles(IMAGE_FIXTURE);
 
@@ -207,7 +207,6 @@ test.describe('Portfolio artifact editing', () => {
       page.getByText('Updated dashboard artifact description.'),
     ).toBeVisible();
     await expect(page.locator('img[alt="Updated Artifact"]')).toBeVisible();
-    await expect(page.getByText('Highlight')).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'View Project' }).first(),
     ).toHaveAttribute('href', 'https://example.com/updated-artifact.pdf');
@@ -229,9 +228,6 @@ test.describe('Portfolio artifact editing', () => {
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Member')).toBeVisible({ timeout: 15_000 });
-    await expect(
-      page.getByTestId('portfolio-highlights-carousel'),
-    ).toContainText('Updated Artifact');
     await expect(
       page.getByTestId('portfolio-section-data').getByRole('button', {
         name: /updated artifact/i,

@@ -6,13 +6,13 @@ const isCI = process.env.CI === 'true';
 
 export default defineConfig({
   testDir: './src/tests/e2e',
-  fullyParallel: true, // run tests within a file in parallel, not just files
+  fullyParallel: !isCI, // CI stability over speed; local stays parallel
 
   timeout: 30_000, // fail faster on genuinely broken tests
   expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 1, // 1 local retry for connection/setup flakiness
-  workers: 4,
+  workers: isCI ? 1 : 4,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 

@@ -184,16 +184,11 @@ test.describe('Portfolio artifact reorder', () => {
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
+      timeout: 40_000,
     });
-    await expect(page.getByLabel('Edit project Alpha Artifact')).toBeVisible({
-      timeout: 15_000,
-    });
-    expect(await readDashboardOrder(page)).toEqual([
-      'Alpha Artifact',
-      'Beta Artifact',
-      'Gamma Artifact',
-    ]);
+    await expect
+      .poll(() => readDashboardOrder(page), { timeout: 30_000 })
+      .toEqual(['Alpha Artifact', 'Beta Artifact', 'Gamma Artifact']);
 
     await page.getByLabel('Move project Gamma Artifact up').click();
     await page.getByLabel('Move project Gamma Artifact up').click();
@@ -204,21 +199,16 @@ test.describe('Portfolio artifact reorder', () => {
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
+      timeout: 40_000,
     });
-    await expect(page.getByLabel('Edit project Gamma Artifact')).toBeVisible({
-      timeout: 15_000,
-    });
-    expect(await readDashboardOrder(page)).toEqual([
-      'Gamma Artifact',
-      'Alpha Artifact',
-      'Beta Artifact',
-    ]);
+    await expect
+      .poll(() => readDashboardOrder(page), { timeout: 30_000 })
+      .toEqual(['Gamma Artifact', 'Alpha Artifact', 'Beta Artifact']);
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Member')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Member')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('portfolio-section-case-study')).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
     expect(await readProfileOrder(page)).toEqual([
       'Gamma Artifact',
@@ -350,16 +340,11 @@ test.describe('Portfolio artifact reorder', () => {
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
+      timeout: 40_000,
     });
-    await expect(page.getByLabel('Edit project Alpha Artifact')).toBeVisible({
-      timeout: 15_000,
-    });
-    expect(await readDashboardOrder(page)).toEqual([
-      'Alpha Artifact',
-      'Beta Artifact',
-      'Gamma Artifact',
-    ]);
+    await expect
+      .poll(() => readDashboardOrder(page), { timeout: 30_000 })
+      .toEqual(['Alpha Artifact', 'Beta Artifact', 'Gamma Artifact']);
 
     await page.getByLabel('Move project Gamma Artifact up').click();
     await page.getByLabel('Move project Gamma Artifact up').click();

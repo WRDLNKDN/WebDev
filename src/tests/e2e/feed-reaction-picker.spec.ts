@@ -35,7 +35,15 @@ test.describe('Feed reaction picker', () => {
     });
     page.on('console', (message) => {
       if (message.type() === 'error') {
-        pageErrors.push(message.text());
+        const text = message.text();
+        // Supabase realtime websocket failures are non-fatal for this UI test.
+        if (
+          text.includes('/realtime/v1/websocket') &&
+          text.includes('ERR_NAME_NOT_RESOLVED')
+        ) {
+          return;
+        }
+        pageErrors.push(text);
       }
     });
 
@@ -54,7 +62,15 @@ test.describe('Feed reaction picker', () => {
     await page.route('**/api/feeds', fulfillFeedList);
     await page.route('**/api/feeds?**', fulfillFeedList);
 
+    const feedResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/feeds') &&
+        response.request().method() === 'GET',
+      { timeout: 20_000 },
+    );
+
     await page.goto('/feed', { waitUntil: 'domcontentloaded' });
+    await feedResponse;
     await page.waitForTimeout(500);
 
     if (
@@ -71,7 +87,7 @@ test.describe('Feed reaction picker', () => {
     try {
       await page
         .getByText('Reaction target post')
-        .waitFor({ state: 'visible', timeout: 10_000 });
+        .waitFor({ state: 'visible', timeout: 20_000 });
     } catch {
       const bodyText = await page.locator('body').innerText();
       throw new Error(

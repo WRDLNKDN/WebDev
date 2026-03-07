@@ -3,8 +3,7 @@ import { seedSignedInSession } from './utils/auth';
 import { USER_ID } from './utils/auth';
 import { stubAppSurface } from './utils/stubAppSurface';
 
-// fixme: authenticated E2E (session/profile stub) fails; unit tests cover resume delete logic
-test.describe.fixme('Dashboard resume delete', () => {
+test.describe('Dashboard resume delete', () => {
   const STUB_PROFILE_WITH_RESUME = {
     id: USER_ID,
     handle: 'member',
@@ -16,6 +15,8 @@ test.describe.fixme('Dashboard resume delete', () => {
     industry: 'Technology and Software',
     secondary_industry: null,
     nerd_creds: { skills: ['Testing'] },
+    socials: [],
+    industries: null,
     resume_url:
       'https://example.supabase.co/storage/v1/object/public/resumes/user-id/resume.pdf',
   };
@@ -26,28 +27,29 @@ test.describe.fixme('Dashboard resume delete', () => {
     test.setTimeout(60_000);
     const { stubAdminRpc } = await seedSignedInSession(page.context());
     await stubAdminRpc(page);
-    // Register BEFORE stubAppSurface so this wins (Playwright: first match wins)
+    await stubAppSurface(page);
+    // Register AFTER stubAppSurface so this profile (with resume_url) wins
     await page.route('**/rest/v1/profiles*', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
+          headers: { 'content-range': '0-0/1' },
           body: JSON.stringify([STUB_PROFILE_WITH_RESUME]),
         });
         return;
       }
       await route.fulfill({ status: 204, body: '' });
     });
-    await stubAppSurface(page);
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
       timeout: 25_000,
     });
 
-    await expect(page.getByRole('heading', { name: /portfolio/i })).toBeVisible(
-      { timeout: 10_000 },
-    );
+    await expect(page.getByText('PORTFOLIO')).toBeVisible({
+      timeout: 15_000,
+    });
     const deleteResumeBtn = page.getByRole('button', {
       name: /delete resume/i,
     });

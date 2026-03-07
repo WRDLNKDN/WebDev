@@ -1,4 +1,3 @@
-import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
@@ -42,8 +41,8 @@ import {
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
-/** Button label for adding a link; icon is rendered separately to avoid duplicate plus text. */
-export const ADD_TO_LIST_BUTTON_LABEL = 'Add to List';
+/** Button label for adding a link (single plus; no startIcon to avoid duplicate plus). */
+export const ADD_TO_LIST_BUTTON_LABEL = '+ Add to List';
 
 interface EditLinksDialogProps {
   open: boolean;
@@ -438,10 +437,10 @@ export const EditLinksDialog = ({
 
                 <Button
                   variant="outlined"
-                  startIcon={<AddIcon />}
                   onClick={handleAddLink}
                   disabled={!canAddLink}
                   sx={{ alignSelf: 'flex-start' }}
+                  aria-label={ADD_TO_LIST_BUTTON_LABEL}
                 >
                   {ADD_TO_LIST_BUTTON_LABEL}
                 </Button>

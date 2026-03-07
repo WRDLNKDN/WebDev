@@ -61,7 +61,8 @@ export const filterSelectInputSx = {
 
 const DIALOG_CONTROL_HEIGHT = 40;
 
-/** Select sx for dialogs: same height, border, bg, and focus as Directory dropdowns. Apply to Select, not FormControl. */
+/** Select sx for dialogs: same height, border, bg, and focus as Directory dropdowns. Apply to Select, not FormControl.
+ * Includes fix for ghosted/overlapping text: only .MuiSelect-select is visible; native input is hidden. */
 export const dialogSelectSx = {
   height: DIALOG_CONTROL_HEIGHT,
   minHeight: DIALOG_CONTROL_HEIGHT,
@@ -84,6 +85,21 @@ export const dialogSelectSx = {
     py: '9px',
     pl: 1.75,
     pr: '32px !important',
+    position: 'relative',
+    zIndex: 1,
+    WebkitTextFillColor: 'currentColor',
+  },
+  /* Prevent ghosted/duplicate text: native input used for form value is hidden; display comes only from .MuiSelect-select */
+  '& input': {
+    opacity: 0,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '100%',
+    height: '100%',
+    margin: 0,
+    padding: 0,
+    pointerEvents: 'none',
   },
   '& .MuiSelect-icon': {
     color: 'rgba(255,255,255,0.5)',

@@ -19,6 +19,9 @@ Overview of automated tests and how they align with documentation.
 See [PR testing steps](./pr-testing-steps.md) for pre-merge checklist; preferred
 e2e command there is `npm run test:e2e`.
 
+For manual UAT sign-off of Dashboard modal and Resume card fixes, see
+[UAT checklist](./UAT_CHECKLIST.md).
+
 ## E2E (Playwright)
 
 All e2e specs live under `src/tests/e2e/`. By default they run on **Chromium**

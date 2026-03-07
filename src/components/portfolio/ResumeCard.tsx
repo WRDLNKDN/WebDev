@@ -51,6 +51,16 @@ export const ResumeCard = ({
   const hasThumbnail = Boolean(thumbnailUrl);
   const isPdf = typeof url === 'string' && url.toLowerCase().includes('.pdf');
   const resumeTitle = getResumeDisplayName({ fileName, url });
+  const errorSuggestsUnsupported =
+    typeof thumbnailError === 'string' &&
+    (thumbnailError.toLowerCase().includes('not supported') ||
+      thumbnailError.toLowerCase().includes('unsupported') ||
+      thumbnailError.toLowerCase().includes('file type'));
+  const showRetry =
+    isOwner &&
+    thumbnailStatus === 'failed' &&
+    onRetryThumbnail &&
+    !errorSuggestsUnsupported;
 
   const handleDeleteClick = () => setConfirmDeleteOpen(true);
   const handleConfirmDelete = async () => {
@@ -85,30 +95,6 @@ export const ResumeCard = ({
         }}
       >
         <>
-          {isOwner && onDelete && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                zIndex: 1,
-              }}
-            >
-              <IconButton
-                size="small"
-                onClick={handleDeleteClick}
-                disabled={deleteBusy || retryThumbnailBusy}
-                aria-label="Delete resume"
-                sx={{
-                  bgcolor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          )}
           <Box
             sx={{
               width: '100%',
@@ -159,9 +145,11 @@ export const ResumeCard = ({
                   <>
                     <CheckCircleOutlineIcon sx={{ fontSize: 42, mb: 1 }} />
                     <Typography variant="caption" color="text.secondary">
-                      Preview failed. Open the document directly.
+                      {errorSuggestsUnsupported
+                        ? 'Preview not available for this file type.'
+                        : 'Preview failed. Open the document directly.'}
                     </Typography>
-                    {thumbnailError && (
+                    {thumbnailError && !errorSuggestsUnsupported && (
                       <Typography
                         variant="caption"
                         color="text.secondary"
@@ -229,25 +217,64 @@ export const ResumeCard = ({
             target="_blank"
             rel="noopener noreferrer"
             sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 1,
               mt: 2,
-              color: 'inherit',
-              borderColor: 'currentColor',
-              textTransform: 'none',
-              fontWeight: 600,
             }}
           >
-            View Document
-          </Button>
-          {isOwner && thumbnailStatus === 'failed' && onRetryThumbnail && (
-            <Button
-              variant="text"
-              sx={{ mt: 1, color: 'inherit' }}
-              disabled={retryThumbnailBusy}
-              onClick={onRetryThumbnail}
-            >
-              {retryThumbnailBusy ? 'Retrying...' : 'Retry Preview'}
-            </Button>
-          )}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                size="small"
+                href={url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: 'inherit',
+                  borderColor: 'currentColor',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                View Document
+              </Button>
+              {showRetry && (
+                <Button
+                  variant="text"
+                  size="small"
+                  sx={{ color: 'inherit' }}
+                  disabled={retryThumbnailBusy}
+                  onClick={onRetryThumbnail}
+                >
+                  {retryThumbnailBusy ? 'Retrying…' : 'Retry Preview'}
+                </Button>
+              )}
+            </Box>
+            {isOwner && onDelete && (
+              <Tooltip title="Delete resume">
+                <IconButton
+                  size="small"
+                  onClick={handleDeleteClick}
+                  disabled={deleteBusy || retryThumbnailBusy}
+                  aria-label="Delete resume"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    border: '1px solid rgba(255,255,255,0.28)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,77,77,0.25)',
+                      color: '#ffe5e5',
+                      borderColor: 'rgba(255,77,77,0.75)',
+                    },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </>
       </Paper>
 

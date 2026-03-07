@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "--- BOOT SEQUENCE (Environment Optimization) ---": "",
-    "dev": "concurrently -n \"VITE,SUPA,API,HEALTH\" -c \"blue,green,magenta,cyan\" \"npm run vite\" \"npm run supabase:start\" \"npm run api\" \"npm run health:launch\"",
+    "dev": "npm run build && concurrently -n \"VITE,SUPA,API,HEALTH\" -c \"blue,green,magenta,cyan\" \"npm run vite\" \"npm run supabase:start\" \"npm run api\" \"npm run health:launch\"",
     "health:launch": "bash ./scripts/health-check.sh",
     "launch": "npm run health:launch",
     "vite": "vite",

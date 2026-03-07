@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
   Box,
@@ -11,11 +12,11 @@ import {
   FormControl,
   FormHelperText,
   IconButton,
-  InputLabel,
   MenuItem,
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -88,6 +89,33 @@ export const EditLinksDialog = ({
   const [newUrl, setNewUrl] = useState('');
   const [newLabel, setNewLabel] = useState('');
   const [addAttempted, setAddAttempted] = useState(false);
+
+  const FieldLabel = ({
+    text,
+    tooltip,
+    required = false,
+  }: {
+    text: string;
+    tooltip: string;
+    required?: boolean;
+  }) => (
+    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          textTransform: 'uppercase',
+          letterSpacing: 0.3,
+          color: 'text.secondary',
+        }}
+      >
+        {text}
+        {required ? ' *' : ''}
+      </Typography>
+      <Tooltip title={tooltip}>
+        <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+      </Tooltip>
+    </Stack>
+  );
 
   const availablePlatforms = useMemo(
     () =>
@@ -237,6 +265,7 @@ export const EditLinksDialog = ({
         fullWidth
         aria-label="Manage Links"
       >
+        <DialogTitle sx={{ pr: 6, fontWeight: 700 }}>Manage Links</DialogTitle>
         <IconButton
           aria-label="Close"
           onClick={handleRequestClose}
@@ -244,7 +273,7 @@ export const EditLinksDialog = ({
         >
           <CloseIcon />
         </IconButton>
-        <DialogContent sx={{ pt: 5 }}>
+        <DialogContent sx={{ pt: 2.5 }}>
           <Stack spacing={4} sx={{ mt: 1 }}>
             {saveError && (
               <Alert severity="error" onClose={() => setSaveError(null)}>
@@ -270,11 +299,12 @@ export const EditLinksDialog = ({
               <Stack spacing={2}>
                 <Stack direction="row" spacing={2}>
                   <FormControl fullWidth size="small" error={categoryError}>
-                    <InputLabel id="add-link-category" shrink>
-                      Category
-                    </InputLabel>
+                    <FieldLabel
+                      text="Category"
+                      required
+                      tooltip="Choose the link grouping used on your profile."
+                    />
                     <Select
-                      labelId="add-link-category"
                       value={newCategory}
                       displayEmpty
                       renderValue={(v) => v || 'Choose Category'}
@@ -304,11 +334,12 @@ export const EditLinksDialog = ({
                     error={platformError}
                     disabled={!newCategory}
                   >
-                    <InputLabel id="add-link-platform" shrink>
-                      Platform
-                    </InputLabel>
+                    <FieldLabel
+                      text="Platform"
+                      required
+                      tooltip="Select the service this URL points to."
+                    />
                     <Select
-                      labelId="add-link-platform"
                       value={newPlatform}
                       displayEmpty
                       renderValue={(v) => v || 'Select platform'}
@@ -340,39 +371,51 @@ export const EditLinksDialog = ({
                   </FormControl>
                 </Stack>
 
-                <TextField
-                  label="URL"
-                  placeholder="https://..."
-                  size="small"
-                  fullWidth
-                  value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
-                  disabled={!newPlatform.trim()}
-                  error={Boolean(
-                    (newUrl.trim() && isDuplicateUrl) ||
-                      (addAttempted && urlFormatError),
-                  )}
-                  helperText={
-                    newUrl.trim() && isDuplicateUrl
-                      ? 'This URL is already in your links.'
-                      : addAttempted && urlFormatError
-                        ? 'Please enter a valid URL.'
-                        : undefined
-                  }
-                  sx={dialogTextFieldSx}
-                />
+                <Box>
+                  <FieldLabel
+                    text="URL"
+                    required
+                    tooltip="Use a public URL. Include https:// for best reliability."
+                  />
+                  <TextField
+                    placeholder="https://..."
+                    size="small"
+                    fullWidth
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    disabled={!newPlatform.trim()}
+                    error={Boolean(
+                      (newUrl.trim() && isDuplicateUrl) ||
+                        (addAttempted && urlFormatError),
+                    )}
+                    helperText={
+                      newUrl.trim() && isDuplicateUrl
+                        ? 'This URL is already in your links.'
+                        : addAttempted && urlFormatError
+                          ? 'Enter a full URL, for example https://example.com.'
+                          : 'Include https:// for the most reliable links.'
+                    }
+                    sx={dialogTextFieldSx}
+                  />
+                </Box>
 
                 {/* Conditional Label Input (Only for Custom links) */}
                 {(newCategory === 'Custom' ||
                   newPlatform === OTHER_PLATFORM) && (
-                  <TextField
-                    label="Label (e.g. My Portfolio)"
-                    size="small"
-                    fullWidth
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    sx={dialogTextFieldSx}
-                  />
+                  <Box>
+                    <FieldLabel
+                      text="Label"
+                      tooltip="Optional short name to display for this custom link."
+                    />
+                    <TextField
+                      placeholder="e.g. My Portfolio"
+                      size="small"
+                      fullWidth
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      sx={dialogTextFieldSx}
+                    />
+                  </Box>
                 )}
 
                 <Button
@@ -384,6 +427,12 @@ export const EditLinksDialog = ({
                 >
                   {ADD_TO_LIST_BUTTON_LABEL}
                 </Button>
+                {!canAddLink && addAttempted && (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    To add a link: choose a category, choose a platform, and
+                    enter a valid unique URL.
+                  </Alert>
+                )}
               </Stack>
             </Box>
 

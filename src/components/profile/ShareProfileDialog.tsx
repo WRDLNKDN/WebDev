@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
+  Alert,
   Box,
   Button,
   Dialog,
@@ -24,6 +25,16 @@ type ShareProfileDialogProps = {
   regenerateBusy?: boolean;
 };
 
+const SHARE_DIALOG_SX = {
+  bgcolor: '#141414',
+  backgroundImage:
+    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
+  border: '1px solid rgba(255,255,255,0.1)',
+  color: 'white',
+  borderRadius: 3,
+  boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+};
+
 export const ShareProfileDialog = ({
   open,
   onClose,
@@ -40,6 +51,7 @@ export const ShareProfileDialog = ({
     fullWidth
     maxWidth="sm"
     aria-labelledby="share-profile-dialog-title"
+    PaperProps={{ sx: SHARE_DIALOG_SX }}
   >
     <DialogTitle
       id="share-profile-dialog-title"
@@ -54,8 +66,8 @@ export const ShareProfileDialog = ({
         <CloseIcon />
       </IconButton>
     </DialogTitle>
-    <DialogContent dividers>
-      <Stack spacing={2}>
+    <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <Stack spacing={2.5}>
         <Typography variant="body2" color="text.secondary">
           Anyone with this link can view a read-only version of your profile.
           Your handle is not in the URL.
@@ -105,9 +117,9 @@ export const ShareProfileDialog = ({
           </>
         ) : (
           <Box>
-            <Typography variant="body2" color="text.secondary">
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
               {shareTokenError ?? 'Unable to load share link. Try refreshing.'}
-            </Typography>
+            </Alert>
           </Box>
         )}
       </Stack>

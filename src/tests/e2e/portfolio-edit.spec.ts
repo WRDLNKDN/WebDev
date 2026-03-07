@@ -348,12 +348,15 @@ test.describe('Portfolio artifact editing', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/edit project/i);
-    await dialog.getByLabel('Project URL').fill('https://example.com/file.exe');
-    await dialog.getByRole('button', { name: /save changes/i }).click();
+    await dialog.getByLabel('Project URL').fill('example.com/file.exe');
+    await expect(
+      dialog.getByRole('button', { name: /save changes/i }),
+    ).toBeDisabled();
 
     await expect(
-      dialog.getByText(/This file type is not supported for portfolio links/i),
+      dialog.getByText(/Use a full URL starting with https:\/\/ or http:\/\//i),
     ).toBeVisible();
+    await expect(dialog.getByText(/fix URL format/i)).toBeVisible();
     await expect(dialog).toBeVisible();
     await expect(page.getByText('Legacy Artifact')).toBeVisible();
     expect(patchCalls).toBe(0);

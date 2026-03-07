@@ -181,6 +181,21 @@ const theme = createTheme({
           'input, textarea, button, select, option, optgroup': {
             fontFamily: FONT_FAMILY,
           },
+          // Global link affordance: every real anchor gets obvious hover text feedback.
+          'a[href]': {
+            transition:
+              'color 120ms ease, text-decoration-color 120ms ease, opacity 120ms ease',
+          },
+          'a[href]:hover': {
+            textDecoration: 'underline !important',
+            textUnderlineOffset: '3px',
+            textDecorationThickness: '2px',
+            cursor: 'pointer',
+          },
+          'a[href]:focus-visible': {
+            textDecoration: 'underline',
+            textUnderlineOffset: '3px',
+          },
         },
       },
     },

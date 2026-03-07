@@ -36,6 +36,9 @@ test.describe('Dashboard share profile modal', () => {
     });
     await expect(profileMenuButton).toBeEnabled({ timeout: 20_000 });
     await profileMenuButton.click({ force: true });
+    await expect(
+      page.getByRole('menuitem', { name: 'View Profile' }),
+    ).toHaveAttribute('href', '/p/h~member');
     await page.getByRole('menuitem', { name: 'Share My Profile' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Share My Profile' });

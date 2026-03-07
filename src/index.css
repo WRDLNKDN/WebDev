@@ -23,6 +23,8 @@ html {
   overflow-y: hidden;
   overflow-x: hidden;
   height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -33,6 +35,9 @@ body {
   overflow-x: hidden;
   overflow-y: hidden;
   height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* #root does not scroll; Layout and Join each provide their own scroll container. */
@@ -61,4 +66,14 @@ button {
   margin: 0;
   padding: 0;
   cursor: pointer;
+}
+
+input,
+textarea,
+select,
+button,
+option,
+optgroup {
+  font: inherit;
+  font-family: inherit;
 }

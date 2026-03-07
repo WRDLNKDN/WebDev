@@ -80,7 +80,7 @@ export const AdminApp = () => {
         >
           <Container maxWidth="sm">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <CircularProgress size={22} />
+              <CircularProgress size={22} aria-label="Loading admin" />
               <Typography variant="body2" sx={{ opacity: 0.85 }}>
                 Loading admin…
               </Typography>

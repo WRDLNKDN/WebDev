@@ -130,7 +130,77 @@ export function getShortLinkLabel(url: string): string {
  * Normalize URL for duplicate detection: lowercase, trim, strip trailing slash.
  * Used by Edit Links modal and profile update validation.
  */
+const TRACKING_QUERY_PARAMS = new Set([
+  'fbclid',
+  'gclid',
+  'mc_cid',
+  'mc_eid',
+  'ref',
+  'ref_src',
+  'si',
+  'trk',
+  'utm_campaign',
+  'utm_content',
+  'utm_medium',
+  'utm_source',
+  'utm_term',
+]);
+
 export function normalizeUrlForDedup(url: string): string {
-  const u = url.trim().toLowerCase();
-  return u.endsWith('/') && u.length > 1 ? u.slice(0, -1) : u;
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  try {
+    const parsed = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
+    );
+    const protocol =
+      parsed.protocol === 'http:' || parsed.protocol === 'https:'
+        ? 'https:'
+        : parsed.protocol.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    const port =
+      parsed.port &&
+      !(
+        (protocol === 'https:' && parsed.port === '443') ||
+        (protocol === 'http:' && parsed.port === '80')
+      )
+        ? `:${parsed.port}`
+        : '';
+    const pathname = parsed.pathname
+      .replace(/\/{2,}/g, '/')
+      .replace(/\/+$/, '');
+    const normalizedParams = new URLSearchParams();
+
+    [...parsed.searchParams.entries()]
+      .filter(([key, value]) => {
+        const normalizedKey = key.trim().toLowerCase();
+        return value.trim() && !TRACKING_QUERY_PARAMS.has(normalizedKey);
+      })
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([key, value]) => {
+        normalizedParams.append(key.trim().toLowerCase(), value.trim());
+      });
+
+    const search = normalizedParams.toString();
+    return `${protocol}//${hostname}${port}${pathname}${search ? `?${search}` : ''}`;
+  } catch {
+    const fallback = trimmed.toLowerCase().replace(/^www\./, '');
+    return fallback.endsWith('/') && fallback.length > 1
+      ? fallback.slice(0, -1)
+      : fallback;
+  }
+}
+
+export function findDuplicateNormalizedUrl(
+  urls: readonly string[],
+): string | null {
+  const seen = new Set<string>();
+  for (const value of urls) {
+    const normalized = normalizeUrlForDedup(value);
+    if (!normalized) continue;
+    if (seen.has(normalized)) return normalized;
+    seen.add(normalized);
+  }
+  return null;
 }

@@ -60,14 +60,14 @@ export const REACTION_OPTIONS: {
     label: 'Care',
     Icon: VolunteerActivismIcon,
     IconOutlined: VolunteerActivismOutlinedIcon,
-    color: '#9c27b0', // Purple (design token: Care)
+    color: '#9c27b0',
   },
   {
     type: 'laughing',
     label: 'Happy',
     Icon: SentimentSatisfiedIcon,
     IconOutlined: SentimentSatisfiedOutlinedIcon,
-    color: '#66bb6a', // Green (design token: Happy)
+    color: '#66bb6a',
   },
   {
     type: 'rage',
@@ -104,15 +104,13 @@ export const FeedReactionBar = ({
   onRemoveReaction,
   sx,
 }: FeedReactionBarProps) => {
+  const HOVER_CLOSE_DELAY_MS = 90;
+  const POPOVER_TRANSITION_MS = 40;
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const hoverOpenRef = useRef<number | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const hoverCloseRef = useRef<number | null>(null);
 
-  const clearHoverTimers = () => {
-    if (hoverOpenRef.current) {
-      clearTimeout(hoverOpenRef.current);
-      hoverOpenRef.current = null;
-    }
+  const clearCloseTimer = () => {
     if (hoverCloseRef.current) {
       clearTimeout(hoverCloseRef.current);
       hoverCloseRef.current = null;
@@ -139,10 +137,27 @@ export const FeedReactionBar = ({
     }
   };
 
+  const openPicker = () => {
+    clearCloseTimer();
+    if (triggerRef.current) {
+      setAnchorEl(triggerRef.current);
+    }
+  };
+
+  const scheduleClosePicker = () => {
+    if (hoverCloseRef.current) {
+      clearTimeout(hoverCloseRef.current);
+    }
+    hoverCloseRef.current = window.setTimeout(
+      () => setAnchorEl(null),
+      HOVER_CLOSE_DELAY_MS,
+    ) as unknown as number;
+  };
+
   return (
     <ClickAwayListener
       onClickAway={() => {
-        clearHoverTimers();
+        clearCloseTimer();
         setAnchorEl(null);
       }}
     >
@@ -158,31 +173,19 @@ export const FeedReactionBar = ({
           ...sx,
         }}
         onMouseLeave={() => {
-          clearHoverTimers();
-          hoverCloseRef.current = window.setTimeout(
-            () => setAnchorEl(null),
-            150,
-          ) as unknown as number;
+          clearCloseTimer();
+          scheduleClosePicker();
         }}
       >
         <Button
           size="small"
-          onMouseEnter={(e) => {
-            if (hoverCloseRef.current) {
-              clearTimeout(hoverCloseRef.current);
-              hoverCloseRef.current = null;
-            }
-            hoverOpenRef.current = window.setTimeout(() => {
-              setAnchorEl(e.currentTarget as HTMLElement);
-              hoverOpenRef.current = null;
-            }, 200) as unknown as number;
-          }}
-          onMouseLeave={() => {
-            if (hoverOpenRef.current) {
-              clearTimeout(hoverOpenRef.current);
-              hoverOpenRef.current = null;
-            }
-          }}
+          ref={triggerRef}
+          onMouseEnter={openPicker}
+          onMouseOver={openPicker}
+          onPointerEnter={openPicker}
+          onPointerOver={openPicker}
+          onMouseLeave={scheduleClosePicker}
+          onFocus={openPicker}
           onClick={(e) => {
             setAnchorEl((prev) =>
               prev ? null : (e.currentTarget as HTMLElement),
@@ -234,6 +237,10 @@ export const FeedReactionBar = ({
           open={Boolean(anchorEl)}
           anchorEl={anchorEl}
           onClose={() => setAnchorEl(null)}
+          disableAutoFocus
+          disableEnforceFocus
+          disableRestoreFocus
+          transitionDuration={POPOVER_TRANSITION_MS}
           anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
           transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
           slotProps={{
@@ -247,18 +254,14 @@ export const FeedReactionBar = ({
                 hoverCloseRef.current = null;
               }
             }}
-            onMouseLeave={() => {
-              hoverCloseRef.current = window.setTimeout(
-                () => setAnchorEl(null),
-                150,
-              ) as unknown as number;
-            }}
+            onMouseLeave={scheduleClosePicker}
           >
             <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
               {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
                 <IconButton
                   key={type}
                   size="small"
+                  data-reaction-color={color}
                   onClick={() => {
                     handleReaction(type);
                     setAnchorEl(null);

@@ -1,7 +1,7 @@
 /**
  * Unit tests for profile links and Add Links modal fixes.
  * - Links render in Identity (collapsible); regression: LINKS header constant and visible-socials logic.
- * - Add Links modal: single "Add to List" label (no duplicate plus); Category/Platform Select use shrink to avoid ghosted text.
+ * - Add Links modal: single "+ Add to List" label (no duplicate plus icon/text).
  */
 
 import { describe, expect, it } from 'vitest';
@@ -10,9 +10,9 @@ import { LINKS_COLLAPSIBLE_HEADER } from '../../components/profile/ProfileLinksW
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 
 describe('EditLinksDialog Add to List button', () => {
-  it('displays a single "Add to List" label (no duplicate plus icon in text)', () => {
+  it('keeps the button text clean and leaves the plus to the icon', () => {
     expect(ADD_TO_LIST_BUTTON_LABEL).toBe('Add to List');
-    expect(ADD_TO_LIST_BUTTON_LABEL).not.toMatch(/^\s*\+/);
+    expect(ADD_TO_LIST_BUTTON_LABEL).not.toContain('+');
   });
 });
 

@@ -7,14 +7,17 @@ import {
 } from '@mui/icons-material';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Grid,
   IconButton,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -23,8 +26,8 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import {
-  formatProjectCategories,
-  parseProjectCategories,
+  PORTFOLIO_CATEGORY_OPTIONS,
+  normalizeProjectCategories,
 } from '../../lib/portfolio/categoryUtils';
 import { validatePortfolioUrl } from '../../lib/portfolio/linkValidation';
 import { toMessage } from '../../lib/utils/errors';
@@ -76,6 +79,7 @@ const emptyForm: NewProject = {
   image_url: '',
   project_url: '',
   tech_stack: [],
+  is_highlighted: false,
 };
 
 export const AddProjectDialog = ({
@@ -90,7 +94,6 @@ export const AddProjectDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<NewProject>(emptyForm);
-  const [categoryInput, setCategoryInput] = useState('');
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
@@ -110,15 +113,13 @@ export const AddProjectDialog = ({
         description: initialProject.description ?? '',
         image_url: initialProject.image_url ?? '',
         project_url: initialProject.project_url ?? '',
-        tech_stack: initialProject.tech_stack ?? [],
+        tech_stack: normalizeProjectCategories(initialProject.tech_stack ?? []),
+        is_highlighted: Boolean(initialProject.is_highlighted),
       });
-      setCategoryInput(
-        formatProjectCategories(initialProject.tech_stack ?? []),
-      );
       setPreviewUrl(initialProject.image_url ?? null);
+      setSelectedFile(undefined);
     } else if (open && !initialProject) {
       setFormData(emptyForm);
-      setCategoryInput('');
       setPreviewUrl(null);
       setSelectedFile(undefined);
     }
@@ -149,17 +150,20 @@ export const AddProjectDialog = ({
       setSubmitError(validation.error);
       return;
     }
+    const selectedCategories = normalizeProjectCategories(formData.tech_stack);
+    if (selectedCategories.length === 0) {
+      setSubmitError('Select at least one category.');
+      return;
+    }
     try {
       setBusy(true);
-      const parsedCategories = parseProjectCategories(categoryInput);
       await onSubmit(
-        { ...formData, tech_stack: parsedCategories },
+        { ...formData, tech_stack: selectedCategories },
         selectedFile,
         projectId,
       );
       if (!isEdit) {
         setFormData(emptyForm);
-        setCategoryInput('');
         setPreviewUrl(null);
         setSelectedFile(undefined);
       }
@@ -297,21 +301,35 @@ export const AddProjectDialog = ({
                 variant="filled"
               />
 
-              <TextField
-                fullWidth
-                label="Categories"
-                placeholder="Case Study, DevOps, UI Design"
-                helperText="Optional. Comma-separated tags shown on your portfolio/profile cards."
-                value={categoryInput}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setCategoryInput(next);
+              <Autocomplete
+                multiple
+                disableCloseOnSelect
+                options={normalizeProjectCategories([
+                  ...PORTFOLIO_CATEGORY_OPTIONS,
+                  ...(formData.tech_stack ?? []),
+                ])}
+                value={normalizeProjectCategories(formData.tech_stack)}
+                onChange={(_, next) => {
                   setFormData((prev) => ({
                     ...prev,
-                    tech_stack: parseProjectCategories(next),
+                    tech_stack: normalizeProjectCategories(next),
                   }));
                 }}
-                variant="filled"
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    required
+                    label="Categories"
+                    placeholder={
+                      (formData.tech_stack?.length ?? 0) > 0
+                        ? ''
+                        : 'Select one or more categories'
+                    }
+                    helperText="Used to organize Portfolio Showcase sections."
+                    variant="filled"
+                  />
+                )}
               />
 
               <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -332,6 +350,36 @@ export const AddProjectDialog = ({
                   }
                 />
               </Stack>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.is_highlighted}
+                    onChange={(_, checked) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        is_highlighted: checked,
+                      }));
+                    }}
+                    color="secondary"
+                  />
+                }
+                label="Highlight in Portfolio Showcase"
+                slotProps={{
+                  typography: {
+                    variant: 'body2',
+                    sx: { color: 'text.secondary' },
+                  },
+                }}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: -2, display: 'block' }}
+              >
+                Highlighted artifacts appear in the carousel above category
+                sections on your profile.
+              </Typography>
             </Stack>
           </Grid>
         </Grid>
@@ -367,6 +415,7 @@ export const AddProjectDialog = ({
               !formData.title.trim() ||
               !formData.description.trim() ||
               !formData.project_url.trim() ||
+              normalizeProjectCategories(formData.tech_stack).length === 0 ||
               !isExternalUrl(formData.project_url.trim())
             }
             startIcon={<SaveIcon />}

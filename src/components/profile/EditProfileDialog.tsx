@@ -15,7 +15,6 @@ import {
   FormControl,
   FormHelperText,
   IconButton,
-  InputLabel,
   MenuItem,
   Select,
   Snackbar,
@@ -90,6 +89,14 @@ const INPUT_STYLES = {
     '&:before, &:after': { display: 'none' },
   },
   '& .MuiFilledInput-input': { padding: INPUT_PADDING },
+  '& .MuiSelect-select': {
+    padding: `${INPUT_PADDING} !important`,
+    minHeight: 'unset !important',
+    display: 'flex',
+    alignItems: 'center',
+    lineHeight: 1.2,
+    boxSizing: 'border-box',
+  },
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.6)',
     fontSize: '0.9rem',
@@ -101,8 +108,18 @@ const INPUT_STYLES = {
   '& .MuiFormHelperText-root': {
     color: 'rgba(255,255,255,0.5)',
     fontSize: '0.75rem',
-    mt: 0.5,
+    mt: 0.75,
+    ml: 0,
   },
+};
+
+const getSubIndustryPlaceholder = (
+  hasPrimaryIndustry: boolean,
+  selectedCount: number,
+): string => {
+  if (!hasPrimaryIndustry) return 'Select an industry first';
+  if (selectedCount > 0) return '';
+  return 'Sub-Industry';
 };
 
 type EditProfileDialogProps = {
@@ -569,13 +586,8 @@ export const EditProfileDialog = ({
                 disabled={busy}
                 sx={INPUT_STYLES}
               >
-                <InputLabel id="edit-profile-pronouns" shrink>
-                  Pronouns
-                </InputLabel>
                 <Select
-                  labelId="edit-profile-pronouns"
                   value={formData.pronouns || ''}
-                  label="Pronouns"
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -584,8 +596,8 @@ export const EditProfileDialog = ({
                   }
                   displayEmpty
                   renderValue={(v) => v || 'Select pronouns'}
+                  inputProps={{ 'aria-label': 'Pronouns' }}
                   sx={{
-                    '& .MuiSelect-select': { padding: INPUT_PADDING },
                     '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
                   }}
                   MenuProps={{
@@ -616,14 +628,34 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 1,
+                  mb: 0.75,
+                  lineHeight: 1.2,
                 }}
               >
-                INDUSTRY
+                PRIMARY INDUSTRY
               </Typography>
-              <FormHelperText sx={{ mb: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  color: 'rgba(255,255,255,0.6)',
+                  mb: 1.25,
+                  lineHeight: 1.35,
+                }}
+              >
+                Used for Directory filtering.
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  color: 'rgba(255,255,255,0.5)',
+                  mb: 1.25,
+                  lineHeight: 1.35,
+                }}
+              >
                 Add up to 5 industries. Each can have up to 8 sub-industries.
-              </FormHelperText>
+              </Typography>
               <Stack spacing={2}>
                 {formData.industries.map((group, idx) => (
                   <Box
@@ -640,11 +672,7 @@ export const EditProfileDialog = ({
                       variant="filled"
                       sx={{ ...INPUT_STYLES, mb: 1 }}
                     >
-                      <InputLabel id={`edit-industry-${idx}`} shrink>
-                        Industry
-                      </InputLabel>
                       <Select
-                        labelId={`edit-industry-${idx}`}
                         value={group.industry}
                         onChange={(e) => {
                           const next = e.target.value;
@@ -660,9 +688,12 @@ export const EditProfileDialog = ({
                             ),
                           }));
                         }}
-                        label="Industry"
                         displayEmpty
                         renderValue={(v) => v || 'Select industry'}
+                        inputProps={{
+                          'aria-label':
+                            idx === 0 ? 'Primary Industry' : 'Industry',
+                        }}
                       >
                         <MenuItem value="">Select industry</MenuItem>
                         {INDUSTRY_PRIMARY_OPTIONS.filter(
@@ -698,14 +729,32 @@ export const EditProfileDialog = ({
                         <TextField
                           {...params}
                           variant="filled"
-                          label="Sub-Industry"
-                          placeholder={
-                            group.industry
-                              ? 'Select up to 8'
-                              : 'Select an industry first'
-                          }
-                          InputLabelProps={{ shrink: true }}
-                          sx={INPUT_STYLES}
+                          placeholder={getSubIndustryPlaceholder(
+                            Boolean(group.industry),
+                            group.sub_industries.length,
+                          )}
+                          inputProps={{
+                            ...params.inputProps,
+                            placeholder: getSubIndustryPlaceholder(
+                              Boolean(group.industry),
+                              group.sub_industries.length,
+                            ),
+                            'aria-label': 'Sub-Industry',
+                          }}
+                          sx={{
+                            ...INPUT_STYLES,
+                            '& .MuiFilledInput-root': {
+                              ...INPUT_STYLES['& .MuiFilledInput-root'],
+                              minHeight: INPUT_HEIGHT,
+                              alignItems: 'center',
+                            },
+                            '& .MuiAutocomplete-input': {
+                              lineHeight: 1.4,
+                            },
+                            '& .MuiAutocomplete-tag': {
+                              my: '2px',
+                            },
+                          }}
                         />
                       )}
                       slotProps={{

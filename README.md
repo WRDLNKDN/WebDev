@@ -24,6 +24,16 @@ WRDLNKDN is a modern, accessibility-first professional feed and platform.
 It explores what professional presence and connection look like when we stop
 pretending it has to be polished, performative, or predictable.
 
+Current surfaced product work includes:
+
+- Dashboard-managed portfolio artifacts with edit, delete, reorder, categories,
+  and highlight support
+- Profile Portfolio Showcase with responsive category sections and a highlights
+  carousel
+- Share-profile, donate, and advertise flows delivered as contained modals
+- Full repo quality gates covering typecheck, eslint, markdownlint, prettier,
+  Vitest, and Playwright
+
 ---
 
 ## 🌐 Platform Architecture
@@ -116,6 +126,28 @@ workflows**, independent of specific implementation details.
    - Backend uses a mock AI adapter (no API key); see
      [Epic: Weirdling Generator](./docs/architecture/epic-weirdling-generator.md)
      to plug in a real provider.
+
+## ✅ Quality Gates
+
+Run the standard verification stack from the project root:
+
+```bash
+npm run check
+```
+
+Run the full verification stack, including Playwright:
+
+```bash
+npm run check:full
+```
+
+Key commands:
+
+- `npm run lint`
+- `npm run lint:md`
+- `npm run typecheck`
+- `npm run test:run`
+- `npm run test:e2e`
 
 ---
 

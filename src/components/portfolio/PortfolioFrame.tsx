@@ -10,28 +10,18 @@ export const PortfolioFrame = ({ title, children }: PortfolioFrameProps) => (
   <>
     <Typography
       variant="h5"
-      sx={{ mb: 3.5, fontWeight: 600, pl: { xs: 1, sm: 2 }, letterSpacing: 1 }}
+      sx={{
+        mb: { xs: 2.5, sm: 3.5 },
+        fontWeight: 600,
+        pl: { xs: 0.5, sm: 2 },
+        letterSpacing: 1,
+      }}
     >
       {title}
     </Typography>
     <Stack
-      direction="row"
-      flexWrap="wrap"
-      spacing={2.5}
-      useFlexGap
-      sx={{
-        py: 4.5,
-        px: { xs: 1, sm: 2 },
-        width: '100%',
-        maxWidth: '100%',
-        overflowX: 'hidden',
-        boxSizing: 'border-box',
-        '& > *': {
-          flex: '1 1 auto',
-          minWidth: { xs: '100%', sm: 200, md: 220 },
-          maxWidth: { xs: '100%', sm: 280, md: 300 },
-        },
-      }}
+      spacing={{ xs: 2, sm: 3 }}
+      sx={{ py: { xs: 2.5, sm: 4.5 }, px: { xs: 0.5, sm: 2 }, minWidth: 0 }}
     >
       {children}
     </Stack>

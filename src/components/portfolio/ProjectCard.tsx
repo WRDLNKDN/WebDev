@@ -1,4 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupportedOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -24,8 +25,10 @@ function isExternalUrl(url: string): boolean {
 
 interface ProjectCardProps {
   project: PortfolioItem;
+  variant?: 'compact' | 'showcase';
   /** When true, show delete button and call onDelete when removed */
   isOwner?: boolean;
+  onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
   /** When provided, clicking the card/title opens this preview instead of navigating to project page */
   onOpenPreview?: (project: PortfolioItem) => void;
@@ -40,7 +43,9 @@ interface ProjectCardProps {
 
 export const ProjectCard = ({
   project,
+  variant = 'compact',
   isOwner,
+  onEdit,
   onDelete,
   onOpenPreview,
   dragHandle,
@@ -49,6 +54,7 @@ export const ProjectCard = ({
   canMoveUp = false,
   canMoveDown = false,
 }: ProjectCardProps) => {
+  const isShowcase = variant === 'showcase';
   const showArrowControls =
     !dragHandle && (onMoveUp != null || onMoveDown != null);
   const url = project.project_url?.trim() ?? '';
@@ -106,9 +112,9 @@ export const ProjectCard = ({
       sx={{
         ...CANDY_BLUEY, // Spread first to ensure brand base (compact for Dashboard)
         width: '100%',
-        maxWidth: 240,
-        minHeight: { xs: 160, md: 200 },
-        height: { xs: 160, md: 200 },
+        maxWidth: isShowcase ? 'none' : 240,
+        minHeight: isShowcase ? { xs: 0, md: 0 } : { xs: 160, md: 200 },
+        height: isShowcase ? '100%' : { xs: 160, md: 200 },
         borderRadius: 3,
         scrollSnapAlign: 'start',
         display: 'flex',
@@ -167,6 +173,24 @@ export const ProjectCard = ({
               }}
             >
               <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
+          )}
+          {onEdit && (
+            <IconButton
+              size="small"
+              aria-label={`Edit project ${project.title}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void onEdit(project);
+              }}
+              sx={{
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.main', color: 'white' },
+              }}
+            >
+              <EditIcon fontSize="small" />
             </IconButton>
           )}
           {onDelete && (
@@ -277,7 +301,7 @@ export const ProjectCard = ({
 
       <Box
         sx={{
-          p: { xs: 2, md: 3 },
+          p: isShowcase ? { xs: 1.5, sm: 2, md: 2.5 } : { xs: 2, md: 3 },
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -321,6 +345,17 @@ export const ProjectCard = ({
               mb: 1,
             }}
           >
+            {project.is_highlighted ? (
+              <Chip
+                size="small"
+                label="Highlight"
+                sx={{
+                  bgcolor: 'rgba(125,42,232,0.18)',
+                  border: '1px solid rgba(125,42,232,0.4)',
+                  color: '#d7b7ff',
+                }}
+              />
+            ) : null}
             {categories.map((tag) => (
               <Chip
                 key={`${project.id}-tag-${tag}`}
@@ -340,6 +375,19 @@ export const ProjectCard = ({
             ))}
           </Box>
         )}
+        {categories.length === 0 && project.is_highlighted ? (
+          <Box sx={{ display: 'flex', mb: 1 }}>
+            <Chip
+              size="small"
+              label="Highlight"
+              sx={{
+                bgcolor: 'rgba(125,42,232,0.18)',
+                border: '1px solid rgba(125,42,232,0.4)',
+                color: '#d7b7ff',
+              }}
+            />
+          </Box>
+        ) : null}
         <Typography
           variant="body2"
           color="text.secondary"
@@ -347,7 +395,7 @@ export const ProjectCard = ({
             mb: 2,
             flexGrow: 1,
             display: '-webkit-box',
-            WebkitLineClamp: 3,
+            WebkitLineClamp: isShowcase ? 4 : 3,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
             userSelect: 'text',

@@ -18,13 +18,27 @@ test.describe('Portfolio categories on public profile', () => {
       },
       portfolio: [
         {
+          id: 'project-2',
+          title: 'Data Artifact',
+          description: 'Categorized under data.',
+          project_url: 'https://example.com/data-case-study.pdf',
+          image_url: null,
+          tech_stack: ['Data'],
+          sort_order: 0,
+          normalized_url: 'https://example.com/data-case-study.pdf',
+          embed_url: null,
+          resolved_type: 'pdf',
+          thumbnail_url: null,
+          thumbnail_status: null,
+        },
+        {
           id: 'project-1',
           title: 'UAT Artifact',
           description: 'Created from dashboard portfolio flow.',
           project_url: 'https://example.com/case-study.pdf',
           image_url: null,
           tech_stack: ['Case Study', 'DevOps', 'UX', 'Performance', 'LongTail'],
-          sort_order: 0,
+          sort_order: 1,
           normalized_url: 'https://example.com/case-study.pdf',
           embed_url: null,
           resolved_type: 'pdf',
@@ -48,16 +62,45 @@ test.describe('Portfolio categories on public profile', () => {
     await page.goto('/p/portfolio-categories-token', {
       waitUntil: 'domcontentloaded',
     });
+    await page.waitForLoadState('networkidle');
 
     await expect(page.getByText('Portfolio Member')).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText('Case Study')).toBeVisible();
-    await expect(page.getByText('DevOps')).toBeVisible();
-    await expect(page.getByText('Performance')).toBeVisible();
 
-    await page.getByRole('button', { name: /uat artifact/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('LongTail')).toBeVisible();
+    const sectionOrder = await page
+      .locator('[data-testid^="portfolio-section-"]')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute('data-testid')),
+      );
+    expect(sectionOrder.slice(0, 3)).toEqual([
+      'portfolio-section-data',
+      'portfolio-section-case-study',
+      'portfolio-section-devops',
+    ]);
+
+    await expect(
+      page.getByTestId('portfolio-section-case-study'),
+    ).toBeVisible();
+    await expect(page.getByTestId('portfolio-section-devops')).toBeVisible();
+    await expect(page.getByTestId('portfolio-section-data')).toBeVisible();
+    await expect(
+      page
+        .getByTestId('portfolio-section-case-study')
+        .getByRole('button', { name: /uat artifact/i }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByTestId('portfolio-section-data')
+        .getByRole('button', { name: /data artifact/i }),
+    ).toBeVisible();
+
+    await page
+      .getByTestId('portfolio-section-case-study')
+      .getByRole('button', { name: /uat artifact/i })
+      .click();
+    const previewDialog = page.getByRole('dialog');
+    await expect(previewDialog).toBeVisible();
+    await expect(previewDialog.getByText('LongTail')).toBeVisible();
   });
 });

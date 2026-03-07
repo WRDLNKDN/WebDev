@@ -186,6 +186,7 @@ export const ExploreSidebar = () => {
           <ListItemButton
             component={RouterLink}
             to="/advertise"
+            state={{ backgroundLocation: location }}
             sx={{
               minHeight: 40,
               py: 0.5,

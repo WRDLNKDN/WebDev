@@ -27,6 +27,7 @@ import { ProjectCard } from './ProjectCard';
 interface SortableCardProps {
   project: PortfolioItem;
   isOwner: boolean;
+  onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
   onOpenPreview?: (project: PortfolioItem) => void;
 }
@@ -34,6 +35,7 @@ interface SortableCardProps {
 const SortableCard = ({
   project,
   isOwner,
+  onEdit,
   onDelete,
   onOpenPreview,
 }: SortableCardProps) => {
@@ -57,6 +59,7 @@ const SortableCard = ({
       <ProjectCard
         project={project}
         isOwner={isOwner}
+        onEdit={onEdit}
         onDelete={onDelete}
         onOpenPreview={onOpenPreview}
         dragHandle={
@@ -98,6 +101,7 @@ interface PortfolioSortableListProps {
   projects: PortfolioItem[];
   isOwner: boolean;
   onReorder: (orderedIds: string[]) => void | Promise<void>;
+  onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
   onOpenPreview?: (project: PortfolioItem) => void;
 }
@@ -106,6 +110,7 @@ export const PortfolioSortableList = ({
   projects,
   isOwner,
   onReorder,
+  onEdit,
   onDelete,
   onOpenPreview,
 }: PortfolioSortableListProps) => {
@@ -154,6 +159,7 @@ export const PortfolioSortableList = ({
               key={project.id}
               project={project}
               isOwner={isOwner}
+              onEdit={onEdit}
               onDelete={onDelete}
               onOpenPreview={onOpenPreview}
             />

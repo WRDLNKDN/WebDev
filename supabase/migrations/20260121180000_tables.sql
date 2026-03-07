@@ -426,6 +426,7 @@ create index if not exists idx_portfolio_items_owner_sort on public.portfolio_it
 -- URL classification and thumbnail (Step 1 + Step 6). Additive only: ADD COLUMN IF NOT EXISTS.
 -- Existing rows keep all current data; new columns are null. No DROP, DELETE, or TRUNCATE.
 alter table public.portfolio_items
+  add column if not exists is_highlighted boolean not null default false,
   add column if not exists normalized_url text,
   add column if not exists embed_url text,
   add column if not exists resolved_type text,
@@ -436,6 +437,8 @@ comment on table public.portfolio_items is
   'User portfolio projects (dashboard).';
 comment on column public.portfolio_items.sort_order is
   'Explicit order for display; lower first. Used for drag-and-drop reorder.';
+comment on column public.portfolio_items.is_highlighted is
+  'When true, item appears in the Portfolio Showcase highlights carousel.';
 comment on column public.portfolio_items.normalized_url is
   'Canonical URL after provider normalization (e.g. Google /preview).';
 comment on column public.portfolio_items.embed_url is

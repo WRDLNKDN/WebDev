@@ -178,7 +178,7 @@ const theme = createTheme({
               backgroundColor: '#959595',
             },
           },
-          'input, textarea, button, select': {
+          'input, textarea, button, select, option, optgroup': {
             fontFamily: FONT_FAMILY,
           },
         },

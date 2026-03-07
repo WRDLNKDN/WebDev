@@ -1,7 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
   Button,
@@ -17,7 +15,6 @@ import {
   Paper,
   Snackbar,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -33,6 +30,7 @@ import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
 import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
+import { ShareProfileDialog } from '../../components/profile/ShareProfileDialog';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -52,7 +50,10 @@ export const Dashboard = () => {
   const state = location.state as { openEditDialog?: boolean } | undefined;
 
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<PortfolioItem | null>(
+    null,
+  );
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [previewProject, setPreviewProject] = useState<PortfolioItem | null>(
     null,
@@ -62,6 +63,7 @@ export const Dashboard = () => {
   const [shareTokenLoading, setShareTokenLoading] = useState(false);
   const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] =
     useState<HTMLElement | null>(null);
   const [editFocusBio, setEditFocusBio] = useState(false);
@@ -130,6 +132,7 @@ export const Dashboard = () => {
     updateProfile,
     uploadAvatar,
     addProject,
+    updateProject,
     deleteProject,
     reorderProjects,
     uploadResume,
@@ -159,6 +162,10 @@ export const Dashboard = () => {
   const resumeThumbnailUrl =
     typeof safeNerdCreds.resume_thumbnail_url === 'string'
       ? safeNerdCreds.resume_thumbnail_url
+      : null;
+  const resumeFileName =
+    typeof safeNerdCreds.resume_file_name === 'string'
+      ? safeNerdCreds.resume_file_name
       : null;
   const resumeThumbnailStatus =
     safeNerdCreds.resume_thumbnail_status === 'pending' ||
@@ -205,6 +212,21 @@ export const Dashboard = () => {
     } catch (e) {
       setSnack(toMessage(e));
     }
+  };
+
+  const openNewProjectDialog = () => {
+    setEditingProject(null);
+    setIsProjectDialogOpen(true);
+  };
+
+  const openEditProjectDialog = (project: PortfolioItem) => {
+    setEditingProject(project);
+    setIsProjectDialogOpen(true);
+  };
+
+  const closeProjectDialog = () => {
+    setIsProjectDialogOpen(false);
+    setEditingProject(null);
   };
 
   return (
@@ -464,98 +486,19 @@ export const Dashboard = () => {
                     View Profile
                   </MenuItem>
                 )}
+                <MenuItem
+                  onClick={() => {
+                    setProfileMenuAnchor(null);
+                    setIsShareDialogOpen(true);
+                  }}
+                  sx={{ py: 1.25 }}
+                >
+                  Share My Profile
+                </MenuItem>
               </Menu>
             </>
           }
         />
-
-        {/* Share my profile: tokenized public link */}
-        <Paper
-          elevation={0}
-          sx={{
-            ...GLASS_CARD,
-            p: { xs: 2, md: 3 },
-            mt: { xs: 2, md: 3 },
-            width: '100%',
-          }}
-        >
-          <Typography
-            variant="overline"
-            sx={{
-              display: 'block',
-              mb: 1.5,
-              letterSpacing: 2,
-              color: 'text.secondary',
-              fontWeight: 600,
-            }}
-          >
-            Share my profile
-          </Typography>
-          {shareTokenLoading ? (
-            <Typography variant="body2" color="text.secondary">
-              Loading link…
-            </Typography>
-          ) : shareToken ? (
-            <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
-                Anyone with this link can view a read-only version of your
-                profile. Your handle is not in the URL.
-              </Typography>
-              <TextField
-                size="small"
-                fullWidth
-                value={buildShareProfileUrl(shareToken)}
-                sx={{
-                  '& .MuiInputBase-input': {
-                    fontSize: '0.875rem',
-                  },
-                }}
-                InputProps={{ readOnly: true }}
-                inputProps={{ 'aria-label': 'Public profile URL' }}
-              />
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<ContentCopyIcon />}
-                  onClick={async () => {
-                    const url = buildShareProfileUrl(shareToken);
-                    try {
-                      await navigator.clipboard.writeText(url);
-                      setSnack('Link copied to clipboard.');
-                    } catch {
-                      setSnack('Could not copy link.');
-                    }
-                  }}
-                  sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    textTransform: 'none',
-                  }}
-                >
-                  Copy link
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<RefreshIcon />}
-                  onClick={() => setRegenerateConfirmOpen(true)}
-                  sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    textTransform: 'none',
-                  }}
-                >
-                  Regenerate link
-                </Button>
-              </Stack>
-            </Stack>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              {shareTokenError ?? 'Unable to load share link. Try refreshing.'}
-            </Typography>
-          )}
-        </Paper>
 
         {/* PORTFOLIO: Resume + Projects — empty state or grid */}
         <Paper
@@ -597,7 +540,7 @@ export const Dashboard = () => {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => setIsAddProjectOpen(true)}
+                  onClick={openNewProjectDialog}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
@@ -680,7 +623,7 @@ export const Dashboard = () => {
                   variant="outlined"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => setIsAddProjectOpen(true)}
+                  onClick={openNewProjectDialog}
                   sx={{
                     borderColor: 'rgba(255,255,255,0.3)',
                     color: 'white',
@@ -712,6 +655,7 @@ export const Dashboard = () => {
                 {profile?.resume_url ? (
                   <ResumeCard
                     url={profile?.resume_url}
+                    fileName={resumeFileName}
                     thumbnailUrl={resumeThumbnailUrl}
                     thumbnailStatus={resumeThumbnailStatus}
                     thumbnailError={
@@ -755,6 +699,9 @@ export const Dashboard = () => {
                     } catch (e) {
                       setSnack(toMessage(e));
                     }
+                  }}
+                  onEdit={(project) => {
+                    openEditProjectDialog(project);
                   }}
                   onOpenPreview={setPreviewProject}
                 />
@@ -853,14 +800,41 @@ export const Dashboard = () => {
         }}
       />
       <AddProjectDialog
-        open={isAddProjectOpen}
-        onClose={() => setIsAddProjectOpen(false)}
-        onSubmit={addProject}
+        open={isProjectDialogOpen}
+        onClose={closeProjectDialog}
+        onSubmit={async (project, file, projectId) => {
+          if (projectId) {
+            await updateProject(projectId, project, file);
+            return;
+          }
+          await addProject(project, file);
+        }}
+        initialProject={editingProject}
+        projectId={editingProject?.id}
       />
       <PortfolioPreviewModal
         project={previewProject}
         open={Boolean(previewProject)}
         onClose={() => setPreviewProject(null)}
+      />
+      <ShareProfileDialog
+        open={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        shareUrl={shareToken ? buildShareProfileUrl(shareToken) : null}
+        shareTokenLoading={shareTokenLoading}
+        shareTokenError={shareTokenError}
+        onCopy={async () => {
+          if (!shareToken) return;
+          const url = buildShareProfileUrl(shareToken);
+          try {
+            await navigator.clipboard.writeText(url);
+            setSnack('Link copied to clipboard.');
+          } catch {
+            setSnack('Could not copy link.');
+          }
+        }}
+        onRegenerate={() => setRegenerateConfirmOpen(true)}
+        regenerateBusy={regenerating}
       />
 
       <Snackbar

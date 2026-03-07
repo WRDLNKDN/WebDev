@@ -7,10 +7,15 @@ import { supabase } from '../lib/auth/supabaseClient';
 import { authedFetch } from '../lib/api/authFetch';
 import {
   detectPlatformFromUrl,
+  findDuplicateNormalizedUrl,
   normalizeUrlForDedup,
 } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
 import { getLinkType, normalizeGoogleUrl } from '../lib/portfolio/linkUtils';
+import {
+  getPortfolioThumbnailStoragePathFromPublicUrl,
+  getProjectImageStoragePathFromPublicUrl,
+} from '../lib/portfolio/projectStorage';
 import { getResumeStoragePathFromPublicUrl } from '../lib/portfolio/resumeStorage';
 import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../types/portfolio';
@@ -43,7 +48,8 @@ export function useProfile() {
             typeof (s as { url: unknown }).url === 'string',
         )
         .map((s, index) => {
-          const url = (s as { url: string }).url;
+          const rawUrl = (s as { url: string }).url;
+          const url = normalizeUrlForDedup(rawUrl) || rawUrl.trim();
           const platform = (() => {
             const candidate = (s as { platform?: unknown }).platform;
             return typeof candidate === 'string' && candidate.trim()
@@ -265,24 +271,23 @@ export function useProfile() {
       // Persist socials with category and platform; enforce URL uniqueness (API layer)
       if (Array.isArray(payload.socials)) {
         const socials = payload.socials as SocialLink[];
-        const seen = new Set<string>();
-        for (const link of socials) {
-          const norm = normalizeUrlForDedup(link.url);
-          if (!norm) continue;
-          if (seen.has(norm)) {
-            throw new Error(
-              'Duplicate URLs are not allowed. Each link must have a unique URL.',
-            );
-          }
-          seen.add(norm);
+        const duplicateUrl = findDuplicateNormalizedUrl(
+          socials.map((link) => link.url),
+        );
+        if (duplicateUrl) {
+          throw new Error(
+            'Duplicate URLs are not allowed. Each link must have a unique URL.',
+          );
         }
         payload.socials = socials.map((link) => {
+          const normalizedUrl =
+            normalizeUrlForDedup(link.url) || link.url.trim();
           const platform =
-            link.platform?.trim() || detectPlatformFromUrl(link.url);
+            link.platform?.trim() || detectPlatformFromUrl(normalizedUrl);
           const category = isValidLinkCategory(link.category)
             ? link.category
             : getCategoryForPlatform(platform);
-          return { ...link, platform, category };
+          return { ...link, url: normalizedUrl, platform, category };
         }) as unknown as Json;
       }
 
@@ -478,6 +483,7 @@ export function useProfile() {
           project_url: projectUrlTrimmed,
           image_url: finalImageUrl,
           tech_stack: newProject.tech_stack,
+          is_highlighted: Boolean(newProject.is_highlighted),
           sort_order: maxOrder,
           normalized_url: normalizedUrl,
           embed_url: embedUrl ?? undefined,
@@ -506,11 +512,45 @@ export function useProfile() {
 
   const deleteProject = async (projectId: string) => {
     try {
+      setUpdating(true);
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) {
         throw new Error('You need to sign in to delete a project.');
+      }
+
+      const { data: projectRow, error: projectFetchError } = await supabase
+        .from('portfolio_items')
+        .select('id, owner_id, image_url, thumbnail_url')
+        .eq('id', projectId)
+        .eq('owner_id', session.user.id)
+        .maybeSingle();
+      if (projectFetchError) throw projectFetchError;
+      if (!projectRow) throw new Error('Artifact not found.');
+
+      const imageStoragePath = getProjectImageStoragePathFromPublicUrl(
+        typeof projectRow.image_url === 'string' ? projectRow.image_url : '',
+      );
+      const thumbnailStoragePath =
+        getPortfolioThumbnailStoragePathFromPublicUrl(
+          typeof projectRow.thumbnail_url === 'string'
+            ? projectRow.thumbnail_url
+            : '',
+        );
+
+      if (imageStoragePath) {
+        const { error: removeImageError } = await supabase.storage
+          .from('project-images')
+          .remove([imageStoragePath]);
+        if (removeImageError) throw removeImageError;
+      }
+
+      if (thumbnailStoragePath) {
+        const { error: removeThumbError } = await supabase.storage
+          .from('portfolio-thumbnails')
+          .remove([thumbnailStoragePath]);
+        if (removeThumbError) throw removeThumbError;
       }
 
       const { error: deleteError } = await supabase
@@ -525,6 +565,8 @@ export function useProfile() {
     } catch (err) {
       console.error('Delete Project Error:', err);
       throw new Error(toMessage(err));
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -630,6 +672,7 @@ export function useProfile() {
           project_url: projectUrlTrimmed,
           image_url: finalImageUrl,
           tech_stack: updates.tech_stack,
+          is_highlighted: Boolean(updates.is_highlighted),
           normalized_url: normalizedUrl,
           embed_url: embedUrl ?? undefined,
           resolved_type: linkType,
@@ -706,12 +749,22 @@ export function useProfile() {
         );
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}/resume.${fileExt}`;
+      const normalizedExt = ext.slice(1);
+      const fileName = `${session.user.id}/resume.${normalizedExt}`;
+      const originalResumeFileName =
+        typeof file.name === 'string' && file.name.trim()
+          ? file.name.trim()
+          : `Resume.${normalizedExt}`;
+      const contentType =
+        ext === '.pdf'
+          ? 'application/pdf'
+          : ext === '.doc'
+            ? 'application/msword'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
       const { error } = await supabase.storage
         .from('resumes')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { upsert: true, contentType });
 
       if (error) throw error;
 
@@ -721,10 +774,16 @@ export function useProfile() {
 
       await updateProfile({
         resume_url: publicUrl,
-        nerd_creds:
-          ext === '.doc' || ext === '.docx'
+        nerd_creds: {
+          resume_file_name: originalResumeFileName,
+          resume_thumbnail_url: undefined,
+          resume_thumbnail_error: null,
+          resume_thumbnail_updated_at: undefined,
+          resume_thumbnail_source_extension: undefined,
+          ...(ext === '.doc' || ext === '.docx'
             ? { resume_thumbnail_status: 'pending' }
-            : {},
+            : { resume_thumbnail_status: undefined }),
+        },
       });
 
       if (ext === '.doc' || ext === '.docx') {
@@ -819,6 +878,7 @@ export function useProfile() {
         resume_url: null,
         nerd_creds: {
           ...currentCreds,
+          resume_file_name: null,
           resume_thumbnail_url: undefined,
           resume_thumbnail_status: undefined,
           resume_thumbnail_error: null,
@@ -854,7 +914,11 @@ export function useProfile() {
         throw new Error('Retry is only available for Word documents.');
       }
 
-      const storagePath = `${session.user.id}/resume.${ext.slice(1)}`;
+      const parsedStoragePath = getResumeStoragePathFromPublicUrl(resumeUrl);
+      const storagePath =
+        parsedStoragePath && parsedStoragePath.startsWith(`${session.user.id}/`)
+          ? parsedStoragePath
+          : `${session.user.id}/resume.${ext.slice(1)}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(

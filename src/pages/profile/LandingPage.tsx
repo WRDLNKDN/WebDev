@@ -8,6 +8,7 @@ import {
   Grid,
   Snackbar,
   Stack,
+  Typography,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonIcon from '@mui/icons-material/Person';
@@ -20,6 +21,7 @@ import type { User } from '@supabase/supabase-js';
 // MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
 import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
+import { PortfolioHighlightsCarousel } from '../../components/portfolio/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
 import { ProjectCard } from '../../components/portfolio/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
@@ -40,6 +42,10 @@ const DivergencePage = lazy(async () => {
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
+import {
+  buildPortfolioCategorySections,
+  portfolioCategoryToSectionTestId,
+} from '../../lib/portfolio/portfolioSections';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
@@ -228,6 +234,8 @@ export const LandingPage = () => {
     typeof creds.resume_thumbnail_url === 'string'
       ? creds.resume_thumbnail_url
       : null;
+  const resumeFileName =
+    typeof creds.resume_file_name === 'string' ? creds.resume_file_name : null;
   const resumeThumbnailStatus =
     creds.resume_thumbnail_status === 'pending' ||
     creds.resume_thumbnail_status === 'complete' ||
@@ -260,6 +268,7 @@ export const LandingPage = () => {
   if (nicheField)
     industryChips.push({ label: nicheField, key: `niche-${nicheField}` });
   const showLinksInIdentity = hasVisibleSocialLinks(profile.socials);
+  const portfolioSections = buildPortfolioCategorySections(projects);
 
   const ownerActions = isOwner ? (
     <Button
@@ -414,16 +423,58 @@ export const LandingPage = () => {
               <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={profile.resume_url}
+                  fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl}
                   thumbnailStatus={resumeThumbnailStatus}
                 />
 
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onOpenPreview={setPreviewProject}
-                  />
+                <PortfolioHighlightsCarousel
+                  projects={projects}
+                  onOpenPreview={setPreviewProject}
+                />
+
+                {portfolioSections.map((section) => (
+                  <Box
+                    key={section.category}
+                    data-testid={portfolioCategoryToSectionTestId(
+                      section.category,
+                    )}
+                    sx={{ width: '100%' }}
+                  >
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        display: 'block',
+                        fontWeight: 700,
+                        letterSpacing: 1.1,
+                        mb: 1.5,
+                        color: 'text.secondary',
+                      }}
+                    >
+                      {section.category}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gap: 2.5,
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, minmax(0, 1fr))',
+                          xl: 'repeat(3, minmax(0, 1fr))',
+                        },
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      {section.projects.map((project) => (
+                        <ProjectCard
+                          key={`${section.category}-${project.id}`}
+                          project={project}
+                          variant="showcase"
+                          onOpenPreview={setPreviewProject}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
                 ))}
               </PortfolioFrame>
             </Grid>

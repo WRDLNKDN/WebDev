@@ -12,6 +12,8 @@ export interface PortfolioItem {
   created_at: string;
   /** Explicit display order (lower first). Used for drag-and-drop reorder. */
   sort_order?: number;
+  /** Highlights appear in the carousel above category sections. */
+  is_highlighted?: boolean;
   /** Canonical URL after provider normalization. */
   normalized_url?: string | null;
   /** URL used for iframe embed when different from project_url. */
@@ -30,4 +32,5 @@ export type NewProject = {
   image_url: string;
   project_url: string;
   tech_stack: string[];
+  is_highlighted: boolean;
 };

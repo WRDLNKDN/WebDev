@@ -615,6 +615,7 @@ export const Directory = () => {
                 <Select
                   value={primaryIndustry}
                   displayEmpty
+                  inputProps={{ 'aria-label': 'Primary Industry' }}
                   renderValue={(v) => v || 'Primary Industry'}
                   onChange={(e) => {
                     const nextPrimary = e.target.value;
@@ -661,6 +662,7 @@ export const Directory = () => {
                   <Select
                     value={secondaryIndustry}
                     displayEmpty
+                    inputProps={{ 'aria-label': 'Sub-industry' }}
                     renderValue={(v) => v || 'Sub-industry'}
                     onChange={(e) =>
                       updateUrl({ secondary_industry: e.target.value })
@@ -715,6 +717,7 @@ export const Directory = () => {
                 <Select
                   value={connectionStatus}
                   displayEmpty
+                  inputProps={{ 'aria-label': 'Connection' }}
                   renderValue={(v) =>
                     v ? (CONNECTION_LABEL[v] ?? v) : 'Connection'
                   }

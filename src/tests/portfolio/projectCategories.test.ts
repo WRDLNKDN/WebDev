@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatProjectCategories,
+  normalizeProjectCategories,
   parseProjectCategories,
 } from '../../lib/portfolio/categoryUtils';
 
@@ -30,5 +31,12 @@ describe('portfolio category parsing', () => {
       'DevOps, Case Study',
     );
     expect(formatProjectCategories(null)).toBe('');
+  });
+
+  it('normalizes category arrays for multi-select persistence', () => {
+    expect(
+      normalizeProjectCategories([' DevOps ', 'devops', '', '  ', 'UI/UX']),
+    ).toEqual(['DevOps', 'UI/UX']);
+    expect(normalizeProjectCategories(null)).toEqual([]);
   });
 });

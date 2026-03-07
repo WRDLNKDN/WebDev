@@ -1,5 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { GameEndScreen } from './GameEndScreen';
 
 // --- ASSET SECTOR ---
 // Imports the base64 string from the separate assets file to keep logic clean
@@ -47,6 +48,8 @@ export const WeirdlingRunner = () => {
     return saved ? parseInt(saved, 10) : 0;
   });
   const [gameOver, setGameOver] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const gameStartTimeRef = useRef<number | null>(null);
 
   // Track if image loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -420,6 +423,26 @@ export const WeirdlingRunner = () => {
     };
   }, [gameOver, score, highScore, imageLoaded]); // removed assetsLoaded dependency, relying on imageLoaded state
 
+  // Track game session start for elapsed time on game over
+  useEffect(() => {
+    if (gameOver) {
+      if (gameStartTimeRef.current != null) {
+        setElapsedSeconds(
+          Math.floor((performance.now() - gameStartTimeRef.current) / 1000),
+        );
+      }
+      gameStartTimeRef.current = null;
+    } else {
+      gameStartTimeRef.current = performance.now();
+    }
+  }, [gameOver]);
+
+  const handlePlayAgain = () => {
+    setGameOver(false);
+    setScore(0);
+    setElapsedSeconds(0);
+  };
+
   return (
     <Box
       sx={{
@@ -467,40 +490,17 @@ export const WeirdlingRunner = () => {
       </Typography>
 
       {gameOver && (
-        <Box sx={{ mt: 2, animation: 'fadeIn 0.5s' }}>
-          <Typography
-            variant="h5"
-            sx={{
-              color: '#ff4d4d',
-              mb: 1,
-              fontWeight: 800,
-            }}
-          >
-            [SYSTEM_CRASH]
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#fff', mb: 2 }}>
-            Buried under legacy paperwork.
-          </Typography>
-          <Typography
-            onClick={() => {
-              setGameOver(false);
-              setScore(0);
-            }}
-            sx={{
-              color: '#42a5f5',
-              cursor: 'pointer',
-              fontWeight: 600,
-              border: '1px solid #42a5f5',
-              display: 'inline-block',
-              px: 2,
-              py: 1,
-              borderRadius: 1,
-              '&:hover': { bgcolor: 'rgba(66, 165, 245, 0.1)' },
-            }}
-          >
-            REBOOT_KERNEL (RESTART)
-          </Typography>
-        </Box>
+        <GameEndScreen
+          title="[SYSTEM_CRASH]"
+          subtitle="Buried under legacy paperwork."
+          stats={[
+            { label: 'Time', value: elapsedSeconds },
+            { label: 'Score', value: score },
+            { label: 'Best', value: highScore },
+          ]}
+          replayButtonLabel="Play again"
+          onReplayClick={handlePlayAgain}
+        />
       )}
     </Box>
   );

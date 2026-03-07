@@ -34,6 +34,7 @@ export interface NerdCreds {
 
   // --- Portfolio Layer ---
   portfolio?: PortfolioItem[];
+  resume_file_name?: string | null;
   resume_thumbnail_url?: string;
   resume_thumbnail_status?: 'pending' | 'complete' | 'failed';
   resume_thumbnail_updated_at?: string;

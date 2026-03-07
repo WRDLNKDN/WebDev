@@ -3804,6 +3804,7 @@ const uploadAdvertiserForm = uploadAdvertiser.fields([
 function cleanAdvertiserRequest(body: unknown): {
   name: string;
   email: string;
+  destinationUrl: string;
   message: string;
   adCopyDescription: string;
 } | null {
@@ -3811,13 +3812,20 @@ function cleanAdvertiserRequest(body: unknown): {
   const o = body as Record<string, unknown>;
   const name = trim(o.name, 200);
   const email = trim(o.email, 254);
+  const destinationUrl = trim(o.destinationUrl, 2000);
   const message = trim(o.message, 5000);
   const adCopyDescription = trim(o.adCopyDescription, 2000);
   if (name.length < 2) return null;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  try {
+    const parsedUrl = new URL(destinationUrl);
+    if (parsedUrl.protocol !== 'https:') return null;
+  } catch {
+    return null;
+  }
   if (message.length < 10) return null;
   if (adCopyDescription.length < 10) return null;
-  return { name, email, message, adCopyDescription };
+  return { name, email, destinationUrl, message, adCopyDescription };
 }
 
 app.post(
@@ -3862,7 +3870,7 @@ app.post(
       return res.status(400).json({
         error: 'Invalid request',
         message:
-          'Name, email, message (min 10 chars), and Ad Copy Description (min 10 chars) are required.',
+          'Name, email, destination URL, message (min 10 chars), and Ad Copy Description (min 10 chars) are required.',
       });
     }
 
@@ -3930,8 +3938,8 @@ app.post(
     const fileLink = signed?.signedUrl ?? '[file stored, link unavailable]';
 
     const subject = `Advertiser Request: ${parsed.name}`;
-    const textBody = `Name: ${parsed.name}\nEmail: ${parsed.email}\n\nMessage:\n${parsed.message}\n\nAd Copy Description:\n${parsed.adCopyDescription}\n\nIcon/Logo: ${fileLink}`;
-    const htmlBody = `<p><strong>Name:</strong> ${escapeHtml(parsed.name)}</p><p><strong>Email:</strong> <a href="mailto:${escapeHtml(parsed.email)}">${escapeHtml(parsed.email)}</a></p><p><strong>Message:</strong></p><pre>${escapeHtml(parsed.message)}</pre><p><strong>Ad Copy Description:</strong></p><pre>${escapeHtml(parsed.adCopyDescription)}</pre><p><strong>Icon/Logo:</strong> <a href="${escapeHtml(fileLink)}">View file (7-day link)</a></p>`;
+    const textBody = `Name: ${parsed.name}\nEmail: ${parsed.email}\nDestination URL: ${parsed.destinationUrl}\n\nMessage:\n${parsed.message}\n\nAd Copy Description:\n${parsed.adCopyDescription}\n\nIcon/Logo: ${fileLink}`;
+    const htmlBody = `<p><strong>Name:</strong> ${escapeHtml(parsed.name)}</p><p><strong>Email:</strong> <a href="mailto:${escapeHtml(parsed.email)}">${escapeHtml(parsed.email)}</a></p><p><strong>Destination URL:</strong> <a href="${escapeHtml(parsed.destinationUrl)}">${escapeHtml(parsed.destinationUrl)}</a></p><p><strong>Message:</strong></p><pre>${escapeHtml(parsed.message)}</pre><p><strong>Ad Copy Description:</strong></p><pre>${escapeHtml(parsed.adCopyDescription)}</pre><p><strong>Icon/Logo:</strong> <a href="${escapeHtml(fileLink)}">View file (7-day link)</a></p>`;
 
     const emailPayload: Record<string, unknown> = {
       from: 'WRDLNKDN Advertise <info@wrdlnkdn.com>',

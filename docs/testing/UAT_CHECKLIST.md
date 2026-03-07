@@ -77,4 +77,5 @@ Resume card.
       390×844) for layout and combo box readability.
 - [ ] No console errors or silent failures during the above flows.
 
-**Signed off by:** ********\_******** **Date:** ********\_********
+**Signed off by:** **\*\*\*\***\_**\*\*\*\*** **Date:**
+**\*\*\*\***\_**\*\*\*\***

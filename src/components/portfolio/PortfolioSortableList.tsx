@@ -35,6 +35,10 @@ interface SortableCardProps {
   canMoveDown?: boolean;
   onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
+  onToggleHighlight?: (
+    projectId: string,
+    isHighlighted: boolean,
+  ) => void | Promise<void>;
   onOpenPreview?: (project: PortfolioItem) => void;
 }
 
@@ -48,6 +52,7 @@ const SortableCard = ({
   canMoveDown,
   onEdit,
   onDelete,
+  onToggleHighlight,
   onOpenPreview,
 }: SortableCardProps) => {
   const {
@@ -76,6 +81,7 @@ const SortableCard = ({
         isOwner={isOwner}
         onEdit={onEdit}
         onDelete={onDelete}
+        onToggleHighlight={onToggleHighlight}
         onOpenPreview={onOpenPreview}
         onMoveUp={onMoveUp}
         onMoveDown={onMoveDown}
@@ -122,6 +128,10 @@ interface PortfolioSortableListProps {
   onReorder: (orderedIds: string[]) => void | Promise<void>;
   onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
+  onToggleHighlight?: (
+    projectId: string,
+    isHighlighted: boolean,
+  ) => void | Promise<void>;
   onOpenPreview?: (project: PortfolioItem) => void;
 }
 
@@ -131,6 +141,7 @@ export const PortfolioSortableList = ({
   onReorder,
   onEdit,
   onDelete,
+  onToggleHighlight,
   onOpenPreview,
 }: PortfolioSortableListProps) => {
   const canReorder = isOwner && projects.length > 1;
@@ -208,6 +219,7 @@ export const PortfolioSortableList = ({
               canMoveDown={canReorder && index < projects.length - 1}
               onEdit={onEdit}
               onDelete={onDelete}
+              onToggleHighlight={onToggleHighlight}
               onOpenPreview={onOpenPreview}
             />
           ))}

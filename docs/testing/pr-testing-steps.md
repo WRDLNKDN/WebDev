@@ -159,6 +159,11 @@ profile routes (IA), Directory, footer, and Dashboard.
       reconnecting later. Block confirmation: title "Block", body about Settings
       for unblocking. Both use Confirm/Cancel.
 
+- [ ] **Portfolio highlight quick toggle**  
+       In Dashboard portfolio cards, click the star action to toggle highlight
+      on/off. Verify the Highlight chip state updates in Dashboard and the
+      artifact appears/disappears in the public profile highlights carousel.
+
 ---
 
 ## 6. Footer

@@ -71,6 +71,10 @@ Tests live under `src/tests/` (and `backend/` where applicable). Run with
 | Portfolio     | `portfolio/portfolioSections.test.ts`, `portfolio/projectCategories.test.ts`, `portfolio/projectStorage.test.ts`, `portfolio/resumeDisplayName.test.ts`, `portfolio/resumeThumbnailGeneration.test.ts` | Section grouping, category normalization, storage cleanup, resume display naming, thumbnail generation |
 | Reactions     | `post/reactionOptions.test.ts`                                                                                                                                                                         | Canonical Feed reaction label/color mapping                                                            |
 
+Additional portfolio unit coverage:
+
+- `portfolio/toggleProjectHighlight.test.ts` (highlight toggle persistence)
+
 ## Documentation that references tests
 
 - **Run e2e before merge:**

@@ -4,6 +4,8 @@ import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupported
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
   Button,
@@ -30,6 +32,10 @@ interface ProjectCardProps {
   isOwner?: boolean;
   onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
+  onToggleHighlight?: (
+    projectId: string,
+    isHighlighted: boolean,
+  ) => void | Promise<void>;
   /** When provided, clicking the card/title opens this preview instead of navigating to project page */
   onOpenPreview?: (project: PortfolioItem) => void;
   /** When provided, shown as drag handle and arrow controls are hidden (reorder via DnD/keyboard on handle) */
@@ -47,6 +53,7 @@ export const ProjectCard = ({
   isOwner,
   onEdit,
   onDelete,
+  onToggleHighlight,
   onOpenPreview,
   dragHandle,
   onMoveUp,
@@ -298,6 +305,43 @@ export const ProjectCard = ({
                 sx={ownerActionSx}
               >
                 <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+            {onToggleHighlight && (
+              <IconButton
+                size="small"
+                aria-label={
+                  project.is_highlighted
+                    ? `Remove artifact ${project.title} from highlights`
+                    : `Mark artifact ${project.title} as highlight`
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void onToggleHighlight(project.id, !project.is_highlighted);
+                }}
+                sx={{
+                  ...ownerActionSx,
+                  color: project.is_highlighted
+                    ? '#f8df95'
+                    : ownerActionSx.color,
+                  border: project.is_highlighted
+                    ? '1px solid rgba(248, 223, 149, 0.42)'
+                    : ownerActionSx.border,
+                  '&:hover': project.is_highlighted
+                    ? {
+                        bgcolor: 'rgba(248, 223, 149, 0.18)',
+                        color: '#ffefba',
+                        borderColor: 'rgba(248, 223, 149, 0.7)',
+                      }
+                    : ownerActionSx['&:hover'],
+                }}
+              >
+                {project.is_highlighted ? (
+                  <StarIcon fontSize="small" />
+                ) : (
+                  <StarBorderIcon fontSize="small" />
+                )}
               </IconButton>
             )}
             {onDelete && (

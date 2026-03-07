@@ -17,6 +17,8 @@ Users can manage portfolio artifacts from the Dashboard Portfolio section.
   - one or more categories
   - optional highlight toggle
 - Edit existing artifacts with the same fields.
+- Toggle highlight state directly from Dashboard artifact cards using the star
+  action. This updates `is_highlighted` without opening the edit dialog.
 - Delete artifacts. Delete removes the row and associated storage objects.
 - Reorder artifacts with drag-and-drop. `sort_order` is the canonical display
   order.
@@ -83,3 +85,4 @@ Relevant automated coverage:
 - `src/tests/e2e/portfolio-highlights.spec.ts`
 - `src/tests/e2e/share-profile-route.spec.ts`
 - `src/tests/portfolio/portfolioSections.test.ts`
+- `src/tests/portfolio/toggleProjectHighlight.test.ts`

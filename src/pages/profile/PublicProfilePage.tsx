@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
+import { PortfolioHighlightsCarousel } from '../../components/portfolio/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
 import { ProjectCard } from '../../components/portfolio/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/ResumeCard';
@@ -19,6 +20,10 @@ import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget'
 import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
+import {
+  buildPortfolioCategorySections,
+  portfolioCategoryToSectionTestId,
+} from '../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { NerdCreds } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
@@ -45,6 +50,7 @@ type PublicProfilePayload = {
     project_url: string | null;
     image_url: string | null;
     tech_stack: string[];
+    is_highlighted?: boolean;
     sort_order?: number;
     normalized_url?: string | null;
     embed_url?: string | null;
@@ -53,6 +59,55 @@ type PublicProfilePayload = {
     thumbnail_status?: string | null;
   }>;
 };
+
+const PUBLIC_PROFILE_SELECT =
+  'id,display_name,tagline,avatar,nerd_creds,socials,resume_url,industry,secondary_industry,niche_field,location,pronouns';
+const PUBLIC_PORTFOLIO_SELECT =
+  'id,title,description,project_url,image_url,tech_stack,is_highlighted,sort_order,normalized_url,embed_url,resolved_type,thumbnail_url,thumbnail_status';
+
+const safeDecode = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+async function fetchPublicProfileByHandleOrId(
+  key: 'handle' | 'id',
+  value: string,
+): Promise<PublicProfilePayload | null> {
+  if (!value.trim()) return null;
+
+  let query = supabase
+    .from('profiles')
+    .select(PUBLIC_PROFILE_SELECT)
+    .eq('status', 'approved')
+    .limit(1);
+  query = key === 'handle' ? query.eq('handle', value) : query.eq('id', value);
+
+  const { data: profileRows, error: profileError } = await query;
+  if (profileError || !Array.isArray(profileRows) || profileRows.length === 0) {
+    return null;
+  }
+
+  const profile = profileRows[0] as PublicProfilePayload['profile'];
+  const { data: portfolioRows, error: portfolioError } = await supabase
+    .from('portfolio_items')
+    .select(PUBLIC_PORTFOLIO_SELECT)
+    .eq('owner_id', profile.id)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (portfolioError) return null;
+
+  return {
+    profile,
+    portfolio: Array.isArray(portfolioRows)
+      ? (portfolioRows as PublicProfilePayload['portfolio'])
+      : [],
+  };
+}
 
 export const PublicProfilePage = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -71,10 +126,33 @@ export const PublicProfilePage = () => {
     }
     let cancelled = false;
     const load = async () => {
-      const { data: payload, error } = await supabase.rpc(
-        'get_public_profile_by_share_token',
-        { p_token: shareToken.trim() },
-      );
+      const trimmedToken = shareToken.trim();
+      let payload: PublicProfilePayload | null = null;
+      let error: { message?: string } | null = null;
+
+      // Directory fallback routes:
+      // /p/h~<handle> and /p/i~<id>
+      if (trimmedToken.startsWith('h~')) {
+        payload = await fetchPublicProfileByHandleOrId(
+          'handle',
+          safeDecode(trimmedToken.slice(2)),
+        );
+      } else if (trimmedToken.startsWith('i~')) {
+        payload = await fetchPublicProfileByHandleOrId(
+          'id',
+          safeDecode(trimmedToken.slice(2)),
+        );
+      } else {
+        const rpcResult = await supabase.rpc(
+          'get_public_profile_by_share_token',
+          {
+            p_token: trimmedToken,
+          },
+        );
+        payload = (rpcResult.data as PublicProfilePayload | null) ?? null;
+        error = rpcResult.error;
+      }
+
       if (cancelled) return;
       if (error || payload == null) {
         setNotFound(true);
@@ -124,6 +202,8 @@ export const PublicProfilePage = () => {
     typeof creds.resume_thumbnail_url === 'string'
       ? creds.resume_thumbnail_url
       : null;
+  const resumeFileName =
+    typeof creds.resume_file_name === 'string' ? creds.resume_file_name : null;
   const resumeThumbnailStatus =
     creds.resume_thumbnail_status === 'pending' ||
     creds.resume_thumbnail_status === 'complete' ||
@@ -163,6 +243,7 @@ export const PublicProfilePage = () => {
     project_url: item.project_url ?? null,
     tech_stack: item.tech_stack ?? [],
     created_at: '',
+    is_highlighted: Boolean(item.is_highlighted),
     sort_order: item.sort_order ?? 0,
     normalized_url: item.normalized_url ?? null,
     embed_url: item.embed_url ?? null,
@@ -171,6 +252,7 @@ export const PublicProfilePage = () => {
     thumbnail_status:
       (item.thumbnail_status as PortfolioItem['thumbnail_status']) ?? null,
   }));
+  const portfolioSections = buildPortfolioCategorySections(projects);
 
   return (
     <>
@@ -262,15 +344,56 @@ export const PublicProfilePage = () => {
               <PortfolioFrame title="Portfolio">
                 <ResumeCard
                   url={p.resume_url ?? undefined}
+                  fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl ?? undefined}
                   thumbnailStatus={resumeThumbnailStatus ?? undefined}
                 />
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onOpenPreview={setPreviewProject}
-                  />
+                <PortfolioHighlightsCarousel
+                  projects={projects}
+                  onOpenPreview={setPreviewProject}
+                />
+                {portfolioSections.map((section) => (
+                  <Box
+                    key={section.category}
+                    data-testid={portfolioCategoryToSectionTestId(
+                      section.category,
+                    )}
+                    sx={{ width: '100%' }}
+                  >
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        display: 'block',
+                        fontWeight: 700,
+                        letterSpacing: 1.1,
+                        mb: 1.5,
+                        color: 'text.secondary',
+                      }}
+                    >
+                      {section.category}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gap: 2.5,
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, minmax(0, 1fr))',
+                          xl: 'repeat(3, minmax(0, 1fr))',
+                        },
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      {section.projects.map((project) => (
+                        <ProjectCard
+                          key={`${section.category}-${project.id}`}
+                          project={project}
+                          variant="showcase"
+                          onOpenPreview={setPreviewProject}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
                 ))}
               </PortfolioFrame>
             </Grid>

@@ -1,4 +1,3 @@
-import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -11,7 +10,6 @@ import {
   FormControl,
   FormHelperText,
   IconButton,
-  InputLabel,
   MenuItem,
   Select,
   Stack,
@@ -30,14 +28,15 @@ import {
 } from '../../theme/filterControls';
 import {
   detectPlatformFromUrl,
+  findDuplicateNormalizedUrl,
   getShortLinkLabel,
   normalizeUrlForDedup,
 } from '../../lib/utils/linkPlatform';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
-/** Button label for adding a link; single "Add to List" (no duplicate plus). */
-export const ADD_TO_LIST_BUTTON_LABEL = 'Add to List';
+/** Button label for adding a link; single leading plus (no duplicate icon). */
+export const ADD_TO_LIST_BUTTON_LABEL = '+ Add to List';
 
 interface EditLinksDialogProps {
   open: boolean;
@@ -117,6 +116,10 @@ export const EditLinksDialog = ({
       links.some((l) => normalizeUrlForDedup(l.url) === normalizedNewUrl),
     [links, normalizedNewUrl],
   );
+  const duplicateLinksInList = useMemo(
+    () => findDuplicateNormalizedUrl(links.map((link) => link.url)),
+    [links],
+  );
   const canAddLink =
     Boolean(newCategory) &&
     newPlatform.trim().length > 0 &&
@@ -170,7 +173,7 @@ export const EditLinksDialog = ({
       id: uuidv4(),
       category: newCategory,
       platform,
-      url: newUrl.trim(),
+      url: normalizedNewUrl,
       label:
         newLabel?.trim() ||
         (platform.toLowerCase() === OTHER_PLATFORM ? 'Link' : platform),
@@ -201,6 +204,12 @@ export const EditLinksDialog = ({
 
   const handleSave = async () => {
     setSaveError(null);
+    if (duplicateLinksInList) {
+      setSaveError(
+        'Duplicate URLs are not allowed. Remove duplicate links before saving.',
+      );
+      return;
+    }
     try {
       setIsSubmitting(true);
       await onUpdate({ socials: links });
@@ -259,17 +268,13 @@ export const EditLinksDialog = ({
               <Stack spacing={2}>
                 <Stack direction="row" spacing={2}>
                   <FormControl fullWidth size="small" error={categoryError}>
-                    <InputLabel id="add-link-category" shrink>
-                      Category
-                    </InputLabel>
                     <Select
-                      labelId="add-link-category"
                       value={newCategory}
-                      label="Category"
                       displayEmpty
                       renderValue={(v) => v || 'Choose Category'}
                       MenuProps={filterSelectMenuProps}
                       sx={dialogSelectSx}
+                      inputProps={{ 'aria-label': 'Category' }}
                       onChange={(e) => {
                         setNewCategory(e.target.value as LinkCategory | '');
                         setNewPlatform('');
@@ -293,17 +298,13 @@ export const EditLinksDialog = ({
                     error={platformError}
                     disabled={!newCategory}
                   >
-                    <InputLabel id="add-link-platform" shrink>
-                      Platform
-                    </InputLabel>
                     <Select
-                      labelId="add-link-platform"
                       value={newPlatform}
-                      label="Platform"
                       displayEmpty
                       renderValue={(v) => v || 'Select platform'}
                       MenuProps={filterSelectMenuProps}
                       sx={dialogSelectSx}
+                      inputProps={{ 'aria-label': 'Platform' }}
                       onChange={(e) => setNewPlatform(e.target.value)}
                     >
                       <MenuItem value="">Select platform</MenuItem>
@@ -338,10 +339,11 @@ export const EditLinksDialog = ({
                   onChange={(e) => setNewUrl(e.target.value)}
                   disabled={!newPlatform.trim()}
                   error={Boolean(
-                    addAttempted && (isDuplicateUrl || urlFormatError),
+                    (newUrl.trim() && isDuplicateUrl) ||
+                      (addAttempted && urlFormatError),
                   )}
                   helperText={
-                    addAttempted && isDuplicateUrl
+                    newUrl.trim() && isDuplicateUrl
                       ? 'This URL is already in your links.'
                       : addAttempted && urlFormatError
                         ? 'Please enter a valid URL.'
@@ -365,7 +367,6 @@ export const EditLinksDialog = ({
 
                 <Button
                   variant="outlined"
-                  startIcon={<AddIcon />}
                   onClick={handleAddLink}
                   disabled={!canAddLink}
                   sx={{ alignSelf: 'flex-start' }}
@@ -377,6 +378,12 @@ export const EditLinksDialog = ({
 
             {/* --- SECTION 2: CURRENT LINKS LIST --- */}
             <Stack spacing={2}>
+              {duplicateLinksInList && (
+                <Alert severity="error">
+                  Duplicate URLs are already present in this list. Remove the
+                  duplicate before saving.
+                </Alert>
+              )}
               <Typography
                 variant="subtitle2"
                 sx={{ color: 'text.secondary', fontWeight: 600 }}
@@ -495,7 +502,7 @@ export const EditLinksDialog = ({
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isSubmitting}
+            disabled={isSubmitting || Boolean(duplicateLinksInList)}
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>

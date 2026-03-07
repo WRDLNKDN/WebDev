@@ -1,6 +1,11 @@
 /**
- * Profile URL for a directory member. Uses /p/:token when profile_share_token is set (avoids 404);
- * otherwise /profile/:handle or /profile/:id. Pure function for easy unit testing.
+ * Profile URL for a directory member.
+ * - Prefer canonical share route: /p/:profile_share_token
+ * - Fallback to explicit public lookup hints on /p:
+ *   - handle => /p/h~<handle>
+ *   - id => /p/i~<id>
+ * "~" is not part of base64url share tokens, so marker collision is avoided.
+ * This avoids /profile/:handle owner-only 404s for directory results.
  */
 export function getProfileLink(member: {
   profile_share_token?: string | null;
@@ -8,10 +13,10 @@ export function getProfileLink(member: {
   id: string;
 }): string {
   if (member.profile_share_token != null && member.profile_share_token !== '') {
-    return `/p/${member.profile_share_token}`;
+    return `/p/${encodeURIComponent(member.profile_share_token)}`;
   }
   if (member.handle) {
-    return `/profile/${member.handle}`;
+    return `/p/h~${encodeURIComponent(member.handle)}`;
   }
-  return `/profile/${member.id}`;
+  return `/p/i~${encodeURIComponent(member.id)}`;
 }

@@ -10,13 +10,16 @@ import {
   DialogTitle,
   IconButton,
   Paper,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { getResumeDisplayName } from '../../lib/portfolio/resumeDisplayName';
 import { CANDY_HAZARD, CANDY_SUCCESS } from '../../theme/candyStyles';
 
 interface ResumeCardProps {
   url?: string | null;
+  fileName?: string | null;
   thumbnailUrl?: string | null;
   thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
   /** Server error message when thumbnail generation failed; shown inline so it persists until retry */
@@ -32,6 +35,7 @@ interface ResumeCardProps {
 
 export const ResumeCard = ({
   url,
+  fileName,
   thumbnailUrl,
   thumbnailStatus,
   thumbnailError,
@@ -46,6 +50,7 @@ export const ResumeCard = ({
   const hasResume = Boolean(url);
   const hasThumbnail = Boolean(thumbnailUrl);
   const isPdf = typeof url === 'string' && url.toLowerCase().includes('.pdf');
+  const resumeTitle = getResumeDisplayName({ fileName, url });
 
   const handleDeleteClick = () => setConfirmDeleteOpen(true);
   const handleConfirmDelete = async () => {
@@ -183,7 +188,25 @@ export const ResumeCard = ({
             )}
           </Box>
           <Typography variant="h6" fontWeight={800} letterSpacing={1}>
-            RESUME
+            <Tooltip title={resumeTitle} placement="top">
+              <Box
+                component="span"
+                tabIndex={0}
+                title={resumeTitle}
+                data-testid="resume-file-name"
+                sx={{
+                  display: 'block',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  outline: 'none',
+                }}
+              >
+                {resumeTitle}
+              </Box>
+            </Tooltip>
           </Typography>
           <Button
             variant="outlined"

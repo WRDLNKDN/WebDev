@@ -241,6 +241,12 @@ export type Database = {
           project_url: string | null
           image_url: string | null
           tech_stack: string[] | null
+          is_highlighted: boolean
+          normalized_url: string | null
+          embed_url: string | null
+          resolved_type: string | null
+          thumbnail_url: string | null
+          thumbnail_status: string | null
           sort_order: number
           created_at: string
           updated_at: string | null
@@ -253,6 +259,12 @@ export type Database = {
           project_url?: string | null
           image_url?: string | null
           tech_stack?: string[] | null
+          is_highlighted?: boolean
+          normalized_url?: string | null
+          embed_url?: string | null
+          resolved_type?: string | null
+          thumbnail_url?: string | null
+          thumbnail_status?: string | null
           sort_order?: number
           created_at?: string
           updated_at?: string | null
@@ -265,6 +277,12 @@ export type Database = {
           project_url?: string | null
           image_url?: string | null
           tech_stack?: string[] | null
+          is_highlighted?: boolean
+          normalized_url?: string | null
+          embed_url?: string | null
+          resolved_type?: string | null
+          thumbnail_url?: string | null
+          thumbnail_status?: string | null
           sort_order?: number
           created_at?: string
           updated_at?: string | null

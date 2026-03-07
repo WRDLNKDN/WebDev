@@ -744,6 +744,15 @@ create policy "Public read project-images"
   to public
   using (bucket_id = 'project-images');
 
+drop policy if exists "Authenticated can delete own project-images" on storage.objects;
+create policy "Authenticated can delete own project-images"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'project-images'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
+
 -- portfolio-thumbnails: worker/authenticated upload, public read. Additive only: new policies for new bucket.
 -- Does not modify portfolio_items or any other table RLS; no data touched.
 drop policy if exists "Authenticated can upload portfolio-thumbnails" on storage.objects;
@@ -757,6 +766,15 @@ create policy "Public read portfolio-thumbnails"
   on storage.objects for select
   to public
   using (bucket_id = 'portfolio-thumbnails');
+
+drop policy if exists "Authenticated can delete own portfolio-thumbnails" on storage.objects;
+create policy "Authenticated can delete own portfolio-thumbnails"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'portfolio-thumbnails'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
 
 -- resumes: authenticated upload (own path), public read
 drop policy if exists "Authenticated can upload resumes" on storage.objects;

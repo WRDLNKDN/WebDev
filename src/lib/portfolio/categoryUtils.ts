@@ -4,6 +4,16 @@
  */
 
 export const MAX_PROJECT_CATEGORIES = 8;
+export const PORTFOLIO_CATEGORY_OPTIONS = [
+  'Case Study',
+  'Web App',
+  'Mobile App',
+  'UI/UX',
+  'DevOps',
+  'Data',
+  'AI/ML',
+  'Writing',
+] as const;
 
 const normalizeCategory = (value: string): string =>
   value.trim().replace(/\s+/g, ' ');
@@ -34,4 +44,26 @@ export function formatProjectCategories(categories: string[] | null): string {
     .map((entry) => normalizeCategory(String(entry)))
     .filter(Boolean)
     .join(', ');
+}
+
+export function normalizeProjectCategories(
+  categories: string[] | null | undefined,
+  maxCategories: number = MAX_PROJECT_CATEGORIES,
+): string[] {
+  if (!Array.isArray(categories)) return [];
+
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  for (const raw of categories) {
+    const category = normalizeCategory(String(raw));
+    if (!category) continue;
+    const key = category.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(category);
+    if (normalized.length >= maxCategories) break;
+  }
+
+  return normalized;
 }

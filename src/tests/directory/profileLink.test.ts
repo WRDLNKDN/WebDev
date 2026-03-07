@@ -15,17 +15,17 @@ describe('getProfileLink (directory 404 fix)', () => {
     );
   });
 
-  it('returns /profile/:handle when no token but handle present', () => {
-    expect(getProfileLink({ id: 'uuid', handle: 'bob' })).toBe('/profile/bob');
+  it('returns /p/h~:handle when no token but handle present', () => {
+    expect(getProfileLink({ id: 'uuid', handle: 'bob' })).toBe('/p/h~bob');
   });
 
-  it('returns /profile/:id when no token and no handle', () => {
-    expect(getProfileLink({ id: 'uuid-123' })).toBe('/profile/uuid-123');
+  it('returns /p/i~:id when no token and no handle', () => {
+    expect(getProfileLink({ id: 'uuid-123' })).toBe('/p/i~uuid-123');
   });
 
   it('ignores empty string profile_share_token', () => {
     expect(
       getProfileLink({ id: 'uuid', handle: 'alice', profile_share_token: '' }),
-    ).toBe('/profile/alice');
+    ).toBe('/p/h~alice');
   });
 });

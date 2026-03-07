@@ -31,7 +31,8 @@ const STUB_PROFILE = {
 };
 
 export async function stubAppSurface(page: Page) {
-  // Register specific routes FIRST so they win (Playwright: first matching route wins).
+  // Register baseline routes; tests can add more specific handlers later.
+  // Playwright runs the most recently registered matching route first.
   await stubAuthToken(page);
 
   await page.route('**/rest/v1/notifications*', async (route) => {
@@ -91,6 +92,15 @@ export async function stubAppSurface(page: Page) {
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
     const method = route.request().method();
+    const pathname = new URL(url).pathname;
+    if (!pathname.startsWith('/api/')) {
+      await route.fallback();
+      return;
+    }
+    if (pathname === '/api/advertise/request') {
+      await route.fallback();
+      return;
+    }
     if (url.includes('auth-callback-logs')) {
       return route.fallback();
     }

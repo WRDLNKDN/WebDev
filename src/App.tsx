@@ -2,6 +2,7 @@ import { Box, CircularProgress } from '@mui/material';
 import { Suspense, lazy, useEffect } from 'react';
 import {
   Navigate,
+  type Location as RouterLocation,
   Route,
   Routes,
   useLocation,
@@ -314,6 +315,9 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const backgroundLocation = (
+    location.state as { backgroundLocation?: RouterLocation } | null
+  )?.backgroundLocation;
 
   // --- SYSTEM SECRET: KONAMI CODE LISTENER ---
   useKonamiCode(() => {
@@ -361,7 +365,7 @@ const App = () => {
         <AvatarProvider>
           <FeatureFlagsProvider>
             <Suspense fallback={<Loading />}>
-              <Routes>
+              <Routes location={backgroundLocation ?? location}>
                 {/* Bumper: full-screen, no nav/footer (for recording) */}
                 <Route path="/bumper" element={<BumperPage />} />
 
@@ -668,6 +672,11 @@ const App = () => {
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Routes>
+              {backgroundLocation ? (
+                <Routes>
+                  <Route path="/advertise" element={<AdvertisePage />} />
+                </Routes>
+              ) : null}
             </Suspense>
           </FeatureFlagsProvider>
         </AvatarProvider>

@@ -1,39 +1,81 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
-  Container,
-  Paper,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
+import {
+  useLocation,
+  useNavigate,
+  type Location as RouterLocation,
+} from 'react-router-dom';
+import {
+  isValidAdvertiserDestinationUrl,
+  validateAdvertiseFields,
+  type AdvertiseFieldErrors,
+} from '../../lib/marketing/advertiseValidation';
 
 const ICON_MAX_BYTES = 5 * 1024 * 1024;
 const ICON_ACCEPT = '.png,.svg,image/png,image/svg+xml';
 
 /**
- * Advertise with us – contact form. Sends to info@wrdlnkdn.com via API
- * with Ad Copy Description and Icon/Logo upload.
+ * Advertise with us - route-mounted modal form.
+ * Sends to info@wrdlnkdn.com via API with destination URL and icon/logo upload.
  */
 export const AdvertisePage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [destinationUrl, setDestinationUrl] = useState('');
   const [message, setMessage] = useState('');
   const [adCopyDescription, setAdCopyDescription] = useState('');
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<AdvertiseFieldErrors>({});
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const backgroundLocation = (
+    location.state as { backgroundLocation?: RouterLocation } | null
+  )?.backgroundLocation;
+
+  const closeModal = () => {
+    if (backgroundLocation) {
+      navigate(
+        {
+          pathname: backgroundLocation.pathname,
+          search: backgroundLocation.search,
+          hash: backgroundLocation.hash,
+        },
+        { replace: true },
+      );
+      return;
+    }
+    navigate('/', { replace: true });
+  };
+
+  const clearFieldError = (field: keyof AdvertiseFieldErrors) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      return { ...prev, [field]: undefined };
+    });
+  };
 
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setIconFile(file ?? null);
     setIconPreview(null);
+    clearFieldError('icon');
     if (file) {
       const reader = new FileReader();
       reader.onload = () => setIconPreview(reader.result as string);
@@ -44,46 +86,39 @@ export const AdvertisePage = () => {
   const clearIcon = () => {
     setIconFile(null);
     setIconPreview(null);
+    clearFieldError('icon');
     if (iconInputRef.current) iconInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
+    const trimmedDestinationUrl = destinationUrl.trim();
     const trimmedMessage = message.trim();
     const trimmedAdCopy = adCopyDescription.trim();
 
-    if (!trimmedName || trimmedName.length < 2) {
-      setError('Name must be at least 2 characters');
-      return;
-    }
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    if (!trimmedMessage || trimmedMessage.length < 10) {
-      setError('Message must be at least 10 characters');
-      return;
-    }
-    if (!trimmedAdCopy || trimmedAdCopy.length < 10) {
-      setError('Ad Copy Description must be at least 10 characters');
-      return;
-    }
-    if (!iconFile) {
-      setError('Icon/logo file is required');
-      return;
-    }
+    const nextFieldErrors = validateAdvertiseFields({
+      name: trimmedName,
+      email: trimmedEmail,
+      destinationUrl: trimmedDestinationUrl,
+      message: trimmedMessage,
+      adCopyDescription: trimmedAdCopy,
+      iconFile,
+    });
+    setFieldErrors(nextFieldErrors);
+    if (Object.values(nextFieldErrors).some(Boolean)) return;
+
+    if (!iconFile) return;
     if (iconFile.size > ICON_MAX_BYTES) {
-      setError('Icon must be 5MB or less');
+      setError('Icon must be 5MB or less.');
       return;
     }
     const validMimes = ['image/png', 'image/svg+xml'];
     if (!validMimes.includes(iconFile.type)) {
-      setError('Icon must be PNG or SVG');
+      setError('Icon must be PNG or SVG.');
       return;
     }
 
@@ -92,6 +127,7 @@ export const AdvertisePage = () => {
       const formData = new FormData();
       formData.append('name', trimmedName);
       formData.append('email', trimmedEmail);
+      formData.append('destinationUrl', trimmedDestinationUrl);
       formData.append('message', trimmedMessage);
       formData.append('adCopyDescription', trimmedAdCopy);
       formData.append('icon', iconFile);
@@ -107,12 +143,13 @@ export const AdvertisePage = () => {
       };
 
       if (res.ok && data.ok) {
-        setSuccess(true);
         setName('');
         setEmail('');
+        setDestinationUrl('');
         setMessage('');
         setAdCopyDescription('');
         clearIcon();
+        closeModal();
         return;
       }
 
@@ -135,159 +172,253 @@ export const AdvertisePage = () => {
     }
   };
 
+  const destinationUrlHasValue = destinationUrl.trim().length > 0;
+  const destinationUrlIsInvalid =
+    destinationUrlHasValue &&
+    !isValidAdvertiserDestinationUrl(destinationUrl.trim());
+
   return (
-    <Box sx={{ py: 6 }}>
-      <Container maxWidth="sm">
-        <Paper
-          elevation={0}
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
+    <Dialog
+      open
+      onClose={() => !submitting && closeModal()}
+      fullWidth
+      maxWidth="sm"
+      aria-labelledby="advertise-dialog-title"
+      PaperProps={{
+        component: 'form',
+        onSubmit: handleSubmit,
+        sx: {
+          maxHeight: 'min(92vh, 860px)',
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          mx: { xs: 1.5, sm: 2 },
+          width: { xs: 'calc(100% - 24px)', sm: '100%' },
+        },
+      }}
+    >
+      <DialogTitle id="advertise-dialog-title" sx={{ pr: 6, pb: 1.25 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          Advertise with us
+        </Typography>
+        <IconButton
+          onClick={closeModal}
+          disabled={submitting}
+          aria-label="Close advertise modal"
+          sx={{ position: 'absolute', right: 10, top: 10 }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-            Advertise with us
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Interested in reaching the WRDLNKDN community? Send us a message.
-          </Typography>
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              Your request was sent to info@wrdlnkdn.com. We&apos;ll be in
-              touch.
-            </Alert>
-          )}
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              onClose={() => setError(null)}
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent
+        dividers
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          overflowY: 'auto',
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          Interested in reaching the WRDLNKDN community? Send us a message.
+        </Typography>
+
+        {error ? (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        ) : null}
+
+        <Stack spacing={2}>
+          <TextField
+            fullWidth
+            label="Name"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              clearFieldError('name');
+            }}
+            variant="outlined"
+            error={Boolean(fieldErrors.name)}
+            helperText={fieldErrors.name}
+          />
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFieldError('email');
+            }}
+            variant="outlined"
+            error={Boolean(fieldErrors.email)}
+            helperText={fieldErrors.email}
+          />
+          <TextField
+            fullWidth
+            required
+            label="Destination Link"
+            type="url"
+            value={destinationUrl}
+            onChange={(e) => {
+              setDestinationUrl(e.target.value);
+              clearFieldError('destinationUrl');
+            }}
+            variant="outlined"
+            placeholder="https://example.com"
+            error={
+              Boolean(fieldErrors.destinationUrl) || destinationUrlIsInvalid
+            }
+            helperText={
+              fieldErrors.destinationUrl ??
+              (destinationUrlIsInvalid
+                ? 'Enter a valid https:// destination URL.'
+                : 'Use the full https:// URL for the destination site.')
+            }
+          />
+          <TextField
+            fullWidth
+            label="Message"
+            multiline
+            rows={4}
+            value={message}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              clearFieldError('message');
+            }}
+            variant="outlined"
+            error={Boolean(fieldErrors.message)}
+            helperText={fieldErrors.message}
+          />
+          <TextField
+            fullWidth
+            label="Brief Description of Your Ad Copy"
+            multiline
+            rows={3}
+            value={adCopyDescription}
+            onChange={(e) => {
+              setAdCopyDescription(e.target.value);
+              clearFieldError('adCopyDescription');
+            }}
+            variant="outlined"
+            required
+            error={Boolean(fieldErrors.adCopyDescription)}
+            helperText={
+              fieldErrors.adCopyDescription ??
+              'Provide a short summary of the messaging, tone, and intended call-to-action.'
+            }
+          />
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Upload Your Icon or Logo *
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              component="div"
             >
-              {error}
-            </Alert>
-          )}
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              variant="outlined"
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              variant="outlined"
-            />
-            <TextField
-              fullWidth
-              label="Message"
-              multiline
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              variant="outlined"
-            />
-            <TextField
-              fullWidth
-              label="Brief Description of Your Ad Copy"
-              multiline
-              rows={3}
-              value={adCopyDescription}
-              onChange={(e) => setAdCopyDescription(e.target.value)}
-              variant="outlined"
-              required
-              helperText="Provide a short summary of the messaging, tone, and intended call-to-action."
-            />
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Upload Your Icon or Logo *
-              </Typography>
+              PNG or SVG preferred. Max 5MB. Transparent background and square
+              format recommended.
+            </Typography>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={2}
+              sx={{ mt: 1, flexWrap: 'wrap' }}
+            >
+              <Button
+                variant="outlined"
+                component="label"
+                size="small"
+                disabled={submitting}
+              >
+                {iconFile ? 'Change file' : 'Choose file'}
+                <input
+                  ref={iconInputRef}
+                  type="file"
+                  accept={ICON_ACCEPT}
+                  hidden
+                  onChange={handleIconChange}
+                />
+              </Button>
+              {iconFile ? (
+                <>
+                  <Typography variant="body2">
+                    {iconFile.name} ({(iconFile.size / 1024).toFixed(1)} KB)
+                  </Typography>
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={clearIcon}
+                    disabled={submitting}
+                  >
+                    Remove
+                  </Button>
+                </>
+              ) : null}
+            </Stack>
+            {fieldErrors.icon ? (
               <Typography
                 variant="caption"
-                color="text.secondary"
-                component="div"
+                color="error.main"
+                sx={{ display: 'block', mt: 1 }}
               >
-                PNG or SVG preferred. Max 5MB. Transparent background and square
-                format recommended.
+                {fieldErrors.icon}
               </Typography>
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={2}
-                sx={{ mt: 1 }}
-              >
-                <Button
-                  variant="outlined"
-                  component="label"
-                  size="small"
-                  disabled={submitting}
-                >
-                  {iconFile ? 'Change file' : 'Choose file'}
-                  <input
-                    ref={iconInputRef}
-                    type="file"
-                    accept={ICON_ACCEPT}
-                    hidden
-                    onChange={handleIconChange}
-                  />
-                </Button>
-                {iconFile && (
-                  <>
-                    <Typography variant="body2">
-                      {iconFile.name} ({(iconFile.size / 1024).toFixed(1)} KB)
-                    </Typography>
-                    <Button
-                      size="small"
-                      color="secondary"
-                      onClick={clearIcon}
-                      disabled={submitting}
-                    >
-                      Remove
-                    </Button>
-                  </>
-                )}
-              </Stack>
-              {iconPreview && (
-                <Box
-                  component="img"
-                  src={iconPreview}
-                  alt="Icon preview"
-                  sx={{
-                    mt: 1.5,
-                    maxWidth: 80,
-                    maxHeight: 80,
-                    objectFit: 'contain',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                  }}
-                />
-              )}
-            </Box>
+            ) : null}
+            {iconPreview ? (
+              <Box
+                component="img"
+                src={iconPreview}
+                alt="Selected advertiser icon preview"
+                sx={{
+                  mt: 2,
+                  width: 96,
+                  height: 96,
+                  objectFit: 'contain',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                  p: 1,
+                }}
+              />
+            ) : null}
+          </Box>
+
+          <Stack
+            direction={{ xs: 'column-reverse', sm: 'row' }}
+            spacing={1.5}
+            justifyContent="flex-end"
+          >
+            <Button
+              onClick={closeModal}
+              disabled={submitting}
+              color="inherit"
+              variant="outlined"
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
               variant="contained"
-              disabled={submitting}
-              startIcon={
-                submitting ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : null
+              disabled={
+                submitting || !isValidAdvertiserDestinationUrl(destinationUrl)
               }
-              sx={{ alignSelf: 'flex-start' }}
             >
-              {submitting ? 'Sending…' : 'Send request'}
+              {submitting ? (
+                <>
+                  <CircularProgress size={18} sx={{ mr: 1.25 }} />
+                  Sending...
+                </>
+              ) : (
+                'Send request'
+              )}
             </Button>
           </Stack>
-        </Paper>
-      </Container>
-    </Box>
+        </Stack>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -56,6 +56,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Link as RouterLink,
+  useLocation,
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
@@ -1728,6 +1729,7 @@ const FeedCard = ({
 type FeedProps = { savedMode?: boolean };
 
 export const Feed = ({ savedMode = false }: FeedProps) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const postParam = searchParams.get('post');
@@ -2952,6 +2954,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                   <ListItemButton
                     component={RouterLink}
                     to="/advertise"
+                    state={{ backgroundLocation: location }}
                     sx={{
                       minHeight: 40,
                       py: 0.5,

@@ -52,6 +52,9 @@ Central index for WRDLNKDN WebDev documentation.
 - [Epic: Home Dashboard](./architecture/epic-home-dashboard.md) —
   Profile-centric landing experience; identity, portfolio, status, friends (MVP
   scope).
+- [Portfolio Showcase](./architecture/portfolio-showcase.md) — Dashboard
+  artifact management, highlights carousel, categorized profile rendering, and
+  verification points.
 - [Directory API](./directory.md) — Member discovery, search, filters,
   connection actions (authenticated only).
 - [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.
@@ -72,6 +75,8 @@ Central index for WRDLNKDN WebDev documentation.
 - [Home scroll analytics queries](./development/home-scroll-analytics.md) — How
   to inspect `home_below_fold_reached` and `home_scroll_depth` events in QA and
   analytics sinks.
+- [Portfolio thumbnail generation](./architecture/portfolio-thumbnail-generation.md)
+  — Resume/project thumbnail generation flow and operational notes.
 - [AAA accessibility backlog](./accessibility/AAA_BACKLOG.md) — Tracking list
   for non-blocking AAA findings from nightly accessibility sweeps.
 - [Markdownlint](./development/markdownlint.md) — Why `--fix` doesn't fix

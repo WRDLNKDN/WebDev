@@ -367,13 +367,17 @@ export const Home = () => {
                 WRDLNKDN
               </Typography>
 
-              <Stack spacing={0.5} sx={{ maxWidth: 420, alignItems: 'center' }}>
+              <Stack
+                spacing={0.75}
+                sx={{ maxWidth: 420, alignItems: 'center' }}
+              >
                 <Typography
-                  variant="subtitle2"
+                  variant="subtitle1"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
-                    letterSpacing: '0.12em',
-                    fontSize: '0.75rem',
+                    fontStyle: 'italic',
+                    letterSpacing: '0.04em',
+                    fontSize: { xs: '1.125rem', sm: '1.25rem' },
                   }}
                 >
                   (Weird Link-uh-din)
@@ -385,7 +389,7 @@ export const Home = () => {
                     fontWeight: 600,
                   }}
                 >
-                  Business, but weirder
+                  Business, but weirder.
                 </Typography>
                 <Typography
                   variant="body1"
@@ -395,18 +399,7 @@ export const Home = () => {
                     lineHeight: 1.5,
                   }}
                 >
-                  A professional networking space where you don&apos;t have to
-                  pretend.
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'rgba(255,255,255,0.8)',
-                    fontWeight: 400,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  For people who build, create, and think differently.
+                  A networking space for people that think differently
                 </Typography>
               </Stack>
             </Grid>

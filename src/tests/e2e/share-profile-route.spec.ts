@@ -61,7 +61,10 @@ test.describe('Share profile route', () => {
     await page.goto('/p/valid-token-with-links', {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByText('Test Member')).toBeVisible({
+    await page.waitForLoadState('networkidle');
+    await expect(
+      page.getByRole('heading', { name: 'Test Member', exact: true }),
+    ).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByText('LINKS')).toBeVisible({ timeout: 5_000 });
@@ -70,5 +73,55 @@ test.describe('Share profile route', () => {
         timeout: 5_000,
       },
     );
+  });
+
+  test('public profile resume card shows stored filename with tooltip', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const resumeFileName =
+      'Nicholas_Clark_Senior_Engineer_Resume_2026_Final_Version.docx';
+    const payload = {
+      profile: {
+        id: '22222222-2222-4222-8222-222222222222',
+        display_name: 'Resume Member',
+        tagline: 'Builder',
+        avatar: null,
+        nerd_creds: {
+          resume_file_name: resumeFileName,
+          resume_thumbnail_status: 'failed',
+        },
+        socials: [],
+        resume_url:
+          'https://example.supabase.co/storage/v1/object/public/resumes/user-id/resume.docx',
+      },
+      portfolio: [],
+    };
+    await page.route(
+      '**/rest/v1/rpc/get_public_profile_by_share_token*',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(payload),
+        });
+      },
+    );
+    await page.goto('/p/valid-token-with-resume', {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.waitForLoadState('networkidle');
+    await expect(
+      page.getByRole('heading', { name: 'Resume Member', exact: true }),
+    ).toBeVisible({
+      timeout: 15_000,
+    });
+    const fileNameTrigger = page.getByTestId('resume-file-name');
+    await expect(fileNameTrigger).toContainText('Nicholas_Clark_Senior_');
+    await expect(fileNameTrigger).toHaveAttribute('title', resumeFileName);
+    await fileNameTrigger.hover();
+    await expect(page.getByRole('tooltip')).toContainText(resumeFileName);
+    await fileNameTrigger.focus();
+    await expect(page.getByRole('tooltip')).toContainText(resumeFileName);
   });
 });

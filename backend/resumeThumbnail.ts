@@ -99,10 +99,19 @@ export const generateResumeThumbnailPng = async (
   storagePath: string,
 ): Promise<Buffer> => {
   const extension = getResumeExtension(storagePath);
-  const extracted =
-    extension === '.doc'
-      ? await extractDocText(fileBuffer)
-      : await extractDocxText(fileBuffer);
+  let extracted = '';
+  try {
+    extracted =
+      extension === '.doc'
+        ? await extractDocText(fileBuffer)
+        : await extractDocxText(fileBuffer);
+  } catch {
+    // Preview generation should stay resilient for Word variants that text
+    // extractors cannot parse (or mislabeled uploads). We still emit a
+    // deterministic thumbnail so the dashboard card does not fail hard.
+    extracted =
+      'Preview text is unavailable for this document. Open the file directly.';
+  }
   const lines = toPreviewLines(extracted);
   const svg = buildSvg(storagePath.split('/').pop() ?? 'resume', lines);
   return sharp(Buffer.from(svg, 'utf8')).png({ quality: 90 }).toBuffer();

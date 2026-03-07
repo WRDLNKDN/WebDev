@@ -1,8 +1,12 @@
 import {
   alpha,
   Box,
+  Button,
   Collapse,
   Container,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   Link,
@@ -11,55 +15,59 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import InstagramIcon from '@mui/icons-material/Instagram';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
+import {
+  FOOTER_DONATE_QR_ASSET,
+  FOOTER_DONATE_URL,
+  FOOTER_SECTIONS,
+  FOOTER_SOCIAL_LINKS,
+  type FooterLink,
+} from './footerConfig';
 
-type FooterLink = {
-  label: string;
-  href: string;
-  external?: boolean;
+const copyTextToClipboard = async (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall back when the Clipboard API exists but denies the write.
+    }
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.setAttribute('readonly', '');
+  textArea.style.position = 'absolute';
+  textArea.style.opacity = '0';
+  textArea.style.pointerEvents = 'none';
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  const copied = document.execCommand('copy');
+  document.body.removeChild(textArea);
+  if (!copied) {
+    throw new Error('Clipboard copy failed');
+  }
 };
-
-type FooterSection = {
-  title: string;
-  links: FooterLink[];
-};
-
-const sections: FooterSection[] = [
-  {
-    title: 'Company',
-    links: [
-      { label: 'About', href: '/about' },
-      { label: 'Advertise', href: '/advertise' },
-      { label: 'Community Partners', href: '/community-partners' },
-      {
-        label: 'Contact',
-        href: 'https://github.com/WRDLNKDN/Agreements?tab=readme-ov-file#contact',
-        external: true,
-      },
-    ],
-  },
-  {
-    title: 'Documentation',
-    links: [
-      { label: 'Terms of Service', href: '/terms' },
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Community Guidelines', href: '/guidelines' },
-    ],
-  },
-];
 
 export const Footer = () => {
   const theme = useTheme();
   const location = useLocation();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [donateModalOpen, setDonateModalOpen] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
 
@@ -86,7 +94,7 @@ export const Footer = () => {
       name: 'WRDLNKDN',
       url: origin,
       logo: `${origin}/assets/github-ready/wrdlnkdn-logo-combo-horizontal.svg`,
-      hasPart: sections.map((section) => ({
+      hasPart: FOOTER_SECTIONS.map((section) => ({
         '@type': 'SiteNavigationElement',
         name: section.title,
         url: section.links.map((link) =>
@@ -170,371 +178,577 @@ export const Footer = () => {
     closeAllSections();
   };
 
+  const openDonateModal = () => {
+    setCopyFeedback(null);
+    setDonateModalOpen(true);
+    closeAllSections();
+    trackEvent('footer_donate_modal_open', {
+      source: 'footer',
+      target: FOOTER_DONATE_URL,
+    });
+  };
+
+  const closeDonateModal = () => {
+    setDonateModalOpen(false);
+    setCopyFeedback(null);
+  };
+
+  const handleCopyDonateLink = async () => {
+    try {
+      await copyTextToClipboard(FOOTER_DONATE_URL);
+      setCopyFeedback('Donation link copied.');
+      trackEvent('footer_donate_copy_click', {
+        source: 'footer_modal',
+        target: FOOTER_DONATE_URL,
+      });
+    } catch {
+      setCopyFeedback('Copy failed. Copy the link manually.');
+    }
+  };
+
+  const renderSocialIcon = (label: string) => {
+    switch (label) {
+      case 'Instagram':
+        return <InstagramIcon sx={{ fontSize: { xs: 15, md: 17 } }} />;
+      case 'GitHub':
+        return <GitHubIcon sx={{ fontSize: { xs: 15, md: 17 } }} />;
+      case 'Facebook':
+        return <FacebookIcon sx={{ fontSize: { xs: 15, md: 17 } }} />;
+      case 'LinkedIn':
+        return <LinkedInIcon sx={{ fontSize: { xs: 15, md: 17 } }} />;
+      case 'YouTube':
+        return <YouTubeIcon sx={{ fontSize: { xs: 15, md: 17 } }} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <Box
-      ref={footerRef}
-      component="footer"
-      aria-label="Site footer"
-      sx={{
-        borderTop: '1px solid',
-        borderColor: dividerColor,
-        mt: { xs: 1, sm: 2, md: 4 },
-        pt: { xs: 1, sm: 1.5, md: 2.5 },
-        pb: {
-          xs: 'calc(0.85rem + env(safe-area-inset-bottom, 0px))',
-          sm: 1.5,
-          md: 2,
-        },
-        backgroundColor:
-          theme.palette.mode === 'dark'
-            ? alpha(theme.palette.background.default, 0.92)
-            : theme.palette.background.default,
-        backdropFilter: 'blur(8px)',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(10px)',
-        transition: reduceMotion
-          ? 'none'
-          : 'opacity 360ms ease, transform 360ms ease',
-      }}
-    >
-      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
-        <Grid container spacing={{ xs: 1.1, sm: 1.5, md: 2.1 }}>
-          <Grid size={{ xs: 7, md: 3 }} sx={{ order: { xs: 1, md: 1 } }}>
-            <Stack
-              spacing={0.45}
-              sx={{
-                alignItems: { xs: 'flex-start', md: 'flex-start' },
-                textAlign: 'left',
-                pr: { md: 1.5 },
-              }}
+    <>
+      <Box
+        ref={footerRef}
+        component="footer"
+        aria-label="Site footer"
+        data-testid="site-footer"
+        sx={{
+          borderTop: '1px solid',
+          borderColor: dividerColor,
+          mt: { xs: 0.5, sm: 1, md: 2 },
+          pt: { xs: 0.75, sm: 1, md: 1.2 },
+          pb: {
+            xs: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+            sm: 1,
+            md: 1.2,
+          },
+          backgroundColor:
+            theme.palette.mode === 'dark'
+              ? alpha(theme.palette.background.default, 0.92)
+              : theme.palette.background.default,
+          backdropFilter: 'blur(8px)',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(10px)',
+          transition: reduceMotion
+            ? 'none'
+            : 'opacity 360ms ease, transform 360ms ease',
+        }}
+      >
+        <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
+          <Grid
+            container
+            alignItems="start"
+            spacing={{ xs: 0.85, sm: 1.1, md: 1.5 }}
+          >
+            <Grid
+              size={{ xs: 12, sm: 6, md: 3 }}
+              sx={{ order: { xs: 1, md: 1 } }}
             >
-              <Stack direction="row" spacing={0.45} alignItems="center">
-                <EmojiEventsIcon
-                  sx={{
-                    display: { xs: 'none', sm: 'inline-flex' },
-                    fontSize: { xs: 22, sm: 24, md: 27 },
-                    color: 'primary.main',
-                    opacity: 0.95,
-                  }}
-                  aria-hidden
-                />
-                <Box
-                  component="img"
-                  src="/assets/og_weirdlings/werdling1_transparent.png"
-                  alt="WRDLNKDN Weirdling logo"
-                  sx={{
-                    display: { xs: 'none', sm: 'block' },
-                    width: { xs: 30, sm: 34, md: 38 },
-                    height: { xs: 30, sm: 34, md: 38 },
-                    objectFit: 'contain',
-                    objectPosition: 'center',
-                  }}
-                />
-                <Box
-                  component="img"
-                  src="/assets/wrdlnkdn_logo.png"
-                  alt="WRDLNKDN wordmark"
-                  sx={{
-                    display: 'block',
-                    width: { xs: 114, sm: 148, md: 172 },
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    objectPosition: 'left center',
-                  }}
-                />
-              </Stack>
-              <Typography
-                variant="body2"
-                color="text.secondary"
+              <Stack
+                spacing={0.3}
                 sx={{
-                  display: { xs: 'none', sm: 'block' },
-                  fontSize: { sm: '0.76rem', md: '0.82rem' },
+                  alignItems: { xs: 'flex-start', md: 'flex-start' },
+                  textAlign: 'left',
+                  pr: { md: 0.75 },
                 }}
               >
-                Business, but weirder.
-              </Typography>
-            </Stack>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }} sx={{ order: { xs: 3, md: 2 } }}>
-            <Box
-              aria-label="Footer navigation sections"
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: 'repeat(2, minmax(0, 1fr))',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                },
-                gap: { xs: 0.5, sm: 0.85, md: 1 },
-              }}
-            >
-              {sections.map((section) => {
-                const open = expandedSection === section.title;
-                const panelId = `footer-panel-${section.title.toLowerCase()}`;
-                return (
-                  <Box
-                    key={section.title}
+                <Stack direction="row" spacing={0.35} alignItems="center">
+                  <EmojiEventsIcon
                     sx={{
-                      border: '1px solid',
-                      borderColor: dividerColor,
-                      borderRadius: 1.25,
-                      overflow: { xs: 'hidden', md: 'visible' },
-                      position: 'relative',
-                      backgroundColor: alpha(
-                        theme.palette.background.paper,
-                        0.2,
-                      ),
+                      display: { xs: 'none', sm: 'inline-flex' },
+                      fontSize: { xs: 20, sm: 22, md: 24 },
+                      color: 'primary.main',
+                      opacity: 0.95,
                     }}
-                  >
+                    aria-hidden
+                  />
+                  <Box
+                    component="img"
+                    src="/assets/og_weirdlings/werdling1_transparent.png"
+                    alt="WRDLNKDN Weirdling logo"
+                    sx={{
+                      display: { xs: 'none', sm: 'block' },
+                      width: { xs: 28, sm: 30, md: 34 },
+                      height: { xs: 28, sm: 30, md: 34 },
+                      objectFit: 'contain',
+                      objectPosition: 'center',
+                    }}
+                  />
+                  <Box
+                    component="img"
+                    src="/assets/wrdlnkdn_logo.png"
+                    alt="WRDLNKDN wordmark"
+                    sx={{
+                      display: 'block',
+                      width: { xs: 114, sm: 138, md: 156 },
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      objectPosition: 'left center',
+                    }}
+                  />
+                </Stack>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    display: { xs: 'none', sm: 'block' },
+                    fontSize: { sm: '0.72rem', md: '0.78rem' },
+                  }}
+                >
+                  Business, but weirder.
+                </Typography>
+              </Stack>
+            </Grid>
+
+            <Grid
+              size={{ xs: 12, sm: 6, md: 6 }}
+              sx={{ order: { xs: 2, md: 2 } }}
+            >
+              <Box
+                aria-label="Footer navigation sections"
+                sx={{
+                  display: 'grid',
+                  width: '100%',
+                  maxWidth: { md: 380 },
+                  mx: { md: 'auto' },
+                  gridTemplateColumns: {
+                    xs: 'repeat(2, minmax(0, 1fr))',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    md: 'repeat(2, minmax(0, 180px))',
+                  },
+                  gap: { xs: 0.45, sm: 0.65, md: 0.8 },
+                  alignItems: 'start',
+                  justifyContent: { md: 'center' },
+                }}
+              >
+                {FOOTER_SECTIONS.map((section) => {
+                  const open = expandedSection === section.title;
+                  const panelId = `footer-panel-${section.title.toLowerCase()}`;
+                  return (
                     <Box
-                      component="button"
-                      type="button"
-                      onClick={() => toggleSection(section.title)}
-                      aria-expanded={open}
-                      aria-controls={panelId}
+                      key={section.title}
+                      data-testid={`footer-section-${section.title.toLowerCase()}`}
                       sx={{
-                        all: 'unset',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                        px: { xs: 0.9, sm: 1.25, md: 1.5 },
-                        py: { xs: 0.62, sm: 0.8, md: 0.88 },
-                        cursor: 'pointer',
-                        boxSizing: 'border-box',
-                        '&:focus-visible': {
-                          outline: '2px solid',
-                          outlineColor: 'primary.main',
-                          outlineOffset: '-2px',
-                        },
+                        border: '1px solid',
+                        borderColor: dividerColor,
+                        borderRadius: 1.25,
+                        overflow: { xs: 'hidden', md: 'visible' },
+                        position: 'relative',
+                        backgroundColor: alpha(
+                          theme.palette.background.paper,
+                          0.2,
+                        ),
                       }}
                     >
-                      <Typography
-                        variant="subtitle2"
-                        fontWeight={700}
-                        sx={{ fontSize: { xs: '0.74rem', md: '0.82rem' } }}
-                      >
-                        {section.title}
-                      </Typography>
                       <Box
-                        component="span"
-                        aria-hidden
+                        component="button"
+                        type="button"
+                        onClick={() => toggleSection(section.title)}
+                        aria-expanded={open}
+                        aria-controls={panelId}
                         sx={{
-                          display: 'inline-flex',
+                          all: 'unset',
+                          display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          width: 22,
-                          height: 22,
-                          transition: reduceMotion
-                            ? 'none'
-                            : 'transform 180ms ease',
-                          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                        }}
-                      >
-                        <ExpandMoreIcon fontSize="small" />
-                      </Box>
-                    </Box>
-
-                    <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
-                      <Stack
-                        id={panelId}
-                        component="ul"
-                        sx={{
-                          listStyle: 'none',
-                          m: 0,
-                          py: 0.2,
-                          px: { xs: 0.9, sm: 1.25, md: 1.5 },
-                          borderTop: '1px solid',
-                          borderColor: dividerColor,
-                          gap: 0.15,
-                          position: { xs: 'static', md: 'absolute' },
-                          top: { md: 'calc(100% + 6px)' },
-                          left: { md: 0 },
-                          right: { md: 0 },
-                          zIndex: { md: 4 },
-                          border: { md: '1px solid' },
-                          borderRadius: { md: 1.25 },
-                          boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
-                          backgroundColor: {
-                            md:
-                              theme.palette.mode === 'dark'
-                                ? alpha(theme.palette.background.paper, 0.96)
-                                : alpha(theme.palette.background.paper, 0.98),
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          px: { xs: 0.8, sm: 1.05, md: 1.2 },
+                          py: { xs: 0.52, sm: 0.68, md: 0.74 },
+                          cursor: 'pointer',
+                          boxSizing: 'border-box',
+                          '&:focus-visible': {
+                            outline: '2px solid',
+                            outlineColor: 'primary.main',
+                            outlineOffset: '-2px',
                           },
                         }}
                       >
-                        {section.links.map((link) => {
-                          const active = isActiveLink(link.href, link.external);
-                          const commonSx = {
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={700}
+                          sx={{ fontSize: { xs: '0.72rem', md: '0.8rem' } }}
+                        >
+                          {section.title}
+                        </Typography>
+                        <Box
+                          component="span"
+                          aria-hidden
+                          sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            py: { xs: 0.45, md: 0.65 },
-                            fontSize: { xs: '0.74rem', md: '0.83rem' },
-                            color: active ? 'primary.main' : 'text.secondary',
-                            fontWeight: active ? 700 : 500,
-                            textDecoration: active ? 'underline' : 'none',
-                            textUnderlineOffset: '3px',
+                            justifyContent: 'center',
+                            width: 22,
+                            height: 22,
                             transition: reduceMotion
                               ? 'none'
-                              : 'color 160ms ease, text-decoration-color 160ms ease',
-                            '&:hover': {
-                              color: 'text.primary',
-                              textDecoration: 'underline',
-                              textUnderlineOffset: '3px',
-                            },
-                          } as const;
-                          return (
-                            <Box component="li" key={link.label}>
-                              {link.external ? (
-                                <Link
-                                  href={link.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={() => handleFooterLinkClick(link)}
-                                  sx={commonSx}
-                                >
-                                  {link.label}
-                                </Link>
-                              ) : (
-                                <Link
-                                  component={RouterLink}
-                                  to={link.href}
-                                  onClick={() => handleFooterLinkClick(link)}
-                                  sx={commonSx}
-                                >
-                                  {link.label}
-                                </Link>
-                              )}
-                            </Box>
-                          );
-                        })}
-                      </Stack>
-                    </Collapse>
-                  </Box>
-                );
-              })}
+                              : 'transform 180ms ease',
+                            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                          }}
+                        >
+                          <ExpandMoreIcon fontSize="small" />
+                        </Box>
+                      </Box>
 
-              <Box
-                sx={{
-                  gridColumn: { xs: '1 / 2', sm: '1 / 2' },
-                  justifySelf: 'start',
-                }}
-              >
-                <Link
-                  href="https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Donate to WRDLNKDN"
+                      <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+                        <Stack
+                          id={panelId}
+                          component="ul"
+                          sx={{
+                            listStyle: 'none',
+                            m: 0,
+                            py: 0.1,
+                            px: { xs: 0.8, sm: 1.05, md: 1.2 },
+                            borderTop: '1px solid',
+                            borderColor: dividerColor,
+                            gap: 0.15,
+                            position: { xs: 'static', md: 'absolute' },
+                            top: { md: 'calc(100% + 6px)' },
+                            left: { md: 0 },
+                            right: { md: 0 },
+                            zIndex: { md: 4 },
+                            border: { md: '1px solid' },
+                            borderRadius: { md: 1.25 },
+                            boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
+                            backgroundColor: {
+                              md:
+                                theme.palette.mode === 'dark'
+                                  ? alpha(theme.palette.background.paper, 0.96)
+                                  : alpha(theme.palette.background.paper, 0.98),
+                            },
+                          }}
+                        >
+                          {section.links.map((link) => {
+                            const active = isActiveLink(
+                              link.href,
+                              link.external,
+                            );
+                            const commonSx = {
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              py: { xs: 0.4, md: 0.56 },
+                              fontSize: { xs: '0.72rem', md: '0.8rem' },
+                              color: active ? 'primary.main' : 'text.secondary',
+                              fontWeight: active ? 700 : 500,
+                              textDecoration: active ? 'underline' : 'none',
+                              textUnderlineOffset: '3px',
+                              transition: reduceMotion
+                                ? 'none'
+                                : 'color 160ms ease, text-decoration-color 160ms ease',
+                              '&:hover': {
+                                color: 'text.primary',
+                                textDecoration: 'underline',
+                                textUnderlineOffset: '3px',
+                              },
+                            } as const;
+                            return (
+                              <Box component="li" key={link.label}>
+                                {link.external ? (
+                                  <Link
+                                    href={link.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => handleFooterLinkClick(link)}
+                                    sx={commonSx}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    component={RouterLink}
+                                    to={link.href}
+                                    state={
+                                      link.href === '/advertise'
+                                        ? { backgroundLocation: location }
+                                        : undefined
+                                    }
+                                    onClick={() => handleFooterLinkClick(link)}
+                                    sx={commonSx}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </Collapse>
+                    </Box>
+                  );
+                })}
+
+                <Box
                   sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    fontWeight: 700,
-                    color: 'primary.main',
-                    textDecoration: 'none',
-                    fontSize: { xs: '0.78rem', md: '0.88rem' },
-                    mt: { xs: 0.05, sm: 0.28 },
-                    '&:hover': {
-                      textDecoration: 'underline',
-                      color: 'primary.dark',
-                    },
-                    '&:focus-visible': {
-                      outline: '2px solid',
-                      outlineColor: 'primary.main',
-                      outlineOffset: 2,
-                      borderRadius: 0.5,
-                    },
+                    gridColumn: { xs: '2 / 3', sm: '2 / 3' },
+                    justifySelf: { xs: 'stretch', sm: 'center' },
+                    pt: { xs: 0, sm: 0.1 },
                   }}
                 >
-                  Donate Now
-                </Link>
+                  <Box
+                    component="button"
+                    type="button"
+                    data-testid="footer-donate-link"
+                    onClick={openDonateModal}
+                    aria-label="Donate to WRDLNKDN"
+                    aria-haspopup="dialog"
+                    aria-controls="footer-donate-modal"
+                    sx={{
+                      all: 'unset',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      color: 'primary.main',
+                      textDecoration: 'none',
+                      fontSize: { xs: '0.75rem', md: '0.82rem' },
+                      minHeight: 30,
+                      px: 1.2,
+                      py: 0.3,
+                      borderRadius: 999,
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.primary.main, 0.42),
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      width: { xs: '100%', sm: 'fit-content' },
+                      mt: { xs: 0, sm: 0.16 },
+                      boxSizing: 'border-box',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        color: 'primary.dark',
+                      },
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: 2,
+                        borderRadius: 0.5,
+                      },
+                    }}
+                  >
+                    Donate Now
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-          </Grid>
+            </Grid>
 
-          <Grid
-            size={{ xs: 5, md: 3 }}
-            sx={{
-              order: { xs: 2, md: 3 },
-              display: 'flex',
-              alignItems: { xs: 'flex-start', md: 'flex-start' },
-              justifyContent: { xs: 'flex-end', md: 'flex-end' },
-            }}
-          >
-            <Stack
-              spacing={0.35}
-              alignItems={{ xs: 'flex-end', md: 'flex-end' }}
-              sx={{ pt: { xs: 0, md: 0.15 } }}
+            <Grid
+              size={{ xs: 12, md: 3 }}
+              sx={{
+                order: { xs: 3, md: 3 },
+                display: 'flex',
+                alignItems: { xs: 'flex-start', md: 'flex-start' },
+                justifyContent: {
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                },
+              }}
             >
               <Stack
-                direction="row"
-                spacing={0.35}
-                aria-label="Social and support links"
+                spacing={0.15}
+                alignItems={{
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                }}
+                sx={{ pt: { xs: 0.15, md: 0.05 } }}
               >
-                <IconButton
-                  component={Link}
-                  href="https://www.facebook.com/wrdlnkdn"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Facebook"
-                  size="small"
+                <Stack
+                  direction="row"
+                  spacing={0.2}
+                  aria-label="Social and support links"
+                  data-testid="footer-social-links"
+                >
+                  {FOOTER_SOCIAL_LINKS.map((link) => (
+                    <IconButton
+                      key={link.label}
+                      component={Link}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.label}
+                      size="small"
+                      sx={{
+                        color: 'text.secondary',
+                        p: { xs: 0.35, md: 0.45 },
+                        '&:hover': { color: 'primary.main' },
+                      }}
+                    >
+                      {renderSocialIcon(link.label)}
+                    </IconButton>
+                  ))}
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  data-testid="footer-copyright"
                   sx={{
-                    color: 'text.secondary',
-                    p: { xs: 0.4, md: 0.55 },
-                    '&:hover': { color: 'primary.main' },
+                    fontSize: { xs: '0.6rem', md: '0.68rem' },
+                    textAlign: { xs: 'left', sm: 'right' },
                   }}
                 >
-                  <FacebookIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
-                </IconButton>
-                <IconButton
-                  component={Link}
-                  href="https://www.linkedin.com/company/wrdlnkdn"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="LinkedIn"
-                  size="small"
-                  sx={{
-                    color: 'text.secondary',
-                    p: { xs: 0.4, md: 0.55 },
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  <LinkedInIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
-                </IconButton>
-                <IconButton
-                  component={Link}
-                  href="https://www.youtube.com/@WRDLNKDN"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="YouTube"
-                  size="small"
-                  sx={{
-                    color: 'text.secondary',
-                    p: { xs: 0.4, md: 0.55 },
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  <YouTubeIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
-                </IconButton>
+                  © {new Date().getFullYear()} WRDLNKDN. All rights reserved.
+                </Typography>
               </Stack>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.62rem', md: '0.72rem' } }}
-              >
-                © {new Date().getFullYear()} WRDLNKDN. All rights reserved.
-              </Typography>
-            </Stack>
+            </Grid>
           </Grid>
-        </Grid>
-      </Container>
+        </Container>
 
-      <script
-        type="application/ld+json"
-        // JSON-LD is the canonical structured-data format for organization/nav SEO.
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(footerStructuredData),
+        <script
+          type="application/ld+json"
+          // JSON-LD is the canonical structured-data format for organization/nav SEO.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(footerStructuredData),
+          }}
+        />
+      </Box>
+
+      <Dialog
+        id="footer-donate-modal"
+        open={donateModalOpen}
+        onClose={closeDonateModal}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="footer-donate-modal-title"
+        PaperProps={{
+          sx: {
+            bgcolor:
+              theme.palette.mode === 'dark'
+                ? alpha(theme.palette.background.paper, 0.96)
+                : theme.palette.background.paper,
+            color: 'text.primary',
+            border: '1px solid',
+            borderColor: dividerColor,
+            borderRadius: 2,
+            backgroundImage: 'none',
+            mx: { xs: 1.25, sm: 2 },
+          },
         }}
-      />
-    </Box>
+      >
+        <DialogTitle
+          id="footer-donate-modal-title"
+          sx={{ pr: 6, pb: 1.25, fontWeight: 700 }}
+        >
+          Donate to WRDLNKDN
+          <IconButton
+            onClick={closeDonateModal}
+            aria-label="Close donate modal"
+            sx={{ position: 'absolute', right: 10, top: 10 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{ borderColor: dividerColor, py: { xs: 2, sm: 2.5 } }}
+        >
+          <Stack spacing={2.5}>
+            <Stack spacing={1.2}>
+              <Typography
+                variant="overline"
+                sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}
+              >
+                Donation Link
+              </Typography>
+              <Link
+                data-testid="footer-donate-modal-url"
+                href={FOOTER_DONATE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  fontSize: { xs: '0.9rem', sm: '0.95rem' },
+                  fontWeight: 600,
+                  wordBreak: 'break-all',
+                }}
+              >
+                {FOOTER_DONATE_URL}
+              </Link>
+              <Button
+                data-testid="footer-donate-copy-button"
+                onClick={() => void handleCopyDonateLink()}
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                Copy link
+              </Button>
+              {copyFeedback ? (
+                <Typography
+                  data-testid="footer-donate-copy-feedback"
+                  variant="body2"
+                  role="status"
+                  aria-live="polite"
+                  sx={{
+                    color: copyFeedback.startsWith('Donation')
+                      ? 'success.main'
+                      : 'error.main',
+                  }}
+                >
+                  {copyFeedback}
+                </Typography>
+              ) : null}
+            </Stack>
+
+            <Stack spacing={1.2} alignItems="center">
+              <Typography
+                variant="overline"
+                sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}
+              >
+                Scan QR Code
+              </Typography>
+              <Link
+                data-testid="footer-donate-qr-link"
+                href={FOOTER_DONATE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open donation page via QR code"
+                sx={{
+                  display: 'inline-flex',
+                  borderRadius: 2,
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: 4,
+                  },
+                }}
+              >
+                <Box
+                  component="img"
+                  data-testid="footer-donate-qr-image"
+                  src={FOOTER_DONATE_QR_ASSET}
+                  alt="QR code for donating to WRDLNKDN"
+                  sx={{
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: { xs: 240, sm: 280 },
+                    borderRadius: 2,
+                    bgcolor: theme.palette.common.white,
+                    p: 1,
+                    boxSizing: 'border-box',
+                    boxShadow: '0 10px 26px rgba(0,0,0,0.22)',
+                  }}
+                />
+              </Link>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

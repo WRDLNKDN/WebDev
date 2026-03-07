@@ -1444,6 +1444,7 @@ export const Navbar = () => {
               <ListItemButton
                 component={RouterLink}
                 to="/advertise"
+                state={{ backgroundLocation: location }}
                 onClick={() => setDrawerOpen(false)}
                 sx={{ minHeight: 40, py: 0.5 }}
               >

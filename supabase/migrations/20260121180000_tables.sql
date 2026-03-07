@@ -1170,6 +1170,16 @@ as $$
         or lower(coalesce(p.tagline, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.industry, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.secondary_industry, '')) like '%' || pr.search_q || '%'
+        or exists (
+          select 1
+          from jsonb_array_elements(coalesce(p.industries, '[]'::jsonb)) g
+          where lower(coalesce(g->>'industry', '')) like '%' || pr.search_q || '%'
+             or exists (
+               select 1
+               from jsonb_array_elements_text(coalesce(g->'sub_industries', '[]'::jsonb)) sub
+               where lower(sub) like '%' || pr.search_q || '%'
+             )
+        )
         or lower(coalesce(p.niche_field, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.location, '')) like '%' || pr.search_q || '%'
         or lower(coalesce(p.nerd_creds->>'bio', '')) like '%' || pr.search_q || '%'
@@ -1183,7 +1193,17 @@ as $$
           or (p.industries is not null and jsonb_array_length(p.industries) > 0 and exists (
             select 1 from jsonb_array_elements(p.industries) g where (g->>'industry') = pr.primary_industry_q
           )))
-        or (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q)
+        or (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q
+          or (p.industries is not null and jsonb_array_length(p.industries) > 0 and exists (
+            select 1
+            from jsonb_array_elements(p.industries) g
+            where (g->>'industry') = pr.secondary_industry_q
+               or exists (
+                 select 1
+                 from jsonb_array_elements_text(coalesce(g->'sub_industries', '[]'::jsonb)) sub
+                 where sub = pr.secondary_industry_q
+               )
+          )))
       )
       and (pr.location_q is null or lower(coalesce(p.location, '')) like '%' || pr.location_q || '%')
       and (

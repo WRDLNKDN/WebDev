@@ -42,6 +42,7 @@ const DivergencePage = lazy(async () => {
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
+import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
 import {
   buildPortfolioCategorySections,
   portfolioCategoryToSectionTestId,
@@ -255,14 +256,10 @@ export const LandingPage = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
-  const primaryIndustry = safeStr(profile.industry);
-  const secondaryIndustry = safeStr(
-    (profile as unknown as { secondary_industry?: string }).secondary_industry,
-  );
   const nicheField = safeStr(
     (profile as unknown as { niche_field?: string }).niche_field,
   );
-  const industryChips = [primaryIndustry, secondaryIndustry]
+  const industryChips = getIndustryDisplayLabels(profile)
     .filter(Boolean)
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
   if (nicheField)
@@ -421,16 +418,16 @@ export const LandingPage = () => {
           >
             <Grid size={12} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio">
+                <PortfolioHighlightsCarousel
+                  projects={projects}
+                  onOpenPreview={setPreviewProject}
+                />
+
                 <ResumeCard
                   url={profile.resume_url}
                   fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl}
                   thumbnailStatus={resumeThumbnailStatus}
-                />
-
-                <PortfolioHighlightsCarousel
-                  projects={projects}
-                  onOpenPreview={setPreviewProject}
                 />
 
                 {portfolioSections.map((section) => (
@@ -456,11 +453,11 @@ export const LandingPage = () => {
                     <Box
                       sx={{
                         display: 'grid',
-                        gap: 2.5,
+                        gap: { xs: 1.5, sm: 2, md: 2.5 },
                         gridTemplateColumns: {
                           xs: '1fr',
                           sm: 'repeat(2, minmax(0, 1fr))',
-                          xl: 'repeat(3, minmax(0, 1fr))',
+                          lg: 'repeat(3, minmax(0, 1fr))',
                         },
                         alignItems: 'stretch',
                       }}
@@ -470,7 +467,6 @@ export const LandingPage = () => {
                           key={`${section.category}-${project.id}`}
                           project={project}
                           variant="showcase"
-                          onOpenPreview={setPreviewProject}
                         />
                       ))}
                     </Box>

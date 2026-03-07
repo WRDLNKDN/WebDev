@@ -20,6 +20,7 @@ import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget'
 import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
+import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
 import {
   buildPortfolioCategorySections,
   portfolioCategoryToSectionTestId,
@@ -37,6 +38,7 @@ type PublicProfilePayload = {
     nerd_creds: NerdCreds | null;
     socials: unknown;
     resume_url: string | null;
+    industries?: unknown;
     industry?: string | null;
     secondary_industry?: string | null;
     niche_field?: string | null;
@@ -61,7 +63,7 @@ type PublicProfilePayload = {
 };
 
 const PUBLIC_PROFILE_SELECT =
-  'id,display_name,tagline,avatar,nerd_creds,socials,resume_url,industry,secondary_industry,niche_field,location,pronouns';
+  'id,display_name,tagline,avatar,nerd_creds,socials,resume_url,industries,industry,secondary_industry,niche_field,location,pronouns';
 const safeDecode = (value: string): string => {
   try {
     return decodeURIComponent(value);
@@ -298,7 +300,7 @@ export const PublicProfilePage = () => {
           .map((s) => s.trim())
           .filter(Boolean)
       : [];
-  const industryChips = [p.industry, p.secondary_industry]
+  const industryChips = getIndustryDisplayLabels(p)
     .filter(Boolean)
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
   if (p.niche_field) {
@@ -416,15 +418,15 @@ export const PublicProfilePage = () => {
           >
             <Grid size={12} sx={{ minWidth: 0 }}>
               <PortfolioFrame title="Portfolio">
+                <PortfolioHighlightsCarousel
+                  projects={projects}
+                  onOpenPreview={setPreviewProject}
+                />
                 <ResumeCard
                   url={p.resume_url ?? undefined}
                   fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl ?? undefined}
                   thumbnailStatus={resumeThumbnailStatus ?? undefined}
-                />
-                <PortfolioHighlightsCarousel
-                  projects={projects}
-                  onOpenPreview={setPreviewProject}
                 />
                 {portfolioSections.map((section) => (
                   <Box
@@ -449,11 +451,11 @@ export const PublicProfilePage = () => {
                     <Box
                       sx={{
                         display: 'grid',
-                        gap: 2.5,
+                        gap: { xs: 1.5, sm: 2, md: 2.5 },
                         gridTemplateColumns: {
                           xs: '1fr',
                           sm: 'repeat(2, minmax(0, 1fr))',
-                          xl: 'repeat(3, minmax(0, 1fr))',
+                          lg: 'repeat(3, minmax(0, 1fr))',
                         },
                         alignItems: 'stretch',
                       }}
@@ -463,7 +465,6 @@ export const PublicProfilePage = () => {
                           key={`${section.category}-${project.id}`}
                           project={project}
                           variant="showcase"
-                          onOpenPreview={setPreviewProject}
                         />
                       ))}
                     </Box>

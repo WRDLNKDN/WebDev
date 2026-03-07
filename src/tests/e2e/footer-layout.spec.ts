@@ -10,7 +10,7 @@ async function goToFooter(page: Page) {
 }
 
 test.describe('Footer layout', () => {
-  test('removes platform links and keeps donate above social links on the right', async ({
+  test('removes platform links and keeps donate centered under docs with socials right-aligned', async ({
     page,
   }) => {
     await stubAppSurface(page);
@@ -32,11 +32,12 @@ test.describe('Footer layout', () => {
 
     const donate = footer.getByTestId('footer-donate-link');
     await expect(donate).toHaveAttribute('aria-label', 'Donate to WRDLNKDN');
-    await expect(donate).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(donate).toHaveAttribute(
-      'aria-controls',
-      'footer-donate-modal',
+      'href',
+      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
     );
+    await expect(donate).toHaveAttribute('target', '_blank');
+    await expect(donate).toHaveAttribute('rel', 'noopener noreferrer');
 
     const donateBox = await donate.boundingBox();
     expect(donateBox).not.toBeNull();
@@ -48,8 +49,19 @@ test.describe('Footer layout', () => {
     const copyright = footer.getByTestId('footer-copyright');
     await expect(socials).toBeVisible();
     await expect(copyright).toBeVisible();
-    await expect(footer.getByLabel('Instagram')).toBeVisible();
-    await expect(footer.getByLabel('GitHub')).toBeVisible();
+    const instagram = footer.getByLabel('Instagram');
+    const github = footer.getByLabel('GitHub');
+    await expect(instagram).toBeVisible();
+    await expect(github).toBeVisible();
+    await expect(instagram).toHaveAttribute(
+      'href',
+      'https://www.instagram.com/wrdlnkdn/',
+    );
+    await expect(github).toHaveAttribute('href', 'https://github.com/wrdlnkdn');
+    await expect(instagram).toHaveAttribute('target', '_blank');
+    await expect(github).toHaveAttribute('target', '_blank');
+    await expect(instagram).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(github).toHaveAttribute('rel', 'noopener noreferrer');
     await expect(
       footer.getByText(/build signal-first connections/i),
     ).toHaveCount(0);
@@ -62,15 +74,8 @@ test.describe('Footer layout', () => {
       throw new Error('Footer social layout could not be measured.');
     }
 
-    expect(donateBox.y + donateBox.height).toBeLessThanOrEqual(
-      socialsBox.y + 2,
-    );
-    // Donate button spans the right column; socials are right-aligned within it.
-    // Assert column alignment by right edge containment instead of left-edge equality.
-    expect(donateBox.x).toBeLessThanOrEqual(socialsBox.x);
-    expect(donateBox.x + donateBox.width).toBeGreaterThanOrEqual(
-      socialsBox.x + socialsBox.width - 1,
-    );
+    // Donate now lives in the center section; socials remain in right section.
+    expect(donateBox.x + donateBox.width).toBeLessThan(socialsBox.x);
     expect(copyrightBox.y).toBeGreaterThan(
       socialsBox.y + socialsBox.height - 2,
     );

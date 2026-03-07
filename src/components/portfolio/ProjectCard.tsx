@@ -65,9 +65,26 @@ export const ProjectCard = ({
   const showArrowControls = onMoveUp != null || onMoveDown != null;
   const url = project.project_url?.trim() ?? '';
   const external = url && isExternalUrl(url);
+  const cardOpensArtifact = isShowcase && Boolean(url) && !onOpenPreview;
   const openPreview = () => onOpenPreview?.(project);
+  const openArtifact = () => {
+    if (!url) return;
+    if (external) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    window.location.assign(url);
+  };
   const linkType = url ? getLinkType(url) : 'unsupported';
   const resolvedType = (project.resolved_type as string) || linkType;
+  const artifactHost = (() => {
+    if (!external || !url) return null;
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return null;
+    }
+  })();
   // Step 2 + Step 3: manual image > server-generated thumbnail > image URL > fallback
   const hasManualImage = Boolean(project.image_url);
   const thumbnailUrl = hasManualImage
@@ -124,22 +141,30 @@ export const ProjectCard = ({
   return (
     <Paper
       {...(onOpenPreview ? { component: 'div' as const } : {})}
-      role={onOpenPreview ? 'button' : undefined}
-      tabIndex={onOpenPreview ? 0 : undefined}
+      role={onOpenPreview ? 'button' : cardOpensArtifact ? 'link' : undefined}
+      tabIndex={onOpenPreview || cardOpensArtifact ? 0 : undefined}
       onClick={
-        onOpenPreview
+        onOpenPreview || cardOpensArtifact
           ? (e) => {
-              if (!(e.target as HTMLElement).closest('a, button'))
+              if ((e.target as HTMLElement).closest('a, button')) return;
+              if (onOpenPreview) {
                 openPreview();
+                return;
+              }
+              openArtifact();
             }
           : undefined
       }
       onKeyDown={
-        onOpenPreview
+        onOpenPreview || cardOpensArtifact
           ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                openPreview();
+                if (onOpenPreview) {
+                  openPreview();
+                  return;
+                }
+                openArtifact();
               }
             }
           : undefined
@@ -369,16 +394,20 @@ export const ProjectCard = ({
             )}
           </Box>
         )}
-        {onOpenPreview ? (
+        {onOpenPreview || cardOpensArtifact ? (
           <Typography
             variant="h6"
             fontWeight={700}
-            noWrap
+            noWrap={!isShowcase}
             component="span"
             sx={{
               color: 'inherit',
               mb: 1.1,
               lineHeight: 1.25,
+              display: isShowcase ? '-webkit-box' : 'block',
+              WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+              WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+              overflow: 'hidden',
               '&:hover': { textDecoration: 'underline' },
             }}
           >
@@ -390,12 +419,16 @@ export const ProjectCard = ({
             to={`/projects/${project.id}`}
             variant="h6"
             fontWeight={700}
-            noWrap
+            noWrap={!isShowcase}
             sx={{
               color: 'inherit',
               textDecoration: 'none',
               mb: 1.1,
               lineHeight: 1.25,
+              display: isShowcase ? '-webkit-box' : 'block',
+              WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+              WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+              overflow: 'hidden',
               '&:hover': { textDecoration: 'underline' },
             }}
           >
@@ -456,6 +489,19 @@ export const ProjectCard = ({
               }}
             />
           </Box>
+        ) : null}
+        {isShowcase && (resolvedType || artifactHost) ? (
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mb: 1.2,
+              color: 'text.secondary',
+              letterSpacing: 0.2,
+            }}
+          >
+            {[resolvedType, artifactHost].filter(Boolean).join(' • ')}
+          </Typography>
         ) : null}
         <Typography
           variant="body2"

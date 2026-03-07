@@ -20,8 +20,12 @@ export const PortfolioFrame = ({ title, children }: PortfolioFrameProps) => (
       {title}
     </Typography>
     <Stack
-      spacing={{ xs: 2, sm: 3 }}
-      sx={{ py: { xs: 2.5, sm: 4.5 }, px: { xs: 0.5, sm: 2 }, minWidth: 0 }}
+      spacing={{ xs: 2, sm: 2.5, md: 3 }}
+      sx={{
+        py: { xs: 2, sm: 3.25, md: 4.5 },
+        px: { xs: 0.25, sm: 1.5, md: 2 },
+        minWidth: 0,
+      }}
     >
       {children}
     </Stack>

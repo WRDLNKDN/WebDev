@@ -34,6 +34,7 @@ import { ShareProfileDialog } from '../../components/profile/ShareProfileDialog'
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useProfile } from '../../hooks/useProfile';
+import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -192,13 +193,7 @@ export const Dashboard = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
-  const selectedIndustries = [
-    safeStr(profile?.industry),
-    safeStr(
-      (profile as unknown as { secondary_industry?: string })
-        ?.secondary_industry,
-    ),
-  ].filter(Boolean);
+  const selectedIndustries = getIndustryDisplayLabels(profile);
   const nicheField = (
     profile as unknown as { niche_field?: string }
   )?.niche_field?.trim();

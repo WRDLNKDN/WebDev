@@ -54,11 +54,16 @@ export const DirectoryRow = ({
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 1.25, md: 2 },
+        p: { xs: 1.5, md: 2 },
         borderRadius: 2,
         bgcolor: CARD_BG,
         border: '1px solid rgba(255,255,255,0.08)',
         overflow: 'hidden',
+        transition: 'border-color 140ms ease, transform 140ms ease',
+        '&:hover': {
+          borderColor: 'rgba(255,255,255,0.2)',
+          transform: 'translateY(-1px)',
+        },
       }}
     >
       <Stack
@@ -70,13 +75,14 @@ export const DirectoryRow = ({
           component={RouterLink}
           to={profileLink}
           sx={{ textDecoration: 'none', flexShrink: 0 }}
+          aria-label={`View ${displayName}'s profile`}
         >
           <Avatar
             src={avatarUrl ?? undefined}
             alt={displayName}
             sx={{
-              width: 56,
-              height: 56,
+              width: 60,
+              height: 60,
               bgcolor: 'primary.dark',
               border: '2px solid rgba(255,255,255,0.1)',
             }}
@@ -92,11 +98,21 @@ export const DirectoryRow = ({
               fontWeight: 700,
               color: 'white',
               textDecoration: 'none',
+              width: 'fit-content',
               '&:hover': { color: 'primary.light' },
             }}
           >
             {displayName}
           </Typography>
+          {member.handle && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              @{member.handle}
+            </Typography>
+          )}
           {member.pronouns && (
             <Typography variant="body2" color="text.secondary">
               {member.pronouns}

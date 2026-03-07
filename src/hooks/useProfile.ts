@@ -12,6 +12,7 @@ import {
 } from '../lib/utils/linkPlatform';
 import { processAvatarForUpload } from '../lib/utils/avatarResize';
 import { getLinkType, normalizeGoogleUrl } from '../lib/portfolio/linkUtils';
+import { getPortfolioUrlSafetyError } from '../lib/portfolio/linkValidation';
 import {
   getPortfolioThumbnailStoragePathFromPublicUrl,
   getProjectImageStoragePathFromPublicUrl,
@@ -220,7 +221,7 @@ export function useProfile() {
           .select('*')
           .eq('owner_id', session.user.id)
           .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: true });
+          .order('id', { ascending: true });
 
         if (!projectsError)
           setProjects((projectsData || []) as PortfolioItem[]);
@@ -448,6 +449,11 @@ export function useProfile() {
       }
 
       const projectUrlTrimmed = newProject.project_url.trim();
+      const projectUrlSafetyError =
+        getPortfolioUrlSafetyError(projectUrlTrimmed);
+      if (projectUrlSafetyError) {
+        throw new Error(projectUrlSafetyError);
+      }
       const linkType = getLinkType(projectUrlTrimmed);
       const normalizedUrl =
         linkType === 'google_doc' ||
@@ -577,28 +583,39 @@ export function useProfile() {
     if (!session?.user) {
       throw new Error('You need to sign in to reorder projects.');
     }
-    if (orderedIds.length === 0) return;
+    if (orderedIds.length < 2) return;
+
+    let previousProjects: PortfolioItem[] = [];
     try {
       setUpdating(true);
+      setProjects((prev) => {
+        previousProjects = prev;
+        const byId = new Map(prev.map((p) => [p.id, p]));
+        const reordered = orderedIds
+          .map((id) => byId.get(id))
+          .filter((p): p is PortfolioItem => Boolean(p));
+        const missing = prev.filter((p) => !orderedIds.includes(p.id));
+        const next = [...reordered, ...missing].map((p, i) => ({
+          ...p,
+          sort_order: i,
+        }));
+        return next;
+      });
+
       await Promise.all(
-        orderedIds.map((id, index) =>
-          supabase
+        orderedIds.map(async (id, index) => {
+          const { error } = await supabase
             .from('portfolio_items')
             .update({ sort_order: index })
             .eq('id', id)
-            .eq('owner_id', session.user.id),
-        ),
+            .eq('owner_id', session.user.id);
+          if (error) throw error;
+        }),
       );
-      setProjects((prev) => {
-        const byId = new Map(prev.map((p) => [p.id, p]));
-        return orderedIds
-          .map((id) => byId.get(id))
-          .filter((p): p is PortfolioItem => Boolean(p))
-          .map((p, i) => ({ ...p, sort_order: i }));
-      });
     } catch (err) {
       console.error('Reorder Projects Error:', err);
-      throw new Error(toMessage(err));
+      if (previousProjects.length > 0) setProjects(previousProjects);
+      throw new Error('Could not save artifact order. Please try again.');
     } finally {
       setUpdating(false);
     }
@@ -646,6 +663,11 @@ export function useProfile() {
       }
 
       const projectUrlTrimmed = updates.project_url.trim();
+      const projectUrlSafetyError =
+        getPortfolioUrlSafetyError(projectUrlTrimmed);
+      if (projectUrlSafetyError) {
+        throw new Error(projectUrlSafetyError);
+      }
       const linkType = getLinkType(projectUrlTrimmed);
       const normalizedUrl =
         linkType === 'google_doc' ||

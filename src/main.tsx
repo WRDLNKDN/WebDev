@@ -21,6 +21,7 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 
 // --- SYSTEM FIREWALL ---
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
+import { GlobalFormTooltips } from './components/common/GlobalFormTooltips';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <HelmetProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <GlobalFormTooltips />
 
         {/* THE FIREWALL:
            Placed inside ThemeProvider so the crash screen looks good.

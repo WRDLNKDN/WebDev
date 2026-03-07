@@ -196,7 +196,7 @@ export const LandingPage = () => {
           .select('*')
           .eq('owner_id', verifiedProfile.id)
           .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: true });
+          .order('id', { ascending: true });
 
         if (projectsError) throw projectsError;
         setProjects((projectsData || []) as PortfolioItem[]);

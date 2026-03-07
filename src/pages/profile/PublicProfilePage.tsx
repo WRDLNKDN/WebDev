@@ -25,7 +25,7 @@ import {
   portfolioCategoryToSectionTestId,
 } from '../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../types/portfolio';
-import type { NerdCreds } from '../../types/profile';
+import type { NerdCreds, SocialLink } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
 
 type PublicProfilePayload = {
@@ -62,15 +62,62 @@ type PublicProfilePayload = {
 
 const PUBLIC_PROFILE_SELECT =
   'id,display_name,tagline,avatar,nerd_creds,socials,resume_url,industry,secondary_industry,niche_field,location,pronouns';
-const PUBLIC_PORTFOLIO_SELECT =
-  'id,title,description,project_url,image_url,tech_stack,is_highlighted,sort_order,normalized_url,embed_url,resolved_type,thumbnail_url,thumbnail_status';
-
 const safeDecode = (value: string): string => {
   try {
     return decodeURIComponent(value);
   } catch {
     return value;
   }
+};
+
+const normalizePublicSocials = (
+  rawSocials: unknown,
+): Parameters<typeof ProfileLinksWidget>[0]['socials'] => {
+  type WidgetSocial = Parameters<
+    typeof ProfileLinksWidget
+  >[0]['socials'][number];
+
+  if (Array.isArray(rawSocials)) {
+    return rawSocials
+      .filter(
+        (item) =>
+          item &&
+          typeof item === 'object' &&
+          typeof (item as { url?: unknown }).url === 'string' &&
+          (item as { isVisible?: unknown }).isVisible !== false,
+      )
+      .map((item) => item as WidgetSocial);
+  }
+
+  if (rawSocials && typeof rawSocials === 'object') {
+    const legacy = rawSocials as Record<string, unknown>;
+    const map: Array<{
+      key: string;
+      label: string;
+      category: SocialLink['category'];
+    }> = [
+      { key: 'discord', label: 'Discord', category: 'Social' },
+      { key: 'reddit', label: 'Reddit', category: 'Social' },
+      { key: 'github', label: 'GitHub', category: 'Professional' },
+    ];
+
+    return map.reduce<WidgetSocial[]>((acc, entry, index) => {
+      const value = legacy[entry.key];
+      if (typeof value !== 'string' || !value.trim()) return acc;
+      acc.push({
+        id: `legacy-${entry.key}`,
+        category: entry.category,
+        platform: entry.label,
+        url: value.trim(),
+        label: entry.label,
+        isVisible: true,
+        order: index,
+      });
+      return acc;
+    }, []);
+  }
+
+  return [];
 };
 
 async function fetchPublicProfileByHandleOrId(
@@ -92,20 +139,53 @@ async function fetchPublicProfileByHandleOrId(
   }
 
   const profile = profileRows[0] as PublicProfilePayload['profile'];
-  const { data: portfolioRows, error: portfolioError } = await supabase
+  const { data: portfolioRows } = await supabase
     .from('portfolio_items')
-    .select(PUBLIC_PORTFOLIO_SELECT)
-    .eq('owner_id', profile.id)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true });
+    .select('*')
+    .eq('owner_id', profile.id);
 
-  if (portfolioError) return null;
+  const normalizedPortfolio = Array.isArray(portfolioRows)
+    ? (portfolioRows as Array<Record<string, unknown>>)
+        .map((row) => ({
+          id: String(row.id ?? ''),
+          title:
+            typeof row.title === 'string' && row.title.trim()
+              ? row.title
+              : 'Untitled project',
+          description:
+            typeof row.description === 'string' ? row.description : null,
+          project_url:
+            typeof row.project_url === 'string' ? row.project_url : null,
+          image_url: typeof row.image_url === 'string' ? row.image_url : null,
+          tech_stack: Array.isArray(row.tech_stack)
+            ? (row.tech_stack as string[])
+            : [],
+          is_highlighted: Boolean(row.is_highlighted),
+          sort_order:
+            typeof row.sort_order === 'number' ? row.sort_order : undefined,
+          normalized_url:
+            typeof row.normalized_url === 'string' ? row.normalized_url : null,
+          embed_url: typeof row.embed_url === 'string' ? row.embed_url : null,
+          resolved_type:
+            typeof row.resolved_type === 'string' ? row.resolved_type : null,
+          thumbnail_url:
+            typeof row.thumbnail_url === 'string' ? row.thumbnail_url : null,
+          thumbnail_status:
+            typeof row.thumbnail_status === 'string'
+              ? row.thumbnail_status
+              : null,
+        }))
+        .filter((row) => row.id !== '')
+        .sort((a, b) => {
+          const orderA = typeof a.sort_order === 'number' ? a.sort_order : 0;
+          const orderB = typeof b.sort_order === 'number' ? b.sort_order : 0;
+          return orderA - orderB || a.id.localeCompare(b.id);
+        })
+    : [];
 
   return {
     profile,
-    portfolio: Array.isArray(portfolioRows)
-      ? (portfolioRows as PublicProfilePayload['portfolio'])
-      : [],
+    portfolio: normalizedPortfolio,
   };
 }
 
@@ -224,15 +304,9 @@ export const PublicProfilePage = () => {
   if (p.niche_field) {
     industryChips.push({ label: p.niche_field, key: `niche-${p.niche_field}` });
   }
-  const rawSocials = Array.isArray(p.socials)
-    ? p.socials
-    : p.socials && typeof p.socials === 'object'
-      ? (p.socials as { isVisible?: boolean }[])
-      : [];
-  const socials = rawSocials.filter((l) => l?.isVisible) as Parameters<
-    typeof ProfileLinksWidget
-  >[0]['socials'];
-  const showLinksInIdentity = hasVisibleSocialLinks(p.socials);
+  const socials = normalizePublicSocials(p.socials);
+  const showLinksInIdentity =
+    socials.length > 0 || hasVisibleSocialLinks(p.socials);
 
   const projects: PortfolioItem[] = (portfolio ?? []).map((item) => ({
     id: item.id,

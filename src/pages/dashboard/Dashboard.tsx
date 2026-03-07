@@ -132,6 +132,7 @@ export const Dashboard = () => {
     uploadAvatar,
     addProject,
     updateProject,
+    toggleProjectHighlight,
     deleteProject,
     reorderProjects,
     uploadResume,
@@ -692,6 +693,13 @@ export const Dashboard = () => {
                   onDelete={async (id) => {
                     try {
                       await deleteProject(id);
+                    } catch (e) {
+                      setSnack(toMessage(e));
+                    }
+                  }}
+                  onToggleHighlight={async (id, isHighlighted) => {
+                    try {
+                      await toggleProjectHighlight(id, isHighlighted);
                     } catch (e) {
                       setSnack(toMessage(e));
                     }

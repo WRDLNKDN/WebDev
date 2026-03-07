@@ -621,6 +621,42 @@ export function useProfile() {
     }
   };
 
+  const toggleProjectHighlight = async (
+    projectId: string,
+    isHighlighted: boolean,
+  ) => {
+    try {
+      setUpdating(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('You need to sign in to update project highlights.');
+      }
+
+      const { data, error: updateError } = await supabase
+        .from('portfolio_items')
+        .update({
+          is_highlighted: isHighlighted,
+        })
+        .eq('id', projectId)
+        .eq('owner_id', session.user.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      setProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? (data as PortfolioItem) : p)),
+      );
+    } catch (err) {
+      console.error('Toggle Project Highlight Error:', err);
+      throw new Error(toMessage(err));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const updateProject = async (
     projectId: string,
     updates: NewProject,
@@ -1022,6 +1058,7 @@ export function useProfile() {
     uploadAvatar,
     addProject,
     updateProject,
+    toggleProjectHighlight,
     deleteProject,
     reorderProjects,
     uploadResume,

@@ -210,12 +210,7 @@ export const ResumeCard = ({
               {resumeTitle}
             </Box>
           </Tooltip>
-          <Button
-            variant="outlined"
-            size="small"
-            href={url || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Box
             sx={{
               display: 'flex',
               alignItems: 'center',

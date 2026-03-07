@@ -14,13 +14,55 @@ export type ValidationResult =
   | { ok: false; error: string };
 
 const VALID_URL_ONLY = 'Enter a valid URL (https:// or http://).';
-const UNSUPPORTED_TYPE =
-  'This file type is not supported for portfolio links. Use a supported link (e.g. image, PDF, document, or Google Docs/Sheets/Slides).';
+const DISALLOWED_URL =
+  'This URL is not allowed for portfolio projects. Please use a professional/public project link.';
 const NOT_PUBLIC =
   'This link is not publicly accessible. Update sharing settings or use a public link.';
 
+const DISALLOWED_HOST_TLDS = ['.xxx', '.adult', '.sex', '.porn'];
+const DISALLOWED_TOKENS = [
+  'porn',
+  'porno',
+  'xxx',
+  'xvideo',
+  'xvideos',
+  'xnxx',
+  'xhamster',
+  'redtube',
+  'youporn',
+  'pornhub',
+  'sexcam',
+  'sexcams',
+  'camgirl',
+  'camgirls',
+] as const;
+
+const tokenBoundaryRegex = new RegExp(
+  `(^|[^a-z0-9])(${DISALLOWED_TOKENS.join('|')})([^a-z0-9]|$)`,
+  'i',
+);
+
+export function getPortfolioUrlSafetyError(url: string): string {
+  const raw = url.trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.toLowerCase();
+    const hostAndPath = `${host}${parsed.pathname.toLowerCase()}`;
+    if (DISALLOWED_HOST_TLDS.some((tld) => host.endsWith(tld))) {
+      return DISALLOWED_URL;
+    }
+    if (tokenBoundaryRegex.test(hostAndPath)) {
+      return DISALLOWED_URL;
+    }
+  } catch {
+    return '';
+  }
+  return '';
+}
+
 /**
- * Validate portfolio URL: format, supported type, and optionally check public access.
+ * Validate portfolio URL: format and optionally check public access.
  * Does not retry; single attempt for accessibility.
  */
 export async function validatePortfolioUrl(
@@ -38,8 +80,10 @@ export async function validatePortfolioUrl(
     return { ok: false, error: VALID_URL_ONLY };
   }
 
+  const safetyError = getPortfolioUrlSafetyError(raw);
+  if (safetyError) return { ok: false, error: safetyError };
+
   const linkType = getLinkType(raw);
-  if (linkType === 'unsupported') return { ok: false, error: UNSUPPORTED_TYPE };
 
   let embedUrl: string | undefined;
   if (

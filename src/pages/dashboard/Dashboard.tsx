@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Link,
   Menu,
   MenuItem,
   Paper,
@@ -477,7 +476,7 @@ export const Dashboard = () => {
                 {profile?.handle && (
                   <MenuItem
                     component="a"
-                    href={`/profile/${profile.handle}`}
+                    href={`/p/h~${encodeURIComponent(profile.handle)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setProfileMenuAnchor(null)}
@@ -555,13 +554,6 @@ export const Dashboard = () => {
                 >
                   Add your first project
                 </Button>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  or
-                </Typography>
                 <input
                   ref={resumeFileInputRef}
                   type="file"
@@ -572,20 +564,24 @@ export const Dashboard = () => {
                     if (f) handleResumeUpload(f);
                   }}
                 />
-                <Link
-                  component="button"
-                  variant="body2"
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
                   onClick={() => resumeFileInputRef.current?.click()}
                   sx={{
-                    color: 'primary.main',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    color: 'white',
+                    background:
+                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                    '&:hover': {
+                      background:
+                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                    },
                   }}
                 >
                   Upload a resume
-                </Link>
+                </Button>
               </Stack>
             </>
           ) : (
@@ -642,13 +638,13 @@ export const Dashboard = () => {
               <Box
                 sx={{
                   display: 'grid',
-                  gap: 1.5,
+                  gap: { xs: 1, sm: 1.25, md: 1.5 },
                   gridTemplateColumns: {
                     xs: '1fr',
-                    sm: 'repeat(2, minmax(0, 1fr))',
-                    lg: 'repeat(3, minmax(0, 1fr))',
+                    sm: 'repeat(2, minmax(260px, 1fr))',
+                    lg: 'repeat(3, minmax(260px, 1fr))',
                   },
-                  justifyItems: { xs: 'stretch', sm: 'center' },
+                  justifyItems: 'stretch',
                   alignItems: 'start',
                 }}
               >

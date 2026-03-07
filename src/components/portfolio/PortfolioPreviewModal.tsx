@@ -2,9 +2,11 @@
  * Portfolio item preview modal: type-specific preview, Open in new tab, Copy link.
  * Error states: unsupported type, not public, embed blocked, temporary failure.
  */
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CloseIcon from '@mui/icons-material/Close';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -12,9 +14,10 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Stack,
   Typography,
 } from '@mui/material';
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getLinkType,
   getLinkTypeLabel,
@@ -28,6 +31,8 @@ const GLASS_MODAL = {
   borderRadius: 2,
   color: 'white',
   overflow: 'hidden',
+  backdropFilter: 'blur(18px)',
+  boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
 };
 
 type PreviewError =
@@ -65,38 +70,96 @@ export const PortfolioPreviewModal = ({
     linkType === 'google_slides'
       ? normalizeGoogleUrl(url)
       : url);
+  const openUrl = (() => {
+    const raw = url.trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^\/\//.test(raw)) return `https:${raw}`;
+    // Support legacy values missing protocol: example.com/path
+    if (/^[a-z0-9.-]+\.[a-z]{2,}(?:[/:?#].*)?$/i.test(raw))
+      return `https://${raw}`;
+    return '';
+  })();
 
-  const handleCopyLink = useCallback(() => {
-    if (!url) return;
-    void navigator.clipboard.writeText(url);
-  }, [url]);
+  useEffect(() => {
+    if (open) setPreviewError(null);
+  }, [open, project?.id, url]);
 
   const renderPreview = () => {
     if (!url) return null;
     if (linkType === 'unsupported') {
       return (
-        <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+        <Alert
+          severity="info"
+          icon={<InfoOutlinedIcon fontSize="inherit" />}
+          sx={{
+            mt: 1,
+            borderRadius: 1,
+            bgcolor: 'rgba(13, 87, 101, 0.22)',
+            border: '1px solid rgba(45, 212, 191, 0.35)',
+            color: '#d6fbf6',
+            '& .MuiAlert-icon': { color: '#2dd4bf' },
+          }}
+        >
           {ERROR_MESSAGES.unsupported}
-        </Typography>
+        </Alert>
       );
     }
     if (previewError) {
       return (
-        <Box sx={{ py: 4, textAlign: 'center' }}>
+        <Box
+          sx={{
+            mt: 1,
+            py: 4,
+            px: 2,
+            textAlign: 'center',
+            borderRadius: 1,
+            border: '1px solid rgba(255,255,255,0.16)',
+            bgcolor: 'rgba(255,255,255,0.03)',
+          }}
+        >
           <Typography color="text.secondary" gutterBottom>
             {ERROR_MESSAGES[previewError]}
           </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            endIcon={<OpenInNewIcon />}
-            sx={{ mt: 1 }}
-          >
-            Open in new tab
-          </Button>
+          {openUrl ? (
+            <Button
+              variant="contained"
+              size="small"
+              href={openUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              endIcon={<OpenInNewIcon />}
+              sx={{
+                mt: 1.5,
+                borderRadius: 1,
+                textTransform: 'none',
+                fontWeight: 700,
+                color: 'white',
+                background: 'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                '&:hover': {
+                  background:
+                    'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                },
+              }}
+            >
+              Open in new tab
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              endIcon={<OpenInNewIcon />}
+              disabled
+              sx={{
+                mt: 1.5,
+                borderRadius: 1,
+                textTransform: 'none',
+                fontWeight: 700,
+              }}
+            >
+              Open in new tab
+            </Button>
+          )}
         </Box>
       );
     }
@@ -172,55 +235,90 @@ export const PortfolioPreviewModal = ({
       <DialogTitle
         sx={{
           borderBottom: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 1,
+          py: 1.5,
+          px: 2,
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="h6" noWrap>
-            {project?.title ?? 'Preview'}
-          </Typography>
-          <Chip
-            label={typeLabel}
-            size="small"
-            sx={{
-              mt: 0.5,
-              bgcolor: 'rgba(255,255,255,0.08)',
-              color: 'text.secondary',
-            }}
-          />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          <Button
-            size="small"
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            endIcon={<OpenInNewIcon />}
-            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
-            variant="outlined"
-          >
-            Open in new tab
-          </Button>
-          <IconButton
-            size="small"
-            onClick={handleCopyLink}
-            aria-label="Copy link"
-            sx={{ color: 'text.secondary' }}
-          >
-            <ContentCopyIcon fontSize="small" />
-          </IconButton>
-        </Box>
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="h6" noWrap>
+              {project?.title ?? 'Preview'}
+            </Typography>
+            <Chip
+              label={typeLabel}
+              size="small"
+              sx={{
+                mt: 0.75,
+                borderRadius: 1,
+                bgcolor: 'rgba(255,255,255,0.08)',
+                color: 'text.secondary',
+              }}
+            />
+          </Box>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {openUrl ? (
+              <IconButton
+                size="small"
+                href={openUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open in new tab"
+                sx={{
+                  color: 'text.secondary',
+                  border: '1px solid rgba(255,255,255,0.24)',
+                  borderRadius: 1,
+                  '&:hover': {
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.45)',
+                    bgcolor: 'rgba(255,255,255,0.08)',
+                  },
+                }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            ) : (
+              <IconButton
+                size="small"
+                aria-label="Open in new tab"
+                disabled
+                sx={{
+                  color: 'text.disabled',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  borderRadius: 1,
+                }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            <IconButton
+              size="small"
+              onClick={onClose}
+              aria-label="Close preview"
+              sx={{
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        </Stack>
       </DialogTitle>
-      <DialogContent sx={{ p: 2 }}>
+      <DialogContent sx={{ p: { xs: 1.5, md: 2 } }}>
         {project?.description && (
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mb: 2, whiteSpace: 'pre-wrap' }}
+            sx={{
+              mb: 1.5,
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.55,
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 1,
+              px: 1.25,
+              py: 1,
+              bgcolor: 'rgba(255,255,255,0.02)',
+            }}
           >
             {project.description}
           </Typography>
@@ -238,6 +336,7 @@ export const PortfolioPreviewModal = ({
                     label={tag}
                     size="small"
                     sx={{
+                      borderRadius: 1,
                       bgcolor: 'rgba(255,255,255,0.08)',
                       color: 'text.secondary',
                       border: '1px solid rgba(255,255,255,0.16)',

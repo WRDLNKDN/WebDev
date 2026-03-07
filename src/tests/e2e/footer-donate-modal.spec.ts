@@ -18,7 +18,7 @@ async function openDonateModal(page: Page) {
 }
 
 test.describe('Footer donate modal', () => {
-  test('opens a donate modal with URL, copy action, QR code, and ESC close', async ({
+  test('opens a donate modal with link + copy action and closes on ESC', async ({
     page,
   }) => {
     const dialog = await openDonateModal(page);
@@ -35,22 +35,7 @@ test.describe('Footer donate modal', () => {
     );
     await expect(donateUrl).toHaveAttribute('target', '_blank');
     await expect(donateUrl).toHaveAttribute('rel', 'noopener noreferrer');
-    await expect(donateUrl).toHaveText(
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
-
-    const qrImage = dialog.getByTestId('footer-donate-qr-image');
-    await expect(qrImage).toBeVisible();
-    await expect(qrImage).toHaveAttribute(
-      'alt',
-      'QR code for donating to WRDLNKDN',
-    );
-
-    const qrLink = dialog.getByTestId('footer-donate-qr-link');
-    await expect(qrLink).toHaveAttribute(
-      'href',
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
+    await expect(donateUrl).toHaveText('[pay.wrdlnkdn.com]');
 
     await dialog.getByTestId('footer-donate-copy-button').click();
     await expect(dialog.getByTestId('footer-donate-copy-feedback')).toHaveText(
@@ -66,9 +51,7 @@ test.describe('Footer donate modal', () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const dialog = await openDonateModal(page);
-
-    const qrImage = dialog.getByTestId('footer-donate-qr-image');
-    await expect(qrImage).toBeVisible();
+    await expect(dialog.getByTestId('footer-donate-modal-url')).toBeVisible();
 
     const dialogMetrics = await dialog.evaluate((node) => ({
       clientHeight: node.clientHeight,

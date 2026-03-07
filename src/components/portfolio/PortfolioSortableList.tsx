@@ -7,7 +7,8 @@ import { Box } from '@mui/material';
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -16,9 +17,9 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { PortfolioItem } from '../../types/portfolio';
@@ -27,6 +28,11 @@ import { ProjectCard } from './ProjectCard';
 interface SortableCardProps {
   project: PortfolioItem;
   isOwner: boolean;
+  canReorder: boolean;
+  onMoveUp?: (projectId: string) => void;
+  onMoveDown?: (projectId: string) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   onEdit?: (project: PortfolioItem) => void | Promise<void>;
   onDelete?: (projectId: string) => void | Promise<void>;
   onOpenPreview?: (project: PortfolioItem) => void;
@@ -35,6 +41,11 @@ interface SortableCardProps {
 const SortableCard = ({
   project,
   isOwner,
+  canReorder,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
   onEdit,
   onDelete,
   onOpenPreview,
@@ -55,15 +66,23 @@ const SortableCard = ({
   };
 
   return (
-    <Box ref={setNodeRef} style={style} sx={{ display: 'inline-block' }}>
+    <Box
+      ref={setNodeRef}
+      style={style}
+      sx={{ display: 'block', width: '100%' }}
+    >
       <ProjectCard
         project={project}
         isOwner={isOwner}
         onEdit={onEdit}
         onDelete={onDelete}
         onOpenPreview={onOpenPreview}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        canMoveUp={canMoveUp}
+        canMoveDown={canMoveDown}
         dragHandle={
-          isOwner ? (
+          isOwner && canReorder ? (
             <Box
               {...attributes}
               {...listeners}
@@ -73,8 +92,8 @@ const SortableCard = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 32,
-                height: 32,
+                width: { xs: 36, md: 32 },
+                height: { xs: 36, md: 32 },
                 borderRadius: 1,
                 color: 'text.secondary',
                 cursor: 'grab',
@@ -114,7 +133,19 @@ export const PortfolioSortableList = ({
   onDelete,
   onOpenPreview,
 }: PortfolioSortableListProps) => {
+  const canReorder = isOwner && projects.length > 1;
+  const moveProjectByOffset = (projectId: string, offset: -1 | 1) => {
+    if (!canReorder) return;
+    const currentIndex = projects.findIndex((p) => p.id === projectId);
+    if (currentIndex < 0) return;
+    const nextIndex = currentIndex + offset;
+    if (nextIndex < 0 || nextIndex >= projects.length) return;
+    const reordered = arrayMove(projects, currentIndex, nextIndex);
+    void onReorder(reordered.map((p) => p.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!canReorder) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = projects.findIndex((p) => p.id === active.id);
@@ -125,7 +156,10 @@ export const PortfolioSortableList = ({
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -151,14 +185,27 @@ export const PortfolioSortableList = ({
     >
       <SortableContext
         items={projects.map((p) => p.id)}
-        strategy={verticalListSortingStrategy}
+        strategy={rectSortingStrategy}
       >
         <Box sx={{ display: 'contents' }}>
-          {projects.map((project) => (
+          {projects.map((project, index) => (
             <SortableCard
               key={project.id}
               project={project}
               isOwner={isOwner}
+              canReorder={canReorder}
+              onMoveUp={
+                canReorder
+                  ? (projectId) => moveProjectByOffset(projectId, -1)
+                  : undefined
+              }
+              onMoveDown={
+                canReorder
+                  ? (projectId) => moveProjectByOffset(projectId, 1)
+                  : undefined
+              }
+              canMoveUp={canReorder && index > 0}
+              canMoveDown={canReorder && index < projects.length - 1}
               onEdit={onEdit}
               onDelete={onDelete}
               onOpenPreview={onOpenPreview}

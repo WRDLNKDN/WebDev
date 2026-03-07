@@ -35,6 +35,30 @@ export async function stubAppSurface(page: Page) {
   // Playwright runs the most recently registered matching route first.
   await stubAuthToken(page);
 
+  // Broad REST fallback first so endpoint-specific stubs below take precedence.
+  await page.route('**/rest/v1/**', async (route) => {
+    const method = route.request().method();
+    const url = route.request().url();
+    if (method !== 'GET') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    if (url.includes('profiles')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-0/1' },
+        body: JSON.stringify([STUB_PROFILE]),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
   await page.route('**/rest/v1/notifications*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -63,29 +87,6 @@ export async function stubAppSurface(page: Page) {
         { key: 'store', enabled: false },
         { key: 'chat', enabled: false },
       ]),
-    });
-  });
-
-  await page.route('**/rest/v1/**', async (route) => {
-    const method = route.request().method();
-    const url = route.request().url();
-    if (method !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-    if (url.includes('profiles')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: { 'content-range': '0-0/1' },
-        body: JSON.stringify([STUB_PROFILE]),
-      });
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([]),
     });
   });
 

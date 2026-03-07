@@ -76,9 +76,9 @@ export const ResumeCard = ({
 
           // Instance-specific overrides (compact for Dashboard)
           width: '100%',
-          maxWidth: 240,
-          minHeight: { xs: 240, md: 320 },
-          height: { xs: 240, md: 320 },
+          maxWidth: { xs: '100%', sm: 320 },
+          minHeight: { xs: 260, md: 320 },
+          height: { xs: 260, md: 320 },
           borderRadius: 3,
           scrollSnapAlign: 'start',
           position: 'relative',

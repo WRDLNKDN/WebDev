@@ -1,7 +1,6 @@
 import {
   alpha,
   Box,
-  Button,
   Collapse,
   Container,
   Dialog,
@@ -28,7 +27,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import {
-  FOOTER_DONATE_QR_ASSET,
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
@@ -102,6 +100,14 @@ export const Footer = () => {
         ),
       })),
     };
+  }, []);
+
+  const donateDomain = useMemo(() => {
+    try {
+      return new URL(FOOTER_DONATE_URL).host.replace(/^www\./i, '');
+    } catch {
+      return FOOTER_DONATE_URL;
+    }
   }, []);
 
   useEffect(() => {
@@ -310,7 +316,8 @@ export const Footer = () => {
                   color="text.secondary"
                   sx={{
                     display: { xs: 'none', sm: 'block' },
-                    fontSize: { sm: '0.72rem', md: '0.78rem' },
+                    fontSize: { sm: '0.78rem', md: '0.84rem' },
+                    lineHeight: 1.35,
                   }}
                 >
                   Business, but weirder.
@@ -384,7 +391,7 @@ export const Footer = () => {
                         <Typography
                           variant="subtitle2"
                           fontWeight={700}
-                          sx={{ fontSize: { xs: '0.72rem', md: '0.8rem' } }}
+                          sx={{ fontSize: { xs: '0.78rem', md: '0.86rem' } }}
                         >
                           {section.title}
                         </Typography>
@@ -444,7 +451,7 @@ export const Footer = () => {
                               display: 'inline-flex',
                               alignItems: 'center',
                               py: { xs: 0.4, md: 0.56 },
-                              fontSize: { xs: '0.72rem', md: '0.8rem' },
+                              fontSize: { xs: '0.78rem', md: '0.86rem' },
                               color: active ? 'primary.main' : 'text.secondary',
                               fontWeight: active ? 700 : 500,
                               textDecoration: active ? 'underline' : 'none',
@@ -493,57 +500,6 @@ export const Footer = () => {
                     </Box>
                   );
                 })}
-
-                <Box
-                  sx={{
-                    gridColumn: { xs: '2 / 3', sm: '2 / 3' },
-                    justifySelf: { xs: 'stretch', sm: 'center' },
-                    pt: { xs: 0, sm: 0.1 },
-                  }}
-                >
-                  <Box
-                    component="button"
-                    type="button"
-                    data-testid="footer-donate-link"
-                    onClick={openDonateModal}
-                    aria-label="Donate to WRDLNKDN"
-                    aria-haspopup="dialog"
-                    aria-controls="footer-donate-modal"
-                    sx={{
-                      all: 'unset',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      color: 'primary.main',
-                      textDecoration: 'none',
-                      fontSize: { xs: '0.75rem', md: '0.82rem' },
-                      minHeight: 30,
-                      px: 1.2,
-                      py: 0.3,
-                      borderRadius: 999,
-                      border: '1px solid',
-                      borderColor: alpha(theme.palette.primary.main, 0.42),
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                      width: { xs: '100%', sm: 'fit-content' },
-                      mt: { xs: 0, sm: 0.16 },
-                      boxSizing: 'border-box',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        textDecoration: 'underline',
-                        color: 'primary.dark',
-                      },
-                      '&:focus-visible': {
-                        outline: '2px solid',
-                        outlineColor: 'primary.main',
-                        outlineOffset: 2,
-                        borderRadius: 0.5,
-                      },
-                    }}
-                  >
-                    Donate Now
-                  </Box>
-                </Box>
               </Box>
             </Grid>
 
@@ -561,7 +517,7 @@ export const Footer = () => {
               }}
             >
               <Stack
-                spacing={0.15}
+                spacing={0.45}
                 alignItems={{
                   xs: 'flex-start',
                   sm: 'flex-end',
@@ -569,6 +525,70 @@ export const Footer = () => {
                 }}
                 sx={{ pt: { xs: 0.15, md: 0.05 } }}
               >
+                <Box
+                  component="button"
+                  type="button"
+                  data-testid="footer-donate-link"
+                  onClick={openDonateModal}
+                  aria-label="Donate to WRDLNKDN"
+                  aria-haspopup="dialog"
+                  aria-controls="footer-donate-modal"
+                  sx={{
+                    all: 'unset',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    fontWeight: 800,
+                    letterSpacing: 0.35,
+                    color: 'white',
+                    textDecoration: 'none',
+                    textTransform: 'uppercase',
+                    fontSize: { xs: '0.78rem', md: '0.84rem' },
+                    lineHeight: 1,
+                    minHeight: 40,
+                    px: 1.8,
+                    py: 0.55,
+                    borderRadius: 1,
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    background:
+                      'linear-gradient(135deg, #0d5f59 0%, #118f87 42%, #1ecfb9 100%)',
+                    width: '100%',
+                    alignSelf: 'stretch',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                    boxShadow:
+                      '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(255,255,255,0.16)',
+                    transition: reduceMotion
+                      ? 'none'
+                      : 'box-shadow 140ms ease, background 140ms ease, border-color 140ms ease',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0))',
+                      pointerEvents: 'none',
+                    },
+                    '&:hover': {
+                      textDecoration: 'none',
+                      background:
+                        'linear-gradient(135deg, #0b5550 0%, #0f7a74 42%, #17b9a5 100%)',
+                      borderColor: 'rgba(255,255,255,0.38)',
+                      boxShadow:
+                        '0 10px 22px rgba(20,184,166,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    },
+                    '&:focus-visible': {
+                      outline: '2px solid',
+                      outlineColor: alpha(theme.palette.common.white, 0.9),
+                      outlineOffset: 2,
+                      borderRadius: 1,
+                    },
+                  }}
+                >
+                  Donate Now
+                </Box>
                 <Stack
                   direction="row"
                   spacing={0.2}
@@ -599,7 +619,7 @@ export const Footer = () => {
                   color="text.secondary"
                   data-testid="footer-copyright"
                   sx={{
-                    fontSize: { xs: '0.6rem', md: '0.68rem' },
+                    fontSize: { xs: '0.68rem', md: '0.74rem' },
                     textAlign: { xs: 'left', sm: 'right' },
                   }}
                 >
@@ -658,7 +678,7 @@ export const Footer = () => {
           dividers
           sx={{ borderColor: dividerColor, py: { xs: 2, sm: 2.5 } }}
         >
-          <Stack spacing={2.5}>
+          <Stack spacing={1.75}>
             <Stack spacing={1.2}>
               <Typography
                 variant="overline"
@@ -666,28 +686,48 @@ export const Footer = () => {
               >
                 Donation Link
               </Typography>
-              <Link
-                data-testid="footer-donate-modal-url"
-                href={FOOTER_DONATE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  fontSize: { xs: '0.9rem', sm: '0.95rem' },
-                  fontWeight: 600,
-                  wordBreak: 'break-all',
-                }}
-              >
-                {FOOTER_DONATE_URL}
-              </Link>
-              <Button
-                data-testid="footer-donate-copy-button"
-                onClick={() => void handleCopyDonateLink()}
-                variant="outlined"
-                startIcon={<ContentCopyIcon />}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Copy link
-              </Button>
+              <Stack direction="row" spacing={0.8} alignItems="center">
+                <Link
+                  data-testid="footer-donate-modal-url"
+                  href={FOOTER_DONATE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    fontSize: { xs: '0.9rem', sm: '0.95rem' },
+                    fontWeight: 600,
+                    fontFamily:
+                      '"IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace',
+                    px: 0.8,
+                    py: 0.35,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: dividerColor,
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  [{donateDomain}]
+                </Link>
+                <IconButton
+                  data-testid="footer-donate-copy-button"
+                  aria-label="Copy donation link"
+                  onClick={() => void handleCopyDonateLink()}
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    border: '1px solid',
+                    borderColor: dividerColor,
+                    borderRadius: 1,
+                    '&:hover': {
+                      color: 'text.primary',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                    },
+                  }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Stack>
               {copyFeedback ? (
                 <Typography
                   data-testid="footer-donate-copy-feedback"
@@ -703,48 +743,6 @@ export const Footer = () => {
                   {copyFeedback}
                 </Typography>
               ) : null}
-            </Stack>
-
-            <Stack spacing={1.2} alignItems="center">
-              <Typography
-                variant="overline"
-                sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}
-              >
-                Scan QR Code
-              </Typography>
-              <Link
-                data-testid="footer-donate-qr-link"
-                href={FOOTER_DONATE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open donation page via QR code"
-                sx={{
-                  display: 'inline-flex',
-                  borderRadius: 2,
-                  '&:focus-visible': {
-                    outline: '2px solid',
-                    outlineColor: 'primary.main',
-                    outlineOffset: 4,
-                  },
-                }}
-              >
-                <Box
-                  component="img"
-                  data-testid="footer-donate-qr-image"
-                  src={FOOTER_DONATE_QR_ASSET}
-                  alt="QR code for donating to WRDLNKDN"
-                  sx={{
-                    display: 'block',
-                    width: '100%',
-                    maxWidth: { xs: 240, sm: 280 },
-                    borderRadius: 2,
-                    bgcolor: theme.palette.common.white,
-                    p: 1,
-                    boxSizing: 'border-box',
-                    boxShadow: '0 10px 26px rgba(0,0,0,0.22)',
-                  }}
-                />
-              </Link>
             </Stack>
           </Stack>
         </DialogContent>

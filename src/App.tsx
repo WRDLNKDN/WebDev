@@ -1,5 +1,5 @@
 import { Box, CircularProgress } from '@mui/material';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import {
   Navigate,
   type Location as RouterLocation,
@@ -286,15 +286,28 @@ const Loading = () => (
 );
 
 const AuthBoot = () => {
+  const lastVisibilityRefreshAtRef = useRef(0);
+
   useEffect(() => {
     void supabase.auth.getSession();
   }, []);
 
   // iPhone/Safari: refresh session when tab becomes visible (e.g. return from another app).
-  // Triggers onAuthStateChange so Navbar/RequireOnboarded stay in sync after iOS app switch.
+  // Restrict to iOS/WebKit and throttle to avoid noisy refresh churn on desktop tab switches.
   useEffect(() => {
+    const ua = navigator.userAgent || '';
+    const isIOS =
+      /iP(hone|ad|od)/i.test(ua) ||
+      (/Macintosh/i.test(ua) && 'ontouchend' in window);
+    const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+    if (!(isIOS && isWebKit)) return;
+
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Avoid repeated refresh bursts while switching quickly between tabs/apps.
+        if (now - lastVisibilityRefreshAtRef.current < 60_000) return;
+        lastVisibilityRefreshAtRef.current = now;
         void supabase.auth.refreshSession();
       }
     };

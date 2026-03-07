@@ -10,7 +10,7 @@ async function goToFooter(page: Page) {
 }
 
 test.describe('Footer layout', () => {
-  test('removes platform links and keeps donate centered under documentation', async ({
+  test('removes platform links and keeps donate above social links on the right', async ({
     page,
   }) => {
     await stubAppSurface(page);
@@ -38,20 +38,11 @@ test.describe('Footer layout', () => {
       'footer-donate-modal',
     );
 
-    const documentation = footer.getByTestId('footer-section-documentation');
-    const docBox = await documentation.boundingBox();
     const donateBox = await donate.boundingBox();
-    expect(docBox).not.toBeNull();
     expect(donateBox).not.toBeNull();
-    if (!docBox || !donateBox) {
+    if (!donateBox) {
       throw new Error('Footer donate placement could not be measured.');
     }
-
-    const docCenterX = docBox.x + docBox.width / 2;
-    const donateCenterX = donateBox.x + donateBox.width / 2;
-
-    expect(donateBox.y).toBeGreaterThan(docBox.y + docBox.height - 2);
-    expect(Math.abs(docCenterX - donateCenterX)).toBeLessThan(90);
 
     const socials = footer.getByTestId('footer-social-links');
     const copyright = footer.getByTestId('footer-copyright');
@@ -71,6 +62,15 @@ test.describe('Footer layout', () => {
       throw new Error('Footer social layout could not be measured.');
     }
 
+    expect(donateBox.y + donateBox.height).toBeLessThanOrEqual(
+      socialsBox.y + 2,
+    );
+    // Donate button spans the right column; socials are right-aligned within it.
+    // Assert column alignment by right edge containment instead of left-edge equality.
+    expect(donateBox.x).toBeLessThanOrEqual(socialsBox.x);
+    expect(donateBox.x + donateBox.width).toBeGreaterThanOrEqual(
+      socialsBox.x + socialsBox.width - 1,
+    );
     expect(copyrightBox.y).toBeGreaterThan(
       socialsBox.y + socialsBox.height - 2,
     );

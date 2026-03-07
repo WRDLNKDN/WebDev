@@ -112,6 +112,11 @@ create table if not exists public.profiles (
   use_weirdling_avatar boolean not null default false
 );
 
+-- Ensure profile share columns exist before share/directory function definitions below.
+alter table if exists public.profiles
+  add column if not exists profile_share_token text,
+  add column if not exists profile_share_token_created_at timestamptz;
+
 comment on column public.profiles.use_weirdling_avatar is
   'When true, show saved Weirdling avatar as profile picture instead of uploaded avatar.';
 
@@ -145,6 +150,9 @@ create index if not exists idx_profiles_email on public.profiles (email);
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
 create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
 create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
+create unique index if not exists idx_profiles_profile_share_token
+  on public.profiles(profile_share_token)
+  where profile_share_token is not null;
 create index if not exists idx_profiles_display_name_trgm
   on public.profiles using gin (lower(display_name) extensions.gin_trgm_ops)
   where display_name is not null;

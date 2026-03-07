@@ -14,7 +14,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import type { PortfolioItem } from '../../types/portfolio';
 
-const AUTO_ADVANCE_MS = 5000;
+const AUTO_ADVANCE_MS = 3500;
 const SWIPE_THRESHOLD_PX = 48;
 
 const getPreviewMediaUrl = (project: PortfolioItem): string | null =>

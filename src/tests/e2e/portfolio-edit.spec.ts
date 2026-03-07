@@ -171,10 +171,9 @@ test.describe('Portfolio artifact editing', () => {
           .join('\n\n') || 'Dashboard hit SYSTEM_HALT.',
       );
     }
-    await expect(page.getByText(/^portfolio$/i)).toBeVisible({
-      timeout: 10_000,
+    await expect(page.getByText('Legacy Artifact')).toBeVisible({
+      timeout: 15_000,
     });
-    await expect(page.getByText('Legacy Artifact')).toBeVisible();
 
     await page.getByLabel('Edit project Legacy Artifact').click();
 

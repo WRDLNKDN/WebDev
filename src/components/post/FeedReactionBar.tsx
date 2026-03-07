@@ -104,19 +104,13 @@ export const FeedReactionBar = ({
   onRemoveReaction,
   sx,
 }: FeedReactionBarProps) => {
-  const HOVER_OPEN_DELAY_MS = 80;
   const HOVER_CLOSE_DELAY_MS = 90;
-  const POPOVER_TRANSITION_MS = 80;
+  const POPOVER_TRANSITION_MS = 40;
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const hoverOpenRef = useRef<number | null>(null);
   const hoverCloseRef = useRef<number | null>(null);
 
-  const clearHoverTimers = () => {
-    if (hoverOpenRef.current) {
-      clearTimeout(hoverOpenRef.current);
-      hoverOpenRef.current = null;
-    }
+  const clearCloseTimer = () => {
     if (hoverCloseRef.current) {
       clearTimeout(hoverCloseRef.current);
       hoverCloseRef.current = null;
@@ -144,28 +138,13 @@ export const FeedReactionBar = ({
   };
 
   const openPicker = () => {
+    clearCloseTimer();
     if (triggerRef.current) {
       setAnchorEl(triggerRef.current);
     }
   };
 
-  const scheduleOpenPicker = () => {
-    if (hoverCloseRef.current) {
-      clearTimeout(hoverCloseRef.current);
-      hoverCloseRef.current = null;
-    }
-    if (anchorEl || hoverOpenRef.current) return;
-    hoverOpenRef.current = window.setTimeout(() => {
-      openPicker();
-      hoverOpenRef.current = null;
-    }, HOVER_OPEN_DELAY_MS) as unknown as number;
-  };
-
   const scheduleClosePicker = () => {
-    if (hoverOpenRef.current) {
-      clearTimeout(hoverOpenRef.current);
-      hoverOpenRef.current = null;
-    }
     if (hoverCloseRef.current) {
       clearTimeout(hoverCloseRef.current);
     }
@@ -178,7 +157,7 @@ export const FeedReactionBar = ({
   return (
     <ClickAwayListener
       onClickAway={() => {
-        clearHoverTimers();
+        clearCloseTimer();
         setAnchorEl(null);
       }}
     >
@@ -194,14 +173,15 @@ export const FeedReactionBar = ({
           ...sx,
         }}
         onMouseLeave={() => {
-          clearHoverTimers();
+          clearCloseTimer();
           scheduleClosePicker();
         }}
       >
         <Button
           size="small"
           ref={triggerRef}
-          onMouseEnter={scheduleOpenPicker}
+          onMouseEnter={openPicker}
+          onPointerEnter={openPicker}
           onMouseLeave={scheduleClosePicker}
           onFocus={openPicker}
           onClick={(e) => {

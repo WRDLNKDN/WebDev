@@ -79,7 +79,7 @@ export const AdminGate = ({ children }: Props) => {
       <Box sx={BG_SX}>
         <Container maxWidth="sm" sx={CARD_SX}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CircularProgress size={22} />
+            <CircularProgress size={22} aria-label="Checking admin access" />
             <Box sx={{ opacity: 0.85 }}>Checking admin access…</Box>
           </Box>
         </Container>

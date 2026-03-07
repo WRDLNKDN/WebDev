@@ -968,8 +968,11 @@ export function useProfile() {
       if (!resumeUrl) throw new Error('No resume found to generate a preview.');
 
       const ext = '.' + (resumeUrl.split('.').pop()?.toLowerCase() ?? '');
-      if (ext !== '.doc' && ext !== '.docx') {
-        throw new Error('Retry is only available for Word documents.');
+      const supportedForPreview = ['.pdf', '.doc', '.docx'];
+      if (!supportedForPreview.includes(ext)) {
+        throw new Error(
+          'Retry preview is only available for PDF and Word documents.',
+        );
       }
 
       const parsedStoragePath = getResumeStoragePathFromPublicUrl(resumeUrl);

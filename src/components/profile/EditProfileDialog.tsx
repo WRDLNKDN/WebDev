@@ -105,6 +105,18 @@ const INPUT_STYLES = {
     color: 'white',
     fontSize: '0.95rem',
   },
+  /* Prevent ghosted/duplicate text in Select: hide the native input used for form value */
+  '& input[aria-hidden="true"]': {
+    opacity: 0,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '100%',
+    height: '100%',
+    margin: 0,
+    padding: 0,
+    pointerEvents: 'none',
+  },
   '& .MuiFormHelperText-root': {
     color: 'rgba(255,255,255,0.5)',
     fontSize: '0.75rem',
@@ -743,10 +755,6 @@ export const EditProfileDialog = ({
                         <TextField
                           {...params}
                           variant="filled"
-                          placeholder={getSubIndustryPlaceholder(
-                            Boolean(group.industry),
-                            group.sub_industries.length,
-                          )}
                           inputProps={{
                             ...params.inputProps,
                             placeholder: getSubIndustryPlaceholder(

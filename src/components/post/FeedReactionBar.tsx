@@ -181,7 +181,9 @@ export const FeedReactionBar = ({
           size="small"
           ref={triggerRef}
           onMouseEnter={openPicker}
+          onMouseOver={openPicker}
           onPointerEnter={openPicker}
+          onPointerOver={openPicker}
           onMouseLeave={scheduleClosePicker}
           onFocus={openPicker}
           onClick={(e) => {

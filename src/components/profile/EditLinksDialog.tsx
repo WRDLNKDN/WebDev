@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -10,6 +11,7 @@ import {
   FormControl,
   FormHelperText,
   IconButton,
+  InputLabel,
   MenuItem,
   Select,
   Stack,
@@ -35,8 +37,8 @@ import {
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
-/** Button label for adding a link; single leading plus (no duplicate icon). */
-export const ADD_TO_LIST_BUTTON_LABEL = '+ Add to List';
+/** Button label for adding a link; icon is rendered separately to avoid duplicate plus text. */
+export const ADD_TO_LIST_BUTTON_LABEL = 'Add to List';
 
 interface EditLinksDialogProps {
   open: boolean;
@@ -268,7 +270,11 @@ export const EditLinksDialog = ({
               <Stack spacing={2}>
                 <Stack direction="row" spacing={2}>
                   <FormControl fullWidth size="small" error={categoryError}>
+                    <InputLabel id="add-link-category" shrink>
+                      Category
+                    </InputLabel>
                     <Select
+                      labelId="add-link-category"
                       value={newCategory}
                       displayEmpty
                       renderValue={(v) => v || 'Choose Category'}
@@ -298,7 +304,11 @@ export const EditLinksDialog = ({
                     error={platformError}
                     disabled={!newCategory}
                   >
+                    <InputLabel id="add-link-platform" shrink>
+                      Platform
+                    </InputLabel>
                     <Select
+                      labelId="add-link-platform"
                       value={newPlatform}
                       displayEmpty
                       renderValue={(v) => v || 'Select platform'}
@@ -367,6 +377,7 @@ export const EditLinksDialog = ({
 
                 <Button
                   variant="outlined"
+                  startIcon={<AddIcon />}
                   onClick={handleAddLink}
                   disabled={!canAddLink}
                   sx={{ alignSelf: 'flex-start' }}

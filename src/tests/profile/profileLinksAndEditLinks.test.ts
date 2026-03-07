@@ -10,9 +10,9 @@ import { LINKS_COLLAPSIBLE_HEADER } from '../../components/profile/ProfileLinksW
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 
 describe('EditLinksDialog Add to List button', () => {
-  it('displays a single leading plus in the label', () => {
-    expect(ADD_TO_LIST_BUTTON_LABEL).toBe('+ Add to List');
-    expect(ADD_TO_LIST_BUTTON_LABEL.match(/\+/g)).toHaveLength(1);
+  it('keeps the button text clean and leaves the plus to the icon', () => {
+    expect(ADD_TO_LIST_BUTTON_LABEL).toBe('Add to List');
+    expect(ADD_TO_LIST_BUTTON_LABEL).not.toContain('+');
   });
 });
 

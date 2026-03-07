@@ -1,6 +1,13 @@
 import { expect, test } from './fixtures';
 
 test.describe('Portfolio highlights carousel', () => {
+  const waitForPublicProfileResponse = (
+    page: import('@playwright/test').Page,
+  ) =>
+    page.waitForResponse((response) =>
+      response.url().includes('/rest/v1/rpc/get_public_profile_by_share_token'),
+    );
+
   test('renders above category sections, shows only highlighted items, and supports navigation', async ({
     page,
   }) => {
@@ -76,9 +83,12 @@ test.describe('Portfolio highlights carousel', () => {
       },
     );
 
-    await page.goto('/p/highlights-token', {
-      waitUntil: 'domcontentloaded',
-    });
+    await Promise.all([
+      waitForPublicProfileResponse(page),
+      page.goto('/p/highlights-token', {
+        waitUntil: 'domcontentloaded',
+      }),
+    ]);
 
     const carousel = page.getByTestId('portfolio-highlights-carousel');
     await expect(carousel).toBeVisible({ timeout: 15_000 });
@@ -175,9 +185,12 @@ test.describe('Portfolio highlights carousel', () => {
       },
     );
 
-    await page.goto('/p/mobile-highlights-token', {
-      waitUntil: 'domcontentloaded',
-    });
+    await Promise.all([
+      waitForPublicProfileResponse(page),
+      page.goto('/p/mobile-highlights-token', {
+        waitUntil: 'domcontentloaded',
+      }),
+    ]);
 
     await expect(page.getByTestId('portfolio-highlights-carousel')).toBeVisible(
       {

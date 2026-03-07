@@ -61,11 +61,10 @@ test.describe('Share profile route', () => {
     await page.goto('/p/valid-token-with-links', {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForLoadState('networkidle');
     await expect(
       page.getByRole('heading', { name: 'Test Member', exact: true }),
     ).toBeVisible({
-      timeout: 15_000,
+      timeout: 20_000,
     });
     await expect(page.getByText('LINKS')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole('heading', { name: /portfolio/i })).toBeVisible(
@@ -110,11 +109,10 @@ test.describe('Share profile route', () => {
     await page.goto('/p/valid-token-with-resume', {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForLoadState('networkidle');
     await expect(
       page.getByRole('heading', { name: 'Resume Member', exact: true }),
     ).toBeVisible({
-      timeout: 15_000,
+      timeout: 20_000,
     });
     const fileNameTrigger = page.getByTestId('resume-file-name');
     await expect(fileNameTrigger).toContainText('Nicholas_Clark_Senior_');

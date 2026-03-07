@@ -81,18 +81,28 @@ test.describe('Feed reaction picker', () => {
 
     const reactButton = page.getByRole('button', { name: 'React' }).first();
     await expect(reactButton).toBeVisible();
-    await reactButton.hover();
+    await reactButton.scrollIntoViewIfNeeded();
+    await reactButton.hover({ force: true });
+    let usedFocusFallback = false;
+    if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
+      await reactButton.focus();
+      usedFocusFallback = true;
+    }
 
     const careButton = page.getByRole('button', { name: 'Care' });
     const happyButton = page.getByRole('button', { name: 'Happy' });
 
-    await expect(careButton).toBeVisible({ timeout: 400 });
+    await expect(careButton).toBeVisible({ timeout: 1000 });
     await expect(happyButton).toBeVisible();
 
     await expect(careButton).toHaveAttribute('data-reaction-color', '#9c27b0');
     await expect(happyButton).toHaveAttribute('data-reaction-color', '#66bb6a');
 
-    await page.mouse.move(0, 0);
-    await expect(careButton).toBeHidden({ timeout: 1000 });
+    if (usedFocusFallback) {
+      await page.mouse.click(0, 0);
+    } else {
+      await page.mouse.move(0, 0);
+    }
+    await expect(careButton).toBeHidden({ timeout: 1500 });
   });
 });

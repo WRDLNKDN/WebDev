@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
@@ -207,6 +207,19 @@ export const Dashboard = () => {
     } catch (e) {
       setSnack(toMessage(e));
     }
+  };
+  const handleResumeInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void handleResumeUpload(file);
+    }
+    // Allow selecting the same file again.
+    e.target.value = '';
+  };
+  const openResumePicker = () => {
+    if (!resumeFileInputRef.current) return;
+    resumeFileInputRef.current.value = '';
+    resumeFileInputRef.current.click();
   };
 
   const openNewProjectDialog = () => {
@@ -518,6 +531,13 @@ export const Dashboard = () => {
           >
             PORTFOLIO
           </Typography>
+          <input
+            ref={resumeFileInputRef}
+            type="file"
+            hidden
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={handleResumeInputChange}
+          />
 
           {!profile?.resume_url && projects.length === 0 ? (
             /* Empty state: message + primary CTA + secondary link */
@@ -550,20 +570,10 @@ export const Dashboard = () => {
                 >
                   Add your first project
                 </Button>
-                <input
-                  ref={resumeFileInputRef}
-                  type="file"
-                  hidden
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleResumeUpload(f);
-                  }}
-                />
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => resumeFileInputRef.current?.click()}
+                  onClick={openResumePicker}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
@@ -585,10 +595,10 @@ export const Dashboard = () => {
               {/* Action buttons when portfolio has content */}
               <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
                 <Button
-                  component="label"
                   variant="outlined"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={openResumePicker}
                   sx={{
                     borderColor: 'rgba(255,255,255,0.3)',
                     color: 'white',
@@ -601,15 +611,6 @@ export const Dashboard = () => {
                   }}
                 >
                   Resume
-                  <input
-                    type="file"
-                    hidden
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleResumeUpload(f);
-                    }}
-                  />
                 </Button>
                 <Button
                   variant="outlined"

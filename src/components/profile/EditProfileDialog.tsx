@@ -628,49 +628,27 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 0.75,
+                  mb: 1,
                   lineHeight: 1.2,
                 }}
               >
                 PRIMARY INDUSTRY
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  color: 'rgba(255,255,255,0.6)',
-                  mb: 1.25,
-                  lineHeight: 1.35,
-                }}
-              >
-                Used for Directory filtering.
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  color: 'rgba(255,255,255,0.5)',
-                  mb: 1.25,
-                  lineHeight: 1.35,
-                }}
-              >
-                Add up to 5 industries. Each can have up to 8 sub-industries.
-              </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={2.25}>
                 {formData.industries.map((group, idx) => (
                   <Box
                     key={idx}
                     sx={{
                       pl: { xs: 0, sm: 1 },
                       borderLeft: { sm: '2px solid rgba(255,255,255,0.1)' },
-                      py: 1,
+                      py: 0.5,
                     }}
                   >
                     <FormControl
                       fullWidth
                       disabled={busy}
                       variant="filled"
-                      sx={{ ...INPUT_STYLES, mb: 1 }}
+                      sx={{ ...INPUT_STYLES, mb: 0.75 }}
                     >
                       <Select
                         value={group.industry}
@@ -689,13 +667,22 @@ export const EditProfileDialog = ({
                           }));
                         }}
                         displayEmpty
-                        renderValue={(v) => v || 'Select industry'}
+                        renderValue={(v) =>
+                          v ||
+                          (idx === 0
+                            ? 'Select primary industry'
+                            : 'Select industry')
+                        }
                         inputProps={{
                           'aria-label':
                             idx === 0 ? 'Primary Industry' : 'Industry',
                         }}
                       >
-                        <MenuItem value="">Select industry</MenuItem>
+                        <MenuItem value="">
+                          {idx === 0
+                            ? 'Select primary industry'
+                            : 'Select industry'}
+                        </MenuItem>
                         {INDUSTRY_PRIMARY_OPTIONS.filter(
                           (opt) =>
                             opt === group.industry ||
@@ -709,6 +696,33 @@ export const EditProfileDialog = ({
                         ))}
                       </Select>
                     </FormControl>
+                    {idx === 0 && (
+                      <Stack spacing={0.35} sx={{ mb: 1.1 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            color: 'rgba(255,255,255,0.62)',
+                            lineHeight: 1.35,
+                            ml: 0.1,
+                          }}
+                        >
+                          Used for Directory filtering.
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            color: 'rgba(255,255,255,0.5)',
+                            lineHeight: 1.35,
+                            ml: 0.1,
+                          }}
+                        >
+                          Add up to 5 industries. Each can have up to 8
+                          sub-industries.
+                        </Typography>
+                      </Stack>
+                    )}
                     <Autocomplete
                       multiple
                       disabled={busy || !group.industry}

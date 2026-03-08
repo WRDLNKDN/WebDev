@@ -66,15 +66,17 @@ test.describe('Share profile route', () => {
     ).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByText('LINKS')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'LINKS' })).toBeVisible({
+      timeout: 5_000,
+    });
     await expect(page.getByRole('heading', { name: /portfolio/i })).toBeVisible(
       {
         timeout: 5_000,
       },
     );
-    // Portfolio LINKS section shows link as a card (title + open action)
+    // Portfolio LINKS section shows link with open action (icon button, not the card)
     await expect(
-      page.getByRole('button', { name: /open linkedin/i }),
+      page.getByRole('button', { name: 'Open LinkedIn', exact: true }),
     ).toBeVisible({ timeout: 5_000 });
   });
 

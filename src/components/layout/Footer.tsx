@@ -296,6 +296,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   return (
                     <Box
                       key={section.title}
+                      data-testid={`footer-section-${section.title.toLowerCase()}`}
                       sx={{
                         border: '1px solid',
                         borderColor: dividerColor,

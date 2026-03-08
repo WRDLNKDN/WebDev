@@ -640,11 +640,11 @@ export const EditProfileDialog = ({
                   fontWeight: 'bold',
                   color: PURPLE_ACCENT,
                   display: 'block',
-                  mb: 1,
+                  mb: 1.25,
                   lineHeight: 1.2,
                 }}
               >
-                PRIMARY INDUSTRY
+                INDUSTRY
               </Typography>
               <Stack spacing={2.25}>
                 {formData.industries.map((group, idx) => (
@@ -660,7 +660,10 @@ export const EditProfileDialog = ({
                       fullWidth
                       disabled={busy}
                       variant="filled"
-                      sx={{ ...INPUT_STYLES, mb: 0.75 }}
+                      sx={{
+                        ...INPUT_STYLES,
+                        mb: idx === 0 ? 0 : 0.75,
+                      }}
                     >
                       <Select
                         value={group.industry}
@@ -679,22 +682,18 @@ export const EditProfileDialog = ({
                           }));
                         }}
                         displayEmpty
-                        renderValue={(v) =>
-                          v ||
-                          (idx === 0
-                            ? 'Select primary industry'
-                            : 'Select industry')
-                        }
+                        renderValue={(v) => v || 'Select industry'}
                         inputProps={{
-                          'aria-label':
-                            idx === 0 ? 'Primary Industry' : 'Industry',
+                          'aria-label': 'Industry',
+                        }}
+                        sx={{
+                          '& .MuiSelect-select': {
+                            py: '8px !important',
+                            lineHeight: 1.35,
+                          },
                         }}
                       >
-                        <MenuItem value="">
-                          {idx === 0
-                            ? 'Select primary industry'
-                            : 'Select industry'}
-                        </MenuItem>
+                        <MenuItem value="">Select industry</MenuItem>
                         {INDUSTRY_PRIMARY_OPTIONS.filter(
                           (opt) =>
                             opt === group.industry ||
@@ -709,14 +708,16 @@ export const EditProfileDialog = ({
                       </Select>
                     </FormControl>
                     {idx === 0 && (
-                      <Stack spacing={0.35} sx={{ mb: 1.1 }}>
+                      <Stack
+                        spacing={0.6}
+                        sx={{ mt: 0.75, mb: 1.25, px: 0.25 }}
+                      >
                         <Typography
                           variant="caption"
                           sx={{
                             display: 'block',
                             color: 'rgba(255,255,255,0.62)',
-                            lineHeight: 1.35,
-                            ml: 0.1,
+                            lineHeight: 1.45,
                           }}
                         >
                           Used for Directory filtering.
@@ -726,8 +727,7 @@ export const EditProfileDialog = ({
                           sx={{
                             display: 'block',
                             color: 'rgba(255,255,255,0.5)',
-                            lineHeight: 1.35,
-                            ml: 0.1,
+                            lineHeight: 1.45,
                           }}
                         >
                           Add up to 5 industries. Each can have up to 8

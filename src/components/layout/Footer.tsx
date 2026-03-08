@@ -3,9 +3,6 @@ import {
   Box,
   Collapse,
   Container,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Grid,
   IconButton,
   Link,
@@ -14,8 +11,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -33,39 +28,11 @@ import {
   type FooterLink,
 } from './footerConfig';
 
-const copyTextToClipboard = async (text: string) => {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return;
-    } catch {
-      // Fall back when the Clipboard API exists but denies the write.
-    }
-  }
-
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-  textArea.setAttribute('readonly', '');
-  textArea.style.position = 'absolute';
-  textArea.style.opacity = '0';
-  textArea.style.pointerEvents = 'none';
-  document.body.appendChild(textArea);
-  textArea.select();
-
-  const copied = document.execCommand('copy');
-  document.body.removeChild(textArea);
-  if (!copied) {
-    throw new Error('Clipboard copy failed');
-  }
-};
-
 export const Footer = () => {
   const theme = useTheme();
   const location = useLocation();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [donateModalOpen, setDonateModalOpen] = useState(false);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
 
@@ -100,14 +67,6 @@ export const Footer = () => {
         ),
       })),
     };
-  }, []);
-
-  const donateDomain = useMemo(() => {
-    try {
-      return new URL(FOOTER_DONATE_URL).host.replace(/^www\./i, '');
-    } catch {
-      return FOOTER_DONATE_URL;
-    }
   }, []);
 
   useEffect(() => {
@@ -184,34 +143,6 @@ export const Footer = () => {
     closeAllSections();
   };
 
-  const openDonateModal = () => {
-    setCopyFeedback(null);
-    setDonateModalOpen(true);
-    closeAllSections();
-    trackEvent('footer_donate_modal_open', {
-      source: 'footer',
-      target: FOOTER_DONATE_URL,
-    });
-  };
-
-  const closeDonateModal = () => {
-    setDonateModalOpen(false);
-    setCopyFeedback(null);
-  };
-
-  const handleCopyDonateLink = async () => {
-    try {
-      await copyTextToClipboard(FOOTER_DONATE_URL);
-      setCopyFeedback('Donation link copied.');
-      trackEvent('footer_donate_copy_click', {
-        source: 'footer_modal',
-        target: FOOTER_DONATE_URL,
-      });
-    } catch {
-      setCopyFeedback('Copy failed. Copy the link manually.');
-    }
-  };
-
   const renderSocialIcon = (label: string) => {
     switch (label) {
       case 'Instagram':
@@ -240,11 +171,11 @@ export const Footer = () => {
           borderTop: '1px solid',
           borderColor: dividerColor,
           mt: { xs: 0.5, sm: 1, md: 2 },
-          pt: { xs: 0.75, sm: 1, md: 1.2 },
+          pt: { xs: 0.5, sm: 0.75, md: 0.8 },
           pb: {
-            xs: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
-            sm: 1,
-            md: 1.2,
+            xs: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+            sm: 0.8,
+            md: 0.85,
           },
           backgroundColor:
             theme.palette.mode === 'dark'
@@ -262,14 +193,14 @@ export const Footer = () => {
           <Grid
             container
             alignItems="start"
-            spacing={{ xs: 0.85, sm: 1.1, md: 1.5 }}
+            spacing={{ xs: 0.7, sm: 0.9, md: 1.1 }}
           >
             <Grid
               size={{ xs: 12, sm: 6, md: 3 }}
               sx={{ order: { xs: 1, md: 1 } }}
             >
               <Stack
-                spacing={0.3}
+                spacing={0.2}
                 sx={{
                   alignItems: { xs: 'flex-start', md: 'flex-start' },
                   textAlign: 'left',
@@ -326,215 +257,209 @@ export const Footer = () => {
             </Grid>
 
             <Grid
-              size={{ xs: 12, sm: 6, md: 6 }}
+              size={{ xs: 12, sm: 6, md: 5 }}
               sx={{ order: { xs: 2, md: 2 } }}
             >
-              <Box
-                aria-label="Footer navigation sections"
-                sx={{
-                  display: 'grid',
-                  width: '100%',
-                  maxWidth: { md: 380 },
-                  mx: { md: 'auto' },
-                  gridTemplateColumns: {
-                    xs: 'repeat(2, minmax(0, 1fr))',
-                    sm: 'repeat(2, minmax(0, 1fr))',
-                    md: 'repeat(2, minmax(0, 180px))',
-                  },
-                  gap: { xs: 0.45, sm: 0.65, md: 0.8 },
-                  alignItems: 'start',
-                  justifyContent: { md: 'center' },
-                }}
-              >
-                {FOOTER_SECTIONS.map((section) => {
-                  const open = expandedSection === section.title;
-                  const panelId = `footer-panel-${section.title.toLowerCase()}`;
-                  return (
-                    <Box
-                      key={section.title}
-                      data-testid={`footer-section-${section.title.toLowerCase()}`}
-                      sx={{
-                        border: '1px solid',
-                        borderColor: dividerColor,
-                        borderRadius: 1.25,
-                        overflow: { xs: 'hidden', md: 'visible' },
-                        position: 'relative',
-                        backgroundColor: alpha(
-                          theme.palette.background.paper,
-                          0.2,
-                        ),
-                      }}
-                    >
+              <Stack spacing={0.55} alignItems="center">
+                <Box
+                  aria-label="Footer navigation sections"
+                  sx={{
+                    display: 'grid',
+                    width: '100%',
+                    maxWidth: { md: 380 },
+                    mx: { md: 'auto' },
+                    gridTemplateColumns: {
+                      xs: 'repeat(2, minmax(0, 1fr))',
+                      sm: 'repeat(2, minmax(0, 1fr))',
+                      md: 'repeat(2, minmax(0, 180px))',
+                    },
+                    gap: { xs: 0.4, sm: 0.55, md: 0.65 },
+                    alignItems: 'start',
+                    justifyContent: { md: 'center' },
+                  }}
+                >
+                  {FOOTER_SECTIONS.map((section) => {
+                    const open = expandedSection === section.title;
+                    const panelId = `footer-panel-${section.title.toLowerCase()}`;
+                    return (
                       <Box
-                        component="button"
-                        type="button"
-                        onClick={() => toggleSection(section.title)}
-                        aria-expanded={open}
-                        aria-controls={panelId}
+                        key={section.title}
+                        data-testid={`footer-section-${section.title.toLowerCase()}`}
                         sx={{
-                          all: 'unset',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          px: { xs: 0.8, sm: 1.05, md: 1.2 },
-                          py: { xs: 0.52, sm: 0.68, md: 0.74 },
-                          cursor: 'pointer',
-                          boxSizing: 'border-box',
-                          '&:focus-visible': {
-                            outline: '2px solid',
-                            outlineColor: 'primary.main',
-                            outlineOffset: '-2px',
-                          },
+                          border: '1px solid',
+                          borderColor: dividerColor,
+                          borderRadius: 1.25,
+                          overflow: { xs: 'hidden', md: 'visible' },
+                          position: 'relative',
+                          backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.2,
+                          ),
                         }}
                       >
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight={700}
-                          sx={{ fontSize: { xs: '0.78rem', md: '0.86rem' } }}
-                        >
-                          {section.title}
-                        </Typography>
                         <Box
-                          component="span"
-                          aria-hidden
+                          component="button"
+                          type="button"
+                          onClick={() => toggleSection(section.title)}
+                          aria-expanded={open}
+                          aria-controls={panelId}
                           sx={{
-                            display: 'inline-flex',
+                            all: 'unset',
+                            display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 22,
-                            height: 22,
-                            transition: reduceMotion
-                              ? 'none'
-                              : 'transform 180ms ease',
-                            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                          }}
-                        >
-                          <ExpandMoreIcon fontSize="small" />
-                        </Box>
-                      </Box>
-
-                      <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
-                        <Stack
-                          id={panelId}
-                          component="ul"
-                          sx={{
-                            listStyle: 'none',
-                            m: 0,
-                            py: 0.1,
+                            justifyContent: 'space-between',
+                            width: '100%',
                             px: { xs: 0.8, sm: 1.05, md: 1.2 },
-                            borderTop: '1px solid',
-                            borderColor: dividerColor,
-                            gap: 0.15,
-                            position: { xs: 'static', md: 'absolute' },
-                            top: { md: 'calc(100% + 6px)' },
-                            left: { md: 0 },
-                            right: { md: 0 },
-                            zIndex: { md: 4 },
-                            border: { md: '1px solid' },
-                            borderRadius: { md: 1.25 },
-                            boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
-                            backgroundColor: {
-                              md:
-                                theme.palette.mode === 'dark'
-                                  ? alpha(theme.palette.background.paper, 0.96)
-                                  : alpha(theme.palette.background.paper, 0.98),
+                            py: { xs: 0.46, sm: 0.58, md: 0.62 },
+                            cursor: 'pointer',
+                            boxSizing: 'border-box',
+                            '&:focus-visible': {
+                              outline: '2px solid',
+                              outlineColor: 'primary.main',
+                              outlineOffset: '-2px',
                             },
                           }}
                         >
-                          {section.links.map((link) => {
-                            const active = isActiveLink(
-                              link.href,
-                              link.external,
-                            );
-                            const commonSx = {
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight={700}
+                            sx={{ fontSize: { xs: '0.75rem', md: '0.82rem' } }}
+                          >
+                            {section.title}
+                          </Typography>
+                          <Box
+                            component="span"
+                            aria-hidden
+                            sx={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              py: { xs: 0.4, md: 0.56 },
-                              fontSize: { xs: '0.78rem', md: '0.86rem' },
-                              color: active ? 'primary.main' : 'text.secondary',
-                              fontWeight: active ? 700 : 500,
-                              textDecoration: active ? 'underline' : 'none',
-                              textUnderlineOffset: '3px',
+                              justifyContent: 'center',
+                              width: 20,
+                              height: 20,
                               transition: reduceMotion
                                 ? 'none'
-                                : 'color 160ms ease, text-decoration-color 160ms ease',
-                              '&:hover': {
-                                color: 'text.primary',
-                                textDecoration: 'underline',
-                                textUnderlineOffset: '3px',
-                              },
-                            } as const;
-                            return (
-                              <Box component="li" key={link.label}>
-                                {link.external ? (
-                                  <Link
-                                    href={link.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={() => handleFooterLinkClick(link)}
-                                    sx={commonSx}
-                                  >
-                                    {link.label}
-                                  </Link>
-                                ) : (
-                                  <Link
-                                    component={RouterLink}
-                                    to={link.href}
-                                    state={
-                                      link.href === '/advertise'
-                                        ? { backgroundLocation: location }
-                                        : undefined
-                                    }
-                                    onClick={() => handleFooterLinkClick(link)}
-                                    sx={commonSx}
-                                  >
-                                    {link.label}
-                                  </Link>
-                                )}
-                              </Box>
-                            );
-                          })}
-                        </Stack>
-                      </Collapse>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Grid>
+                                : 'transform 180ms ease',
+                              transform: open
+                                ? 'rotate(180deg)'
+                                : 'rotate(0deg)',
+                            }}
+                          >
+                            <ExpandMoreIcon fontSize="small" />
+                          </Box>
+                        </Box>
 
-            <Grid
-              size={{ xs: 12, md: 3 }}
-              sx={{
-                order: { xs: 3, md: 3 },
-                display: 'flex',
-                alignItems: { xs: 'flex-start', md: 'flex-start' },
-                justifyContent: {
-                  xs: 'flex-start',
-                  sm: 'flex-end',
-                  md: 'flex-end',
-                },
-              }}
-            >
-              <Stack
-                spacing={0.45}
-                alignItems={{
-                  xs: 'flex-start',
-                  sm: 'flex-end',
-                  md: 'flex-end',
-                }}
-                sx={{ pt: { xs: 0.15, md: 0.05 } }}
-              >
-                <Box
-                  component="button"
-                  type="button"
+                        <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+                          <Stack
+                            id={panelId}
+                            component="ul"
+                            sx={{
+                              listStyle: 'none',
+                              m: 0,
+                              py: 0.05,
+                              px: { xs: 0.8, sm: 1.05, md: 1.2 },
+                              borderTop: '1px solid',
+                              borderColor: dividerColor,
+                              gap: 0.15,
+                              position: { xs: 'static', md: 'absolute' },
+                              top: { md: 'calc(100% + 6px)' },
+                              left: { md: 0 },
+                              right: { md: 0 },
+                              zIndex: { md: 4 },
+                              border: { md: '1px solid' },
+                              borderRadius: { md: 1.25 },
+                              boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
+                              backgroundColor: {
+                                md:
+                                  theme.palette.mode === 'dark'
+                                    ? alpha(
+                                        theme.palette.background.paper,
+                                        0.96,
+                                      )
+                                    : alpha(
+                                        theme.palette.background.paper,
+                                        0.98,
+                                      ),
+                              },
+                            }}
+                          >
+                            {section.links.map((link) => {
+                              const active = isActiveLink(
+                                link.href,
+                                link.external,
+                              );
+                              const commonSx = {
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                py: { xs: 0.36, md: 0.48 },
+                                fontSize: { xs: '0.76rem', md: '0.82rem' },
+                                color: active
+                                  ? 'primary.main'
+                                  : 'text.secondary',
+                                fontWeight: active ? 700 : 500,
+                                textDecoration: active ? 'underline' : 'none',
+                                textUnderlineOffset: '3px',
+                                transition: reduceMotion
+                                  ? 'none'
+                                  : 'color 160ms ease, text-decoration-color 160ms ease',
+                                '&:hover': {
+                                  color: 'text.primary',
+                                  textDecoration: 'underline',
+                                  textUnderlineOffset: '3px',
+                                },
+                              } as const;
+                              return (
+                                <Box component="li" key={link.label}>
+                                  {link.external ? (
+                                    <Link
+                                      href={link.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={() =>
+                                        handleFooterLinkClick(link)
+                                      }
+                                      sx={commonSx}
+                                    >
+                                      {link.label}
+                                    </Link>
+                                  ) : (
+                                    <Link
+                                      component={RouterLink}
+                                      to={link.href}
+                                      state={
+                                        link.href === '/advertise'
+                                          ? { backgroundLocation: location }
+                                          : undefined
+                                      }
+                                      onClick={() =>
+                                        handleFooterLinkClick(link)
+                                      }
+                                      sx={commonSx}
+                                    >
+                                      {link.label}
+                                    </Link>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+                        </Collapse>
+                      </Box>
+                    );
+                  })}
+                </Box>
+                <Link
                   data-testid="footer-donate-link"
-                  onClick={openDonateModal}
+                  href={FOOTER_DONATE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Donate to WRDLNKDN"
-                  aria-haspopup="dialog"
-                  aria-controls="footer-donate-modal"
+                  onClick={() =>
+                    trackEvent('footer_donate_link_click', {
+                      source: 'footer',
+                      target: FOOTER_DONATE_URL,
+                    })
+                  }
                   sx={{
-                    all: 'unset',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -545,17 +470,15 @@ export const Footer = () => {
                     color: 'white',
                     textDecoration: 'none',
                     textTransform: 'uppercase',
-                    fontSize: { xs: '0.78rem', md: '0.84rem' },
+                    fontSize: { xs: '0.74rem', md: '0.8rem' },
                     lineHeight: 1,
-                    minHeight: 40,
-                    px: 1.8,
-                    py: 0.55,
+                    minHeight: 34,
+                    px: 1.45,
+                    py: 0.45,
                     borderRadius: 1,
                     border: '1px solid rgba(255,255,255,0.22)',
                     background:
                       'linear-gradient(135deg, #0d5f59 0%, #118f87 42%, #1ecfb9 100%)',
-                    width: '100%',
-                    alignSelf: 'stretch',
                     boxSizing: 'border-box',
                     cursor: 'pointer',
                     boxShadow:
@@ -588,7 +511,32 @@ export const Footer = () => {
                   }}
                 >
                   Donate Now
-                </Box>
+                </Link>
+              </Stack>
+            </Grid>
+
+            <Grid
+              size={{ xs: 12, md: 4 }}
+              sx={{
+                order: { xs: 3, md: 3 },
+                display: 'flex',
+                alignItems: { xs: 'flex-start', md: 'flex-start' },
+                justifyContent: {
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                },
+              }}
+            >
+              <Stack
+                spacing={0.3}
+                alignItems={{
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                }}
+                sx={{ pt: { xs: 0.15, md: 0.05 } }}
+              >
                 <Stack
                   direction="row"
                   spacing={0.2}
@@ -638,115 +586,6 @@ export const Footer = () => {
           }}
         />
       </Box>
-
-      <Dialog
-        id="footer-donate-modal"
-        open={donateModalOpen}
-        onClose={closeDonateModal}
-        fullWidth
-        maxWidth="xs"
-        aria-labelledby="footer-donate-modal-title"
-        PaperProps={{
-          sx: {
-            bgcolor:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.background.paper, 0.96)
-                : theme.palette.background.paper,
-            color: 'text.primary',
-            border: '1px solid',
-            borderColor: dividerColor,
-            borderRadius: 2,
-            backgroundImage: 'none',
-            mx: { xs: 1.25, sm: 2 },
-          },
-        }}
-      >
-        <DialogTitle
-          id="footer-donate-modal-title"
-          sx={{ pr: 6, pb: 1.25, fontWeight: 700 }}
-        >
-          Donate to WRDLNKDN
-          <IconButton
-            onClick={closeDonateModal}
-            aria-label="Close donate modal"
-            sx={{ position: 'absolute', right: 10, top: 10 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent
-          dividers
-          sx={{ borderColor: dividerColor, py: { xs: 2, sm: 2.5 } }}
-        >
-          <Stack spacing={1.75}>
-            <Stack spacing={1.2}>
-              <Typography
-                variant="overline"
-                sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}
-              >
-                Donation Link
-              </Typography>
-              <Stack direction="row" spacing={0.8} alignItems="center">
-                <Link
-                  data-testid="footer-donate-modal-url"
-                  href={FOOTER_DONATE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    fontSize: { xs: '0.9rem', sm: '0.95rem' },
-                    fontWeight: 600,
-                    fontFamily:
-                      '"IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace',
-                    px: 0.8,
-                    py: 0.35,
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: dividerColor,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
-                  }}
-                >
-                  [{donateDomain}]
-                </Link>
-                <IconButton
-                  data-testid="footer-donate-copy-button"
-                  aria-label="Copy donation link"
-                  onClick={() => void handleCopyDonateLink()}
-                  size="small"
-                  sx={{
-                    color: 'text.secondary',
-                    border: '1px solid',
-                    borderColor: dividerColor,
-                    borderRadius: 1,
-                    '&:hover': {
-                      color: 'text.primary',
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    },
-                  }}
-                >
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-              {copyFeedback ? (
-                <Typography
-                  data-testid="footer-donate-copy-feedback"
-                  variant="body2"
-                  role="status"
-                  aria-live="polite"
-                  sx={{
-                    color: copyFeedback.startsWith('Donation')
-                      ? 'success.main'
-                      : 'error.main',
-                  }}
-                >
-                  {copyFeedback}
-                </Typography>
-              ) : null}
-            </Stack>
-          </Stack>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

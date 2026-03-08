@@ -377,7 +377,8 @@ export const Home = () => {
                     color: 'rgba(255,255,255,0.85)',
                     fontStyle: 'italic',
                     letterSpacing: '0.04em',
-                    fontSize: { xs: '1.125rem', sm: '1.25rem' },
+                    fontSize: { xs: '1.375rem', sm: '1.5rem', md: '1.625rem' },
+                    lineHeight: 1.25,
                   }}
                 >
                   (Weird Link-uh-din)
@@ -385,7 +386,7 @@ export const Home = () => {
                 <Typography
                   variant="h5"
                   sx={{
-                    color: 'primary.light',
+                    color: 'primary.main',
                     fontWeight: 600,
                   }}
                 >

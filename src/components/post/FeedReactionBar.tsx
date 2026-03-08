@@ -10,6 +10,7 @@ import {
   Popover,
   Stack,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
@@ -23,8 +24,9 @@ import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied';
 import SentimentSatisfiedOutlinedIcon from '@mui/icons-material/SentimentSatisfiedOutlined';
 import MoodBadIcon from '@mui/icons-material/MoodBad';
 import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
-import type { ReactionType } from '../../lib/api/feedsApi';
 import { useRef, useState } from 'react';
+import { REACTION_COLORS } from '../../constants/reactionColors';
+import type { ReactionType } from '../../lib/api/feedsApi';
 
 /** Exported for comment reaction bars in Feed */
 export const REACTION_OPTIONS: {
@@ -39,42 +41,42 @@ export const REACTION_OPTIONS: {
     label: 'Like',
     Icon: ThumbUpIcon,
     IconOutlined: ThumbUpOutlinedIcon,
-    color: 'primary.main',
+    color: REACTION_COLORS.like,
   },
   {
     type: 'love',
     label: 'Love',
     Icon: FavoriteIcon,
     IconOutlined: FavoriteBorderIcon,
-    color: 'error.main',
+    color: REACTION_COLORS.love,
   },
   {
     type: 'inspiration',
     label: 'Insightful',
     Icon: LightbulbIcon,
     IconOutlined: LightbulbOutlinedIcon,
-    color: 'warning.main',
+    color: REACTION_COLORS.inspiration,
   },
   {
     type: 'care',
     label: 'Care',
     Icon: VolunteerActivismIcon,
     IconOutlined: VolunteerActivismOutlinedIcon,
-    color: '#9c27b0',
+    color: REACTION_COLORS.care,
   },
   {
     type: 'laughing',
     label: 'Happy',
     Icon: SentimentSatisfiedIcon,
     IconOutlined: SentimentSatisfiedOutlinedIcon,
-    color: '#66bb6a',
+    color: REACTION_COLORS.laughing,
   },
   {
     type: 'rage',
     label: 'Rage',
     Icon: MoodBadIcon,
     IconOutlined: MoodBadOutlinedIcon,
-    color: 'error.dark',
+    color: REACTION_COLORS.rage,
   },
 ];
 
@@ -104,8 +106,9 @@ export const FeedReactionBar = ({
   onRemoveReaction,
   sx,
 }: FeedReactionBarProps) => {
-  const HOVER_CLOSE_DELAY_MS = 90;
+  const HOVER_CLOSE_DELAY_MS = 200;
   const POPOVER_TRANSITION_MS = 40;
+  const supportsHover = useMediaQuery('(hover: hover) and (pointer: fine)');
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const hoverCloseRef = useRef<number | null>(null);
@@ -137,7 +140,8 @@ export const FeedReactionBar = ({
     }
   };
 
-  const openPicker = () => {
+  const openPicker = (force = false) => {
+    if (!supportsHover && !force) return;
     clearCloseTimer();
     if (triggerRef.current) {
       setAnchorEl(triggerRef.current);
@@ -180,12 +184,13 @@ export const FeedReactionBar = ({
         <Button
           size="small"
           ref={triggerRef}
-          onMouseEnter={openPicker}
-          onMouseOver={openPicker}
-          onPointerEnter={openPicker}
-          onPointerOver={openPicker}
-          onMouseLeave={scheduleClosePicker}
-          onFocus={openPicker}
+          onMouseEnter={() => {
+            if (supportsHover) openPicker();
+          }}
+          onMouseLeave={() => {
+            if (supportsHover) scheduleClosePicker();
+          }}
+          onFocus={() => openPicker(true)}
           onClick={(e) => {
             setAnchorEl((prev) =>
               prev ? null : (e.currentTarget as HTMLElement),

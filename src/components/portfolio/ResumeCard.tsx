@@ -175,27 +175,41 @@ export const ResumeCard = ({
               </Box>
             )}
           </Box>
-          <Typography variant="h6" fontWeight={800} letterSpacing={1}>
-            <Tooltip title={resumeTitle} placement="top">
-              <Box
-                component="span"
-                tabIndex={0}
-                title={resumeTitle}
-                data-testid="resume-file-name"
-                sx={{
-                  display: 'block',
-                  width: '100%',
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  outline: 'none',
-                }}
-              >
-                {resumeTitle}
-              </Box>
-            </Tooltip>
-          </Typography>
+          <Tooltip title={resumeTitle} placement="top">
+            <Box
+              component="span"
+              tabIndex={0}
+              title={resumeTitle}
+              data-testid="resume-file-name"
+              aria-label={resumeTitle}
+              sx={{
+                display: 'block',
+                width: '100%',
+                maxWidth: 260,
+                px: 1.5,
+                mb: 0.5,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                wordBreak: 'normal',
+                overflowWrap: 'normal',
+                textTransform: 'none',
+                letterSpacing: 0,
+                lineHeight: 1.2,
+                fontWeight: 700,
+                fontSize: '1.05rem',
+                color: 'inherit',
+                '&:focus-visible': {
+                  outline: '2px solid rgba(144, 202, 249, 0.9)',
+                  outlineOffset: 2,
+                  borderRadius: 1,
+                },
+              }}
+            >
+              {resumeTitle}
+            </Box>
+          </Tooltip>
           <Box
             sx={{
               display: 'flex',

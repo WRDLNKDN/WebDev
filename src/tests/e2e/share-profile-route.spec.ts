@@ -122,4 +122,47 @@ test.describe('Share profile route', () => {
     await fileNameTrigger.focus();
     await expect(page.getByRole('tooltip')).toContainText(resumeFileName);
   });
+
+  test('public profile resume card falls back to Resume.pdf when filename is unavailable', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const payload = {
+      profile: {
+        id: '33333333-3333-4333-8333-333333333333',
+        display_name: 'Resume Fallback Member',
+        tagline: 'Builder',
+        avatar: null,
+        nerd_creds: {},
+        socials: [],
+        resume_url:
+          'https://example.supabase.co/storage/v1/object/public/resumes/user-id/resume.pdf',
+      },
+      portfolio: [],
+    };
+    await page.route(
+      '**/rest/v1/rpc/get_public_profile_by_share_token*',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(payload),
+        });
+      },
+    );
+    await page.goto('/p/valid-token-with-resume-fallback', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(
+      page.getByRole('heading', {
+        name: 'Resume Fallback Member',
+        exact: true,
+      }),
+    ).toBeVisible({
+      timeout: 20_000,
+    });
+    const fileNameTrigger = page.getByTestId('resume-file-name');
+    await expect(fileNameTrigger).toHaveText('Resume.pdf');
+    await expect(fileNameTrigger).toHaveAttribute('title', 'Resume.pdf');
+  });
 });

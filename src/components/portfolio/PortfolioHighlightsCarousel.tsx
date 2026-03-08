@@ -145,16 +145,16 @@ export const PortfolioHighlightsCarousel = ({
                 aria-hidden={index !== activeIndex}
                 sx={{
                   minWidth: '100%',
-                  p: { xs: 1.5, sm: 2.5, md: 3 },
+                  p: { xs: 1.25, sm: 2, md: 2.5, lg: 3 },
                 }}
               >
                 <Box
                   sx={{
                     display: 'grid',
-                    gap: { xs: 2, md: 3 },
+                    gap: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
                     gridTemplateColumns: {
                       xs: '1fr',
-                      md: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
+                      lg: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
                     },
                     alignItems: 'stretch',
                   }}
@@ -181,7 +181,7 @@ export const PortfolioHighlightsCarousel = ({
                     }
                     sx={{
                       position: 'relative',
-                      aspectRatio: '16 / 9',
+                      aspectRatio: { xs: '4 / 3', sm: '16 / 9' },
                       borderRadius: 2.5,
                       overflow: 'hidden',
                       bgcolor: 'rgba(255,255,255,0.04)',
@@ -235,6 +235,7 @@ export const PortfolioHighlightsCarousel = ({
                       sx={{
                         fontWeight: 700,
                         lineHeight: 1.1,
+                        fontSize: { xs: '1.3rem', sm: '1.5rem' },
                       }}
                     >
                       {project.title}
@@ -284,6 +285,7 @@ export const PortfolioHighlightsCarousel = ({
                           sx={{
                             textTransform: 'none',
                             fontWeight: 600,
+                            width: { xs: '100%', sm: 'auto' },
                           }}
                         >
                           Preview
@@ -305,6 +307,7 @@ export const PortfolioHighlightsCarousel = ({
                           sx={{
                             textTransform: 'none',
                             fontWeight: 700,
+                            width: { xs: '100%', sm: 'auto' },
                           }}
                         >
                           Open artifact
@@ -324,8 +327,8 @@ export const PortfolioHighlightsCarousel = ({
         alignItems="center"
         justifyContent="space-between"
         sx={{
-          px: { xs: 1.25, sm: 2.5 },
-          py: 1,
+          px: { xs: 1, sm: 2, md: 2.5 },
+          py: { xs: 0.75, sm: 1 },
           borderTop: '1px solid rgba(255,255,255,0.08)',
         }}
       >
@@ -337,13 +340,17 @@ export const PortfolioHighlightsCarousel = ({
           {activeIndex + 1} / {highlightedProjects.length}
         </Typography>
         {highlightedProjects.length > 1 ? (
-          <Stack direction="row" spacing={0.5}>
+          <Stack direction="row" spacing={{ xs: 0.25, sm: 0.5 }}>
             <IconButton
               aria-label="Previous highlight"
               data-testid="portfolio-highlights-prev"
               onClick={goToPrevious}
-              size="small"
-              sx={{ color: 'white' }}
+              size="medium"
+              sx={{
+                color: 'white',
+                width: { xs: 40, sm: 32 },
+                height: { xs: 40, sm: 32 },
+              }}
             >
               <ChevronLeftIcon fontSize="small" />
             </IconButton>
@@ -351,8 +358,12 @@ export const PortfolioHighlightsCarousel = ({
               aria-label="Next highlight"
               data-testid="portfolio-highlights-next"
               onClick={goToNext}
-              size="small"
-              sx={{ color: 'white' }}
+              size="medium"
+              sx={{
+                color: 'white',
+                width: { xs: 40, sm: 32 },
+                height: { xs: 40, sm: 32 },
+              }}
             >
               <ChevronRightIcon fontSize="small" />
             </IconButton>

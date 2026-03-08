@@ -21,7 +21,11 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CATEGORY_ORDER, PLATFORM_OPTIONS } from '../../constants/platforms';
+import {
+  CATEGORY_ORDER,
+  PLATFORM_OPTIONS,
+  getCategoryForPlatform,
+} from '../../constants/platforms';
 import { toMessage } from '../../lib/utils/errors';
 import {
   dialogSelectSx,
@@ -72,7 +76,7 @@ export const EditLinksDialog = ({
       const next = Array.isArray(currentLinks) ? [...currentLinks] : [];
       setLinks(next);
       initialLinksRef.current = next;
-      setNewCategory('');
+      setNewCategory('Professional');
       setNewPlatform('');
       setNewUrl('');
       setNewLabel('');
@@ -83,7 +87,9 @@ export const EditLinksDialog = ({
   }, [open, currentLinks]);
 
   // Form state: Add New inputs — Category required first, then Platform, then URL
-  const [newCategory, setNewCategory] = useState<LinkCategory | ''>('');
+  const [newCategory, setNewCategory] = useState<LinkCategory | ''>(
+    'Professional',
+  );
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [newLabel, setNewLabel] = useState('');
@@ -381,8 +387,20 @@ export const EditLinksDialog = ({
                     size="small"
                     fullWidth
                     value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    disabled={!newPlatform.trim()}
+                    onChange={(e) => {
+                      const nextUrl = e.target.value;
+                      setNewUrl(nextUrl);
+
+                      // Restore fast-add flow: infer platform/category from URL when platform isn't chosen yet.
+                      if (newPlatform.trim()) return;
+                      const detected = detectPlatformFromUrl(nextUrl);
+                      if (!nextUrl.trim() || detected === 'Custom') return;
+
+                      const detectedCategory = getCategoryForPlatform(detected);
+                      setNewCategory(detectedCategory);
+                      setNewPlatform(detected);
+                    }}
+                    disabled={!newCategory}
                     error={Boolean(
                       (newUrl.trim() && isDuplicateUrl) ||
                         (addAttempted && urlFormatError),

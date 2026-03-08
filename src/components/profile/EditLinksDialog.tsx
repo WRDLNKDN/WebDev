@@ -212,17 +212,19 @@ export const EditLinksDialog = ({
     return Boolean(newCategory || newPlatform.trim() || newUrl.trim());
   }, [links, newCategory, newPlatform, newUrl]);
 
+  // #609: within each category, sort alphabetically by label (case-insensitive).
+  // The `order` property is preserved on link objects for DB persistence but is
+  // no longer used as a display sort key.
   const sortedLinks = useMemo(
     () =>
       [...links].sort((a, b) => {
         const catA = CATEGORY_ORDER.indexOf(a.category);
         const catB = CATEGORY_ORDER.indexOf(b.category);
         if (catA !== catB) return catA - catB;
-        if (a.order !== b.order) return a.order - b.order;
-        const labelCmp = (a.label || '').localeCompare(b.label || '');
+        const labelA = (a.label || a.platform || '').toLowerCase();
+        const labelB = (b.label || b.platform || '').toLowerCase();
+        const labelCmp = labelA.localeCompare(labelB);
         if (labelCmp !== 0) return labelCmp;
-        const urlCmp = a.url.localeCompare(b.url);
-        if (urlCmp !== 0) return urlCmp;
         return a.id.localeCompare(b.id);
       }),
     [links],
@@ -570,7 +572,11 @@ export const EditLinksDialog = ({
                 );
                 if (categoryLinks.length === 0) return null;
                 return (
-                  <Stack key={category} spacing={1}>
+                  <Stack
+                    key={category}
+                    spacing={1}
+                    data-testid={`edit-link-group-${category}`}
+                  >
                     <Typography
                       variant="overline"
                       sx={{
@@ -622,6 +628,7 @@ export const EditLinksDialog = ({
                                 variant="body2"
                                 fontWeight={600}
                                 noWrap
+                                data-testid="edit-link-label"
                               >
                                 {getShortLinkLabel(link.url)}
                               </Typography>

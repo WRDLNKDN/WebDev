@@ -11,16 +11,16 @@ import {
   Typography,
 } from '@mui/material';
 import {
-  CATEGORY_ORDER,
-  getCategoryForPlatform,
-} from '../../constants/platforms';
-import {
   detectPlatformFromUrl,
   getShortLinkLabel,
 } from '../../lib/utils/linkPlatform';
 import { useState } from 'react';
 import type { SocialLink } from '../../types/profile';
 import { LinkIcon } from './LinkIcon';
+import {
+  groupAndAlphabetizeLinks,
+  DISPLAY_CATEGORY_ORDER,
+} from '../../lib/profile/groupAndAlphabetizeLinks';
 
 interface ProfileLinksWidgetProps {
   socials: SocialLink[];
@@ -36,34 +36,8 @@ interface ProfileLinksWidgetProps {
   defaultExpanded?: boolean;
 }
 
-type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
-const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
-  'Professional',
-  'Social',
-  'Content',
-  'Other',
-];
-
 /** Collapsible section header for the links list in Identity. */
 export const LINKS_COLLAPSIBLE_HEADER = 'LINKS';
-
-const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
-  if (
-    link.category === 'Professional' ||
-    link.category === 'Social' ||
-    link.category === 'Content'
-  ) {
-    return link.category;
-  }
-  // Custom or unknown: infer from platform so we don't mis-group
-  const platform =
-    link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
-  const inferred = getCategoryForPlatform(platform);
-  if (inferred === 'Professional') return 'Professional';
-  if (inferred === 'Social') return 'Social';
-  if (inferred === 'Content') return 'Content';
-  return 'Other';
-};
 
 export const ProfileLinksWidget = ({
   socials,
@@ -84,13 +58,18 @@ export const ProfileLinksWidget = ({
 
   if (visibleLinks.length === 0) return null;
 
-  // Sort all visible links by schema category order, then by link order
-  const sortedLinks = [...visibleLinks].sort((a, b) => {
-    const catA = CATEGORY_ORDER.indexOf(a.category);
-    const catB = CATEGORY_ORDER.indexOf(b.category);
-    if (catA !== catB) return catA - catB;
-    return a.order - b.order;
-  });
+  // 3. For grouped mode: use groupAndAlphabetizeLinks (groups by category,
+  //    sorts alphabetically by label within each group).
+  //    For flat mode: sort alphabetically by label across all links.
+  const groupedLinks = grouped ? groupAndAlphabetizeLinks(visibleLinks) : null;
+
+  const flatSortedLinks = !grouped
+    ? [...visibleLinks].sort((a, b) =>
+        (a.label || a.platform || '')
+          .toLowerCase()
+          .localeCompare((b.label || b.platform || '').toLowerCase()),
+      )
+    : [];
 
   const renderLink = (link: SocialLink) => {
     const displayPlatform = link.platform?.trim()
@@ -99,6 +78,7 @@ export const ProfileLinksWidget = ({
     return (
       <Box
         key={link.id}
+        data-testid={`link-row-${link.id}`}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -173,30 +153,20 @@ export const ProfileLinksWidget = ({
     );
   };
 
-  const groupedLinks = grouped
-    ? sortedLinks.reduce<Record<DisplayCategory, SocialLink[]>>(
-        (acc, link) => {
-          const key = normalizeDisplayCategory(link);
-          acc[key] = acc[key] ? [...acc[key], link] : [link];
-          return acc;
-        },
-        {
-          Professional: [],
-          Social: [],
-          Content: [],
-          Other: [],
-        },
-      )
-    : null;
-
   const content = !grouped ? (
-    <Stack spacing={1}>{sortedLinks.map((link) => renderLink(link))}</Stack>
+    <Stack spacing={1} data-testid="profile-links-widget">
+      {flatSortedLinks.map((link) => renderLink(link))}
+    </Stack>
   ) : (
-    <Stack spacing={1.5} sx={{ width: '100%' }}>
+    <Stack
+      spacing={1.5}
+      sx={{ width: '100%' }}
+      data-testid="profile-links-widget"
+    >
       {DISPLAY_CATEGORY_ORDER.filter(
-        (category) => groupedLinks![category].length,
+        (category) => groupedLinks![category].length > 0,
       ).map((category) => (
-        <Box key={category}>
+        <Box key={category} data-testid={`link-group-${category}`}>
           <Typography
             variant="overline"
             sx={{

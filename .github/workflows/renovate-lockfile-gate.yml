@@ -4,6 +4,7 @@ on:
   pull_request_target:
     types: [opened, synchronize, labeled, reopened, ready_for_review]
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write

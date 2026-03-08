@@ -85,6 +85,8 @@ export const ResumeCard = ({
           ...(hasResume ? CANDY_BLUEY : CANDY_HAZARD),
           width: '100%',
           maxWidth: { xs: '100%', sm: 360 },
+          minHeight: { xs: 200, md: 220 },
+          height: { xs: 200, md: 220 },
           borderRadius: 3,
           scrollSnapAlign: 'start',
           display: 'flex',

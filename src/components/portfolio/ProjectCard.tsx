@@ -142,8 +142,8 @@ export const ProjectCard = ({
           {
             width: '100%',
             maxWidth: isShowcase ? 'none' : { xs: '100%', sm: 360 },
-            minHeight: isShowcase ? { xs: 0, md: 0 } : undefined,
-            height: isShowcase ? '100%' : undefined,
+            minHeight: isShowcase ? { xs: 0, md: 0 } : { xs: 200, md: 220 },
+            height: isShowcase ? '100%' : { xs: 200, md: 220 },
             borderRadius: 3,
             scrollSnapAlign: 'start',
             display: 'flex',

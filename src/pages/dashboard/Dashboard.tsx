@@ -66,6 +66,7 @@ export const Dashboard = () => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] =
     useState<HTMLElement | null>(null);
+  const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [editFocusBio, setEditFocusBio] = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -556,65 +557,22 @@ export const Dashboard = () => {
           />
 
           {!profile?.resume_url && projects.length === 0 ? (
-            /* Empty state: message + primary CTA + secondary link */
+            /* Empty state: one Add dropdown */
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Your profile is empty.
               </Typography>
-              <Stack
-                direction="row"
-                flexWrap="wrap"
-                alignItems="center"
-                gap={1}
-                sx={{ alignItems: 'center' }}
-              >
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={openNewProjectDialog}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    color: 'white',
-                    background:
-                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                    '&:hover': {
-                      background:
-                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                    },
-                  }}
-                >
-                  Add your first project
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={openResumePicker}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    color: 'white',
-                    background:
-                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                    '&:hover': {
-                      background:
-                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                    },
-                  }}
-                >
-                  Upload a resume
-                </Button>
-              </Stack>
-            </>
-          ) : (
-            <>
-              {/* Action buttons when portfolio has content */}
               <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
                 <Button
                   variant="contained"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  onClick={openResumePicker}
+                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                  onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                  disabled={loading}
+                  aria-label="Add links, resume, or project"
+                  aria-haspopup="true"
+                  aria-expanded={Boolean(addMenuAnchor)}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
@@ -632,13 +590,70 @@ export const Dashboard = () => {
                     },
                   }}
                 >
-                  + Resume
+                  Add
                 </Button>
+                <Menu
+                  anchorEl={addMenuAnchor}
+                  open={Boolean(addMenuAnchor)}
+                  onClose={() => setAddMenuAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        mt: 1.5,
+                        minWidth: 200,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(30,30,30,0.98)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setAddMenuAnchor(null);
+                      setIsLinksOpen(true);
+                    }}
+                    sx={{ py: 1.25 }}
+                  >
+                    + Add Links
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setAddMenuAnchor(null);
+                      openResumePicker();
+                    }}
+                    sx={{ py: 1.25 }}
+                  >
+                    + Add Resume
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setAddMenuAnchor(null);
+                      openNewProjectDialog();
+                    }}
+                    sx={{ py: 1.25 }}
+                  >
+                    + Add Project
+                  </MenuItem>
+                </Menu>
+              </Stack>
+            </>
+          ) : (
+            <>
+              {/* One Add button with dropdown in portfolio area */}
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
                 <Button
                   variant="contained"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  onClick={openNewProjectDialog}
+                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                  onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                  disabled={loading}
+                  aria-label="Add links, resume, or project"
+                  aria-haspopup="true"
+                  aria-expanded={Boolean(addMenuAnchor)}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
@@ -656,8 +671,56 @@ export const Dashboard = () => {
                     },
                   }}
                 >
-                  + Add Project
+                  Add
                 </Button>
+                <Menu
+                  anchorEl={addMenuAnchor}
+                  open={Boolean(addMenuAnchor)}
+                  onClose={() => setAddMenuAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        mt: 1.5,
+                        minWidth: 200,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(30,30,30,0.98)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setAddMenuAnchor(null);
+                      setIsLinksOpen(true);
+                    }}
+                    sx={{ py: 1.25 }}
+                  >
+                    + Add Links
+                  </MenuItem>
+                  {!profile?.resume_url && (
+                    <MenuItem
+                      onClick={() => {
+                        setAddMenuAnchor(null);
+                        openResumePicker();
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      + Add Resume
+                    </MenuItem>
+                  )}
+                  <MenuItem
+                    onClick={() => {
+                      setAddMenuAnchor(null);
+                      openNewProjectDialog();
+                    }}
+                    sx={{ py: 1.25 }}
+                  >
+                    + Add Project
+                  </MenuItem>
+                </Menu>
               </Stack>
 
               <Box

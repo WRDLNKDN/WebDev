@@ -19,7 +19,11 @@ import {
 } from '../lib/portfolio/projectStorage';
 import { getResumeStoragePathFromPublicUrl } from '../lib/portfolio/resumeStorage';
 import { messageFromApiResponse, toMessage } from '../lib/utils/errors';
-import type { NewProject, PortfolioItem } from '../types/portfolio';
+import {
+  type NewProject,
+  type PortfolioItem,
+  RESUME_ITEM_ID,
+} from '../types/portfolio';
 import type { DashboardProfile, NerdCreds, SocialLink } from '../types/profile';
 import type { Json } from '../types/supabase';
 
@@ -621,6 +625,21 @@ export function useProfile() {
     }
   };
 
+  /** Reorder resume + projects together. orderedIds must include RESUME_ITEM_ID when profile has a resume. */
+  const reorderPortfolioItems = async (orderedIds: string[]) => {
+    const resumeIndex = orderedIds.indexOf(RESUME_ITEM_ID);
+    const projectIds = orderedIds.filter((id) => id !== RESUME_ITEM_ID);
+    if (projectIds.length > 0) {
+      await reorderProjects(projectIds);
+    }
+    if (resumeIndex >= 0 && profile) {
+      const creds = profile.nerd_creds ?? {};
+      await updateProfile({
+        nerd_creds: { ...creds, resume_display_index: resumeIndex },
+      });
+    }
+  };
+
   const toggleProjectHighlight = async (
     projectId: string,
     isHighlighted: boolean,
@@ -1064,6 +1083,7 @@ export function useProfile() {
     toggleProjectHighlight,
     deleteProject,
     reorderProjects,
+    reorderPortfolioItems,
     uploadResume,
     deleteResume,
     retryResumeThumbnail,

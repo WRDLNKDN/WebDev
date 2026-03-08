@@ -13,6 +13,7 @@ import {
   Menu,
   MenuItem,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -135,16 +136,18 @@ export const FeedAdCard = ({
       >
         {onDismiss && (
           <>
-            <IconButton
-              size="small"
-              sx={{ position: 'absolute', top: 8, right: 8 }}
-              aria-label="More options"
-              aria-haspopup="true"
-              aria-expanded={!!menuAnchor}
-              onClick={(e) => setMenuAnchor(e.currentTarget)}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
+            <Tooltip title="More options">
+              <IconButton
+                size="small"
+                sx={{ position: 'absolute', top: 8, right: 8 }}
+                aria-label="More options"
+                aria-haspopup="true"
+                aria-expanded={!!menuAnchor}
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Menu
               anchorEl={menuAnchor}
               open={!!menuAnchor}

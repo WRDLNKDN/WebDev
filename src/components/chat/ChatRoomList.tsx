@@ -5,6 +5,7 @@ import {
   IconButton,
   List,
   ListItemButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -117,23 +118,25 @@ export const ChatRoomList = ({
                 </Typography>
               </Box>
               {onRemoveChat && (
-                <IconButton
-                  aria-label="Remove chat"
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveChat(room.id);
-                  }}
-                  sx={{
-                    ml: 'auto',
-                    flexShrink: 0,
-                    bgcolor: 'rgba(0,0,0,0.6)',
-                    color: 'white',
-                    '&:hover': { bgcolor: 'error.main', color: 'white' },
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Remove chat">
+                  <IconButton
+                    aria-label="Remove chat"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveChat(room.id);
+                    }}
+                    sx={{
+                      ml: 'auto',
+                      flexShrink: 0,
+                      bgcolor: 'rgba(0,0,0,0.6)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'error.main', color: 'white' },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               )}
             </ListItemButton>
           ))

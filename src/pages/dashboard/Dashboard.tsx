@@ -40,7 +40,7 @@ import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import type { NerdCreds } from '../../types/profile';
-import type { PortfolioItem } from '../../types/portfolio';
+import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
 
 export const Dashboard = () => {
@@ -135,7 +135,7 @@ export const Dashboard = () => {
     updateProject,
     toggleProjectHighlight,
     deleteProject,
-    reorderProjects,
+    reorderPortfolioItems,
     uploadResume,
     deleteResume,
     retryResumeThumbnail,
@@ -397,34 +397,45 @@ export const Dashboard = () => {
                 <Button
                   variant="outlined"
                   size="small"
+                  startIcon={<AddIcon sx={{ fontSize: 18 }} />}
                   onClick={() => setIsLinksOpen(true)}
                   disabled={loading}
-                  aria-label="Directory links"
+                  aria-label="Add or edit links"
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    minHeight: { xs: 36, sm: 32 },
-                    fontSize: '0.8rem',
+                    borderColor: 'rgba(45, 212, 191, 0.6)',
+                    color: '#2dd4bf',
+                    minHeight: 38,
+                    fontSize: '0.875rem',
+                    py: 0.6,
                     px: 1.5,
+                    '&:hover': {
+                      borderColor: '#2dd4bf',
+                      bgcolor: 'rgba(45, 212, 191, 0.12)',
+                    },
                   }}
                 >
-                  Links
+                  Add Links
                 </Button>
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
-                  endIcon={<KeyboardArrowDownIcon />}
+                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                   disabled={loading}
                   aria-label="Profile menu"
                   aria-haspopup="true"
                   aria-expanded={Boolean(profileMenuAnchor)}
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    minHeight: { xs: 36, sm: 32 },
-                    fontSize: '0.8rem',
+                    borderColor: 'rgba(45, 212, 191, 0.6)',
+                    color: '#2dd4bf',
+                    minHeight: 38,
+                    fontSize: '0.875rem',
+                    py: 0.6,
                     px: 1.5,
+                    '&:hover': {
+                      borderColor: '#2dd4bf',
+                      bgcolor: 'rgba(45, 212, 191, 0.12)',
+                    },
                   }}
                 >
                   Profile
@@ -436,11 +447,16 @@ export const Dashboard = () => {
                   disabled={loading}
                   aria-label="Settings"
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    minHeight: { xs: 36, sm: 32 },
-                    fontSize: '0.8rem',
+                    borderColor: 'rgba(45, 212, 191, 0.6)',
+                    color: '#2dd4bf',
+                    minHeight: 38,
+                    fontSize: '0.875rem',
+                    py: 0.6,
                     px: 1.5,
+                    '&:hover': {
+                      borderColor: '#2dd4bf',
+                      bgcolor: 'rgba(45, 212, 191, 0.12)',
+                    },
                   }}
                 >
                   Settings
@@ -595,40 +611,52 @@ export const Dashboard = () => {
               {/* Action buttons when portfolio has content */}
               <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                   onClick={openResumePicker}
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
                     textTransform: 'none',
                     fontWeight: 600,
-                    minHeight: 28,
+                    color: 'white',
+                    background:
+                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                    border: 'none',
+                    minHeight: 34,
                     py: 0.5,
                     px: 1.5,
                     fontSize: '0.8125rem',
+                    '&:hover': {
+                      background:
+                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                    },
                   }}
                 >
-                  Resume
+                  + Resume
                 </Button>
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                   onClick={openNewProjectDialog}
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
                     textTransform: 'none',
                     fontWeight: 600,
-                    minHeight: 28,
+                    color: 'white',
+                    background:
+                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                    border: 'none',
+                    minHeight: 34,
                     py: 0.5,
                     px: 1.5,
                     fontSize: '0.8125rem',
+                    '&:hover': {
+                      background:
+                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                    },
                   }}
                 >
-                  Add Project
+                  + Add Project
                 </Button>
               </Stack>
 
@@ -638,50 +666,68 @@ export const Dashboard = () => {
                   gap: { xs: 1, sm: 1.25, md: 1.5 },
                   gridTemplateColumns: {
                     xs: '1fr',
-                    sm: 'repeat(2, minmax(260px, 1fr))',
-                    lg: 'repeat(3, minmax(260px, 1fr))',
+                    sm: 'repeat(2, minmax(320px, 1fr))',
+                    lg: 'repeat(3, minmax(320px, 1fr))',
                   },
                   justifyItems: 'stretch',
                   alignItems: 'start',
                 }}
               >
-                {profile?.resume_url ? (
-                  <ResumeCard
-                    url={profile?.resume_url}
-                    fileName={resumeFileName}
-                    thumbnailUrl={resumeThumbnailUrl}
-                    thumbnailStatus={resumeThumbnailStatus}
-                    thumbnailError={
-                      typeof safeNerdCreds.resume_thumbnail_error === 'string'
-                        ? safeNerdCreds.resume_thumbnail_error
-                        : null
-                    }
-                    onUpload={handleResumeUpload}
-                    onRetryThumbnail={() => {
-                      void retryResumeThumbnail().catch((e) => {
-                        setSnack(toMessage(e));
-                      });
-                    }}
-                    retryThumbnailBusy={updating}
-                    onDelete={async () => {
-                      try {
-                        await deleteResume();
-                        void refresh();
-                      } catch (e) {
-                        setSnack(toMessage(e));
-                      }
-                    }}
-                    deleteBusy={updating}
-                    isOwner
-                  />
-                ) : null}
-
                 <PortfolioSortableList
+                  orderedIds={(() => {
+                    const projectIds = projects.map((p) => p.id);
+                    if (!profile?.resume_url) return projectIds;
+                    const resumeIndex = Math.min(
+                      Math.max(0, safeNerdCreds.resume_display_index ?? 0),
+                      projectIds.length,
+                    );
+                    return [
+                      ...projectIds.slice(0, resumeIndex),
+                      RESUME_ITEM_ID,
+                      ...projectIds.slice(resumeIndex),
+                    ];
+                  })()}
                   projects={projects}
+                  renderResumeCard={
+                    profile?.resume_url
+                      ? (dragHandle) => (
+                          <ResumeCard
+                            url={profile?.resume_url}
+                            fileName={resumeFileName}
+                            thumbnailUrl={resumeThumbnailUrl}
+                            thumbnailStatus={resumeThumbnailStatus}
+                            thumbnailError={
+                              typeof safeNerdCreds.resume_thumbnail_error ===
+                              'string'
+                                ? safeNerdCreds.resume_thumbnail_error
+                                : null
+                            }
+                            onUpload={handleResumeUpload}
+                            onRetryThumbnail={() => {
+                              void retryResumeThumbnail().catch((e) => {
+                                setSnack(toMessage(e));
+                              });
+                            }}
+                            retryThumbnailBusy={updating}
+                            onDelete={async () => {
+                              try {
+                                await deleteResume();
+                                void refresh();
+                              } catch (e) {
+                                setSnack(toMessage(e));
+                              }
+                            }}
+                            deleteBusy={updating}
+                            isOwner
+                            dragHandle={dragHandle}
+                          />
+                        )
+                      : undefined
+                  }
                   isOwner
                   onReorder={async (orderedIds) => {
                     try {
-                      await reorderProjects(orderedIds);
+                      await reorderPortfolioItems(orderedIds);
                     } catch (e) {
                       setSnack(toMessage(e));
                     }

@@ -38,13 +38,13 @@ import type { NewProject, PortfolioItem } from '../../types/portfolio';
 // REUSING THE VIBE
 const SOLO_GRADIENT =
   'linear-gradient(90deg, #00C4CC 0%, #7D2AE8 50%, #FF22C9 100%)';
-const TERMINAL_LABEL_SX = {
-  fontFamily: '"IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace',
+const LABEL_SX = {
+  fontFamily: '"Poppins", sans-serif',
   letterSpacing: 0.25,
   fontSize: '0.78rem',
 };
 const LABEL_ROW_SX = {
-  ...TERMINAL_LABEL_SX,
+  ...LABEL_SX,
   color: 'text.secondary',
   textTransform: 'uppercase',
   lineHeight: 1.2,
@@ -282,8 +282,7 @@ export const AddProjectDialog = ({
             sx={{
               fontWeight: 700,
               letterSpacing: 0.8,
-              fontFamily:
-                '"IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace',
+              fontFamily: '"Poppins", sans-serif',
             }}
           >
             {isEdit ? 'EDIT ' : 'NEW '}
@@ -298,9 +297,15 @@ export const AddProjectDialog = ({
               PROJECT
             </Box>
           </Typography>
-          <IconButton onClick={onClose} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
+          <Tooltip title="Close">
+            <IconButton
+              onClick={onClose}
+              sx={{ color: 'white' }}
+              aria-label="Close dialog"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </DialogTitle>
 

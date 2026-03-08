@@ -6,7 +6,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -15,6 +14,7 @@ import {
   DialogTitle,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -26,13 +26,17 @@ import {
 import type { PortfolioItem } from '../../types/portfolio';
 
 const GLASS_MODAL = {
-  bgcolor: '#141414',
-  border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: 2,
+  bgcolor: '#1a1a1d',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 2.5,
   color: 'white',
   overflow: 'hidden',
-  backdropFilter: 'blur(18px)',
-  boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+  backdropFilter: 'blur(20px)',
+  boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)',
+  margin: '32px auto',
+  maxHeight: 'calc(100vh - 64px)',
+  display: 'flex',
+  flexDirection: 'column',
 };
 
 type PreviewError =
@@ -89,20 +93,24 @@ export const PortfolioPreviewModal = ({
     if (!url) return null;
     if (linkType === 'unsupported') {
       return (
-        <Alert
-          severity="info"
-          icon={<InfoOutlinedIcon fontSize="inherit" />}
+        <Box
           sx={{
-            mt: 1,
-            borderRadius: 1,
-            bgcolor: 'rgba(13, 87, 101, 0.22)',
-            border: '1px solid rgba(45, 212, 191, 0.35)',
-            color: '#d6fbf6',
-            '& .MuiAlert-icon': { color: '#2dd4bf' },
+            mt: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 1.25,
+            borderRadius: 1.5,
+            bgcolor: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
           }}
         >
-          {ERROR_MESSAGES.unsupported}
-        </Alert>
+          <InfoOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+          <Typography variant="body2" color="text.secondary">
+            {ERROR_MESSAGES.unsupported}
+          </Typography>
+        </Box>
       );
     }
     if (previewError) {
@@ -231,80 +239,123 @@ export const PortfolioPreviewModal = ({
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: GLASS_MODAL }}
+      sx={{ '& .MuiDialog-container': { alignItems: 'center' } }}
     >
       <DialogTitle
+        component="div"
         sx={{
           borderBottom: '1px solid rgba(255,255,255,0.1)',
           py: 1.5,
-          px: 2,
+          px: { xs: 2, md: 2.5 },
+          flexShrink: 0,
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="flex-start">
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h6" noWrap>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Box
+            sx={{
+              minWidth: 0,
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="h6" noWrap sx={{ fontWeight: 600 }}>
               {project?.title ?? 'Preview'}
             </Typography>
             <Chip
               label={typeLabel}
               size="small"
               sx={{
-                mt: 0.75,
                 borderRadius: 1,
                 bgcolor: 'rgba(255,255,255,0.08)',
                 color: 'text.secondary',
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontWeight: 500,
               }}
             />
           </Box>
-          <Stack direction="row" spacing={0.5} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            flexShrink={0}
+          >
             {openUrl ? (
+              <Tooltip title="Open in new tab">
+                <IconButton
+                  size="small"
+                  href={openUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open in new tab"
+                  sx={{
+                    color: '#b9c3dd',
+                    border: '1px solid rgba(255,255,255,0.28)',
+                    borderRadius: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      color: '#ecfeff',
+                      borderColor: 'rgba(0,196,204,0.65)',
+                      bgcolor: 'rgba(0,196,204,0.22)',
+                    },
+                  }}
+                >
+                  <OpenInNewIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Open in new tab">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label="Open in new tab"
+                    disabled
+                    sx={{
+                      color: 'text.disabled',
+                      border: '1px solid rgba(255,255,255,0.16)',
+                      borderRadius: 1,
+                      width: 32,
+                      height: 32,
+                    }}
+                  >
+                    <OpenInNewIcon sx={{ fontSize: '1rem' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+            <Tooltip title="Close preview">
               <IconButton
                 size="small"
-                href={openUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open in new tab"
+                onClick={onClose}
+                aria-label="Close preview"
                 sx={{
-                  color: 'text.secondary',
-                  border: '1px solid rgba(255,255,255,0.24)',
+                  color: '#b9c3dd',
+                  border: '1px solid rgba(255,255,255,0.28)',
                   borderRadius: 1,
+                  width: 32,
+                  height: 32,
                   '&:hover': {
                     color: 'white',
-                    borderColor: 'rgba(255,255,255,0.45)',
                     bgcolor: 'rgba(255,255,255,0.08)',
+                    borderColor: 'rgba(255,255,255,0.4)',
                   },
                 }}
               >
-                <OpenInNewIcon fontSize="small" />
+                <CloseIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
-            ) : (
-              <IconButton
-                size="small"
-                aria-label="Open in new tab"
-                disabled
-                sx={{
-                  color: 'text.disabled',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                  borderRadius: 1,
-                }}
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            )}
-            <IconButton
-              size="small"
-              onClick={onClose}
-              aria-label="Close preview"
-              sx={{
-                color: 'white',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            </Tooltip>
           </Stack>
         </Stack>
       </DialogTitle>
-      <DialogContent sx={{ p: { xs: 1.5, md: 2 } }}>
+      <DialogContent sx={{ p: { xs: 2, md: 2.5 }, flex: 1, minHeight: 0 }}>
         {project?.description && (
           <Typography
             variant="body2"

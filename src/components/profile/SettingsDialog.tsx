@@ -10,6 +10,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
 } from '@mui/material';
 
 const GLASS_MODAL = {
@@ -61,19 +62,21 @@ export const SettingsDialog = ({
       aria-label="Settings"
       PaperProps={{ sx: GLASS_MODAL }}
     >
-      <IconButton
-        aria-label="Close"
-        onClick={onClose}
-        sx={{
-          position: 'absolute',
-          right: 8,
-          top: 8,
-          zIndex: 1,
-          color: 'white',
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
+      <Tooltip title="Close">
+        <IconButton
+          aria-label="Close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            color: 'white',
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Tooltip>
       <DialogContent sx={{ pt: 5, px: 0, pb: 0 }}>
         <List disablePadding>
           <ListItemButton

@@ -65,60 +65,29 @@ export const IdentityHeader = ({
       overflow: 'hidden',
     }}
   >
-    {actions && (
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-        flexWrap="wrap"
-        useFlexGap
-        spacing={{ xs: 1.25, sm: 2 }}
-        sx={{
-          mb: { xs: 1.5, md: 2 },
-          '& .MuiButton-root': { minWidth: 0 },
-        }}
-      >
-        {actions}
-      </Stack>
-    )}
-
     <Stack
       direction={{ xs: 'column', md: 'row' }}
       spacing={{ xs: 2, sm: 3, md: 4 }}
-      alignItems="flex-start"
+      alignItems={{ xs: 'stretch', md: 'center' }}
+      justifyContent="space-between"
       sx={{ textAlign: 'left', minWidth: 0 }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={{ xs: 1.5, md: 2 }}
         alignItems="flex-start"
-        sx={{ flexShrink: 0, minWidth: 0 }}
+        sx={{ flex: '1 1 0', minWidth: 0, maxWidth: '100%' }}
       >
-        {slotLeftOfAvatar && (
+        <Stack alignItems="flex-start" spacing={1.5} sx={{ flexShrink: 0 }}>
           <Box
             sx={{
-              order: { xs: 2, md: 1 },
-              minWidth: { md: 220 },
-              maxWidth: { md: 280 },
-            }}
-          >
-            {slotLeftOfAvatar}
-          </Box>
-        )}
-        <Stack
-          alignItems="flex-start"
-          spacing={1.5}
-          sx={{ order: { xs: 1, md: 2 } }}
-        >
-          <Box
-            sx={{
-              width: 168,
-              height: 168,
+              width: 120,
+              height: 120,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: '50%',
-              border: '4px solid rgba(66,165,245,0.45)',
+              border: '3px solid rgba(66,165,245,0.45)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             }}
           >
@@ -126,7 +95,12 @@ export const IdentityHeader = ({
               src={avatarUrl || undefined}
               alt={displayName}
               size="header"
-              sx={{ border: 'none', boxShadow: 'none' }}
+              sx={{
+                border: 'none',
+                boxShadow: 'none',
+                width: 112,
+                height: 112,
+              }}
             />
           </Box>
           {slotUnderAvatarLabel && (
@@ -144,90 +118,105 @@ export const IdentityHeader = ({
           )}
           {slotUnderAvatar}
         </Stack>
-      </Stack>
-      <Box
-        sx={{
-          flex: '1 1 0',
-          minWidth: 0,
-          maxWidth: '100%',
-          // Ensure bio and name have room: floor width so layout doesn't squish
-          '@media (min-width: 900px)': { minWidth: 360 },
-        }}
-      >
-        <Typography
-          variant="h4"
+        <Box
           sx={{
-            fontWeight: 700,
-            mb: 0.5,
-            letterSpacing: -0.5,
-            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
+            flex: '1 1 0',
+            minWidth: 0,
+            maxWidth: '100%',
+            '@media (min-width: 900px)': { minWidth: 360 },
           }}
         >
-          {displayName}
-        </Typography>
-        {tagline && (
           <Typography
-            variant="subtitle1"
+            variant="h4"
             sx={{
-              fontWeight: 600,
-              mb: 1,
-              color: 'primary.main',
-            }}
-          >
-            {tagline}
-          </Typography>
-        )}
-        {bioIsPlaceholder && onAddBio ? (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => onAddBio()}
-            aria-label="Add bio"
-            sx={{
-              mt: 0.5,
-              my: 1,
-              borderColor: 'rgba(255,255,255,0.3)',
-              color: 'white',
-              textTransform: 'none',
-              fontSize: '0.9rem',
-              '&:hover': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                bgcolor: 'rgba(255,255,255,0.06)',
-              },
-            }}
-          >
-            Add bio
-          </Button>
-        ) : !bioIsPlaceholder && bio ? (
-          <Typography
-            component="blockquote"
-            variant="body1"
-            color="text.secondary"
-            sx={{
-              lineHeight: 1.6,
-              fontStyle: 'italic',
-              borderLeft: '3px solid',
-              borderColor: 'primary.main',
-              pl: { xs: 1.5, md: 2 },
-              my: 1,
-              mt: 0.5,
-              maxWidth: 560,
+              fontWeight: 700,
+              mb: 0.5,
+              letterSpacing: -0.5,
+              fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
             }}
           >
-            &ldquo;{bio}&rdquo;
+            {displayName}
           </Typography>
-        ) : null}
+          {tagline && (
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 600,
+                mb: 1,
+                color: 'primary.main',
+              }}
+            >
+              {tagline}
+            </Typography>
+          )}
+          {bioIsPlaceholder && onAddBio ? (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onAddBio()}
+              aria-label="Add bio"
+              sx={{
+                mt: 0.5,
+                my: 1,
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: 'white',
+                textTransform: 'none',
+                fontSize: '0.9rem',
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.5)',
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
+              }}
+            >
+              Add bio
+            </Button>
+          ) : !bioIsPlaceholder && bio ? (
+            <Typography
+              component="blockquote"
+              variant="body1"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.6,
+                fontStyle: 'italic',
+                borderLeft: '3px solid',
+                borderColor: 'primary.main',
+                pl: { xs: 1.5, md: 2 },
+                my: 1,
+                mt: 0.5,
+                maxWidth: 560,
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+              }}
+            >
+              &ldquo;{bio}&rdquo;
+            </Typography>
+          ) : null}
 
-        {badges && (
-          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 2, mb: 2 }}>
-            {badges}
-          </Stack>
-        )}
-      </Box>
+          {badges && (
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              gap={1}
+              sx={{ mt: 2, mb: 2 }}
+            >
+              {badges}
+            </Stack>
+          )}
+        </Box>
+      </Stack>
+      {slotLeftOfAvatar && (
+        <Box
+          sx={{
+            flexShrink: 0,
+            minWidth: { md: 220 },
+            maxWidth: { md: 280 },
+          }}
+        >
+          {slotLeftOfAvatar}
+        </Box>
+      )}
       {/* Middle column: e.g. WEIRDLINGS — right-aligned on desktop */}
       {slotBetweenContentAndActions && (
         <Stack
@@ -252,6 +241,24 @@ export const IdentityHeader = ({
             </Typography>
           )}
           {slotBetweenContentAndActions}
+        </Stack>
+      )}
+      {/* Actions on far right, lined up with content */}
+      {actions && (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="flex-end"
+          alignItems={{ xs: 'flex-end', sm: 'center' }}
+          flexWrap="wrap"
+          useFlexGap
+          spacing={{ xs: 1.25, sm: 2 }}
+          sx={{
+            flexShrink: 0,
+            alignSelf: { xs: 'stretch', md: 'flex-end' },
+            '& .MuiButton-root': { minWidth: 0 },
+          }}
+        >
+          {actions}
         </Stack>
       )}
     </Stack>

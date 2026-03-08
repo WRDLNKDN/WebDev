@@ -16,6 +16,7 @@ import {
   InputAdornment,
   Link,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
@@ -129,14 +130,16 @@ export const GifPickerDialog = ({
         }}
       >
         <span>Choose a GIF</span>
-        <IconButton
-          onClick={onClose}
-          aria-label="Close"
-          size="small"
-          sx={{ ml: 1 }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Tooltip title="Close">
+          <IconButton
+            onClick={onClose}
+            aria-label="Close"
+            size="small"
+            sx={{ ml: 1 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
       </DialogTitle>
       <DialogContent>
         <TextField

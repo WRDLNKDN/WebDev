@@ -1,8 +1,8 @@
 /**
- * Sortable list of portfolio project cards with drag handle.
+ * Sortable list of portfolio items: resume (optional) + project cards.
  * Uses @dnd-kit for accessible drag-and-drop and keyboard reorder.
+ * Whole card is draggable (no handle icon).
  */
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { Box } from '@mui/material';
 import {
   DndContext,
@@ -22,7 +22,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { PortfolioItem } from '../../types/portfolio';
+import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { ProjectCard } from './ProjectCard';
 
 interface SortableCardProps {
@@ -74,7 +74,25 @@ const SortableCard = ({
     <Box
       ref={setNodeRef}
       style={style}
-      sx={{ display: 'block', width: '100%' }}
+      {...(isOwner && canReorder ? { ...attributes, ...listeners } : {})}
+      sx={{
+        display: 'block',
+        width: '100%',
+        ...(isOwner && canReorder
+          ? {
+              cursor: 'grab',
+              touchAction: 'none',
+              '&:active': { cursor: 'grabbing' },
+            }
+          : {}),
+      }}
+      tabIndex={isOwner && canReorder ? 0 : undefined}
+      role={isOwner && canReorder ? 'button' : undefined}
+      aria-label={
+        isOwner && canReorder
+          ? `Drag to reorder ${project.title}. Use arrow keys to move, Space to drop.`
+          : undefined
+      }
     >
       <ProjectCard
         project={project}
@@ -87,43 +105,70 @@ const SortableCard = ({
         onMoveDown={onMoveDown}
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
-        dragHandle={
-          isOwner && canReorder ? (
-            <Box
-              {...attributes}
-              {...listeners}
-              component="span"
-              tabIndex={0}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: { xs: 36, md: 32 },
-                height: { xs: 36, md: 32 },
-                borderRadius: 1,
-                color: 'text.secondary',
-                cursor: 'grab',
-                touchAction: 'none',
-                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
-                '&:focus': {
-                  outline: '2px solid',
-                  outlineColor: 'primary.main',
-                },
-                '&:active': { cursor: 'grabbing' },
-              }}
-              aria-label={`Drag to reorder ${project.title}. Use arrow keys to move, Space to drop.`}
-            >
-              <DragIndicatorIcon fontSize="small" />
-            </Box>
-          ) : undefined
-        }
       />
     </Box>
   );
 };
 
+interface SortableResumeCardProps {
+  renderResumeCard: (dragHandle: React.ReactNode) => React.ReactNode;
+  canReorder: boolean;
+}
+
+const SortableResumeCard = ({
+  renderResumeCard,
+  canReorder,
+}: SortableResumeCardProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: RESUME_ITEM_ID });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      {...(canReorder ? { ...attributes, ...listeners } : {})}
+      sx={{
+        display: 'block',
+        width: '100%',
+        ...(canReorder
+          ? {
+              cursor: 'grab',
+              touchAction: 'none',
+              '&:active': { cursor: 'grabbing' },
+            }
+          : {}),
+      }}
+      tabIndex={canReorder ? 0 : undefined}
+      role={canReorder ? 'button' : undefined}
+      aria-label={
+        canReorder
+          ? 'Drag to reorder resume. Use arrow keys to move, Space to drop.'
+          : undefined
+      }
+    >
+      {renderResumeCard(undefined)}
+    </Box>
+  );
+};
+
 interface PortfolioSortableListProps {
+  /** Ids in display order; may include RESUME_ITEM_ID when resume is present. */
+  orderedIds: string[];
   projects: PortfolioItem[];
+  /** When provided, the resume slot is included and rendered with this render prop (receives drag handle). */
+  renderResumeCard?: (dragHandle: React.ReactNode) => React.ReactNode;
   isOwner: boolean;
   onReorder: (orderedIds: string[]) => void | Promise<void>;
   onEdit?: (project: PortfolioItem) => void | Promise<void>;
@@ -136,7 +181,9 @@ interface PortfolioSortableListProps {
 }
 
 export const PortfolioSortableList = ({
+  orderedIds,
   projects,
+  renderResumeCard,
   isOwner,
   onReorder,
   onEdit,
@@ -144,26 +191,28 @@ export const PortfolioSortableList = ({
   onToggleHighlight,
   onOpenPreview,
 }: PortfolioSortableListProps) => {
-  const canReorder = isOwner && projects.length > 1;
-  const moveProjectByOffset = (projectId: string, offset: -1 | 1) => {
+  const canReorder = isOwner && orderedIds.length > 1;
+  const projectById = new Map(projects.map((p) => [p.id, p]));
+
+  const moveItemByOffset = (id: string, offset: -1 | 1) => {
     if (!canReorder) return;
-    const currentIndex = projects.findIndex((p) => p.id === projectId);
+    const currentIndex = orderedIds.indexOf(id);
     if (currentIndex < 0) return;
     const nextIndex = currentIndex + offset;
-    if (nextIndex < 0 || nextIndex >= projects.length) return;
-    const reordered = arrayMove(projects, currentIndex, nextIndex);
-    void onReorder(reordered.map((p) => p.id));
+    if (nextIndex < 0 || nextIndex >= orderedIds.length) return;
+    const reordered = arrayMove(orderedIds, currentIndex, nextIndex);
+    void onReorder(reordered);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     if (!canReorder) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = projects.findIndex((p) => p.id === active.id);
-    const newIndex = projects.findIndex((p) => p.id === over.id);
+    const oldIndex = orderedIds.indexOf(active.id as string);
+    const newIndex = orderedIds.indexOf(over.id as string);
     if (oldIndex < 0 || newIndex < 0) return;
-    const reordered = arrayMove(projects, oldIndex, newIndex);
-    void onReorder(reordered.map((p) => p.id));
+    const reordered = arrayMove(orderedIds, oldIndex, newIndex);
+    void onReorder(reordered);
   };
 
   const sensors = useSensors(
@@ -184,7 +233,7 @@ export const PortfolioSortableList = ({
       accessibility={{
         announcements: {
           onDragStart: () =>
-            'Picked up project. Use arrow keys to move, Space to drop.',
+            'Picked up item. Use arrow keys to move, Space to drop.',
           onDragOver: ({ over }) =>
             over
               ? 'Over new position. Press Space to drop.'
@@ -194,35 +243,46 @@ export const PortfolioSortableList = ({
         },
       }}
     >
-      <SortableContext
-        items={projects.map((p) => p.id)}
-        strategy={rectSortingStrategy}
-      >
+      <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
         <Box sx={{ display: 'contents' }}>
-          {projects.map((project, index) => (
-            <SortableCard
-              key={project.id}
-              project={project}
-              isOwner={isOwner}
-              canReorder={canReorder}
-              onMoveUp={
-                canReorder
-                  ? (projectId) => moveProjectByOffset(projectId, -1)
-                  : undefined
-              }
-              onMoveDown={
-                canReorder
-                  ? (projectId) => moveProjectByOffset(projectId, 1)
-                  : undefined
-              }
-              canMoveUp={canReorder && index > 0}
-              canMoveDown={canReorder && index < projects.length - 1}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleHighlight={onToggleHighlight}
-              onOpenPreview={onOpenPreview}
-            />
-          ))}
+          {orderedIds.map((id, index) => {
+            if (id === RESUME_ITEM_ID) {
+              if (!renderResumeCard) return null;
+              return (
+                <SortableResumeCard
+                  key={RESUME_ITEM_ID}
+                  renderResumeCard={renderResumeCard}
+                  canReorder={canReorder}
+                />
+              );
+            }
+            const project = projectById.get(id);
+            if (!project) return null;
+            return (
+              <SortableCard
+                key={project.id}
+                project={project}
+                isOwner={isOwner}
+                canReorder={canReorder}
+                onMoveUp={
+                  canReorder
+                    ? (projectId) => moveItemByOffset(projectId, -1)
+                    : undefined
+                }
+                onMoveDown={
+                  canReorder
+                    ? (projectId) => moveItemByOffset(projectId, 1)
+                    : undefined
+                }
+                canMoveUp={canReorder && index > 0}
+                canMoveDown={canReorder && index < orderedIds.length - 1}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onToggleHighlight={onToggleHighlight}
+                onOpenPreview={onOpenPreview}
+              />
+            );
+          })}
         </Box>
       </SortableContext>
     </DndContext>

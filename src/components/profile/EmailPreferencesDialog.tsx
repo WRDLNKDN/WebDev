@@ -8,6 +8,7 @@ import {
   FormControlLabel,
   IconButton,
   Switch,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
@@ -125,19 +126,21 @@ export const EmailPreferencesDialog = ({
       aria-label="Email preferences"
       PaperProps={{ sx: GLASS_MODAL }}
     >
-      <IconButton
-        aria-label="Close"
-        onClick={onClose}
-        sx={{
-          position: 'absolute',
-          right: 8,
-          top: 8,
-          zIndex: 1,
-          color: 'white',
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
+      <Tooltip title="Close">
+        <IconButton
+          aria-label="Close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            color: 'white',
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Tooltip>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <EmailIcon fontSize="small" />
         Email preferences

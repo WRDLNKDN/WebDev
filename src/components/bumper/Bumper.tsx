@@ -7,7 +7,7 @@ import './bumperKeyframes.css';
 
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { Box, IconButton, Stack, Typography } from '@mui/material';
+import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
@@ -145,24 +145,26 @@ export const Bumper = ({
 
       {/* Sound on: restore bumper voiceover (browsers block unmuted autoplay) */}
       {!soundOn && (
-        <IconButton
-          onClick={() => void handlePlayWithSound()}
-          aria-label="Play bumper with sound"
-          sx={{
-            position: 'absolute',
-            bottom: 24,
-            right: 24,
-            zIndex: 2,
-            color: 'rgba(255,255,255,0.85)',
-            bgcolor: 'rgba(0,0,0,0.4)',
-            '&:hover': {
-              bgcolor: 'rgba(0,0,0,0.6)',
-              color: 'white',
-            },
-          }}
-        >
-          <VolumeOffIcon sx={{ fontSize: 28 }} />
-        </IconButton>
+        <Tooltip title="Play with sound">
+          <IconButton
+            onClick={() => void handlePlayWithSound()}
+            aria-label="Play bumper with sound"
+            sx={{
+              position: 'absolute',
+              bottom: 24,
+              right: 24,
+              zIndex: 2,
+              color: 'rgba(255,255,255,0.85)',
+              bgcolor: 'rgba(0,0,0,0.4)',
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+              },
+            }}
+          >
+            <VolumeOffIcon sx={{ fontSize: 28 }} />
+          </IconButton>
+        </Tooltip>
       )}
       {soundOn && (
         <Box

@@ -9,6 +9,7 @@ import {
   IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
@@ -341,32 +342,36 @@ export const PortfolioHighlightsCarousel = ({
         </Typography>
         {highlightedProjects.length > 1 ? (
           <Stack direction="row" spacing={{ xs: 0.25, sm: 0.5 }}>
-            <IconButton
-              aria-label="Previous highlight"
-              data-testid="portfolio-highlights-prev"
-              onClick={goToPrevious}
-              size="medium"
-              sx={{
-                color: 'white',
-                width: { xs: 40, sm: 32 },
-                height: { xs: 40, sm: 32 },
-              }}
-            >
-              <ChevronLeftIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              aria-label="Next highlight"
-              data-testid="portfolio-highlights-next"
-              onClick={goToNext}
-              size="medium"
-              sx={{
-                color: 'white',
-                width: { xs: 40, sm: 32 },
-                height: { xs: 40, sm: 32 },
-              }}
-            >
-              <ChevronRightIcon fontSize="small" />
-            </IconButton>
+            <Tooltip title="Previous highlight">
+              <IconButton
+                aria-label="Previous highlight"
+                data-testid="portfolio-highlights-prev"
+                onClick={goToPrevious}
+                size="medium"
+                sx={{
+                  color: 'white',
+                  width: { xs: 40, sm: 32 },
+                  height: { xs: 40, sm: 32 },
+                }}
+              >
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Next highlight">
+              <IconButton
+                aria-label="Next highlight"
+                data-testid="portfolio-highlights-next"
+                onClick={goToNext}
+                size="medium"
+                sx={{
+                  color: 'white',
+                  width: { xs: 40, sm: 32 },
+                  height: { xs: 40, sm: 32 },
+                }}
+              >
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Stack>
         ) : (
           <Box sx={{ width: 64 }} />

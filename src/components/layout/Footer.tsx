@@ -7,6 +7,7 @@ import {
   IconButton,
   Link,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -544,22 +545,23 @@ export const Footer = () => {
                   data-testid="footer-social-links"
                 >
                   {FOOTER_SOCIAL_LINKS.map((link) => (
-                    <IconButton
-                      key={link.label}
-                      component={Link}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={link.label}
-                      size="small"
-                      sx={{
-                        color: 'text.secondary',
-                        p: { xs: 0.35, md: 0.45 },
-                        '&:hover': { color: 'primary.main' },
-                      }}
-                    >
-                      {renderSocialIcon(link.label)}
-                    </IconButton>
+                    <Tooltip key={link.label} title={link.label}>
+                      <IconButton
+                        component={Link}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.label}
+                        size="small"
+                        sx={{
+                          color: 'text.secondary',
+                          p: { xs: 0.35, md: 0.45 },
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                      >
+                        {renderSocialIcon(link.label)}
+                      </IconButton>
+                    </Tooltip>
                   ))}
                 </Stack>
                 <Typography

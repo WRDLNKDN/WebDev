@@ -271,13 +271,15 @@ export const EditLinksDialog = ({
         aria-label="Manage Links"
       >
         <DialogTitle sx={{ pr: 6, fontWeight: 700 }}>Manage Links</DialogTitle>
-        <IconButton
-          aria-label="Close"
-          onClick={handleRequestClose}
-          sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Tooltip title="Close">
+          <IconButton
+            aria-label="Close"
+            onClick={handleRequestClose}
+            sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
         <DialogContent sx={{ pt: 2.5 }}>
           <Stack spacing={4} sx={{ mt: 1 }}>
             {saveError && (
@@ -544,24 +546,28 @@ export const EditLinksDialog = ({
                             </Box>
                           </Stack>
 
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDelete(link.id)}
-                            aria-label={`Remove ${link.label || link.platform}`}
-                            sx={{
-                              flexShrink: 0,
-                              p: 0.25,
-                              minWidth: 0,
-                              minHeight: 0,
-                              color: 'error.main',
-                              '&:hover': {
-                                bgcolor: 'error.main',
-                                color: 'error.contrastText',
-                              },
-                            }}
+                          <Tooltip
+                            title={`Remove ${link.label || link.platform}`}
                           >
-                            <CloseIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDelete(link.id)}
+                              aria-label={`Remove ${link.label || link.platform}`}
+                              sx={{
+                                flexShrink: 0,
+                                p: 0.25,
+                                minWidth: 0,
+                                minHeight: 0,
+                                color: 'error.main',
+                                '&:hover': {
+                                  bgcolor: 'error.main',
+                                  color: 'error.contrastText',
+                                },
+                              }}
+                            >
+                              <CloseIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       );
                     })}

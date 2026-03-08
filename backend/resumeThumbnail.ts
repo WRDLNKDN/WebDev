@@ -52,7 +52,7 @@ const buildSvg = (name: string, lines: string[]): string => {
   const lineBlocks = lines
     .map(
       (line, index) =>
-        `<text x="48" y="${145 + index * 31}" font-size="23" fill="#1f2937" font-family="Inter, Arial, sans-serif">${escapeXml(line)}</text>`,
+        `<text x="48" y="${145 + index * 31}" font-size="23" fill="#1f2937" font-family="Poppins, sans-serif">${escapeXml(line)}</text>`,
     )
     .join('');
 
@@ -65,8 +65,8 @@ const buildSvg = (name: string, lines: string[]): string => {
     </defs>
     <rect width="900" height="1200" fill="url(#bg)"/>
     <rect x="24" y="24" width="852" height="1152" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="48" y="84" font-size="32" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-weight="700">Resume Preview</text>
-    <text x="48" y="117" font-size="20" fill="#334155" font-family="Inter, Arial, sans-serif">${safeTitle}</text>
+    <text x="48" y="84" font-size="32" fill="#0f172a" font-family="Poppins, sans-serif" font-weight="700">Resume Preview</text>
+    <text x="48" y="117" font-size="20" fill="#334155" font-family="Poppins, sans-serif">${safeTitle}</text>
     <line x1="48" y1="133" x2="852" y2="133" stroke="#e2e8f0" stroke-width="2"/>
     ${lineBlocks}
   </svg>`;

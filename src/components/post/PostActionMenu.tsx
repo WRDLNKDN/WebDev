@@ -2,7 +2,7 @@
  * PostActionMenu — three-dot menu for post/message actions (edit, delete, report).
  * Shared by FeedCard and MessageList.
  */
-import { IconButton, Menu, MenuItem } from '@mui/material';
+import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useState } from 'react';
 
@@ -39,16 +39,18 @@ export const PostActionMenu = ({
 
   return (
     <>
-      <IconButton
-        size="small"
-        onClick={handleOpen}
-        aria-label={ariaLabel}
-        aria-haspopup="true"
-        aria-expanded={open}
-        sx={{ color: 'rgba(255,255,255,0.6)' }}
-      >
-        <MoreVertIcon fontSize="small" />
-      </IconButton>
+      <Tooltip title={ariaLabel}>
+        <IconButton
+          size="small"
+          onClick={handleOpen}
+          aria-label={ariaLabel}
+          aria-haspopup="true"
+          aria-expanded={open}
+          sx={{ color: 'rgba(255,255,255,0.6)' }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
       <Menu
         anchorEl={anchorEl}
         open={open}

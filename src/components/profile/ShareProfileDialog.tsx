@@ -11,6 +11,7 @@ import {
   IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -58,13 +59,15 @@ export const ShareProfileDialog = ({
       sx={{ pr: 6, fontWeight: 700 }}
     >
       Share My Profile
-      <IconButton
-        onClick={onClose}
-        aria-label="Close share profile modal"
-        sx={{ position: 'absolute', right: 10, top: 10 }}
-      >
-        <CloseIcon />
-      </IconButton>
+      <Tooltip title="Close">
+        <IconButton
+          onClick={onClose}
+          aria-label="Close share profile modal"
+          sx={{ position: 'absolute', right: 10, top: 10 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Tooltip>
     </DialogTitle>
     <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.08)' }}>
       <Stack spacing={2.5}>

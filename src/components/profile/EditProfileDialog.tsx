@@ -20,6 +20,7 @@ import {
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -467,16 +468,24 @@ export const EditProfileDialog = ({
         >
           EDIT <span style={{ color: PURPLE_ACCENT }}>PROFILE</span>
         </Typography>
-        <IconButton
-          onClick={onClose}
-          disabled={busy}
-          sx={{
-            color: 'rgba(255,255,255,0.6)',
-            '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Tooltip title="Close">
+          <span>
+            <IconButton
+              onClick={onClose}
+              disabled={busy}
+              aria-label="Close"
+              sx={{
+                color: 'rgba(255,255,255,0.6)',
+                '&:hover': {
+                  color: 'white',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
@@ -501,25 +510,29 @@ export const EditProfileDialog = ({
                     backgroundClip: 'padding-box, border-box',
                   }}
                 />
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={busy}
-                  aria-label="Edit avatar"
-                  sx={{
-                    position: 'absolute',
-                    bottom: 2,
-                    right: 2,
-                    bgcolor: 'rgba(0,0,0,0.7)',
-                    color: 'white',
-                    width: 24,
-                    height: 24,
-                    '&:hover': {
-                      bgcolor: 'rgba(0,0,0,0.85)',
-                    },
-                  }}
-                >
-                  <EditIcon sx={{ fontSize: 14 }} />
-                </IconButton>
+                <Tooltip title="Change avatar">
+                  <span>
+                    <IconButton
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={busy}
+                      aria-label="Edit avatar"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 2,
+                        right: 2,
+                        bgcolor: 'rgba(0,0,0,0.7)',
+                        color: 'white',
+                        width: 24,
+                        height: 24,
+                        '&:hover': {
+                          bgcolor: 'rgba(0,0,0,0.85)',
+                        },
+                      }}
+                    >
+                      <EditIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
                 <input
                   ref={fileInputRef}
                   type="file"

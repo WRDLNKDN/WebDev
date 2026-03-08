@@ -33,6 +33,7 @@ import {
   Snackbar,
   Stack,
   Toolbar,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -441,14 +442,16 @@ export const Navbar = () => {
         >
           {/* Mobile: hamburger menu */}
           {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="Open menu"
-              onClick={() => setDrawerOpen(true)}
-              sx={{ mr: 0.5 }}
-            >
-              <MenuIcon fontSize="small" />
-            </IconButton>
+            <Tooltip title="Open menu">
+              <IconButton
+                color="inherit"
+                aria-label="Open menu"
+                onClick={() => setDrawerOpen(true)}
+                sx={{ mr: 0.5 }}
+              >
+                <MenuIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
 
           {/* Left: logo (home) + search — shrink on mobile so Join/Sign in stay visible */}
@@ -858,73 +861,85 @@ export const Navbar = () => {
               ) : (
                 <>
                   {showAuthedHeader && dashboardEnabled && (
-                    <IconButton
-                      component={RouterLink}
-                      to="/dashboard/notifications"
-                      aria-label={
+                    <Tooltip
+                      title={
                         notificationsUnread > 0
                           ? `${notificationsUnread} unread notifications`
                           : 'Notifications'
                       }
-                      sx={{
-                        color: 'rgba(255,255,255,0.85)',
-                        ...(path === '/dashboard/notifications' && {
-                          color: 'white',
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                        }),
-                      }}
                     >
-                      <Badge
-                        badgeContent={
+                      <IconButton
+                        component={RouterLink}
+                        to="/dashboard/notifications"
+                        aria-label={
                           notificationsUnread > 0
-                            ? notificationsUnread
-                            : undefined
+                            ? `${notificationsUnread} unread notifications`
+                            : 'Notifications'
                         }
-                        color="error"
+                        sx={{
+                          color: 'rgba(255,255,255,0.85)',
+                          ...(path === '/dashboard/notifications' && {
+                            color: 'white',
+                            bgcolor: 'rgba(255,255,255,0.12)',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                          }),
+                        }}
                       >
-                        <NotificationsIcon sx={{ fontSize: 22 }} />
-                      </Badge>
-                    </IconButton>
+                        <Badge
+                          badgeContent={
+                            notificationsUnread > 0
+                              ? notificationsUnread
+                              : undefined
+                          }
+                          color="error"
+                        >
+                          <NotificationsIcon sx={{ fontSize: 22 }} />
+                        </Badge>
+                      </IconButton>
+                    </Tooltip>
                   )}
-                  <IconButton
-                    type="button"
-                    onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                    aria-label="Account menu"
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(avatarMenuAnchor)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.25,
-                      p: 0.25,
-                      color: 'inherit',
-                      borderRadius: 9999,
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                    }}
-                  >
-                    <Box
+                  <Tooltip title="Account menu">
+                    <IconButton
+                      type="button"
+                      onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                      aria-label="Account menu"
+                      aria-haspopup="true"
+                      aria-expanded={Boolean(avatarMenuAnchor)}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '50%',
-                        border: '2px solid rgba(255,255,255,0.4)',
-                        p: '1px',
-                        flexShrink: 0,
+                        gap: 0.25,
+                        p: 0.25,
+                        color: 'inherit',
+                        borderRadius: 9999,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }}
                     >
-                      <ProfileAvatar
-                        src={avatarUrl ?? undefined}
-                        alt={session?.user?.user_metadata?.full_name || 'User'}
-                        size="small"
-                        sx={{ width: 24, height: 24 }}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '50%',
+                          border: '2px solid rgba(255,255,255,0.4)',
+                          p: '1px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ProfileAvatar
+                          src={avatarUrl ?? undefined}
+                          alt={
+                            session?.user?.user_metadata?.full_name || 'User'
+                          }
+                          size="small"
+                          sx={{ width: 24, height: 24 }}
+                        />
+                      </Box>
+                      <KeyboardArrowDownIcon
+                        sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
                       />
-                    </Box>
-                    <KeyboardArrowDownIcon
-                      sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
-                    />
-                  </IconButton>
+                    </IconButton>
+                  </Tooltip>
                   <Menu
                     anchorEl={avatarMenuAnchor}
                     open={Boolean(avatarMenuAnchor)}
@@ -1056,72 +1071,84 @@ export const Navbar = () => {
               ) : (
                 <>
                   {showAuthedHeader && dashboardEnabled && (
-                    <IconButton
-                      component={RouterLink}
-                      to="/dashboard/notifications"
-                      aria-label={
+                    <Tooltip
+                      title={
                         notificationsUnread > 0
                           ? `${notificationsUnread} unread notifications`
                           : 'Notifications'
                       }
-                      sx={{
-                        color: 'white',
-                        ...(path === '/dashboard/notifications' && {
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
-                        }),
-                      }}
                     >
-                      <Badge
-                        badgeContent={
+                      <IconButton
+                        component={RouterLink}
+                        to="/dashboard/notifications"
+                        aria-label={
                           notificationsUnread > 0
-                            ? notificationsUnread
-                            : undefined
+                            ? `${notificationsUnread} unread notifications`
+                            : 'Notifications'
                         }
-                        color="error"
+                        sx={{
+                          color: 'white',
+                          ...(path === '/dashboard/notifications' && {
+                            bgcolor: 'rgba(255,255,255,0.12)',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                          }),
+                        }}
                       >
-                        <NotificationsIcon sx={{ fontSize: 22 }} />
-                      </Badge>
-                    </IconButton>
+                        <Badge
+                          badgeContent={
+                            notificationsUnread > 0
+                              ? notificationsUnread
+                              : undefined
+                          }
+                          color="error"
+                        >
+                          <NotificationsIcon sx={{ fontSize: 22 }} />
+                        </Badge>
+                      </IconButton>
+                    </Tooltip>
                   )}
-                  <IconButton
-                    type="button"
-                    onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                    aria-label="Account menu"
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(avatarMenuAnchor)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.25,
-                      p: 0.25,
-                      color: 'inherit',
-                      borderRadius: 9999,
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
-                    }}
-                  >
-                    <Box
+                  <Tooltip title="Account menu">
+                    <IconButton
+                      type="button"
+                      onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                      aria-label="Account menu"
+                      aria-haspopup="true"
+                      aria-expanded={Boolean(avatarMenuAnchor)}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '50%',
-                        border: '2px solid rgba(255,255,255,0.4)',
-                        p: '1px',
-                        flexShrink: 0,
+                        gap: 0.25,
+                        p: 0.25,
+                        color: 'inherit',
+                        borderRadius: 9999,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
                       }}
                     >
-                      <ProfileAvatar
-                        src={avatarUrl ?? undefined}
-                        alt={session?.user?.user_metadata?.full_name || 'User'}
-                        size="small"
-                        sx={{ width: 24, height: 24 }}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '50%',
+                          border: '2px solid rgba(255,255,255,0.4)',
+                          p: '1px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ProfileAvatar
+                          src={avatarUrl ?? undefined}
+                          alt={
+                            session?.user?.user_metadata?.full_name || 'User'
+                          }
+                          size="small"
+                          sx={{ width: 24, height: 24 }}
+                        />
+                      </Box>
+                      <KeyboardArrowDownIcon
+                        sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
                       />
-                    </Box>
-                    <KeyboardArrowDownIcon
-                      sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
-                    />
-                  </IconButton>
+                    </IconButton>
+                  </Tooltip>
                 </>
               )}
             </Stack>

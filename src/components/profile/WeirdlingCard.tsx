@@ -7,6 +7,7 @@ import {
   IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { GLASS_CARD } from '../../theme/candyStyles';
@@ -106,21 +107,23 @@ export const WeirdlingCard = ({
                 }}
               />
             )}
-            <IconButton
-              size="small"
-              onClick={() => onDeleteRequest(weirdling)}
-              aria-label={`Delete ${weirdling.displayName}`}
-              sx={{
-                position: 'absolute',
-                top: 4,
-                right: 4,
-                bgcolor: 'rgba(0,0,0,0.6)',
-                color: 'white',
-                '&:hover': { bgcolor: 'error.main', color: 'white' },
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            <Tooltip title={`Delete ${weirdling.displayName}`}>
+              <IconButton
+                size="small"
+                onClick={() => onDeleteRequest(weirdling)}
+                aria-label={`Delete ${weirdling.displayName}`}
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'error.main', color: 'white' },
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
           <Typography variant="subtitle1" fontWeight={600}>
             {weirdling.displayName}

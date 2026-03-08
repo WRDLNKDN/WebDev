@@ -40,6 +40,8 @@ export interface NerdCreds {
   resume_thumbnail_updated_at?: string;
   resume_thumbnail_error?: string | null;
   resume_thumbnail_source_extension?: string;
+  /** Display order: 0 = resume first, 1 = after first project, etc. Used for portfolio reorder. */
+  resume_display_index?: number;
 
   // --- Legacy Support ---
   [key: string]: unknown;

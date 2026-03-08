@@ -1,19 +1,13 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import ImageNotSupportedOutlinedIcon from '@mui/icons-material/ImageNotSupportedOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
-import {
-  Box,
-  Button,
-  Chip,
-  IconButton,
-  Paper,
-  Typography,
-} from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
+import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getLinkType } from '../../lib/portfolio/linkUtils';
 import { CANDY_BLUEY } from '../../theme/candyStyles';
@@ -90,47 +84,20 @@ export const ProjectCard = ({
   const thumbnailUrl = hasManualImage
     ? project.image_url
     : project.thumbnail_url || (resolvedType === 'image' ? url : null);
-  const thumbnailPending =
-    !hasManualImage && project.thumbnail_status === 'pending';
-  const thumbnailFailed =
-    !hasManualImage && project.thumbnail_status === 'failed';
-  const showThumbnailSkeleton = thumbnailPending && !thumbnailUrl;
-  const showFallbackIcon =
-    thumbnailFailed || (!thumbnailUrl && !showThumbnailSkeleton);
   const ownerActionSx = {
     bgcolor: 'transparent',
     color: '#b9c3dd',
     border: '1px solid rgba(255,255,255,0.28)',
     borderRadius: 1,
+    minWidth: 32,
+    width: 32,
+    height: 32,
+    padding: 0,
+    '& .MuiSvgIcon-root': { fontSize: '1rem' },
     '&:hover': {
       bgcolor: 'rgba(0,196,204,0.22)',
       color: '#ecfeff',
       borderColor: 'rgba(0,196,204,0.65)',
-    },
-  } as const;
-  const ctaSx = {
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-    color: 'white',
-    borderColor: 'transparent',
-    background: 'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-    textTransform: 'none',
-    fontWeight: 800,
-    letterSpacing: 0.3,
-    fontSize: '0.9rem',
-    borderRadius: 1,
-    minHeight: 40,
-    px: 1.8,
-    py: 0.7,
-    boxShadow: '0 8px 20px rgba(20,184,166,0.28)',
-    '&:hover': {
-      color: 'white',
-      borderColor: 'transparent',
-      background: 'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-      boxShadow: '0 12px 28px rgba(20,184,166,0.4)',
-    },
-    '&:active': {
-      transform: 'translateY(1px)',
     },
   } as const;
   const categories = (project.tech_stack ?? [])
@@ -145,7 +112,7 @@ export const ProjectCard = ({
       tabIndex={onOpenPreview || cardOpensArtifact ? 0 : undefined}
       onClick={
         onOpenPreview || cardOpensArtifact
-          ? (e) => {
+          ? (e: MouseEvent<HTMLDivElement>) => {
               if ((e.target as HTMLElement).closest('a, button')) return;
               if (onOpenPreview) {
                 openPreview();
@@ -157,7 +124,7 @@ export const ProjectCard = ({
       }
       onKeyDown={
         onOpenPreview || cardOpensArtifact
-          ? (e) => {
+          ? (e: KeyboardEvent<HTMLDivElement>) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 if (onOpenPreview) {
@@ -169,327 +136,192 @@ export const ProjectCard = ({
             }
           : undefined
       }
-      sx={{
-        ...CANDY_BLUEY, // Spread first to ensure brand base (compact for Dashboard)
-        width: '100%',
-        maxWidth: isShowcase ? 'none' : { xs: '100%', sm: 320 },
-        minHeight: isShowcase ? { xs: 0, md: 0 } : { xs: 240, md: 280 },
-        height: isShowcase ? '100%' : { xs: 240, md: 280 },
-        borderRadius: 3,
-        scrollSnapAlign: 'start',
-        display: 'flex',
-        flexDirection: 'column',
-        ...(onOpenPreview ? { cursor: 'pointer' } : {}),
-      }}
+      sx={
+        [
+          CANDY_BLUEY,
+          {
+            width: '100%',
+            maxWidth: isShowcase ? 'none' : { xs: '100%', sm: 360 },
+            minHeight: isShowcase ? { xs: 0, md: 0 } : undefined,
+            height: isShowcase ? '100%' : undefined,
+            borderRadius: 3,
+            scrollSnapAlign: 'start',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            ...(onOpenPreview ? { cursor: 'pointer' as const } : {}),
+          },
+        ] as SxProps<Theme>
+      }
     >
-      <Box
-        sx={{
-          width: '100%',
-          aspectRatio: '16 / 9',
-          bgcolor: 'rgba(0,0,0,0.5)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {thumbnailUrl ? (
+      {thumbnailUrl ? (
+        <Box
+          sx={{
+            width: '100%',
+            minHeight: { xs: 72, sm: 80 },
+            aspectRatio: '16 / 9',
+            maxHeight: { xs: 88, md: 100 },
+            flexShrink: 0,
+            bgcolor: 'rgba(0,0,0,0.5)',
+            overflow: 'hidden',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
           <Box
             component="img"
             src={thumbnailUrl}
             alt={project.title}
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-        ) : showThumbnailSkeleton ? (
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              p: 2,
-              bgcolor: 'rgba(0,0,0,0.25)',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-            }}
-            aria-hidden
-          >
-            <Box
-              sx={{
-                width: '60%',
-                height: '50%',
-                borderRadius: 1,
-                bgcolor: 'rgba(255,255,255,0.08)',
-                animation: 'pulse 1.5s ease-in-out infinite',
-                '@keyframes pulse': {
-                  '0%, 100%': { opacity: 0.6 },
-                  '50%': { opacity: 1 },
-                },
-              }}
-            />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 1, textAlign: 'center' }}
-            >
-              Thumbnail generating…
-            </Typography>
-          </Box>
-        ) : showFallbackIcon ? (
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              p: 2,
-              bgcolor: 'rgba(0,0,0,0.25)',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-            }}
-            aria-hidden
-          >
-            <ImageNotSupportedOutlinedIcon
-              sx={{
-                fontSize: 40,
-                color: 'text.secondary',
-                opacity: 0.7,
-                mb: 1,
-              }}
-            />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ textAlign: 'center' }}
-            >
-              Preview unavailable
-            </Typography>
-          </Box>
-        ) : null}
-      </Box>
+        </Box>
+      ) : null}
+      {!thumbnailUrl && !isShowcase ? (
+        <Box
+          sx={{
+            minHeight: { xs: 72, sm: 80 },
+            maxHeight: { xs: 88, md: 100 },
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(0,0,0,0.2)',
+          }}
+        >
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            No image
+          </Typography>
+        </Box>
+      ) : null}
 
       <Box
         sx={{
           p: isShowcase
             ? { xs: 1.75, sm: 2.25, md: 2.75 }
-            : { xs: 2.25, md: 3.25 },
+            : { xs: 1.25, md: 1.75 },
           flexGrow: 1,
+          minHeight: 0,
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {isOwner && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              mb: 1.5,
-            }}
-          >
-            {dragHandle}
-            {showArrowControls && onMoveUp && (
-              <IconButton
-                size="small"
-                aria-label={`Move project ${project.title} up`}
-                disabled={!canMoveUp}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMoveUp(project.id);
-                }}
-                sx={ownerActionSx}
-              >
-                <KeyboardArrowUpIcon fontSize="small" />
-              </IconButton>
-            )}
-            {showArrowControls && onMoveDown && (
-              <IconButton
-                size="small"
-                aria-label={`Move project ${project.title} down`}
-                disabled={!canMoveDown}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMoveDown(project.id);
-                }}
-                sx={ownerActionSx}
-              >
-                <KeyboardArrowDownIcon fontSize="small" />
-              </IconButton>
-            )}
-            {onEdit && (
-              <IconButton
-                size="small"
-                aria-label={`Edit project ${project.title}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void onEdit(project);
-                }}
-                sx={ownerActionSx}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            )}
-            {onToggleHighlight && (
-              <IconButton
-                size="small"
-                aria-label={
-                  project.is_highlighted
-                    ? `Remove artifact ${project.title} from highlights`
-                    : `Mark artifact ${project.title} as highlight`
-                }
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void onToggleHighlight(project.id, !project.is_highlighted);
-                }}
-                sx={{
-                  ...ownerActionSx,
-                  color: project.is_highlighted
-                    ? '#f8df95'
-                    : ownerActionSx.color,
-                  border: project.is_highlighted
-                    ? '1px solid rgba(248, 223, 149, 0.42)'
-                    : ownerActionSx.border,
-                  '&:hover': project.is_highlighted
-                    ? {
-                        bgcolor: 'rgba(248, 223, 149, 0.18)',
-                        color: '#ffefba',
-                        borderColor: 'rgba(248, 223, 149, 0.7)',
-                      }
-                    : ownerActionSx['&:hover'],
-                }}
-              >
-                {project.is_highlighted ? (
-                  <StarIcon fontSize="small" />
-                ) : (
-                  <StarBorderIcon fontSize="small" />
-                )}
-              </IconButton>
-            )}
-            {onDelete && (
-              <IconButton
-                size="small"
-                aria-label={`Remove project ${project.title}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void onDelete(project.id);
-                }}
-                sx={{
-                  ...ownerActionSx,
-                  color: '#fbc7c7',
-                  border: '1px solid rgba(255,132,132,0.35)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255,77,77,0.25)',
-                    color: '#ffe5e5',
-                    borderColor: 'rgba(255,77,77,0.75)',
-                  },
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
-        )}
-        {onOpenPreview || cardOpensArtifact ? (
+        <Box component="p" sx={{ m: 0, mb: 1.1, lineHeight: 1.25 }}>
           <Typography
-            variant="h6"
-            fontWeight={700}
-            noWrap={!isShowcase}
             component="span"
+            variant="caption"
             sx={{
-              color: 'inherit',
-              mb: 1.1,
-              lineHeight: 1.25,
-              display: isShowcase ? '-webkit-box' : 'block',
-              WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-              WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-              overflow: 'hidden',
-              '&:hover': { textDecoration: 'underline' },
+              color: 'text.secondary',
+              textTransform: 'uppercase',
+              letterSpacing: 1.2,
+              fontSize: '0.875rem',
+              fontWeight: 600,
             }}
           >
-            {project.title}
+            Title:{' '}
           </Typography>
-        ) : (
-          <Typography
-            component={RouterLink}
-            to={`/projects/${project.id}`}
-            variant="h6"
-            fontWeight={700}
-            noWrap={!isShowcase}
-            sx={{
-              color: 'inherit',
-              textDecoration: 'none',
-              mb: 1.1,
-              lineHeight: 1.25,
-              display: isShowcase ? '-webkit-box' : 'block',
-              WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-              WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-              overflow: 'hidden',
-              '&:hover': { textDecoration: 'underline' },
-            }}
-          >
-            {project.title}
-          </Typography>
-        )}
-        {categories.length > 0 && (
+          {onOpenPreview || cardOpensArtifact ? (
+            <Typography
+              variant="h6"
+              component="span"
+              fontWeight={700}
+              noWrap={!isShowcase}
+              sx={{
+                color: 'inherit',
+                letterSpacing: 0.5,
+                display: isShowcase ? '-webkit-box' : 'inline',
+                WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+                WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+                overflow: 'hidden',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              {project.title}
+            </Typography>
+          ) : (
+            <Typography
+              component={RouterLink}
+              to={`/projects/${project.id}`}
+              variant="h6"
+              fontWeight={700}
+              noWrap={!isShowcase}
+              sx={{
+                color: 'inherit',
+                textDecoration: 'none',
+                letterSpacing: 0.5,
+                display: isShowcase ? '-webkit-box' : 'inline',
+                WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+                WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+                overflow: 'hidden',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              {project.title}
+            </Typography>
+          )}
+        </Box>
+        {(categories.length > 0 || project.is_highlighted) && (
           <Box
+            component="p"
             sx={{
+              m: 0,
+              mb: 1.4,
               display: 'flex',
               flexWrap: 'wrap',
-              gap: 0.6,
-              mb: 1.4,
+              alignItems: 'baseline',
+              gap: 0.5,
             }}
           >
-            {project.is_highlighted ? (
-              <Chip
-                size="small"
-                label="Highlight"
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+              }}
+            >
+              Tags:{' '}
+            </Typography>
+            {project.is_highlighted && (
+              <Box
+                component="span"
                 sx={{
-                  bgcolor: 'rgba(125,42,232,0.18)',
-                  border: '1px solid rgba(125,42,232,0.4)',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 999,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  bgcolor: 'rgba(125,42,232,0.12)',
                   color: '#d7b7ff',
-                  borderRadius: 1,
                 }}
-              />
-            ) : null}
+              >
+                Highlight
+              </Box>
+            )}
             {categories.map((tag) => (
-              <Chip
+              <Box
                 key={`${project.id}-tag-${tag}`}
-                size="small"
-                label={tag}
+                component="span"
                 sx={{
-                  bgcolor: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.16)',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 999,
+                  fontSize: '0.75rem',
                   color: 'text.secondary',
-                  borderRadius: 1,
+                  bgcolor: 'rgba(255,255,255,0.06)',
                   maxWidth: '100%',
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  },
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
-              />
+              >
+                {tag}
+              </Box>
             ))}
           </Box>
         )}
-        {categories.length === 0 && project.is_highlighted ? (
-          <Box sx={{ display: 'flex', mb: 1.4 }}>
-            <Chip
-              size="small"
-              label="Highlight"
-              sx={{
-                bgcolor: 'rgba(125,42,232,0.18)',
-                border: '1px solid rgba(125,42,232,0.4)',
-                color: '#d7b7ff',
-                borderRadius: 1,
-              }}
-            />
-          </Box>
-        ) : null}
         {isShowcase && (resolvedType || artifactHost) ? (
           <Typography
             variant="caption"
@@ -503,51 +335,229 @@ export const ProjectCard = ({
             {[resolvedType, artifactHost].filter(Boolean).join(' • ')}
           </Typography>
         ) : null}
-        <Typography
-          variant="body2"
-          color="text.secondary"
+        <Box component="p" sx={{ m: 0, mb: 1.5, flexGrow: 1 }}>
+          <Typography
+            component="span"
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              textTransform: 'uppercase',
+              letterSpacing: 1.2,
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            Description:{' '}
+          </Typography>
+          <Typography
+            component="span"
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              letterSpacing: 0.4,
+              display: '-webkit-box',
+              WebkitLineClamp: isShowcase ? 4 : 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              userSelect: 'text',
+              lineHeight: 1.55,
+            }}
+          >
+            {project.description ?? ''}
+          </Typography>
+        </Box>
+      </Box>
+      {url != null && (
+        <Box
           sx={{
-            mb: 2.4,
-            flexGrow: 1,
-            display: '-webkit-box',
-            WebkitLineClamp: isShowcase ? 4 : 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            userSelect: 'text',
-            lineHeight: 1.55,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 0.5,
+            px: 1.25,
+            py: 0.75,
+            minHeight: 40,
+            borderTop: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          {project.description ?? ''}
-        </Typography>
-
-        {url &&
-          (external ? (
-            <Button
-              variant="contained"
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              size="medium"
-              endIcon={<OpenInNewIcon />}
-              sx={ctaSx}
-              onClick={(e) => e.stopPropagation()}
-            >
-              View Project
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              component={RouterLink}
-              to={url}
-              size="medium"
-              endIcon={<OpenInNewIcon />}
-              sx={ctaSx}
-              onClick={(e) => e.stopPropagation()}
-            >
-              View Project
-            </Button>
-          ))}
-      </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              minHeight: 28,
+            }}
+          >
+            {dragHandle}
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              minHeight: 28,
+            }}
+          >
+            <Tooltip title="Open project">
+              <Box
+                component="span"
+                sx={{ display: 'inline-flex', alignItems: 'center' }}
+              >
+                {external ? (
+                  <IconButton
+                    component="a"
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="small"
+                    aria-label="Open project"
+                    onClick={(e) => e.stopPropagation()}
+                    sx={ownerActionSx}
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    component={RouterLink}
+                    to={url}
+                    size="small"
+                    aria-label="Open project"
+                    onClick={(e) => e.stopPropagation()}
+                    sx={ownerActionSx}
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            </Tooltip>
+            {isOwner && showArrowControls && onMoveUp && (
+              <Tooltip title="Move up">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Move project ${project.title} up`}
+                    disabled={!canMoveUp}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onMoveUp(project.id);
+                    }}
+                    sx={ownerActionSx}
+                  >
+                    <KeyboardArrowUpIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+            {showArrowControls && onMoveDown && (
+              <Tooltip title="Move down">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Move project ${project.title} down`}
+                    disabled={!canMoveDown}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onMoveDown(project.id);
+                    }}
+                    sx={ownerActionSx}
+                  >
+                    <KeyboardArrowDownIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+            {onEdit && (
+              <Tooltip title="Edit project">
+                <IconButton
+                  size="small"
+                  aria-label={`Edit project ${project.title}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void onEdit(project);
+                  }}
+                  sx={ownerActionSx}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onToggleHighlight && (
+              <Tooltip
+                title={
+                  project.is_highlighted
+                    ? 'Remove from highlights'
+                    : 'Add to highlights'
+                }
+              >
+                <IconButton
+                  size="small"
+                  aria-label={
+                    project.is_highlighted
+                      ? `Remove artifact ${project.title} from highlights`
+                      : `Mark artifact ${project.title} as highlight`
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void onToggleHighlight(project.id, !project.is_highlighted);
+                  }}
+                  sx={{
+                    ...ownerActionSx,
+                    color: project.is_highlighted
+                      ? '#f8df95'
+                      : ownerActionSx.color,
+                    border: project.is_highlighted
+                      ? '1px solid rgba(248, 223, 149, 0.42)'
+                      : ownerActionSx.border,
+                    '&:hover': project.is_highlighted
+                      ? {
+                          bgcolor: 'rgba(248, 223, 149, 0.18)',
+                          color: '#ffefba',
+                          borderColor: 'rgba(248, 223, 149, 0.7)',
+                        }
+                      : ownerActionSx['&:hover'],
+                  }}
+                >
+                  {project.is_highlighted ? (
+                    <StarIcon fontSize="small" />
+                  ) : (
+                    <StarBorderIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
+            {onDelete && (
+              <Tooltip title="Delete project">
+                <IconButton
+                  size="small"
+                  aria-label={`Remove project ${project.title}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void onDelete(project.id);
+                  }}
+                  sx={{
+                    ...ownerActionSx,
+                    color: '#fbc7c7',
+                    border: '1px solid rgba(255,132,132,0.35)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,77,77,0.25)',
+                      color: '#ffe5e5',
+                      borderColor: 'rgba(255,77,77,0.75)',
+                    },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        </Box>
+      )}
     </Paper>
   );
 };

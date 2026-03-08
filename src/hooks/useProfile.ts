@@ -274,6 +274,7 @@ export function useProfile() {
       }
 
       // Persist socials with category and platform; enforce URL uniqueness (API layer)
+      let normalizedSocials: SocialLink[] | undefined;
       if (Array.isArray(payload.socials)) {
         const socials = payload.socials as SocialLink[];
         const duplicateUrl = findDuplicateNormalizedUrl(
@@ -284,7 +285,7 @@ export function useProfile() {
             'Duplicate URLs are not allowed. Each link must have a unique URL.',
           );
         }
-        payload.socials = socials.map((link) => {
+        normalizedSocials = socials.map((link) => {
           const normalizedUrl =
             normalizeUrlForDedup(link.url) || link.url.trim();
           const platform =
@@ -293,7 +294,8 @@ export function useProfile() {
             ? link.category
             : getCategoryForPlatform(platform);
           return { ...link, url: normalizedUrl, platform, category };
-        }) as unknown as Json;
+        });
+        payload.socials = normalizedSocials as unknown as Json;
       }
 
       // 4. ASYNCHRONOUS EXECUTION (The Database Write)
@@ -339,14 +341,18 @@ export function useProfile() {
         );
       }
 
-      // Optimistic State Sync
+      // Optimistic State Sync — use normalized socials when present so UI matches DB
       setProfile((prev) => {
         if (!prev) return null;
-        return {
+        const next: DashboardProfile = {
           ...prev,
           ...topLevelUpdates,
           nerd_creds: mergedNerdCreds,
         } as DashboardProfile;
+        if (normalizedSocials !== undefined) {
+          next.socials = normalizedSocials;
+        }
+        return next;
       });
     } catch (err: unknown) {
       console.error('SYSTEM_LOG: Profile Update Error:', err);

@@ -1,4 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -9,15 +11,36 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  Link,
   Menu,
   MenuItem,
   Paper,
   Snackbar,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import {
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
@@ -28,8 +51,12 @@ import { ResumeCard } from '../../components/portfolio/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
-import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
+import { LinkIcon } from '../../components/profile/LinkIcon';
 import { ShareProfileDialog } from '../../components/profile/ShareProfileDialog';
+import {
+  detectPlatformFromUrl,
+  getShortLinkLabel,
+} from '../../lib/utils/linkPlatform';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -39,9 +66,129 @@ import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
-import type { NerdCreds } from '../../types/profile';
+import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
+
+/** Draggable row for portfolio links list; used inside DndContext + SortableContext. */
+const SortableLinkRow = ({
+  link,
+  onRemove,
+}: {
+  link: SocialLink;
+  onRemove: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const href = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+  const label =
+    link.label?.trim() || link.platform?.trim() || getShortLinkLabel(link.url);
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
+        p: 1,
+        borderRadius: 1.5,
+        border: '1px solid rgba(255,255,255,0.12)',
+        '&:hover': {
+          borderColor: 'rgba(255,255,255,0.25)',
+        },
+      }}
+    >
+      <Box
+        {...attributes}
+        {...listeners}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          color: 'text.secondary',
+          touchAction: 'none',
+          p: 0.25,
+          mr: 0.5,
+          borderRadius: 1,
+          '&:hover': { color: 'text.primary' },
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+          },
+        }}
+        aria-label="Drag to reorder"
+      >
+        <DragIndicatorIcon sx={{ fontSize: '1.25rem' }} />
+      </Box>
+      <Link
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        underline="none"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flex: 1,
+          minWidth: 0,
+          color: 'text.primary',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          '&:hover': {
+            color: 'primary.main',
+          },
+        }}
+      >
+        <LinkIcon
+          platform={link.platform?.trim() || detectPlatformFromUrl(link.url)}
+          sx={{ mr: 1.5, fontSize: '1.1rem', width: 20, flexShrink: 0 }}
+        />
+        <Typography
+          variant="body2"
+          noWrap
+          sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {label}
+        </Typography>
+      </Link>
+      <Tooltip title={`Remove ${label}`}>
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          aria-label={`Remove ${label}`}
+          sx={{
+            p: 0.25,
+            minWidth: 0,
+            minHeight: 0,
+            color: 'error.main',
+            '&:hover': {
+              bgcolor: 'error.main',
+              color: 'error.contrastText',
+            },
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+};
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -147,6 +294,77 @@ export const Dashboard = () => {
     useCurrentUserAvatar();
 
   const [snack, setSnack] = useState<string | null>(null);
+  /** After saving links in the dialog, show this so links appear immediately. */
+  const [savedLinksOverride, setSavedLinksOverride] = useState<
+    SocialLink[] | null
+  >(null);
+  /** Fallback so links still show if override/profile are briefly empty. */
+  const lastLinksRef = useRef<SocialLink[]>([]);
+
+  // Prime links from server on load so saved links show even before opening the dialog
+  useEffect(() => {
+    if (
+      savedLinksOverride === null &&
+      Array.isArray(profile?.socials) &&
+      profile.socials.length > 0
+    ) {
+      setSavedLinksOverride(profile.socials);
+    }
+  }, [profile?.socials, savedLinksOverride]);
+  // Keep ref in sync when profile has links so we have a fallback for display
+  useEffect(() => {
+    if (Array.isArray(profile?.socials) && profile.socials.length > 0) {
+      lastLinksRef.current = profile.socials;
+    }
+  }, [profile?.socials]);
+
+  // Coerce to array: prefer override, then profile, then last-known ref so links always show after save
+  const socialsArray = useMemo(() => {
+    const fromOverride = savedLinksOverride ?? [];
+    const fromProfile = Array.isArray(profile?.socials) ? profile.socials : [];
+    if (fromOverride.length > 0) return fromOverride;
+    if (fromProfile.length > 0) return fromProfile;
+    return lastLinksRef.current.length > 0 ? lastLinksRef.current : [];
+  }, [savedLinksOverride, profile?.socials]);
+  // Portfolio section: show ALL links (no isVisible filter) so saved links always appear
+  const portfolioLinksSorted = useMemo(
+    () =>
+      [...socialsArray]
+        .filter((s) => s && typeof s === 'object')
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [socialsArray],
+  );
+
+  const linkSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleLinksDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = portfolioLinksSorted.findIndex((l) => l.id === active.id);
+    const newIndex = portfolioLinksSorted.findIndex((l) => l.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(portfolioLinksSorted, oldIndex, newIndex);
+    const reorderedWithOrder = reordered.map((link, i) => ({
+      ...link,
+      order: i,
+    }));
+    setSavedLinksOverride(reorderedWithOrder);
+    lastLinksRef.current = reorderedWithOrder;
+    try {
+      await updateProfile({ socials: reorderedWithOrder });
+      await refresh();
+    } catch (e) {
+      setSnack(toMessage(e));
+    }
+  };
 
   if (!session) return null;
 
@@ -198,9 +416,6 @@ export const Dashboard = () => {
   const nicheField = (
     profile as unknown as { niche_field?: string }
   )?.niche_field?.trim();
-  const hasVisibleSocialLinks = (profile?.socials ?? []).some(
-    (link) => link.isVisible,
-  );
   const handleResumeUpload = async (file: File) => {
     try {
       await uploadResume(file);
@@ -262,28 +477,7 @@ export const Dashboard = () => {
               : undefined
           }
           avatarUrl={avatarUrl}
-          slotLeftOfAvatar={
-            hasVisibleSocialLinks ? (
-              <ProfileLinksWidget
-                socials={profile?.socials ?? []}
-                grouped
-                collapsible
-                defaultExpanded={true}
-                isOwner
-                onRemove={async (linkId) => {
-                  const next = (profile?.socials ?? []).filter(
-                    (link) => link.id !== linkId,
-                  );
-                  try {
-                    await updateProfile({ socials: next });
-                    await refresh();
-                  } catch (e) {
-                    setSnack(toMessage(e));
-                  }
-                }}
-              />
-            ) : undefined
-          }
+          slotLeftOfAvatar={undefined}
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
           badges={
@@ -395,28 +589,6 @@ export const Dashboard = () => {
                 spacing={1}
                 sx={{ flexWrap: 'wrap' }}
               >
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<AddIcon sx={{ fontSize: 18 }} />}
-                  onClick={() => setIsLinksOpen(true)}
-                  disabled={loading}
-                  aria-label="Add or edit links"
-                  sx={{
-                    borderColor: 'rgba(45, 212, 191, 0.6)',
-                    color: '#2dd4bf',
-                    minHeight: 38,
-                    fontSize: '0.875rem',
-                    py: 0.6,
-                    px: 1.5,
-                    '&:hover': {
-                      borderColor: '#2dd4bf',
-                      bgcolor: 'rgba(45, 212, 191, 0.12)',
-                    },
-                  }}
-                >
-                  Add Links
-                </Button>
                 <Button
                   variant="outlined"
                   size="small"
@@ -536,171 +708,106 @@ export const Dashboard = () => {
             maxWidth: '100%',
           }}
         >
-          <Typography
-            variant="overline"
+          <Box
             sx={{
-              display: 'block',
-              mb: 2,
-              letterSpacing: 2,
-              color: 'text.secondary',
-              fontWeight: 600,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
             }}
           >
-            PORTFOLIO
-          </Typography>
-          <input
-            ref={resumeFileInputRef}
-            type="file"
-            hidden
-            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            onChange={handleResumeInputChange}
-          />
+            <Typography
+              variant="overline"
+              sx={{
+                display: 'block',
+                mb: 2,
+                letterSpacing: 2,
+                color: 'text.secondary',
+                fontWeight: 600,
+              }}
+            >
+              PORTFOLIO
+            </Typography>
+            <input
+              ref={resumeFileInputRef}
+              type="file"
+              hidden
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleResumeInputChange}
+            />
 
-          {!profile?.resume_url && projects.length === 0 ? (
-            /* Empty state: one Add dropdown */
-            <>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Your profile is empty.
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                  onClick={(e) => setAddMenuAnchor(e.currentTarget)}
-                  disabled={loading}
-                  aria-label="Add links, resume, or project"
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(addMenuAnchor)}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    color: 'white',
-                    background:
-                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                    border: 'none',
-                    minHeight: 34,
-                    py: 0.5,
-                    px: 1.5,
-                    fontSize: '0.8125rem',
-                    '&:hover': {
+            {!profile?.resume_url && projects.length === 0 ? (
+              /* Empty state: one Add dropdown */
+              <>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Your profile is empty.
+                </Typography>
+                <Stack
+                  direction="row"
+                  flexWrap="wrap"
+                  gap={1}
+                  sx={{ mb: 2, justifyContent: 'flex-start' }}
+                >
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                    onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                    disabled={loading}
+                    aria-label="Add links, resume, or project"
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(addMenuAnchor)}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: 'white',
                       background:
-                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                    },
-                  }}
-                >
-                  Add
-                </Button>
-                <Menu
-                  anchorEl={addMenuAnchor}
-                  open={Boolean(addMenuAnchor)}
-                  onClose={() => setAddMenuAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                  slotProps={{
-                    paper: {
-                      sx: {
-                        mt: 1.5,
-                        minWidth: 200,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(30,30,30,0.98)',
-                        border: '1px solid rgba(255,255,255,0.12)',
+                        'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                      border: 'none',
+                      minHeight: 34,
+                      py: 0.5,
+                      px: 1.5,
+                      fontSize: '0.8125rem',
+                      '&:hover': {
+                        background:
+                          'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
                       },
-                    },
-                  }}
-                >
-                  <MenuItem
-                    onClick={() => {
-                      setAddMenuAnchor(null);
-                      setIsLinksOpen(true);
                     }}
-                    sx={{ py: 1.25 }}
                   >
-                    + Add Links
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setAddMenuAnchor(null);
-                      openResumePicker();
-                    }}
-                    sx={{ py: 1.25 }}
-                  >
-                    + Add Resume
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setAddMenuAnchor(null);
-                      openNewProjectDialog();
-                    }}
-                    sx={{ py: 1.25 }}
-                  >
-                    + Add Project
-                  </MenuItem>
-                </Menu>
-              </Stack>
-            </>
-          ) : (
-            <>
-              {/* One Add button with dropdown in portfolio area */}
-              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                  onClick={(e) => setAddMenuAnchor(e.currentTarget)}
-                  disabled={loading}
-                  aria-label="Add links, resume, or project"
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(addMenuAnchor)}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    color: 'white',
-                    background:
-                      'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                    border: 'none',
-                    minHeight: 34,
-                    py: 0.5,
-                    px: 1.5,
-                    fontSize: '0.8125rem',
-                    '&:hover': {
-                      background:
-                        'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                    },
-                  }}
-                >
-                  Add
-                </Button>
-                <Menu
-                  anchorEl={addMenuAnchor}
-                  open={Boolean(addMenuAnchor)}
-                  onClose={() => setAddMenuAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                  slotProps={{
-                    paper: {
-                      sx: {
-                        mt: 1.5,
-                        minWidth: 200,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(30,30,30,0.98)',
-                        border: '1px solid rgba(255,255,255,0.12)',
+                    Add
+                  </Button>
+                  <Menu
+                    anchorEl={addMenuAnchor}
+                    open={Boolean(addMenuAnchor)}
+                    onClose={() => setAddMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1.5,
+                          minWidth: 200,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(30,30,30,0.98)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                        },
                       },
-                    },
-                  }}
-                >
-                  <MenuItem
-                    onClick={() => {
-                      setAddMenuAnchor(null);
-                      setIsLinksOpen(true);
                     }}
-                    sx={{ py: 1.25 }}
                   >
-                    + Add Links
-                  </MenuItem>
-                  {!profile?.resume_url && (
+                    <MenuItem
+                      onClick={() => {
+                        setAddMenuAnchor(null);
+                        setIsLinksOpen(true);
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      + Add Links
+                    </MenuItem>
                     <MenuItem
                       onClick={() => {
                         setAddMenuAnchor(null);
@@ -710,113 +817,318 @@ export const Dashboard = () => {
                     >
                       + Add Resume
                     </MenuItem>
-                  )}
-                  <MenuItem
-                    onClick={() => {
-                      setAddMenuAnchor(null);
-                      openNewProjectDialog();
+                    <MenuItem
+                      onClick={() => {
+                        setAddMenuAnchor(null);
+                        openNewProjectDialog();
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      + Add Project
+                    </MenuItem>
+                  </Menu>
+                </Stack>
+                <Box sx={{ mb: 2, width: '100%' }}>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      display: 'block',
+                      mb: 1,
+                      letterSpacing: 1.2,
+                      color: 'text.secondary',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
                     }}
-                    sx={{ py: 1.25 }}
                   >
-                    + Add Project
-                  </MenuItem>
-                </Menu>
-              </Stack>
-
-              <Box
-                sx={{
-                  display: 'grid',
-                  gap: { xs: 1, sm: 1.25, md: 1.5 },
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, minmax(320px, 1fr))',
-                    lg: 'repeat(3, minmax(320px, 1fr))',
-                  },
-                  justifyItems: 'stretch',
-                  alignItems: 'start',
-                }}
-              >
-                <PortfolioSortableList
-                  orderedIds={(() => {
-                    const projectIds = projects.map((p) => p.id);
-                    if (!profile?.resume_url) return projectIds;
-                    const resumeIndex = Math.min(
-                      Math.max(0, safeNerdCreds.resume_display_index ?? 0),
-                      projectIds.length,
-                    );
-                    return [
-                      ...projectIds.slice(0, resumeIndex),
-                      RESUME_ITEM_ID,
-                      ...projectIds.slice(resumeIndex),
-                    ];
-                  })()}
-                  projects={projects}
-                  renderResumeCard={
-                    profile?.resume_url
-                      ? (dragHandle) => (
-                          <ResumeCard
-                            url={profile?.resume_url}
-                            fileName={resumeFileName}
-                            thumbnailUrl={resumeThumbnailUrl}
-                            thumbnailStatus={resumeThumbnailStatus}
-                            thumbnailError={
-                              typeof safeNerdCreds.resume_thumbnail_error ===
-                              'string'
-                                ? safeNerdCreds.resume_thumbnail_error
-                                : null
-                            }
-                            onUpload={handleResumeUpload}
-                            onRetryThumbnail={() => {
-                              void retryResumeThumbnail().catch((e) => {
-                                setSnack(toMessage(e));
-                              });
-                            }}
-                            retryThumbnailBusy={updating}
-                            onDelete={async () => {
+                    LINKS
+                  </Typography>
+                  <DndContext
+                    sensors={linkSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleLinksDragEnd}
+                  >
+                    <SortableContext
+                      items={portfolioLinksSorted.map((l) => l.id)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gap: { xs: 1, sm: 1.25, md: 1.5 },
+                          gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, minmax(280px, 1fr))',
+                            lg: 'repeat(4, minmax(240px, 1fr))',
+                          },
+                          justifyItems: 'stretch',
+                          alignItems: 'start',
+                        }}
+                      >
+                        {portfolioLinksSorted.map((link) => (
+                          <SortableLinkRow
+                            key={link.id}
+                            link={link}
+                            onRemove={async () => {
+                              const next = socialsArray.filter(
+                                (l) => l.id !== link.id,
+                              );
+                              setSavedLinksOverride(next);
                               try {
-                                await deleteResume();
-                                void refresh();
+                                await updateProfile({ socials: next });
+                                await refresh();
                               } catch (e) {
                                 setSnack(toMessage(e));
                               }
                             }}
-                            deleteBusy={updating}
-                            isOwner
-                            dragHandle={dragHandle}
                           />
-                        )
-                      : undefined
-                  }
-                  isOwner
-                  onReorder={async (orderedIds) => {
-                    try {
-                      await reorderPortfolioItems(orderedIds);
-                    } catch (e) {
-                      setSnack(toMessage(e));
+                        ))}
+                      </Box>
+                    </SortableContext>
+                  </DndContext>
+                </Box>
+              </>
+            ) : (
+              <>
+                {/* One Add button with dropdown in portfolio area */}
+                <Stack
+                  direction="row"
+                  flexWrap="wrap"
+                  gap={1}
+                  sx={{ mb: 2, justifyContent: 'flex-start' }}
+                >
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                    onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                    disabled={loading}
+                    aria-label="Add links, resume, or project"
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(addMenuAnchor)}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: 'white',
+                      background:
+                        'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                      border: 'none',
+                      minHeight: 34,
+                      py: 0.5,
+                      px: 1.5,
+                      fontSize: '0.8125rem',
+                      '&:hover': {
+                        background:
+                          'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                      },
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Menu
+                    anchorEl={addMenuAnchor}
+                    open={Boolean(addMenuAnchor)}
+                    onClose={() => setAddMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1.5,
+                          minWidth: 200,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(30,30,30,0.98)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        setAddMenuAnchor(null);
+                        setIsLinksOpen(true);
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      + Add Links
+                    </MenuItem>
+                    {!profile?.resume_url && (
+                      <MenuItem
+                        onClick={() => {
+                          setAddMenuAnchor(null);
+                          openResumePicker();
+                        }}
+                        sx={{ py: 1.25 }}
+                      >
+                        + Add Resume
+                      </MenuItem>
+                    )}
+                    <MenuItem
+                      onClick={() => {
+                        setAddMenuAnchor(null);
+                        openNewProjectDialog();
+                      }}
+                      sx={{ py: 1.25 }}
+                    >
+                      + Add Project
+                    </MenuItem>
+                  </Menu>
+                </Stack>
+
+                <Box sx={{ mb: 2, width: '100%' }}>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      display: 'block',
+                      mb: 1,
+                      letterSpacing: 1.2,
+                      color: 'text.secondary',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    LINKS
+                  </Typography>
+                  <DndContext
+                    sensors={linkSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleLinksDragEnd}
+                  >
+                    <SortableContext
+                      items={portfolioLinksSorted.map((l) => l.id)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gap: { xs: 1, sm: 1.25, md: 1.5 },
+                          gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, minmax(280px, 1fr))',
+                            lg: 'repeat(4, minmax(240px, 1fr))',
+                          },
+                          justifyItems: 'stretch',
+                          alignItems: 'start',
+                        }}
+                      >
+                        {portfolioLinksSorted.map((link) => (
+                          <SortableLinkRow
+                            key={link.id}
+                            link={link}
+                            onRemove={async () => {
+                              const next = socialsArray.filter(
+                                (l) => l.id !== link.id,
+                              );
+                              setSavedLinksOverride(next);
+                              try {
+                                await updateProfile({ socials: next });
+                                await refresh();
+                              } catch (e) {
+                                setSnack(toMessage(e));
+                              }
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </SortableContext>
+                  </DndContext>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gap: { xs: 1, sm: 1.25, md: 1.5 },
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, minmax(280px, 1fr))',
+                      lg: 'repeat(4, minmax(240px, 1fr))',
+                    },
+                    justifyItems: 'stretch',
+                    alignItems: 'start',
+                  }}
+                >
+                  <PortfolioSortableList
+                    orderedIds={(() => {
+                      const projectIds = projects.map((p) => p.id);
+                      if (!profile?.resume_url) return projectIds;
+                      const resumeIndex = Math.min(
+                        Math.max(0, safeNerdCreds.resume_display_index ?? 0),
+                        projectIds.length,
+                      );
+                      return [
+                        ...projectIds.slice(0, resumeIndex),
+                        RESUME_ITEM_ID,
+                        ...projectIds.slice(resumeIndex),
+                      ];
+                    })()}
+                    projects={projects}
+                    renderResumeCard={
+                      profile?.resume_url
+                        ? (dragHandle) => (
+                            <ResumeCard
+                              url={profile?.resume_url}
+                              fileName={resumeFileName}
+                              thumbnailUrl={resumeThumbnailUrl}
+                              thumbnailStatus={resumeThumbnailStatus}
+                              thumbnailError={
+                                typeof safeNerdCreds.resume_thumbnail_error ===
+                                'string'
+                                  ? safeNerdCreds.resume_thumbnail_error
+                                  : null
+                              }
+                              onUpload={handleResumeUpload}
+                              onRetryThumbnail={() => {
+                                void retryResumeThumbnail().catch((e) => {
+                                  setSnack(toMessage(e));
+                                });
+                              }}
+                              retryThumbnailBusy={updating}
+                              onDelete={async () => {
+                                try {
+                                  await deleteResume();
+                                  void refresh();
+                                } catch (e) {
+                                  setSnack(toMessage(e));
+                                }
+                              }}
+                              deleteBusy={updating}
+                              isOwner
+                              dragHandle={dragHandle}
+                            />
+                          )
+                        : undefined
                     }
-                  }}
-                  onDelete={async (id) => {
-                    try {
-                      await deleteProject(id);
-                    } catch (e) {
-                      setSnack(toMessage(e));
-                    }
-                  }}
-                  onToggleHighlight={async (id, isHighlighted) => {
-                    try {
-                      await toggleProjectHighlight(id, isHighlighted);
-                    } catch (e) {
-                      setSnack(toMessage(e));
-                    }
-                  }}
-                  onEdit={(project) => {
-                    openEditProjectDialog(project);
-                  }}
-                  onOpenPreview={setPreviewProject}
-                />
-              </Box>
-            </>
-          )}
+                    isOwner
+                    onReorder={async (orderedIds) => {
+                      try {
+                        await reorderPortfolioItems(orderedIds);
+                      } catch (e) {
+                        setSnack(toMessage(e));
+                      }
+                    }}
+                    onDelete={async (id) => {
+                      try {
+                        await deleteProject(id);
+                      } catch (e) {
+                        setSnack(toMessage(e));
+                      }
+                    }}
+                    onToggleHighlight={async (id, isHighlighted) => {
+                      try {
+                        await toggleProjectHighlight(id, isHighlighted);
+                      } catch (e) {
+                        setSnack(toMessage(e));
+                      }
+                    }}
+                    onEdit={(project) => {
+                      openEditProjectDialog(project);
+                    }}
+                    onOpenPreview={setPreviewProject}
+                  />
+                </Box>
+              </>
+            )}
+          </Box>
         </Paper>
       </Container>
 
@@ -902,15 +1214,24 @@ export const Dashboard = () => {
       <EditLinksDialog
         open={isLinksOpen}
         onClose={() => setIsLinksOpen(false)}
-        currentLinks={profile?.socials ?? []}
+        currentLinks={socialsArray}
+        existingProjectUrls={projects.map((p) => p.project_url)}
         onUpdate={async (updates) => {
+          if (Array.isArray(updates.socials)) {
+            lastLinksRef.current = updates.socials;
+            setSavedLinksOverride(updates.socials);
+          }
           await updateProfile(updates);
+          // Refetch after a short delay so profile.socials is in sync with DB
+          await new Promise((r) => setTimeout(r, 350));
           await refresh();
         }}
       />
       <AddProjectDialog
         open={isProjectDialogOpen}
         onClose={closeProjectDialog}
+        existingProjects={projects}
+        existingLinkUrls={socialsArray.map((s) => s.url)}
         onSubmit={async (project, file, projectId) => {
           if (projectId) {
             await updateProject(projectId, project, file);

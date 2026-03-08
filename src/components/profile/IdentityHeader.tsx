@@ -69,7 +69,7 @@ export const IdentityHeader = ({
       direction={{ xs: 'column', md: 'row' }}
       spacing={{ xs: 2, sm: 3, md: 4 }}
       alignItems={{ xs: 'stretch', md: 'center' }}
-      justifyContent="space-between"
+      justifyContent="flex-start"
       sx={{ textAlign: 'left', minWidth: 0 }}
     >
       <Stack
@@ -243,18 +243,18 @@ export const IdentityHeader = ({
           {slotBetweenContentAndActions}
         </Stack>
       )}
-      {/* Actions on far right, lined up with content */}
+      {/* Actions on left, lined up with content */}
       {actions && (
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="flex-end"
-          alignItems={{ xs: 'flex-end', sm: 'center' }}
+          justifyContent="flex-start"
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
           flexWrap="wrap"
           useFlexGap
           spacing={{ xs: 1.25, sm: 2 }}
           sx={{
             flexShrink: 0,
-            alignSelf: { xs: 'stretch', md: 'flex-end' },
+            alignSelf: { xs: 'stretch', md: 'center' },
             '& .MuiButton-root': { minWidth: 0 },
           }}
         >

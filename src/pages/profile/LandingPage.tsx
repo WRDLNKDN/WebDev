@@ -366,7 +366,7 @@ export const LandingPage = () => {
               showLinksInIdentity ? (
                 <ProfileLinksWidget
                   socials={profile.socials || []}
-                  grouped
+                  grouped={false}
                   collapsible
                   defaultExpanded={true}
                 />

@@ -23,7 +23,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   PORTFOLIO_CATEGORY_OPTIONS,
   normalizeProjectCategories,
@@ -32,6 +32,7 @@ import {
   getPortfolioUrlSafetyError,
   validatePortfolioUrl,
 } from '../../lib/portfolio/linkValidation';
+import { normalizeUrlForDedup } from '../../lib/utils/linkPlatform';
 import { toMessage } from '../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
 
@@ -84,13 +85,17 @@ type AddProjectDialogProps = {
   /** When set, dialog is in edit mode (prefill form, title "Edit Project") */
   initialProject?: PortfolioItem | null;
   projectId?: string;
+  /** Existing projects used to block duplicate project URLs (optional). */
+  existingProjects?: PortfolioItem[];
+  /** Profile link URLs to treat as duplicates (project URL must not match any). */
+  existingLinkUrls?: (string | null)[];
 };
 
 const emptyForm: NewProject = {
   title: '',
   description: '',
   image_url: '',
-  project_url: '',
+  project_url: 'https://',
   tech_stack: [],
   is_highlighted: false,
 };
@@ -101,6 +106,8 @@ export const AddProjectDialog = ({
   onSubmit,
   initialProject,
   projectId,
+  existingProjects = [],
+  existingLinkUrls = [],
 }: AddProjectDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -199,14 +206,40 @@ export const AddProjectDialog = ({
   const hasValidProtocol = !hasUrl || isExternalUrl(url);
   const urlSafetyError =
     hasUrl && hasValidProtocol ? getPortfolioUrlSafetyError(url) : '';
+  const normalizedFormUrl = hasUrl ? normalizeUrlForDedup(url) : '';
+  const normalizedLinkUrls = useMemo(
+    () =>
+      new Set(
+        existingLinkUrls
+          .filter((u): u is string => typeof u === 'string' && u.trim() !== '')
+          .map((u) => normalizeUrlForDedup(u)),
+      ),
+    [existingLinkUrls],
+  );
+  const isDuplicateProjectUrl = Boolean(
+    normalizedFormUrl &&
+      existingProjects.some(
+        (p) =>
+          p.id !== projectId &&
+          normalizeUrlForDedup(p.project_url?.trim() ?? '') ===
+            normalizedFormUrl,
+      ),
+  );
+  const isDuplicateLinkUrl = Boolean(
+    normalizedFormUrl && normalizedLinkUrls.has(normalizedFormUrl),
+  );
   const urlErrorMessage =
     !hasUrl || (!urlTouched && !submitError)
       ? ''
-      : !hasValidProtocol
-        ? 'Use a full URL starting with https:// or http://.'
-        : urlSafetyError
-          ? urlSafetyError
-          : '';
+      : isDuplicateLinkUrl
+        ? 'This URL is already in your links. Use a different URL or add it as a link instead.'
+        : isDuplicateProjectUrl
+          ? 'This URL is already used by another project.'
+          : !hasValidProtocol
+            ? 'Use a full URL starting with https:// or http://.'
+            : urlSafetyError
+              ? urlSafetyError
+              : '';
   const blockers: string[] = [];
   if (!hasTitle) blockers.push('add a project name');
   if (!hasDescription) blockers.push('add a description');
@@ -214,6 +247,8 @@ export const AddProjectDialog = ({
   if (!hasUrl) blockers.push('add a project URL');
   if (hasUrl && !hasValidProtocol) blockers.push('fix URL format (http/https)');
   if (urlSafetyError) blockers.push('use a professional project URL');
+  if (isDuplicateProjectUrl || isDuplicateLinkUrl)
+    blockers.push('use a different project URL');
   const isSubmitDisabled = busy || blockers.length > 0;
 
   const handleSubmit = async () => {
@@ -225,6 +260,26 @@ export const AddProjectDialog = ({
     if (!validation.ok) {
       setSubmitError(validation.error);
       return;
+    }
+    const normalizedUrl = normalizeUrlForDedup(url);
+    if (normalizedUrl) {
+      const duplicateProject = existingProjects.some(
+        (p) =>
+          p.id !== projectId &&
+          normalizeUrlForDedup(p.project_url?.trim() ?? '') === normalizedUrl,
+      );
+      if (duplicateProject) {
+        setSubmitError(
+          'This project URL is already used by another project. Use a different URL.',
+        );
+        return;
+      }
+      if (normalizedLinkUrls.has(normalizedUrl)) {
+        setSubmitError(
+          'This URL is already in your links. Use a different URL or add it as a link instead.',
+        );
+        return;
+      }
     }
     const selectedCategories = normalizeProjectCategories(formData.tech_stack);
     if (selectedCategories.length === 0) {
@@ -397,6 +452,7 @@ export const AddProjectDialog = ({
                   size="small"
                   inputProps={{
                     'aria-label': 'Project Name',
+                    title: 'Internal title shown on your profile card.',
                     'data-field-tooltip':
                       'Internal title shown on your profile card.',
                   }}
@@ -478,6 +534,8 @@ export const AddProjectDialog = ({
                   size="small"
                   inputProps={{
                     'aria-label': 'Project URL',
+                    title:
+                      'Public link to your artifact. Must start with http:// or https://.',
                     'data-field-tooltip':
                       'Public link to your artifact. Must start with http:// or https://.',
                   }}

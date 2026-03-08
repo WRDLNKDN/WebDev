@@ -1,5 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Alert,
   Box,
@@ -32,6 +34,7 @@ import {
   dialogTextFieldSx,
   filterSelectMenuProps,
 } from '../../theme/filterControls';
+import { getPortfolioUrlSafetyError } from '../../lib/portfolio/linkValidation';
 import {
   detectPlatformFromUrl,
   findDuplicateNormalizedUrl,
@@ -49,6 +52,8 @@ interface EditLinksDialogProps {
   onClose: () => void;
   currentLinks: SocialLink[];
   onUpdate: (updates: { socials: SocialLink[] }) => Promise<void>;
+  /** Portfolio project URLs to treat as duplicates (link URL must not match any). */
+  existingProjectUrls?: (string | null)[];
 }
 
 export const EditLinksDialog = ({
@@ -56,6 +61,7 @@ export const EditLinksDialog = ({
   onClose,
   currentLinks,
   onUpdate,
+  existingProjectUrls = [],
 }: EditLinksDialogProps) => {
   const OTHER_PLATFORM = 'other';
   // 1. SAFE INITIALIZATION (Prevents "map is not a function" crash)
@@ -78,7 +84,7 @@ export const EditLinksDialog = ({
       initialLinksRef.current = next;
       setNewCategory('Professional');
       setNewPlatform('');
-      setNewUrl('');
+      setNewUrl('https://');
       setNewLabel('');
       setAddAttempted(false);
       setUnsavedConfirmOpen(false);
@@ -91,7 +97,7 @@ export const EditLinksDialog = ({
     'Professional',
   );
   const [newPlatform, setNewPlatform] = useState('');
-  const [newUrl, setNewUrl] = useState('');
+  const [newUrl, setNewUrl] = useState('https://');
   const [newLabel, setNewLabel] = useState('');
   const [addAttempted, setAddAttempted] = useState(false);
 
@@ -144,22 +150,48 @@ export const EditLinksDialog = ({
     }
   })();
   const urlFormatError = Boolean(addAttempted && newUrl.trim() && !hasValidUrl);
+  const urlSafetyError =
+    newUrl.trim() && hasValidUrl ? getPortfolioUrlSafetyError(newUrl) : '';
   const normalizedNewUrl = normalizeUrlForDedup(newUrl);
+  const normalizedPortfolioUrls = useMemo(
+    () =>
+      new Set(
+        existingProjectUrls
+          .filter((u): u is string => typeof u === 'string' && u.trim() !== '')
+          .map((u) => normalizeUrlForDedup(u)),
+      ),
+    [existingProjectUrls],
+  );
   const isDuplicateUrl = useMemo(
     () =>
       normalizedNewUrl.length > 0 &&
       links.some((l) => normalizeUrlForDedup(l.url) === normalizedNewUrl),
     [links, normalizedNewUrl],
   );
+  const isDuplicatePortfolioUrl = useMemo(
+    () =>
+      normalizedNewUrl.length > 0 &&
+      normalizedPortfolioUrls.has(normalizedNewUrl),
+    [normalizedNewUrl, normalizedPortfolioUrls],
+  );
   const duplicateLinksInList = useMemo(
     () => findDuplicateNormalizedUrl(links.map((link) => link.url)),
     [links],
+  );
+  const linksOverlapPortfolio = useMemo(
+    () =>
+      links.some((link) =>
+        normalizedPortfolioUrls.has(normalizeUrlForDedup(link.url)),
+      ),
+    [links, normalizedPortfolioUrls],
   );
   const canAddLink =
     Boolean(newCategory) &&
     newPlatform.trim().length > 0 &&
     hasValidUrl &&
-    !isDuplicateUrl;
+    !urlSafetyError &&
+    !isDuplicateUrl &&
+    !isDuplicatePortfolioUrl;
   const platformError = addAttempted && !newPlatform.trim();
   const categoryError = addAttempted && !newCategory;
 
@@ -172,7 +204,8 @@ export const EditLinksDialog = ({
       if (
         a[i].url !== b[i]?.url ||
         a[i].platform !== b[i]?.platform ||
-        a[i].category !== b[i]?.category
+        a[i].category !== b[i]?.category ||
+        a[i].order !== b[i]?.order
       )
         return true;
     }
@@ -199,7 +232,22 @@ export const EditLinksDialog = ({
 
   const handleAddLink = () => {
     setAddAttempted(true);
-    if (!canAddLink || !newCategory) return;
+    if (!newCategory) return;
+    if (urlSafetyError) return;
+    // Block duplicate by normalized URL (defensive even if canAddLink is true)
+    if (
+      normalizedNewUrl.length > 0 &&
+      links.some((l) => normalizeUrlForDedup(l.url) === normalizedNewUrl)
+    ) {
+      return;
+    }
+    if (
+      normalizedNewUrl.length > 0 &&
+      normalizedPortfolioUrls.has(normalizedNewUrl)
+    ) {
+      return;
+    }
+    if (!canAddLink) return;
 
     const platform = newPlatform.trim();
     const nextOrder =
@@ -218,7 +266,7 @@ export const EditLinksDialog = ({
 
     setLinks((prev) => [...prev, newLinkItem]);
     setNewPlatform('');
-    setNewUrl('');
+    setNewUrl('https://');
     setNewLabel('');
     setAddAttempted(false);
   };
@@ -237,11 +285,35 @@ export const EditLinksDialog = ({
     setLinks((prev) => prev.filter((l) => l.id !== id));
   };
 
+  const handleMoveUp = (linkId: string) => {
+    const sorted = [...sortedLinks];
+    const idx = sorted.findIndex((l) => l.id === linkId);
+    if (idx <= 0) return;
+    [sorted[idx - 1], sorted[idx]] = [sorted[idx], sorted[idx - 1]];
+    const reordered = sorted.map((link, i) => ({ ...link, order: i }));
+    setLinks(reordered);
+  };
+
+  const handleMoveDown = (linkId: string) => {
+    const sorted = [...sortedLinks];
+    const idx = sorted.findIndex((l) => l.id === linkId);
+    if (idx < 0 || idx >= sorted.length - 1) return;
+    [sorted[idx], sorted[idx + 1]] = [sorted[idx + 1], sorted[idx]];
+    const reordered = sorted.map((link, i) => ({ ...link, order: i }));
+    setLinks(reordered);
+  };
+
   const handleSave = async () => {
     setSaveError(null);
     if (duplicateLinksInList) {
       setSaveError(
         'Duplicate URLs are not allowed. Remove duplicate links before saving.',
+      );
+      return;
+    }
+    if (linksOverlapPortfolio) {
+      setSaveError(
+        'A link URL is already used in your portfolio. Use a different URL or remove it from portfolio first.',
       );
       return;
     }
@@ -319,8 +391,11 @@ export const EditLinksDialog = ({
                       sx={dialogSelectSx}
                       inputProps={{ 'aria-label': 'Category' }}
                       onChange={(e) => {
-                        setNewCategory(e.target.value as LinkCategory | '');
-                        setNewPlatform('');
+                        const category = e.target.value as LinkCategory | '';
+                        setNewCategory(category);
+                        setNewPlatform(
+                          category === 'Custom' ? OTHER_PLATFORM : '',
+                        );
                       }}
                     >
                       <MenuItem value="">Choose Category</MenuItem>
@@ -382,10 +457,10 @@ export const EditLinksDialog = ({
                   <FieldLabel
                     text="URL"
                     required
-                    tooltip="Use a public URL. Include https:// for best reliability."
+                    tooltip="Public URL for this link."
                   />
                   <TextField
-                    placeholder="https://..."
+                    placeholder="https://example.com"
                     size="small"
                     fullWidth
                     value={newUrl}
@@ -404,15 +479,22 @@ export const EditLinksDialog = ({
                     }}
                     disabled={!newCategory}
                     error={Boolean(
-                      (newUrl.trim() && isDuplicateUrl) ||
+                      (newUrl.trim() &&
+                        (isDuplicateUrl ||
+                          isDuplicatePortfolioUrl ||
+                          urlSafetyError)) ||
                         (addAttempted && urlFormatError),
                     )}
                     helperText={
-                      newUrl.trim() && isDuplicateUrl
-                        ? 'This URL is already in your links.'
-                        : addAttempted && urlFormatError
-                          ? 'Enter a full URL, for example https://example.com.'
-                          : 'Include https:// for the most reliable links.'
+                      newUrl.trim() && urlSafetyError
+                        ? urlSafetyError
+                        : newUrl.trim() && isDuplicatePortfolioUrl
+                          ? 'This URL is already used in your portfolio.'
+                          : newUrl.trim() && isDuplicateUrl
+                            ? 'This URL is already in your links.'
+                            : addAttempted && urlFormatError
+                              ? 'Enter a valid URL.'
+                              : ''
                     }
                     sx={dialogTextFieldSx}
                   />
@@ -457,10 +539,11 @@ export const EditLinksDialog = ({
 
             {/* --- SECTION 2: CURRENT LINKS LIST --- */}
             <Stack spacing={2}>
-              {duplicateLinksInList && (
+              {(duplicateLinksInList || linksOverlapPortfolio) && (
                 <Alert severity="error">
-                  Duplicate URLs are already present in this list. Remove the
-                  duplicate before saving.
+                  {duplicateLinksInList
+                    ? 'Duplicate URLs are already present in this list. Remove the duplicate before saving.'
+                    : 'A link URL is already used in your portfolio. Use a different URL or remove it from portfolio first.'}
                 </Alert>
               )}
               <Typography
@@ -502,6 +585,13 @@ export const EditLinksDialog = ({
                       const platformForIcon =
                         link.platform?.trim() ||
                         detectPlatformFromUrl(link.url);
+                      const globalIndex = sortedLinks.findIndex(
+                        (l) => l.id === link.id,
+                      );
+                      const canMoveUp = globalIndex > 0;
+                      const canMoveDown =
+                        globalIndex >= 0 &&
+                        globalIndex < sortedLinks.length - 1;
                       return (
                         <Box
                           key={link.id}
@@ -546,28 +636,70 @@ export const EditLinksDialog = ({
                             </Box>
                           </Stack>
 
-                          <Tooltip
-                            title={`Remove ${link.label || link.platform}`}
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={0.25}
+                            sx={{ flexShrink: 0 }}
                           >
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(link.id)}
-                              aria-label={`Remove ${link.label || link.platform}`}
-                              sx={{
-                                flexShrink: 0,
-                                p: 0.25,
-                                minWidth: 0,
-                                minHeight: 0,
-                                color: 'error.main',
-                                '&:hover': {
-                                  bgcolor: 'error.main',
-                                  color: 'error.contrastText',
-                                },
-                              }}
+                            <Tooltip title="Move up">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleMoveUp(link.id)}
+                                  disabled={!canMoveUp}
+                                  aria-label={`Move ${link.label || link.platform} up`}
+                                  sx={{
+                                    p: 0.25,
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                  }}
+                                >
+                                  <KeyboardArrowUpIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Move down">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleMoveDown(link.id)}
+                                  disabled={!canMoveDown}
+                                  aria-label={`Move ${link.label || link.platform} down`}
+                                  sx={{
+                                    p: 0.25,
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                  }}
+                                >
+                                  <KeyboardArrowDownIcon
+                                    sx={{ fontSize: 18 }}
+                                  />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip
+                              title={`Remove ${link.label || link.platform}`}
                             >
-                              <CloseIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDelete(link.id)}
+                                aria-label={`Remove ${link.label || link.platform}`}
+                                sx={{
+                                  p: 0.25,
+                                  minWidth: 0,
+                                  minHeight: 0,
+                                  color: 'error.main',
+                                  '&:hover': {
+                                    bgcolor: 'error.main',
+                                    color: 'error.contrastText',
+                                  },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </Box>
                       );
                     })}
@@ -585,7 +717,11 @@ export const EditLinksDialog = ({
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isSubmitting || Boolean(duplicateLinksInList)}
+            disabled={
+              isSubmitting ||
+              Boolean(duplicateLinksInList) ||
+              Boolean(linksOverlapPortfolio)
+            }
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>

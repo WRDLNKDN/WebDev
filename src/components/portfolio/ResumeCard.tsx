@@ -126,12 +126,14 @@ export const ResumeCard = ({
               sx={{
                 width: '100%',
                 minHeight: { xs: 72, sm: 80 },
+                aspectRatio: '16 / 9',
                 maxHeight: { xs: 88, md: 100 },
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 bgcolor: 'rgba(0,0,0,0.2)',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
               }}
             >
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -142,6 +144,7 @@ export const ResumeCard = ({
           <Box
             sx={{
               p: { xs: 1.25, md: 1.75 },
+              pb: { xs: 1.5, md: 2 },
               flexGrow: 1,
               minHeight: 0,
               overflow: 'hidden',
@@ -225,10 +228,11 @@ export const ResumeCard = ({
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
               gap: 0.5,
               px: 1.25,
-              py: 0.75,
+              pt: 1.25,
+              pb: 0.75,
               minHeight: 40,
               borderTop: '1px solid rgba(255,255,255,0.08)',
             }}

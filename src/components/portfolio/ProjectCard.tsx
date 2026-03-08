@@ -178,13 +178,16 @@ export const ProjectCard = ({
       {!thumbnailUrl && !isShowcase ? (
         <Box
           sx={{
+            width: '100%',
             minHeight: { xs: 72, sm: 80 },
+            aspectRatio: '16 / 9',
             maxHeight: { xs: 88, md: 100 },
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             bgcolor: 'rgba(0,0,0,0.2)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
           }}
         >
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -198,6 +201,7 @@ export const ProjectCard = ({
           p: isShowcase
             ? { xs: 1.75, sm: 2.25, md: 2.75 }
             : { xs: 1.25, md: 1.75 },
+          pb: isShowcase ? { xs: 2, sm: 2.5, md: 3 } : { xs: 1.5, md: 2 },
           flexGrow: 1,
           minHeight: 0,
           overflow: 'hidden',
@@ -205,66 +209,72 @@ export const ProjectCard = ({
           flexDirection: 'column',
         }}
       >
-        <Box component="p" sx={{ m: 0, mb: 1.1, lineHeight: 1.25 }}>
-          <Typography
-            component="span"
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              textTransform: 'uppercase',
-              letterSpacing: 1.2,
-              fontSize: '0.875rem',
-              fontWeight: 600,
-            }}
-          >
-            Title:{' '}
-          </Typography>
-          {onOpenPreview || cardOpensArtifact ? (
+        <Box
+          sx={{
+            flexShrink: 0,
+            minHeight: isShowcase ? undefined : 56,
+          }}
+        >
+          <Box component="p" sx={{ m: 0, mb: 1.1, lineHeight: 1.25 }}>
             <Typography
-              variant="h6"
               component="span"
-              fontWeight={700}
-              noWrap={!isShowcase}
+              variant="caption"
               sx={{
-                color: 'inherit',
-                letterSpacing: 0.5,
-                display: isShowcase ? '-webkit-box' : 'inline',
-                WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-                WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-                overflow: 'hidden',
-                '&:hover': { textDecoration: 'underline' },
+                color: 'text.secondary',
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                fontSize: '0.875rem',
+                fontWeight: 600,
               }}
             >
-              {project.title}
+              Title:{' '}
             </Typography>
-          ) : (
-            <Typography
-              component={RouterLink}
-              to={`/projects/${project.id}`}
-              variant="h6"
-              fontWeight={700}
-              noWrap={!isShowcase}
-              sx={{
-                color: 'inherit',
-                textDecoration: 'none',
-                letterSpacing: 0.5,
-                display: isShowcase ? '-webkit-box' : 'inline',
-                WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-                WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-                overflow: 'hidden',
-                '&:hover': { textDecoration: 'underline' },
-              }}
-            >
-              {project.title}
-            </Typography>
-          )}
-        </Box>
-        {(categories.length > 0 || project.is_highlighted) && (
+            {onOpenPreview || cardOpensArtifact ? (
+              <Typography
+                variant="h6"
+                component="span"
+                fontWeight={700}
+                noWrap={!isShowcase}
+                sx={{
+                  color: 'inherit',
+                  letterSpacing: 0.5,
+                  display: isShowcase ? '-webkit-box' : 'inline',
+                  WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+                  WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+                  overflow: 'hidden',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                {project.title}
+              </Typography>
+            ) : (
+              <Typography
+                component={RouterLink}
+                to={`/projects/${project.id}`}
+                variant="h6"
+                fontWeight={700}
+                noWrap={!isShowcase}
+                sx={{
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  letterSpacing: 0.5,
+                  display: isShowcase ? '-webkit-box' : 'inline',
+                  WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
+                  WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
+                  overflow: 'hidden',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                {project.title}
+              </Typography>
+            )}
+          </Box>
           <Box
             component="p"
             sx={{
               m: 0,
               mb: 1.4,
+              minHeight: 28,
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'baseline',
@@ -321,7 +331,7 @@ export const ProjectCard = ({
               </Box>
             ))}
           </Box>
-        )}
+        </Box>
         {isShowcase && (resolvedType || artifactHost) ? (
           <Typography
             variant="caption"
@@ -373,10 +383,11 @@ export const ProjectCard = ({
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             gap: 0.5,
             px: 1.25,
-            py: 0.75,
+            pt: 1.25,
+            pb: 0.75,
             minHeight: 40,
             borderTop: '1px solid rgba(255,255,255,0.08)',
           }}

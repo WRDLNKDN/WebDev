@@ -14,8 +14,7 @@ export type ValidationResult =
   | { ok: false; error: string };
 
 const VALID_URL_ONLY = 'Enter a valid URL (https:// or http://).';
-const DISALLOWED_URL =
-  'This URL is not allowed for portfolio projects. Please use a professional/public project link.';
+const DISALLOWED_URL = 'This URL is not allowed. Please use a different link.';
 const NOT_PUBLIC =
   'This link is not publicly accessible. Update sharing settings or use a public link.';
 

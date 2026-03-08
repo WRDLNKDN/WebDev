@@ -25,7 +25,7 @@ function isExternalUrl(url: string): boolean {
 
 export const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { updateProject } = useProfile();
+  const { profile, updateProject, projects } = useProfile();
 
   const [project, setProject] = useState<PortfolioItem | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -253,6 +253,12 @@ export const ProjectPage = () => {
         onSubmit={handleUpdate}
         initialProject={project}
         projectId={project.id}
+        existingProjects={isOwner ? projects : []}
+        existingLinkUrls={
+          isOwner
+            ? (profile?.socials ?? []).map((link: { url: string }) => link.url)
+            : []
+        }
       />
       <PortfolioPreviewModal
         project={project}

@@ -102,7 +102,7 @@ export const MessengerOverlay = () => {
       if (id) {
         setStartDmOpen(false);
         messenger?.openPopOut(id);
-        messenger?.toggleOverlay();
+        messenger?.closeOverlay();
       }
     },
     [createDm, messenger],
@@ -114,7 +114,7 @@ export const MessengerOverlay = () => {
       if (id) {
         setCreateGroupOpen(false);
         messenger?.openPopOut(id);
-        messenger?.toggleOverlay();
+        messenger?.closeOverlay();
       }
     },
     [createGroup, messenger],
@@ -123,7 +123,7 @@ export const MessengerOverlay = () => {
   const handleOpenRoom = useCallback(
     (roomId: string) => {
       messenger?.openPopOut(roomId);
-      messenger?.toggleOverlay();
+      messenger?.closeOverlay();
     },
     [messenger],
   );
@@ -137,7 +137,7 @@ export const MessengerOverlay = () => {
     [removeChat, fetchRooms],
   );
 
-  const openOverlay = messenger?.toggleOverlay;
+  const openOverlay = messenger?.openOverlay;
 
   const getRoomLabel = useCallback(
     (r: ChatRoomWithMembers) => {

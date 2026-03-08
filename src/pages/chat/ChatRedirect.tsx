@@ -19,8 +19,14 @@ export const ChatRedirect = () => {
   const messenger = useMessenger();
   const { rooms, createDm, loading } = useChatRooms();
   const withUserId = searchParams.get('with');
+  const handledTargetRef = useRef<string | null>(null);
+  const redirectTargetKey = useMemo(
+    () => `${roomId ?? ''}|${withUserId ?? ''}`,
+    [roomId, withUserId],
+  );
 
   useEffect(() => {
+    if (handledTargetRef.current === redirectTargetKey) return;
     const run = async () => {
       // Mobile: use full chat page (works reliably; overlay/popover is cramped on small screens).
       if (mobile) {
@@ -54,14 +60,16 @@ export const ChatRedirect = () => {
 
       // Desktop: overlay + popover on Feed
       if (roomId && messenger) {
+        handledTargetRef.current = redirectTargetKey;
         messenger.openWithRoom(roomId);
-        messenger.toggleOverlay();
+        messenger.openOverlay();
         navigate('/feed', { replace: true });
         return;
       }
 
       if (withUserId && messenger) {
         if (loading) return;
+        handledTargetRef.current = redirectTargetKey;
         const existing = rooms.find(
           (r) =>
             r.room_type === 'dm' &&
@@ -69,13 +77,13 @@ export const ChatRedirect = () => {
         );
         if (existing) {
           messenger.openPopOut(existing.id);
-          messenger.toggleOverlay();
+          messenger.openOverlay();
         } else {
           try {
             const id = await createDm(withUserId);
             if (id) {
               messenger.openPopOut(id);
-              messenger.toggleOverlay();
+              messenger.openOverlay();
             }
           } catch {
             // e.g. blocked, not connected – still go to feed
@@ -86,11 +94,13 @@ export const ChatRedirect = () => {
       }
 
       if (messenger) {
-        messenger.toggleOverlay();
+        handledTargetRef.current = redirectTargetKey;
+        messenger.openOverlay();
       }
       navigate('/feed', { replace: true });
     };
     void run();
+<<<<<<< HEAD
   }, [
     mobile,
     navigate,
@@ -101,6 +111,20 @@ export const ChatRedirect = () => {
     createDm,
     loading,
   ]);
+||||||| parent of 4419ab94 (fixint it)
+  }, [navigate, roomId, withUserId, messenger, rooms, createDm, loading]);
+=======
+  }, [
+    navigate,
+    roomId,
+    withUserId,
+    messenger,
+    rooms,
+    createDm,
+    loading,
+    redirectTargetKey,
+  ]);
+>>>>>>> 4419ab94 (fixint it)
 
   return null;
 };

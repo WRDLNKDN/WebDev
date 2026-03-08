@@ -33,7 +33,12 @@ import {
   type FooterLink,
 } from './footerConfig';
 
-export const Footer = () => {
+type FooterProps = {
+  /** When false, Chat link is hidden (e.g. when not logged in). */
+  showChatLink?: boolean;
+};
+
+export const Footer = ({ showChatLink = false }: FooterProps) => {
   const theme = useTheme();
   const location = useLocation();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -52,6 +57,17 @@ export const Footer = () => {
       theme.palette.common.white,
       theme.palette.text.primary,
     ],
+  );
+
+  const sections = useMemo(
+    () =>
+      FOOTER_SECTIONS.map((section) => ({
+        ...section,
+        links: section.links.filter(
+          (link) => showChatLink || link.href !== '/chat',
+        ),
+      })),
+    [showChatLink],
   );
 
   const footerStructuredData = useMemo(() => {
@@ -262,198 +278,164 @@ export const Footer = () => {
               </Stack>
             </Grid>
 
-            <Grid
-              size={{ xs: 12, sm: 6, md: 5 }}
-              sx={{ order: { xs: 2, md: 2 } }}
-            >
-              <Stack spacing={0.55} alignItems="center">
-                <Box
-                  aria-label="Footer navigation sections"
-                  sx={{
-                    display: 'grid',
-                    width: '100%',
-                    maxWidth: { md: 380 },
-                    mx: { md: 'auto' },
-                    gridTemplateColumns: {
-                      xs: 'repeat(2, minmax(0, 1fr))',
-                      sm: 'repeat(2, minmax(0, 1fr))',
-                      md: 'repeat(2, minmax(0, 180px))',
-                    },
-                    gap: { xs: 0.4, sm: 0.55, md: 0.65 },
-                    alignItems: 'start',
-                    justifyContent: { md: 'center' },
-                  }}
-                >
-                  {FOOTER_SECTIONS.map((section) => {
-                    const open = expandedSection === section.title;
-                    const panelId = `footer-panel-${section.title.toLowerCase()}`;
-                    return (
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Box
+                aria-label="Footer navigation sections"
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    md: 'repeat(3, minmax(0, 1fr))',
+                  },
+                  gap: 1.25,
+                }}
+              >
+                {sections.map((section) => {
+                  const open = expandedSection === section.title;
+                  const panelId = `footer-panel-${section.title.toLowerCase()}`;
+                  return (
+                    <Box
+                      key={section.title}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: dividerColor,
+                        borderRadius: 1.5,
+                        overflow: { xs: 'hidden', md: 'visible' },
+                        position: 'relative',
+                        backgroundColor: alpha(
+                          theme.palette.background.paper,
+                          0.2,
+                        ),
+                      }}
+                    >
                       <Box
-                        key={section.title}
-                        data-testid={`footer-section-${section.title.toLowerCase()}`}
+                        component="button"
+                        type="button"
+                        onClick={() => toggleSection(section.title)}
+                        aria-expanded={open}
+                        aria-controls={panelId}
                         sx={{
-                          border: '1px solid',
-                          borderColor: dividerColor,
-                          borderRadius: 1.25,
-                          overflow: { xs: 'hidden', md: 'visible' },
-                          position: 'relative',
-                          backgroundColor: alpha(
-                            theme.palette.background.paper,
-                            0.2,
-                          ),
+                          all: 'unset',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          px: { xs: 1.5, md: 2 },
+                          py: { xs: 1.1, md: 1.2 },
+                          cursor: 'pointer',
+                          boxSizing: 'border-box',
+                          '&:focus-visible': {
+                            outline: '2px solid',
+                            outlineColor: 'primary.main',
+                            outlineOffset: '-2px',
+                          },
                         }}
                       >
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {section.title}
+                        </Typography>
                         <Box
-                          component="button"
-                          type="button"
-                          onClick={() => toggleSection(section.title)}
-                          aria-expanded={open}
-                          aria-controls={panelId}
+                          component="span"
+                          aria-hidden
                           sx={{
-                            all: 'unset',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            width: '100%',
-                            px: { xs: 0.8, sm: 1.05, md: 1.2 },
-                            py: { xs: 0.46, sm: 0.58, md: 0.62 },
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
-                            '&:focus-visible': {
-                              outline: '2px solid',
-                              outlineColor: 'primary.main',
-                              outlineOffset: '-2px',
+                            justifyContent: 'center',
+                            width: 24,
+                            height: 24,
+                            transition: reduceMotion
+                              ? 'none'
+                              : 'transform 180ms ease',
+                            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                          }}
+                        >
+                          <ExpandMoreIcon fontSize="small" />
+                        </Box>
+                      </Box>
+
+                      <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+                        <Stack
+                          id={panelId}
+                          component="ul"
+                          sx={{
+                            listStyle: 'none',
+                            m: 0,
+                            py: 0.25,
+                            px: { xs: 1.5, md: 2 },
+                            borderTop: '1px solid',
+                            borderColor: dividerColor,
+                            gap: 0.25,
+                            position: { xs: 'static', md: 'absolute' },
+                            top: { md: 'calc(100% + 8px)' },
+                            left: { md: 0 },
+                            right: { md: 0 },
+                            zIndex: { md: 4 },
+                            border: { md: '1px solid' },
+                            borderRadius: { md: 1.5 },
+                            boxShadow: {
+                              md: '0 10px 28px rgba(0,0,0,0.28)',
+                            },
+                            backgroundColor: {
+                              md:
+                                theme.palette.mode === 'dark'
+                                  ? alpha(theme.palette.background.paper, 0.96)
+                                  : alpha(theme.palette.background.paper, 0.98),
                             },
                           }}
                         >
-                          <Typography
-                            variant="subtitle2"
-                            fontWeight={700}
-                            sx={{ fontSize: { xs: '0.75rem', md: '0.82rem' } }}
-                          >
-                            {section.title}
-                          </Typography>
-                          <Box
-                            component="span"
-                            aria-hidden
-                            sx={{
+                          {section.links.map((link) => {
+                            const active = isActiveLink(
+                              link.href,
+                              link.external,
+                            );
+                            const commonSx = {
                               display: 'inline-flex',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 20,
-                              height: 20,
+                              py: 0.75,
+                              color: active ? 'primary.main' : 'text.secondary',
+                              fontWeight: active ? 700 : 500,
+                              textDecoration: active ? 'underline' : 'none',
+                              textUnderlineOffset: '3px',
                               transition: reduceMotion
                                 ? 'none'
-                                : 'transform 180ms ease',
-                              transform: open
-                                ? 'rotate(180deg)'
-                                : 'rotate(0deg)',
-                            }}
-                          >
-                            <ExpandMoreIcon fontSize="small" />
-                          </Box>
-                        </Box>
-
-                        <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
-                          <Stack
-                            id={panelId}
-                            component="ul"
-                            sx={{
-                              listStyle: 'none',
-                              m: 0,
-                              py: 0.05,
-                              px: { xs: 0.8, sm: 1.05, md: 1.2 },
-                              borderTop: '1px solid',
-                              borderColor: dividerColor,
-                              gap: 0.15,
-                              position: { xs: 'static', md: 'absolute' },
-                              top: { md: 'calc(100% + 6px)' },
-                              left: { md: 0 },
-                              right: { md: 0 },
-                              zIndex: { md: 4 },
-                              border: { md: '1px solid' },
-                              borderRadius: { md: 1.25 },
-                              boxShadow: { md: '0 10px 26px rgba(0,0,0,0.28)' },
-                              backgroundColor: {
-                                md:
-                                  theme.palette.mode === 'dark'
-                                    ? alpha(
-                                        theme.palette.background.paper,
-                                        0.96,
-                                      )
-                                    : alpha(
-                                        theme.palette.background.paper,
-                                        0.98,
-                                      ),
-                              },
-                            }}
-                          >
-                            {section.links.map((link) => {
-                              const active = isActiveLink(
-                                link.href,
-                                link.external,
-                              );
-                              const commonSx = {
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                py: { xs: 0.36, md: 0.48 },
-                                fontSize: { xs: '0.76rem', md: '0.82rem' },
-                                color: active
-                                  ? 'primary.main'
-                                  : 'text.secondary',
-                                fontWeight: active ? 700 : 500,
-                                textDecoration: active ? 'underline' : 'none',
+                                : 'color 160ms ease, text-decoration-color 160ms ease',
+                              '&:hover': {
+                                color: 'text.primary',
+                                textDecoration: 'underline',
                                 textUnderlineOffset: '3px',
-                                transition: reduceMotion
-                                  ? 'none'
-                                  : 'color 160ms ease, text-decoration-color 160ms ease',
-                                '&:hover': {
-                                  color: 'text.primary',
-                                  textDecoration: 'underline',
-                                  textUnderlineOffset: '3px',
-                                },
-                              } as const;
-                              return (
-                                <Box component="li" key={link.label}>
-                                  {link.external ? (
-                                    <Link
-                                      href={link.href}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={() =>
-                                        handleFooterLinkClick(link)
-                                      }
-                                      sx={commonSx}
-                                    >
-                                      {link.label}
-                                    </Link>
-                                  ) : (
-                                    <Link
-                                      component={RouterLink}
-                                      to={link.href}
-                                      state={
-                                        link.href === '/advertise'
-                                          ? { backgroundLocation: location }
-                                          : undefined
-                                      }
-                                      onClick={() =>
-                                        handleFooterLinkClick(link)
-                                      }
-                                      sx={commonSx}
-                                    >
-                                      {link.label}
-                                    </Link>
-                                  )}
-                                </Box>
-                              );
-                            })}
-                          </Stack>
-                        </Collapse>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              </Stack>
+                              },
+                            } as const;
+                            return (
+                              <Box component="li" key={link.label}>
+                                {link.external ? (
+                                  <Link
+                                    href={link.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => handleFooterLinkClick(link)}
+                                    sx={commonSx}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    component={RouterLink}
+                                    to={link.href}
+                                    onClick={() => handleFooterLinkClick(link)}
+                                    sx={commonSx}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </Collapse>
+                    </Box>
+                  );
+                })}
+              </Box>
             </Grid>
 
             <Grid

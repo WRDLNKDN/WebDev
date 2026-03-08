@@ -1,6 +1,9 @@
 /** Server-generated thumbnail status. Thumbnail failure does not block saving. */
 export type ThumbnailStatus = 'pending' | 'generated' | 'failed';
 
+/** Stable id for the resume slot in the unified portfolio sortable list (resume + projects). */
+export const RESUME_ITEM_ID = '__resume__';
+
 export interface PortfolioItem {
   id: string;
   owner_id: string;

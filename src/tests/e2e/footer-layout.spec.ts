@@ -32,12 +32,6 @@ test.describe('Footer layout', () => {
 
     const donate = footer.getByTestId('footer-donate-link');
     await expect(donate).toHaveAttribute('aria-label', 'Donate to WRDLNKDN');
-    await expect(donate).toHaveAttribute(
-      'href',
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
-    await expect(donate).toHaveAttribute('target', '_blank');
-    await expect(donate).toHaveAttribute('rel', 'noopener noreferrer');
 
     const donateBox = await donate.boundingBox();
     expect(donateBox).not.toBeNull();
@@ -74,8 +68,10 @@ test.describe('Footer layout', () => {
       throw new Error('Footer social layout could not be measured.');
     }
 
-    // Donate now lives in the center section; socials remain in right section.
-    expect(donateBox.x + donateBox.width).toBeLessThan(socialsBox.x);
+    // Donate lives above socials in the same (right) column.
+    expect(donateBox.y + donateBox.height).toBeLessThanOrEqual(
+      socialsBox.y + 2,
+    );
     expect(copyrightBox.y).toBeGreaterThan(
       socialsBox.y + socialsBox.height - 2,
     );

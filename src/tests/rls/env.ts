@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import dotenv from 'dotenv';
 
 const loadIfExists = (p: string) => {
-  if (fs.existsSync(p)) dotenv.config({ path: p });
+  if (fs.existsSync(p)) dotenv.config({ path: p, quiet: true });
 };
 
 // Load repo root envs

@@ -72,7 +72,10 @@ test.describe('Add Project dialog UX', () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible();
 
-    await page.getByRole('button', { name: /add your first project/i }).click();
+    await page
+      .getByRole('button', { name: /add links, resume, or project/i })
+      .click();
+    await page.getByRole('menuitem', { name: /add project/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/new project/i);
 
@@ -96,7 +99,10 @@ test.describe('Add Project dialog UX', () => {
   test('aligns helper text with field edges', async ({ page }) => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible();
-    await page.getByRole('button', { name: /add your first project/i }).click();
+    await page
+      .getByRole('button', { name: /add links, resume, or project/i })
+      .click();
+    await page.getByRole('menuitem', { name: /add project/i }).click();
     const dialog = page.getByRole('dialog');
 
     const categoriesField = dialog.getByPlaceholder(

@@ -9,6 +9,7 @@ import {
   IconButton,
   Popover,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
 } from '@mui/material';
@@ -263,19 +264,23 @@ export const FeedReactionBar = ({
           >
             <Stack direction="row" spacing={0.5} sx={{ py: 0.5 }}>
               {REACTION_OPTIONS.map(({ type, label, Icon, color }) => (
-                <IconButton
-                  key={type}
-                  size="small"
-                  data-reaction-color={color}
-                  onClick={() => {
-                    handleReaction(type);
-                    setAnchorEl(null);
-                  }}
-                  sx={{ color, '&:hover': { bgcolor: 'action.hover', color } }}
-                  aria-label={label}
-                >
-                  <Icon sx={{ fontSize: 24, color: 'inherit' }} />
-                </IconButton>
+                <Tooltip key={type} title={label}>
+                  <IconButton
+                    size="small"
+                    data-reaction-color={color}
+                    onClick={() => {
+                      handleReaction(type);
+                      setAnchorEl(null);
+                    }}
+                    sx={{
+                      color,
+                      '&:hover': { bgcolor: 'action.hover', color },
+                    }}
+                    aria-label={label}
+                  >
+                    <Icon sx={{ fontSize: 24, color: 'inherit' }} />
+                  </IconButton>
+                </Tooltip>
               ))}
             </Stack>
           </Box>

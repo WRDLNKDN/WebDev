@@ -12,6 +12,7 @@ import {
   IconButton,
   Popover,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import EmojiPicker, {
@@ -302,16 +303,18 @@ export const MessageInput = ({
               '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
             },
           }}
-          inputProps={{ 'aria-label': 'Message' }}
+          inputProps={{ 'aria-label': 'Message', title: 'Type a message' }}
         />
-        <IconButton
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          aria-label={expanded ? 'Collapse input' : 'Expand input'}
-          sx={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}
-        >
-          <KeyboardArrowUpIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title={expanded ? 'Collapse input' : 'Expand input'}>
+          <IconButton
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? 'Collapse input' : 'Expand input'}
+            sx={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}
+          >
+            <KeyboardArrowUpIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
       <Box
         sx={{
@@ -329,42 +332,56 @@ export const MessageInput = ({
             onChange={handleFileSelect}
             style={{ display: 'none' }}
           />
-          <IconButton
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || uploading}
-            aria-label="Attach image"
-            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
-          >
-            <ImageIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || uploading}
-            aria-label="Attach file"
-            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
-          >
-            <AttachFileIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            type="button"
-            onClick={() => setGifPickerOpen(true)}
-            disabled={disabled || uploading || pendingFiles.length >= 1}
-            aria-label="Add GIF"
-            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
-          >
-            <GifBoxIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            type="button"
-            onClick={(e) => setEmojiAnchor(e.currentTarget)}
-            disabled={disabled || uploading}
-            aria-label="Add emoji"
-            sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
-          >
-            <EmojiEmotionsOutlinedIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Attach image">
+            <span>
+              <IconButton
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || uploading}
+                aria-label="Attach image"
+                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+              >
+                <ImageIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Attach file">
+            <span>
+              <IconButton
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || uploading}
+                aria-label="Attach file"
+                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+              >
+                <AttachFileIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Add GIF">
+            <span>
+              <IconButton
+                type="button"
+                onClick={() => setGifPickerOpen(true)}
+                disabled={disabled || uploading || pendingFiles.length >= 1}
+                aria-label="Add GIF"
+                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+              >
+                <GifBoxIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Add emoji">
+            <IconButton
+              type="button"
+              onClick={(e) => setEmojiAnchor(e.currentTarget)}
+              disabled={disabled || uploading}
+              aria-label="Add emoji"
+              sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+            >
+              <EmojiEmotionsOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Typography
@@ -374,25 +391,31 @@ export const MessageInput = ({
           >
             Press Enter to Send
           </Typography>
-          <IconButton
-            type="button"
-            aria-label="More options"
-            sx={{ color: 'rgba(255,255,255,0.65)', p: 0.5 }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            type="submit"
-            disabled={
-              disabled ||
-              uploading ||
-              (!text.trim() && pendingFiles.length === 0)
-            }
-            aria-label="Send message"
-            sx={{ color: INPUT_SEPARATOR_GREEN, p: 0.75 }}
-          >
-            <SendIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="More options">
+            <IconButton
+              type="button"
+              aria-label="More options"
+              sx={{ color: 'rgba(255,255,255,0.65)', p: 0.5 }}
+            >
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Send message">
+            <span>
+              <IconButton
+                type="submit"
+                disabled={
+                  disabled ||
+                  uploading ||
+                  (!text.trim() && pendingFiles.length === 0)
+                }
+                aria-label="Send message"
+                sx={{ color: INPUT_SEPARATOR_GREEN, p: 0.75 }}
+              >
+                <SendIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Box>
       </Box>
 

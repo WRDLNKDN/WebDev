@@ -3,6 +3,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -25,9 +26,11 @@ export const PolicyDialog = ({ open, title, text, onClose }: Props) => {
         }}
       >
         {title}
-        <IconButton aria-label="Close" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
+        <Tooltip title="Close">
+          <IconButton aria-label="Close" onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
       </DialogTitle>
 
       <DialogContent dividers>

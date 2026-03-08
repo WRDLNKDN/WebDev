@@ -16,6 +16,7 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -152,26 +153,28 @@ export const MessengerOverlay = () => {
   /* Show floating button when overlay is closed. */
   const showFloatingChat = Boolean(messenger && !messenger.overlayOpen);
   const floatingChatButton = showFloatingChat ? (
-    <IconButton
-      onClick={openOverlay}
-      aria-label="Open messages"
-      size="medium"
-      sx={{
-        position: 'fixed',
-        right: 28,
-        top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
-        zIndex: 1200,
-        bgcolor: 'background.paper',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: '8px 0 0 8px',
-        borderRight: 'none',
-        boxShadow: 2,
-        color: 'text.primary',
-        '&:hover': { bgcolor: 'action.hover' },
-      }}
-    >
-      <MessageIcon />
-    </IconButton>
+    <Tooltip title="Open messages">
+      <IconButton
+        onClick={openOverlay}
+        aria-label="Open messages"
+        size="medium"
+        sx={{
+          position: 'fixed',
+          right: 28,
+          top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
+          zIndex: 1200,
+          bgcolor: 'background.paper',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '8px 0 0 8px',
+          borderRight: 'none',
+          boxShadow: 2,
+          color: 'text.primary',
+          '&:hover': { bgcolor: 'action.hover' },
+        }}
+      >
+        <MessageIcon />
+      </IconButton>
+    </Tooltip>
   ) : null;
 
   return (

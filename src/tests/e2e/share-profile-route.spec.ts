@@ -72,6 +72,10 @@ test.describe('Share profile route', () => {
         timeout: 5_000,
       },
     );
+    // Portfolio LINKS section shows link as a card (title + open action)
+    await expect(
+      page.getByRole('button', { name: /open linkedin/i }),
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test('public profile resume card shows stored filename with tooltip', async ({

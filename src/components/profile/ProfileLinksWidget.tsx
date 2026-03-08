@@ -7,6 +7,7 @@ import {
   IconButton,
   Link,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -143,28 +144,30 @@ export const ProfileLinksWidget = ({
           </Typography>
         </Link>
         {isOwner && onRemove && (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRemove(link.id);
-            }}
-            aria-label={`Remove ${link.label || link.platform}`}
-            sx={{
-              flexShrink: 0,
-              p: 0.25,
-              minWidth: 0,
-              minHeight: 0,
-              color: 'error.main',
-              '&:hover': {
-                bgcolor: 'error.main',
-                color: 'error.contrastText',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title={`Remove ${link.label || link.platform}`}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove(link.id);
+              }}
+              aria-label={`Remove ${link.label || link.platform}`}
+              sx={{
+                flexShrink: 0,
+                p: 0.25,
+                minWidth: 0,
+                minHeight: 0,
+                color: 'error.main',
+                '&:hover': {
+                  bgcolor: 'error.main',
+                  color: 'error.contrastText',
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         )}
       </Box>
     );

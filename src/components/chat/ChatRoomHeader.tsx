@@ -15,6 +15,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
@@ -220,31 +221,36 @@ export const ChatRoomHeader = ({
         </Box>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-        <IconButton
-          onClick={(e) => setMenuAnchor(e.currentTarget)}
-          aria-label="Chat options"
-          sx={{ color: 'rgba(255,255,255,0.75)' }}
-        >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
-        {onPopOut && (
+        <Tooltip title="Chat options">
           <IconButton
-            onClick={onPopOut}
-            aria-label="Open in new window"
+            onClick={(e) => setMenuAnchor(e.currentTarget)}
+            aria-label="Chat options"
             sx={{ color: 'rgba(255,255,255,0.75)' }}
-            title="Pop out chat"
           >
-            <OpenInNewIcon fontSize="small" />
+            <MoreVertIcon fontSize="small" />
           </IconButton>
+        </Tooltip>
+        {onPopOut && (
+          <Tooltip title="Open in new window">
+            <IconButton
+              onClick={onPopOut}
+              aria-label="Open in new window"
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <OpenInNewIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         )}
         {closeIcon && (
-          <IconButton
-            onClick={onBack}
-            aria-label="Close"
-            sx={{ color: 'rgba(255,255,255,0.75)' }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Close">
+            <IconButton
+              onClick={onBack}
+              aria-label="Close"
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         )}
       </Box>
       <Menu

@@ -47,8 +47,8 @@ const FOCUS_RING = {
   outlineOffset: '2px',
 };
 
-/** Sitewide font stack: Poppins + fallbacks (Helvetica, Arial, sans-serif) */
-const FONT_FAMILY = '"Poppins", "Helvetica", "Arial", sans-serif';
+/** Sitewide font: Poppins (Google Font), fallback to generic sans-serif */
+const FONT_FAMILY = '"Poppins", sans-serif';
 
 const theme = createTheme({
   palette: PALETTE,
@@ -416,6 +416,7 @@ const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
+          fontFamily: FONT_FAMILY,
           backgroundColor: '#424242',
           color: '#ffffff',
           fontSize: '0.875rem',

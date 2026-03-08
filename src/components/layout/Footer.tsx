@@ -3,10 +3,14 @@ import {
   Box,
   Collapse,
   Container,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   Link,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -22,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import {
+  FOOTER_DONATE_QR_ASSET,
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
@@ -34,6 +39,7 @@ export const Footer = () => {
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [donateDialogOpen, setDonateDialogOpen] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
 
   const dividerColor = useMemo(
@@ -447,22 +453,48 @@ export const Footer = () => {
                     );
                   })}
                 </Box>
-                <Link
+              </Stack>
+            </Grid>
+
+            <Grid
+              size={{ xs: 12, md: 4 }}
+              sx={{
+                order: { xs: 3, md: 3 },
+                display: 'flex',
+                alignItems: { xs: 'flex-start', md: 'flex-start' },
+                justifyContent: {
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                },
+              }}
+            >
+              <Stack
+                spacing={1}
+                alignItems={{
+                  xs: 'flex-start',
+                  sm: 'flex-end',
+                  md: 'flex-end',
+                }}
+                sx={{ width: '100%', pt: { xs: 0.15, md: 0.05 } }}
+              >
+                <Box
+                  component="button"
+                  type="button"
                   data-testid="footer-donate-link"
-                  href={FOOTER_DONATE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   aria-label="Donate to WRDLNKDN"
-                  onClick={() =>
+                  onClick={() => {
                     trackEvent('footer_donate_link_click', {
                       source: 'footer',
                       target: FOOTER_DONATE_URL,
-                    })
-                  }
+                    });
+                    setDonateDialogOpen(true);
+                  }}
                   sx={{
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    width: '100%',
                     position: 'relative',
                     overflow: 'hidden',
                     fontWeight: 800,
@@ -511,32 +543,57 @@ export const Footer = () => {
                   }}
                 >
                   Donate Now
-                </Link>
-              </Stack>
-            </Grid>
-
-            <Grid
-              size={{ xs: 12, md: 4 }}
-              sx={{
-                order: { xs: 3, md: 3 },
-                display: 'flex',
-                alignItems: { xs: 'flex-start', md: 'flex-start' },
-                justifyContent: {
-                  xs: 'flex-start',
-                  sm: 'flex-end',
-                  md: 'flex-end',
-                },
-              }}
-            >
-              <Stack
-                spacing={0.3}
-                alignItems={{
-                  xs: 'flex-start',
-                  sm: 'flex-end',
-                  md: 'flex-end',
-                }}
-                sx={{ pt: { xs: 0.15, md: 0.05 } }}
-              >
+                </Box>
+                <Dialog
+                  open={donateDialogOpen}
+                  onClose={() => setDonateDialogOpen(false)}
+                  aria-labelledby="donate-dialog-title"
+                  aria-describedby="donate-dialog-description"
+                  maxWidth="xs"
+                  fullWidth
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: dividerColor,
+                      },
+                    },
+                  }}
+                >
+                  <DialogTitle id="donate-dialog-title">
+                    Donate to WRDLNKDN
+                  </DialogTitle>
+                  <DialogContent id="donate-dialog-description">
+                    <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>
+                      <Box
+                        component="img"
+                        src={FOOTER_DONATE_QR_ASSET}
+                        alt="Donate QR code"
+                        sx={{
+                          width: 200,
+                          height: 200,
+                          objectFit: 'contain',
+                          display: 'block',
+                        }}
+                      />
+                      <Link
+                        href={FOOTER_DONATE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          fontWeight: 600,
+                          color: 'primary.main',
+                          '&:hover': { textDecoration: 'underline' },
+                        }}
+                        onClick={() => setDonateDialogOpen(false)}
+                      >
+                        Pay online at pay.wrdlnkdn.com
+                      </Link>
+                    </Stack>
+                  </DialogContent>
+                </Dialog>
                 <Stack
                   direction="row"
                   spacing={0.2}
@@ -544,22 +601,23 @@ export const Footer = () => {
                   data-testid="footer-social-links"
                 >
                   {FOOTER_SOCIAL_LINKS.map((link) => (
-                    <IconButton
-                      key={link.label}
-                      component={Link}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={link.label}
-                      size="small"
-                      sx={{
-                        color: 'text.secondary',
-                        p: { xs: 0.35, md: 0.45 },
-                        '&:hover': { color: 'primary.main' },
-                      }}
-                    >
-                      {renderSocialIcon(link.label)}
-                    </IconButton>
+                    <Tooltip key={link.label} title={link.label}>
+                      <IconButton
+                        component={Link}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.label}
+                        size="small"
+                        sx={{
+                          color: 'text.secondary',
+                          p: { xs: 0.35, md: 0.45 },
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                      >
+                        {renderSocialIcon(link.label)}
+                      </IconButton>
+                    </Tooltip>
                   ))}
                 </Stack>
                 <Typography

@@ -10,6 +10,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink, useParams } from 'react-router-dom';
+import { LinkCard } from '../../components/portfolio/LinkCard';
 import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
@@ -329,6 +330,7 @@ export const PublicProfilePage = () => {
       (item.thumbnail_status as PortfolioItem['thumbnail_status']) ?? null,
   }));
   const portfolioSections = buildPortfolioCategorySections(projects);
+  const sortedSocials = [...socials].sort((a, b) => a.order - b.order);
 
   return (
     <>
@@ -373,7 +375,7 @@ export const PublicProfilePage = () => {
               showLinksInIdentity ? (
                 <ProfileLinksWidget
                   socials={socials}
-                  grouped
+                  grouped={false}
                   collapsible
                   defaultExpanded={true}
                 />
@@ -422,6 +424,40 @@ export const PublicProfilePage = () => {
                   projects={projects}
                   onOpenPreview={setPreviewProject}
                 />
+                {sortedSocials.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        display: 'block',
+                        mb: 1,
+                        letterSpacing: 1.2,
+                        color: 'text.secondary',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      LINKS
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gap: { xs: 1, sm: 1.25, md: 1.5 },
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, minmax(320px, 1fr))',
+                          lg: 'repeat(3, minmax(320px, 1fr))',
+                        },
+                        justifyItems: 'stretch',
+                        alignItems: 'start',
+                      }}
+                    >
+                      {sortedSocials.map((link) => (
+                        <LinkCard key={link.id} link={link} />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
                 <ResumeCard
                   url={p.resume_url ?? undefined}
                   fileName={resumeFileName}

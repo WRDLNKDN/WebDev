@@ -6,6 +6,7 @@ import {
   DialogContent,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -38,14 +39,16 @@ export const ViewTagsSkillsDialog = ({
       fullWidth
       aria-label="Tags & Skills"
     >
-      <IconButton
-        aria-label="Close"
-        onClick={onClose}
-        size="small"
-        sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
-      >
-        <CloseIcon />
-      </IconButton>
+      <Tooltip title="Close">
+        <IconButton
+          aria-label="Close"
+          onClick={onClose}
+          size="small"
+          sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Tooltip>
       <DialogContent sx={{ pt: 5 }}>
         <Stack spacing={3}>
           {hasTags || hasSkills ? (

@@ -15,17 +15,9 @@ async function getDonateLink(page: Page) {
 }
 
 test.describe('Footer donate link', () => {
-  test('uses direct external donation link and opens in a new tab', async ({
-    page,
-  }) => {
-    const donateLink = await getDonateLink(page);
-    await expect(donateLink).toHaveAttribute(
-      'href',
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
-    await expect(donateLink).toHaveAttribute('target', '_blank');
-    await expect(donateLink).toHaveAttribute('rel', 'noopener noreferrer');
-    await expect(donateLink).toHaveAttribute(
+  test('opens donate modal with QR code and payment link', async ({ page }) => {
+    const donateButton = await getDonateLink(page);
+    await expect(donateButton).toHaveAttribute(
       'aria-label',
       'Donate to WRDLNKDN',
     );
@@ -33,9 +25,25 @@ test.describe('Footer donate link', () => {
       page.getByRole('dialog', { name: 'Donate to WRDLNKDN' }),
     ).toHaveCount(0);
 
+    await donateButton.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Donate to WRDLNKDN' });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole('img', { name: 'Donate QR code' }),
+    ).toBeVisible();
+    const payLink = dialog.getByRole('link', {
+      name: /pay online/i,
+    });
+    await expect(payLink).toHaveAttribute(
+      'href',
+      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
+    );
+    await expect(payLink).toHaveAttribute('target', '_blank');
+
     const [popup] = await Promise.all([
       page.waitForEvent('popup'),
-      donateLink.click(),
+      payLink.click(),
     ]);
     await popup.waitForLoadState('domcontentloaded');
     await expect(popup).toHaveURL(

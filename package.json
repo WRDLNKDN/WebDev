@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "--- BOOT SEQUENCE (Environment Optimization) ---": "",
-    "dev": "npm run build && concurrently -n \"VITE,SUPA,API,HEALTH\" -c \"blue,green,magenta,cyan\" \"npm run vite\" \"npm run supabase:start\" \"npm run api\" \"npm run health:launch\"",
+    "dev": "npm run build && concurrently -n \"API,VITE,SUPA,HEALTH\" -c \"magenta,blue,green,cyan\" \"npm run api\" \"npx wait-on http://127.0.0.1:3001/api/health -t 60000 && (sleep 3 || true) && npm run vite\" \"npm run supabase:start\" \"npm run health:launch\"",
     "health:launch": "bash ./scripts/health-check.sh",
     "launch": "npm run health:launch",
     "vite": "vite",
@@ -97,6 +97,7 @@
     "@typescript-eslint/parser": "8.18.2",
     "@vitejs/plugin-react": "4.3.4",
     "concurrently": "9.2.1",
+    "wait-on": "8.0.1",
     "dotenv": "17.2.3",
     "eslint": "9.39.2",
     "eslint-config-prettier": "9.1.0",

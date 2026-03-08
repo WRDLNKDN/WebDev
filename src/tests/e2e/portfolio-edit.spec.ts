@@ -208,7 +208,7 @@ test.describe('Portfolio artifact editing', () => {
     ).toBeVisible();
     await expect(page.locator('img[alt="Updated Artifact"]')).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'View Project' }).first(),
+      page.getByRole('link', { name: 'Open project' }).first(),
     ).toHaveAttribute('href', 'https://example.com/updated-artifact.pdf');
 
     // Ensure dashboard reflects persisted values after a full reload,
@@ -223,7 +223,7 @@ test.describe('Portfolio artifact editing', () => {
     ).toBeVisible();
     await expect(page.locator('img[alt="Updated Artifact"]')).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'View Project' }).first(),
+      page.getByRole('link', { name: 'Open project' }).first(),
     ).toHaveAttribute('href', 'https://example.com/updated-artifact.pdf');
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });

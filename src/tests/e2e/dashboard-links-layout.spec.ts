@@ -14,12 +14,13 @@
  *   8. No regression: Manage Links modal behavior is unchanged
  */
 
-import { expect, test } from '@playwright/test';
-import { loginAs } from './utils/auth';
+import { expect, test } from './fixtures';
+import { seedSignedInSession } from './utils/auth';
+import { stubAppSurface } from './utils/stubAppSurface';
 
 // ---------------------------------------------------------------------------
 // Shared fixture: profile with links in multiple categories
-// The seed / stub must include:
+// Stub data lives in auth.ts fixture profiles:
 //   Professional: GitHub (order=2), LinkedIn (order=0), Stack Overflow (order=1)
 //   Social:       Instagram (order=1), Discord (order=0)
 //   Content:      YouTube (order=1), Blog (order=0)
@@ -30,8 +31,9 @@ import { loginAs } from './utils/auth';
 // ---------------------------------------------------------------------------
 
 test.describe('Issue #609 – Grouped, alphabetized links in Identity', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'test-user-with-links');
+  test.beforeEach(async ({ page, context }) => {
+    await seedSignedInSession(context);
+    await stubAppSurface(page);
   });
 
   // -------------------------------------------------------------------------
@@ -354,8 +356,8 @@ test.describe('Issue #609 – Grouped, alphabetized links in Identity', () => {
     test('Portfolio section has no LINKS block in empty portfolio state', async ({
       page,
     }) => {
-      // Log in as a user with links but no portfolio projects/resume
-      await loginAs(page, 'test-user-links-only');
+      // The top-level beforeEach seeds a user with links but the stub profile
+      // has no resume_url and no projects, so this is already the empty-portfolio state.
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle');
 

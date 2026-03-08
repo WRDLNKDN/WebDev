@@ -178,14 +178,26 @@ const FIXTURE_PROFILES: Record<string, object> = {
  *
  * Returns a `stubAdminRpc` helper that stubs Supabase RPC calls needing admin.
  */
-export async function seedSignedInSession(context: BrowserContext) {
+export async function seedSignedInSession(
+  context: BrowserContext,
+  options: { handle?: string; isAdmin?: boolean } = {},
+) {
   const session = getStubSession();
+  const handle = options.handle ?? 'member';
+  const role = options.isAdmin ? 'admin' : 'authenticated';
 
   // Inject session into localStorage before any page loads
-  await context.addInitScript((s) => {
-    const key = `sb-${location.hostname}-auth-token`;
-    localStorage.setItem(key, JSON.stringify(s));
-  }, session);
+  await context.addInitScript(
+    ({ s, r }) => {
+      (s as Record<string, unknown>).user = {
+        ...((s as Record<string, unknown>).user as object),
+        role: r,
+      };
+      const key = `sb-${location.hostname}-auth-token`;
+      localStorage.setItem(key, JSON.stringify(s));
+    },
+    { s: session, r: role },
+  );
 
   const stubAdminRpc = async (page: Page) => {
     await page.route('**/rest/v1/rpc/**', async (route) => {
@@ -195,9 +207,20 @@ export async function seedSignedInSession(context: BrowserContext) {
         body: JSON.stringify(null),
       });
     });
+    // Stub share token RPC specifically
+    await page.route(
+      '**/rest/v1/rpc/get_or_create_profile_share_token*',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify('stub-share-token'),
+        });
+      },
+    );
   };
 
-  return { session, stubAdminRpc };
+  return { session, handle, stubAdminRpc };
 }
 
 // ---------------------------------------------------------------------------

@@ -11,12 +11,16 @@ const RLS_SQL = readFileSync(
 );
 
 describe('migrations idempotent / no table drops', () => {
-  it('tables migration never drops tables (only triggers/functions)', () => {
-    // DROP TRIGGER IF EXISTS is allowed (removes trigger only). DROP TABLE would remove data.
+  it('tables migration avoids destructive table-data operations', () => {
+    // Guard against accidental data nukes in schema migration.
     expect(TABLES_SQL).not.toMatch(/\bdrop\s+table\s+/i);
+    expect(TABLES_SQL).not.toMatch(/\btruncate\s+(table\s+)?/i);
+    expect(TABLES_SQL).not.toMatch(/\bdelete\s+from\s+[a-z0-9_."]+\s*;/i);
   });
 
-  it('RLS migration never drops tables', () => {
+  it('RLS migration avoids destructive table-data operations', () => {
     expect(RLS_SQL).not.toMatch(/\bdrop\s+table\s+/i);
+    expect(RLS_SQL).not.toMatch(/\btruncate\s+(table\s+)?/i);
+    expect(RLS_SQL).not.toMatch(/\bdelete\s+from\s+[a-z0-9_."]+\s*;/i);
   });
 });

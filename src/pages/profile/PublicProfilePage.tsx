@@ -465,6 +465,7 @@ export const PublicProfilePage = () => {
                           key={`${section.category}-${project.id}`}
                           project={project}
                           variant="showcase"
+                          onOpenPreview={setPreviewProject}
                         />
                       ))}
                     </Box>

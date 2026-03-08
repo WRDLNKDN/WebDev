@@ -467,6 +467,7 @@ export const LandingPage = () => {
                           key={`${section.category}-${project.id}`}
                           project={project}
                           variant="showcase"
+                          onOpenPreview={setPreviewProject}
                         />
                       ))}
                     </Box>

@@ -15,6 +15,8 @@ const AUTH_STORAGE_KEYS = [
   'dev-sb-wrdlnkdn-auth',
 ];
 
+const SIGN_OUT_REDIRECT_KEY = 'auth_sign_out_redirect';
+
 /**
  * Remove auth tokens from localStorage so the next visit doesn't see a stale session.
  * Safe to call when already signed out (e.g. on init if session is null).
@@ -27,12 +29,36 @@ export function clearAuthStorage(): void {
   }
 }
 
+function setSignOutRedirect(path: string): void {
+  try {
+    window.sessionStorage.setItem(SIGN_OUT_REDIRECT_KEY, path);
+  } catch {
+    // ignore (private mode, etc.)
+  }
+}
+
+export function consumeSignOutRedirect(): string | null {
+  try {
+    const path = window.sessionStorage.getItem(SIGN_OUT_REDIRECT_KEY);
+    if (!path) return null;
+    window.sessionStorage.removeItem(SIGN_OUT_REDIRECT_KEY);
+    return path;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sign out from Supabase (all tabs if scope is global), then clear auth storage
  * and profile/onboarded caches so the next visit or next user isn't in an odd state.
  * Does not clear all cookies or all localStorage — only auth-related keys.
  */
-export async function signOut(): Promise<void> {
+export async function signOut(options?: {
+  redirectTo?: string;
+}): Promise<void> {
+  if (options?.redirectTo) {
+    setSignOutRedirect(options.redirectTo);
+  }
   try {
     await supabase.auth.signOut({ scope: 'global' });
   } finally {

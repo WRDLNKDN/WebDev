@@ -4,7 +4,10 @@ import { expect, test } from '../fixtures';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const IMAGE_FIXTURE = path.resolve(__dirname, '../fixtures/image-sample.png');
+const IMAGE_FIXTURE = path.resolve(
+  __dirname,
+  '../../../../public/assets/logo.png',
+);
 
 test.describe('Advertise modal', () => {
   test('renders as a modal, validates destination link, and submits it in the payload', async ({

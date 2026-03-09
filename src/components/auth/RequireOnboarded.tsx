@@ -8,6 +8,7 @@ import {
   hasProfileOnboardedSticky,
   setProfileValidated,
 } from '../../lib/profile/profileValidatedCache';
+import { consumeSignOutRedirect } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { devLog, devWarn } from '../../lib/utils/devLog';
 
@@ -237,6 +238,8 @@ export const RequireOnboarded = ({
             return;
           }
           hasEverAllowedRef.current = false;
+          redirectToRef.current =
+            (consumeSignOutRedirect() as '/' | '/join' | null) ?? '/';
           setState('redirect');
         })();
         return;

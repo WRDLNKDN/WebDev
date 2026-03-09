@@ -1,14 +1,10 @@
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
 import './index.css';
 import { initRefreshCapture } from './lib/utils/refreshCapture';
-import theme from './theme/theme';
 
 // Capture refresh for debugging odd behavior on reload
 initRefreshCapture();
@@ -20,27 +16,18 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 }
 
 // --- SYSTEM FIREWALL ---
-import { ErrorBoundary } from './components/layout/ErrorBoundary';
+import { RootErrorBoundary } from './components/layout/RootErrorBoundary';
 import { GlobalFormTooltips } from './components/common/GlobalFormTooltips';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {/* HelmetProvider handles the Head metadata */}
-    <HelmetProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <GlobalFormTooltips />
+    <GlobalFormTooltips />
 
-        {/* THE FIREWALL:
-           Placed inside ThemeProvider so the crash screen looks good.
-           Placed outside BrowserRouter to catch routing failures.
-        */}
-        <ErrorBoundary>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </ErrorBoundary>
-      </ThemeProvider>
-    </HelmetProvider>
+    {/* Keep the root entry plain so the landing page can avoid eager MUI boot. */}
+    <RootErrorBoundary>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </RootErrorBoundary>
   </React.StrictMode>,
 );

@@ -26,11 +26,6 @@ import {
   searchChatGifs,
   type GifContentFilter,
 } from '../../../lib/chat/gifApi';
-import {
-  ContentFilterButtons,
-  GifResultsGrid,
-  type GifPickerResult,
-} from '../gif/GifPickerDialogSections';
 
 export type GifPickerDialogProps = {
   open: boolean;
@@ -57,7 +52,9 @@ export const GifPickerDialog = ({
   const [error, setError] = useState<string | null>(null);
   const [contentFilter, setContentFilter] =
     useState<GifContentFilter>('medium');
-  const [results, setResults] = useState<GifPickerResult[]>([]);
+  const [results, setResults] = useState<
+    Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
+  >([]);
 
   const loadGifs = useCallback(
     async (q: string, filter: GifContentFilter = contentFilter) => {
@@ -180,14 +177,41 @@ export const GifPickerDialog = ({
           sx={{ mb: 1.5 }}
         />
         {showContentFilter && (
-          <ContentFilterButtons
-            contentFilter={contentFilter}
-            query={query}
-            onSelect={(filter, selectedQuery) => {
-              setContentFilter(filter);
-              handleSearch(selectedQuery, filter);
-            }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Content:
+            </Typography>
+            <Button
+              size="small"
+              variant={contentFilter === 'low' ? 'contained' : 'text'}
+              onClick={() => {
+                setContentFilter('low');
+                handleSearch(query, 'low');
+              }}
+            >
+              G
+            </Button>
+            <Button
+              size="small"
+              variant={contentFilter === 'medium' ? 'contained' : 'text'}
+              onClick={() => {
+                setContentFilter('medium');
+                handleSearch(query, 'medium');
+              }}
+            >
+              PG-13
+            </Button>
+            <Button
+              size="small"
+              variant={contentFilter === 'high' ? 'contained' : 'text'}
+              onClick={() => {
+                setContentFilter('high');
+                handleSearch(query, 'high');
+              }}
+            >
+              Strict
+            </Button>
+          </Box>
         )}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -235,12 +259,45 @@ export const GifPickerDialog = ({
             </Typography>
           </Box>
         ) : (
-          <GifResultsGrid
-            results={results}
-            maxHeight={maxHeight}
-            cellHeight={cellHeight}
-            onPick={handlePick}
-          />
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 1,
+              maxHeight,
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {results.map((gif) => (
+              <Box
+                key={gif.id}
+                component="button"
+                type="button"
+                onClick={() => handlePick(gif.gifUrl, gif.title)}
+                sx={{
+                  p: 0,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  bgcolor: 'black',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={gif.previewUrl}
+                  alt={gif.title || 'GIF'}
+                  sx={{
+                    width: '100%',
+                    height: cellHeight,
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
         )}
         <Typography
           variant="caption"

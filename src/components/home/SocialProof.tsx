@@ -1,61 +1,37 @@
-import { Box, Container, Grid, Typography } from '@mui/material';
-
 export const SocialProof = () => {
   return (
-    <Box
-      component="section"
+    <section
+      className="home-landing__section home-landing__section--base"
       aria-labelledby="social-proof-heading"
-      sx={{
-        py: 8,
-        bgcolor: 'rgba(5, 7, 15, 0.95)',
-        borderTop: '1px solid',
-        borderColor: 'rgba(255,255,255,0.08)',
-      }}
     >
-      <Container maxWidth="lg">
-        <Typography
-          id="social-proof-heading"
-          component="h2"
-          variant="h4"
-          sx={{
-            fontWeight: 600,
-            color: 'text.primary',
-            textAlign: 'center',
-            mb: 4,
-          }}
-        >
+      <div className="home-landing__container">
+        <h2 id="social-proof-heading" className="home-landing__section-title">
           Community in Motion
-        </Typography>
-        <Grid container spacing={4}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={{ color: 'primary.light', mb: 1.5 }}>
-              Featured posts
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+        </h2>
+        <div className="home-landing__grid home-landing__grid--three">
+          <article className="home-landing__card">
+            <h3 className="home-landing__card-title">Featured posts</h3>
+            <p className="home-landing__card-body">
               Real voices from the community—values-driven posts and
               conversations that show what WRDLNKDN is about.
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={{ color: 'primary.light', mb: 1.5 }}>
-              Highlighted members
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </p>
+          </article>
+          <article className="home-landing__card">
+            <h3 className="home-landing__card-title">Highlighted members</h3>
+            <p className="home-landing__card-body">
               Members who show up: contributors, volunteers, and members
               building the network with intent and participation.
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={{ color: 'primary.light', mb: 1.5 }}>
-              Community stats
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </p>
+          </article>
+          <article className="home-landing__card">
+            <h3 className="home-landing__card-title">Community stats</h3>
+            <p className="home-landing__card-body">
               Growth and activity metrics that reflect a living community—join
               the movement and watch it grow.
-            </Typography>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
   );
 };

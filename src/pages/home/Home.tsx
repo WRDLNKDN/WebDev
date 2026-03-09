@@ -1,35 +1,57 @@
-// src/pages/Home.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Navigate } from 'react-router-dom';
 
-import { HomeSkeleton } from '../../components/home/HomeSkeleton';
+import { GuestView } from '../../components/home/GuestView';
 import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
-import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import '../../components/home/homeLanding.css';
 import { trackEvent } from '../../lib/analytics/trackEvent';
-import { supabase } from '../../lib/auth/supabaseClient';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
-import { HomeHero } from './HomeHero';
+
+const getSupabase = async () => {
+  const mod = await import('../../lib/auth/supabaseClient');
+  return mod.supabase;
+};
+
+const resolvePostAuthPath = async (): Promise<'/' | '/dashboard' | '/feed'> => {
+  try {
+    const supabase = await getSupabase();
+    const { data, error } = await supabase
+      .from('feature_flags')
+      .select('key, enabled')
+      .in('key', ['feed', 'dashboard']);
+    if (error) return '/feed';
+
+    const flags = new Map(
+      (data ?? []).map((row) => [row.key, row.enabled === true]),
+    );
+    if (flags.get('feed') !== false) return '/feed';
+    if (flags.get('dashboard') !== false) return '/dashboard';
+    return '/';
+  } catch {
+    return '/feed';
+  }
+};
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
  * Always render as the canonical "/" destination.
  */
 export const Home = () => {
-  const feedEnabled = useFeatureFlag('feed');
-  const dashboardEnabled = useFeatureFlag('dashboard');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scrollMilestonesSeenRef = useRef<Set<number>>(new Set());
   const belowFoldTrackedRef = useRef(false);
+  const authStartedRef = useRef(false);
 
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<{ id: string } | null>(null);
   /** When session exists, we only redirect to /feed if onboarded; otherwise stay on home. */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [postAuthPath, setPostAuthPath] = useState<
+    '/' | '/dashboard' | '/feed'
+  >('/feed');
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -38,40 +60,53 @@ export const Home = () => {
     [],
   );
 
-  const PRIMARY_VIDEO_SRC = '/assets/video/hero-green-pinky.mp4';
-  const FALLBACK_VIDEO_SRC = '/assets/video/hero-bg.mp4';
+  const [videoFailed, setVideoFailed] = useState(false);
 
-  const [videoSrc, setVideoSrc] = useState(PRIMARY_VIDEO_SRC);
-
-  // Show text only after the video finishes (or immediately if reduced motion).
-  const [showContent, setShowContent] = useState<boolean>(
-    prefersReducedMotion ? true : false,
-  );
+  const [showContent, setShowContent] = useState(true);
 
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
-  // AUTH: session + onboarding. Redirect to /feed only when onboarded; else stay on home.
+  const ensureVideoPlayback = useCallback(() => {
+    const el = videoRef.current;
+    if (!el || prefersReducedMotion) return;
+    try {
+      const playAttempt = el.play();
+      if (playAttempt && typeof playAttempt.catch === 'function') {
+        void playAttempt.catch(() => {
+          // Best effort only. If autoplay is blocked, the page still remains usable.
+        });
+      }
+    } catch {
+      // Best effort only. If autoplay is blocked, the page still remains usable.
+    }
+  }, [prefersReducedMotion]);
+
   useEffect(() => {
     let mounted = true;
+    let unsubscribe: (() => void) | null = null;
 
-    const checkSession = async () => {
+    const loadAuthState = async () => {
       try {
+        const supabase = await getSupabase();
         const { data, error: sessionError } = await supabase.auth.getSession();
-
         if (!mounted) return;
 
-        if (sessionError)
+        if (sessionError) {
           console.warn('Session check warning:', sessionError.message);
+        }
 
         const user = data.session?.user;
         setSession(user ? { id: user.id } : null);
         if (!user) {
           setOnboarded(null);
-          setIsLoading(false);
           return;
         }
+
+        setPostAuthPath(await resolvePostAuthPath());
+        if (!mounted) return;
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name, join_reason, participation_style')
@@ -79,44 +114,85 @@ export const Home = () => {
           .maybeSingle();
         if (!mounted) return;
         setOnboarded(profile ? isProfileOnboarded(profile) : false);
-        setIsLoading(false);
       } catch (err) {
-        console.error('Session check failed:', err);
         if (mounted) {
           setError(toMessage(err));
           setOnboarded(null);
-          setIsLoading(false);
         }
       }
     };
 
-    void checkSession();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+    const startAuth = () => {
+      if (authStartedRef.current) return;
+      authStartedRef.current = true;
+      void loadAuthState();
+      void (async () => {
+        const supabase = await getSupabase();
         if (!mounted) return;
-        setSession(newSession?.user ? { id: newSession.user.id } : null);
-        if (!newSession?.user) setOnboarded(null);
-        setIsLoading(false);
-      },
-    );
+        const { data: sub } = supabase.auth.onAuthStateChange(
+          async (_event, newSession) => {
+            if (!mounted) return;
+            setSession(newSession?.user ? { id: newSession.user.id } : null);
+            if (!newSession?.user) {
+              setOnboarded(null);
+              return;
+            }
+            setPostAuthPath(await resolvePostAuthPath());
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, join_reason, participation_style')
+              .eq('id', newSession.user.id)
+              .maybeSingle();
+            if (!mounted) return;
+            setOnboarded(profile ? isProfileOnboarded(profile) : false);
+          },
+        );
+        unsubscribe = () => sub.subscription.unsubscribe();
+      })();
+    };
 
-    const safetyTimer = setTimeout(() => {
-      if (mounted && isLoading) setIsLoading(false);
-    }, 1500);
+    const triggerAuthBootstrap = () => {
+      startAuth();
+      window.removeEventListener('pointerdown', triggerAuthBootstrap);
+      window.removeEventListener('pointermove', triggerAuthBootstrap);
+      window.removeEventListener('keydown', triggerAuthBootstrap);
+      window.removeEventListener('focus', triggerAuthBootstrap);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        triggerAuthBootstrap();
+      }
+    };
+
+    window.addEventListener('pointerdown', triggerAuthBootstrap, {
+      passive: true,
+    });
+    window.addEventListener('pointermove', triggerAuthBootstrap, {
+      passive: true,
+      once: true,
+    });
+    window.addEventListener('keydown', triggerAuthBootstrap);
+    window.addEventListener('focus', triggerAuthBootstrap);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
-      sub.subscription.unsubscribe();
+      window.removeEventListener('pointerdown', triggerAuthBootstrap);
+      window.removeEventListener('pointermove', triggerAuthBootstrap);
+      window.removeEventListener('keydown', triggerAuthBootstrap);
+      window.removeEventListener('focus', triggerAuthBootstrap);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      unsubscribe?.();
     };
-  }, [isLoading]);
+  }, []);
 
   // When session exists but onboarded is still null (e.g. auth state changed), resolve onboarding.
   useEffect(() => {
     if (!session?.id || onboarded !== null) return;
     let mounted = true;
     void (async () => {
+      const supabase = await getSupabase();
       const { data: profile } = await supabase
         .from('profiles')
         .select('display_name, join_reason, participation_style')
@@ -182,43 +258,9 @@ export const Home = () => {
     }
   }, [prefersReducedMotion]);
 
-  const handleVideoError = () => {
-    // IMPORTANT:
-    // Do NOT show the content on error.
-    // Swap to fallback video and still wait for onEnded.
-    if (videoSrc !== FALLBACK_VIDEO_SRC) {
-      setVideoSrc(FALLBACK_VIDEO_SRC);
-
-      // Try to restart playback with the new source.
-      requestAnimationFrame(() => {
-        const el = videoRef.current;
-        if (!el) return;
-        try {
-          el.load();
-          void el.play();
-        } catch {
-          // If play fails, we still do not reveal content yet.
-          // Let the user see the background overlay and the page will remain usable.
-        }
-      });
-
-      return;
-    }
-
-    // If even the fallback video errors, reveal content so the page is not stuck.
-    setHeroPhase('dimmed');
-    setShowContent(true);
-  };
-
-  if (isLoading) {
-    return <HomeSkeleton />;
-  }
-
-  const postAuthPath = feedEnabled
-    ? '/feed'
-    : dashboardEnabled
-      ? '/dashboard'
-      : '/';
+  useEffect(() => {
+    ensureVideoPlayback();
+  }, [ensureVideoPlayback]);
 
   // Signed-in and onboarded users go to the primary enabled surface.
   if (session && onboarded === true) {
@@ -226,55 +268,72 @@ export const Home = () => {
   }
 
   return (
-    <>
-      <Helmet>
-        <title>Business, but weirder. | WRDLNKDN</title>
-        <meta
-          name="description"
-          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
-        />
-        <link rel="canonical" href="https://wrdlnkdn.com" />
-        <meta property="og:url" content="https://wrdlnkdn.com" />
-        <meta property="og:title" content="Business, but weirder." />
-        <meta
-          property="og:description"
-          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://wrdlnkdn.com/og-image.png" />
-        <meta
-          property="og:image:alt"
-          content="WRDLNKDN - Business, but weirder."
-        />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Business, but weirder." />
-        <meta
-          name="twitter:description"
-          content="A professional networking space where you don't have to pretend. For people who build, create, and think differently."
-        />
-        <meta
-          name="twitter:image"
-          content="https://wrdlnkdn.com/og-image.png"
-        />
-      </Helmet>
+    <main className="home-landing" data-testid="signed-out-landing">
+      <section className="home-landing__hero">
+        {!prefersReducedMotion && !videoFailed ? (
+          <video
+            ref={videoRef}
+            className={`home-landing__video${heroPhase === 'dimmed' ? ' home-landing__video--dimmed' : ''}`}
+            autoPlay
+            muted
+            loop={false}
+            playsInline
+            preload="metadata"
+            poster="/assets/video/hero-bg-poster.jpg"
+            onLoadedMetadata={setPlaybackRate}
+            onCanPlay={setPlaybackRate}
+            onLoadedData={ensureVideoPlayback}
+            onEnded={handleVideoEnded}
+            onError={() => {
+              setVideoFailed(true);
+              setHeroPhase('dimmed');
+            }}
+            aria-hidden="true"
+          >
+            <source
+              media="(max-width: 767px)"
+              src="/assets/video/hero-bg-mobile.mp4"
+              type="video/mp4"
+            />
+            <source src="/assets/video/hero-bg-desktop.mp4" type="video/mp4" />
+          </video>
+        ) : null}
 
-      <HomeHero
-        error={error}
-        onClearError={() => setError(null)}
-        videoRef={videoRef}
-        videoSrc={videoSrc}
-        showContent={showContent}
-        heroPhase={heroPhase}
-        prefersReducedMotion={prefersReducedMotion}
-        onLoadedMetadata={setPlaybackRate}
-        onCanPlay={setPlaybackRate}
-        onVideoEnded={handleVideoEnded}
-        onVideoError={handleVideoError}
-      />
+        <div
+          className={`home-landing__video-overlay${heroPhase === 'dimmed' ? ' home-landing__video-overlay--dimmed' : ''}`}
+        />
 
+        <div
+          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
+          data-testid="app-main"
+        >
+          <div className="home-landing__hero-grid">
+            <div className="home-landing__headline">
+              {error ? (
+                <div className="home-landing__error" role="alert">
+                  {error}
+                </div>
+              ) : null}
+              <h1 className="home-landing__title">WRDLNKDN</h1>
+              <div className="home-landing__copy">
+                <p className="home-landing__pronunciation">
+                  (Weird Link-uh-din)
+                </p>
+                <p className="home-landing__tagline">Business, but weirder.</p>
+                <p className="home-landing__subcopy">
+                  A networking space for people that think differently
+                </p>
+              </div>
+            </div>
+            <div className="home-landing__cta">
+              <GuestView buttonsOnly />
+            </div>
+          </div>
+        </div>
+      </section>
       <WhatMakesDifferent />
       <HowItWorks />
       <SocialProof />
-    </>
+    </main>
   );
 };

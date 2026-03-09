@@ -1,55 +1,37 @@
-import { Box, Container, Grid, Typography } from '@mui/material';
-
 export const WhatMakesDifferent = () => {
   return (
-    <Box
-      component="section"
+    <section
+      className="home-landing__section home-landing__section--base"
       aria-labelledby="what-makes-different-heading"
-      sx={{
-        pt: 1.5,
-        pb: 6,
-        bgcolor: 'rgba(5, 7, 15, 0.95)',
-        borderTop: '1px solid',
-        borderColor: 'rgba(255,255,255,0.08)',
-      }}
     >
-      <Container maxWidth="lg">
-        <Typography
+      <div className="home-landing__container">
+        <h2
           id="what-makes-different-heading"
-          component="h2"
-          variant="h4"
-          sx={{
-            fontWeight: 600,
-            color: 'text.primary',
-            textAlign: 'center',
-            mb: 4,
-          }}
+          className="home-landing__section-title"
         >
           What Makes This Different
-        </Typography>
-        <Grid container spacing={4}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="h6" sx={{ color: 'primary.light', mb: 1.5 }}>
-              Values and intent
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+        </h2>
+        <div className="home-landing__grid home-landing__grid--two">
+          <article className="home-landing__card">
+            <h3 className="home-landing__card-title">Values and intent</h3>
+            <p className="home-landing__card-body">
               WRDLNKDN is built around shared values and clear intent. Your
-              profile reflects what you care about and how you want to show up—
+              profile reflects what you care about and how you want to show up,
               so connections are meaningful, not noisy.
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="h6" sx={{ color: 'primary.light', mb: 1.5 }}>
+            </p>
+          </article>
+          <article className="home-landing__card">
+            <h3 className="home-landing__card-title">
               How participation works
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </h3>
+            <p className="home-landing__card-body">
               Participation is the engine. Contribute, show up, and the network
-              grows with you. No algorithms pushing engagement—just people
+              grows with you. No algorithms pushing engagement, just people
               building a professional community on values and participation.
-            </Typography>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
   );
 };

@@ -1,11 +1,20 @@
-import { Box, Button, Paper, Tooltip, Typography } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { useState } from 'react';
-import { PortfolioPreviewModal } from '../dialogs/PortfolioPreviewModal';
 import { getResumeDisplayName } from '../../../lib/portfolio/resumeDisplayName';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
-import { ResumeCardFooter } from './resume/ResumeCardFooter';
-import { ResumeDeleteDialog } from './resume/ResumeDeleteDialog';
-import type { PortfolioItem } from '../../../types/portfolio';
 
 interface ResumeCardProps {
   url?: string | null;
@@ -40,7 +49,6 @@ export const ResumeCard = ({
   dragHandle,
 }: ResumeCardProps) => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const hasResume = Boolean(url);
   const hasThumbnail = Boolean(thumbnailUrl);
   const resumeTitle = getResumeDisplayName({ fileName, url });
@@ -56,10 +64,6 @@ export const ResumeCard = ({
     !errorSuggestsUnsupported;
 
   const handleDeleteClick = () => setConfirmDeleteOpen(true);
-  const handleOpenPreview = () => {
-    if (!url) return;
-    setPreviewOpen(true);
-  };
   const handleConfirmDelete = async () => {
     if (onDelete) {
       await Promise.resolve(onDelete());
@@ -73,23 +77,6 @@ export const ResumeCard = ({
 
   // No ghost container: when owner has no resume, parent shows action buttons only.
   if (!hasResume && isOwner) return null;
-
-  const resumePreviewItem: PortfolioItem | null = url
-    ? {
-        id: '__resume_preview__',
-        owner_id: '',
-        title: resumeTitle,
-        description: 'Resume artifact',
-        image_url: null,
-        project_url: url,
-        tech_stack: ['resume'],
-        created_at: '',
-        embed_url: null,
-        resolved_type: null,
-        thumbnail_url: thumbnailUrl ?? null,
-        thumbnail_status: null,
-      }
-    : null;
 
   return (
     <>
@@ -236,28 +223,132 @@ export const ResumeCard = ({
           </Box>
         </>
         {url != null && (
-          <ResumeCardFooter
-            dragHandle={dragHandle}
-            onOpen={handleOpenPreview}
-            onDelete={onDelete ? handleDeleteClick : undefined}
-            deleteBusy={deleteBusy}
-            retryThumbnailBusy={retryThumbnailBusy}
-          />
+          <Box
+            sx={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              gap: 0.5,
+              px: 1.25,
+              pt: 1.25,
+              pb: 0.75,
+              minHeight: 40,
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                minHeight: 28,
+              }}
+            >
+              {dragHandle}
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                minHeight: 28,
+              }}
+            >
+              <Tooltip title="Open document">
+                <Box
+                  component="span"
+                  sx={{ display: 'inline-flex', alignItems: 'center' }}
+                >
+                  <IconButton
+                    component="a"
+                    href={url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="small"
+                    aria-label="Open document"
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{
+                      bgcolor: 'transparent',
+                      minWidth: 32,
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      color: '#b9c3dd',
+                      border: '1px solid rgba(255,255,255,0.28)',
+                      borderRadius: 1,
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                      '&:hover': {
+                        bgcolor: 'rgba(0,196,204,0.22)',
+                        color: '#ecfeff',
+                        borderColor: 'rgba(0,196,204,0.65)',
+                      },
+                    }}
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Tooltip>
+              {onDelete && (
+                <Tooltip title="Delete resume">
+                  <IconButton
+                    size="small"
+                    onClick={handleDeleteClick}
+                    disabled={deleteBusy || retryThumbnailBusy}
+                    aria-label="Delete resume"
+                    sx={{
+                      bgcolor: 'transparent',
+                      minWidth: 32,
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      color: '#fbc7c7',
+                      border: '1px solid rgba(255,132,132,0.35)',
+                      borderRadius: 1,
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                      '&:hover': {
+                        bgcolor: 'rgba(255,77,77,0.25)',
+                        color: '#ffe5e5',
+                        borderColor: 'rgba(255,77,77,0.75)',
+                      },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          </Box>
         )}
       </Paper>
 
-      <ResumeDeleteDialog
+      <Dialog
         open={confirmDeleteOpen}
-        deleteBusy={deleteBusy}
-        onClose={() => setConfirmDeleteOpen(false)}
-        onConfirm={() => void handleConfirmDelete()}
-      />
-
-      <PortfolioPreviewModal
-        project={resumePreviewItem}
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-      />
+        onClose={() => !deleteBusy && setConfirmDeleteOpen(false)}
+        aria-labelledby="resume-delete-dialog-title"
+        aria-describedby="resume-delete-dialog-description"
+      >
+        <DialogTitle id="resume-delete-dialog-title">Delete resume</DialogTitle>
+        <DialogContent id="resume-delete-dialog-description">
+          <Typography>Are you sure you want to delete your resume?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmDeleteOpen(false)}
+            disabled={deleteBusy}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => void handleConfirmDelete()}
+            disabled={deleteBusy}
+          >
+            {deleteBusy ? 'Deleting…' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

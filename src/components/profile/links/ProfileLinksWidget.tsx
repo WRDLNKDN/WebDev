@@ -11,17 +11,16 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  CATEGORY_ORDER,
+  getCategoryForPlatform,
+} from '../../../constants/platforms';
+import {
   detectPlatformFromUrl,
   getShortLinkLabel,
-  normalizeUrlForDedup,
 } from '../../../lib/utils/linkPlatform';
 import { useState } from 'react';
 import type { SocialLink } from '../../../types/profile';
 import { LinkIcon } from './LinkIcon';
-import {
-  groupAndAlphabetizeLinks,
-  DISPLAY_CATEGORY_ORDER,
-} from '../../../lib/profile/groupAndAlphabetizeLinks';
 
 interface ProfileLinksWidgetProps {
   socials: SocialLink[];
@@ -37,8 +36,34 @@ interface ProfileLinksWidgetProps {
   defaultExpanded?: boolean;
 }
 
+type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
+const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
+  'Professional',
+  'Social',
+  'Content',
+  'Other',
+];
+
 /** Collapsible section header for the links list in Identity. */
 export const LINKS_COLLAPSIBLE_HEADER = 'LINKS';
+
+const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
+  if (
+    link.category === 'Professional' ||
+    link.category === 'Social' ||
+    link.category === 'Content'
+  ) {
+    return link.category;
+  }
+  // Custom or unknown: infer from platform so we don't mis-group
+  const platform =
+    link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
+  const inferred = getCategoryForPlatform(platform);
+  if (inferred === 'Professional') return 'Professional';
+  if (inferred === 'Social') return 'Social';
+  if (inferred === 'Content') return 'Content';
+  return 'Other';
+};
 
 export const ProfileLinksWidget = ({
   socials,
@@ -48,55 +73,32 @@ export const ProfileLinksWidget = ({
   collapsible = grouped,
   defaultExpanded = true,
 }: ProfileLinksWidgetProps) => {
-  const resolveExternalHref = (rawUrl: string): string | null => {
-    const normalized = normalizeUrlForDedup(rawUrl);
-    if (/^https?:\/\//i.test(normalized)) return normalized;
-    const trimmed = rawUrl.trim();
-    if (!trimmed) return null;
-    const withScheme = /^https?:\/\//i.test(trimmed)
-      ? trimmed
-      : `https://${trimmed}`;
-    try {
-      const parsed = new URL(withScheme);
-      return /^https?:$/i.test(parsed.protocol) ? parsed.toString() : null;
-    } catch {
-      return null;
-    }
-  };
-
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [collapsedByCategory, setCollapsedByCategory] = useState<
-    Partial<Record<(typeof DISPLAY_CATEGORY_ORDER)[number], boolean>>
-  >({});
-  const rawSocials = Array.isArray(socials) ? socials : [];
-  const visibleLinks = rawSocials.filter((s) => s.isVisible !== false);
-  const showOwnerShellWhenEmpty =
-    isOwner && grouped && collapsible && rawSocials.length === 0;
 
-  if (visibleLinks.length === 0 && !showOwnerShellWhenEmpty) return null;
+  // 1. HARDENED SAFETY CHECK:
+  // We explicitly check Array.isArray to prevent crashes if Supabase sends {}
+  if (!socials || !Array.isArray(socials) || socials.length === 0) return null;
 
-  // 3. For grouped mode: use groupAndAlphabetizeLinks (groups by category,
-  //    sorts alphabetically by label within each group).
-  //    For flat mode: sort alphabetically by label across all links.
-  const groupedLinks = grouped ? groupAndAlphabetizeLinks(visibleLinks) : null;
+  // 2. Filter for visible links only
+  const visibleLinks = socials.filter((s) => s.isVisible);
 
-  const flatSortedLinks = !grouped
-    ? [...visibleLinks].sort((a, b) =>
-        (a.label || a.platform || '')
-          .toLowerCase()
-          .localeCompare((b.label || b.platform || '').toLowerCase()),
-      )
-    : [];
+  if (visibleLinks.length === 0) return null;
+
+  // Sort all visible links by schema category order, then by link order
+  const sortedLinks = [...visibleLinks].sort((a, b) => {
+    const catA = CATEGORY_ORDER.indexOf(a.category);
+    const catB = CATEGORY_ORDER.indexOf(b.category);
+    if (catA !== catB) return catA - catB;
+    return a.order - b.order;
+  });
 
   const renderLink = (link: SocialLink) => {
     const displayPlatform = link.platform?.trim()
       ? link.platform
       : detectPlatformFromUrl(link.url);
-    const href = resolveExternalHref(link.url);
     return (
       <Box
         key={link.id}
-        data-testid={`link-row-${link.id}`}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -110,10 +112,9 @@ export const ProfileLinksWidget = ({
         }}
       >
         <Link
-          href={href ?? undefined}
+          href={link.url}
           target="_blank"
           rel="noopener noreferrer"
-          aria-disabled={href ? undefined : true}
           underline="none"
           sx={{
             display: 'flex',
@@ -124,8 +125,6 @@ export const ProfileLinksWidget = ({
             fontSize: '0.9rem',
             fontWeight: 500,
             transition: 'all 0.2s',
-            pointerEvents: href ? 'auto' : 'none',
-            opacity: href ? 1 : 0.6,
             '&:hover': {
               color: 'primary.main',
               transform: 'translateX(4px)',
@@ -174,77 +173,47 @@ export const ProfileLinksWidget = ({
     );
   };
 
+  const groupedLinks = grouped
+    ? sortedLinks.reduce<Record<DisplayCategory, SocialLink[]>>(
+        (acc, link) => {
+          const key = normalizeDisplayCategory(link);
+          acc[key] = acc[key] ? [...acc[key], link] : [link];
+          return acc;
+        },
+        {
+          Professional: [],
+          Social: [],
+          Content: [],
+          Other: [],
+        },
+      )
+    : null;
+
   const content = !grouped ? (
-    <Stack spacing={1} data-testid="profile-links-widget">
-      {flatSortedLinks.map((link) => renderLink(link))}
-    </Stack>
+    <Stack spacing={1}>{sortedLinks.map((link) => renderLink(link))}</Stack>
   ) : (
-    <Stack
-      spacing={1.5}
-      sx={{ width: '100%' }}
-      data-testid="profile-links-widget"
-    >
+    <Stack spacing={1.5} sx={{ width: '100%' }}>
       {DISPLAY_CATEGORY_ORDER.filter(
-        (category) => groupedLinks![category].length > 0,
-      ).map((category) => {
-        const categoryCollapsed = collapsedByCategory[category] === true;
-        return (
-          <Box key={category} data-testid={`link-group-${category}`}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() =>
-                setCollapsedByCategory((prev) => ({
-                  ...prev,
-                  [category]: !categoryCollapsed,
-                }))
-              }
-              aria-expanded={!categoryCollapsed}
-              aria-controls={`link-group-content-${category}`}
-              id={`link-group-header-${category}`}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                border: 'none',
-                background: 'none',
-                p: 0,
-                cursor: 'pointer',
-                color: 'text.secondary',
-                textAlign: 'left',
-                width: '100%',
-                mb: 0.5,
-                '&:hover': { color: 'text.primary' },
-              }}
-            >
-              <Typography
-                variant="overline"
-                sx={{
-                  fontSize: '0.66rem',
-                  letterSpacing: 1.2,
-                  color: 'inherit',
-                  display: 'block',
-                }}
-              >
-                {category}
-              </Typography>
-              {categoryCollapsed ? (
-                <ExpandMoreIcon sx={{ fontSize: 16 }} aria-hidden />
-              ) : (
-                <ExpandLessIcon sx={{ fontSize: 16 }} aria-hidden />
-              )}
-            </Box>
-            <Collapse
-              in={!categoryCollapsed}
-              id={`link-group-content-${category}`}
-            >
-              <Stack spacing={0.75}>
-                {groupedLinks![category].map((link) => renderLink(link))}
-              </Stack>
-            </Collapse>
-          </Box>
-        );
-      })}
+        (category) => groupedLinks![category].length,
+      ).map((category) => (
+        <Box key={category}>
+          <Typography
+            variant="overline"
+            sx={{
+              fontSize: '0.66rem',
+              letterSpacing: 1.2,
+              color: 'text.secondary',
+              display: 'block',
+              mb: 0.5,
+            }}
+          >
+            {category}
+          </Typography>
+          <Stack spacing={0.75}>
+            {groupedLinks![category].map((link) => renderLink(link))}
+          </Stack>
+        </Box>
+      ))}
     </Stack>
   );
 

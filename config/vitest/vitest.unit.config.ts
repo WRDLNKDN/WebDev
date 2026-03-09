@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom', // or 'node' if these are node-only
+    environment: 'node',
     globals: true,
 
     include: [

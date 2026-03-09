@@ -30,7 +30,7 @@ export default defineConfig({
       '**/.next/**',
       '**/playwright-report/**',
       '**/test-results/**',
-      'src/e2e/**',
+      'src/tests/e2e/**',
     ],
   },
 });

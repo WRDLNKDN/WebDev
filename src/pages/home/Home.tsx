@@ -1,14 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
-import { HowItWorks } from '../../components/home/HowItWorks';
-import { SocialProof } from '../../components/home/SocialProof';
-import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 import '../../components/home/homeLanding.css';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+
+const WhatMakesDifferent = lazy(async () => ({
+  default: (await import('../../components/home/WhatMakesDifferent'))
+    .WhatMakesDifferent,
+}));
+const HowItWorks = lazy(async () => ({
+  default: (await import('../../components/home/HowItWorks')).HowItWorks,
+}));
+const SocialProof = lazy(async () => ({
+  default: (await import('../../components/home/SocialProof')).SocialProof,
+}));
 
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
@@ -331,9 +347,11 @@ export const Home = () => {
           </div>
         </div>
       </section>
-      <WhatMakesDifferent />
-      <HowItWorks />
-      <SocialProof />
+      <Suspense fallback={null}>
+        <WhatMakesDifferent />
+        <HowItWorks />
+        <SocialProof />
+      </Suspense>
     </main>
   );
 };

@@ -53,6 +53,7 @@ export const IdentityHeader = ({
 }: IdentityHeaderProps) => (
   <Paper
     elevation={0}
+    data-testid="identity-header"
     sx={{
       p: { xs: 1.5, sm: 2, md: 4 },
       borderRadius: 4,

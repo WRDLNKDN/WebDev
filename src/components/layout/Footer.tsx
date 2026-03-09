@@ -69,6 +69,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
       })),
     [showChatLink],
   );
+  const sectionTestId = (title: string) =>
+    `footer-section-${title.toLowerCase().replace(/\s+/g, '-')}`;
 
   const footerStructuredData = useMemo(() => {
     const origin =
@@ -297,7 +299,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   return (
                     <Box
                       key={section.title}
-                      data-testid={`footer-section-${section.title.toLowerCase()}`}
+                      data-testid={sectionTestId(section.title)}
                       sx={{
                         border: '1px solid',
                         borderColor: dividerColor,

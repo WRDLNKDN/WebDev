@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
@@ -21,13 +22,15 @@ import { GlobalFormTooltips } from './components/common/GlobalFormTooltips';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GlobalFormTooltips />
+    <HelmetProvider>
+      <GlobalFormTooltips />
 
-    {/* Keep the root entry plain so the landing page can avoid eager MUI boot. */}
-    <RootErrorBoundary>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </RootErrorBoundary>
+      {/* Keep the root entry plain so the landing page can avoid eager MUI boot. */}
+      <RootErrorBoundary>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </RootErrorBoundary>
+    </HelmetProvider>
   </React.StrictMode>,
 );

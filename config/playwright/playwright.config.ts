@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const isCI = process.env.CI === 'true';
+const LOCAL_WORKERS = 6;
+const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '2');
 
 export default defineConfig({
   testDir: '../../src/tests/e2e',
@@ -12,7 +14,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 1, // 1 local retry for connection/setup flakiness
-  workers: isCI ? 1 : 4,
+  workers: isCI ? CI_WORKERS : LOCAL_WORKERS,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 

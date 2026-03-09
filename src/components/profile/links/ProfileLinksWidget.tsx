@@ -196,7 +196,7 @@ export const ProfileLinksWidget = ({
       {DISPLAY_CATEGORY_ORDER.filter(
         (category) => groupedLinks![category].length,
       ).map((category) => (
-        <Box key={category}>
+        <Box key={category} data-testid={`link-group-${category}`}>
           <Typography
             variant="overline"
             sx={{

@@ -218,11 +218,15 @@ export const EditLinksDialog = ({
         const catA = CATEGORY_ORDER.indexOf(a.category);
         const catB = CATEGORY_ORDER.indexOf(b.category);
         if (catA !== catB) return catA - catB;
-        if (a.order !== b.order) return a.order - b.order;
-        const labelCmp = (a.label || '').localeCompare(b.label || '');
+        const labelA = getShortLinkLabel(a.url).toLowerCase();
+        const labelB = getShortLinkLabel(b.url).toLowerCase();
+        const labelCmp = labelA.localeCompare(labelB);
         if (labelCmp !== 0) return labelCmp;
-        const urlCmp = a.url.localeCompare(b.url);
+        const urlCmp = a.url.toLowerCase().localeCompare(b.url.toLowerCase());
         if (urlCmp !== 0) return urlCmp;
+        if (a.order !== b.order) return a.order - b.order;
+        const explicitLabelCmp = (a.label || '').localeCompare(b.label || '');
+        if (explicitLabelCmp !== 0) return explicitLabelCmp;
         return a.id.localeCompare(b.id);
       }),
     [links],
@@ -570,7 +574,11 @@ export const EditLinksDialog = ({
                 );
                 if (categoryLinks.length === 0) return null;
                 return (
-                  <Stack key={category} spacing={1}>
+                  <Stack
+                    key={category}
+                    spacing={1}
+                    data-testid={`edit-link-group-${category}`}
+                  >
                     <Typography
                       variant="overline"
                       sx={{
@@ -622,6 +630,7 @@ export const EditLinksDialog = ({
                                 variant="body2"
                                 fontWeight={600}
                                 noWrap
+                                data-testid="edit-link-label"
                               >
                                 {getShortLinkLabel(link.url)}
                               </Typography>

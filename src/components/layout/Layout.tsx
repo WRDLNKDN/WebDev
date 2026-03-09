@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   MessengerProvider,
@@ -9,18 +9,31 @@ import {
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { ChatPopover } from '../chat/overlay/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
-import { Footer } from './Footer';
 import { UatBanner } from './UatBanner';
-import { MessengerOverlay } from './MessengerOverlay';
-import { Navbar } from './Navbar';
 import { PAGE_BACKGROUND } from '../../theme/candyStyles';
+
+const Navbar = lazy(async () => ({
+  default: (await import('./Navbar')).Navbar,
+}));
+const Footer = lazy(async () => ({
+  default: (await import('./Footer')).Footer,
+}));
+const MessengerOverlay = lazy(async () => ({
+  default: (await import('./MessengerOverlay')).MessengerOverlay,
+}));
+const ChatPopover = lazy(async () => ({
+  default: (await import('../chat/overlay/ChatPopover')).ChatPopover,
+}));
 
 const PAGE_BG = {
   ...PAGE_BACKGROUND,
   backgroundAttachment: { xs: 'scroll', md: 'fixed' },
 };
+
+const NavbarFallback = () => (
+  <Box sx={{ minHeight: { xs: 56, md: 64 }, flexShrink: 0 }} />
+);
 
 const LayoutContent = () => {
   const { pathname } = useLocation();
@@ -84,7 +97,9 @@ const LayoutContent = () => {
         ...PAGE_BG,
       }}
     >
-      <Navbar />
+      <Suspense fallback={<NavbarFallback />}>
+        <Navbar />
+      </Suspense>
       <Box
         className="app-scroll-container"
         data-testid="app-scroll-container"
@@ -117,15 +132,23 @@ const LayoutContent = () => {
       </Box>
       {!isHome && !isJoin && !isAdmin && (
         <Box component="footer" sx={{ flexShrink: 0 }}>
-          <Footer />
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
         </Box>
       )}
-      {!isAdmin && chatEnabled && <MessengerOverlay />}
+      {!isAdmin && chatEnabled && (
+        <Suspense fallback={null}>
+          <MessengerOverlay />
+        </Suspense>
+      )}
       {!isAdmin && chatEnabled && session?.user && messenger?.popoverRoomId && (
-        <ChatPopover
-          roomId={messenger.popoverRoomId}
-          onClose={messenger.closePopover}
-        />
+        <Suspense fallback={null}>
+          <ChatPopover
+            roomId={messenger.popoverRoomId}
+            onClose={messenger.closePopover}
+          />
+        </Suspense>
       )}
     </Box>
   );

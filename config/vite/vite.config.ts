@@ -39,6 +39,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          if (id.includes('emoji-picker-react')) return 'emoji-picker';
+          if (id.includes('@dicebear')) return 'dicebear';
+          if (id.includes('/uuid/') || id.includes('\\uuid\\')) return 'uuid';
           if (id.includes('@mui')) return 'mui';
           if (id.includes('@emotion')) return 'emotion';
           if (id.includes('@supabase')) return 'supabase';

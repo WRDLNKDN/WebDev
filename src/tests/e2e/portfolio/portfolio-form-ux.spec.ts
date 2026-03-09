@@ -68,18 +68,27 @@ test.describe('Add Project dialog UX', () => {
     });
   });
 
-  test('shows tooltip text when hovering form fields', async ({ page }) => {
+  const openAddProjectDialog = async (
+    page: import('@playwright/test').Page,
+  ) => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible();
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 30_000 });
 
-    const addButton = page.getByRole('button', {
+    const addArtifactButton = page.getByRole('button', {
       name: /add links, resume, or project/i,
     });
-    await expect(addButton).toBeEnabled({ timeout: 30_000 });
-    await addButton.click();
+    await expect(addArtifactButton).toBeVisible({ timeout: 30_000 });
+    await expect(addArtifactButton).toBeEnabled({ timeout: 30_000 });
+    await addArtifactButton.click();
+
     await page.getByRole('menuitem', { name: /add project/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/new project/i);
+    return dialog;
+  };
+
+  test('shows tooltip text when hovering form fields', async ({ page }) => {
+    const dialog = await openAddProjectDialog(page);
 
     const nameField = dialog.getByPlaceholder('Enter project name');
     await nameField.hover();
@@ -99,15 +108,7 @@ test.describe('Add Project dialog UX', () => {
   });
 
   test('aligns helper text with field edges', async ({ page }) => {
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible();
-    const addButton = page.getByRole('button', {
-      name: /add links, resume, or project/i,
-    });
-    await expect(addButton).toBeEnabled({ timeout: 30_000 });
-    await addButton.click();
-    await page.getByRole('menuitem', { name: /add project/i }).click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openAddProjectDialog(page);
 
     const categoriesField = dialog.getByPlaceholder(
       'Select one or more categories',

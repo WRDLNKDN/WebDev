@@ -1,4 +1,4 @@
-name: Nightly Accessibility Audit
+name: ♿ Nightly Accessibility Audit
 
 on:
   schedule:

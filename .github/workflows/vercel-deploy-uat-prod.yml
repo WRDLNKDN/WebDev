@@ -1,4 +1,4 @@
-name: Vercel Deploy UAT then PROD (approval gated)
+name: 🚀 Vercel Deploy UAT then PROD (approval gated)
 
 on:
   push:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy-uat:
-    name: Vercel UAT (Production)
+    name: 🚀 Vercel UAT (Production)
     runs-on: ubuntu-latest
     environment: uat
 
@@ -32,22 +32,22 @@ jobs:
       VITE_APP_ENV: uat
 
     steps:
-      - name: Checkout
+      - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: 🧰 Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Quality gate (typecheck, lint, tests)
+      - name: ✅ Quality gate (typecheck, lint, tests)
         run: npm run check
 
-      - name: Verify secrets (UAT)
+      - name: 🔐 Verify secrets (UAT)
         run: |
           set -e
           [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
@@ -60,30 +60,30 @@ jobs:
             exit 1
           fi
 
-      - name: Link Vercel project (UAT)
+      - name: 🔗 Link Vercel project (UAT)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json
 
-      - name: Pull (production)
+      - name: 📥 Pull (production)
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
 
-      - name: Clean build output and caches
+      - name: 🧹 Clean build output and caches
         run: rm -rf dist node_modules/.vite
 
-      - name: Build (UAT → webdev-uat.vercel.app)
+      - name: 🏗️ Build (UAT -> webdev-uat.vercel.app)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
 
-      - name: Deploy (production)
+      - name: 🚀 Deploy (production)
         run:
           npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"
 
   deploy-prod:
-    name: Vercel PROD (Production, approval gated)
+    name: 🚀 Vercel PROD (Production, approval gated)
     runs-on: ubuntu-latest
     needs: deploy-uat
     environment: production
@@ -103,22 +103,22 @@ jobs:
       VITE_APP_ENV: production
 
     steps:
-      - name: Checkout
+      - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: 🧰 Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Quality gate (typecheck, lint, tests)
+      - name: ✅ Quality gate (typecheck, lint, tests)
         run: npm run check
 
-      - name: Verify secrets (PROD)
+      - name: 🔐 Verify secrets (PROD)
         run: |
           set -e
           [ -n "${VERCEL_TOKEN:-}" ] || (echo "::error::Missing VERCEL_TOKEN" && exit 1)
@@ -127,24 +127,24 @@ jobs:
           [ -n "${VITE_SUPABASE_URL:-}" ] || (echo "::error::Missing SUPABASE_PROD_URL" && exit 1)
           [ -n "${VITE_SUPABASE_ANON_KEY:-}" ] || (echo "::error::Missing SUPABASE_PROD_ANON_KEY" && exit 1)
 
-      - name: Link Vercel project (PROD)
+      - name: 🔗 Link Vercel project (PROD)
         run: |
           mkdir -p .vercel
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json
 
-      - name: Pull (production)
+      - name: 📥 Pull (production)
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
 
-      - name: Clean build output and caches
+      - name: 🧹 Clean build output and caches
         run: rm -rf dist node_modules/.vite
 
-      - name: Build (production)
+      - name: 🏗️ Build (production)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
 
-      - name: Deploy (production)
+      - name: 🚀 Deploy (production)
         run:
           npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"

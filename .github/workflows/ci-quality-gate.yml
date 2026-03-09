@@ -1,4 +1,4 @@
-name: CI – Quality Gate
+name: ✅ CI - Quality Gate
 
 on:
   pull_request:
@@ -116,28 +116,46 @@ jobs:
           echo "Skipping Playwright UI in CI (no display). Run npm run
           test:e2e:ui locally."
 
-      # -----------------------
-      # Summary gate (single status)
-      # -----------------------
-      - name: WebDevExpected (summary gate)
-        if: always()
+  rls:
+    name: 🛡️ RLS CI
+    runs-on: ubuntu-latest
+
+    env:
+      VITE_SUPABASE_URL: 'https://example.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🛡️ Vitest (RLS)
+        run: npm run test:rls
+
+  summary:
+    name: 🚦 WebDevExpected
+    runs-on: ubuntu-latest
+    needs: [webdev, rls]
+    if: always()
+
+    steps:
+      - name: 🚦 Summary gate
         run: |
-          echo "lint:      ${{ steps.lint.outcome }}"
-          echo "typecheck: ${{ steps.typecheck.outcome }}"
-          echo "format:    ${{ steps.format.outcome }}"
-          echo "mdlint:    ${{ steps.mdlint.outcome }}"
-          echo "unit:      ${{ steps.unit.outcome }}"
-          echo "pwinstall: ${{ steps.pwinstall.outcome }}"
-          echo "e2e:       ${{ steps.e2e.outcome }}"
+          echo "webdev: ${{ needs.webdev.result }}"
+          echo "rls:    ${{ needs.rls.result }}"
 
           fail=0
-          [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.format.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.mdlint.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.unit.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.pwinstall.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.e2e.outcome }}" = "success" ] || fail=1
+          [ "${{ needs.webdev.result }}" = "success" ] || fail=1
+          [ "${{ needs.rls.result }}" = "success" ] || fail=1
 
           if [ "$fail" -ne 0 ]; then
             echo ""

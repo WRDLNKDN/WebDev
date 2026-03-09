@@ -2,10 +2,9 @@ import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { FeedAdCardMenu } from './ad/FeedAdCardMenu';
-import {
-  parseFeedAdvertiserLinks,
-  type FeedAdvertiser,
-} from './ad/feedAdTypes';
+import { parseFeedAdvertiserLinks } from './ad/feedAdTypes';
+export type { FeedAdvertiser } from './ad/feedAdTypes';
+import type { FeedAdvertiser } from './ad/feedAdTypes';
 
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??

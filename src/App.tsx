@@ -1,74 +1,46 @@
-import { Box, CircularProgress } from '@mui/material';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import {
   Navigate,
-  type Location as RouterLocation,
   useLocation,
   useNavigate,
-  useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { AppOverlayRoutes, AppRouteTree } from './app/routing/AppRouteTree';
-import { AvatarProvider } from './context/AvatarContext';
-import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
-import { JoinProvider } from './context/JoinProvider';
+
 import { useKonamiCode } from './hooks/useKonamiCode';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
-import { supabase } from './lib/auth/supabaseClient';
+
+const AppShell = lazy(async () => import('./AppShell'));
+const PublicHomeSurface = lazy(async () => {
+  const m = await import('./app/PublicHomeSurface');
+  return { default: m.PublicHomeSurface };
+});
 
 const Loading = () => (
-  <Box
-    component="main"
-    sx={{ display: 'flex', justifyContent: 'center', py: 10 }}
+  <main
+    data-testid="app-main"
+    style={{
+      minHeight: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '4rem 1rem',
+      background: '#121212',
+      color: '#ffffff',
+    }}
   >
-    <CircularProgress aria-label="Loading application" />
-  </Box>
+    <div
+      aria-label="Loading application"
+      style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '0.02em' }}
+    >
+      Loading...
+    </div>
+  </main>
 );
-
-const AuthBoot = () => {
-  const lastVisibilityRefreshAtRef = useRef(0);
-
-  useEffect(() => {
-    void supabase.auth.getSession();
-  }, []);
-
-  useEffect(() => {
-    const ua = navigator.userAgent || '';
-    const isIOS =
-      /iP(hone|ad|od)/i.test(ua) ||
-      (/Macintosh/i.test(ua) && 'ontouchend' in window);
-    const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
-    if (!(isIOS && isWebKit)) return;
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        if (now - lastVisibilityRefreshAtRef.current < 60_000) return;
-        lastVisibilityRefreshAtRef.current = now;
-        void supabase.auth.refreshSession();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
-
-  return null;
-};
-
-const RedirectUToProfile = () => {
-  const { handle } = useParams<{ handle: string }>();
-  return <Navigate to={`/profile/${handle ?? ''}`} replace />;
-};
 
 const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-
-  const backgroundLocation = (
-    location.state as { backgroundLocation?: RouterLocation } | null
-  )?.backgroundLocation;
 
   useKonamiCode(() => {
     navigate('/divergence');
@@ -96,27 +68,22 @@ const App = () => {
 
   useEffect(() => {
     registerAnalyticsSinks();
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  return (
-    <>
-      <AuthBoot />
+  if (location.pathname === '/home') {
+    return <Navigate to="/" replace />;
+  }
 
-      <JoinProvider>
-        <AvatarProvider>
-          <FeatureFlagsProvider>
-            <Suspense fallback={<Loading />}>
-              <AppRouteTree
-                redirectUToProfile={<RedirectUToProfile />}
-                routesLocation={backgroundLocation ?? location}
-              />
-              {backgroundLocation ? <AppOverlayRoutes /> : null}
-            </Suspense>
-          </FeatureFlagsProvider>
-        </AvatarProvider>
-      </JoinProvider>
-    </>
+  const isPublicHome = location.pathname === '/';
+
+  return (
+    <Suspense fallback={<Loading />}>
+      {isPublicHome ? <PublicHomeSurface /> : <AppShell />}
+    </Suspense>
   );
 };
 

@@ -60,4 +60,29 @@ test.describe('Dashboard share profile modal', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
   });
+
+  test('sign out from profile menu returns to the home page', async ({
+    page,
+    context,
+  }) => {
+    const { stubAdminRpc } = await seedSignedInSession(context, {
+      handle: 'member',
+    });
+    await stubAdminRpc(page);
+    await stubAppSurface(page);
+
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 25_000,
+    });
+
+    const accountMenuButton = page.locator(
+      'button[aria-label="Account menu"]:visible',
+    );
+    await expect(accountMenuButton).toBeEnabled({ timeout: 20_000 });
+    await accountMenuButton.click();
+    await page.getByRole('menuitem', { name: 'Sign Out' }).click();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
 });

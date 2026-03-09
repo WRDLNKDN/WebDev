@@ -1,30 +1,28 @@
 import { defineConfig, devices } from '@playwright/test';
-import os from 'node:os';
 
 const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const isCI = process.env.CI === 'true';
-const localWorkers = Number.parseInt(process.env.E2E_WORKERS ?? '14', 10);
-const requestedLocalWorkers =
-  Number.isFinite(localWorkers) && localWorkers > 0 ? localWorkers : 14;
-const cpuSafeMaxWorkers = Math.max(2, os.cpus().length - 1);
-const resolvedLocalWorkers = Math.min(requestedLocalWorkers, cpuSafeMaxWorkers);
+const LOCAL_WORKERS = 6;
+const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '2');
 
 export default defineConfig({
-  testDir: './src/tests/e2e',
-  // Keep file-level parallelism via workers, but avoid intra-file contention.
-  fullyParallel: false,
+  testDir: '../../src/tests/e2e',
+  fullyParallel: !isCI, // CI stability over speed; local stays parallel
 
-  timeout: isCI ? 30_000 : 60_000,
-  expect: { timeout: isCI ? 10_000 : 20_000 },
+  timeout: 30_000, // fail faster on genuinely broken tests
+  expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 1, // 1 local retry for connection/setup flakiness
-  workers: isCI ? 1 : resolvedLocalWorkers,
+  workers: isCI ? CI_WORKERS : LOCAL_WORKERS,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 
   reporter: isCI
-    ? [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']]
+    ? [
+        ['html', { open: 'never', outputFolder: '../../playwright-report' }],
+        ['list'],
+      ]
     : 'list',
 
   use: {
@@ -32,8 +30,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: isCI ? 'retain-on-failure' : 'off', // video pipeline has overhead locally
     screenshot: 'only-on-failure',
-    actionTimeout: isCI ? 8_000 : 15_000,
-    navigationTimeout: isCI ? 30_000 : 60_000,
+    actionTimeout: 8_000,
+    navigationTimeout: 30_000,
   },
 
   webServer: {

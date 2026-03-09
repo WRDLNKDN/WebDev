@@ -1,8 +1,8 @@
 services:
   WRDLNKDN-ui:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.prod
     ports:
       - '8080:80'
     environment:

@@ -1,7 +1,8 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import React from 'react';
-import { IdentityBadges } from './badges/IdentityBadges';
 
 interface IdentityHeaderProps {
   displayName: string;
@@ -51,8 +52,8 @@ export const IdentityHeader = ({
   statusMessage: _statusMessage,
 }: IdentityHeaderProps) => (
   <Paper
-    data-testid="identity-header"
     elevation={0}
+    data-testid="identity-header"
     sx={{
       p: { xs: 1.5, sm: 2, md: 4 },
       borderRadius: 4,
@@ -265,4 +266,61 @@ export const IdentityHeader = ({
   </Paper>
 );
 
-export { IdentityBadges };
+interface IdentityBadgesProps {
+  onTagsClick?: () => void;
+  onSkillsClick?: () => void;
+}
+
+/** Badge row: Builder Tags, Skills, Edit Profile — Edit Profile is the main CTA */
+export const IdentityBadges = ({
+  onTagsClick,
+  onSkillsClick,
+}: IdentityBadgesProps) => {
+  const onEdit = onTagsClick ?? onSkillsClick;
+  return (
+    <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
+      <Chip
+        size="small"
+        icon={<LocalOfferIcon sx={{ fontSize: 16 }} />}
+        label="Builder Tags"
+        onClick={onTagsClick}
+        clickable={Boolean(onTagsClick)}
+        sx={{
+          bgcolor: 'rgba(255,193,7,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(255,193,7,0.35)',
+          cursor: onTagsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      <Chip
+        size="small"
+        icon={<PsychologyIcon sx={{ fontSize: 16 }} />}
+        label="Skills"
+        onClick={onSkillsClick}
+        clickable={Boolean(onSkillsClick)}
+        sx={{
+          bgcolor: 'rgba(236,64,122,0.15)',
+          color: 'text.primary',
+          border: '1px solid rgba(236,64,122,0.35)',
+          cursor: onSkillsClick ? 'pointer' : 'default',
+          '& .MuiChip-icon': { color: 'inherit' },
+        }}
+      />
+      {onEdit && (
+        <Chip
+          size="small"
+          label="Edit Profile"
+          onClick={onEdit}
+          clickable
+          sx={{
+            bgcolor: 'rgba(66,165,245,0.15)',
+            color: 'primary.light',
+            border: '1px solid rgba(66,165,245,0.4)',
+            cursor: 'pointer',
+          }}
+        />
+      )}
+    </Stack>
+  );
+};

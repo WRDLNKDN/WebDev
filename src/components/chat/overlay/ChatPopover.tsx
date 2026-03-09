@@ -5,12 +5,14 @@ import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from '../room/ChatRoomHeader';
 import { MessageInput } from '../message/MessageInput';
 import { MessageList } from '../message/MessageList';
+import { BlockConfirmDialog } from '../dialogs/BlockConfirmDialog';
+import { GroupActionsDialog } from '../dialogs/GroupActionsDialog';
+import { ReportDialog } from '../dialogs/ReportDialog';
 import { useChat, useReportMessage } from '../../../hooks/useChat';
 import { useChatPresence } from '../../../hooks/useChatPresence';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
 import { GLASS_CARD } from '../../../theme/candyStyles';
-import { ChatPopoverDialogs } from './ChatPopoverDialogs';
 
 const POPOVER_WIDTH = 460;
 const POPOVER_HEIGHT = 740;
@@ -250,27 +252,57 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
         )}
       </Box>
 
-      <ChatPopoverDialogs
-        room={room}
-        roomId={roomId}
-        uid={uid}
-        blockDialogOpen={blockDialogOpen}
-        groupDialogOpen={groupDialogOpen}
-        groupDialogMode={groupDialogMode}
-        reportOpen={reportOpen}
-        reportTarget={reportTarget}
-        otherMember={otherMember ?? null}
-        onClose={onClose}
-        onSetBlockDialogOpen={setBlockDialogOpen}
-        onSetGroupDialogOpen={setGroupDialogOpen}
-        onSetReportOpen={setReportOpen}
-        onSetReportTarget={setReportTarget}
-        onBlockUser={blockUser}
-        onRenameRoom={renameRoom}
-        onInviteMembers={inviteMembers}
-        onRemoveMember={removeMember}
-        onTransferAdmin={transferAdmin}
-        onSubmitReport={submitReport}
+      <BlockConfirmDialog
+        open={blockDialogOpen}
+        onClose={() => setBlockDialogOpen(false)}
+        onConfirm={async () => {
+          if (!otherMember?.user_id) return;
+          await blockUser(otherMember.user_id);
+          setBlockDialogOpen(false);
+          onClose();
+        }}
+        displayName={
+          otherMember?.profile?.display_name ||
+          otherMember?.profile?.handle ||
+          'this user'
+        }
+      />
+      {room && (
+        <GroupActionsDialog
+          open={groupDialogOpen}
+          mode={groupDialogMode}
+          onClose={() => setGroupDialogOpen(false)}
+          roomId={roomId}
+          roomName={room.name ?? ''}
+          currentMembers={room.members ?? []}
+          currentUserId={uid}
+          onRename={renameRoom}
+          onInvite={inviteMembers}
+          onRemove={removeMember}
+          onTransferAdmin={transferAdmin}
+        />
+      )}
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => {
+          setReportOpen(false);
+          setReportTarget(null);
+        }}
+        onSubmit={async (
+          reportedMessageId,
+          reportedUserId,
+          category,
+          freeText,
+        ) => {
+          await submitReport(
+            reportedMessageId ?? undefined,
+            reportedUserId ?? undefined,
+            category,
+            freeText,
+          );
+        }}
+        reportedMessageId={reportTarget?.messageId ?? null}
+        reportedUserId={reportTarget?.userId ?? null}
       />
     </>
   );

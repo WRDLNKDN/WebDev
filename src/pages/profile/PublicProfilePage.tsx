@@ -9,10 +9,10 @@ import { buildPortfolioCategorySections } from '../../lib/portfolio/portfolioSec
 import type { PortfolioItem } from '../../types/portfolio';
 import type { NerdCreds } from '../../types/profile';
 import {
-  type PublicProfilePayload,
   fetchPublicProfileByHandleOrId,
   normalizePublicSocials,
   safeDecode,
+  type PublicProfilePayload,
 } from './publicProfileData';
 import { PublicProfileContent } from './components/PublicProfileContent';
 
@@ -31,14 +31,14 @@ export const PublicProfilePage = () => {
       setLoading(false);
       return;
     }
+
     let cancelled = false;
+
     const load = async () => {
       const trimmedToken = shareToken.trim();
       let payload: PublicProfilePayload | null = null;
       let error: { message?: string } | null = null;
 
-      // Directory fallback routes:
-      // /p/h~<handle> and /p/i~<id>
       if (trimmedToken.startsWith('h~')) {
         payload = await fetchPublicProfileByHandleOrId(
           'handle',
@@ -61,21 +61,19 @@ export const PublicProfilePage = () => {
       }
 
       if (cancelled) return;
-      if (error || payload == null) {
+
+      if (error || payload == null || !payload.profile) {
         setNotFound(true);
         setLoading(false);
         return;
       }
-      const parsed = payload as unknown as PublicProfilePayload;
-      if (!parsed.profile) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      setData(parsed);
+
+      setData(payload);
       setLoading(false);
     };
+
     void load();
+
     return () => {
       cancelled = true;
     };
@@ -101,10 +99,15 @@ export const PublicProfilePage = () => {
     return <NotFoundPage />;
   }
 
-  const { profile: p, portfolio } = data;
+  const { profile, portfolio } = data;
   const creds = (
-    p.nerd_creds && typeof p.nerd_creds === 'object' ? p.nerd_creds : {}
+    profile.nerd_creds && typeof profile.nerd_creds === 'object'
+      ? profile.nerd_creds
+      : {}
   ) as NerdCreds;
+  const socials = normalizePublicSocials(profile.socials);
+  const showLinksInIdentity =
+    socials.length > 0 || hasVisibleSocialLinks(profile.socials);
   const resumeThumbnailUrl =
     typeof creds.resume_thumbnail_url === 'string'
       ? creds.resume_thumbnail_url
@@ -118,26 +121,27 @@ export const PublicProfilePage = () => {
       ? creds.resume_thumbnail_status
       : null;
   const selectedSkills = Array.isArray(creds.skills)
-    ? (creds.skills as string[]).map((s) => String(s).trim()).filter(Boolean)
+    ? creds.skills.map((skill) => String(skill).trim()).filter(Boolean)
     : typeof creds.skills === 'string'
       ? creds.skills
           .split(',')
-          .map((s) => s.trim())
+          .map((skill) => skill.trim())
           .filter(Boolean)
       : [];
-  const industryChips = getIndustryDisplayLabels(p)
+  const industryChips = getIndustryDisplayLabels(profile)
     .filter(Boolean)
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
-  if (p.niche_field) {
-    industryChips.push({ label: p.niche_field, key: `niche-${p.niche_field}` });
+
+  if (profile.niche_field) {
+    industryChips.push({
+      label: profile.niche_field,
+      key: `niche-${profile.niche_field}`,
+    });
   }
-  const socials = normalizePublicSocials(p.socials);
-  const showLinksInIdentity =
-    socials.length > 0 || hasVisibleSocialLinks(p.socials);
 
   const projects: PortfolioItem[] = (portfolio ?? []).map((item) => ({
     id: item.id,
-    owner_id: p.id,
+    owner_id: profile.id,
     title: item.title,
     description: item.description ?? null,
     image_url: item.image_url ?? null,
@@ -157,7 +161,7 @@ export const PublicProfilePage = () => {
 
   return (
     <PublicProfileContent
-      profile={p}
+      profile={profile}
       creds={creds}
       socials={socials}
       showLinksInIdentity={showLinksInIdentity}

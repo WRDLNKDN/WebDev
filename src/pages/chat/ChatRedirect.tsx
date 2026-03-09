@@ -1,5 +1,5 @@
 import { useTheme, useMediaQuery } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMessenger } from '../../context/MessengerContext';
 import { useChatRooms } from '../../hooks/useChat';
@@ -100,7 +100,6 @@ export const ChatRedirect = () => {
       navigate('/feed', { replace: true });
     };
     void run();
-<<<<<<< HEAD
   }, [
     mobile,
     navigate,
@@ -111,20 +110,6 @@ export const ChatRedirect = () => {
     createDm,
     loading,
   ]);
-||||||| parent of 4419ab94 (fixint it)
-  }, [navigate, roomId, withUserId, messenger, rooms, createDm, loading]);
-=======
-  }, [
-    navigate,
-    roomId,
-    withUserId,
-    messenger,
-    rooms,
-    createDm,
-    loading,
-    redirectTargetKey,
-  ]);
->>>>>>> 4419ab94 (fixint it)
 
   return null;
 };

@@ -105,6 +105,7 @@ export const ChatRedirect = () => {
     navigate,
     roomId,
     withUserId,
+    redirectTargetKey,
     messenger,
     rooms,
     createDm,

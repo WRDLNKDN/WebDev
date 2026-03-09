@@ -288,6 +288,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     md: 'repeat(3, minmax(0, 1fr))',
                   },
                   gap: 1.25,
+                  alignItems: 'stretch',
                 }}
               >
                 {sections.map((section) => {
@@ -307,6 +308,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           theme.palette.background.paper,
                           0.2,
                         ),
+                        minWidth: { md: 220 },
                       }}
                     >
                       <Box
@@ -319,8 +321,9 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           all: 'unset',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
                           width: '100%',
+                          minWidth: 0,
+                          gap: 0.75,
                           px: { xs: 1.5, md: 2 },
                           py: { xs: 1.1, md: 1.2 },
                           cursor: 'pointer',
@@ -332,7 +335,15 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           },
                         }}
                       >
-                        <Typography variant="subtitle2" fontWeight={700}>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={700}
+                          sx={{
+                            flex: '1 1 auto',
+                            minWidth: 0,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {section.title}
                         </Typography>
                         <Box
@@ -340,6 +351,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                           aria-hidden
                           sx={{
                             display: 'inline-flex',
+                            flexShrink: 0,
                             alignItems: 'center',
                             justifyContent: 'center',
                             width: 24,
@@ -477,7 +489,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '100%',
+                    width: 'fit-content',
+                    maxWidth: '100%',
                     position: 'relative',
                     overflow: 'hidden',
                     fontWeight: 800,
@@ -495,6 +508,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     background:
                       'linear-gradient(135deg, #0d5f59 0%, #118f87 42%, #1ecfb9 100%)',
                     boxSizing: 'border-box',
+                    alignSelf: { xs: 'flex-start', sm: 'flex-end' },
                     cursor: 'pointer',
                     boxShadow:
                       '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(255,255,255,0.16)',

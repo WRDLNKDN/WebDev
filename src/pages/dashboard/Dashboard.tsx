@@ -44,15 +44,15 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
-import { AddProjectDialog } from '../../components/portfolio/AddProjectDialog';
-import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
-import { PortfolioSortableList } from '../../components/portfolio/PortfolioSortableList';
-import { ResumeCard } from '../../components/portfolio/ResumeCard';
+import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
+import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
+import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
+import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
-import { IdentityHeader } from '../../components/profile/IdentityHeader';
-import { EditLinksDialog } from '../../components/profile/EditLinksDialog';
-import { LinkIcon } from '../../components/profile/LinkIcon';
-import { ShareProfileDialog } from '../../components/profile/ShareProfileDialog';
+import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
+import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
+import { LinkIcon } from '../../components/profile/links/LinkIcon';
+import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,

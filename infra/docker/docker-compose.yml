@@ -1,0 +1,10 @@
+services:
+  WRDLNKDN-ui:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.prod
+    ports:
+      - '8080:80'
+    environment:
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}

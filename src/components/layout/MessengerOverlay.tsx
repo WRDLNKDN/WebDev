@@ -24,8 +24,8 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
-import { CreateGroupDialog } from '../chat/CreateGroupDialog';
-import { StartDmDialog } from '../chat/StartDmDialog';
+import { CreateGroupDialog } from '../chat/dialogs/CreateGroupDialog';
+import { StartDmDialog } from '../chat/dialogs/StartDmDialog';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';

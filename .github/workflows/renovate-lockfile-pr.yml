@@ -1,4 +1,4 @@
-name: Renovate Lockfile Reproducibility Check
+name: 🤖 Renovate Lockfile Reproducibility Check
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   check-lockfile:
-    name: Validate lockfile integrity
+    name: 🔒 Validate lockfile integrity
     if:
       github.actor == 'renovate[bot]' && github.event.pull_request.draft ==
       false

@@ -1,0 +1,192 @@
+import CampaignIcon from '@mui/icons-material/Campaign';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FlagIcon from '@mui/icons-material/Flag';
+import HandshakeIcon from '@mui/icons-material/Handshake';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
+import {
+  Box,
+  Container,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Paper,
+  Typography,
+} from '@mui/material';
+import type { ReactNode } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { PAGE_BACKGROUND } from '../../../theme/candyStyles';
+
+const BG_SX = {
+  minHeight: '100%',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  overflowX: 'hidden' as const,
+  ...PAGE_BACKGROUND,
+  position: 'relative' as const,
+  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
+};
+
+const SIDEBAR_WIDTH = 260;
+
+type NavItem = {
+  label: string;
+  to: string;
+  icon: ReactNode;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', to: '/admin', icon: <DashboardIcon /> },
+  {
+    label: 'Content Moderation',
+    to: '/admin/content',
+    icon: <VideoLibraryIcon />,
+  },
+  {
+    label: 'Chat Reports',
+    to: '/admin/chat-reports',
+    icon: <ReportProblemIcon />,
+  },
+  {
+    label: 'Auth Callback Health',
+    to: '/admin/auth-callback-health',
+    icon: <MonitorHeartIcon />,
+  },
+  {
+    label: 'Advertisers',
+    to: '/admin/advertisers',
+    icon: <CampaignIcon />,
+  },
+  {
+    label: 'Community Partners',
+    to: '/admin/community-partners',
+    icon: <HandshakeIcon />,
+  },
+  {
+    label: 'Feature Flags',
+    to: '/admin/feature-flags',
+    icon: <FlagIcon />,
+  },
+];
+
+type Props = {
+  children: ReactNode;
+  title?: string;
+  subtitle?: string;
+};
+
+export const AdminLayout = ({ children, title, subtitle }: Props) => {
+  const location = useLocation();
+
+  const sidebar = (
+    <Paper
+      component="nav"
+      variant="outlined"
+      sx={{
+        width: SIDEBAR_WIDTH,
+        flexShrink: 0,
+        borderRadius: 2,
+        borderColor: 'rgba(255,255,255,0.12)',
+        bgcolor: 'rgba(16, 18, 24, 0.6)',
+        p: 1,
+      }}
+    >
+      <List disablePadding>
+        {NAV_ITEMS.map((item) => {
+          const isActive = location.pathname === item.to;
+          return (
+            <ListItem key={item.to} disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to={item.to}
+                selected={isActive}
+                sx={{
+                  borderRadius: 1,
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(255,255,255,0.08)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+    </Paper>
+  );
+
+  return (
+    <Box sx={{ ...BG_SX, position: 'relative' }}>
+      <Box sx={{ position: 'relative', flex: 1, py: 4, px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" disableGutters>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 3,
+              alignItems: 'flex-start',
+            }}
+          >
+            {/* Sidebar - sticky on desktop, horizontal scroll on mobile */}
+            <Box
+              sx={{
+                position: { md: 'sticky' },
+                top: 24,
+                width: { xs: '100%', md: SIDEBAR_WIDTH },
+                flexShrink: 0,
+              }}
+            >
+              {sidebar}
+            </Box>
+
+            {/* Main content */}
+            <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+              {/* Optional page title */}
+              {(title || subtitle) && (
+                <Box sx={{ mb: 3 }}>
+                  {title && (
+                    <Typography
+                      component="h1"
+                      variant="h4"
+                      sx={{ fontWeight: 800, mb: subtitle ? 0.5 : 0 }}
+                    >
+                      {title}
+                    </Typography>
+                  )}
+                  {subtitle && (
+                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                      {subtitle}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              <Paper
+                variant="outlined"
+                sx={{
+                  borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  bgcolor: 'rgba(16, 18, 24, 0.70)',
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
+                  p: { xs: 3, sm: 4 },
+                  color: '#fff',
+                }}
+              >
+                {children}
+              </Paper>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+    </Box>
+  );
+};

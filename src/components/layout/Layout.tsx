@@ -47,22 +47,6 @@ const LayoutContent = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
-    };
-    void init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
   // Prevent double scrollbars: this layout owns the only scroll container (same pattern as Join)
   useEffect(() => {
     const html = document.documentElement;

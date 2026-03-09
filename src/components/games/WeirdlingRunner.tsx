@@ -256,7 +256,7 @@ export const WeirdlingRunner = () => {
         ctx.fillRect(doorX + 10, groundLevel - 90, 50, 40);
 
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.font = '10px Poppins, sans-serif';
+        ctx.font = '10px "Avenir Next", "Segoe UI", sans-serif';
         const dept = ['HR', 'LEGAL', 'SALES', 'AUDIT'][
           Math.floor(distanceTraveled / 1000) % 4
         ];

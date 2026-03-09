@@ -47,13 +47,14 @@ const FOCUS_RING = {
   outlineOffset: '2px',
 };
 
-/** Sitewide font: Poppins (Google Font), fallback to generic sans-serif */
-const FONT_FAMILY = '"Poppins", sans-serif';
+/** Sitewide font stack: local/system sans to avoid blocking external font fetches. */
+const FONT_FAMILY =
+  '"Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 const theme = createTheme({
   palette: PALETTE,
 
-  // TYPOGRAPHY: Poppins for all copy (Google Font, loaded in index.html)
+  // TYPOGRAPHY: local/system sans stack to keep the landing path fast.
   typography: {
     fontFamily: FONT_FAMILY,
     fontSize: 16,

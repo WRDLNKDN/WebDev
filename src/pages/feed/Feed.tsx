@@ -60,7 +60,7 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
-import * as GifPicker from '../../components/chat/GifPickerDialog';
+import * as GifPicker from '../../components/chat/dialogs/GifPickerDialog';
 import { logFeedAdEvent } from '../../lib/analytics/feedAdEvents';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import {
@@ -83,7 +83,7 @@ import {
   type FeedViewPreference,
   type ReactionType,
 } from '../../lib/api/feedsApi';
-import { signOut } from '../../lib/auth/signOut';
+import { consumeSignOutRedirect, signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import {
@@ -2046,7 +2046,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             return;
           }
           setSession(null);
-          navigate('/join', { replace: true });
+          navigate(consumeSignOutRedirect() ?? '/join', { replace: true });
         })();
         return;
       }

@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
-import { BlockConfirmDialog } from '../../components/chat/BlockConfirmDialog';
+import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type {
   ConnectionState,

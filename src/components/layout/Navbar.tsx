@@ -45,7 +45,6 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
-import { consumeJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
@@ -358,7 +357,7 @@ export const Navbar = () => {
   const handleSignOut = async () => {
     setBusy(true);
     try {
-      await signOut();
+      await signOut({ redirectTo: '/' });
       setSession(null);
       navigate('/', { replace: true });
     } catch (error) {
@@ -408,12 +407,6 @@ export const Navbar = () => {
     if (path === '/signin' || path === '/join') {
       setDrawerOpen(false);
     }
-  }, [path]);
-
-  useEffect(() => {
-    if (path !== '/feed') return;
-    if (!consumeJoinCompletionFlash()) return;
-    setSnack('Join complete. Welcome to the Feed.');
   }, [path]);
 
   return (

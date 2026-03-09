@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ADD_TO_LIST_BUTTON_LABEL } from '../../components/profile/EditLinksDialog';
-import { LINKS_COLLAPSIBLE_HEADER } from '../../components/profile/ProfileLinksWidget';
+import { ADD_TO_LIST_BUTTON_LABEL } from '../../components/profile/links/EditLinksDialog';
+import { LINKS_COLLAPSIBLE_HEADER } from '../../components/profile/links/ProfileLinksWidget';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 
 describe('EditLinksDialog Add to List button', () => {

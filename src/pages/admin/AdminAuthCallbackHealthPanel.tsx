@@ -14,7 +14,7 @@ import {
   type AdminAuthCallbackLog,
 } from '../../lib/api/contentApi';
 import { toMessage } from '../../lib/utils/errors';
-import { useAdminSession } from './AdminSessionContext';
+import { useAdminSession } from './core/AdminSessionContext';
 
 type Props = {
   title?: string;

@@ -20,15 +20,15 @@ import type { User } from '@supabase/supabase-js';
 
 // MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
-import { PortfolioFrame } from '../../components/portfolio/PortfolioFrame';
-import { PortfolioHighlightsCarousel } from '../../components/portfolio/PortfolioHighlightsCarousel';
-import { PortfolioPreviewModal } from '../../components/portfolio/PortfolioPreviewModal';
-import { ProjectCard } from '../../components/portfolio/ProjectCard';
-import { ResumeCard } from '../../components/portfolio/ResumeCard';
-import { IdentityHeader } from '../../components/profile/IdentityHeader';
+import { PortfolioFrame } from '../../components/portfolio/layout/PortfolioFrame';
+import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
+import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
+import { ProjectCard } from '../../components/portfolio/cards/ProjectCard';
+import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
+import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 
 // --- NEW WIDGET SECTOR ---
-import { ProfileLinksWidget } from '../../components/profile/ProfileLinksWidget';
+import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
 import { NotFoundPage } from '../misc/NotFoundPage';

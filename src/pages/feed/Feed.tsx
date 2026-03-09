@@ -1058,7 +1058,7 @@ const FeedCard = ({
         {/* Post action bar: React | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
         <Box
           sx={{
-            mt: 0.5,
+            mt: 0.75,
             width: '100%',
             display: 'flex',
             flexDirection: 'row',
@@ -1068,7 +1068,8 @@ const FeedCard = ({
             gap: { xs: 0.5, sm: 1 },
             borderTop: 1,
             borderColor: 'divider',
-            py: 0.25,
+            pt: { xs: 1.1, sm: 1.25 },
+            pb: 0.35,
             '& > *': {
               minHeight: { xs: 40, sm: 36 },
               display: 'flex',
@@ -1750,6 +1751,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   });
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [showInitialFeedLoader, setShowInitialFeedLoader] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [composerValue, setComposerValue] = useState('');
   const [composerImages, setComposerImages] = useState<string[]>([]);
@@ -2139,6 +2141,21 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     if (!session) return;
     void loadPage();
   }, [session, loadPage]);
+
+  useEffect(() => {
+    if (!loading || items.length > 0) {
+      setShowInitialFeedLoader(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowInitialFeedLoader(true);
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [items.length, loading]);
 
   // Fetch feed_view_preference from profile when session loads
   useEffect(() => {
@@ -3162,7 +3179,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
             {/* Feed list — flows with page (single scroll at Layout) */}
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {loading && items.length === 0 ? (
+              {showInitialFeedLoader ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                   <CircularProgress aria-label="Loading feed" />
                 </Box>

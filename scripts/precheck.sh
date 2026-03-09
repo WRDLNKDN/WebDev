@@ -94,7 +94,7 @@ echo "✅ [SUCCESS]: Docs are clean."
 
 # 5. TYPESCRIPT (Static Verification)
 echo "🛠️  [STEP 5]: Verifying Type Integrity (tsc)..."
-if ! npx --no-install tsc --noEmit --pretty false; then
+if ! npx --no-install tsc -p config/typescript/tsconfig.app.json --noEmit --pretty false; then
   echo "🛑 [SYSTEM FAULT]: TypeScript found type errors. Go fix those red squiggles!"
   exit 1
 fi

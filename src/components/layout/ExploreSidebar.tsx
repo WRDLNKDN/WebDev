@@ -42,6 +42,7 @@ export const ExploreSidebar = () => {
   const location = useLocation();
   const path = location.pathname;
   const eventsEnabled = useFeatureFlag('events');
+  const groupsEnabled = useFeatureFlag('groups');
   const chatEnabled = useFeatureFlag('chat');
   const gamesEnabled = useFeatureFlag('games');
 
@@ -107,26 +108,28 @@ export const ExploreSidebar = () => {
             </ListItemButton>
           </ListItem>
         )}
-        <ListItem disablePadding>
-          <ListItemButton
-            component={RouterLink}
-            to="/groups"
-            sx={{
-              minHeight: 40,
-              py: 0.5,
-              borderRadius: 0,
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <ForumIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Groups"
-              primaryTypographyProps={{ variant: 'body2' }}
-            />
-          </ListItemButton>
-        </ListItem>
+        {groupsEnabled && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component={RouterLink}
+              to="/groups"
+              sx={{
+                minHeight: 40,
+                py: 0.5,
+                borderRadius: 0,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <ForumIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Groups"
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
         <ListSubheader
           disableSticky
           sx={{

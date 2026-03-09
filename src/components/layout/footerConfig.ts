@@ -25,10 +25,6 @@ export const FOOTER_SOCIAL_LINKS: FooterSocialLink[] = [
     href: 'https://www.instagram.com/wrdlnkdn/',
   },
   {
-    label: 'GitHub',
-    href: 'https://github.com/wrdlnkdn',
-  },
-  {
     label: 'Facebook',
     href: 'https://www.facebook.com/wrdlnkdn',
   },
@@ -39,6 +35,10 @@ export const FOOTER_SOCIAL_LINKS: FooterSocialLink[] = [
   {
     label: 'YouTube',
     href: 'https://www.youtube.com/@WRDLNKDN',
+  },
+  {
+    label: 'GitHub',
+    href: 'https://github.com/wrdlnkdn',
   },
 ];
 
@@ -57,7 +57,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     ],
   },
   {
-    title: 'Documentation',
+    title: 'Legal Notices',
     links: [
       { label: 'Terms of Service', href: '/terms' },
       { label: 'Privacy Policy', href: '/privacy' },

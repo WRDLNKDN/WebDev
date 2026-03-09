@@ -15,6 +15,14 @@ async function stubAuthToken(page: Page) {
       body: JSON.stringify(session),
     });
   });
+
+  await page.route('**/auth/v1/user**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(session.user),
+    });
+  });
 }
 
 const STUB_PROFILE = {
@@ -28,9 +36,56 @@ const STUB_PROFILE = {
   industry: 'Technology and Software',
   secondary_industry: null,
   nerd_creds: { skills: ['Testing'] },
+  socials: [
+    {
+      id: 'p-link-1',
+      category: 'Professional',
+      platform: 'GitHub',
+      url: 'https://github.com/testuser',
+      label: 'GitHub',
+      isVisible: true,
+      order: 0,
+    },
+    {
+      id: 'p-link-2',
+      category: 'Professional',
+      platform: 'LinkedIn',
+      url: 'https://linkedin.com/in/testuser',
+      label: 'LinkedIn',
+      isVisible: true,
+      order: 1,
+    },
+    {
+      id: 's-link-1',
+      category: 'Social',
+      platform: 'Discord',
+      url: 'https://discord.com/users/testuser',
+      label: 'Discord',
+      isVisible: true,
+      order: 2,
+    },
+    {
+      id: 'c-link-1',
+      category: 'Content',
+      platform: 'YouTube',
+      url: 'https://youtube.com/@testuser',
+      label: 'YouTube',
+      isVisible: true,
+      order: 3,
+    },
+  ],
 };
 
 export async function stubAppSurface(page: Page) {
+  const buildProfilesBody = (acceptHeader: string | undefined) => {
+    const wantsSingleObject = Boolean(
+      acceptHeader?.includes('application/vnd.pgrst.object+json'),
+    );
+    return wantsSingleObject
+      ? JSON.stringify(STUB_PROFILE)
+      : JSON.stringify([STUB_PROFILE]);
+  };
+
   // Register baseline routes; tests can add more specific handlers later.
   // Playwright runs the most recently registered matching route first.
   await stubAuthToken(page);
@@ -44,11 +99,12 @@ export async function stubAppSurface(page: Page) {
       return;
     }
     if (url.includes('profiles')) {
+      const accept = route.request().headers()['accept'];
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         headers: { 'content-range': '0-0/1' },
-        body: JSON.stringify([STUB_PROFILE]),
+        body: buildProfilesBody(accept),
       });
       return;
     }
@@ -69,11 +125,12 @@ export async function stubAppSurface(page: Page) {
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {
+    const accept = route.request().headers()['accept'];
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       headers: { 'content-range': '0-0/1' },
-      body: JSON.stringify([STUB_PROFILE]),
+      body: buildProfilesBody(accept),
     });
   });
 
@@ -103,7 +160,8 @@ export async function stubAppSurface(page: Page) {
       return;
     }
     if (url.includes('auth-callback-logs')) {
-      return route.fallback();
+      await route.fallback();
+      return;
     }
     if (method !== 'GET') {
       await route.fulfill({ status: 204, body: '' });

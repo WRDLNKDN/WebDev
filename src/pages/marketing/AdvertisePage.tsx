@@ -1,7 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
-  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -9,7 +8,6 @@ import {
   DialogTitle,
   IconButton,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
@@ -23,14 +21,10 @@ import {
   validateAdvertiseFields,
   type AdvertiseFieldErrors,
 } from '../../lib/marketing/advertiseValidation';
+import { AdvertiseIconField } from './AdvertiseIconField';
+import { AdvertiseRequestFields } from './AdvertiseRequestFields';
 
 const ICON_MAX_BYTES = 5 * 1024 * 1024;
-const ICON_ACCEPT = '.png,.svg,image/png,image/svg+xml';
-
-/**
- * Advertise with us - route-mounted modal form.
- * Sends to info@wrdlnkdn.com via API with destination URL and icon/logo upload.
- */
 export const AdvertisePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -183,12 +177,17 @@ export const AdvertisePage = () => {
       onClose={() => !submitting && closeModal()}
       fullWidth
       maxWidth="sm"
+      scroll="paper"
       aria-labelledby="advertise-dialog-title"
+      aria-describedby="advertise-dialog-description"
       PaperProps={{
         component: 'form',
         onSubmit: handleSubmit,
         sx: {
           maxHeight: 'min(92vh, 860px)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           borderRadius: 3,
           border: '1px solid',
           borderColor: 'divider',
@@ -211,12 +210,17 @@ export const AdvertisePage = () => {
         </IconButton>
       </DialogTitle>
       <DialogContent
+        id="advertise-dialog-description"
         dividers
         sx={{
           display: 'flex',
           flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
           gap: 2,
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <Typography variant="body1" color="text.secondary">
@@ -229,194 +233,75 @@ export const AdvertisePage = () => {
           </Alert>
         ) : null}
 
-        <Stack spacing={2}>
-          <TextField
-            fullWidth
-            label="Name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              clearFieldError('name');
-            }}
-            variant="outlined"
-            error={Boolean(fieldErrors.name)}
-            helperText={fieldErrors.name}
-          />
-          <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              clearFieldError('email');
-            }}
-            variant="outlined"
-            error={Boolean(fieldErrors.email)}
-            helperText={fieldErrors.email}
-          />
-          <TextField
-            fullWidth
-            required
-            label="Destination Link"
-            type="url"
-            value={destinationUrl}
-            onChange={(e) => {
-              setDestinationUrl(e.target.value);
-              clearFieldError('destinationUrl');
-            }}
-            variant="outlined"
-            placeholder="https://example.com"
-            error={
-              Boolean(fieldErrors.destinationUrl) || destinationUrlIsInvalid
-            }
-            helperText={
-              fieldErrors.destinationUrl ??
-              (destinationUrlIsInvalid
-                ? 'Enter a valid https:// destination URL.'
-                : 'Use the full https:// URL for the destination site.')
-            }
-          />
-          <TextField
-            fullWidth
-            label="Message"
-            multiline
-            rows={4}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-              clearFieldError('message');
-            }}
-            variant="outlined"
-            error={Boolean(fieldErrors.message)}
-            helperText={fieldErrors.message}
-          />
-          <TextField
-            fullWidth
-            label="Brief Description of Your Ad Copy"
-            multiline
-            rows={3}
-            value={adCopyDescription}
-            onChange={(e) => {
-              setAdCopyDescription(e.target.value);
-              clearFieldError('adCopyDescription');
-            }}
-            variant="outlined"
-            required
-            error={Boolean(fieldErrors.adCopyDescription)}
-            helperText={
-              fieldErrors.adCopyDescription ??
-              'Provide a short summary of the messaging, tone, and intended call-to-action.'
-            }
-          />
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Upload Your Icon or Logo *
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              component="div"
-            >
-              PNG or SVG preferred. Max 5MB. Transparent background and square
-              format recommended.
-            </Typography>
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={2}
-              sx={{ mt: 1, flexWrap: 'wrap' }}
-            >
-              <Button
-                variant="outlined"
-                component="label"
-                size="small"
-                disabled={submitting}
-              >
-                {iconFile ? 'Change file' : 'Choose file'}
-                <input
-                  ref={iconInputRef}
-                  type="file"
-                  accept={ICON_ACCEPT}
-                  hidden
-                  onChange={handleIconChange}
-                />
-              </Button>
-              {iconFile ? (
-                <>
-                  <Typography variant="body2">
-                    {iconFile.name} ({(iconFile.size / 1024).toFixed(1)} KB)
-                  </Typography>
-                  <Button
-                    size="small"
-                    color="secondary"
-                    onClick={clearIcon}
-                    disabled={submitting}
-                  >
-                    Remove
-                  </Button>
-                </>
-              ) : null}
-            </Stack>
-            {fieldErrors.icon ? (
-              <Typography
-                variant="caption"
-                color="error.main"
-                sx={{ display: 'block', mt: 1 }}
-              >
-                {fieldErrors.icon}
-              </Typography>
-            ) : null}
-            {iconPreview ? (
-              <Box
-                component="img"
-                src={iconPreview}
-                alt="Selected advertiser icon preview"
-                sx={{
-                  mt: 2,
-                  width: 96,
-                  height: 96,
-                  objectFit: 'contain',
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.paper',
-                  p: 1,
-                }}
-              />
-            ) : null}
-          </Box>
+        <AdvertiseRequestFields
+          name={name}
+          email={email}
+          destinationUrl={destinationUrl}
+          destinationUrlIsInvalid={destinationUrlIsInvalid}
+          message={message}
+          adCopyDescription={adCopyDescription}
+          fieldErrors={fieldErrors}
+          onNameChange={(value) => {
+            setName(value);
+            clearFieldError('name');
+          }}
+          onEmailChange={(value) => {
+            setEmail(value);
+            clearFieldError('email');
+          }}
+          onDestinationUrlChange={(value) => {
+            setDestinationUrl(value);
+            clearFieldError('destinationUrl');
+          }}
+          onMessageChange={(value) => {
+            setMessage(value);
+            clearFieldError('message');
+          }}
+          onAdCopyDescriptionChange={(value) => {
+            setAdCopyDescription(value);
+            clearFieldError('adCopyDescription');
+          }}
+        />
+        <AdvertiseIconField
+          iconFile={iconFile}
+          iconPreview={iconPreview}
+          iconInputRef={iconInputRef}
+          fieldError={fieldErrors.icon}
+          submitting={submitting}
+          onFileChange={handleIconChange}
+          onClear={clearIcon}
+        />
 
-          <Stack
-            direction={{ xs: 'column-reverse', sm: 'row' }}
-            spacing={1.5}
-            justifyContent="flex-end"
+        <Stack
+          direction={{ xs: 'column-reverse', sm: 'row' }}
+          spacing={1.5}
+          justifyContent="flex-end"
+        >
+          <Button
+            onClick={closeModal}
+            disabled={submitting}
+            color="inherit"
+            variant="outlined"
           >
-            <Button
-              onClick={closeModal}
-              disabled={submitting}
-              color="inherit"
-              variant="outlined"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={
-                submitting || !isValidAdvertiserDestinationUrl(destinationUrl)
-              }
-            >
-              {submitting ? (
-                <>
-                  <CircularProgress size={18} sx={{ mr: 1.25 }} />
-                  Sending...
-                </>
-              ) : (
-                'Send request'
-              )}
-            </Button>
-          </Stack>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={
+              submitting ||
+              !isValidAdvertiserDestinationUrl(destinationUrl.trim())
+            }
+          >
+            {submitting ? (
+              <>
+                <CircularProgress size={18} sx={{ mr: 1.25 }} />
+                Sending...
+              </>
+            ) : (
+              'Send request'
+            )}
+          </Button>
         </Stack>
       </DialogContent>
     </Dialog>

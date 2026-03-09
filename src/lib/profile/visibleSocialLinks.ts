@@ -18,5 +18,5 @@ function toSocialsArray(socials: unknown): SocialLike[] {
  */
 export function hasVisibleSocialLinks(socials: unknown): boolean {
   const list = toSocialsArray(socials);
-  return list.some((l) => l?.isVisible);
+  return list.some((l) => l?.isVisible !== false);
 }

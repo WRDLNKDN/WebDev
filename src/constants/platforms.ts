@@ -33,12 +33,45 @@ export const PLATFORM_OPTIONS = [
   { label: 'Medium', value: 'Medium', category: 'Content' },
   { label: 'Substack', value: 'Substack', category: 'Content' },
   { label: 'Patreon', value: 'Patreon', category: 'Content' },
+
+  // --- GAMES ---
+  { label: 'Armor Games', value: 'Armor Games', category: 'Games' },
+  { label: 'Epic Games Store', value: 'Epic Games Store', category: 'Games' },
+  { label: 'Game Jolt', value: 'Game Jolt', category: 'Games' },
+  {
+    label: 'GitHub (Game Repo)',
+    value: 'GitHub (Game Repo)',
+    category: 'Games',
+  },
+  { label: 'itch.io', value: 'itch.io', category: 'Games' },
+  { label: 'Kongregate', value: 'Kongregate', category: 'Games' },
+  { label: 'Newgrounds', value: 'Newgrounds', category: 'Games' },
+  { label: 'Nintendo eShop', value: 'Nintendo eShop', category: 'Games' },
+  {
+    label: 'PlayStation Store',
+    value: 'PlayStation Store',
+    category: 'Games',
+  },
+  { label: 'Roblox', value: 'Roblox', category: 'Games' },
+  { label: 'Steam', value: 'Steam', category: 'Games' },
+  { label: 'Unity Play', value: 'Unity Play', category: 'Games' },
+  {
+    label: 'Web Browser (Playable Web Game)',
+    value: 'Web Browser (Playable Web Game)',
+    category: 'Games',
+  },
+  {
+    label: 'Xbox / Microsoft Store',
+    value: 'Xbox / Microsoft Store',
+    category: 'Games',
+  },
 ] as const;
 
 export const CATEGORY_ORDER: LinkCategory[] = [
   'Professional',
   'Social',
   'Content',
+  'Games',
   'Custom',
 ];
 
@@ -47,6 +80,7 @@ const VALID_LINK_CATEGORIES: LinkCategory[] = [
   'Professional',
   'Social',
   'Content',
+  'Games',
   'Custom',
 ];
 

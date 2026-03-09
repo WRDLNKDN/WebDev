@@ -1,10 +1,8 @@
 // src/pages/Home.tsx
-import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Navigate } from 'react-router-dom';
 
-import { GuestView } from '../../components/home/GuestView';
 import { HomeSkeleton } from '../../components/home/HomeSkeleton';
 import { HowItWorks } from '../../components/home/HowItWorks';
 import { SocialProof } from '../../components/home/SocialProof';
@@ -14,6 +12,7 @@ import { trackEvent } from '../../lib/analytics/trackEvent';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+import { HomeHero } from './HomeHero';
 
 /**
  * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
@@ -259,166 +258,19 @@ export const Home = () => {
         />
       </Helmet>
 
-      <Box
-        component="main"
-        data-testid="signed-out-landing"
-        sx={{
-          position: 'relative',
-          minHeight: 'calc(100vh - 64px)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          overflowX: 'hidden',
-          overflowY: 'visible',
-        }}
-      >
-        <Box
-          component="video"
-          ref={videoRef}
-          autoPlay
-          muted
-          loop={false}
-          playsInline
-          onLoadedMetadata={setPlaybackRate}
-          onCanPlay={setPlaybackRate}
-          onEnded={handleVideoEnded}
-          onError={handleVideoError}
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            zIndex: 0,
-            opacity: heroPhase === 'dimmed' && !prefersReducedMotion ? 0 : 1,
-            transition:
-              heroPhase === 'dimmed' && !prefersReducedMotion
-                ? 'opacity 1s ease-out'
-                : 'none',
-          }}
-          src={videoSrc}
-        />
-
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            bgcolor:
-              heroPhase === 'dimmed'
-                ? 'rgba(5, 7, 15, 0.92)'
-                : 'rgba(5, 7, 15, 0.6)',
-            zIndex: 1,
-            pointerEvents: 'none',
-            transition: 'background-color 1s ease-out',
-          }}
-        />
-
-        <Container
-          maxWidth="lg"
-          sx={{
-            position: 'relative',
-            zIndex: 2,
-            opacity: showContent ? 1 : 0,
-            transform: showContent ? 'translateY(0)' : 'translateY(16px)',
-            transition: showContent
-              ? 'opacity 400ms ease-out, transform 400ms ease-out'
-              : 'none',
-            pt: { xs: 3, sm: 4, md: 5 },
-            pb: 1,
-          }}
-        >
-          <Grid
-            container
-            spacing={4}
-            alignItems="center"
-            justifyContent="center"
-            sx={{ textAlign: 'center' }}
-          >
-            {/* Copy first: WRDLNKDN, pronunciation, tagline, description */}
-            <Grid
-              size={{ xs: 12 }}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              {error && (
-                <Alert
-                  severity="error"
-                  onClose={() => setError(null)}
-                  sx={{ mb: 2 }}
-                >
-                  {error}
-                </Alert>
-              )}
-              <Typography
-                component="h1"
-                variant="h1"
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  letterSpacing: '0.02em',
-                  fontSize: { xs: '3rem', sm: '3.5rem', md: '4rem' },
-                  lineHeight: 1.1,
-                  textShadow: '0 2px 20px rgba(0,0,0,0.5)',
-                }}
-              >
-                WRDLNKDN
-              </Typography>
-
-              <Stack
-                spacing={0.75}
-                sx={{ maxWidth: 420, alignItems: 'center' }}
-              >
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    fontStyle: 'italic',
-                    letterSpacing: '0.04em',
-                    fontSize: { xs: '1.375rem', sm: '1.5rem', md: '1.625rem' },
-                    lineHeight: 1.25,
-                  }}
-                >
-                  (Weird Link-uh-din)
-                </Typography>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    color: 'primary.main',
-                    fontWeight: 600,
-                  }}
-                >
-                  Business, but weirder.
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'rgba(255,255,255,0.9)',
-                    fontWeight: 400,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  A networking space for people that think differently
-                </Typography>
-              </Stack>
-            </Grid>
-
-            {/* Join and Sign in under the copy */}
-            <Grid
-              size={{ xs: 12 }}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <GuestView buttonsOnly />
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+      <HomeHero
+        error={error}
+        onClearError={() => setError(null)}
+        videoRef={videoRef}
+        videoSrc={videoSrc}
+        showContent={showContent}
+        heroPhase={heroPhase}
+        prefersReducedMotion={prefersReducedMotion}
+        onLoadedMetadata={setPlaybackRate}
+        onCanPlay={setPlaybackRate}
+        onVideoEnded={handleVideoEnded}
+        onVideoError={handleVideoError}
+      />
 
       <WhatMakesDifferent />
       <HowItWorks />

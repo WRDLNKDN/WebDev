@@ -1,0 +1,63 @@
+import { Box } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../../lib/auth/supabaseClient';
+
+export const AttachmentPreview = ({
+  path,
+  mimeType,
+}: {
+  path: string;
+  mimeType: string;
+}) => {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const isImage = mimeType.startsWith('image/');
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.storage
+        .from('chat-attachments')
+        .createSignedUrl(path, 3600);
+      if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  return (
+    <Box
+      component="a"
+      href={signedUrl ?? '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      sx={{
+        display: 'block',
+        maxWidth: 220,
+        maxHeight: 220,
+        borderRadius: 1,
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.2)',
+      }}
+    >
+      {isImage && signedUrl ? (
+        <Box
+          component="img"
+          src={signedUrl}
+          alt="Attachment"
+          sx={{
+            width: '100%',
+            height: 'auto',
+            maxHeight: 220,
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      ) : (
+        <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', fontSize: 12 }}>
+          {signedUrl ? 'File' : '...'}
+        </Box>
+      )}
+    </Box>
+  );
+};

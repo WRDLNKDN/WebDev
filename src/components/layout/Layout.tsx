@@ -9,7 +9,7 @@ import {
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { ChatPopover } from '../chat/ChatPopover';
+import { ChatPopover } from '../chat/overlay/ChatPopover';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Footer } from './Footer';
 import { UatBanner } from './UatBanner';
@@ -30,22 +30,6 @@ const LayoutContent = () => {
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
   const chatEnabled = useFeatureFlag('chat');
-
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
-    };
-    void init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;

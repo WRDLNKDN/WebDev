@@ -30,7 +30,7 @@ content, advertisers, and community partners.
 - Admin is not public.
 - Admin is not owner-scoped.
 - Admin requires authenticated user with admin role.
-- Unauthorized access returns deterministic `403` UI state.
+- Unauthorized access returns deterministic `403` (UI + API).
 
 Admin configures. Member-facing surfaces render.
 
@@ -92,7 +92,7 @@ Target policy semantics map to:
 When not active:
 
 - Immediate session invalidation
-- Deterministic `403` behavior across authenticated surfaces
+- Deterministic `403` behavior across authenticated surfaces and protected APIs
 - Audit logging required
 - Public profile visibility policy must be explicit
 

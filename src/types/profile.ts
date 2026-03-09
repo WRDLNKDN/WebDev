@@ -1,20 +1,19 @@
-import type { Database } from './supabase';
-
-// --- SECTOR 1: LINK SYSTEM (New for Issue #132) ---
-
-export type LinkCategory = 'Professional' | 'Social' | 'Content' | 'Custom';
+export type LinkCategory =
+  | 'Professional'
+  | 'Social'
+  | 'Content'
+  | 'Games'
+  | 'Custom';
 
 export interface SocialLink {
-  id: string; // UUID for stable sorting/rendering
-  category: LinkCategory; // Grouping header
-  platform: string; // 'LinkedIn', 'GitHub', 'Custom', etc.
+  id: string;
+  category: LinkCategory;
+  platform: string;
   url: string;
-  label?: string; // Required for 'Custom', optional override for others
-  isVisible: boolean; // Toggle without deleting
-  order: number; // Drag-and-drop position
+  label?: string;
+  isVisible: boolean;
+  order: number;
 }
-
-// --- SECTOR 2: NERD CREDENTIALS ---
 
 export interface PortfolioItem {
   id: string;
@@ -26,13 +25,10 @@ export interface PortfolioItem {
 }
 
 export interface NerdCreds {
-  // --- Expression Layer ---
   status_message?: string;
   status_emoji?: string;
   theme_song_url?: string;
-  bio?: string; // Added to match recent usage
-
-  // --- Portfolio Layer ---
+  bio?: string;
   portfolio?: PortfolioItem[];
   resume_file_name?: string | null;
   resume_thumbnail_url?: string;
@@ -40,35 +36,37 @@ export interface NerdCreds {
   resume_thumbnail_updated_at?: string;
   resume_thumbnail_error?: string | null;
   resume_thumbnail_source_extension?: string;
-  /** Display order: 0 = resume first, 1 = after first project, etc. Used for portfolio reorder. */
   resume_display_index?: number;
-
-  // --- Legacy Support ---
   [key: string]: unknown;
 }
 
-// --- SECTOR 3: INDUSTRY GROUPS (Edit Profile) ---
-
-/** One industry group: single Industry + optional Sub-Industries (max 8). */
 export interface IndustryGroup {
   industry: string;
   sub_industries: string[];
 }
 
-// --- SECTOR 4: THE DASHBOARD PROFILE ---
-
-// The "Hard Columns" directly from Supabase
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-
-export interface DashboardProfile
-  extends Omit<ProfileRow, 'nerd_creds' | 'socials' | 'industries'> {
-  // Override generic 'Json' with specific schemas
+export interface DashboardProfile {
+  id: string;
+  email?: string | null;
+  handle: string;
+  display_name?: string | null;
+  avatar?: string | null;
+  tagline?: string | null;
+  pronouns?: string | null;
+  status?: string | null;
+  profile_visibility?: 'members_only' | 'connections_only' | null;
+  industry?: string | null;
+  secondary_industry?: string | null;
+  niche_field?: string | null;
+  location?: string | null;
+  join_reason?: string[] | null;
+  participation_style?: string[] | null;
+  policy_version?: string | null;
+  resume_url?: string | null;
   nerd_creds: NerdCreds;
-
-  // The new Links Module structure
-  // If null in DB, we treat it as an empty array in the hooks
   socials: SocialLink[];
-
-  /** Multiple industry groups (DB: profiles.industries jsonb). */
   industries: IndustryGroup[] | null;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
 }

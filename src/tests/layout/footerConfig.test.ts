@@ -7,10 +7,10 @@ import {
 } from '../../components/layout/footerConfig';
 
 describe('footerConfig', () => {
-  it('keeps footer sections limited to company and documentation', () => {
+  it('keeps footer sections limited to company and legal notices', () => {
     expect(FOOTER_SECTIONS.map((section) => section.title)).toEqual([
       'Company',
-      'Documentation',
+      'Legal Notices',
     ]);
   });
 
@@ -37,13 +37,13 @@ describe('footerConfig', () => {
     expect(FOOTER_DONATE_QR_ASSET).toBe('/assets/donate-qr.png');
   });
 
-  it('includes instagram and github in the footer social links', () => {
+  it('keeps github as the rightmost social link', () => {
     expect(FOOTER_SOCIAL_LINKS.map((link) => link.label)).toEqual([
       'Instagram',
-      'GitHub',
       'Facebook',
       'LinkedIn',
       'YouTube',
+      'GitHub',
     ]);
   });
 });

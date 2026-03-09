@@ -16,26 +16,12 @@ import {
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../../lib/auth/supabaseClient';
-
-const CONTACT_EMAIL = 'info@wrdlnkdn.com';
-const PROFILE_BASE = 'https://wrdlnkdn.com/profile/';
-
-const HELP_TYPES = [
-  'Account and sign-in',
-  'Profile and settings',
-  'Feed and posting',
-  'Connections and messaging',
-  'Directory and search',
-  'Groups and events',
-  'Bug report',
-  'Safety, moderation, or policy',
-  'Billing, donations, or merch',
-  'Partnership or sponsorship',
-  'Feature request',
-  'Other',
-] as const;
-
-type HelpType = (typeof HELP_TYPES)[number];
+import {
+  CONTACT_EMAIL,
+  HELP_TYPES,
+  PROFILE_BASE,
+  type HelpType,
+} from './helpPageData';
 
 /**
  * Help / Contact us page – prefills for signed-in users, Help Type dropdown,

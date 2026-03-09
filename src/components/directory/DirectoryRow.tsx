@@ -1,27 +1,12 @@
-import BlockIcon from '@mui/icons-material/Block';
-import ChatIcon from '@mui/icons-material/Chat';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import {
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  Menu,
-  MenuItem,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Avatar, Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   getProfileLink,
   type DirectoryMember,
 } from '../../lib/api/directoryApi';
-import { connectionStateLabel } from '../../lib/directory/connectionState';
 import { CARD_BG } from '../../theme/candyStyles';
+import { DirectoryRowActions } from './row/DirectoryRowActions';
 
 interface DirectoryRowProps {
   member: DirectoryMember;
@@ -174,149 +159,18 @@ export const DirectoryRow = ({
           )}
         </Box>
 
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          flexShrink={0}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          sx={{ width: { xs: '100%', sm: 'auto' } }}
-        >
-          {member.connection_state === 'pending_received' && (
-            <Typography variant="caption" sx={{ color: 'warning.main' }}>
-              {connectionStateLabel[member.connection_state]}
-            </Typography>
-          )}
-          {member.connection_state === 'not_connected' && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<PersonAddIcon />}
-              onClick={() => onConnect(member.id)}
-              disabled={busy}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: 'white',
-                minHeight: { xs: 40, sm: 32 },
-              }}
-            >
-              Connect
-            </Button>
-          )}
-          {member.connection_state === 'pending' && (
-            <Button
-              variant="outlined"
-              size="small"
-              disabled
-              sx={{
-                minHeight: { xs: 40, sm: 32 },
-                color: 'warning.main',
-                borderColor: 'warning.main',
-              }}
-            >
-              Pending approval
-            </Button>
-          )}
-          {member.connection_state === 'pending_received' && (
-            <>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => onAccept(member.id)}
-                disabled={busy}
-                sx={{ minHeight: { xs: 40, sm: 32 } }}
-              >
-                Accept
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => onDecline(member.id)}
-                disabled={busy}
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  minHeight: { xs: 40, sm: 32 },
-                }}
-              >
-                Decline
-              </Button>
-            </>
-          )}
-          {member.connection_state === 'connected' && (
-            <>
-              <Button
-                variant="outlined"
-                size="small"
-                component={RouterLink}
-                to={`/chat?with=${member.id}`}
-                startIcon={<ChatIcon />}
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  minHeight: { xs: 40, sm: 32 },
-                }}
-              >
-                Chat
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                endIcon={<ExpandMoreIcon />}
-                onClick={(e) => setManageAnchor(e.currentTarget)}
-                disabled={busy}
-                aria-haspopup="true"
-                aria-expanded={Boolean(manageAnchor)}
-                aria-label="Manage connection"
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  minHeight: { xs: 40, sm: 32 },
-                }}
-              >
-                Manage
-              </Button>
-              <Menu
-                anchorEl={manageAnchor}
-                open={Boolean(manageAnchor)}
-                onClose={() => setManageAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      minWidth: 160,
-                      mt: 1.25,
-                      borderRadius: 2,
-                      bgcolor: 'rgba(30,30,30,0.98)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                    },
-                  },
-                }}
-              >
-                <MenuItem
-                  onClick={() => {
-                    setManageAnchor(null);
-                    onDisconnect(member);
-                  }}
-                  sx={{ gap: 1, py: 1.25 }}
-                >
-                  <PersonRemoveIcon fontSize="small" />
-                  Disconnect
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    setManageAnchor(null);
-                    onBlock(member);
-                  }}
-                  sx={{ gap: 1, py: 1.25, color: 'error.main' }}
-                >
-                  <BlockIcon fontSize="small" />
-                  Block
-                </MenuItem>
-              </Menu>
-            </>
-          )}
-        </Stack>
+        <DirectoryRowActions
+          member={member}
+          busy={busy}
+          manageAnchor={manageAnchor}
+          onManageOpen={(anchor) => setManageAnchor(anchor)}
+          onManageClose={() => setManageAnchor(null)}
+          onConnect={onConnect}
+          onAccept={onAccept}
+          onDecline={onDecline}
+          onDisconnect={onDisconnect}
+          onBlock={onBlock}
+        />
       </Stack>
     </Paper>
   );

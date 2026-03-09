@@ -1,8 +1,6 @@
 import {
   ErrorOutline as ErrorIcon,
   AutoAwesome as MagicIcon,
-  Save as SaveIcon,
-  CheckCircle as SuccessIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -10,9 +8,7 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Fade,
-  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -25,21 +21,14 @@ import { useRef, useState } from 'react';
 // PATH FIX: We go up two levels to find the client in src/
 import { supabase } from '../../lib/auth/supabaseClient';
 import { toMessage } from '../../lib/utils/errors';
+import { WeirdlingLoadingBar } from './WeirdlingLoadingBar';
+import { WeirdlingResultCard } from './WeirdlingResultCard';
+import type { WeirdlingResponse } from './weirdlingTypes';
 
 // --- TYPES ---
 interface WeirdlingGeneratorProps {
   session: Session | null;
   onWeirdlingGenerated?: () => void;
-}
-
-interface WeirdlingResponse {
-  status: string;
-  prediction: {
-    output: string[];
-    status: string;
-  };
-  names: string[];
-  debug_prompt: string;
 }
 
 // ARROW FUNCTION FIX: Satisfies 'react/function-component-definition'
@@ -267,38 +256,7 @@ const WeirdlingGenerator = ({
           </Stack>
         </CardContent>
 
-        {loading && (
-          <Box sx={{ p: 2, bgcolor: 'background.default' }}>
-            <Typography
-              variant="caption"
-              sx={{ display: 'block', mb: 1, textAlign: 'center' }}
-            >
-              Connecting to Human OS...
-            </Typography>
-            <Box
-              sx={{
-                width: '100%',
-                height: 4,
-                bgcolor: 'rgba(255,255,255,0.1)',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  bgcolor: 'secondary.main',
-                  animation: 'indeterminate 1.5s infinite linear',
-                  '@keyframes indeterminate': {
-                    '0%': { transform: 'translateX(-100%)' },
-                    '100%': { transform: 'translateX(100%)' },
-                  },
-                }}
-              />
-            </Box>
-          </Box>
-        )}
+        {loading && <WeirdlingLoadingBar />}
       </Card>
 
       <Box
@@ -308,102 +266,14 @@ const WeirdlingGenerator = ({
         aria-live="polite"
       >
         {result && (
-          <Fade in>
-            <Card
-              sx={{
-                border: `2px solid ${theme.palette.success.main}`,
-                position: 'relative',
-                overflow: 'visible',
-              }}
-            >
-              <CardContent>
-                <Stack spacing={3}>
-                  <Box
-                    sx={{
-                      width: '100%',
-                      aspectRatio: '1/1',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                      bgcolor: 'background.default',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {result.prediction.output[0] ? (
-                      <Box
-                        component="img"
-                        src={result.prediction.output[0]}
-                        alt="Generated weirdling"
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                        }}
-                      />
-                    ) : (
-                      <Skeleton
-                        variant="rectangular"
-                        width="100%"
-                        height="100%"
-                      />
-                    )}
-                  </Box>
-
-                  <Box>
-                    <Typography variant="h6" gutterBottom color="text.primary">
-                      Identity Detected. Select Designation:
-                    </Typography>
-                    <Stack direction="row" flexWrap="wrap" gap={1}>
-                      {result.names.map((name) => (
-                        <Chip
-                          key={name}
-                          label={name}
-                          onClick={() => setSelectedName(name)}
-                          color={selectedName === name ? 'success' : 'default'}
-                          variant={
-                            selectedName === name ? 'filled' : 'outlined'
-                          }
-                          clickable
-                          sx={{
-                            fontSize: '0.9rem',
-                            py: 2.5,
-                            px: 1,
-                            borderRadius: '24px',
-                            borderWidth: selectedName === name ? 0 : 1,
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                  </Box>
-
-                  {selectedName && (
-                    <Fade in>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color={saveStatus === 'saved' ? 'success' : 'primary'}
-                        onClick={handleSave}
-                        disabled={saveStatus !== 'idle'}
-                        startIcon={
-                          saveStatus === 'saved' ? (
-                            <SuccessIcon />
-                          ) : (
-                            <SaveIcon />
-                          )
-                        }
-                        sx={{ py: 1.5, fontWeight: 700 }}
-                      >
-                        {saveStatus === 'saved'
-                          ? 'IDENTITY SECURED'
-                          : `CONFIRM: ${selectedName}`}
-                      </Button>
-                    </Fade>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Fade>
+          <WeirdlingResultCard
+            result={result}
+            selectedName={selectedName}
+            saveStatus={saveStatus}
+            successBorderColor={theme.palette.success.main}
+            onSelectName={setSelectedName}
+            onSave={handleSave}
+          />
         )}
       </Box>
     </Stack>

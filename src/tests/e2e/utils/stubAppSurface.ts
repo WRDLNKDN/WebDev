@@ -59,21 +59,13 @@ export async function stubAppSurface(page: Page) {
     });
   });
 
+  // ---- Notifications ----
   await page.route('**/rest/v1/notifications*', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       headers: { 'content-range': '0-0/0' },
       body: '[]',
-    });
-  });
-
-  await page.route('**/rest/v1/profiles*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: { 'content-range': '0-0/1' },
-      body: JSON.stringify([STUB_PROFILE]),
     });
   });
 

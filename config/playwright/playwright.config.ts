@@ -12,7 +12,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   retries: isCI ? 2 : 1, // 1 local retry for connection/setup flakiness
-  workers: isCI ? 1 : 4,
+  workers: isCI ? 1 : 14,
 
   forbidOnly: isCI, // catches accidental test.only in PRs
 

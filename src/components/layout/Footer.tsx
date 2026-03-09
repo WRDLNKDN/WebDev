@@ -46,17 +46,15 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
   const [visible, setVisible] = useState(false);
   const [donateDialogOpen, setDonateDialogOpen] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
+  const footerSurface = alpha('#08111f', 0.94);
+  const footerPanelSurface = alpha('#101827', 0.94);
+  const footerRaisedSurface = alpha('#0d1524', 0.98);
+  const footerTextPrimary = alpha(theme.palette.common.white, 0.92);
+  const footerTextSecondary = alpha(theme.palette.common.white, 0.68);
 
   const dividerColor = useMemo(
-    () =>
-      theme.palette.mode === 'dark'
-        ? alpha(theme.palette.common.white, 0.14)
-        : alpha(theme.palette.text.primary, 0.14),
-    [
-      theme.palette.mode,
-      theme.palette.common.white,
-      theme.palette.text.primary,
-    ],
+    () => alpha(theme.palette.common.white, 0.14),
+    [theme.palette.common.white],
   );
 
   const sections = useMemo(
@@ -201,10 +199,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
             sm: 0.8,
             md: 0.85,
           },
-          backgroundColor:
-            theme.palette.mode === 'dark'
-              ? alpha(theme.palette.background.default, 0.92)
-              : theme.palette.background.default,
+          backgroundColor: footerSurface,
+          color: footerTextPrimary,
           backdropFilter: 'blur(8px)',
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0)' : 'translateY(10px)',
@@ -268,7 +264,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 </Stack>
                 <Typography
                   variant="body2"
-                  color="text.secondary"
+                  color={footerTextSecondary}
                   sx={{
                     display: { xs: 'none', sm: 'block' },
                     fontSize: { sm: '0.78rem', md: '0.84rem' },
@@ -306,10 +302,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         borderRadius: 1.5,
                         overflow: { xs: 'hidden', md: 'visible' },
                         position: 'relative',
-                        backgroundColor: alpha(
-                          theme.palette.background.paper,
-                          0.2,
-                        ),
+                        backgroundColor: footerPanelSurface,
                         minWidth: { md: 220 },
                       }}
                     >
@@ -344,6 +337,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                             flex: '1 1 auto',
                             minWidth: 0,
                             whiteSpace: 'nowrap',
+                            color: footerTextPrimary,
                           }}
                         >
                           {section.title}
@@ -391,10 +385,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                               md: '0 10px 28px rgba(0,0,0,0.28)',
                             },
                             backgroundColor: {
-                              md:
-                                theme.palette.mode === 'dark'
-                                  ? alpha(theme.palette.background.paper, 0.96)
-                                  : alpha(theme.palette.background.paper, 0.98),
+                              md: footerRaisedSurface,
                             },
                           }}
                         >
@@ -407,7 +398,9 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                               display: 'inline-flex',
                               alignItems: 'center',
                               py: 0.75,
-                              color: active ? 'primary.main' : 'text.secondary',
+                              color: active
+                                ? 'primary.main'
+                                : footerTextSecondary,
                               fontWeight: active ? 700 : 500,
                               textDecoration: active ? 'underline' : 'none',
                               textUnderlineOffset: '3px',
@@ -415,7 +408,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                                 ? 'none'
                                 : 'color 160ms ease, text-decoration-color 160ms ease',
                               '&:hover': {
-                                color: 'text.primary',
+                                color: footerTextPrimary,
                                 textDecoration: 'underline',
                                 textUnderlineOffset: '3px',
                               },
@@ -554,7 +547,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     paper: {
                       sx: {
                         borderRadius: 2,
-                        bgcolor: 'background.paper',
+                        bgcolor: footerRaisedSurface,
+                        color: footerTextPrimary,
                         border: '1px solid',
                         borderColor: dividerColor,
                       },
@@ -609,9 +603,9 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         aria-label={link.label}
                         size="small"
                         sx={{
-                          color: 'text.secondary',
+                          color: footerTextSecondary,
                           p: { xs: 0.35, md: 0.45 },
-                          '&:hover': { color: 'primary.main' },
+                          '&:hover': { color: footerTextPrimary },
                         }}
                       >
                         {renderSocialIcon(link.label)}
@@ -621,7 +615,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 </Stack>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
+                  color={footerTextSecondary}
                   data-testid="footer-copyright"
                   sx={{
                     fontSize: { xs: '0.68rem', md: '0.74rem' },

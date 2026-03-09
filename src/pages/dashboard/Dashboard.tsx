@@ -1,6 +1,4 @@
 import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -11,34 +9,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  IconButton,
-  Link,
   Menu,
   MenuItem,
   Paper,
   Snackbar,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import {
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -51,12 +28,8 @@ import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
-import { LinkIcon } from '../../components/profile/links/LinkIcon';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
-import {
-  detectPlatformFromUrl,
-  getShortLinkLabel,
-} from '../../lib/utils/linkPlatform';
+import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -69,126 +42,6 @@ import { GLASS_CARD } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
-
-/** Draggable row for portfolio links list; used inside DndContext + SortableContext. */
-const SortableLinkRow = ({
-  link,
-  onRemove,
-}: {
-  link: SocialLink;
-  onRemove: () => void;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: link.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-  const href = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-  const label =
-    link.label?.trim() || link.platform?.trim() || getShortLinkLabel(link.url);
-  return (
-    <Box
-      ref={setNodeRef}
-      style={style}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 1,
-        p: 1,
-        borderRadius: 1.5,
-        border: '1px solid rgba(255,255,255,0.12)',
-        '&:hover': {
-          borderColor: 'rgba(255,255,255,0.25)',
-        },
-      }}
-    >
-      <Box
-        {...attributes}
-        {...listeners}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: isDragging ? 'grabbing' : 'grab',
-          color: 'text.secondary',
-          touchAction: 'none',
-          p: 0.25,
-          mr: 0.5,
-          borderRadius: 1,
-          '&:hover': { color: 'text.primary' },
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: 'primary.main',
-            outlineOffset: 2,
-          },
-        }}
-        aria-label="Drag to reorder"
-      >
-        <DragIndicatorIcon sx={{ fontSize: '1.25rem' }} />
-      </Box>
-      <Link
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        underline="none"
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: 1,
-          minWidth: 0,
-          color: 'text.primary',
-          fontSize: '0.9rem',
-          fontWeight: 500,
-          '&:hover': {
-            color: 'primary.main',
-          },
-        }}
-      >
-        <LinkIcon
-          platform={link.platform?.trim() || detectPlatformFromUrl(link.url)}
-          sx={{ mr: 1.5, fontSize: '1.1rem', width: 20, flexShrink: 0 }}
-        />
-        <Typography
-          variant="body2"
-          noWrap
-          sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-        >
-          {label}
-        </Typography>
-      </Link>
-      <Tooltip title={`Remove ${label}`}>
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          aria-label={`Remove ${label}`}
-          sx={{
-            p: 0.25,
-            minWidth: 0,
-            minHeight: 0,
-            color: 'error.main',
-            '&:hover': {
-              bgcolor: 'error.main',
-              color: 'error.contrastText',
-            },
-          }}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    </Box>
-  );
-};
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -326,45 +179,6 @@ export const Dashboard = () => {
     if (fromProfile.length > 0) return fromProfile;
     return lastLinksRef.current.length > 0 ? lastLinksRef.current : [];
   }, [savedLinksOverride, profile?.socials]);
-  // Portfolio section: show ALL links (no isVisible filter) so saved links always appear
-  const portfolioLinksSorted = useMemo(
-    () =>
-      [...socialsArray]
-        .filter((s) => s && typeof s === 'object')
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [socialsArray],
-  );
-
-  const linkSensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
-  const handleLinksDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = portfolioLinksSorted.findIndex((l) => l.id === active.id);
-    const newIndex = portfolioLinksSorted.findIndex((l) => l.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(portfolioLinksSorted, oldIndex, newIndex);
-    const reorderedWithOrder = reordered.map((link, i) => ({
-      ...link,
-      order: i,
-    }));
-    setSavedLinksOverride(reorderedWithOrder);
-    lastLinksRef.current = reorderedWithOrder;
-    try {
-      await updateProfile({ socials: reorderedWithOrder });
-      await refresh();
-    } catch (e) {
-      setSnack(toMessage(e));
-    }
-  };
 
   if (!session) return null;
 
@@ -656,15 +470,6 @@ export const Dashboard = () => {
                 <MenuItem
                   onClick={() => {
                     setProfileMenuAnchor(null);
-                    setIsLinksOpen(true);
-                  }}
-                  sx={{ py: 1.25 }}
-                >
-                  Add or Edit Links
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    setProfileMenuAnchor(null);
                     setIsEditOpen(true);
                   }}
                   sx={{ py: 1.25 }}
@@ -697,9 +502,15 @@ export const Dashboard = () => {
           }
         />
 
-        {/* PORTFOLIO: Resume + Projects — empty state or grid */}
+        <DashboardLinksSection
+          loading={loading}
+          socials={socialsArray}
+          onOpenLinks={() => setIsLinksOpen(true)}
+        />
+
         <Paper
           elevation={0}
+          data-testid="dashboard-portfolio-showcase-section"
           sx={{
             ...GLASS_CARD,
             p: { xs: 2, md: 3 },
@@ -726,7 +537,7 @@ export const Dashboard = () => {
                 fontWeight: 600,
               }}
             >
-              PORTFOLIO
+              PORTFOLIO SHOWCASE
             </Typography>
             <input
               ref={resumeFileInputRef}
@@ -737,7 +548,6 @@ export const Dashboard = () => {
             />
 
             {!profile?.resume_url && projects.length === 0 ? (
-              /* Empty state: one Add dropdown */
               <>
                 <Typography
                   variant="body2"
@@ -759,7 +569,7 @@ export const Dashboard = () => {
                     endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                     onClick={(e) => setAddMenuAnchor(e.currentTarget)}
                     disabled={loading}
-                    aria-label="Add links, resume, or project"
+                    aria-label="Add resume or project"
                     aria-haspopup="true"
                     aria-expanded={Boolean(addMenuAnchor)}
                     sx={{
@@ -799,15 +609,6 @@ export const Dashboard = () => {
                       },
                     }}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        setAddMenuAnchor(null);
-                        setIsLinksOpen(true);
-                      }}
-                      sx={{ py: 1.25 }}
-                    >
-                      + Add Links
-                    </MenuItem>
                     <MenuItem
                       onClick={() => {
                         setAddMenuAnchor(null);
@@ -828,68 +629,9 @@ export const Dashboard = () => {
                     </MenuItem>
                   </Menu>
                 </Stack>
-                <Box sx={{ mb: 2, width: '100%' }}>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      display: 'block',
-                      mb: 1,
-                      letterSpacing: 1.2,
-                      color: 'text.secondary',
-                      fontWeight: 700,
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    LINKS
-                  </Typography>
-                  <DndContext
-                    sensors={linkSensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleLinksDragEnd}
-                  >
-                    <SortableContext
-                      items={portfolioLinksSorted.map((l) => l.id)}
-                      strategy={rectSortingStrategy}
-                    >
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gap: { xs: 1, sm: 1.25, md: 1.5 },
-                          gridTemplateColumns: {
-                            xs: '1fr',
-                            sm: 'repeat(2, minmax(280px, 1fr))',
-                            lg: 'repeat(4, minmax(240px, 1fr))',
-                          },
-                          justifyItems: 'stretch',
-                          alignItems: 'start',
-                        }}
-                      >
-                        {portfolioLinksSorted.map((link) => (
-                          <SortableLinkRow
-                            key={link.id}
-                            link={link}
-                            onRemove={async () => {
-                              const next = socialsArray.filter(
-                                (l) => l.id !== link.id,
-                              );
-                              setSavedLinksOverride(next);
-                              try {
-                                await updateProfile({ socials: next });
-                                await refresh();
-                              } catch (e) {
-                                setSnack(toMessage(e));
-                              }
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </SortableContext>
-                  </DndContext>
-                </Box>
               </>
             ) : (
               <>
-                {/* One Add button with dropdown in portfolio area */}
                 <Stack
                   direction="row"
                   flexWrap="wrap"
@@ -903,7 +645,7 @@ export const Dashboard = () => {
                     endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                     onClick={(e) => setAddMenuAnchor(e.currentTarget)}
                     disabled={loading}
-                    aria-label="Add links, resume, or project"
+                    aria-label="Add resume or project"
                     aria-haspopup="true"
                     aria-expanded={Boolean(addMenuAnchor)}
                     sx={{
@@ -943,15 +685,6 @@ export const Dashboard = () => {
                       },
                     }}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        setAddMenuAnchor(null);
-                        setIsLinksOpen(true);
-                      }}
-                      sx={{ py: 1.25 }}
-                    >
-                      + Add Links
-                    </MenuItem>
                     {!profile?.resume_url && (
                       <MenuItem
                         onClick={() => {
@@ -974,65 +707,6 @@ export const Dashboard = () => {
                     </MenuItem>
                   </Menu>
                 </Stack>
-
-                <Box sx={{ mb: 2, width: '100%' }}>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      display: 'block',
-                      mb: 1,
-                      letterSpacing: 1.2,
-                      color: 'text.secondary',
-                      fontWeight: 700,
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    LINKS
-                  </Typography>
-                  <DndContext
-                    sensors={linkSensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleLinksDragEnd}
-                  >
-                    <SortableContext
-                      items={portfolioLinksSorted.map((l) => l.id)}
-                      strategy={rectSortingStrategy}
-                    >
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gap: { xs: 1, sm: 1.25, md: 1.5 },
-                          gridTemplateColumns: {
-                            xs: '1fr',
-                            sm: 'repeat(2, minmax(280px, 1fr))',
-                            lg: 'repeat(4, minmax(240px, 1fr))',
-                          },
-                          justifyItems: 'stretch',
-                          alignItems: 'start',
-                        }}
-                      >
-                        {portfolioLinksSorted.map((link) => (
-                          <SortableLinkRow
-                            key={link.id}
-                            link={link}
-                            onRemove={async () => {
-                              const next = socialsArray.filter(
-                                (l) => l.id !== link.id,
-                              );
-                              setSavedLinksOverride(next);
-                              try {
-                                await updateProfile({ socials: next });
-                                await refresh();
-                              } catch (e) {
-                                setSnack(toMessage(e));
-                              }
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </SortableContext>
-                  </DndContext>
-                </Box>
 
                 <Box
                   sx={{

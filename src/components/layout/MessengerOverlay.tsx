@@ -37,6 +37,8 @@ export const MessengerOverlay = () => {
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
   const chatEnabled = useFeatureFlag('chat');
+  const floatingButtonBg = 'rgba(12, 18, 29, 0.96)';
+  const floatingButtonBorder = 'rgba(255,255,255,0.18)';
 
   const {
     rooms,
@@ -141,13 +143,13 @@ export const MessengerOverlay = () => {
           right: 28,
           top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
           zIndex: 1200,
-          bgcolor: 'background.paper',
-          border: '1px solid rgba(255,255,255,0.12)',
+          bgcolor: floatingButtonBg,
+          border: `1px solid ${floatingButtonBorder}`,
           borderRadius: '8px 0 0 8px',
           borderRight: 'none',
-          boxShadow: 2,
-          color: 'text.primary',
-          '&:hover': { bgcolor: 'action.hover' },
+          boxShadow: '0 14px 28px rgba(0,0,0,0.35)',
+          color: 'rgba(255,255,255,0.96)',
+          '&:hover': { bgcolor: 'rgba(20, 29, 45, 0.98)' },
         }}
       >
         <MessageIcon />

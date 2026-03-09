@@ -824,12 +824,15 @@ export const Navbar = () => {
                       type="button"
                       onClick={() => void openJoin()}
                       sx={{
-                        color: 'rgba(255,255,255,0.85)',
+                        color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '1rem',
                         minWidth: 0,
                         px: 1,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        '&:hover': {
+                          bgcolor: 'rgba(255,255,255,0.06)',
+                          color: 'white',
+                        },
                       }}
                     >
                       Join
@@ -840,12 +843,15 @@ export const Navbar = () => {
                     type="button"
                     onClick={() => void openSignIn()}
                     sx={{
-                      color: 'rgba(255,255,255,0.85)',
+                      color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '1rem',
                       minWidth: 0,
                       px: 1,
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                      '&:hover': {
+                        bgcolor: 'rgba(255,255,255,0.06)',
+                        color: 'white',
+                      },
                     }}
                   >
                     Sign in
@@ -1029,12 +1035,15 @@ export const Navbar = () => {
                         minHeight: 40,
                         minWidth: 'auto',
                         px: 1.25,
-                        color: 'text.secondary',
+                        color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '0.9375rem',
                         touchAction: 'manipulation',
                         pointerEvents: 'auto',
-                        '&:hover': { color: 'white' },
+                        '&:hover': {
+                          color: 'white',
+                          bgcolor: 'rgba(255,255,255,0.06)',
+                        },
                       }}
                     >
                       Join
@@ -1050,12 +1059,15 @@ export const Navbar = () => {
                       minHeight: 40,
                       minWidth: 'auto',
                       px: 1.25,
-                      color: 'text.secondary',
+                      color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '0.9375rem',
                       touchAction: 'manipulation',
                       pointerEvents: 'auto',
-                      '&:hover': { color: 'white' },
+                      '&:hover': {
+                        color: 'white',
+                        bgcolor: 'rgba(255,255,255,0.06)',
+                      },
                     }}
                   >
                     Sign in

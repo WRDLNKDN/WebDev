@@ -11,11 +11,9 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 45_000 });
 
-    const profileButton = page.getByRole('button', { name: /profile/i });
-    await expect(profileButton).toBeVisible({ timeout: 45_000 });
-    await expect(profileButton).toBeEnabled({ timeout: 45_000 });
-    await profileButton.click();
-    await page.getByRole('menuitem', { name: /add or edit links/i }).click();
+    const linksSection = page.getByTestId('dashboard-links-section');
+    await expect(linksSection).toBeVisible({ timeout: 45_000 });
+    await linksSection.getByRole('button', { name: /add links/i }).click();
     await expect(
       page.getByRole('dialog', { name: /manage links/i }),
     ).toBeVisible();

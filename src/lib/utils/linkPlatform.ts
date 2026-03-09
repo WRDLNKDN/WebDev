@@ -29,6 +29,18 @@ export type DetectablePlatform =
   | 'Substack'
   | 'Patreon'
   | 'Calendly'
+  | 'Armor Games'
+  | 'Epic Games Store'
+  | 'Game Jolt'
+  | 'itch.io'
+  | 'Kongregate'
+  | 'Newgrounds'
+  | 'Nintendo eShop'
+  | 'PlayStation Store'
+  | 'Roblox'
+  | 'Steam'
+  | 'Unity Play'
+  | 'Xbox / Microsoft Store'
   | 'Custom';
 
 /** Domain (hostname) -> platform value. Order matters for subdomain matches. */
@@ -63,6 +75,21 @@ const DOMAIN_TO_PLATFORM: [string | RegExp, DetectablePlatform][] = [
   ['substack.com', 'Substack'],
   ['patreon.com', 'Patreon'],
   ['calendly.com', 'Calendly'],
+  // Games
+  ['armorgames.com', 'Armor Games'],
+  ['store.epicgames.com', 'Epic Games Store'],
+  ['gamejolt.com', 'Game Jolt'],
+  ['itch.io', 'itch.io'],
+  ['kongregate.com', 'Kongregate'],
+  ['newgrounds.com', 'Newgrounds'],
+  ['nintendo.com', 'Nintendo eShop'],
+  ['store.playstation.com', 'PlayStation Store'],
+  ['roblox.com', 'Roblox'],
+  ['steampowered.com', 'Steam'],
+  ['steamcommunity.com', 'Steam'],
+  ['play.unity.com', 'Unity Play'],
+  ['xbox.com', 'Xbox / Microsoft Store'],
+  ['microsoft.com', 'Xbox / Microsoft Store'],
 ];
 
 /**

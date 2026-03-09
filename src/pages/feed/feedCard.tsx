@@ -1,0 +1,283 @@
+import { useMemo, useState } from 'react';
+import { formatPostTime } from '../../lib/post/formatPostTime';
+import { PostCard } from '../../components/post';
+import {
+  extractBodyUrls,
+  isGifUrl,
+  type LinkPreviewPayload,
+  removeGifUrlsFromBody,
+} from './feedRenderUtils';
+import { FeedCardCommentsSection } from './feedCardCommentsSection';
+import { FeedCardEngagementActions } from './feedCardEngagementActions';
+import { FeedCardImageDialog } from './feedCardImageDialog';
+import { FeedCardPostContent } from './feedCardPostContent';
+import { FeedCardRepostMeta } from './feedCardRepostMeta';
+import type { FeedCardProps, PreviewImageSource } from './feedCardTypes';
+export {
+  hasRenderableContent,
+  type LocalFeedDisplayItem,
+} from './feedCardTypes';
+import { useFeedCardActions } from './useFeedCardActions';
+import { useFeedCardImagePreview } from './useFeedCardImagePreview';
+
+export const FeedCard = ({
+  item,
+  actions,
+  isOwner,
+  viewerUserId,
+  viewerAvatarUrl,
+  commentsExpanded,
+  comments,
+  commentsLoading,
+  onAddComment,
+  isLinkPreviewDismissed,
+  onDismissLinkPreview,
+}: FeedCardProps) => {
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentSelectedGif, setCommentSelectedGif] = useState<string | null>(
+    null,
+  );
+  const [commentGifPickerOpen, setCommentGifPickerOpen] = useState(false);
+  const [commentEmojiAnchor, setCommentEmojiAnchor] =
+    useState<HTMLElement | null>(null);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editPostDraft, setEditPostDraft] = useState('');
+  const [savingPostEdit, setSavingPostEdit] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentDraft, setEditCommentDraft] = useState('');
+  const [savingCommentEdit, setSavingCommentEdit] = useState(false);
+  const displayName =
+    (item.actor?.display_name as string) || item.actor?.handle || 'Weirdling';
+  const handle = (item.actor?.handle as string) || null;
+  const snapshot =
+    item.kind === 'repost' && item.payload?.snapshot
+      ? (item.payload.snapshot as {
+          body?: string;
+          actor_handle?: string;
+          actor_display_name?: string;
+        })
+      : null;
+  const repostOriginalHandle =
+    typeof snapshot?.actor_handle === 'string' && snapshot.actor_handle.trim()
+      ? snapshot.actor_handle.trim()
+      : null;
+  const repostOriginalName =
+    typeof snapshot?.actor_display_name === 'string' &&
+    snapshot.actor_display_name.trim()
+      ? snapshot.actor_display_name.trim()
+      : repostOriginalHandle;
+  const repostOriginalId =
+    item.kind === 'repost' && typeof item.payload?.original_id === 'string'
+      ? item.payload.original_id
+      : null;
+  const body =
+    (snapshot?.body as string) ||
+    (item.payload?.body as string) ||
+    (item.payload?.text as string) ||
+    (item.kind === 'external_link' && item.payload?.url
+      ? String(item.payload?.url)
+      : '');
+  const url =
+    item.kind === 'external_link' ? (item.payload?.url as string) : null;
+  const label =
+    item.kind === 'external_link' ? (item.payload?.label as string) : null;
+  const linkPreview = item.payload?.link_preview as
+    | LinkPreviewPayload
+    | undefined;
+  const bodyGifUrls = useMemo(
+    () => extractBodyUrls(body).filter(isGifUrl),
+    [body],
+  );
+  const bodyGifUrlSet = useMemo(() => new Set(bodyGifUrls), [bodyGifUrls]);
+  const postAttachmentImages = useMemo(
+    () =>
+      Array.isArray(item.payload?.images)
+        ? ((item.payload.images as string[]).filter(
+            (imgUrl) => !bodyGifUrlSet.has(imgUrl),
+          ) as string[])
+        : [],
+    [bodyGifUrlSet, item.payload?.images],
+  );
+  const previewableImages = useMemo(() => {
+    const ordered: { url: string; source: PreviewImageSource }[] = [];
+    const seen = new Set<string>();
+    for (const gifUrl of bodyGifUrls) {
+      if (seen.has(gifUrl)) continue;
+      seen.add(gifUrl);
+      ordered.push({ url: gifUrl, source: 'body_gif' });
+    }
+    for (const imageUrl of postAttachmentImages) {
+      if (seen.has(imageUrl)) continue;
+      seen.add(imageUrl);
+      ordered.push({ url: imageUrl, source: 'post_attachment' });
+    }
+    return ordered;
+  }, [bodyGifUrls, postAttachmentImages]);
+  const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
+  const likeCount = item.like_count ?? 0;
+  const loveCount = item.love_count ?? 0;
+  const inspirationCount = item.inspiration_count ?? 0;
+  const careCount = item.care_count ?? 0;
+  const laughingCount = item.laughing_count ?? 0;
+  const rageCount = item.rage_count ?? 0;
+  const viewerReaction = item.viewer_reaction ?? null;
+  const commentCount = item.comment_count ?? 0;
+  const isPostEdited = Boolean(item.edited_at);
+  const actorAvatar =
+    viewerUserId && item.user_id === viewerUserId
+      ? (viewerAvatarUrl ?? (item.actor?.avatar as string) ?? null)
+      : ((item.actor?.avatar as string) ?? null);
+  const {
+    imagePreviewState,
+    setImagePreviewState,
+    imageTouchStartXRef,
+    imageLightboxUrl,
+    currentPreviewIndex,
+    openImageLightbox,
+    handlePreviewPrevious,
+    handlePreviewNext,
+    closeImageLightbox,
+  } = useFeedCardImagePreview(item.id, previewableImages);
+
+  const { handleReaction, handleAddComment, handleSavePostEdit } =
+    useFeedCardActions({
+      item,
+      actions,
+      viewerReaction,
+      likeCount,
+      loveCount,
+      inspirationCount,
+      careCount,
+      laughingCount,
+      rageCount,
+      commentDraft,
+      commentSelectedGif,
+      submittingComment,
+      setSubmittingComment,
+      setCommentDraft,
+      setCommentSelectedGif,
+      onAddComment,
+      editPostDraft,
+      savingPostEdit,
+      setSavingPostEdit,
+      setIsEditingPost,
+    });
+
+  return (
+    <>
+      <PostCard
+        author={{
+          avatarUrl: actorAvatar,
+          displayName,
+          handle,
+          createdAt: item.created_at,
+          editedAt: isPostEdited ? item.edited_at : null,
+          formatTime: formatPostTime,
+          children:
+            item.kind === 'repost' ? (
+              <FeedCardRepostMeta
+                repostOriginalHandle={repostOriginalHandle}
+                repostOriginalName={repostOriginalName}
+                repostOriginalId={repostOriginalId}
+              />
+            ) : undefined,
+        }}
+        actionMenu={
+          isOwner
+            ? {
+                visible: !isEditingPost,
+                ariaLabel: 'Post options',
+                items: [
+                  ...(item.kind === 'post'
+                    ? [
+                        {
+                          label: 'Edit',
+                          onClick: () => {
+                            setEditPostDraft(body);
+                            setIsEditingPost(true);
+                          },
+                        },
+                      ]
+                    : []),
+                  {
+                    label: 'Delete',
+                    onClick: () => actions.onDelete(item.id),
+                    danger: true,
+                  },
+                ],
+              }
+            : null
+        }
+        sx={{ mb: 2 }}
+      >
+        <FeedCardPostContent
+          isEditingPost={isEditingPost}
+          editPostDraft={editPostDraft}
+          setEditPostDraft={setEditPostDraft}
+          handleSavePostEdit={handleSavePostEdit}
+          savingPostEdit={savingPostEdit}
+          setIsEditingPost={setIsEditingPost}
+          body={body}
+          bodyTextWithoutGifUrls={bodyTextWithoutGifUrls}
+          bodyGifUrls={bodyGifUrls}
+          openImageLightbox={openImageLightbox}
+          linkPreview={linkPreview}
+          isLinkPreviewDismissed={isLinkPreviewDismissed}
+          onDismissLinkPreview={onDismissLinkPreview}
+          postAttachmentImages={postAttachmentImages}
+          url={url}
+          label={label}
+        />
+        <FeedCardEngagementActions
+          item={item}
+          actions={actions}
+          viewerReaction={viewerReaction}
+          likeCount={likeCount}
+          loveCount={loveCount}
+          inspirationCount={inspirationCount}
+          careCount={careCount}
+          laughingCount={laughingCount}
+          rageCount={rageCount}
+          commentCount={commentCount}
+          handleReaction={handleReaction}
+        />
+        <FeedCardCommentsSection
+          commentsExpanded={commentsExpanded}
+          commentsLoading={commentsLoading}
+          comments={comments}
+          itemId={item.id}
+          viewerUserId={viewerUserId}
+          actions={actions}
+          editingCommentId={editingCommentId}
+          setEditingCommentId={setEditingCommentId}
+          editCommentDraft={editCommentDraft}
+          setEditCommentDraft={setEditCommentDraft}
+          savingCommentEdit={savingCommentEdit}
+          setSavingCommentEdit={setSavingCommentEdit}
+          commentDraft={commentDraft}
+          setCommentDraft={setCommentDraft}
+          commentSelectedGif={commentSelectedGif}
+          setCommentSelectedGif={setCommentSelectedGif}
+          commentGifPickerOpen={commentGifPickerOpen}
+          setCommentGifPickerOpen={setCommentGifPickerOpen}
+          commentEmojiAnchor={commentEmojiAnchor}
+          setCommentEmojiAnchor={setCommentEmojiAnchor}
+          handleAddComment={handleAddComment}
+          submittingComment={submittingComment}
+        />
+      </PostCard>
+      <FeedCardImageDialog
+        imageLightboxUrl={imageLightboxUrl}
+        closeImageLightbox={closeImageLightbox}
+        previewableImages={previewableImages}
+        imageTouchStartXRef={imageTouchStartXRef}
+        handlePreviewNext={handlePreviewNext}
+        handlePreviewPrevious={handlePreviewPrevious}
+        imagePreviewState={imagePreviewState}
+        setImagePreviewState={setImagePreviewState}
+        currentPreviewIndex={currentPreviewIndex}
+      />
+    </>
+  );
+};

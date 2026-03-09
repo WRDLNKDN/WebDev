@@ -1,20 +1,14 @@
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { BlockConfirmDialog } from '../../components/chat/BlockConfirmDialog';
-import { ChatRoomHeader } from '../../components/chat/ChatRoomHeader';
-import { ChatRoomList } from '../../components/chat/ChatRoomList';
-import { CreateGroupDialog } from '../../components/chat/CreateGroupDialog';
-import { GroupActionsDialog } from '../../components/chat/GroupActionsDialog';
-import { MessageInput } from '../../components/chat/MessageInput';
-import { MessageList } from '../../components/chat/MessageList';
-import { ReportDialog } from '../../components/chat/ReportDialog';
-import { StartDmDialog } from '../../components/chat/StartDmDialog';
+import { ChatRoomList } from '../../components/chat/room/ChatRoomList';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
+import { ChatPageContentPane } from './ChatPageContentPane';
+import { ChatPageDialogs } from './ChatPageDialogs';
 
 export const ChatPage = () => {
   const navigate = useNavigate();
@@ -207,193 +201,79 @@ export const ChatPage = () => {
           />
         </Box>
 
-        <Box
-          sx={{
-            flex: 1,
-            display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
-            flexDirection: 'column',
-            minWidth: 0,
+        <ChatPageContentPane
+          roomId={roomId}
+          uid={uid}
+          room={room}
+          onlineUsers={onlineUsers}
+          typingUsers={typingUsers}
+          isRoomAdmin={isRoomAdmin ?? false}
+          otherMember={otherMember}
+          messages={messages}
+          chatLoading={chatLoading}
+          error={error}
+          sending={sending}
+          hasOlderMessages={hasOlderMessages}
+          loadingOlder={loadingOlder}
+          isAdmin={isAdmin}
+          onLeave={handleLeave}
+          onOpenBlock={() => setBlockDialogOpen(true)}
+          onOpenInvite={() => {
+            setGroupDialogMode('invite');
+            setGroupDialogOpen(true);
           }}
-        >
-          {roomId ? (
-            <>
-              <ChatRoomHeader
-                room={room}
-                currentUserId={uid}
-                onlineUsers={onlineUsers}
-                typingUsers={typingUsers}
-                isRoomAdmin={isRoomAdmin ?? false}
-                onLeave={handleLeave}
-                onBlock={() => setBlockDialogOpen(true)}
-                onInvite={() => {
-                  setGroupDialogMode('invite');
-                  setGroupDialogOpen(true);
-                }}
-                onRename={() => {
-                  setGroupDialogMode('rename');
-                  setGroupDialogOpen(true);
-                }}
-                onManageMembers={() => {
-                  setGroupDialogMode('manage');
-                  setGroupDialogOpen(true);
-                }}
-                onBack={() => navigate('/chat-full')}
-              />
-
-              {error && (
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Typography color="error" variant="body2">
-                    {error}
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => void refresh()}
-                  >
-                    Try again
-                  </Button>
-                </Box>
-              )}
-
-              {chatLoading ? (
-                <Box
-                  sx={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <MessageList
-                  messages={messages}
-                  currentUserId={uid}
-                  roomType={room?.room_type ?? 'dm'}
-                  otherUserId={otherMember?.user_id}
-                  onLoadOlder={() => void loadOlderMessages()}
-                  hasOlderMessages={hasOlderMessages}
-                  loadingOlder={loadingOlder}
-                  onEdit={editMessage}
-                  onDelete={deleteMessage}
-                  onReaction={toggleReaction}
-                  onReport={(msgId) => handleReport(msgId)}
-                  onMessagesViewed={markAsRead}
-                  isAdmin={isAdmin}
-                  typingAvatarUrl={
-                    room?.room_type === 'dm'
-                      ? (otherMember?.profile?.avatar ?? null)
-                      : undefined
-                  }
-                  showTyping={
-                    !!(
-                      room?.room_type === 'dm' &&
-                      otherMember?.user_id &&
-                      typingUsers.has(otherMember.user_id)
-                    )
-                  }
-                />
-              )}
-
-              <MessageInput
-                onSend={sendMessage}
-                onTyping={startTyping}
-                onStopTyping={stopTyping}
-                disabled={sending || chatLoading}
-              />
-            </>
-          ) : (
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 2,
-              }}
-            >
-              <Typography variant="h6" color="text.secondary">
-                Select a conversation or start a new chat
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => setStartDmOpen(true)}
-                >
-                  New 1:1 chat
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => setCreateGroupOpen(true)}
-                >
-                  New group
-                </Button>
-              </Box>
-            </Box>
-          )}
-        </Box>
+          onOpenRename={() => {
+            setGroupDialogMode('rename');
+            setGroupDialogOpen(true);
+          }}
+          onOpenManage={() => {
+            setGroupDialogMode('manage');
+            setGroupDialogOpen(true);
+          }}
+          onBack={() => navigate('/chat-full')}
+          onRefresh={() => void refresh()}
+          onLoadOlder={() => void loadOlderMessages()}
+          onEditMessage={editMessage}
+          onDeleteMessage={deleteMessage}
+          onToggleReaction={toggleReaction}
+          onReport={handleReport}
+          onMessagesViewed={markAsRead}
+          onSendMessage={sendMessage}
+          onTyping={startTyping}
+          onStopTyping={stopTyping}
+          onStartDm={() => setStartDmOpen(true)}
+          onCreateGroup={() => setCreateGroupOpen(true)}
+        />
       </Box>
 
-      <StartDmDialog
-        open={startDmOpen}
-        onClose={() => {
-          setStartDmOpen(false);
-          setStartDmError(null);
-        }}
-        onSelect={handleStartDm}
-        startError={startDmError}
-      />
-      <CreateGroupDialog
-        open={createGroupOpen}
-        onClose={() => setCreateGroupOpen(false)}
-        onCreate={handleCreateGroup}
-        currentUserId={uid ?? undefined}
-      />
-      <BlockConfirmDialog
-        open={blockDialogOpen}
-        onClose={() => setBlockDialogOpen(false)}
-        onConfirm={handleBlock}
-        displayName={
-          otherMember?.profile?.display_name ||
-          otherMember?.profile?.handle ||
-          'this user'
-        }
-      />
-      {roomId && room && (
-        <GroupActionsDialog
-          open={groupDialogOpen}
-          mode={groupDialogMode}
-          onClose={() => setGroupDialogOpen(false)}
-          roomId={roomId}
-          roomName={room.name ?? ''}
-          currentMembers={room.members ?? []}
-          currentUserId={uid}
-          onRename={renameRoom}
-          onInvite={inviteMembers}
-          onRemove={removeMember}
-          onTransferAdmin={transferAdmin}
-        />
-      )}
-      <ReportDialog
-        open={reportOpen}
-        onClose={() => {
-          setReportOpen(false);
-          setReportTarget(null);
-        }}
-        onSubmit={handleReportSubmit}
-        reportedMessageId={reportTarget?.messageId ?? null}
-        reportedUserId={reportTarget?.userId ?? null}
+      <ChatPageDialogs
+        uid={uid}
+        roomId={roomId}
+        room={room}
+        otherMember={otherMember}
+        startDmOpen={startDmOpen}
+        startDmError={startDmError}
+        createGroupOpen={createGroupOpen}
+        blockDialogOpen={blockDialogOpen}
+        groupDialogOpen={groupDialogOpen}
+        groupDialogMode={groupDialogMode}
+        reportOpen={reportOpen}
+        reportTarget={reportTarget}
+        onSetStartDmOpen={setStartDmOpen}
+        onSetStartDmError={setStartDmError}
+        onSetCreateGroupOpen={setCreateGroupOpen}
+        onSetBlockDialogOpen={setBlockDialogOpen}
+        onSetGroupDialogOpen={setGroupDialogOpen}
+        onSetReportOpen={setReportOpen}
+        onSetReportTarget={setReportTarget}
+        onStartDm={handleStartDm}
+        onCreateGroup={handleCreateGroup}
+        onBlock={handleBlock}
+        onRenameRoom={renameRoom}
+        onInviteMembers={inviteMembers}
+        onRemoveMember={removeMember}
+        onTransferAdmin={transferAdmin}
+        onReportSubmit={handleReportSubmit}
       />
     </Box>
   );

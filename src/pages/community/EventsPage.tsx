@@ -1,29 +1,22 @@
 import AddIcon from '@mui/icons-material/Add';
-import EventIcon from '@mui/icons-material/Event';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import PersonIcon from '@mui/icons-material/Person';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Paper,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { filterEventsByBlockedHosts } from '../../lib/events/blockedFilter';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  CreateEventDialog,
+  EventsContent,
+  type CreateEventState,
+} from './eventsPageUi';
 
 type EventRow = {
   id: string;
@@ -40,21 +33,24 @@ type EventRow = {
   yes_count?: number;
 };
 
+const initialCreateState: CreateEventState = {
+  createTitle: '',
+  createDescription: '',
+  createStartAt: '',
+  createEndAt: '',
+  createLocation: '',
+  createLocationType: '',
+  createLinkUrl: '',
+};
+
 export const EventsPage = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [upcoming, setUpcoming] = useState<EventRow[]>([]);
   const [past, setPast] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createTitle, setCreateTitle] = useState('');
-  const [createDescription, setCreateDescription] = useState('');
-  const [createStartAt, setCreateStartAt] = useState('');
-  const [createEndAt, setCreateEndAt] = useState('');
-  const [createLocation, setCreateLocation] = useState('');
-  const [createLocationType, setCreateLocationType] = useState<
-    'virtual' | 'physical' | ''
-  >('');
-  const [createLinkUrl, setCreateLinkUrl] = useState('');
+  const [createState, setCreateState] =
+    useState<CreateEventState>(initialCreateState);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +62,6 @@ export const EventsPage = () => {
       .from('events')
       .select('*')
       .order('start_at', { ascending: true });
-
     if (err) {
       setLoading(false);
       return;
@@ -103,13 +98,11 @@ export const EventsPage = () => {
         .select('id, handle, display_name, avatar')
         .eq('id', ev.host_id)
         .maybeSingle();
-
       const { count } = await supabase
         .from('event_rsvps')
         .select('*', { count: 'exact', head: true })
         .eq('event_id', ev.id)
         .eq('status', 'yes');
-
       const enriched: EventRow = {
         ...ev,
         host_handle: profiles?.handle ?? null,
@@ -117,12 +110,8 @@ export const EventsPage = () => {
         host_avatar: profiles?.avatar ?? null,
         yes_count: count ?? 0,
       };
-
-      if (new Date(ev.start_at) >= now) {
-        upcomingList.push(enriched);
-      } else {
-        pastList.push(enriched);
-      }
+      if (new Date(ev.start_at) >= now) upcomingList.push(enriched);
+      else pastList.push(enriched);
     }
 
     upcomingList.sort(
@@ -142,7 +131,11 @@ export const EventsPage = () => {
   }, [load]);
 
   const handleCreate = async () => {
-    if (!session?.user?.id || !createTitle.trim() || !createStartAt) {
+    if (
+      !session?.user?.id ||
+      !createState.createTitle.trim() ||
+      !createState.createStartAt
+    ) {
       setError('Title and start date are required.');
       return;
     }
@@ -164,28 +157,23 @@ export const EventsPage = () => {
       setError('Account disabled.');
       return;
     }
+
     setSubmitting(true);
     setError(null);
     try {
       const { error: insertErr } = await supabase.from('events').insert({
         host_id: session.user.id,
-        title: createTitle.trim(),
-        description: createDescription.trim() || null,
-        start_at: createStartAt,
-        end_at: createEndAt || null,
-        location: createLocation.trim() || null,
-        location_type: createLocationType || null,
-        link_url: createLinkUrl.trim() || null,
+        title: createState.createTitle.trim(),
+        description: createState.createDescription.trim() || null,
+        start_at: createState.createStartAt,
+        end_at: createState.createEndAt || null,
+        location: createState.createLocation.trim() || null,
+        location_type: createState.createLocationType || null,
+        link_url: createState.createLinkUrl.trim() || null,
       });
       if (insertErr) throw insertErr;
       setCreateOpen(false);
-      setCreateTitle('');
-      setCreateDescription('');
-      setCreateStartAt('');
-      setCreateEndAt('');
-      setCreateLocation('');
-      setCreateLocationType('');
-      setCreateLinkUrl('');
+      setCreateState(initialCreateState);
       await load();
     } catch (e: unknown) {
       setError(toMessage(e) || 'Failed to create event');
@@ -203,8 +191,6 @@ export const EventsPage = () => {
       minute: '2-digit',
     });
 
-  const CARD_BG = 'rgba(30, 30, 30, 0.65)';
-
   return (
     <Box sx={{ flex: 1, pt: { xs: 2, md: 4 }, pb: 8 }}>
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
@@ -213,7 +199,7 @@ export const EventsPage = () => {
           sx={{
             p: { xs: 2, md: 3 },
             borderRadius: 4,
-            bgcolor: CARD_BG,
+            bgcolor: 'rgba(30, 30, 30, 0.65)',
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255,255,255,0.1)',
             mb: 4,
@@ -245,302 +231,26 @@ export const EventsPage = () => {
             )}
           </Stack>
 
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress aria-label="Loading events" size={48} />
-            </Box>
-          ) : (
-            <>
-              {upcoming.length > 0 && (
-                <Box sx={{ mb: 4 }}>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      display: 'block',
-                      mb: 2,
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Upcoming
-                  </Typography>
-                  <Stack spacing={2}>
-                    {upcoming.map((ev) => (
-                      <Card
-                        key={ev.id}
-                        variant="outlined"
-                        component={RouterLink}
-                        to={`/events/${ev.id}`}
-                        sx={{
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          borderRadius: 2,
-                          transition:
-                            'border-color 0.2s, background-color 0.2s',
-                          '&:hover': {
-                            borderColor: 'primary.main',
-                            bgcolor: 'action.hover',
-                          },
-                        }}
-                      >
-                        <CardContent sx={{ p: 2 }}>
-                          <Typography variant="h6" fontWeight={600}>
-                            {ev.title}
-                          </Typography>
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            spacing={1}
-                            sx={{ mt: 1 }}
-                            flexWrap="wrap"
-                          >
-                            <PersonIcon fontSize="small" color="action" />
-                            <Typography variant="body2" color="text.secondary">
-                              {ev.host_display_name || ev.host_handle || 'Host'}
-                            </Typography>
-                            <Typography
-                              component="span"
-                              variant="body2"
-                              color="text.secondary"
-                            >
-                              •
-                            </Typography>
-                            <EventIcon fontSize="small" color="action" />
-                            <Typography variant="body2" color="text.secondary">
-                              {formatDate(ev.start_at)}
-                            </Typography>
-                            {ev.location && (
-                              <>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  •
-                                </Typography>
-                                <LocationOnIcon
-                                  fontSize="small"
-                                  color="action"
-                                />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {ev.location}
-                                </Typography>
-                              </>
-                            )}
-                          </Stack>
-                          {ev.yes_count !== undefined && ev.yes_count > 0 && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', mt: 1 }}
-                            >
-                              {ev.yes_count} attending
-                            </Typography>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-
-              {past.length > 0 && (
-                <Box>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      display: 'block',
-                      mb: 2,
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Past Events
-                  </Typography>
-                  <Stack spacing={2}>
-                    {past.map((ev) => (
-                      <Card
-                        key={ev.id}
-                        variant="outlined"
-                        component={RouterLink}
-                        to={`/events/${ev.id}`}
-                        sx={{
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          opacity: 0.85,
-                          borderRadius: 2,
-                          '&:hover': {
-                            opacity: 1,
-                            borderColor: 'divider',
-                          },
-                        }}
-                      >
-                        <CardContent sx={{ p: 2 }}>
-                          <Typography variant="h6" fontWeight={600}>
-                            {ev.title}
-                          </Typography>
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            spacing={1}
-                            sx={{ mt: 1 }}
-                            flexWrap="wrap"
-                          >
-                            <Typography variant="body2" color="text.secondary">
-                              {ev.host_display_name || ev.host_handle || 'Host'}
-                            </Typography>
-                            <Typography
-                              component="span"
-                              variant="body2"
-                              color="text.secondary"
-                            >
-                              •
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {formatDate(ev.start_at)}
-                            </Typography>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-
-              {upcoming.length === 0 && past.length === 0 && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 8,
-                    textAlign: 'center',
-                    borderRadius: 4,
-                    bgcolor: 'rgba(18, 18, 18, 0.8)',
-                    border: '2px dashed rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-                    No events yet
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mb: 2 }}>
-                    Create an event to bring the community together.
-                  </Typography>
-                  {session && (
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={() => setCreateOpen(true)}
-                      sx={{ mt: 2, textTransform: 'none' }}
-                    >
-                      Create Event
-                    </Button>
-                  )}
-                </Paper>
-              )}
-            </>
-          )}
+          <EventsContent
+            loading={loading}
+            upcoming={upcoming}
+            past={past}
+            sessionPresent={Boolean(session)}
+            onOpenCreate={() => setCreateOpen(true)}
+            formatDate={formatDate}
+          />
         </Paper>
       </Container>
 
-      <Dialog
+      <CreateEventDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 2 } }}
-      >
-        <DialogTitle>Create Event</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label="Title"
-              required
-              fullWidth
-              value={createTitle}
-              onChange={(e) => setCreateTitle(e.target.value)}
-              placeholder="e.g. AMA with the team"
-            />
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={createDescription}
-              onChange={(e) => setCreateDescription(e.target.value)}
-            />
-            <TextField
-              label="Start"
-              type="datetime-local"
-              required
-              fullWidth
-              value={createStartAt}
-              onChange={(e) => setCreateStartAt(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="End"
-              type="datetime-local"
-              fullWidth
-              value={createEndAt}
-              onChange={(e) => setCreateEndAt(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Location"
-              fullWidth
-              value={createLocation}
-              onChange={(e) => setCreateLocation(e.target.value)}
-              placeholder="Virtual or physical address"
-            />
-            <TextField
-              label="Location type"
-              select
-              fullWidth
-              value={createLocationType}
-              onChange={(e) =>
-                setCreateLocationType(
-                  e.target.value as 'virtual' | 'physical' | '',
-                )
-              }
-              SelectProps={{ native: true }}
-            >
-              <option value="">—</option>
-              <option value="virtual">Virtual</option>
-              <option value="physical">Physical</option>
-            </TextField>
-            <TextField
-              label="Link URL"
-              fullWidth
-              value={createLinkUrl}
-              onChange={(e) => setCreateLinkUrl(e.target.value)}
-              placeholder="https://..."
-            />
-            {error && (
-              <Typography variant="body2" color="error">
-                {error}
-              </Typography>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setCreateOpen(false)}
-            sx={{ textTransform: 'none' }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => void handleCreate()}
-            disabled={submitting || !createTitle.trim() || !createStartAt}
-            sx={{ textTransform: 'none' }}
-          >
-            {submitting ? 'Creating…' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        state={createState}
+        setState={(next) => setCreateState((prev) => ({ ...prev, ...next }))}
+        error={error}
+        submitting={submitting}
+        onCreate={() => void handleCreate()}
+      />
     </Box>
   );
 };

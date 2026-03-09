@@ -1,56 +1,15 @@
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import {
-  Box,
-  Card,
-  CardContent,
-  IconButton,
-  Link,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
-
-export type FeedAdvertiserLink = { label: string; url: string };
-
-export type FeedAdvertiser = {
-  id: string;
-  company_name: string;
-  title: string;
-  description: string;
-  url: string;
-  logo_url: string | null;
-  image_url?: string | null;
-  links: unknown;
-  active: boolean;
-  sort_order: number;
-};
+import { FeedAdCardMenu } from './ad/FeedAdCardMenu';
+import {
+  parseFeedAdvertiserLinks,
+  type FeedAdvertiser,
+} from './ad/feedAdTypes';
 
 const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
-
-function parseLinks(raw: unknown): FeedAdvertiserLink[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter(
-      (x): x is { label?: string; url?: string } =>
-        x != null && typeof x === 'object',
-    )
-    .map((x) => ({
-      label: String(x.label ?? ''),
-      url: String(x.url ?? ''),
-    }))
-    .filter((x) => x.label || x.url);
-}
 
 type Props = {
   advertiser: FeedAdvertiser;
@@ -65,7 +24,7 @@ export const FeedAdCard = ({
   onAdClick,
   onImpression,
 }: Props) => {
-  const links = parseLinks(advertiser.links);
+  const links = parseFeedAdvertiserLinks(advertiser.links);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
   const hasTrackedImpressionRef = useRef(false);
@@ -134,63 +93,12 @@ export const FeedAdCard = ({
           '&:last-child': { pb: 2 },
         }}
       >
-        {onDismiss && (
-          <>
-            <Tooltip title="More options">
-              <IconButton
-                size="small"
-                sx={{ position: 'absolute', top: 8, right: 8 }}
-                aria-label="More options"
-                aria-haspopup="true"
-                aria-expanded={!!menuAnchor}
-                onClick={(e) => setMenuAnchor(e.currentTarget)}
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={menuAnchor}
-              open={!!menuAnchor}
-              onClose={() => setMenuAnchor(null)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            >
-              <MenuItem
-                onClick={() => {
-                  onDismiss();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <BlockOutlinedIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Hide this ad</ListItemText>
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  onDismiss();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <ThumbDownOutlinedIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Not interested</ListItemText>
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  onDismiss();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <VisibilityOutlinedIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Seen too often</ListItemText>
-              </MenuItem>
-            </Menu>
-          </>
-        )}
+        <FeedAdCardMenu
+          menuAnchor={menuAnchor}
+          onOpen={(anchor) => setMenuAnchor(anchor)}
+          onClose={() => setMenuAnchor(null)}
+          onDismiss={onDismiss}
+        />
         <Stack
           direction="row"
           spacing={{ xs: 1, sm: 2 }}

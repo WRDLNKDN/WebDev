@@ -8,7 +8,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Paper,
   Stack,
   Typography,
 } from '@mui/material';
@@ -16,6 +15,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { EventRsvpActions } from './EventRsvpActions';
 
 type EventRow = {
   id: string;
@@ -278,48 +278,12 @@ export const EventDetailPage = () => {
           )}
 
           {session && !isPast && (
-            <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Will you attend?
-              </Typography>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                flexWrap="wrap"
-                useFlexGap
-                sx={{
-                  '& .MuiButton-root': { width: { xs: '100%', sm: 'auto' } },
-                }}
-              >
-                <Button
-                  size="small"
-                  variant={viewerRsvp === 'yes' ? 'contained' : 'outlined'}
-                  onClick={() => void setRsvp('yes')}
-                  disabled={saving}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Yes {rsvpCounts.yes > 0 && `(${rsvpCounts.yes})`}
-                </Button>
-                <Button
-                  size="small"
-                  variant={viewerRsvp === 'maybe' ? 'contained' : 'outlined'}
-                  onClick={() => void setRsvp('maybe')}
-                  disabled={saving}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Maybe {rsvpCounts.maybe > 0 && `(${rsvpCounts.maybe})`}
-                </Button>
-                <Button
-                  size="small"
-                  variant={viewerRsvp === 'no' ? 'contained' : 'outlined'}
-                  onClick={() => void setRsvp('no')}
-                  disabled={saving}
-                  sx={{ textTransform: 'none' }}
-                >
-                  No {rsvpCounts.no > 0 && `(${rsvpCounts.no})`}
-                </Button>
-              </Stack>
-            </Paper>
+            <EventRsvpActions
+              viewerRsvp={viewerRsvp}
+              saving={saving}
+              rsvpCounts={rsvpCounts}
+              onSetRsvp={(status) => void setRsvp(status)}
+            />
           )}
         </CardContent>
       </Card>

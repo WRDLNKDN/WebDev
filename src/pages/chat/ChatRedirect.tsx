@@ -1,5 +1,5 @@
 import { useTheme, useMediaQuery } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMessenger } from '../../context/MessengerContext';
 import { useChatRooms } from '../../hooks/useChat';
@@ -19,35 +19,56 @@ export const ChatRedirect = () => {
   const messenger = useMessenger();
   const { rooms, createDm, loading } = useChatRooms();
   const withUserId = searchParams.get('with');
+  const handledKeyRef = useRef<string | null>(null);
+  const actionKey = `${mobile ? 'mobile' : 'desktop'}|${roomId ?? ''}|${withUserId ?? ''}`;
+
+  // Safety valve: if chat room loading stalls, never leave the user on a blank /chat route.
+  useEffect(() => {
+    if (!loading) return;
+    const timer = window.setTimeout(() => {
+      if (mobile) navigate('/chat-full', { replace: true });
+      else navigate('/feed', { replace: true });
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [loading, mobile, navigate]);
 
   useEffect(() => {
+    if (loading) return;
+    if (handledKeyRef.current === actionKey) return;
+    handledKeyRef.current = actionKey;
+    let cancelled = false;
+
     const run = async () => {
       // Mobile: use full chat page (works reliably; overlay/popover is cramped on small screens).
       if (mobile) {
         if (roomId) {
+          if (cancelled) return;
           navigate(`/chat-full/${roomId}`, { replace: true });
           return;
         }
         if (withUserId) {
-          if (loading) return;
           const existing = rooms.find(
             (r) =>
               r.room_type === 'dm' &&
               r.members?.some((m) => m.user_id === withUserId),
           );
           if (existing) {
+            if (cancelled) return;
             navigate(`/chat-full/${existing.id}`, { replace: true });
           } else {
             try {
               const id = await createDm(withUserId);
+              if (cancelled) return;
               if (id) navigate(`/chat-full/${id}`, { replace: true });
               else navigate('/chat-full', { replace: true });
             } catch {
+              if (cancelled) return;
               navigate('/chat-full', { replace: true });
             }
           }
           return;
         }
+        if (cancelled) return;
         navigate('/chat-full', { replace: true });
         return;
       }
@@ -55,13 +76,13 @@ export const ChatRedirect = () => {
       // Desktop: overlay + popover on Feed
       if (roomId && messenger) {
         messenger.openWithRoom(roomId);
-        messenger.toggleOverlay();
+        if (!messenger.overlayOpen) messenger.toggleOverlay();
+        if (cancelled) return;
         navigate('/feed', { replace: true });
         return;
       }
 
       if (withUserId && messenger) {
-        if (loading) return;
         const existing = rooms.find(
           (r) =>
             r.room_type === 'dm' &&
@@ -69,34 +90,41 @@ export const ChatRedirect = () => {
         );
         if (existing) {
           messenger.openPopOut(existing.id);
-          messenger.toggleOverlay();
+          if (!messenger.overlayOpen) messenger.toggleOverlay();
         } else {
           try {
             const id = await createDm(withUserId);
+            if (cancelled) return;
             if (id) {
               messenger.openPopOut(id);
-              messenger.toggleOverlay();
+              if (!messenger.overlayOpen) messenger.toggleOverlay();
             }
           } catch {
             // e.g. blocked, not connected – still go to feed
           }
         }
+        if (cancelled) return;
         navigate('/feed', { replace: true });
         return;
       }
 
       if (messenger) {
-        messenger.toggleOverlay();
+        if (!messenger.overlayOpen) messenger.toggleOverlay();
       }
+      if (cancelled) return;
       navigate('/feed', { replace: true });
     };
     void run();
+    return () => {
+      cancelled = true;
+    };
   }, [
     mobile,
     navigate,
     roomId,
     withUserId,
     messenger,
+    actionKey,
     rooms,
     createDm,
     loading,

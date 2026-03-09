@@ -3,7 +3,7 @@
  *
  * Pure utility for Issue #609.
  * Groups visible SocialLinks into display categories (Professional, Social,
- * Content, Other) and sorts links alphabetically by label within each group.
+ * Content, Games, Other) and sorts links alphabetically by label within each group.
  *
  * Used by:
  *   - ProfileLinksWidget (grouped render path — Profile + Dashboard Identity)
@@ -13,14 +13,21 @@
 import type { SocialLink } from '../../types/profile';
 import { getCategoryForPlatform } from '../../constants/platforms';
 import { detectPlatformFromUrl } from '../utils/linkPlatform';
+import { compareLinksByTitle } from './linkTitle';
 
-export type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
+export type DisplayCategory =
+  | 'Professional'
+  | 'Social'
+  | 'Content'
+  | 'Games'
+  | 'Other';
 
 /** Canonical render order for category groups. */
 export const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
   'Professional',
   'Social',
   'Content',
+  'Games',
   'Other',
 ];
 
@@ -34,7 +41,8 @@ function resolveDisplayCategory(link: SocialLink): DisplayCategory {
   if (
     link.category === 'Professional' ||
     link.category === 'Social' ||
-    link.category === 'Content'
+    link.category === 'Content' ||
+    link.category === 'Games'
   ) {
     return link.category;
   }
@@ -45,15 +53,8 @@ function resolveDisplayCategory(link: SocialLink): DisplayCategory {
   if (inferred === 'Professional') return 'Professional';
   if (inferred === 'Social') return 'Social';
   if (inferred === 'Content') return 'Content';
+  if (inferred === 'Games') return 'Games';
   return 'Other';
-}
-
-/**
- * Returns the sort key for a link: label → platform → url (all lower-case).
- * Ensures a consistent, case-insensitive alphabetical order.
- */
-function sortKey(link: SocialLink): string {
-  return (link.label || link.platform || link.url || '').toLowerCase();
 }
 
 /**
@@ -69,18 +70,19 @@ export function groupAndAlphabetizeLinks(socials: SocialLink[]): GroupedLinks {
     Professional: [],
     Social: [],
     Content: [],
+    Games: [],
     Other: [],
   };
 
   for (const link of socials) {
-    if (!link?.isVisible) continue;
+    if (link?.isVisible === false) continue;
     const category = resolveDisplayCategory(link);
     result[category].push(link);
   }
 
   // Sort each bucket alphabetically by label
   for (const category of DISPLAY_CATEGORY_ORDER) {
-    result[category].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+    result[category].sort((a, b) => compareLinksByTitle(a, b));
   }
 
   return result;

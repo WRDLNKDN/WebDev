@@ -84,9 +84,36 @@ describe.skipIf(!hasSupabaseEnv)(
       expect(b.code).toBe('UNAUTHORIZED');
     });
 
-    it('GET /api/admin/profiles without auth returns 403', async () => {
-      const { status } = await request('/api/admin/profiles');
+    it('all key admin routes return deterministic 403 without auth', async () => {
+      const adminRoutes = [
+        '/api/admin/profiles',
+        '/api/admin/content/submissions',
+        '/api/admin/audit',
+        '/api/admin/auth-callback-logs',
+        '/api/admin/resume-thumbnails/summary',
+      ];
+
+      const responses = await Promise.all(
+        adminRoutes.map((url) => request(url)),
+      );
+      responses.forEach(({ status }, index) => {
+        expect(
+          status,
+          `${adminRoutes[index]} should return 403 for unauthorized access`,
+        ).toBe(403);
+      });
+    });
+
+    it('admin routes reject invalid Bearer token with deterministic 403', async () => {
+      const { status, body } = await request('/api/admin/profiles', {
+        headers: { Authorization: 'Bearer invalid.jwt.token' },
+      });
       expect(status).toBe(403);
+      const b = body as { status?: number; message?: string; code?: string };
+      expect(b.status).toBe(403);
+      expect(typeof b.message).toBe('string');
+      expect(b.message?.length).toBeGreaterThan(0);
+      expect(b.code).toBe('FORBIDDEN');
     });
 
     it('invalid Bearer token returns 401', async () => {

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toMessage } from '../lib/utils/errors';
-import type { ProfileRow, ProfileStatus } from '../pages/admin/adminApi';
-import { fetchProfiles } from '../pages/admin/adminApi';
+import type { ProfileRow, ProfileStatus } from '../pages/admin/core/adminApi';
+import { fetchProfiles } from '../pages/admin/core/adminApi';
 
 type UseAdminProfilesArgs = {
   token: string;

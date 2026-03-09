@@ -14,15 +14,27 @@
  */
 
 import type { BrowserContext, Page } from '@playwright/test';
+import { FIXTURE_PROFILES, FIXTURE_USER_ID } from './authFixtures';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-export const USER_ID = '00000000-0000-0000-0000-000000000001';
+export const USER_ID = FIXTURE_USER_ID;
 
 const ACCESS_TOKEN = 'stub-access-token';
 const REFRESH_TOKEN = 'stub-refresh-token';
+
+function resolveAuthStorageKey(): string {
+  const appEnv = (process.env.VITE_APP_ENV ?? '').trim().toLowerCase();
+  const envPrefix =
+    appEnv === 'uat'
+      ? 'uat-'
+      : appEnv === 'production' || appEnv === 'prod'
+        ? 'prod-'
+        : 'dev-';
+  return `${envPrefix}sb-wrdlnkdn-auth`;
+}
 
 // ---------------------------------------------------------------------------
 // Stub session shape — matches Supabase GoTrue /token response
@@ -52,123 +64,6 @@ export function getStubSession(overrides?: Record<string, unknown>) {
 }
 
 // ---------------------------------------------------------------------------
-// Fixture profiles keyed by logical name
-// ---------------------------------------------------------------------------
-
-/** Links used across Profile + Dashboard fixture users */
-const STUB_LINKS_PROFESSIONAL = [
-  {
-    id: 'link-p1',
-    category: 'Professional',
-    platform: 'GitHub',
-    url: 'https://github.com/testuser',
-    label: 'GitHub',
-    isVisible: true,
-    order: 2,
-  },
-  {
-    id: 'link-p2',
-    category: 'Professional',
-    platform: 'LinkedIn',
-    url: 'https://linkedin.com/in/testuser',
-    label: 'LinkedIn',
-    isVisible: true,
-    order: 0,
-  },
-  {
-    id: 'link-p3',
-    category: 'Professional',
-    platform: 'Stack Overflow',
-    url: 'https://stackoverflow.com/users/1/testuser',
-    label: 'Stack Overflow',
-    isVisible: true,
-    order: 1,
-  },
-];
-
-const STUB_LINKS_SOCIAL = [
-  {
-    id: 'link-s1',
-    category: 'Social',
-    platform: 'Instagram',
-    url: 'https://instagram.com/testuser',
-    label: 'Instagram',
-    isVisible: true,
-    order: 1,
-  },
-  {
-    id: 'link-s2',
-    category: 'Social',
-    platform: 'Discord',
-    url: 'https://discord.com/testuser',
-    label: 'Discord',
-    isVisible: true,
-    order: 0,
-  },
-];
-
-const STUB_LINKS_CONTENT = [
-  {
-    id: 'link-c1',
-    category: 'Content',
-    platform: 'YouTube',
-    url: 'https://youtube.com/@testuser',
-    label: 'YouTube',
-    isVisible: true,
-    order: 1,
-  },
-  {
-    id: 'link-c2',
-    category: 'Content',
-    platform: 'Blog',
-    url: 'https://myblog.com',
-    label: 'Blog',
-    isVisible: true,
-    order: 0,
-  },
-];
-
-const ALL_STUB_LINKS = [
-  ...STUB_LINKS_PROFESSIONAL,
-  ...STUB_LINKS_SOCIAL,
-  ...STUB_LINKS_CONTENT,
-];
-
-/** Base profile shape shared across fixture users */
-const BASE_PROFILE = {
-  id: USER_ID,
-  handle: 'test-user-with-links',
-  display_name: 'Test User',
-  status: 'approved',
-  join_reason: ['networking'],
-  participation_style: ['builder'],
-  policy_version: '1.0',
-  industry: 'Technology and Software',
-  secondary_industry: null,
-  tagline: 'Test tagline',
-  additional_context: '',
-  nerd_creds: { skills: ['Testing'] },
-  resume_url: null,
-  avatar: null,
-};
-
-const FIXTURE_PROFILES: Record<string, object> = {
-  /** Has Professional + Social + Content links, plus portfolio projects */
-  'test-user-with-links': {
-    ...BASE_PROFILE,
-    handle: 'test-user-with-links',
-    socials: ALL_STUB_LINKS,
-  },
-  /** Has links but no resume or portfolio projects */
-  'test-user-links-only': {
-    ...BASE_PROFILE,
-    handle: 'test-user-links-only',
-    socials: ALL_STUB_LINKS,
-    resume_url: null,
-  },
-};
-
-// ---------------------------------------------------------------------------
 // seedSignedInSession — used by existing specs (edit-profile-smoke etc.)
 // ---------------------------------------------------------------------------
 
@@ -186,17 +81,31 @@ export async function seedSignedInSession(
   const handle = options.handle ?? 'member';
   const role = options.isAdmin ? 'admin' : 'authenticated';
 
+  const storageKey = resolveAuthStorageKey();
+
   // Inject session into localStorage before any page loads
   await context.addInitScript(
-    ({ s, r }) => {
+    ({ s, r, authKey }) => {
       (s as Record<string, unknown>).user = {
         ...((s as Record<string, unknown>).user as object),
         role: r,
       };
-      const key = `sb-${location.hostname}-auth-token`;
-      localStorage.setItem(key, JSON.stringify(s));
+
+      const serialized = JSON.stringify(s);
+      localStorage.setItem(authKey, serialized);
+
+      // Legacy and fallback keys used by older tests/clients.
+      const legacyKey = `sb-${location.hostname}-auth-token`;
+      localStorage.setItem(legacyKey, serialized);
+
+      const discovered = Object.keys(localStorage).find(
+        (k) => k.startsWith('sb-') && k.endsWith('-auth-token'),
+      );
+      if (discovered) {
+        localStorage.setItem(discovered, serialized);
+      }
     },
-    { s: session, r: role },
+    { s: session, r: role, authKey: storageKey },
   );
 
   const stubAdminRpc = async (page: Page) => {
@@ -236,9 +145,18 @@ export async function seedSignedInSession(
  *   await page.goto('/dashboard');
  */
 export async function loginAs(page: Page, fixture: string) {
+  const storageKey = resolveAuthStorageKey();
   const profile =
     FIXTURE_PROFILES[fixture] ?? FIXTURE_PROFILES['test-user-with-links'];
   const session = getStubSession();
+  const buildProfilesBody = (acceptHeader: string | undefined) => {
+    const wantsSingleObject = Boolean(
+      acceptHeader?.includes('application/vnd.pgrst.object+json'),
+    );
+    return wantsSingleObject
+      ? JSON.stringify(profile)
+      : JSON.stringify([profile]);
+  };
 
   // Stub GoTrue token refresh
   await page.route('**/auth/v1/token**', async (route) => {
@@ -264,11 +182,12 @@ export async function loginAs(page: Page, fixture: string) {
 
   // Stub profile REST endpoint with fixture data
   await page.route('**/rest/v1/profiles*', async (route) => {
+    const accept = route.request().headers()['accept'];
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       headers: { 'content-range': '0-0/1' },
-      body: JSON.stringify([profile]),
+      body: buildProfilesBody(accept),
     });
   });
 
@@ -286,17 +205,24 @@ export async function loginAs(page: Page, fixture: string) {
 
   // Inject session into localStorage so the Supabase client considers the
   // user signed in before the page JS runs
-  await page.addInitScript((s) => {
-    try {
-      // Supabase stores the key as sb-<project-ref>-auth-token; using a
-      // wildcard key prefix covers any project ref in any environment
-      const existing = Object.keys(localStorage).find(
-        (k) => k.startsWith('sb-') && k.endsWith('-auth-token'),
-      );
-      const key = existing ?? 'sb-stub-auth-token';
-      localStorage.setItem(key, JSON.stringify(s));
-    } catch {
-      // localStorage may not be available in some contexts
-    }
-  }, session);
+  await page.addInitScript(
+    ({ s, authKey }) => {
+      try {
+        const serialized = JSON.stringify(s);
+
+        localStorage.setItem(authKey, serialized);
+
+        // Supabase stores the key as sb-<project-ref>-auth-token; using a
+        // wildcard key prefix covers any project ref in any environment
+        const existing = Object.keys(localStorage).find(
+          (k) => k.startsWith('sb-') && k.endsWith('-auth-token'),
+        );
+        const key = existing ?? 'sb-stub-auth-token';
+        localStorage.setItem(key, serialized);
+      } catch {
+        // localStorage may not be available in some contexts
+      }
+    },
+    { s: session, authKey: storageKey },
+  );
 }

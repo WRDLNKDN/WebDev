@@ -2,29 +2,20 @@ import {
   Alert,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
-  FormControlLabel,
-  Link,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { POLICY_VERSION } from '../../types/join';
-
-/** Format a "Joined Month Year" string from the current date. */
-function joinedLabel(): string {
-  return new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-}
+import { ProfileStepHero } from './profile/ProfileStepHero';
+import { ProfileStepMarketingOptIn } from './profile/ProfileStepMarketingOptIn';
+import { ProfileStepPreviewCard } from './profile/ProfileStepPreviewCard';
 
 const ProfileStep = () => {
   const navigate = useNavigate();
@@ -117,50 +108,7 @@ const ProfileStep = () => {
         spacing={3}
         sx={{ width: '100%', maxWidth: 520, alignItems: 'center' }}
       >
-        {/* Hero text */}
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 800,
-              color: '#fff',
-              mb: 1,
-              fontSize: { xs: '1.75rem', sm: '2.1rem' },
-              letterSpacing: '-0.01em',
-            }}
-          >
-            You&apos;re almost in.
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: '#fff',
-              mb: 1.25,
-              fontSize: { xs: '1rem', sm: '1.15rem' },
-            }}
-          >
-            Choose how you&apos;ll show up in{' '}
-            <Box
-              component="span"
-              sx={{
-                background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 800,
-              }}
-            >
-              WRDLNKDN
-            </Box>
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}
-          >
-            Pick a name that feels authentic. This is how your profile will be
-            seen in the community.
-          </Typography>
-        </Box>
+        <ProfileStepHero />
 
         {/* Error */}
         {combinedError && (
@@ -214,111 +162,15 @@ const ProfileStep = () => {
           }}
         />
 
-        {/* Profile preview card */}
-        <Box
-          sx={{
-            width: '100%',
-            borderRadius: 2.5,
-            border: '1.5px solid rgba(56,189,248,0.45)',
-            bgcolor: 'rgba(10,14,28,0.7)',
-            p: { xs: 2.5, sm: 3 },
-            backdropFilter: 'blur(20px)',
-            boxShadow:
-              '0 0 32px rgba(56,189,248,0.12), inset 0 1px 0 rgba(56,189,248,0.1)',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: 0,
-              background:
-                'radial-gradient(ellipse at 30% 0%, rgba(56,189,248,0.06) 0%, transparent 65%)',
-              pointerEvents: 'none',
-            },
-          }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 0.75,
-              letterSpacing: '-0.01em',
-              wordBreak: 'break-word',
-            }}
-          >
-            {previewName}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: 'rgba(255,255,255,0.55)', mb: 0.5 }}
-          >
-            Member
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem' }}
-          >
-            Joined {joinedLabel()}
-          </Typography>
-        </Box>
+        <ProfileStepPreviewCard previewName={previewName} />
 
-        {/* Marketing opt-in */}
-        <FormControlLabel
-          sx={{ alignSelf: 'flex-start', alignItems: 'flex-start' }}
-          control={
-            <Checkbox
-              checked={marketingOptIn}
-              onChange={(e) => {
-                setMarketingOptIn(e.target.checked);
-                setLocalError(null);
-              }}
-              size="small"
-              sx={{
-                mt: '-2px',
-                color: 'rgba(255,255,255,0.3)',
-                '&.Mui-checked': { color: '#38bdf8' },
-                p: '6px',
-              }}
-            />
-          }
-          label={
-            <Typography
-              variant="caption"
-              sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}
-            >
-              Send me occasional WRDLNKDN emails (product updates, events,
-              community news). Optional.{' '}
-              <Link
-                component={RouterLink}
-                to="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: '#38bdf8',
-                  textDecorationColor: 'rgba(56,189,248,0.4)',
-                }}
-              >
-                Privacy
-              </Link>{' '}
-              and{' '}
-              <Link
-                component={RouterLink}
-                to="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: '#38bdf8',
-                  textDecorationColor: 'rgba(56,189,248,0.4)',
-                }}
-              >
-                Terms
-              </Link>
-              .
-            </Typography>
-          }
+        <ProfileStepMarketingOptIn
+          checked={marketingOptIn}
+          disabled={submitting}
+          onChange={(checked) => {
+            setMarketingOptIn(checked);
+            setLocalError(null);
+          }}
         />
 
         {/* Back (left) + Launch (right) */}

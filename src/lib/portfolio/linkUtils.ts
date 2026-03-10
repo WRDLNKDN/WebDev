@@ -156,6 +156,9 @@ export function isPreviewableType(type: PortfolioLinkType): boolean {
   return (
     type === 'image' ||
     type === 'pdf' ||
+    type === 'document' ||
+    type === 'presentation' ||
+    type === 'spreadsheet' ||
     type === 'google_doc' ||
     type === 'google_sheet' ||
     type === 'google_slides'

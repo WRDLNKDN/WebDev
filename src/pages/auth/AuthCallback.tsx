@@ -41,6 +41,9 @@ export const AuthCallback = () => {
     params.get('next') ||
     new URLSearchParams(window.location.search).get('next') ||
     '/feed';
+  const authCode =
+    params.get('code') ||
+    new URLSearchParams(window.location.search).get('code');
   const appEnv =
     (import.meta.env.VITE_APP_ENV as string | undefined)
       ?.trim()
@@ -115,6 +118,14 @@ export const AuthCallback = () => {
 
         let { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
+        if (!data.session && authCode) {
+          devLog('🔵 AuthCallback: No session yet, exchanging auth code');
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(authCode);
+          if (exchangeError) throw exchangeError;
+          ({ data, error: sessionError } = await supabase.auth.getSession());
+          if (sessionError) throw sessionError;
+        }
         if (!data.session) {
           await new Promise((r) => setTimeout(r, 400));
           ({ data, error: sessionError } = await supabase.auth.getSession());

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
 import type { ChatRoom, ChatRoomMember } from '../types/chat';
 import type { ChatRoomWithMembers } from './chatTypes';
@@ -155,23 +156,10 @@ export function useChatRooms() {
           ]),
         );
 
-        const preview = (
-          content: string | null,
-          isDeleted: boolean,
-          maxLength = 45,
-        ) => {
-          if (isDeleted) return 'Message deleted';
-          if (!content?.trim()) return '—';
-          const trimmed = content.trim();
-          return trimmed.length <= maxLength
-            ? trimmed
-            : `${trimmed.slice(0, maxLength)}…`;
-        };
-
         withMembers.forEach((room) => {
           const summary = summaryMap.get(room.id);
           if (!summary) return;
-          room.last_message_preview = preview(
+          room.last_message_preview = sanitizeChatRoomPreview(
             summary.last_content,
             summary.last_is_deleted,
           );

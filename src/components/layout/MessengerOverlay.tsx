@@ -106,7 +106,7 @@ export const MessengerOverlay = () => {
   const handleOpenRoom = useCallback(
     (roomId: string) => {
       messenger?.openPopOut(roomId);
-      messenger?.toggleOverlay();
+      messenger?.closeOverlay();
     },
     [messenger],
   );
@@ -120,6 +120,7 @@ export const MessengerOverlay = () => {
     [removeChat, fetchRooms],
   );
 
+  const openOverlay = messenger?.openOverlay;
   const getRoomLabel = useCallback(
     (r: ChatRoomWithMembers) => {
       if (r.room_type === 'group' && r.name) return r.name;
@@ -135,7 +136,7 @@ export const MessengerOverlay = () => {
   const floatingChatButton = showFloatingChat ? (
     <Tooltip title="Open messages">
       <IconButton
-        onClick={messenger?.toggleOverlay}
+        onClick={openOverlay}
         aria-label="Open messages"
         size="medium"
         sx={{
@@ -182,7 +183,7 @@ export const MessengerOverlay = () => {
             getRoomLabel={getRoomLabel}
             onOpenRoom={handleOpenRoom}
             onRemoveChat={handleRemoveChat}
-            onBackdropClick={messenger.toggleOverlay}
+            onBackdropClick={messenger.closeOverlay}
           />,
           document.body,
         )}

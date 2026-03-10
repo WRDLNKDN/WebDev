@@ -180,6 +180,9 @@ export const ChatRoomHeader = ({
         display: 'flex',
         alignItems: 'center',
         gap: 1,
+        minWidth: 0,
+        width: '100%',
+        overflowX: 'hidden',
       }}
     >
       {!closeIcon && (
@@ -187,9 +190,17 @@ export const ChatRoomHeader = ({
           size="small"
           startIcon={<ArrowBackIcon />}
           onClick={onBack ?? (() => navigate('/chat-full'))}
-          sx={{ color: 'white', minWidth: 0, mr: 0.5 }}
+          sx={{
+            color: 'white',
+            minWidth: 0,
+            mr: 0.5,
+            px: { xs: 0.5, sm: 1 },
+            '& .MuiButton-startIcon': { mr: { xs: 0, sm: 0.5 } },
+          }}
         >
-          Back
+          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+            Back
+          </Box>
         </Button>
       )}
       <Box

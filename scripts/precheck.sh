@@ -103,7 +103,7 @@ echo "✅ [SUCCESS]: Types are verified."
 # 6. ACCESSIBILITY SMOKE TEST (The Core Requirement)
 if docker ps | grep -q "supabase_db"; then
   echo "♿ [STEP 6]: Running WCAG 2.2 Accessibility Audit..."
-  if ! npx playwright test e2e/accessibility.spec.ts; then
+  if ! npx playwright test -c config/playwright/playwright.config.ts layout/accessibility.spec.ts; then
     echo "🛑 [A11Y FAULT]: Accessibility is a core requirement, not a feature. Fix the violations above!"
     exit 1
   fi
@@ -115,7 +115,7 @@ fi
 # 7. FUNCTIONAL E2E TESTS (The Behavioral Audit)
 if docker ps | grep -q "supabase_db"; then
   echo "🤖 [STEP 7]: Running Functional E2E Tests (Non-Smoke Test)..."
-  if ! npx playwright test --grep-invert "accessibility"; then
+  if ! npx playwright test -c config/playwright/playwright.config.ts --grep-invert "accessibility"; then
     echo "🛑 [LOGIC FAULT]: Functional tests failed. Back to the drawing board!"
     exit 1
   fi

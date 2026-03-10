@@ -584,6 +584,28 @@ const FeedCard = ({
   const rageCount = item.rage_count ?? 0;
   const viewerReaction = item.viewer_reaction ?? null;
   const commentCount = item.comment_count ?? 0;
+  const totalReactions =
+    likeCount +
+    loveCount +
+    inspirationCount +
+    careCount +
+    laughingCount +
+    rageCount;
+  const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
+    ...reaction,
+    count:
+      reaction.type === 'like'
+        ? likeCount
+        : reaction.type === 'love'
+          ? loveCount
+          : reaction.type === 'inspiration'
+            ? inspirationCount
+            : reaction.type === 'care'
+              ? careCount
+              : reaction.type === 'laughing'
+                ? laughingCount
+                : rageCount,
+  })).filter((reaction) => reaction.count > 0);
   const isPostEdited = Boolean(item.edited_at);
   const imageLightboxUrl = imagePreviewState.url;
   const actorAvatar =
@@ -988,15 +1010,8 @@ const FeedCard = ({
             {label || url}
           </Typography>
         )}
-        {/* Engagement row (LinkedIn-style): X reactions · X comments above actions */}
-        {(likeCount +
-          loveCount +
-          inspirationCount +
-          careCount +
-          laughingCount +
-          rageCount >
-          0 ||
-          commentCount > 0) && (
+        {/* Engagement row: reaction summary + comment count above actions */}
+        {(totalReactions > 0 || commentCount > 0) && (
           <Box
             sx={{
               mt: 1,
@@ -1006,39 +1021,44 @@ const FeedCard = ({
               flexWrap: 'wrap',
             }}
           >
-            {likeCount +
-              loveCount +
-              inspirationCount +
-              careCount +
-              laughingCount +
-              rageCount >
-              0 && (
-              <Typography
-                component="span"
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  fontSize: '0.75rem',
-                  cursor: 'default',
-                }}
-              >
-                {likeCount +
-                  loveCount +
-                  inspirationCount +
-                  careCount +
-                  laughingCount +
-                  rageCount}{' '}
-                reaction
-                {likeCount +
-                  loveCount +
-                  inspirationCount +
-                  careCount +
-                  laughingCount +
-                  rageCount !==
-                1
-                  ? 's'
-                  : ''}
-              </Typography>
+            {totalReactions > 0 && (
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  sx={{ '& > *:not(:first-of-type)': { ml: -0.55 } }}
+                >
+                  {reactionSummary.slice(0, 3).map(({ type, Icon, color }) => (
+                    <Box
+                      key={type}
+                      sx={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'rgba(12,18,29,0.92)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 12, color: 'inherit' }} />
+                    </Box>
+                  ))}
+                </Stack>
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.75rem',
+                    cursor: 'default',
+                  }}
+                >
+                  {totalReactions} reaction{totalReactions !== 1 ? 's' : ''}
+                </Typography>
+              </Stack>
             )}
             {commentCount > 0 && (
               <Typography

@@ -47,6 +47,7 @@ import {
   buildPortfolioCategorySections,
   portfolioCategoryToSectionTestId,
 } from '../../lib/portfolio/portfolioSections';
+import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
@@ -266,6 +267,12 @@ export const LandingPage = () => {
     industryChips.push({ label: nicheField, key: `niche-${nicheField}` });
   const showLinksInIdentity = hasVisibleSocialLinks(profile.socials);
   const portfolioSections = buildPortfolioCategorySections(projects);
+  const resumePreviewProject = buildResumePreviewItem({
+    url: profile.resume_url,
+    fileName: resumeFileName,
+    thumbnailUrl: resumeThumbnailUrl,
+    thumbnailStatus: resumeThumbnailStatus,
+  });
 
   const ownerActions = isOwner ? (
     <Button
@@ -428,6 +435,8 @@ export const LandingPage = () => {
                   fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl}
                   thumbnailStatus={resumeThumbnailStatus}
+                  onOpenPreview={setPreviewProject}
+                  previewProject={resumePreviewProject}
                 />
 
                 {portfolioSections.map((section) => (

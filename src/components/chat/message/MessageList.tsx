@@ -147,12 +147,15 @@ export const MessageList = ({
       sx={{
         flex: 1,
         overflow: 'auto',
+        overflowX: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         gap: compact ? 1 : 1.5,
         p: compact ? 1.25 : 2,
         bgcolor: CHAT_PANEL_BG,
         position: 'relative',
+        minWidth: 0,
+        width: '100%',
       }}
     >
       {hasOlderMessages && onLoadOlder && (
@@ -215,7 +218,8 @@ export const MessageList = ({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
-              maxWidth: '85%',
+              maxWidth: { xs: '100%', sm: '85%' },
+              minWidth: 0,
               position: 'relative',
             }}
           >
@@ -274,6 +278,9 @@ export const MessageList = ({
                 borderColor: isOwn
                   ? 'rgba(147,197,253,0.55)'
                   : 'rgba(255,255,255,0.12)',
+                minWidth: 0,
+                width: '100%',
+                maxWidth: '100%',
               }}
               contentSx={{ pt: 1.5, pb: 1, px: 1.5 }}
             >
@@ -292,7 +299,9 @@ export const MessageList = ({
                       border: '1px solid rgba(255,255,255,0.2)',
                       background: 'rgba(0,0,0,0.2)',
                       color: 'white',
-                      minWidth: 200,
+                      width: '100%',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
                     }}
                     aria-label="Edit message"
                   />

@@ -10,6 +10,8 @@ import {
 type MessengerContextValue = {
   overlayOpen: boolean;
   toggleOverlay: () => void;
+  openOverlay: () => void;
+  closeOverlay: () => void;
   /** Open overlay and optionally select a room (opens popover if roomId provided). */
   openWithRoom: (roomId: string) => void;
   /** Open a room in an in-page floating popover (not a new window). */
@@ -34,6 +36,12 @@ export const MessengerProvider = ({
   const toggleOverlay = useCallback(() => {
     setOverlayOpen((prev) => !prev);
   }, []);
+  const openOverlay = useCallback(() => {
+    setOverlayOpen(true);
+  }, []);
+  const closeOverlay = useCallback(() => {
+    setOverlayOpen(false);
+  }, []);
   const openPopOut = useCallback((roomId: string) => {
     setPopoverRoomId(roomId);
   }, []);
@@ -47,6 +55,8 @@ export const MessengerProvider = ({
     () => ({
       overlayOpen,
       toggleOverlay,
+      openOverlay,
+      closeOverlay,
       openWithRoom,
       openPopOut,
       closePopover,
@@ -56,6 +66,8 @@ export const MessengerProvider = ({
     [
       overlayOpen,
       toggleOverlay,
+      openOverlay,
+      closeOverlay,
       openWithRoom,
       openPopOut,
       closePopover,

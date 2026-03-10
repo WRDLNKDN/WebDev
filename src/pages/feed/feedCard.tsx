@@ -240,6 +240,7 @@ export const FeedCard = ({
           laughingCount={laughingCount}
           rageCount={rageCount}
           commentCount={commentCount}
+          commentsExpanded={commentsExpanded}
           handleReaction={handleReaction}
         />
         <FeedCardCommentsSection

@@ -1,7 +1,6 @@
 import {
   alpha,
   Box,
-  Collapse,
   Container,
   Dialog,
   DialogContent,
@@ -276,7 +275,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
           </Box>
         </Box>
 
-        <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+        {open ? (
           <Stack
             id={panelId}
             component="ul"
@@ -321,6 +320,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
               overflowY: 'auto',
               overscrollBehavior: 'contain',
               backgroundColor: footerRaisedSurface,
+              animation: reduceMotion ? 'none' : 'footerMenuIn 160ms ease-out',
             }}
           >
             {section.links.map((link) => {
@@ -369,7 +369,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
               );
             })}
           </Stack>
-        </Collapse>
+        ) : null}
       </Box>
     );
   };
@@ -407,28 +407,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
             alignItems="center"
             spacing={{ xs: 0.7, sm: 0.9, md: 1.1 }}
           >
-            <Grid
-              size={{ xs: 12, sm: 6, md: 3 }}
-              sx={{ order: { xs: 1, md: 1 } }}
-            >
-              <Stack
-                spacing={0.75}
-                sx={{
-                  alignItems: { xs: 'stretch', md: 'flex-start' },
-                  textAlign: 'left',
-                  pr: { md: 0.75 },
-                }}
-              >
-                {companySection
-                  ? renderFooterSection(companySection, {
-                      align: 'left',
-                      panelDirection: 'up',
-                    })
-                  : null}
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 5 }}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Stack
                 spacing={0.85}
                 sx={{
@@ -437,41 +416,57 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   px: { md: 0.75 },
                 }}
               >
-                <Stack direction="row" spacing={0.35} alignItems="center">
-                  <EmojiEventsIcon
-                    sx={{
-                      display: { xs: 'none', sm: 'inline-flex' },
-                      fontSize: { xs: 20, sm: 22, md: 24 },
-                      color: 'primary.main',
-                      opacity: 0.95,
-                    }}
-                    aria-hidden
-                  />
-                  <Box
-                    component="img"
-                    src="/assets/og_weirdlings/werdling1_transparent.png"
-                    alt="WRDLNKDN Weirdling logo"
-                    sx={{
-                      display: { xs: 'none', sm: 'block' },
-                      width: { xs: 28, sm: 30, md: 34 },
-                      height: { xs: 28, sm: 30, md: 34 },
-                      objectFit: 'contain',
-                      objectPosition: 'center',
-                    }}
-                  />
-                  <Box
-                    component="img"
-                    src="/assets/wrdlnkdn_logo.png"
-                    alt="WRDLNKDN wordmark"
-                    sx={{
-                      display: 'block',
-                      width: { xs: 114, sm: 138, md: 156 },
-                      maxWidth: '100%',
-                      objectFit: 'contain',
-                      objectPosition: 'center',
-                    }}
-                  />
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={{ xs: 0.75, sm: 1.15, md: 1.4 }}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ width: '100%', flexWrap: 'wrap' }}
+                >
+                  {companySection
+                    ? renderFooterSection(companySection, {
+                        align: 'center',
+                        panelDirection: 'up',
+                      })
+                    : null}
+
+                  <Stack direction="row" spacing={0.35} alignItems="center">
+                    <EmojiEventsIcon
+                      sx={{
+                        display: { xs: 'none', sm: 'inline-flex' },
+                        fontSize: { xs: 20, sm: 22, md: 24 },
+                        color: 'primary.main',
+                        opacity: 0.95,
+                      }}
+                      aria-hidden
+                    />
+                    <Box
+                      component="img"
+                      src="/assets/og_weirdlings/werdling1_transparent.png"
+                      alt="WRDLNKDN Weirdling logo"
+                      sx={{
+                        display: { xs: 'none', sm: 'block' },
+                        width: { xs: 28, sm: 30, md: 34 },
+                        height: { xs: 28, sm: 30, md: 34 },
+                        objectFit: 'contain',
+                        objectPosition: 'center',
+                      }}
+                    />
+                    <Box
+                      component="img"
+                      src="/assets/wrdlnkdn_logo.png"
+                      alt="WRDLNKDN wordmark"
+                      sx={{
+                        display: 'block',
+                        width: { xs: 114, sm: 138, md: 156 },
+                        maxWidth: '100%',
+                        objectFit: 'contain',
+                        objectPosition: 'center',
+                      }}
+                    />
+                  </Stack>
                 </Stack>
+
                 <Typography
                   variant="body2"
                   color={footerTextSecondary}
@@ -483,19 +478,28 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 >
                   Business, but weirder.
                 </Typography>
-                {legalSection
-                  ? renderFooterSection(legalSection, {
-                      align: 'center',
-                      panelDirection: 'up',
-                    })
-                  : null}
+
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={{ xs: 0.75, sm: 1.15, md: 1.4 }}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ width: '100%', flexWrap: 'wrap' }}
+                >
+                  {legalSection
+                    ? renderFooterSection(legalSection, {
+                        align: 'center',
+                        panelDirection: 'up',
+                      })
+                    : null}
+                </Stack>
               </Stack>
             </Grid>
 
             <Grid
               size={{ xs: 12, md: 4 }}
               sx={{
-                order: { xs: 3, md: 3 },
+                order: { xs: 3, md: 2 },
                 display: 'flex',
                 alignItems: { xs: 'flex-start', md: 'flex-start' },
                 justifyContent: {
@@ -543,7 +547,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     lineHeight: 1,
                     minHeight: 34,
                     whiteSpace: 'nowrap',
-                    px: 1.15,
+                    px: 0.95,
                     py: 0.45,
                     borderRadius: 1,
                     border: '1px solid rgba(255,255,255,0.22)',

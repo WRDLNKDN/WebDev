@@ -167,6 +167,8 @@ export const ChatPage = () => {
     <Box
       sx={{
         minHeight: '100vh',
+        minWidth: 0,
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         backgroundImage: {
@@ -181,6 +183,8 @@ export const ChatPage = () => {
           display: 'flex',
           flex: 1,
           minHeight: 0,
+          minWidth: 0,
+          maxWidth: '100%',
           ...GLASS_CARD,
           m: { xs: 1, sm: 2 },
           overflow: 'hidden',
@@ -191,6 +195,7 @@ export const ChatPage = () => {
             display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
             width: { xs: '100%', md: 280 },
             minWidth: { xs: 0, md: 280 },
+            maxWidth: '100%',
             flexShrink: 0,
             borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
             flexDirection: 'column',
@@ -213,6 +218,8 @@ export const ChatPage = () => {
             display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
             flexDirection: 'column',
             minWidth: 0,
+            maxWidth: '100%',
+            overflowX: 'hidden',
           }}
         >
           {roomId ? (

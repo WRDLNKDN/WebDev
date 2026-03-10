@@ -21,6 +21,7 @@ import { ProjectCard } from '../../../components/portfolio/cards/ProjectCard';
 import { ResumeCard } from '../../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../../components/profile/identity/IdentityHeader';
 import { ProfileLinksWidget } from '../../../components/profile/links/ProfileLinksWidget';
+import { buildResumePreviewItem } from '../../../lib/portfolio/resumePreviewItem';
 import { portfolioCategoryToSectionTestId } from '../../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../../types/portfolio';
 import type { DashboardProfile } from '../../../types/profile';
@@ -77,6 +78,13 @@ export const LandingPageContent = ({
   snack,
   setSnack,
 }: LandingPageContentProps) => {
+  const resumePreviewProject = buildResumePreviewItem({
+    url: profile.resume_url,
+    fileName: resumeFileName,
+    thumbnailUrl: resumeThumbnailUrl,
+    thumbnailStatus: resumeThumbnailStatus,
+  });
+
   const ownerActions = isOwner ? (
     <Button
       component={RouterLink}
@@ -234,6 +242,8 @@ export const LandingPageContent = ({
                   fileName={resumeFileName}
                   thumbnailUrl={resumeThumbnailUrl}
                   thumbnailStatus={resumeThumbnailStatus}
+                  onOpenPreview={setPreviewProject}
+                  previewProject={resumePreviewProject}
                 />
                 {portfolioSections.map((section) => (
                   <Box

@@ -337,7 +337,7 @@ export const Home = () => {
                 </p>
                 <p className="home-landing__tagline">Business, but weirder.</p>
                 <p className="home-landing__subcopy">
-                  A networking space for people that think differently
+                  A networking space for people who think differently
                 </p>
               </div>
             </div>

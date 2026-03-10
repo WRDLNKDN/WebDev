@@ -3,7 +3,7 @@ import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 test.describe('Dashboard links and profile layout regressions', () => {
-  test('profile header is left-justified and pills do not stretch full width', async ({
+  test('profile header is left-justified, skills wrap naturally, and industries collapse by group', async ({
     page,
     context,
   }) => {
@@ -35,7 +35,7 @@ test.describe('Dashboard links and profile layout regressions', () => {
 
     expect(leftOffset).toBeLessThan(400);
 
-    // ---- PILL WIDTH CHECK (when profile has skills/industries) ----
+    // ---- SKILLS CHIP WIDTH CHECK ----
 
     const pills = page.getByTestId('dashboard-pill');
     const pillCount = await pills.count();
@@ -56,6 +56,26 @@ test.describe('Dashboard links and profile layout regressions', () => {
       // pill should not be full width (allow for narrow parent / single pill)
       expect(pillMetrics.width).toBeLessThan(pillMetrics.parentWidth * 0.99);
     }
+
+    // ---- INDUSTRY GROUP CHECK ----
+
+    const technologyGroup = page.getByTestId(
+      'dashboard-industry-group-Technology',
+    );
+    await expect(technologyGroup).toBeVisible();
+
+    const technologyToggle = technologyGroup.getByRole('button', {
+      name: /technology/i,
+    });
+    await expect(technologyToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(technologyGroup.getByText('Cloud Computing')).toBeVisible();
+    await expect(technologyGroup.getByText('Cybersecurity')).toBeVisible();
+
+    await technologyToggle.click();
+    await expect(technologyToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      technologyGroup.getByText('Cloud Computing'),
+    ).not.toBeVisible();
   });
 
   test('links section sits between Identity and Portfolio Showcase and link management is not in the profile menu', async ({

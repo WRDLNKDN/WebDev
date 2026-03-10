@@ -8,6 +8,7 @@ import { ProjectCard } from '../../../components/portfolio/cards/ProjectCard';
 import { ResumeCard } from '../../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../../components/profile/identity/IdentityHeader';
 import { ProfileLinksWidget } from '../../../components/profile/links/ProfileLinksWidget';
+import { buildResumePreviewItem } from '../../../lib/portfolio/resumePreviewItem';
 import { portfolioCategoryToSectionTestId } from '../../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../../types/portfolio';
 import type { NerdCreds } from '../../../types/profile';
@@ -47,6 +48,12 @@ export const PublicProfileContent = ({
 }: PublicProfileContentProps) => {
   const hasPortfolioArtifacts =
     projects.length > 0 || Boolean(profile.resume_url);
+  const resumePreviewProject = buildResumePreviewItem({
+    url: profile.resume_url ?? undefined,
+    fileName: resumeFileName ?? undefined,
+    thumbnailUrl: resumeThumbnailUrl ?? undefined,
+    thumbnailStatus: resumeThumbnailStatus ?? undefined,
+  });
 
   return (
     <>
@@ -145,6 +152,8 @@ export const PublicProfileContent = ({
                     fileName={resumeFileName ?? undefined}
                     thumbnailUrl={resumeThumbnailUrl ?? undefined}
                     thumbnailStatus={resumeThumbnailStatus ?? undefined}
+                    onOpenPreview={onOpenPreview}
+                    previewProject={resumePreviewProject}
                   />
                   {portfolioSections.map((section) => (
                     <Box

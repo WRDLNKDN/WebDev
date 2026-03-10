@@ -34,8 +34,19 @@ const STUB_PROFILE = {
   participation_style: ['builder'],
   policy_version: '1.0',
   industry: 'Technology and Software',
-  secondary_industry: null,
-  nerd_creds: { skills: ['Testing'] },
+  secondary_industry: 'Cloud Computing',
+  niche_field: 'Platform Governance',
+  industries: [
+    {
+      industry: 'Technology',
+      sub_industries: ['Cloud Computing', 'Cybersecurity'],
+    },
+    {
+      industry: 'Finance',
+      sub_industries: ['FinTech'],
+    },
+  ],
+  nerd_creds: { skills: ['Testing', 'Platform Strategy', 'DevSecOps'] },
   socials: [
     {
       id: 'p-link-1',

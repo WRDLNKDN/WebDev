@@ -235,6 +235,9 @@ export const MessageInput = ({
         borderTop: `2px solid ${INPUT_SEPARATOR_GREEN}`,
         p: 1.25,
         bgcolor: 'rgba(54,58,66,0.95)',
+        minWidth: 0,
+        width: '100%',
+        overflowX: 'hidden',
       }}
     >
       {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
@@ -266,7 +269,15 @@ export const MessageInput = ({
           ))}
         </Box>
       )}
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 0.5,
+          minWidth: 0,
+          width: '100%',
+        }}
+      >
         <TextField
           multiline
           maxRows={expanded ? 6 : 2}
@@ -296,6 +307,8 @@ export const MessageInput = ({
           size="small"
           fullWidth
           sx={{
+            flex: 1,
+            minWidth: 0,
             '& .MuiOutlinedInput-root': {
               bgcolor: 'rgba(40,44,52,0.9)',
               color: 'white',
@@ -324,9 +337,20 @@ export const MessageInput = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 0.5,
+          minWidth: 0,
+          width: '100%',
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.25,
+            minWidth: 0,
+            flexWrap: 'wrap',
+          }}
+        >
           <input
             ref={fileInputRef}
             type="file"
@@ -385,11 +409,25 @@ export const MessageInput = ({
             </IconButton>
           </Tooltip>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            minWidth: 0,
+            ml: { xs: 'auto', sm: 0 },
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+          }}
+        >
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ fontSize: '0.7rem', opacity: 0.85 }}
+            sx={{
+              fontSize: '0.7rem',
+              opacity: 0.85,
+              display: { xs: 'none', sm: 'inline' },
+            }}
           >
             Press Enter to Send
           </Typography>
@@ -457,7 +495,7 @@ export const MessageInput = ({
                 fallback={
                   <Box
                     sx={{
-                      width: 340,
+                      width: { xs: 'min(320px, 82vw)', sm: 340 },
                       height: 380,
                       bgcolor: 'rgba(40,44,52,0.98)',
                     }}
@@ -466,7 +504,11 @@ export const MessageInput = ({
               >
                 <EmojiPicker
                   theme={'dark' as Theme}
-                  width={340}
+                  width={
+                    typeof window !== 'undefined'
+                      ? Math.min(340, Math.max(260, window.innerWidth - 48))
+                      : 340
+                  }
                   height={380}
                   searchPlaceholder="Search emoji"
                   onEmojiClick={handleEmojiClick}

@@ -1,8 +1,11 @@
 import AddIcon from '@mui/icons-material/Add';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
   Button,
+  Collapse,
   Container,
   Dialog,
   DialogActions,
@@ -28,21 +31,197 @@ import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
-import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
+import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
-import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { useProfile } from '../../hooks/useProfile';
-import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
+import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
+import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
-import type { NerdCreds, SocialLink } from '../../types/profile';
+import type { IndustryGroup, NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
+
+const sectionLabelSx = {
+  color: 'text.secondary',
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+  fontWeight: 700,
+} as const;
+
+const skillPillSx = {
+  display: 'inline-flex',
+  width: 'fit-content',
+  maxWidth: '100%',
+  whiteSpace: 'nowrap',
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 999,
+  bgcolor: 'rgba(236,64,122,0.15)',
+  border: '1px solid rgba(236,64,122,0.35)',
+  fontSize: '0.78rem',
+} as const;
+
+const nichePillSx = {
+  display: 'inline-flex',
+  width: 'fit-content',
+  maxWidth: '100%',
+  whiteSpace: 'nowrap',
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 999,
+  bgcolor: 'rgba(66,165,245,0.1)',
+  border: '1px solid rgba(66,165,245,0.25)',
+  fontSize: '0.78rem',
+} as const;
+
+const DashboardSkillsBlock = ({ skills }: { skills: string[] }) => {
+  if (skills.length === 0) return null;
+
+  return (
+    <Stack spacing={1.25} sx={{ width: '100%' }}>
+      <Typography variant="caption" sx={sectionLabelSx}>
+        Skills
+      </Typography>
+      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ width: '100%' }}>
+        {skills.map((skill) => (
+          <Box
+            key={`skill-${skill}`}
+            data-testid="dashboard-pill"
+            sx={skillPillSx}
+          >
+            {skill}
+          </Box>
+        ))}
+      </Stack>
+    </Stack>
+  );
+};
+
+const DashboardIndustriesBlock = ({
+  groups,
+  nicheField,
+}: {
+  groups: IndustryGroup[];
+  nicheField?: string;
+}) => {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    () =>
+      Object.fromEntries(
+        groups.map((group) => [group.industry.toLowerCase(), true]),
+      ),
+  );
+
+  if (groups.length === 0 && !nicheField) return null;
+
+  return (
+    <Stack spacing={1.25} sx={{ width: '100%' }}>
+      <Typography variant="caption" sx={sectionLabelSx}>
+        Industries
+      </Typography>
+      <Stack spacing={1}>
+        {groups.map((group) => {
+          const groupKey = group.industry.toLowerCase();
+          const isExpanded = expandedGroups[groupKey] ?? true;
+
+          return (
+            <Box
+              key={group.industry}
+              data-testid={`dashboard-industry-group-${group.industry}`}
+              sx={{
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 2,
+                bgcolor: 'rgba(255,255,255,0.02)',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                onClick={() =>
+                  setExpandedGroups((prev) => ({
+                    ...prev,
+                    [groupKey]: !isExpanded,
+                  }))
+                }
+                aria-expanded={isExpanded}
+                aria-controls={`dashboard-industry-sublist-${groupKey}`}
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  p: 1.25,
+                  border: 'none',
+                  bgcolor: 'transparent',
+                  color: 'inherit',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {group.industry}
+                </Typography>
+                {isExpanded ? (
+                  <ExpandLessIcon
+                    sx={{ fontSize: 18, color: 'text.secondary' }}
+                  />
+                ) : (
+                  <ExpandMoreIcon
+                    sx={{ fontSize: 18, color: 'text.secondary' }}
+                  />
+                )}
+              </Box>
+              <Collapse in={isExpanded}>
+                <Stack
+                  id={`dashboard-industry-sublist-${groupKey}`}
+                  spacing={0.75}
+                  sx={{
+                    px: 1.25,
+                    pb: 1.25,
+                  }}
+                >
+                  {group.sub_industries.length > 0 ? (
+                    group.sub_industries.map((subIndustry) => (
+                      <Typography
+                        key={`${group.industry}-${subIndustry}`}
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ lineHeight: 1.5 }}
+                      >
+                        {subIndustry}
+                      </Typography>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No subindustries listed
+                    </Typography>
+                  )}
+                </Stack>
+              </Collapse>
+            </Box>
+          );
+        })}
+        {nicheField ? (
+          <Stack spacing={0.75} sx={{ pt: groups.length > 0 ? 0.5 : 0 }}>
+            <Typography variant="caption" sx={sectionLabelSx}>
+              Niche field
+            </Typography>
+            <Box data-testid="dashboard-pill" sx={nichePillSx}>
+              {nicheField}
+            </Box>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Stack>
+  );
+};
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -227,7 +406,7 @@ export const Dashboard = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
-  const selectedIndustries = getIndustryDisplayLabels(profile);
+  const industryGroups = normalizeIndustryGroups(profile);
   const nicheField = (
     profile as unknown as { niche_field?: string }
   )?.niche_field?.trim();
@@ -267,6 +446,12 @@ export const Dashboard = () => {
     setIsProjectDialogOpen(false);
     setEditingProject(null);
   };
+  const resumePreviewProject = buildResumePreviewItem({
+    url: profile?.resume_url,
+    fileName: resumeFileName,
+    thumbnailUrl: resumeThumbnailUrl,
+    thumbnailStatus: resumeThumbnailStatus,
+  });
 
   return (
     <Box
@@ -278,6 +463,7 @@ export const Dashboard = () => {
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <IdentityHeader
+          layoutVariant="three-column"
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
@@ -292,118 +478,14 @@ export const Dashboard = () => {
               : undefined
           }
           avatarUrl={avatarUrl}
-          slotLeftOfAvatar={
-            hasVisibleSocialLinks(socialsArray) ? (
-              <ProfileLinksWidget
-                socials={socialsArray}
-                grouped
-                collapsible
-                defaultExpanded
-              />
-            ) : undefined
-          }
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
-          badges={
-            selectedSkills.length > 0 ||
-            selectedIndustries.length > 0 ||
-            !!nicheField ? (
-              <Stack spacing={1.25} sx={{ mt: 1 }}>
-                {selectedSkills.length > 0 && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Skills
-                  </Typography>
-                )}
-                {selectedSkills.length > 0 && (
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {selectedSkills.map((skill) => (
-                      <Box
-                        key={`skill-${skill}`}
-                        data-testid="dashboard-pill"
-                        sx={{
-                          display: 'inline-flex',
-                          width: 'fit-content',
-                          maxWidth: '100%',
-                          whiteSpace: 'nowrap',
-                          px: 1.25,
-                          py: 0.5,
-                          borderRadius: 999,
-                          bgcolor: 'rgba(236,64,122,0.15)',
-                          border: '1px solid rgba(236,64,122,0.35)',
-                          fontSize: '0.78rem',
-                        }}
-                      >
-                        {skill}
-                      </Box>
-                    ))}
-                  </Stack>
-                )}
-                {(selectedIndustries.length > 0 || nicheField) && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Industries
-                  </Typography>
-                )}
-                {(selectedIndustries.length > 0 || nicheField) && (
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {selectedIndustries.map((industry) => (
-                      <Box
-                        key={`industry-${industry}`}
-                        data-testid="dashboard-pill"
-                        sx={{
-                          display: 'inline-flex',
-                          width: 'fit-content',
-                          maxWidth: '100%',
-                          whiteSpace: 'nowrap',
-                          px: 1.25,
-                          py: 0.5,
-                          borderRadius: 999,
-                          bgcolor: 'rgba(66,165,245,0.15)',
-                          border: '1px solid rgba(66,165,245,0.35)',
-                          fontSize: '0.78rem',
-                        }}
-                      >
-                        {industry}
-                      </Box>
-                    ))}
-                    {nicheField && (
-                      <Box
-                        data-testid="dashboard-pill"
-                        sx={{
-                          display: 'inline-flex',
-                          width: 'fit-content',
-                          maxWidth: '100%',
-                          whiteSpace: 'nowrap',
-                          px: 1.25,
-                          py: 0.5,
-                          borderRadius: 999,
-                          bgcolor: 'rgba(66,165,245,0.1)',
-                          border: '1px solid rgba(66,165,245,0.25)',
-                          fontSize: '0.78rem',
-                        }}
-                      >
-                        {nicheField}
-                      </Box>
-                    )}
-                  </Stack>
-                )}
-              </Stack>
-            ) : undefined
+          badges={<DashboardSkillsBlock skills={selectedSkills} />}
+          rightColumn={
+            <DashboardIndustriesBlock
+              groups={industryGroups}
+              nicheField={nicheField}
+            />
           }
           slotBetweenContentAndActions={undefined}
           actions={
@@ -510,6 +592,12 @@ export const Dashboard = () => {
               </Menu>
             </>
           }
+        />
+
+        <DashboardLinksSection
+          loading={loading}
+          socials={socialsArray}
+          onOpenLinks={() => setIsLinksOpen(true)}
         />
 
         <Paper
@@ -772,6 +860,8 @@ export const Dashboard = () => {
                               deleteBusy={updating}
                               isOwner
                               dragHandle={dragHandle}
+                              onOpenPreview={setPreviewProject}
+                              previewProject={resumePreviewProject}
                             />
                           )
                         : undefined

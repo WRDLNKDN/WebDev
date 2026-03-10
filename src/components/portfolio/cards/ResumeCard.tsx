@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { getResumeDisplayName } from '../../../lib/portfolio/resumeDisplayName';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
+import type { PortfolioItem } from '../../../types/portfolio';
 
 interface ResumeCardProps {
   url?: string | null;
@@ -32,6 +33,8 @@ interface ResumeCardProps {
   isOwner?: boolean;
   /** When provided (e.g. from sortable list), shown as drag handle for reorder. Same pattern as ProjectCard. */
   dragHandle?: React.ReactNode;
+  onOpenPreview?: (project: PortfolioItem) => void;
+  previewProject?: PortfolioItem | null;
 }
 
 export const ResumeCard = ({
@@ -47,6 +50,8 @@ export const ResumeCard = ({
   deleteBusy = false,
   isOwner,
   dragHandle,
+  onOpenPreview,
+  previewProject,
 }: ResumeCardProps) => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const hasResume = Boolean(url);
@@ -260,33 +265,62 @@ export const ResumeCard = ({
                   component="span"
                   sx={{ display: 'inline-flex', alignItems: 'center' }}
                 >
-                  <IconButton
-                    component="a"
-                    href={url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="small"
-                    aria-label="Open document"
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{
-                      bgcolor: 'transparent',
-                      minWidth: 32,
-                      width: 32,
-                      height: 32,
-                      padding: 0,
-                      color: '#b9c3dd',
-                      border: '1px solid rgba(255,255,255,0.28)',
-                      borderRadius: 1,
-                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
-                      '&:hover': {
-                        bgcolor: 'rgba(0,196,204,0.22)',
-                        color: '#ecfeff',
-                        borderColor: 'rgba(0,196,204,0.65)',
-                      },
-                    }}
-                  >
-                    <OpenInNewIcon fontSize="small" />
-                  </IconButton>
+                  {onOpenPreview && previewProject ? (
+                    <IconButton
+                      size="small"
+                      aria-label="Open document"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPreview(previewProject);
+                      }}
+                      sx={{
+                        bgcolor: 'transparent',
+                        minWidth: 32,
+                        width: 32,
+                        height: 32,
+                        padding: 0,
+                        color: '#b9c3dd',
+                        border: '1px solid rgba(255,255,255,0.28)',
+                        borderRadius: 1,
+                        '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                        '&:hover': {
+                          bgcolor: 'rgba(0,196,204,0.22)',
+                          color: '#ecfeff',
+                          borderColor: 'rgba(0,196,204,0.65)',
+                        },
+                      }}
+                    >
+                      <OpenInNewIcon fontSize="small" />
+                    </IconButton>
+                  ) : (
+                    <IconButton
+                      component="a"
+                      href={url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="small"
+                      aria-label="Open document"
+                      onClick={(e) => e.stopPropagation()}
+                      sx={{
+                        bgcolor: 'transparent',
+                        minWidth: 32,
+                        width: 32,
+                        height: 32,
+                        padding: 0,
+                        color: '#b9c3dd',
+                        border: '1px solid rgba(255,255,255,0.28)',
+                        borderRadius: 1,
+                        '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                        '&:hover': {
+                          bgcolor: 'rgba(0,196,204,0.22)',
+                          color: '#ecfeff',
+                          borderColor: 'rgba(0,196,204,0.65)',
+                        },
+                      }}
+                    >
+                      <OpenInNewIcon fontSize="small" />
+                    </IconButton>
+                  )}
                 </Box>
               </Tooltip>
               {onDelete && (

@@ -4,9 +4,28 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import { Box, Button, Typography } from '@mui/material';
-import { FeedReactionBar } from '../../components/post';
+import { FeedReactionBar, REACTION_OPTIONS } from '../../components/post';
 import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
 import type { FeedCardActions } from './feedCardTypes';
+
+const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
+const FEED_ACTION_BUTTON_SX = {
+  textTransform: 'none',
+  minWidth: 0,
+  minHeight: 0,
+  flexDirection: { xs: 'row', sm: 'row' },
+  gap: 0.625,
+  pt: 1,
+  pb: 0.75,
+  px: 0,
+  borderRadius: 2,
+  transition:
+    'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+  '&:hover': {
+    bgcolor: 'transparent',
+    transform: 'scale(1.08)',
+  },
+} as const;
 
 type FeedCardEngagementActionsProps = {
   item: FeedItem;
@@ -19,6 +38,7 @@ type FeedCardEngagementActionsProps = {
   laughingCount: number;
   rageCount: number;
   commentCount: number;
+  commentsExpanded: boolean;
   handleReaction: (type: ReactionType) => void;
 };
 
@@ -33,6 +53,7 @@ export const FeedCardEngagementActions = ({
   laughingCount,
   rageCount,
   commentCount,
+  commentsExpanded,
   handleReaction,
 }: FeedCardEngagementActionsProps) => {
   const totalReactions =
@@ -42,6 +63,21 @@ export const FeedCardEngagementActions = ({
     careCount +
     laughingCount +
     rageCount;
+  const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
+    ...reaction,
+    count:
+      reaction.type === 'like'
+        ? likeCount
+        : reaction.type === 'love'
+          ? loveCount
+          : reaction.type === 'inspiration'
+            ? inspirationCount
+            : reaction.type === 'care'
+              ? careCount
+              : reaction.type === 'laughing'
+                ? laughingCount
+                : rageCount,
+  })).filter((reaction) => reaction.count > 0);
   return (
     <>
       {(totalReactions > 0 || commentCount > 0) && (
@@ -55,17 +91,45 @@ export const FeedCardEngagementActions = ({
           }}
         >
           {totalReactions > 0 && (
-            <Typography
-              component="span"
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontSize: '0.75rem',
-                cursor: 'default',
-              }}
-            >
-              {totalReactions} reaction{totalReactions !== 1 ? 's' : ''}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  '& > *:not(:first-of-type)': { ml: -0.55 },
+                }}
+              >
+                {reactionSummary.slice(0, 3).map(({ type, Icon, color }) => (
+                  <Box
+                    key={type}
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'rgba(12,18,29,0.92)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color,
+                    }}
+                  >
+                    <Icon sx={{ fontSize: 12, color: 'inherit' }} />
+                  </Box>
+                ))}
+              </Box>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  cursor: 'default',
+                }}
+              >
+                {totalReactions} reaction{totalReactions !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
           )}
           {commentCount > 0 && (
             <Typography
@@ -91,10 +155,12 @@ export const FeedCardEngagementActions = ({
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'flex-start',
-          gap: { xs: 0.5, sm: 1 },
+          columnGap: 2.5,
+          rowGap: 0.5,
           borderTop: 1,
           borderColor: 'divider',
-          py: 0.25,
+          pt: 1,
+          pb: 0.75,
           '& > *': {
             minHeight: { xs: 40, sm: 36 },
             display: 'flex',
@@ -119,18 +185,11 @@ export const FeedCardEngagementActions = ({
           size="small"
           onClick={() => actions.onCommentToggle(item.id)}
           sx={{
-            textTransform: 'none',
-            color: 'info.main',
-            minWidth: 0,
-            minHeight: 0,
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 0.25, sm: 0.5 },
-            py: { xs: 0.75, sm: 0.5 },
-            px: 1,
-            borderRadius: 2,
+            ...FEED_ACTION_BUTTON_SX,
+            color: commentsExpanded ? '#60A5FA' : FEED_ACTION_MUTED_COLOR,
             '&:hover': {
-              bgcolor: 'rgba(41, 182, 246, 0.12)',
-              color: 'info.light',
+              ...FEED_ACTION_BUTTON_SX['&:hover'],
+              color: '#60A5FA',
             },
           }}
         >
@@ -149,18 +208,11 @@ export const FeedCardEngagementActions = ({
           size="small"
           onClick={() => actions.onRepost(item)}
           sx={{
-            textTransform: 'none',
-            color: 'success.main',
-            minWidth: 0,
-            minHeight: 0,
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 0.25, sm: 0.5 },
-            py: { xs: 0.75, sm: 0.5 },
-            px: 1,
-            borderRadius: 2,
+            ...FEED_ACTION_BUTTON_SX,
+            color: FEED_ACTION_MUTED_COLOR,
             '&:hover': {
-              bgcolor: 'rgba(102, 187, 106, 0.12)',
-              color: 'success.light',
+              ...FEED_ACTION_BUTTON_SX['&:hover'],
+              color: '#A78BFA',
             },
           }}
         >
@@ -177,18 +229,11 @@ export const FeedCardEngagementActions = ({
           size="small"
           onClick={() => actions.onSend(item)}
           sx={{
-            textTransform: 'none',
-            color: 'primary.main',
-            minWidth: 0,
-            minHeight: 0,
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 0.25, sm: 0.5 },
-            py: { xs: 0.75, sm: 0.5 },
-            px: 1,
-            borderRadius: 2,
+            ...FEED_ACTION_BUTTON_SX,
+            color: FEED_ACTION_MUTED_COLOR,
             '&:hover': {
-              bgcolor: 'rgba(66, 165, 245, 0.12)',
-              color: 'primary.light',
+              ...FEED_ACTION_BUTTON_SX['&:hover'],
+              color: '#38BDF8',
             },
           }}
         >
@@ -209,20 +254,11 @@ export const FeedCardEngagementActions = ({
               : actions.onSave(item.id)
           }
           sx={{
-            textTransform: 'none',
-            color: item.viewer_saved ? 'warning.main' : 'text.secondary',
-            minWidth: 0,
-            minHeight: 0,
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 0.25, sm: 0.5 },
-            py: { xs: 0.75, sm: 0.5 },
-            px: 1,
-            borderRadius: 2,
+            ...FEED_ACTION_BUTTON_SX,
+            color: item.viewer_saved ? '#FBBF24' : FEED_ACTION_MUTED_COLOR,
             '&:hover': {
-              bgcolor: item.viewer_saved
-                ? 'rgba(255, 183, 77, 0.12)'
-                : 'rgba(255, 183, 77, 0.08)',
-              color: 'warning.light',
+              ...FEED_ACTION_BUTTON_SX['&:hover'],
+              color: '#FBBF24',
             },
           }}
           aria-label={item.viewer_saved ? 'Unsave' : 'Save'}

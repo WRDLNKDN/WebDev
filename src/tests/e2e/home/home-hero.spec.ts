@@ -14,7 +14,7 @@ test.describe('Home hero', () => {
 
     await expect(page.getByText('Business, but weirder.')).toBeVisible();
     await expect(
-      page.getByText('A networking space for people that think differently'),
+      page.getByText('A networking space for people who think differently'),
     ).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Join Us' })).toBeVisible();

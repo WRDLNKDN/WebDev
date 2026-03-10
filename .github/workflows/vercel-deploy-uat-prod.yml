@@ -44,8 +44,10 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: ✅ Quality gate (typecheck, lint, tests)
-        run: npm run check
+      - name: ✅ Deploy validation (typecheck, lint, format)
+        run:
+          npm run typecheck && npm run lint && npm run lint:md && npm run
+          format:check
 
       - name: 🔐 Verify secrets (UAT)
         run: |
@@ -114,8 +116,10 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: ✅ Quality gate (typecheck, lint, tests)
-        run: npm run check
+      - name: ✅ Deploy validation (typecheck, lint, format)
+        run:
+          npm run typecheck && npm run lint && npm run lint:md && npm run
+          format:check
 
       - name: 🔐 Verify secrets (PROD)
         run: |

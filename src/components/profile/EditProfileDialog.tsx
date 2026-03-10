@@ -352,7 +352,6 @@ export const EditProfileDialog = ({
           </span>
         </Tooltip>
       </DialogTitle>
-
       <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
         {busy && !uploadedAvatarUrl ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>

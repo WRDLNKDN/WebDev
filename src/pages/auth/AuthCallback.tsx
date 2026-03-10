@@ -285,7 +285,7 @@ export const AuthCallback = () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [callbackTimeoutMs, navigate, next, setIdentity, goToStep]);
+  }, [authCode, callbackTimeoutMs, navigate, next, setIdentity, goToStep]);
 
   useAuthCallbackFallbackRedirect(next);
 

@@ -8,11 +8,7 @@ import { Box, Button, Dialog, DialogContent, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { PortfolioPreviewDialogHeader } from '../preview/PortfolioPreviewDialogHeader';
 import { PortfolioPreviewMeta } from '../preview/PortfolioPreviewMeta';
-import {
-  getLinkType,
-  getLinkTypeLabel,
-  normalizeGoogleUrl,
-} from '../../../lib/portfolio/linkUtils';
+import { getPortfolioPreviewModel } from '../../../lib/portfolio/previewUtils';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 const GLASS_MODAL = {
@@ -54,42 +50,19 @@ export const PortfolioPreviewModal = ({
   onClose,
 }: PortfolioPreviewModalProps) => {
   const [previewError, setPreviewError] = useState<PreviewError | null>(null);
-  const url = project?.project_url?.trim() ?? '';
-  const linkType = url ? getLinkType(url) : 'unsupported';
-  const typeLabel = getLinkTypeLabel(linkType);
-  const embedUrl =
-    project?.embed_url ||
-    (linkType === 'google_doc' ||
-    linkType === 'google_sheet' ||
-    linkType === 'google_slides'
-      ? normalizeGoogleUrl(url)
-      : url);
-  const openUrl = (() => {
-    const raw = url.trim();
-    if (!raw) return '';
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (/^\/\//.test(raw)) return `https:${raw}`;
-    // Support legacy values missing protocol: example.com/path
-    if (/^[a-z0-9.-]+\.[a-z]{2,}(?:[/:?#].*)?$/i.test(raw))
-      return `https://${raw}`;
-    return '';
-  })();
-  const canPreviewInline =
-    linkType === 'image' ||
-    linkType === 'pdf' ||
-    linkType === 'google_doc' ||
-    linkType === 'google_sheet' ||
-    linkType === 'google_slides';
+  const { kind, linkType, typeLabel, openUrl, downloadUrl, previewUrl } =
+    getPortfolioPreviewModel(project);
 
   useEffect(() => {
     if (open) setPreviewError(null);
-  }, [open, project?.id, url]);
+  }, [open, project?.id, project?.project_url]);
 
   const renderPreview = () => {
-    if (!url) return null;
+    if (!openUrl) return null;
     if (linkType === 'unsupported') {
       return (
         <Box
+          data-testid="portfolio-preview-fallback"
           sx={{
             mt: 1.5,
             display: 'flex',
@@ -112,6 +85,7 @@ export const PortfolioPreviewModal = ({
     if (previewError) {
       return (
         <Box
+          data-testid="portfolio-preview-fallback"
           sx={{
             mt: 1,
             py: 4,
@@ -129,7 +103,7 @@ export const PortfolioPreviewModal = ({
             <Button
               variant="contained"
               size="small"
-              href={openUrl}
+              href={downloadUrl}
               download
               target="_blank"
               rel="noopener noreferrer"
@@ -172,9 +146,10 @@ export const PortfolioPreviewModal = ({
       return (
         <Box
           component="img"
-          src={url}
+          src={previewUrl}
           alt={project?.title ?? 'Preview'}
           onError={() => setPreviewError('temporary')}
+          data-testid="portfolio-preview-image"
           sx={{
             width: '100%',
             maxHeight: '60vh',
@@ -188,9 +163,10 @@ export const PortfolioPreviewModal = ({
       return (
         <Box
           component="iframe"
-          src={`${url}#toolbar=0&navpanes=0`}
+          src={previewUrl}
           title={project?.title ?? 'PDF preview'}
           onError={() => setPreviewError('temporary')}
+          data-testid="portfolio-preview-frame"
           sx={{
             width: '100%',
             height: '60vh',
@@ -209,9 +185,32 @@ export const PortfolioPreviewModal = ({
       return (
         <Box
           component="iframe"
-          src={embedUrl}
+          src={previewUrl}
           title={project?.title ?? typeLabel}
           onError={() => setPreviewError('embed_blocked')}
+          data-testid="portfolio-preview-frame"
+          sx={{
+            width: '100%',
+            height: '60vh',
+            minHeight: 400,
+            border: 0,
+            borderRadius: 1,
+          }}
+        />
+      );
+    }
+    if (
+      linkType === 'document' ||
+      linkType === 'presentation' ||
+      linkType === 'spreadsheet'
+    ) {
+      return (
+        <Box
+          component="iframe"
+          src={previewUrl}
+          title={project?.title ?? typeLabel}
+          onError={() => setPreviewError('embed_blocked')}
+          data-testid="portfolio-preview-frame"
           sx={{
             width: '100%',
             height: '60vh',
@@ -233,6 +232,7 @@ export const PortfolioPreviewModal = ({
     <Dialog
       open={open}
       onClose={onClose}
+      data-testid="portfolio-preview-modal"
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: GLASS_MODAL }}
@@ -248,7 +248,7 @@ export const PortfolioPreviewModal = ({
         title={project?.title ?? 'Preview'}
         typeLabel={typeLabel}
         openUrl={openUrl}
-        downloadUrl={openUrl}
+        downloadUrl={downloadUrl}
         onClose={onClose}
       />
       <DialogContent
@@ -260,10 +260,11 @@ export const PortfolioPreviewModal = ({
         }}
       >
         <PortfolioPreviewMeta project={project} />
-        {canPreviewInline || previewError ? (
+        {kind !== 'none' || previewError ? (
           renderPreview()
         ) : (
           <Box
+            data-testid="portfolio-preview-fallback"
             sx={{
               mt: 1,
               py: 4,
@@ -281,7 +282,7 @@ export const PortfolioPreviewModal = ({
               <Button
                 variant="contained"
                 size="small"
-                href={openUrl}
+                href={downloadUrl}
                 download
                 target="_blank"
                 rel="noopener noreferrer"

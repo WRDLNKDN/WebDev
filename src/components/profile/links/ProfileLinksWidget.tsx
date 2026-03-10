@@ -41,7 +41,10 @@ export const ProfileLinksWidget = ({
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
-  const safeSocials = Array.isArray(socials) ? socials : [];
+  const safeSocials = useMemo(
+    () => (Array.isArray(socials) ? socials : []),
+    [socials],
+  );
 
   const visibleGroups = useMemo(
     () => groupSocialLinksByCategory(safeSocials, { visibleOnly: true }),

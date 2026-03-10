@@ -21,6 +21,7 @@ import {
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useOAuthReturnReset } from '../../lib/auth/useOAuthReturnReset';
 import {
   APP_GLASS_BORDER,
   APP_GLASS_SHADOW,
@@ -59,6 +60,14 @@ export const SignIn = () => {
     : dashboardEnabled
       ? '/dashboard'
       : '/';
+
+  useOAuthReturnReset({
+    loading,
+    reset: () => {
+      setLoading(false);
+      setLoadingProvider(null);
+    },
+  });
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     setLoading(true);

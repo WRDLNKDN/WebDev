@@ -16,6 +16,7 @@ import {
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useOAuthReturnReset } from '../../lib/auth/useOAuthReturnReset';
 import type { IdentityProvider } from '../../types/join';
 import {
   identityStepChecking,
@@ -124,6 +125,18 @@ export const IdentityStep = () => {
       }
     };
   }, []);
+
+  useOAuthReturnReset({
+    loading,
+    reset: () => {
+      if (redirectGuardRef.current) {
+        clearTimeout(redirectGuardRef.current);
+        redirectGuardRef.current = null;
+      }
+      setLoading(false);
+      setLoadingProvider(null);
+    },
+  });
 
   const handleOAuthSignIn = async (provider: 'google' | 'azure') => {
     if (!canProceed) {

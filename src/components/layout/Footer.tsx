@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Grid,
   IconButton,
   Link,
   Stack,
@@ -402,12 +401,47 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
         }}
       >
         <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
-          <Grid
-            container
-            alignItems="center"
-            spacing={{ xs: 0.7, sm: 0.9, md: 1.1 }}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+              },
+              alignItems: 'center',
+              gap: { xs: 0.9, sm: 1, md: 1.25 },
+            }}
           >
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Box sx={{ display: 'flex', justifyContent: { md: 'flex-start' } }}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(160px, max-content))',
+                  },
+                  gap: { xs: 0.75, sm: 1.1 },
+                  width: '100%',
+                  justifyContent: 'flex-start',
+                  justifyItems: { xs: 'stretch', sm: 'start' },
+                }}
+              >
+                {companySection
+                  ? renderFooterSection(companySection, {
+                      align: 'center',
+                      panelDirection: 'up',
+                    })
+                  : null}
+                {legalSection
+                  ? renderFooterSection(legalSection, {
+                      align: 'center',
+                      panelDirection: 'up',
+                    })
+                  : null}
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Stack
                 spacing={0.85}
                 sx={{
@@ -417,54 +451,44 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 }}
               >
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={{ xs: 0.75, sm: 1.15, md: 1.4 }}
+                  direction="row"
+                  spacing={0.35}
                   alignItems="center"
                   justifyContent="center"
-                  sx={{ width: '100%', flexWrap: 'wrap' }}
                 >
-                  {companySection
-                    ? renderFooterSection(companySection, {
-                        align: 'center',
-                        panelDirection: 'up',
-                      })
-                    : null}
-
-                  <Stack direction="row" spacing={0.35} alignItems="center">
-                    <EmojiEventsIcon
-                      sx={{
-                        display: { xs: 'none', sm: 'inline-flex' },
-                        fontSize: { xs: 20, sm: 22, md: 24 },
-                        color: 'primary.main',
-                        opacity: 0.95,
-                      }}
-                      aria-hidden
-                    />
-                    <Box
-                      component="img"
-                      src="/assets/og_weirdlings/werdling1_transparent.png"
-                      alt="WRDLNKDN Weirdling logo"
-                      sx={{
-                        display: { xs: 'none', sm: 'block' },
-                        width: { xs: 28, sm: 30, md: 34 },
-                        height: { xs: 28, sm: 30, md: 34 },
-                        objectFit: 'contain',
-                        objectPosition: 'center',
-                      }}
-                    />
-                    <Box
-                      component="img"
-                      src="/assets/wrdlnkdn_logo.png"
-                      alt="WRDLNKDN wordmark"
-                      sx={{
-                        display: 'block',
-                        width: { xs: 114, sm: 138, md: 156 },
-                        maxWidth: '100%',
-                        objectFit: 'contain',
-                        objectPosition: 'center',
-                      }}
-                    />
-                  </Stack>
+                  <EmojiEventsIcon
+                    sx={{
+                      display: { xs: 'none', sm: 'inline-flex' },
+                      fontSize: { xs: 20, sm: 22, md: 24 },
+                      color: 'primary.main',
+                      opacity: 0.95,
+                    }}
+                    aria-hidden
+                  />
+                  <Box
+                    component="img"
+                    src="/assets/og_weirdlings/werdling1_transparent.png"
+                    alt="WRDLNKDN Weirdling logo"
+                    sx={{
+                      display: { xs: 'none', sm: 'block' },
+                      width: { xs: 28, sm: 30, md: 34 },
+                      height: { xs: 28, sm: 30, md: 34 },
+                      objectFit: 'contain',
+                      objectPosition: 'center',
+                    }}
+                  />
+                  <Box
+                    component="img"
+                    src="/assets/wrdlnkdn_logo.png"
+                    alt="WRDLNKDN wordmark"
+                    sx={{
+                      display: 'block',
+                      width: { xs: 114, sm: 138, md: 156 },
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      objectPosition: 'center',
+                    }}
+                  />
                 </Stack>
 
                 <Typography
@@ -478,28 +502,11 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 >
                   Business, but weirder.
                 </Typography>
-
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={{ xs: 0.75, sm: 1.15, md: 1.4 }}
-                  alignItems="center"
-                  justifyContent="center"
-                  sx={{ width: '100%', flexWrap: 'wrap' }}
-                >
-                  {legalSection
-                    ? renderFooterSection(legalSection, {
-                        align: 'center',
-                        panelDirection: 'up',
-                      })
-                    : null}
-                </Stack>
               </Stack>
-            </Grid>
+            </Box>
 
-            <Grid
-              size={{ xs: 12, md: 4 }}
+            <Box
               sx={{
-                order: { xs: 3, md: 2 },
                 display: 'flex',
                 alignItems: { xs: 'flex-start', md: 'flex-start' },
                 justifyContent: {
@@ -676,8 +683,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   © {new Date().getFullYear()} WRDLNKDN. All rights reserved.
                 </Typography>
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Container>
 
         <script

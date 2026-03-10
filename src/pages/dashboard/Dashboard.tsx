@@ -31,12 +31,10 @@ import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
-import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
-import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';

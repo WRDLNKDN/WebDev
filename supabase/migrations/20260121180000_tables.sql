@@ -1193,7 +1193,7 @@ as $$
           or (p.industries is not null and jsonb_array_length(p.industries) > 0 and exists (
             select 1 from jsonb_array_elements(p.industries) g where (g->>'industry') = pr.primary_industry_q
           )))
-        or (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q
+        and (pr.secondary_industry_q is null or p.industry = pr.secondary_industry_q or p.secondary_industry = pr.secondary_industry_q
           or (p.industries is not null and jsonb_array_length(p.industries) > 0 and exists (
             select 1
             from jsonb_array_elements(p.industries) g

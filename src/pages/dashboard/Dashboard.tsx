@@ -28,11 +28,12 @@ import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
+import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
-import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { useProfile } from '../../hooks/useProfile';
 import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
@@ -291,7 +292,16 @@ export const Dashboard = () => {
               : undefined
           }
           avatarUrl={avatarUrl}
-          slotLeftOfAvatar={undefined}
+          slotLeftOfAvatar={
+            hasVisibleSocialLinks(socialsArray) ? (
+              <ProfileLinksWidget
+                socials={socialsArray}
+                grouped
+                collapsible
+                defaultExpanded
+              />
+            ) : undefined
+          }
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
           badges={
@@ -500,12 +510,6 @@ export const Dashboard = () => {
               </Menu>
             </>
           }
-        />
-
-        <DashboardLinksSection
-          loading={loading}
-          socials={socialsArray}
-          onOpenLinks={() => setIsLinksOpen(true)}
         />
 
         <Paper

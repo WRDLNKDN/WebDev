@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
+import { AUTH_SCREEN_BG, GLASS_CARD } from '../../theme/candyStyles';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -41,8 +41,8 @@ export const Login = () => {
   };
 
   return (
-    <Box sx={SIGNUP_BG}>
-      <Container maxWidth="sm">
+    <Box sx={AUTH_SCREEN_BG}>
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
         <Paper
           elevation={24}
           sx={{

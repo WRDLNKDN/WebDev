@@ -3,6 +3,8 @@ import { Avatar, Box, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { CARD_BG } from '../../theme/candyStyles';
 
+const DIRECTORY_CARD_TEXT_SECONDARY = 'rgba(255,255,255,0.82)';
+
 interface DirectoryCardProps {
   id: string;
   handle: string | null;
@@ -59,7 +61,7 @@ export const DirectoryCard = ({
           {pronouns && (
             <Typography
               variant="body2"
-              sx={{ color: 'text.secondary', mt: 0.5 }}
+              sx={{ color: DIRECTORY_CARD_TEXT_SECONDARY, mt: 0.5 }}
             >
               {pronouns}
             </Typography>

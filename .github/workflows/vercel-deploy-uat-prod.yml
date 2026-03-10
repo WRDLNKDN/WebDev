@@ -1,4 +1,4 @@
-name: 🚀 Vercel Deploy UAT then PROD (approval gated)
+name: 🚀 Vercel Deploy UAT then PROD
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_prod:
-        description: 'Also deploy production (requires approval)'
+        description: 'Also deploy production'
         required: false
         type: boolean
         default: false
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy-uat:
-    name: 🚀 Vercel UAT (Production)
+    name: 🚀 Vercel UAT
     runs-on: ubuntu-latest
     environment: uat
 
@@ -66,7 +66,7 @@ jobs:
           echo '{"orgId":"'"$VERCEL_ORG_ID"'","projectId":"'"$VERCEL_PROJECT_ID"'"}' > .vercel/project.json
           cat .vercel/project.json
 
-      - name: 📥 Pull (production)
+      - name: 📥 Pull Vercel settings (UAT stage)
         run:
           npx --yes vercel@latest pull --yes --environment=production --token
           "$VERCEL_TOKEN"
@@ -77,16 +77,15 @@ jobs:
       - name: 🏗️ Build (UAT -> webdev-uat.vercel.app)
         run: npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
 
-      - name: 🚀 Deploy (production)
+      - name: 🚀 Deploy (UAT stage)
         run:
           npx --yes vercel@latest deploy --prebuilt --prod --yes --token
           "$VERCEL_TOKEN"
 
   deploy-prod:
-    name: 🚀 Vercel PROD (Production, approval gated)
+    name: 🚀 Vercel PROD (Production)
     runs-on: ubuntu-latest
     needs: deploy-uat
-    environment: production
 
     if:
       ${{ github.event_name == 'push' || (github.event_name ==

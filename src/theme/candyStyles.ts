@@ -29,6 +29,23 @@ export const PAGE_BACKGROUND = {
   ...SUBTLE_GRID,
 } as const;
 
+export const APP_GLASS_BORDER = '1px solid rgba(255,255,255,0.12)';
+export const APP_GLASS_SURFACE = 'rgba(16, 18, 24, 0.72)';
+export const APP_GLASS_SURFACE_STRONG = 'rgba(16, 18, 24, 0.82)';
+export const APP_GLASS_SHADOW = '0 18px 60px rgba(0,0,0,0.55)';
+export const APP_GLASS_BACKDROP = 'blur(12px)';
+export const APP_PAGE_OVERLAY =
+  'linear-gradient(180deg, rgba(8,8,10,0.78) 0%, rgba(8,8,10,0.9) 100%)';
+
+export const NAVBAR_GLASS = {
+  bgcolor: APP_GLASS_SURFACE,
+  backgroundColor: APP_GLASS_SURFACE,
+  backgroundImage: 'none',
+  color: '#ffffff',
+  backdropFilter: APP_GLASS_BACKDROP,
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+} as const;
+
 /** @deprecated Use PAGE_BACKGROUND. Kept for legacy SYNERGY_BG usage. */
 export const SYNERGY_BG = 'url("/assets/background-desktop.png")';
 export const PROFILE_BG = 'url("/assets/profile-bg.png")';
@@ -108,10 +125,10 @@ export const GLASS_CARD = {
   position: 'relative' as const,
   width: '100%',
   borderRadius: 3,
-  border: '1px solid rgba(255,255,255,0.1)',
-  bgcolor: 'rgba(16, 18, 24, 0.82)',
-  backdropFilter: 'blur(20px)',
-  boxShadow: '0 0 24px rgba(66, 165, 245, 0.06), 0 12px 40px rgba(0,0,0,0.4)',
+  border: APP_GLASS_BORDER,
+  bgcolor: APP_GLASS_SURFACE,
+  backdropFilter: APP_GLASS_BACKDROP,
+  boxShadow: APP_GLASS_SHADOW,
   color: '#fff',
   overflow: 'hidden' as const,
 };
@@ -159,3 +176,15 @@ export const SIGNUP_BG = {
     zIndex: 0,
   },
 };
+
+export const AUTH_SCREEN_BG = {
+  ...SIGNUP_BG,
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    background: APP_PAGE_OVERLAY,
+    zIndex: 0,
+    pointerEvents: 'none' as const,
+  },
+} as const;

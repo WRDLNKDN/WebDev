@@ -24,6 +24,12 @@ import { WelcomeStep } from '../../components/join/WelcomeStep';
 import { toMessage } from '../../lib/utils/errors';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
+import {
+  APP_GLASS_BACKDROP,
+  APP_GLASS_BORDER,
+  APP_GLASS_SHADOW,
+  APP_GLASS_SURFACE,
+} from '../../theme/candyStyles';
 
 const BG_SX = {
   flex: 1,
@@ -47,10 +53,10 @@ const CARD_SX = {
   width: '100%',
   maxWidth: 920,
   borderRadius: 3,
-  border: '1px solid rgba(255,255,255,0.12)',
-  bgcolor: 'rgba(16, 18, 24, 0.70)',
-  backdropFilter: 'blur(12px)',
-  boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
+  border: APP_GLASS_BORDER,
+  bgcolor: APP_GLASS_SURFACE,
+  backdropFilter: APP_GLASS_BACKDROP,
+  boxShadow: APP_GLASS_SHADOW,
   p: { xs: 1.5, sm: 2, md: 3 },
   pb: { xs: 2.5, sm: 3, md: 3.5 },
   color: '#fff',

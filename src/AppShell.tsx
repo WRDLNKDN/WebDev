@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@mui/material';
 import { Box, CircularProgress } from '@mui/material';
 import { Suspense, useEffect, useRef } from 'react';
 import {
@@ -12,6 +13,7 @@ import { AvatarProvider } from './context/AvatarContext';
 import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
 import { JoinProvider } from './context/JoinProvider';
 import { supabase } from './lib/auth/supabaseClient';
+import theme from './theme/theme';
 
 const Loading = () => (
   <Box
@@ -66,7 +68,7 @@ const AppShell = () => {
   )?.backgroundLocation;
 
   return (
-    <>
+    <ThemeProvider theme={theme}>
       <AuthBoot />
 
       <JoinProvider>
@@ -82,7 +84,7 @@ const AppShell = () => {
           </FeatureFlagsProvider>
         </AvatarProvider>
       </JoinProvider>
-    </>
+    </ThemeProvider>
   );
 };
 

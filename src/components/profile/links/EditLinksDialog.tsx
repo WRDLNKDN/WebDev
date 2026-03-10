@@ -1,7 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Alert,
   Box,
@@ -24,11 +22,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-  CATEGORY_ORDER,
   PLATFORM_OPTIONS,
   getCategoryForPlatform,
 } from '../../../constants/platforms';
+import { DISPLAY_LINK_CATEGORY_ORDER } from '../../../lib/profile/socialLinksPresentation';
 import { toMessage } from '../../../lib/utils/errors';
+import {
+  getDisplayLinkCategory,
+  getSocialLinkTitle,
+  sortSocialLinksForEdit,
+} from '../../../lib/profile/socialLinksPresentation';
 import {
   dialogSelectSx,
   dialogTextFieldSx,
@@ -38,7 +41,6 @@ import { getPortfolioUrlSafetyError } from '../../../lib/portfolio/linkValidatio
 import {
   detectPlatformFromUrl,
   findDuplicateNormalizedUrl,
-  getShortLinkLabel,
   normalizeUrlForDedup,
 } from '../../../lib/utils/linkPlatform';
 import type { LinkCategory, SocialLink } from '../../../types/profile';
@@ -212,25 +214,7 @@ export const EditLinksDialog = ({
     return Boolean(newCategory || newPlatform.trim() || newUrl.trim());
   }, [links, newCategory, newPlatform, newUrl]);
 
-  const sortedLinks = useMemo(
-    () =>
-      [...links].sort((a, b) => {
-        const catA = CATEGORY_ORDER.indexOf(a.category);
-        const catB = CATEGORY_ORDER.indexOf(b.category);
-        if (catA !== catB) return catA - catB;
-        const labelA = getShortLinkLabel(a.url).toLowerCase();
-        const labelB = getShortLinkLabel(b.url).toLowerCase();
-        const labelCmp = labelA.localeCompare(labelB);
-        if (labelCmp !== 0) return labelCmp;
-        const urlCmp = a.url.toLowerCase().localeCompare(b.url.toLowerCase());
-        if (urlCmp !== 0) return urlCmp;
-        if (a.order !== b.order) return a.order - b.order;
-        const explicitLabelCmp = (a.label || '').localeCompare(b.label || '');
-        if (explicitLabelCmp !== 0) return explicitLabelCmp;
-        return a.id.localeCompare(b.id);
-      }),
-    [links],
-  );
+  const sortedLinks = useMemo(() => sortSocialLinksForEdit(links), [links]);
 
   // --- ACTIONS ---
 
@@ -287,24 +271,6 @@ export const EditLinksDialog = ({
 
   const handleDelete = (id: string) => {
     setLinks((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const handleMoveUp = (linkId: string) => {
-    const sorted = [...sortedLinks];
-    const idx = sorted.findIndex((l) => l.id === linkId);
-    if (idx <= 0) return;
-    [sorted[idx - 1], sorted[idx]] = [sorted[idx], sorted[idx - 1]];
-    const reordered = sorted.map((link, i) => ({ ...link, order: i }));
-    setLinks(reordered);
-  };
-
-  const handleMoveDown = (linkId: string) => {
-    const sorted = [...sortedLinks];
-    const idx = sorted.findIndex((l) => l.id === linkId);
-    if (idx < 0 || idx >= sorted.length - 1) return;
-    [sorted[idx], sorted[idx + 1]] = [sorted[idx + 1], sorted[idx]];
-    const reordered = sorted.map((link, i) => ({ ...link, order: i }));
-    setLinks(reordered);
   };
 
   const handleSave = async () => {
@@ -403,7 +369,13 @@ export const EditLinksDialog = ({
                       }}
                     >
                       <MenuItem value="">Choose Category</MenuItem>
-                      {CATEGORY_ORDER.map((c) => (
+                      {[
+                        'Professional',
+                        'Social',
+                        'Content',
+                        'Games',
+                        'Custom',
+                      ].map((c) => (
                         <MenuItem key={c} value={c}>
                           {c}
                         </MenuItem>
@@ -568,9 +540,9 @@ export const EditLinksDialog = ({
                 </Typography>
               )}
 
-              {CATEGORY_ORDER.map((category) => {
+              {DISPLAY_LINK_CATEGORY_ORDER.map((category) => {
                 const categoryLinks = sortedLinks.filter(
-                  (link) => link.category === category,
+                  (link) => getDisplayLinkCategory(link) === category,
                 );
                 if (categoryLinks.length === 0) return null;
                 return (
@@ -593,13 +565,6 @@ export const EditLinksDialog = ({
                       const platformForIcon =
                         link.platform?.trim() ||
                         detectPlatformFromUrl(link.url);
-                      const globalIndex = sortedLinks.findIndex(
-                        (l) => l.id === link.id,
-                      );
-                      const canMoveUp = globalIndex > 0;
-                      const canMoveDown =
-                        globalIndex >= 0 &&
-                        globalIndex < sortedLinks.length - 1;
                       return (
                         <Box
                           key={link.id}
@@ -632,7 +597,7 @@ export const EditLinksDialog = ({
                                 noWrap
                                 data-testid="edit-link-label"
                               >
-                                {getShortLinkLabel(link.url)}
+                                {getSocialLinkTitle(link)}
                               </Typography>
                               <Typography
                                 variant="caption"
@@ -651,49 +616,13 @@ export const EditLinksDialog = ({
                             spacing={0.25}
                             sx={{ flexShrink: 0 }}
                           >
-                            <Tooltip title="Move up">
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleMoveUp(link.id)}
-                                  disabled={!canMoveUp}
-                                  aria-label={`Move ${link.label || link.platform} up`}
-                                  sx={{
-                                    p: 0.25,
-                                    minWidth: 0,
-                                    minHeight: 0,
-                                  }}
-                                >
-                                  <KeyboardArrowUpIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title="Move down">
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleMoveDown(link.id)}
-                                  disabled={!canMoveDown}
-                                  aria-label={`Move ${link.label || link.platform} down`}
-                                  sx={{
-                                    p: 0.25,
-                                    minWidth: 0,
-                                    minHeight: 0,
-                                  }}
-                                >
-                                  <KeyboardArrowDownIcon
-                                    sx={{ fontSize: 18 }}
-                                  />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
                             <Tooltip
-                              title={`Remove ${link.label || link.platform}`}
+                              title={`Remove ${getSocialLinkTitle(link)}`}
                             >
                               <IconButton
                                 size="small"
                                 onClick={() => handleDelete(link.id)}
-                                aria-label={`Remove ${link.label || link.platform}`}
+                                aria-label={`Remove ${getSocialLinkTitle(link)}`}
                                 sx={{
                                   p: 0.25,
                                   minWidth: 0,

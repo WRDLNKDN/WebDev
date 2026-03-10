@@ -112,6 +112,7 @@ export const AdminApp = () => {
                 borderRadius: 3,
                 border: '1px solid rgba(255,255,255,0.12)',
                 bgcolor: 'rgba(16, 18, 24, 0.8)',
+                color: 'rgba(255,255,255,0.96)',
               }}
             >
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>

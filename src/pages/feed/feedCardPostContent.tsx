@@ -46,7 +46,7 @@ export const FeedCardPostContent = ({
   url,
   label,
 }: FeedCardPostContentProps) => (
-  <>
+  <Box sx={{ pb: 1.25 }}>
     {isEditingPost ? (
       <Stack spacing={1} sx={{ mt: 1 }}>
         <TextField
@@ -171,5 +171,5 @@ export const FeedCardPostContent = ({
         {label || url}
       </Typography>
     )}
-  </>
+  </Box>
 );

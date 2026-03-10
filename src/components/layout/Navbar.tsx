@@ -47,6 +47,7 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+import { NAVBAR_GLASS } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 
 /**
@@ -417,11 +418,9 @@ export const Navbar = () => {
         color="transparent"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(18, 18, 18, 0.9)', // Deep glass effect
-          backdropFilter: 'blur(12px)',
+          ...NAVBAR_GLASS,
           zIndex: 1100,
           isolation: 'isolate',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
         <Toolbar

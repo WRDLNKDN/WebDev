@@ -84,7 +84,7 @@ export const FeedCardEngagementActions = ({
       )}
       <Box
         sx={{
-          mt: 0.5,
+          mt: 1.75,
           width: '100%',
           display: 'flex',
           flexDirection: 'row',

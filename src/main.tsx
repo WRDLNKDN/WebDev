@@ -25,7 +25,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <HelmetProvider>
       <GlobalFormTooltips />
 
-      {/* Keep the root entry plain so the landing page can avoid eager MUI boot. */}
       <RootErrorBoundary>
         <BrowserRouter>
           <App />

@@ -18,6 +18,10 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { CARD_BG } from '../../theme/candyStyles';
+
+const EVENT_TEXT_SECONDARY = 'rgba(255,255,255,0.82)';
+const EVENT_TEXT_MUTED = 'rgba(255,255,255,0.72)';
 
 type EventRow = {
   id: string;
@@ -179,19 +183,24 @@ const EventCardList = ({
         to={`/events/${ev.id}`}
         sx={{
           textDecoration: 'none',
-          color: 'inherit',
+          color: '#ffffff',
+          bgcolor: CARD_BG,
+          borderColor: 'rgba(255,255,255,0.08)',
           opacity: past ? 0.85 : 1,
           borderRadius: 2,
           transition: past
             ? undefined
             : 'border-color 0.2s, background-color 0.2s',
           '&:hover': past
-            ? { opacity: 1, borderColor: 'divider' }
-            : { borderColor: 'primary.main', bgcolor: 'action.hover' },
+            ? { opacity: 1, borderColor: 'rgba(255,255,255,0.18)' }
+            : {
+                borderColor: 'primary.main',
+                bgcolor: 'rgba(40, 40, 40, 0.8)',
+              },
         }}
       >
         <CardContent sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: '#ffffff' }}>
             {ev.title}
           </Typography>
           <Stack
@@ -202,14 +211,18 @@ const EventCardList = ({
             flexWrap="wrap"
           >
             {!past && <PersonIcon fontSize="small" color="action" />}
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: EVENT_TEXT_SECONDARY }}>
               {ev.host_display_name || ev.host_handle || 'Host'}
             </Typography>
-            <Typography component="span" variant="body2" color="text.secondary">
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ color: EVENT_TEXT_MUTED }}
+            >
               •
             </Typography>
             {!past && <EventIcon fontSize="small" color="action" />}
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: EVENT_TEXT_SECONDARY }}>
               {formatDate(ev.start_at)}
             </Typography>
             {!past && ev.location && (
@@ -217,12 +230,15 @@ const EventCardList = ({
                 <Typography
                   component="span"
                   variant="body2"
-                  color="text.secondary"
+                  sx={{ color: EVENT_TEXT_MUTED }}
                 >
                   •
                 </Typography>
                 <LocationOnIcon fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{ color: EVENT_TEXT_SECONDARY }}
+                >
                   {ev.location}
                 </Typography>
               </>
@@ -231,8 +247,7 @@ const EventCardList = ({
           {!past && ev.yes_count !== undefined && ev.yes_count > 0 && (
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 1 }}
+              sx={{ display: 'block', mt: 1, color: EVENT_TEXT_MUTED }}
             >
               {ev.yes_count} attending
             </Typography>
@@ -277,7 +292,7 @@ export const EventsContent = ({
             sx={{
               display: 'block',
               mb: 2,
-              color: 'text.secondary',
+              color: EVENT_TEXT_MUTED,
               fontWeight: 600,
             }}
           >
@@ -294,7 +309,7 @@ export const EventsContent = ({
             sx={{
               display: 'block',
               mb: 2,
-              color: 'text.secondary',
+              color: EVENT_TEXT_MUTED,
               fontWeight: 600,
             }}
           >
@@ -313,12 +328,13 @@ export const EventsContent = ({
             borderRadius: 4,
             bgcolor: 'rgba(18, 18, 18, 0.8)',
             border: '2px dashed rgba(255,255,255,0.1)',
+            color: '#ffffff',
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
             No events yet
           </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
+          <Typography sx={{ mb: 2, color: EVENT_TEXT_SECONDARY }}>
             Create an event to bring the community together.
           </Typography>
           {sessionPresent && (

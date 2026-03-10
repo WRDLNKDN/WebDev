@@ -10,60 +10,25 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  CATEGORY_ORDER,
-  getCategoryForPlatform,
-} from '../../../constants/platforms';
-import {
-  detectPlatformFromUrl,
-  getShortLinkLabel,
-} from '../../../lib/utils/linkPlatform';
-import { useState } from 'react';
+  getSocialLinkPlatform,
+  getSocialLinkTitle,
+  groupSocialLinksByCategory,
+} from '../../../lib/profile/socialLinksPresentation';
 import type { SocialLink } from '../../../types/profile';
 import { LinkIcon } from './LinkIcon';
 
 interface ProfileLinksWidgetProps {
   socials: SocialLink[];
-  /** When true, show remove (X) button on each link */
   isOwner?: boolean;
-  /** Called when owner removes a link */
   onRemove?: (linkId: string) => void;
-  /** Group by category heading when true */
   grouped?: boolean;
-  /** When true, show a collapsible header so the list can be expanded/collapsed. Default true when grouped. */
   collapsible?: boolean;
-  /** When collapsible, start expanded (default true). */
   defaultExpanded?: boolean;
 }
 
-type DisplayCategory = 'Professional' | 'Social' | 'Content' | 'Other';
-const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
-  'Professional',
-  'Social',
-  'Content',
-  'Other',
-];
-
-/** Collapsible section header for the links list in Identity. */
 export const LINKS_COLLAPSIBLE_HEADER = 'LINKS';
-
-const normalizeDisplayCategory = (link: SocialLink): DisplayCategory => {
-  if (
-    link.category === 'Professional' ||
-    link.category === 'Social' ||
-    link.category === 'Content'
-  ) {
-    return link.category;
-  }
-  // Custom or unknown: infer from platform so we don't mis-group
-  const platform =
-    link.platform?.trim() || detectPlatformFromUrl(link.url) || '';
-  const inferred = getCategoryForPlatform(platform);
-  if (inferred === 'Professional') return 'Professional';
-  if (inferred === 'Social') return 'Social';
-  if (inferred === 'Content') return 'Content';
-  return 'Other';
-};
 
 export const ProfileLinksWidget = ({
   socials,
@@ -73,29 +38,48 @@ export const ProfileLinksWidget = ({
   collapsible = grouped,
   defaultExpanded = true,
 }: ProfileLinksWidgetProps) => {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
+  const safeSocials = useMemo(
+    () => (Array.isArray(socials) ? socials : []),
+    [socials],
+  );
 
-  // 1. HARDENED SAFETY CHECK:
-  // We explicitly check Array.isArray to prevent crashes if Supabase sends {}
-  if (!socials || !Array.isArray(socials) || socials.length === 0) return null;
+  const visibleGroups = useMemo(
+    () => groupSocialLinksByCategory(safeSocials, { visibleOnly: true }),
+    [safeSocials],
+  );
+  const visibleLinks = useMemo(
+    () => visibleGroups.flatMap((group) => group.links),
+    [visibleGroups],
+  );
 
-  // 2. Filter for visible links only
-  const visibleLinks = socials.filter((s) => s.isVisible);
+  useEffect(() => {
+    if (!grouped || !collapsible) return;
 
+    setExpandedGroups((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const group of visibleGroups) {
+        if (typeof next[group.category] !== 'boolean') {
+          next[group.category] = defaultExpanded;
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [collapsible, defaultExpanded, grouped, visibleGroups]);
+
+  if (safeSocials.length === 0) return null;
   if (visibleLinks.length === 0) return null;
 
-  // Sort all visible links by schema category order, then by link order
-  const sortedLinks = [...visibleLinks].sort((a, b) => {
-    const catA = CATEGORY_ORDER.indexOf(a.category);
-    const catB = CATEGORY_ORDER.indexOf(b.category);
-    if (catA !== catB) return catA - catB;
-    return a.order - b.order;
-  });
-
   const renderLink = (link: SocialLink) => {
-    const displayPlatform = link.platform?.trim()
-      ? link.platform
-      : detectPlatformFromUrl(link.url);
+    const displayPlatform = getSocialLinkPlatform(link);
+    const linkTitle = getSocialLinkTitle(link);
+
     return (
       <Box
         key={link.id}
@@ -140,11 +124,11 @@ export const ProfileLinksWidget = ({
             noWrap
             sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
           >
-            {getShortLinkLabel(link.url)}
+            {linkTitle}
           </Typography>
         </Link>
-        {isOwner && onRemove && (
-          <Tooltip title={`Remove ${link.label || link.platform}`}>
+        {isOwner && onRemove ? (
+          <Tooltip title={`Remove ${linkTitle}`}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -152,7 +136,7 @@ export const ProfileLinksWidget = ({
                 e.stopPropagation();
                 onRemove(link.id);
               }}
-              aria-label={`Remove ${link.label || link.platform}`}
+              aria-label={`Remove ${linkTitle}`}
               sx={{
                 flexShrink: 0,
                 p: 0.25,
@@ -168,102 +152,107 @@ export const ProfileLinksWidget = ({
               <CloseIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        )}
+        ) : null}
       </Box>
     );
   };
 
-  const groupedLinks = grouped
-    ? sortedLinks.reduce<Record<DisplayCategory, SocialLink[]>>(
-        (acc, link) => {
-          const key = normalizeDisplayCategory(link);
-          acc[key] = acc[key] ? [...acc[key], link] : [link];
-          return acc;
-        },
-        {
-          Professional: [],
-          Social: [],
-          Content: [],
-          Other: [],
-        },
-      )
-    : null;
-
-  const content = !grouped ? (
-    <Stack spacing={1}>{sortedLinks.map((link) => renderLink(link))}</Stack>
-  ) : (
+  const content = grouped ? (
     <Stack spacing={1.5} sx={{ width: '100%' }}>
-      {DISPLAY_CATEGORY_ORDER.filter(
-        (category) => groupedLinks![category].length,
-      ).map((category) => (
-        <Box key={category} data-testid={`link-group-${category}`}>
-          <Typography
-            variant="overline"
+      {visibleGroups.map((group) => {
+        const isExpanded = collapsible
+          ? (expandedGroups[group.category] ?? defaultExpanded)
+          : true;
+
+        return (
+          <Box
+            key={group.category}
+            data-testid={`link-group-${group.category}`}
             sx={{
-              fontSize: '0.66rem',
-              letterSpacing: 1.2,
-              color: 'text.secondary',
-              display: 'block',
-              mb: 0.5,
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 2,
+              bgcolor: 'rgba(255,255,255,0.02)',
+              overflow: 'hidden',
             }}
           >
-            {category}
-          </Typography>
-          <Stack spacing={0.75}>
-            {groupedLinks![category].map((link) => renderLink(link))}
-          </Stack>
-        </Box>
-      ))}
+            <Box
+              component={collapsible ? 'button' : 'div'}
+              type={collapsible ? 'button' : undefined}
+              onClick={
+                collapsible
+                  ? () =>
+                      setExpandedGroups((prev) => ({
+                        ...prev,
+                        [group.category]: !isExpanded,
+                      }))
+                  : undefined
+              }
+              aria-expanded={collapsible ? isExpanded : undefined}
+              sx={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1,
+                p: 1.25,
+                border: 'none',
+                bgcolor: 'transparent',
+                color: 'inherit',
+                textAlign: 'left',
+                cursor: collapsible ? 'pointer' : 'default',
+              }}
+            >
+              <Typography
+                variant="overline"
+                sx={{
+                  fontSize: '0.66rem',
+                  letterSpacing: 1.2,
+                  color: 'text.secondary',
+                  display: 'block',
+                  fontWeight: 700,
+                }}
+              >
+                {group.category}
+              </Typography>
+              {collapsible ? (
+                isExpanded ? (
+                  <ExpandLessIcon
+                    sx={{ fontSize: 18, color: 'text.secondary' }}
+                  />
+                ) : (
+                  <ExpandMoreIcon
+                    sx={{ fontSize: 18, color: 'text.secondary' }}
+                  />
+                )
+              ) : null}
+            </Box>
+            <Collapse in={isExpanded}>
+              <Stack spacing={0.75} sx={{ px: 1.25, pb: 1.25 }}>
+                {group.links.map((link) => renderLink(link))}
+              </Stack>
+            </Collapse>
+          </Box>
+        );
+      })}
     </Stack>
+  ) : (
+    <Stack spacing={1}>{visibleLinks.map((link) => renderLink(link))}</Stack>
   );
 
-  if (collapsible) {
-    return (
-      <Stack spacing={0} sx={{ width: '100%' }}>
-        <Box
-          component="button"
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          aria-expanded={expanded}
-          aria-controls="profile-links-content"
-          id="profile-links-header"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            border: 'none',
-            background: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            color: 'text.secondary',
-            textAlign: 'left',
-            width: '100%',
-            '&:hover': { color: 'text.primary' },
-          }}
-        >
-          <Typography
-            variant="overline"
-            sx={{
-              fontSize: '0.66rem',
-              letterSpacing: 1.2,
-              color: 'inherit',
-              fontWeight: 700,
-            }}
-          >
-            {LINKS_COLLAPSIBLE_HEADER}
-          </Typography>
-          {expanded ? (
-            <ExpandLessIcon sx={{ fontSize: 18 }} aria-hidden />
-          ) : (
-            <ExpandMoreIcon sx={{ fontSize: 18 }} aria-hidden />
-          )}
-        </Box>
-        <Collapse in={expanded} id="profile-links-content">
-          {content}
-        </Collapse>
-      </Stack>
-    );
-  }
-
-  return content;
+  return (
+    <Stack spacing={1} sx={{ width: '100%' }}>
+      <Typography
+        variant="overline"
+        sx={{
+          fontSize: '0.66rem',
+          letterSpacing: 1.2,
+          color: 'text.secondary',
+          fontWeight: 700,
+        }}
+      >
+        {LINKS_COLLAPSIBLE_HEADER}
+      </Typography>
+      {content}
+    </Stack>
+  );
 };

@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './env';
+import {
+  getMissingRlsEnvVars,
+  RLS_TEST_ENV_READY,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_URL,
+} from './env';
 
 type Database = {
   public: {
@@ -27,22 +32,30 @@ type Database = {
   };
 };
 
-const service = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: { persistSession: false },
+const service = RLS_TEST_ENV_READY
+  ? createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    })
+  : null;
+
+(RLS_TEST_ENV_READY ? describe : describe.skip)(
+  'admin_allowlist visibility',
+  () => {
+    if (!RLS_TEST_ENV_READY) {
+      test.skip(`Missing RLS env: ${getMissingRlsEnvVars().join(', ')}`, () => {
+        // Intentionally skipped when service-role credentials are unavailable.
+      });
+      return;
+    }
+
+    test('service role can read allowlist', async () => {
+      const { data, error } = await service!
+        .from('admin_allowlist')
+        .select('email')
+        .limit(5);
+
+      expect(error).toBeNull();
+      expect(Array.isArray(data)).toBe(true);
+    });
   },
 );
-
-describe('admin_allowlist visibility', () => {
-  test('service role can read allowlist', async () => {
-    const { data, error } = await service
-      .from('admin_allowlist')
-      .select('email')
-      .limit(5);
-
-    expect(error).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
-  });
-});

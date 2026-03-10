@@ -8,6 +8,9 @@ import {
 import { CARD_BG } from '../../theme/candyStyles';
 import { DirectoryRowActions } from './row/DirectoryRowActions';
 
+const DIRECTORY_TEXT_SECONDARY = 'rgba(255,255,255,0.82)';
+const DIRECTORY_TEXT_MUTED = 'rgba(255,255,255,0.72)';
+
 interface DirectoryRowProps {
   member: DirectoryMember;
   onConnect: (id: string) => void;
@@ -92,14 +95,17 @@ export const DirectoryRow = ({
           {member.handle && (
             <Typography
               variant="caption"
-              color="text.secondary"
+              sx={{ color: DIRECTORY_TEXT_SECONDARY }}
               display="block"
             >
               @{member.handle}
             </Typography>
           )}
           {member.pronouns && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{ color: DIRECTORY_TEXT_SECONDARY }}
+            >
               {member.pronouns}
             </Typography>
           )}
@@ -117,7 +123,7 @@ export const DirectoryRow = ({
             member.location) && (
             <Typography
               variant="caption"
-              color="text.secondary"
+              sx={{ color: DIRECTORY_TEXT_MUTED }}
               display="block"
             >
               {[member.industry, member.secondary_industry, member.location]
@@ -145,8 +151,8 @@ export const DirectoryRow = ({
           {member.bio_snippet && (
             <Typography
               variant="body2"
-              color="text.secondary"
               sx={{
+                color: DIRECTORY_TEXT_SECONDARY,
                 mt: 1,
                 display: '-webkit-box',
                 WebkitLineClamp: 2,

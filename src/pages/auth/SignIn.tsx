@@ -21,6 +21,12 @@ import {
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  APP_GLASS_BORDER,
+  APP_GLASS_SHADOW,
+  APP_GLASS_SURFACE,
+  AUTH_SCREEN_BG,
+} from '../../theme/candyStyles';
 
 export const SignIn = () => {
   const feedEnabled = useFeatureFlag('feed');
@@ -88,22 +94,41 @@ export const SignIn = () => {
 
   if (session === null) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+      <Box
+        sx={{
+          ...AUTH_SCREEN_BG,
+          minHeight: '100dvh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          px: 2,
+        }}
+      >
         <CircularProgress aria-label="Checking sign-in status" />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ py: 6 }}>
-      <Container maxWidth="sm">
+    <Box
+      sx={{
+        ...AUTH_SCREEN_BG,
+        minHeight: '100dvh',
+        py: 6,
+        px: 2,
+      }}
+    >
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
         <Paper
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
             borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
+            border: APP_GLASS_BORDER,
+            bgcolor: APP_GLASS_SURFACE,
+            color: '#ffffff',
+            backdropFilter: 'blur(12px)',
+            boxShadow: APP_GLASS_SHADOW,
           }}
         >
           <Stack spacing={3}>

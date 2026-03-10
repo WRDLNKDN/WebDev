@@ -31,6 +31,9 @@ const BG_SX = {
 };
 
 const SIDEBAR_WIDTH = 260;
+const ADMIN_TEXT_PRIMARY = 'rgba(255,255,255,0.96)';
+const ADMIN_TEXT_SECONDARY = 'rgba(255,255,255,0.78)';
+const ADMIN_TEXT_MUTED = 'rgba(255,255,255,0.62)';
 
 type NavItem = {
   label: string;
@@ -92,6 +95,13 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
         borderColor: 'rgba(255,255,255,0.12)',
         bgcolor: 'rgba(16, 18, 24, 0.6)',
         p: 1,
+        color: ADMIN_TEXT_PRIMARY,
+        '& .MuiListItemText-primary': {
+          color: ADMIN_TEXT_PRIMARY,
+        },
+        '& .MuiListItemIcon-root': {
+          color: ADMIN_TEXT_SECONDARY,
+        },
       }}
     >
       <List disablePadding>
@@ -105,8 +115,14 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                 selected={isActive}
                 sx={{
                   borderRadius: 1,
+                  color: ADMIN_TEXT_SECONDARY,
+                  '&:hover': {
+                    color: ADMIN_TEXT_PRIMARY,
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                  },
                   '&.Mui-selected': {
                     bgcolor: 'rgba(255,255,255,0.08)',
+                    color: ADMIN_TEXT_PRIMARY,
                     '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
                   },
                 }}
@@ -178,7 +194,71 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                   backdropFilter: 'blur(12px)',
                   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
                   p: { xs: 3, sm: 4 },
-                  color: '#fff',
+                  color: ADMIN_TEXT_PRIMARY,
+                  '& .MuiTypography-root': {
+                    color: 'inherit',
+                  },
+                  '& .MuiTypography-body2, & .MuiTypography-caption, & .MuiTypography-overline':
+                    {
+                      color: ADMIN_TEXT_SECONDARY,
+                    },
+                  '& .MuiTableCell-root': {
+                    color: ADMIN_TEXT_PRIMARY,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                  },
+                  '& .MuiTableCell-head': {
+                    color: ADMIN_TEXT_PRIMARY,
+                    fontWeight: 700,
+                  },
+                  '& .MuiDivider-root': {
+                    borderColor: 'rgba(255,255,255,0.12)',
+                  },
+                  '& .MuiChip-root': {
+                    color: ADMIN_TEXT_PRIMARY,
+                  },
+                  '& .MuiAlert-message': {
+                    color: ADMIN_TEXT_PRIMARY,
+                  },
+                  '& .MuiFormLabel-root': {
+                    color: ADMIN_TEXT_SECONDARY,
+                  },
+                  '& .MuiFormLabel-root.Mui-focused': {
+                    color: ADMIN_TEXT_PRIMARY,
+                  },
+                  '& .MuiInputBase-root': {
+                    color: ADMIN_TEXT_PRIMARY,
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: ADMIN_TEXT_MUTED,
+                    opacity: 1,
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.18)',
+                  },
+                  '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline':
+                    {
+                      borderColor: 'rgba(255,255,255,0.3)',
+                    },
+                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
+                    {
+                      borderColor: 'rgba(45,212,191,0.72)',
+                    },
+                  '& .MuiSelect-icon': {
+                    color: ADMIN_TEXT_SECONDARY,
+                  },
+                  '& .MuiFormHelperText-root': {
+                    color: ADMIN_TEXT_MUTED,
+                  },
+                  '& .MuiButton-text': {
+                    color: ADMIN_TEXT_PRIMARY,
+                  },
+                  '& a': {
+                    color: '#7dd3fc',
+                  },
+                  '& .MuiCard-root, & .MuiPaper-root': {
+                    color: ADMIN_TEXT_PRIMARY,
+                  },
                 }}
               >
                 {children}

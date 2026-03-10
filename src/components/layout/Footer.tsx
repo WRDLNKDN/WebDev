@@ -67,6 +67,19 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
       })),
     [showChatLink],
   );
+  const companySection =
+    sections.find((section) => section.title === 'Company') ?? sections[0];
+  const legalSection =
+    sections.find((section) => section.title === 'Legal Notices') ?? null;
+  const socialLinks = useMemo(() => {
+    const githubLink = FOOTER_SOCIAL_LINKS.find(
+      (link) => link.label === 'GitHub',
+    );
+    const otherLinks = FOOTER_SOCIAL_LINKS.filter(
+      (link) => link.label !== 'GitHub',
+    );
+    return githubLink ? [...otherLinks, githubLink] : FOOTER_SOCIAL_LINKS;
+  }, []);
   const sectionTestId = (title: string) =>
     `footer-section-${title.toLowerCase().replace(/\s+/g, '-')}`;
 
@@ -182,6 +195,185 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
     }
   };
 
+  const renderFooterSection = (
+    section: (typeof sections)[number],
+    options?: { align?: 'left' | 'center'; panelDirection?: 'up' | 'down' },
+  ) => {
+    const open = expandedSection === section.title;
+    const panelId = `footer-panel-${section.title.toLowerCase().replace(/\s+/g, '-')}`;
+    const align = options?.align ?? 'left';
+    const panelDirection = options?.panelDirection ?? 'up';
+
+    return (
+      <Box
+        key={section.title}
+        data-testid={sectionTestId(section.title)}
+        sx={{
+          border: '1px solid',
+          borderColor: dividerColor,
+          borderRadius: 1.5,
+          position: 'relative',
+          overflow: 'visible',
+          backgroundColor: footerPanelSurface,
+          width: 'fit-content',
+          minWidth: { xs: '100%', sm: 160 },
+          maxWidth: '100%',
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          onClick={() => toggleSection(section.title)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          sx={{
+            all: 'unset',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            minWidth: 0,
+            gap: 0.75,
+            px: { xs: 1.35, md: 1.55 },
+            py: { xs: 0.95, md: 1.05 },
+            cursor: 'pointer',
+            boxSizing: 'border-box',
+            '&:focus-visible': {
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+              outlineOffset: '-2px',
+            },
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            sx={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              whiteSpace: 'nowrap',
+              color: footerTextPrimary,
+              textAlign: align,
+            }}
+          >
+            {section.title}
+          </Typography>
+          <Box
+            component="span"
+            aria-hidden
+            sx={{
+              display: 'inline-flex',
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 18,
+              height: 18,
+              transition: reduceMotion ? 'none' : 'transform 180ms ease',
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
+          >
+            <ExpandMoreIcon sx={{ fontSize: 18 }} />
+          </Box>
+        </Box>
+
+        <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
+          <Stack
+            id={panelId}
+            component="ul"
+            sx={{
+              listStyle: 'none',
+              m: 0,
+              py: 0.25,
+              px: { xs: 1.35, md: 1.55 },
+              gap: 0.25,
+              position: { xs: 'fixed', sm: 'absolute' },
+              left: {
+                xs: 12,
+                sm: align === 'center' ? '50%' : 0,
+              },
+              right: { xs: 12, sm: 'auto' },
+              top: {
+                xs: 'auto',
+                sm: panelDirection === 'down' ? 'calc(100% + 8px)' : 'auto',
+              },
+              bottom: {
+                xs: 'calc(env(safe-area-inset-bottom, 0px) + 72px)',
+                sm: panelDirection === 'up' ? 'calc(100% + 8px)' : 'auto',
+              },
+              transform: {
+                xs: 'none',
+                sm: align === 'center' ? 'translateX(-50%)' : 'none',
+              },
+              zIndex: 6,
+              border: '1px solid',
+              borderColor: dividerColor,
+              borderRadius: 1.5,
+              boxShadow: '0 10px 28px rgba(0,0,0,0.28)',
+              maxHeight: { xs: 'min(50vh, 360px)', sm: 'min(42vh, 320px)' },
+              minWidth: { xs: 'auto', sm: 220 },
+              width: {
+                xs: 'auto',
+                sm:
+                  align === 'center'
+                    ? 'max-content'
+                    : 'min(280px, calc(100vw - 48px))',
+              },
+              overflowY: 'auto',
+              overscrollBehavior: 'contain',
+              backgroundColor: footerRaisedSurface,
+            }}
+          >
+            {section.links.map((link) => {
+              const active = isActiveLink(link.href, link.external);
+              const commonSx = {
+                display: 'inline-flex',
+                alignItems: 'center',
+                py: 0.75,
+                color: active ? 'primary.main' : footerTextSecondary,
+                fontWeight: active ? 700 : 500,
+                textDecoration: active ? 'underline' : 'none',
+                textUnderlineOffset: '3px',
+                transition: reduceMotion
+                  ? 'none'
+                  : 'color 160ms ease, text-decoration-color 160ms ease',
+                '&:hover': {
+                  color: footerTextPrimary,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '3px',
+                },
+              } as const;
+
+              return (
+                <Box component="li" key={link.label}>
+                  {link.external ? (
+                    <Link
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleFooterLinkClick(link)}
+                      sx={commonSx}
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <Link
+                      component={RouterLink}
+                      to={link.href}
+                      onClick={() => handleFooterLinkClick(link)}
+                      sx={commonSx}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
+                </Box>
+              );
+            })}
+          </Stack>
+        </Collapse>
+      </Box>
+    );
+  };
+
   return (
     <>
       <Box
@@ -212,7 +404,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
         <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
           <Grid
             container
-            alignItems="start"
+            alignItems="center"
             spacing={{ xs: 0.7, sm: 0.9, md: 1.1 }}
           >
             <Grid
@@ -220,11 +412,29 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
               sx={{ order: { xs: 1, md: 1 } }}
             >
               <Stack
-                spacing={0.2}
+                spacing={0.75}
                 sx={{
-                  alignItems: { xs: 'flex-start', md: 'flex-start' },
+                  alignItems: { xs: 'stretch', md: 'flex-start' },
                   textAlign: 'left',
                   pr: { md: 0.75 },
+                }}
+              >
+                {companySection
+                  ? renderFooterSection(companySection, {
+                      align: 'left',
+                      panelDirection: 'up',
+                    })
+                  : null}
+              </Stack>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Stack
+                spacing={0.85}
+                sx={{
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  px: { md: 0.75 },
                 }}
               >
                 <Stack direction="row" spacing={0.35} alignItems="center">
@@ -258,7 +468,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                       width: { xs: 114, sm: 138, md: 156 },
                       maxWidth: '100%',
                       objectFit: 'contain',
-                      objectPosition: 'left center',
+                      objectPosition: 'center',
                     }}
                   />
                 </Stack>
@@ -273,177 +483,13 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 >
                   Business, but weirder.
                 </Typography>
+                {legalSection
+                  ? renderFooterSection(legalSection, {
+                      align: 'center',
+                      panelDirection: 'up',
+                    })
+                  : null}
               </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 5 }}>
-              <Box
-                aria-label="Footer navigation sections"
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    md: 'repeat(3, minmax(0, 1fr))',
-                  },
-                  gap: 1.25,
-                  alignItems: 'stretch',
-                }}
-              >
-                {sections.map((section) => {
-                  const open = expandedSection === section.title;
-                  const panelId = `footer-panel-${section.title.toLowerCase()}`;
-                  return (
-                    <Box
-                      key={section.title}
-                      data-testid={sectionTestId(section.title)}
-                      sx={{
-                        border: '1px solid',
-                        borderColor: dividerColor,
-                        borderRadius: 1.5,
-                        overflow: { xs: 'hidden', md: 'visible' },
-                        position: 'relative',
-                        backgroundColor: footerPanelSurface,
-                        minWidth: { md: 220 },
-                      }}
-                    >
-                      <Box
-                        component="button"
-                        type="button"
-                        onClick={() => toggleSection(section.title)}
-                        aria-expanded={open}
-                        aria-controls={panelId}
-                        sx={{
-                          all: 'unset',
-                          display: 'flex',
-                          alignItems: 'center',
-                          width: '100%',
-                          minWidth: 0,
-                          gap: 0.75,
-                          px: { xs: 1.5, md: 2 },
-                          py: { xs: 1.1, md: 1.2 },
-                          cursor: 'pointer',
-                          boxSizing: 'border-box',
-                          '&:focus-visible': {
-                            outline: '2px solid',
-                            outlineColor: 'primary.main',
-                            outlineOffset: '-2px',
-                          },
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight={700}
-                          sx={{
-                            flex: '1 1 auto',
-                            minWidth: 0,
-                            whiteSpace: 'nowrap',
-                            color: footerTextPrimary,
-                          }}
-                        >
-                          {section.title}
-                        </Typography>
-                        <Box
-                          component="span"
-                          aria-hidden
-                          sx={{
-                            display: 'inline-flex',
-                            flexShrink: 0,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 24,
-                            height: 24,
-                            transition: reduceMotion
-                              ? 'none'
-                              : 'transform 180ms ease',
-                            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                          }}
-                        >
-                          <ExpandMoreIcon fontSize="small" />
-                        </Box>
-                      </Box>
-
-                      <Collapse in={open} timeout={reduceMotion ? 0 : 180}>
-                        <Stack
-                          id={panelId}
-                          component="ul"
-                          sx={{
-                            listStyle: 'none',
-                            m: 0,
-                            py: 0.25,
-                            px: { xs: 1.5, md: 2 },
-                            borderTop: '1px solid',
-                            borderColor: dividerColor,
-                            gap: 0.25,
-                            position: { xs: 'static', md: 'absolute' },
-                            top: { md: 'calc(100% + 8px)' },
-                            left: { md: 0 },
-                            right: { md: 0 },
-                            zIndex: { md: 4 },
-                            border: { md: '1px solid' },
-                            borderRadius: { md: 1.5 },
-                            boxShadow: {
-                              md: '0 10px 28px rgba(0,0,0,0.28)',
-                            },
-                            backgroundColor: {
-                              md: footerRaisedSurface,
-                            },
-                          }}
-                        >
-                          {section.links.map((link) => {
-                            const active = isActiveLink(
-                              link.href,
-                              link.external,
-                            );
-                            const commonSx = {
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              py: 0.75,
-                              color: active
-                                ? 'primary.main'
-                                : footerTextSecondary,
-                              fontWeight: active ? 700 : 500,
-                              textDecoration: active ? 'underline' : 'none',
-                              textUnderlineOffset: '3px',
-                              transition: reduceMotion
-                                ? 'none'
-                                : 'color 160ms ease, text-decoration-color 160ms ease',
-                              '&:hover': {
-                                color: footerTextPrimary,
-                                textDecoration: 'underline',
-                                textUnderlineOffset: '3px',
-                              },
-                            } as const;
-                            return (
-                              <Box component="li" key={link.label}>
-                                {link.external ? (
-                                  <Link
-                                    href={link.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={() => handleFooterLinkClick(link)}
-                                    sx={commonSx}
-                                  >
-                                    {link.label}
-                                  </Link>
-                                ) : (
-                                  <Link
-                                    component={RouterLink}
-                                    to={link.href}
-                                    onClick={() => handleFooterLinkClick(link)}
-                                    sx={commonSx}
-                                  >
-                                    {link.label}
-                                  </Link>
-                                )}
-                              </Box>
-                            );
-                          })}
-                        </Stack>
-                      </Collapse>
-                    </Box>
-                  );
-                })}
-              </Box>
             </Grid>
 
             <Grid
@@ -496,7 +542,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     fontSize: { xs: '0.74rem', md: '0.8rem' },
                     lineHeight: 1,
                     minHeight: 34,
-                    px: 1.45,
+                    whiteSpace: 'nowrap',
+                    px: 1.15,
                     py: 0.45,
                     borderRadius: 1,
                     border: '1px solid rgba(255,255,255,0.22)',
@@ -593,7 +640,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   aria-label="Social and support links"
                   data-testid="footer-social-links"
                 >
-                  {FOOTER_SOCIAL_LINKS.map((link) => (
+                  {socialLinks.map((link) => (
                     <Tooltip key={link.label} title={link.label}>
                       <IconButton
                         component={Link}

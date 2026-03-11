@@ -1689,6 +1689,12 @@ app.post('/api/directory/connect', async (req, res) => {
     .maybeSingle();
   if (profile && profile.status === 'disabled')
     return sendApiError(res, 403, 'Account disabled');
+  const { data: existingConnections } = await adminSupabase
+    .from('feed_connections')
+    .select('user_id, connected_user_id')
+    .or(
+      `and(user_id.eq.${userId},connected_user_id.eq.${targetId}),and(user_id.eq.${targetId},connected_user_id.eq.${userId})`,
+    );
   const { data: reversePending } = await adminSupabase
     .from('connection_requests')
     .select('id')
@@ -1696,7 +1702,29 @@ app.post('/api/directory/connect', async (req, res) => {
     .eq('recipient_id', userId)
     .eq('status', 'pending')
     .maybeSingle();
-  const intent = getConnectIntent(Boolean(reversePending));
+  const intent = getConnectIntent(
+    Boolean(reversePending),
+    Boolean(existingConnections?.length),
+  );
+  if (intent === 'normalize_existing_connection') {
+    const nowIso = /* @__PURE__ */ new Date().toISOString();
+    await adminSupabase.from('feed_connections').upsert(
+      [
+        { user_id: userId, connected_user_id: targetId },
+        { user_id: targetId, connected_user_id: userId },
+      ],
+      { onConflict: 'user_id,connected_user_id' },
+    );
+    await adminSupabase
+      .from('connection_requests')
+      .update({ status: 'accepted', updated_at: nowIso })
+      .or(
+        `and(requester_id.eq.${userId},recipient_id.eq.${targetId},status.eq.pending),and(requester_id.eq.${targetId},recipient_id.eq.${userId},status.eq.pending)`,
+      );
+    return res
+      .status(200)
+      .json({ ok: true, normalizedExistingConnection: true });
+  }
   if (intent === 'auto_accept_reverse_pending') {
     const nowIso = /* @__PURE__ */ new Date().toISOString();
     await adminSupabase
@@ -2288,6 +2316,15 @@ app.post('/api/directory/disconnect', async (req, res) => {
     .delete()
     .eq('user_id', targetId)
     .eq('connected_user_id', userId);
+  await adminSupabase
+    .from('connection_requests')
+    .update({
+      status: 'declined',
+      updated_at: /* @__PURE__ */ new Date().toISOString(),
+    })
+    .or(
+      `and(requester_id.eq.${userId},recipient_id.eq.${targetId},status.eq.pending),and(requester_id.eq.${targetId},recipient_id.eq.${userId},status.eq.pending)`,
+    );
   return res.json({ ok: true });
 });
 app.get('/api/me/avatar', requireAuth, async (req, res) => {

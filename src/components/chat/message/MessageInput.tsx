@@ -228,6 +228,7 @@ export const MessageInput = ({
     <Box
       component="form"
       onSubmit={handleSubmit}
+      data-testid="chat-message-input-shell"
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -332,6 +333,7 @@ export const MessageInput = ({
         </Tooltip>
       </Box>
       <Box
+        data-testid="chat-message-toolbar"
         sx={{
           display: 'flex',
           alignItems: 'center',

@@ -22,11 +22,13 @@ export type FeedReactionBarProps = {
   rageCount: number;
   onReaction: (type: ReactionType) => void;
   onRemoveReaction: () => void;
+  buttonTestId?: string;
   sx?: object;
 };
 
 export const FeedReactionBar = (props: FeedReactionBarProps) => {
-  const { viewerReaction, onReaction, onRemoveReaction, sx } = props;
+  const { viewerReaction, onReaction, onRemoveReaction, buttonTestId, sx } =
+    props;
 
   return (
     <ReactPickerButton<ReactionType>
@@ -40,6 +42,7 @@ export const FeedReactionBar = (props: FeedReactionBarProps) => {
         onReaction(type);
       }}
       buttonLabel="React"
+      buttonTestId={buttonTestId}
       sx={{
         pt: 1,
         pb: 0.75,

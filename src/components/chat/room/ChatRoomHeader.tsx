@@ -175,11 +175,12 @@ export const ChatRoomHeader = ({
   return (
     <Box
       sx={{
-        p: 1.5,
+        px: { xs: 1, sm: 1.5 },
+        py: { xs: 1, sm: 1.5 },
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
         alignItems: 'center',
-        gap: 1,
+        gap: { xs: 0.5, sm: 1 },
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
@@ -208,7 +209,7 @@ export const ChatRoomHeader = ({
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: 1.25,
+          gap: { xs: 0.75, sm: 1.25 },
           minWidth: 0,
         }}
       >
@@ -231,7 +232,14 @@ export const ChatRoomHeader = ({
           )}
         </Box>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.25,
+          flexShrink: 0,
+        }}
+      >
         <Tooltip title="Chat options">
           <IconButton
             onClick={(e) => setMenuAnchor(e.currentTarget)}

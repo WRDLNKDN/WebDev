@@ -659,7 +659,8 @@ export const Dashboard = () => {
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  Your profile is empty.
+                  Start by adding links, a resume, or a project to build your
+                  public portfolio showcase.
                 </Typography>
                 <Stack
                   direction="row"

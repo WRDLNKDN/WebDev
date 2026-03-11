@@ -7,16 +7,18 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { SharedReactionOption } from './sharedReactions';
 
-const MUTED_COLOR = 'rgba(255,255,255,0.65)';
-const HOVER_COLOR = '#22C55E';
+const MUTED_COLOR = INTERACTION_COLORS.muted;
+const HOVER_COLOR = INTERACTION_COLORS.react;
 
 export type ReactPickerButtonProps<T extends string = string> = {
   options: SharedReactionOption<T>[];
   selectedValue?: T | null;
   onToggleReaction: (value: T) => void;
   buttonLabel?: string;
+  buttonTestId?: string;
   sx?: object;
   buttonSx?: object;
   traySx?: object;
@@ -28,6 +30,7 @@ export const ReactPickerButton = <T extends string = string>({
   selectedValue = null,
   onToggleReaction,
   buttonLabel = 'React',
+  buttonTestId,
   sx,
   buttonSx,
   traySx,
@@ -89,6 +92,7 @@ export const ReactPickerButton = <T extends string = string>({
             clearHoverCloseTimeout();
             setOpen((prev) => !prev);
           }}
+          data-testid={buttonTestId}
           aria-label={buttonLabel}
           aria-haspopup="true"
           aria-expanded={open}
@@ -120,8 +124,6 @@ export const ReactPickerButton = <T extends string = string>({
               bgcolor: 'transparent',
               color: selected?.color ?? HOVER_COLOR,
               transform: 'scale(1.08)',
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
             },
             ...buttonSx,
           }}

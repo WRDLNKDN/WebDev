@@ -79,6 +79,7 @@ export const MessageInputView = ({
   <Box
     component="form"
     onSubmit={handleSubmit}
+    data-testid="chat-message-input-shell"
     sx={{
       display: 'flex',
       flexDirection: 'column',
@@ -118,7 +119,13 @@ export const MessageInputView = ({
       </Box>
     )}
 
-    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 0.5,
+      }}
+    >
       <TextField
         multiline
         maxRows={expanded ? 6 : 2}
@@ -171,14 +178,24 @@ export const MessageInputView = ({
     </Box>
 
     <Box
+      data-testid="chat-message-toolbar"
       sx={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: { xs: 'flex-start', sm: 'center' },
         justifyContent: 'space-between',
-        gap: 0.5,
+        gap: 0.75,
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.25,
+          flexWrap: 'wrap',
+          minWidth: 0,
+        }}
+      >
         <input
           ref={fileInputRef}
           type="file"
@@ -238,11 +255,24 @@ export const MessageInputView = ({
         </Tooltip>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          ml: { xs: 'auto', sm: 0 },
+          width: { xs: '100%', sm: 'auto' },
+          justifyContent: { xs: 'space-between', sm: 'flex-end' },
+        }}
+      >
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ fontSize: '0.7rem', opacity: 0.85 }}
+          sx={{
+            fontSize: '0.7rem',
+            opacity: 0.85,
+            display: { xs: 'none', sm: 'inline' },
+          }}
         >
           Press Enter to Send
         </Typography>

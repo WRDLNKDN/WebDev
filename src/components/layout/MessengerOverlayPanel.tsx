@@ -195,6 +195,7 @@ export const MessengerOverlayPanel = ({
                 key={id}
                 component="button"
                 type="button"
+                aria-pressed={active}
                 onClick={() => setMessageTab(id)}
                 sx={{
                   border: 0,
@@ -209,8 +210,14 @@ export const MessengerOverlayPanel = ({
                   mr: 1,
                   borderBottom: '2px solid',
                   borderBottomColor: active ? '#00a660' : 'transparent',
+                  textDecoration: active ? 'underline' : 'none',
+                  textUnderlineOffset: '4px',
                   borderRadius: 0,
-                  '&:hover': { color: active ? '#00a660' : 'text.primary' },
+                  '&:hover': {
+                    color: active ? '#00a660' : 'text.primary',
+                    textDecoration: 'underline',
+                    transform: 'translateY(-1px)',
+                  },
                 }}
               >
                 {label}

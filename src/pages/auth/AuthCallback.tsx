@@ -91,6 +91,7 @@ export const AuthCallback = () => {
     let cancelled = false;
     const sleep = (ms: number) =>
       new Promise((resolve) => setTimeout(resolve, ms));
+    const fetchSession = async () => supabase.auth.getSession();
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       setTimedOut(true);
@@ -116,27 +117,23 @@ export const AuthCallback = () => {
         devLog('🔵 AuthCallback: next parameter =', next);
         devLog('🔵 AuthCallback: Full URL =', window.location.href);
 
-        let exchangedCode = false;
         let session = null;
-        let sessionError = null;
-        for (let attempt = 0; attempt < 5; attempt += 1) {
-          const { data, error } = await supabase.auth.getSession();
-          sessionError = error;
-          if (sessionError) throw sessionError;
+        if (authCode) {
+          devLog('🔵 AuthCallback: Exchanging auth code');
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(authCode);
+          if (exchangeError) throw exchangeError;
+        }
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const { data, error } = await fetchSession();
+          if (error) throw error;
           if (data.session) {
             session = data.session;
             break;
           }
-          if (!exchangedCode && authCode) {
-            exchangedCode = true;
-            devLog('🔵 AuthCallback: No session yet, exchanging auth code');
-            const { error: exchangeError } =
-              await supabase.auth.exchangeCodeForSession(authCode);
-            if (exchangeError) throw exchangeError;
-            continue;
-          }
-          if (attempt < 4) {
-            await sleep(180);
+          if (attempt < 2) {
+            await sleep(120);
           }
         }
         if (!session) {
@@ -164,13 +161,13 @@ export const AuthCallback = () => {
 
             let profile = null;
             let profileError = null;
-            for (let attempt = 0; attempt < 3; attempt += 1) {
+            for (let attempt = 0; attempt < 2; attempt += 1) {
               const result = await fetchProfile();
               profile = result.data;
               profileError = result.error;
               if (profile || profileError) break;
-              if (attempt < 2) {
-                await sleep(180);
+              if (attempt < 1) {
+                await sleep(120);
                 if (cancelled) return;
               }
             }
@@ -225,13 +222,13 @@ export const AuthCallback = () => {
 
               let profile = null;
               let profileError = null;
-              for (let attempt = 0; attempt < 4; attempt += 1) {
+              for (let attempt = 0; attempt < 2; attempt += 1) {
                 const result = await fetchProfile();
                 profile = result.data;
                 profileError = result.error;
                 if (profile || profileError) break;
-                if (attempt < 3) {
-                  await sleep(200);
+                if (attempt < 1) {
+                  await sleep(120);
                   if (cancelled) return;
                 }
               }
@@ -306,6 +303,10 @@ export const AuthCallback = () => {
     if (!error) return;
     postAuthCallbackLog();
   }, [error, postAuthCallbackLog]);
+
+  if (!error) {
+    return null;
+  }
 
   return (
     <Box sx={SIGNUP_BG}>

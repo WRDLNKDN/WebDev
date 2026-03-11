@@ -81,32 +81,38 @@ export const ChatPageDialogs = ({
   onReportSubmit,
 }: ChatPageDialogsProps) => (
   <>
-    <StartDmDialog
-      open={startDmOpen}
-      onClose={() => {
-        onSetStartDmOpen(false);
-        onSetStartDmError(null);
-      }}
-      onSelect={onStartDm}
-      startError={startDmError}
-    />
-    <CreateGroupDialog
-      open={createGroupOpen}
-      onClose={() => onSetCreateGroupOpen(false)}
-      onCreate={onCreateGroup}
-      currentUserId={uid}
-    />
-    <BlockConfirmDialog
-      open={blockDialogOpen}
-      onClose={() => onSetBlockDialogOpen(false)}
-      onConfirm={onBlock}
-      displayName={
-        otherMember?.profile?.display_name ||
-        otherMember?.profile?.handle ||
-        'this user'
-      }
-    />
-    {roomId && room && (
+    {startDmOpen ? (
+      <StartDmDialog
+        open={startDmOpen}
+        onClose={() => {
+          onSetStartDmOpen(false);
+          onSetStartDmError(null);
+        }}
+        onSelect={onStartDm}
+        startError={startDmError}
+      />
+    ) : null}
+    {createGroupOpen ? (
+      <CreateGroupDialog
+        open={createGroupOpen}
+        onClose={() => onSetCreateGroupOpen(false)}
+        onCreate={onCreateGroup}
+        currentUserId={uid}
+      />
+    ) : null}
+    {blockDialogOpen ? (
+      <BlockConfirmDialog
+        open={blockDialogOpen}
+        onClose={() => onSetBlockDialogOpen(false)}
+        onConfirm={onBlock}
+        displayName={
+          otherMember?.profile?.display_name ||
+          otherMember?.profile?.handle ||
+          'this user'
+        }
+      />
+    ) : null}
+    {groupDialogOpen && roomId && room ? (
       <GroupActionsDialog
         open={groupDialogOpen}
         mode={groupDialogMode}
@@ -120,16 +126,18 @@ export const ChatPageDialogs = ({
         onRemove={onRemoveMember}
         onTransferAdmin={onTransferAdmin}
       />
-    )}
-    <ReportDialog
-      open={reportOpen}
-      onClose={() => {
-        onSetReportOpen(false);
-        onSetReportTarget(null);
-      }}
-      onSubmit={onReportSubmit}
-      reportedMessageId={reportTarget?.messageId ?? null}
-      reportedUserId={reportTarget?.userId ?? null}
-    />
+    ) : null}
+    {reportOpen ? (
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => {
+          onSetReportOpen(false);
+          onSetReportTarget(null);
+        }}
+        onSubmit={onReportSubmit}
+        reportedMessageId={reportTarget?.messageId ?? null}
+        reportedUserId={reportTarget?.userId ?? null}
+      />
+    ) : null}
   </>
 );

@@ -7,9 +7,19 @@ import { Box, Button, Typography } from '@mui/material';
 import { FeedReactionBar, REACTION_OPTIONS } from '../../components/post';
 import { getFeedReactionCount } from '../../components/post/sharedReactions';
 import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
+import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { FeedCardActions } from './feedCardTypes';
 
-const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
+const FEED_ACTION_MUTED_COLOR = INTERACTION_COLORS.muted;
+const FEED_COMMENT_ACTION_COLOR = INTERACTION_COLORS.comment;
+const FEED_REPOST_ACTION_COLOR = INTERACTION_COLORS.repost;
+const FEED_SEND_ACTION_COLOR = INTERACTION_COLORS.send;
+const FEED_SAVE_ACTION_COLOR = INTERACTION_COLORS.save;
+const FEED_ACTION_SELECTED_TEXT_SX = {
+  fontWeight: 700,
+  textDecoration: 'underline',
+  textUnderlineOffset: '4px',
+} as const;
 const FEED_ACTION_BUTTON_SX = {
   textTransform: 'none',
   minWidth: 0,
@@ -22,14 +32,19 @@ const FEED_ACTION_BUTTON_SX = {
   borderRadius: 2,
   transition:
     'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+  color: FEED_ACTION_MUTED_COLOR,
+  '& .MuiButton-startIcon': {
+    margin: 0,
+  },
+  '& .MuiSvgIcon-root, & .MuiTypography-root': {
+    color: 'inherit',
+  },
   '& .MuiTypography-root': {
     fontWeight: 600,
   },
   '&:hover': {
     bgcolor: 'transparent',
     transform: 'scale(1.08)',
-    textDecoration: 'underline',
-    textUnderlineOffset: '4px',
   },
 } as const;
 
@@ -165,7 +180,7 @@ export const FeedCardEngagementActions = ({
           rowGap: 0.5,
           borderTop: 1,
           borderColor: 'divider',
-          pt: 1.35,
+          pt: 1,
           pb: 0.75,
           '& > *': {
             minHeight: { xs: 40, sm: 36 },
@@ -186,22 +201,25 @@ export const FeedCardEngagementActions = ({
           onRemoveReaction={() =>
             actions.onRemoveReaction(item.id, item.viewer_reaction ?? undefined)
           }
+          buttonTestId={`feed-action-react-${item.id}`}
         />
         <Button
           size="small"
           onClick={() => actions.onCommentToggle(item.id)}
+          data-testid={`feed-action-comment-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: commentsExpanded ? '#60A5FA' : FEED_ACTION_MUTED_COLOR,
+            color: commentsExpanded
+              ? FEED_COMMENT_ACTION_COLOR
+              : FEED_ACTION_MUTED_COLOR,
             ...(commentsExpanded
               ? {
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '4px',
+                  '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
                 }
               : null),
             '&:hover': {
               ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: '#60A5FA',
+              color: FEED_COMMENT_ACTION_COLOR,
             },
           }}
           aria-pressed={commentsExpanded}
@@ -220,12 +238,12 @@ export const FeedCardEngagementActions = ({
         <Button
           size="small"
           onClick={() => actions.onRepost(item)}
+          data-testid={`feed-action-repost-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: FEED_ACTION_MUTED_COLOR,
             '&:hover': {
               ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: '#A78BFA',
+              color: FEED_REPOST_ACTION_COLOR,
             },
           }}
         >
@@ -241,12 +259,12 @@ export const FeedCardEngagementActions = ({
         <Button
           size="small"
           onClick={() => actions.onSend(item)}
+          data-testid={`feed-action-send-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: FEED_ACTION_MUTED_COLOR,
             '&:hover': {
               ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: '#38BDF8',
+              color: FEED_SEND_ACTION_COLOR,
             },
           }}
         >
@@ -266,18 +284,20 @@ export const FeedCardEngagementActions = ({
               ? actions.onUnsave(item.id)
               : actions.onSave(item.id)
           }
+          data-testid={`feed-action-save-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: item.viewer_saved ? '#FBBF24' : FEED_ACTION_MUTED_COLOR,
+            color: item.viewer_saved
+              ? FEED_SAVE_ACTION_COLOR
+              : FEED_ACTION_MUTED_COLOR,
             ...(item.viewer_saved
               ? {
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '4px',
+                  '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
                 }
               : null),
             '&:hover': {
               ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: '#FBBF24',
+              color: FEED_SAVE_ACTION_COLOR,
             },
           }}
           aria-label={item.viewer_saved ? 'Unsave' : 'Save'}

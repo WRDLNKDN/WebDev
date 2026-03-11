@@ -1,6 +1,13 @@
-export type ConnectIntent = 'create_pending' | 'auto_accept_reverse_pending';
+export type ConnectIntent =
+  | 'create_pending'
+  | 'auto_accept_reverse_pending'
+  | 'normalize_existing_connection';
 
-export function getConnectIntent(hasReversePending: boolean): ConnectIntent {
+export function getConnectIntent(
+  hasReversePending: boolean,
+  hasExistingConnection = false,
+): ConnectIntent {
+  if (hasExistingConnection) return 'normalize_existing_connection';
   return hasReversePending ? 'auto_accept_reverse_pending' : 'create_pending';
 }
 

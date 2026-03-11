@@ -57,12 +57,18 @@ export const PostActionMenu = ({
           aria-haspopup="true"
           aria-expanded={open}
           sx={{
-            color: 'rgba(255,255,255,0.68)',
-            borderRadius: 2,
+            width: 36,
+            height: 36,
+            color: 'rgba(255,255,255,0.82)',
+            borderRadius: '999px',
+            bgcolor: 'rgba(255,255,255,0.09)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            boxShadow: '0 8px 18px rgba(0,0,0,0.22)',
             transition:
-              'background-color 120ms ease, color 120ms ease, transform 120ms ease',
+              'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
             '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.08)',
+              bgcolor: 'rgba(255,255,255,0.14)',
+              borderColor: 'rgba(255,255,255,0.2)',
               color: '#fff',
               transform: 'scale(1.04)',
             },
@@ -80,16 +86,16 @@ export const PostActionMenu = ({
         PaperProps={{
           elevation: 0,
           sx: {
-            mt: 0.75,
-            minWidth: 224,
-            borderRadius: 2.5,
+            mt: 0.9,
+            minWidth: 268,
+            borderRadius: 2,
             color: '#f8fafc',
-            border: '1px solid rgba(96,165,250,0.45)',
-            bgcolor: 'rgba(17,24,39,0.98)',
+            border: '1px solid rgba(125,211,252,0.82)',
+            bgcolor: 'rgba(16,22,31,0.985)',
             boxShadow:
-              '0 20px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset',
+              '0 24px 44px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
             backdropFilter: 'blur(14px)',
-            py: 0.5,
+            py: 0.85,
           },
         }}
       >
@@ -102,16 +108,16 @@ export const PostActionMenu = ({
               handleClose();
             }}
             sx={{
-              minHeight: 44,
-              px: 1.5,
-              gap: 1,
+              minHeight: 54,
+              px: 1.9,
+              gap: 1.35,
               color: item.danger ? '#fecaca' : 'inherit',
               '& .MuiListItemIcon-root': {
-                minWidth: 28,
+                minWidth: 30,
                 color: item.danger ? '#fca5a5' : 'rgba(255,255,255,0.82)',
               },
               '& .MuiListItemText-primary': {
-                fontSize: '0.96rem',
+                fontSize: '1rem',
                 fontWeight: 600,
               },
               '&:hover': {

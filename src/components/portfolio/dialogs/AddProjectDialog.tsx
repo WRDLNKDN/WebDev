@@ -30,6 +30,8 @@ import {
 } from '../../../lib/portfolio/categoryUtils';
 import {
   getPortfolioUrlSafetyError,
+  PORTFOLIO_NOT_PUBLIC_ERROR,
+  sanitizePortfolioUrlInput,
   validatePortfolioUrl,
 } from '../../../lib/portfolio/linkValidation';
 import { normalizeUrlForDedup } from '../../../lib/utils/linkPlatform';
@@ -134,9 +136,16 @@ export const AddProjectDialog = ({
     required?: boolean;
   }) => (
     <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
-      <Typography sx={LABEL_ROW_SX}>
+      <Typography component="span" sx={LABEL_ROW_SX}>
         {text}
-        {required ? ' *' : ''}
+        {required ? (
+          <Box
+            component="span"
+            sx={{ color: 'error.main', fontWeight: 700, ml: 0.35 }}
+          >
+            *
+          </Box>
+        ) : null}
       </Typography>
       <Tooltip title={tooltip}>
         <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
@@ -196,9 +205,10 @@ export const AddProjectDialog = ({
     }
   };
 
-  const isExternalUrl = (url: string) => /^https?:\/\//i.test(url.trim());
+  const isExternalUrl = (url: string) =>
+    /^https?:\/\//i.test(sanitizePortfolioUrlInput(url));
   const normalizedCategories = normalizeProjectCategories(formData.tech_stack);
-  const url = formData.project_url.trim();
+  const url = sanitizePortfolioUrlInput(formData.project_url);
   const hasTitle = Boolean(formData.title.trim());
   const hasDescription = Boolean(formData.description.trim());
   const hasCategories = normalizedCategories.length > 0;
@@ -253,13 +263,18 @@ export const AddProjectDialog = ({
 
   const handleSubmit = async () => {
     setSubmitError(null);
-    const url = formData.project_url?.trim() ?? '';
+    const url = sanitizePortfolioUrlInput(formData.project_url ?? '');
     const validation = await validatePortfolioUrl(url, {
       checkAccessible: true,
     });
     if (!validation.ok) {
-      setSubmitError(validation.error);
-      return;
+      if (validation.error === PORTFOLIO_NOT_PUBLIC_ERROR) {
+        // Many valid destinations block HEAD/CORS checks. Treat this as advisory,
+        // not a save blocker, and persist the edited URL anyway.
+      } else {
+        setSubmitError(validation.error);
+        return;
+      }
     }
     const normalizedUrl = normalizeUrlForDedup(url);
     if (normalizedUrl) {
@@ -289,7 +304,11 @@ export const AddProjectDialog = ({
     try {
       setBusy(true);
       await onSubmit(
-        { ...formData, tech_stack: selectedCategories },
+        {
+          ...formData,
+          project_url: url,
+          tech_stack: selectedCategories,
+        },
         selectedFile,
         projectId,
       );

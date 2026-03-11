@@ -14,6 +14,7 @@ const FEED_ITEM = {
     handle: 'member',
     display_name: 'Member',
     avatar: null,
+    bio: 'Senior Engineering Manager',
   },
   like_count: 0,
   love_count: 0,
@@ -96,6 +97,7 @@ test.describe('Feed reaction picker', () => {
     }
 
     const reactButton = page.getByRole('button', { name: 'React' }).first();
+    await expect(page.getByText('Senior Engineering Manager')).toBeVisible();
     await expect(reactButton).toBeVisible();
     await expect(reactButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
     await reactButton.scrollIntoViewIfNeeded();

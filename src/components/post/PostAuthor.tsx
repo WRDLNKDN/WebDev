@@ -28,6 +28,8 @@ export type PostAuthorProps = {
   inIcon?: boolean;
   /** Optional extra content below the name row (e.g. "Reposted from ...") */
   children?: React.ReactNode;
+  /** Optional profile description shown under the author line */
+  description?: string | null;
 };
 
 export const PostAuthor = ({
@@ -41,8 +43,13 @@ export const PostAuthor = ({
   formatTime = (s) => s,
   inIcon = false,
   children,
+  description,
 }: PostAuthorProps) => {
   const timeStr = formatTime(createdAt);
+  const trimmedDescription =
+    typeof description === 'string' && description.trim()
+      ? description.trim()
+      : null;
 
   if (compact) {
     return (
@@ -62,32 +69,51 @@ export const PostAuthor = ({
         to={handle ? `/profile/${handle}` : undefined}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.5}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          flexWrap="wrap"
+          gap={0.5}
+          sx={{ pr: 1 }}
+        >
           {handle ? (
             <Typography
               component={RouterLink}
               to={`/profile/${handle}`}
               variant="subtitle1"
-              fontWeight={600}
+              fontWeight={700}
               sx={{
                 color: 'text.primary',
                 textDecoration: 'none',
+                fontSize: { xs: '1.02rem', sm: '1.08rem' },
+                lineHeight: 1.15,
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
               {displayName}
             </Typography>
           ) : (
-            <Typography variant="subtitle1" fontWeight={600}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+              sx={{
+                fontSize: { xs: '1.02rem', sm: '1.08rem' },
+                lineHeight: 1.15,
+              }}
+            >
               {displayName}
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: '0.82rem', lineHeight: 1.15 }}
+          >
             • {timeStr}
           </Typography>
           {inIcon && (
             <LinkedInIcon
-              sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.8 }}
+              sx={{ fontSize: 14, color: '#f59e0b', opacity: 0.95 }}
               aria-hidden
             />
           )}
@@ -97,6 +123,26 @@ export const PostAuthor = ({
             </Typography>
           )}
         </Stack>
+        {trimmedDescription ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mt: 0.2,
+              lineHeight: 1.2,
+              fontSize: '0.82rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+              maxWidth: '100%',
+              opacity: 0.92,
+            }}
+          >
+            {trimmedDescription}
+          </Typography>
+        ) : null}
         {children}
       </Box>
     </Stack>

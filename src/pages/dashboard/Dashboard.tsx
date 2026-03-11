@@ -26,12 +26,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // MODULAR COMPONENTS
 import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
 import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
+import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
+import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -78,29 +80,6 @@ const nichePillSx = {
   border: '1px solid rgba(66,165,245,0.25)',
   fontSize: '0.78rem',
 } as const;
-
-const DashboardSkillsBlock = ({ skills }: { skills: string[] }) => {
-  if (skills.length === 0) return null;
-
-  return (
-    <Stack spacing={1.25} sx={{ width: '100%' }}>
-      <Typography variant="caption" sx={sectionLabelSx}>
-        Skills
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ width: '100%' }}>
-        {skills.map((skill) => (
-          <Box
-            key={`skill-${skill}`}
-            data-testid="dashboard-pill"
-            sx={skillPillSx}
-          >
-            {skill}
-          </Box>
-        ))}
-      </Stack>
-    </Stack>
-  );
-};
 
 const DashboardIndustriesBlock = ({
   groups,
@@ -462,7 +441,6 @@ export const Dashboard = () => {
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <IdentityHeader
-          layoutVariant="three-column"
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
@@ -479,14 +457,50 @@ export const Dashboard = () => {
           avatarUrl={avatarUrl}
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={null}
-          badges={<DashboardSkillsBlock skills={selectedSkills} />}
-          rightColumn={
+          badges={
+            selectedSkills.length > 0 ||
+            industryGroups.length > 0 ||
+            Boolean(nicheField) ? (
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {industryGroups.map((group) => (
+                  <Box
+                    key={`industry-${group.industry}`}
+                    data-testid="dashboard-pill"
+                    sx={{
+                      ...nichePillSx,
+                      bgcolor: 'rgba(66,165,245,0.15)',
+                      border: '1px solid rgba(66,165,245,0.35)',
+                    }}
+                  >
+                    {group.industry}
+                  </Box>
+                ))}
+                {nicheField ? (
+                  <Box data-testid="dashboard-pill" sx={nichePillSx}>
+                    {nicheField}
+                  </Box>
+                ) : null}
+                {selectedSkills.map((skill) => (
+                  <Box
+                    key={`skill-${skill}`}
+                    data-testid="dashboard-pill"
+                    sx={skillPillSx}
+                  >
+                    {skill}
+                  </Box>
+                ))}
+              </Stack>
+            ) : undefined
+          }
+          slotBetweenContentAndActionsLabel={
+            industryGroups.length > 0 || nicheField ? 'Industries' : undefined
+          }
+          slotBetweenContentAndActions={
             <DashboardIndustriesBlock
               groups={industryGroups}
               nicheField={nicheField}
             />
           }
-          slotBetweenContentAndActions={undefined}
           actions={
             <>
               <Stack
@@ -591,6 +605,12 @@ export const Dashboard = () => {
               </Menu>
             </>
           }
+        />
+
+        <DashboardLinksSection
+          loading={loading}
+          socials={socialsArray}
+          onOpenLinks={() => setIsLinksOpen(true)}
         />
 
         <Paper
@@ -792,6 +812,11 @@ export const Dashboard = () => {
                     </MenuItem>
                   </Menu>
                 </Stack>
+
+                <PortfolioHighlightsCarousel
+                  projects={projects}
+                  onOpenPreview={setPreviewProject}
+                />
 
                 <Box
                   sx={{

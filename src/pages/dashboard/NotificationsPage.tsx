@@ -12,6 +12,8 @@ export const NotificationsPage = () => {
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actingRequestId, setActingRequestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +47,30 @@ export const NotificationsPage = () => {
       );
     } finally {
       setMarkingRead(false);
+    }
+  }, []);
+
+  const dismissRow = useCallback(async (id: string) => {
+    const now = new Date().toISOString();
+    setDismissingId(id);
+    try {
+      await supabase
+        .from('notifications')
+        .update({ read_at: now })
+        .eq('id', id);
+      setRows((prev) => prev.filter((row) => row.id !== id));
+    } finally {
+      setDismissingId(null);
+    }
+  }, []);
+
+  const deleteRow = useCallback(async (id: string) => {
+    setDeletingId(id);
+    try {
+      await supabase.from('notifications').delete().eq('id', id);
+      setRows((prev) => prev.filter((row) => row.id !== id));
+    } finally {
+      setDeletingId(null);
     }
   }, []);
 
@@ -105,12 +131,16 @@ export const NotificationsPage = () => {
       loading={loading}
       unreadCount={rows.filter((row) => !row.read_at).length}
       markingRead={markingRead}
+      dismissingId={dismissingId}
+      deletingId={deletingId}
       markAllAsRead={() => void markAllAsRead()}
       actingRequestId={actingRequestId}
       handleConnectionDecision={(row, decision) =>
         void handleConnectionDecision(row, decision)
       }
       markAsRead={(id) => void markAsRead(id)}
+      dismissRow={(id) => void dismissRow(id)}
+      deleteRow={(id) => void deleteRow(id)}
     />
   );
 };

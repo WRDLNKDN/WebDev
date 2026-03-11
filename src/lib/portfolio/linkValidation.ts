@@ -15,8 +15,19 @@ export type ValidationResult =
 
 const VALID_URL_ONLY = 'Enter a valid URL (https:// or http://).';
 const DISALLOWED_URL = 'This URL is not allowed. Please use a different link.';
-const NOT_PUBLIC =
+export const PORTFOLIO_NOT_PUBLIC_ERROR =
   'This link is not publicly accessible. Update sharing settings or use a public link.';
+
+export function sanitizePortfolioUrlInput(url: string): string {
+  let next = url.trim();
+  if (!next) return '';
+
+  next = next.replace(/^(https?:)\s+(https?:\/\/)/i, '$2');
+  next = next.replace(/^(https?:)\s*:\s*(https?:\/\/)/i, '$2');
+  next = next.replace(/^(https?:\/\/)\s+(https?:\/\/)/i, '$2');
+
+  return next.replace(/\s+/g, '');
+}
 
 const DISALLOWED_HOST_TLDS = ['.xxx', '.adult', '.sex', '.porn'];
 const DISALLOWED_TOKENS = [
@@ -68,7 +79,7 @@ export async function validatePortfolioUrl(
   url: string,
   options: { checkAccessible?: boolean } = {},
 ): Promise<ValidationResult> {
-  const raw = url.trim();
+  const raw = sanitizePortfolioUrlInput(url);
   if (!raw) return { ok: false, error: VALID_URL_ONLY };
 
   if (!/^https?:\/\//i.test(raw)) return { ok: false, error: VALID_URL_ONLY };
@@ -96,7 +107,7 @@ export async function validatePortfolioUrl(
   if (options.checkAccessible) {
     const accessible = await checkLinkAccessibleCors(raw);
     if (!accessible) {
-      return { ok: false, error: NOT_PUBLIC };
+      return { ok: false, error: PORTFOLIO_NOT_PUBLIC_ERROR };
     }
   }
 

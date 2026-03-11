@@ -2,6 +2,7 @@ export type FeedItemActor = {
   handle: string | null;
   display_name: string | null;
   avatar: string | null;
+  bio?: string | null;
 };
 
 export type ReactionType =

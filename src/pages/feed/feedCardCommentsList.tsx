@@ -53,26 +53,51 @@ export const FeedCardCommentsList = ({
         key={c.id}
         alignItems="flex-start"
         disablePadding
-        sx={{ py: 0.5 }}
+        sx={{ py: 0.5, gap: { xs: 1, sm: 1.25 } }}
       >
-        <ListItemAvatar sx={{ minWidth: 48 }}>
+        <ListItemAvatar sx={{ minWidth: { xs: 40, sm: 48 }, mt: 0.125 }}>
           <ProfileAvatar
             src={c.actor?.avatar ?? undefined}
             alt={c.actor?.display_name || c.actor?.handle || '?'}
             size="small"
+            sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}
           />
         </ListItemAvatar>
         <ListItemText
+          sx={{ my: 0, minWidth: 0 }}
           primary={
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Typography variant="body2" fontWeight={600}>
-                {c.actor?.display_name || c.actor?.handle || 'Someone'}
-              </Typography>
-              {c.edited_at && (
-                <Typography variant="caption" color="text.secondary">
-                  Edited
+            <Stack spacing={0.125}>
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{ fontSize: { xs: '0.86rem', sm: '0.875rem' } }}
+                >
+                  {c.actor?.display_name || c.actor?.handle || 'Someone'}
                 </Typography>
-              )}
+                {c.edited_at && (
+                  <Typography variant="caption" color="text.secondary">
+                    Edited
+                  </Typography>
+                )}
+              </Stack>
+              {c.actor?.bio ? (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    fontSize: { xs: '0.72rem', sm: '0.75rem' },
+                  }}
+                >
+                  {c.actor.bio}
+                </Typography>
+              ) : null}
             </Stack>
           }
           secondary={

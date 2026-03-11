@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
+import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
@@ -179,6 +180,11 @@ export const DashboardPortfolioSection = ({
             </MenuItem>
           </Menu>
         </Stack>
+
+        <PortfolioHighlightsCarousel
+          projects={projects}
+          onOpenPreview={onOpenPreview}
+        />
 
         {!isEmpty ? (
           <Box

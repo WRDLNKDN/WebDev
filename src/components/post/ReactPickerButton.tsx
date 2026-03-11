@@ -109,10 +109,19 @@ export const ReactPickerButton = <T extends string = string>({
             '& .MuiSvgIcon-root, & .MuiTypography-root': {
               color: 'inherit',
             },
+            ...(selected
+              ? {
+                  fontWeight: 700,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '4px',
+                }
+              : null),
             '&:hover': {
               bgcolor: 'transparent',
               color: selected?.color ?? HOVER_COLOR,
               transform: 'scale(1.08)',
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
             },
             ...buttonSx,
           }}
@@ -123,7 +132,7 @@ export const ReactPickerButton = <T extends string = string>({
             variant="caption"
             sx={{
               fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-              fontWeight: 600,
+              fontWeight: selected ? 700 : 600,
               color: 'inherit',
             }}
           >

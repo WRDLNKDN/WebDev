@@ -6,18 +6,25 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
+import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import EventIcon from '@mui/icons-material/Event';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import ForumIcon from '@mui/icons-material/Forum';
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import LinkIcon from '@mui/icons-material/Link';
 import MessageIcon from '@mui/icons-material/Message';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import ThumbDownOffAltOutlinedIcon from '@mui/icons-material/ThumbDownOffAltOutlined';
 import {
   Box,
   Button,
@@ -50,6 +57,8 @@ import {
   ToggleButtonGroup,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
@@ -131,6 +140,7 @@ const AD_IMPRESSION_CAP_PER_SESSION = (() => {
 const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
 const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
+const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.72)';
 
 type FeedCachePayload = {
   items: FeedItem[];
@@ -432,11 +442,13 @@ const ShareDialog = ({
   open,
   onClose,
   onCopyLink,
+  mobile,
 }: {
   item: FeedItem | null;
   open: boolean;
   onClose: () => void;
   onCopyLink: (url: string) => void;
+  mobile: boolean;
 }) => {
   if (!item) return null;
   const postUrl =
@@ -444,7 +456,25 @@ const ShareDialog = ({
       ? `${window.location.origin}/feed?post=${encodeURIComponent(item.id)}`
       : '';
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={mobile}
+      PaperProps={{
+        sx: mobile
+          ? {
+              m: 0,
+              width: '100%',
+              maxWidth: '100%',
+              minHeight: '42vh',
+              borderRadius: '20px 20px 0 0',
+              alignSelf: 'flex-end',
+            }
+          : undefined,
+      }}
+    >
       <DialogTitle>Share this post</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
@@ -579,6 +609,11 @@ const FeedCard = ({
     return ordered;
   }, [bodyGifUrls, postAttachmentImages]);
   const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
+  const canonicalPostUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/feed?post=${item.id}`
+      : `/feed?post=${item.id}`;
+  const embedSnippet = `<blockquote data-weirdlkn-post="${item.id}">${bodyTextWithoutGifUrls || body || displayName}</blockquote>`;
   const likeCount = item.like_count ?? 0;
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
@@ -808,6 +843,7 @@ const FeedCard = ({
           avatarUrl: actorAvatar,
           displayName,
           handle,
+          description: item.actor?.bio ?? null,
           createdAt: item.created_at,
           editedAt: isPostEdited ? item.edited_at : null,
           formatTime: formatPostTime,
@@ -857,32 +893,84 @@ const FeedCard = ({
               </Stack>
             ) : undefined,
         }}
-        actionMenu={
-          isOwner
-            ? {
-                visible: !isEditingPost,
-                ariaLabel: 'Post options',
-                items: [
-                  ...(item.kind === 'post'
-                    ? [
-                        {
-                          label: 'Edit',
-                          onClick: () => {
-                            setEditPostDraft(body);
-                            setIsEditingPost(true);
-                          },
-                        },
-                      ]
-                    : []),
+        actionMenu={{
+          visible: !isEditingPost,
+          ariaLabel: 'Post options',
+          items: [
+            {
+              label: item.viewer_saved ? 'Unsave' : 'Save',
+              icon: item.viewer_saved ? (
+                <BookmarkIcon fontSize="small" />
+              ) : (
+                <BookmarkBorderIcon fontSize="small" />
+              ),
+              onClick: () =>
+                item.viewer_saved
+                  ? actions.onUnsave(item.id)
+                  : actions.onSave(item.id),
+            },
+            {
+              label: 'Copy link to post',
+              icon: <LinkIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(canonicalPostUrl),
+            },
+            {
+              label: 'Embed this post',
+              icon: <CodeIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(embedSnippet),
+            },
+            ...(!isOwner && handle
+              ? [
+                  {
+                    label: `Unfollow ${displayName}`,
+                    icon: <PersonOffOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo(
+                        `Unfollow for @${handle} is coming soon.`,
+                      ),
+                  },
+                ]
+              : []),
+            ...(!isOwner
+              ? [
+                  {
+                    label: 'Not interested',
+                    icon: <ThumbDownOffAltOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('We will show fewer posts like this.'),
+                  },
+                  {
+                    label: 'Report post',
+                    icon: <FlagOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('Report flow is coming soon.'),
+                  },
+                ]
+              : []),
+            ...(isOwner && item.kind === 'post'
+              ? [
+                  {
+                    label: 'Edit',
+                    icon: <EditOutlinedIcon fontSize="small" />,
+                    onClick: () => {
+                      setEditPostDraft(body);
+                      setIsEditingPost(true);
+                    },
+                  },
+                ]
+              : []),
+            ...(isOwner
+              ? [
                   {
                     label: 'Delete',
+                    icon: <DeleteOutlineIcon fontSize="small" />,
                     onClick: () => actions.onDelete(item.id),
                     danger: true,
                   },
-                ],
-              }
-            : null
-        }
+                ]
+              : []),
+          ],
+        }}
         sx={{ mb: 2 }}
       >
         {isEditingPost ? (
@@ -1085,10 +1173,10 @@ const FeedCard = ({
             width: '100%',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
             alignItems: 'center',
-            justifyContent: 'flex-start',
-            gap: { xs: 0.5, sm: 1 },
+            justifyContent: 'space-between',
+            gap: { xs: 0.25, sm: 0.5 },
             borderTop: 1,
             borderColor: 'divider',
             pt: { xs: 1.1, sm: 1.25 },
@@ -1097,6 +1185,8 @@ const FeedCard = ({
               minHeight: { xs: 40, sm: 36 },
               display: 'flex',
               alignItems: 'center',
+              flex: '1 1 0',
+              minWidth: 0,
             },
           }}
         >
@@ -1115,23 +1205,29 @@ const FeedCard = ({
                 item.viewer_reaction ?? undefined,
               )
             }
+            sx={{ width: '100%' }}
           />
           <Button
             size="small"
             onClick={() => actions.onCommentToggle(item.id)}
             sx={{
               textTransform: 'none',
-              color: 'info.main',
+              color: commentsExpanded ? '#60A5FA' : FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
+              width: '100%',
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
               py: { xs: 0.75, sm: 0.5 },
               px: 1,
               borderRadius: 2,
+              justifyContent: 'center',
+              transition:
+                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
               '&:hover': {
-                bgcolor: 'rgba(41, 182, 246, 0.12)',
-                color: 'info.light',
+                bgcolor: 'rgba(96, 165, 250, 0.08)',
+                color: '#60A5FA',
+                transform: 'scale(1.04)',
               },
             }}
           >
@@ -1151,17 +1247,22 @@ const FeedCard = ({
             onClick={() => actions.onRepost(item)}
             sx={{
               textTransform: 'none',
-              color: 'success.main',
+              color: FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
+              width: '100%',
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
               py: { xs: 0.75, sm: 0.5 },
               px: 1,
               borderRadius: 2,
+              justifyContent: 'center',
+              transition:
+                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
               '&:hover': {
-                bgcolor: 'rgba(102, 187, 106, 0.12)',
-                color: 'success.light',
+                bgcolor: 'rgba(167, 139, 250, 0.08)',
+                color: '#A78BFA',
+                transform: 'scale(1.04)',
               },
             }}
           >
@@ -1179,17 +1280,22 @@ const FeedCard = ({
             onClick={() => actions.onSend(item)}
             sx={{
               textTransform: 'none',
-              color: 'primary.main',
+              color: FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
+              width: '100%',
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
               py: { xs: 0.75, sm: 0.5 },
               px: 1,
               borderRadius: 2,
+              justifyContent: 'center',
+              transition:
+                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
               '&:hover': {
-                bgcolor: 'rgba(66, 165, 245, 0.12)',
-                color: 'primary.light',
+                bgcolor: 'rgba(56, 189, 248, 0.08)',
+                color: '#38BDF8',
+                transform: 'scale(1.04)',
               },
             }}
           >
@@ -1211,19 +1317,24 @@ const FeedCard = ({
             }
             sx={{
               textTransform: 'none',
-              color: item.viewer_saved ? 'warning.main' : 'text.secondary',
+              color: item.viewer_saved ? '#FBBF24' : FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
+              width: '100%',
               minHeight: 0,
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 0.25, sm: 0.5 },
               py: { xs: 0.75, sm: 0.5 },
               px: 1,
               borderRadius: 2,
+              justifyContent: 'center',
+              transition:
+                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
               '&:hover': {
                 bgcolor: item.viewer_saved
-                  ? 'rgba(255, 183, 77, 0.12)'
-                  : 'rgba(255, 183, 77, 0.08)',
-                color: 'warning.light',
+                  ? 'rgba(251, 191, 36, 0.12)'
+                  : 'rgba(251, 191, 36, 0.08)',
+                color: '#FBBF24',
+                transform: 'scale(1.04)',
               },
             }}
             aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
@@ -1275,24 +1386,42 @@ const FeedCard = ({
                       </ListItemAvatar>
                       <ListItemText
                         primary={
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            alignItems="center"
-                          >
-                            <Typography variant="body2" fontWeight={600}>
-                              {c.actor?.display_name ||
-                                c.actor?.handle ||
-                                'Someone'}
-                            </Typography>
-                            {c.edited_at && (
+                          <Stack spacing={0.125}>
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              alignItems="center"
+                            >
+                              <Typography variant="body2" fontWeight={600}>
+                                {c.actor?.display_name ||
+                                  c.actor?.handle ||
+                                  'Someone'}
+                              </Typography>
+                              {c.edited_at && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Edited
+                                </Typography>
+                              )}
+                            </Stack>
+                            {c.actor?.bio ? (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
+                                sx={{
+                                  lineHeight: 1.3,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: 'vertical',
+                                }}
                               >
-                                Edited
+                                {c.actor.bio}
                               </Typography>
-                            )}
+                            ) : null}
                           </Stack>
                         }
                         secondary={
@@ -1733,6 +1862,8 @@ const FeedCard = ({
 type FeedProps = { savedMode?: boolean };
 
 export const Feed = ({ savedMode = false }: FeedProps) => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -2316,7 +2447,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
   const handleSubmitPost = async () => {
     const text = composerValue.trim();
-    if (!text || posting || !session?.access_token) return;
+    const hasContent = Boolean(text) || composerImages.length > 0;
+    if (!hasContent || posting || !session?.access_token) return;
     try {
       setPosting(true);
       await createFeedPost({
@@ -3312,11 +3444,21 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         }}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmallScreen}
         PaperProps={{
           sx: {
             bgcolor: 'background.paper',
-            borderRadius: 2,
+            borderRadius: isSmallScreen ? '20px 20px 0 0' : 2,
             border: '1px solid rgba(255,255,255,0.1)',
+            ...(isSmallScreen
+              ? {
+                  m: 0,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minHeight: '82vh',
+                  alignSelf: 'flex-end',
+                }
+              : null),
           },
         }}
       >
@@ -3500,17 +3642,22 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 </IconButton>
               </Typography>
             )}
-            <Box sx={{ flex: 1, minWidth: 8 }} />
+            <Box sx={{ flex: 1, minWidth: isSmallScreen ? '100%' : 8 }} />
             <Button
               variant="contained"
               size="small"
               onClick={() => void handleSubmitPost()}
-              disabled={posting || imageUploading || !composerValue.trim()}
+              disabled={
+                posting ||
+                imageUploading ||
+                (!composerValue.trim() && composerImages.length === 0)
+              }
               sx={{
                 textTransform: 'none',
                 borderRadius: '9999px',
                 px: 2.5,
                 py: 0.75,
+                width: { xs: '100%', sm: 'auto' },
                 '&:hover': { filter: 'brightness(1.08)' },
               }}
             >
@@ -3532,11 +3679,21 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         onClose={() => setScheduleDialogOpen(false)}
         maxWidth="xs"
         fullWidth
+        fullScreen={isSmallScreen}
         PaperProps={{
           sx: {
             bgcolor: 'background.paper',
-            borderRadius: 2,
+            borderRadius: isSmallScreen ? '20px 20px 0 0' : 2,
             border: '1px solid rgba(255,255,255,0.1)',
+            ...(isSmallScreen
+              ? {
+                  m: 0,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minHeight: '58vh',
+                  alignSelf: 'flex-end',
+                }
+              : null),
           },
         }}
       >
@@ -3658,6 +3815,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         open={Boolean(shareModalItem)}
         onClose={() => setShareModalItem(null)}
         onCopyLink={handleCopyLink}
+        mobile={isSmallScreen}
       />
 
       <Snackbar

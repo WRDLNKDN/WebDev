@@ -185,6 +185,7 @@ export const FeedCard = ({
           avatarUrl: actorAvatar,
           displayName,
           handle,
+          description: item.actor?.bio ?? null,
           createdAt: item.created_at,
           editedAt: isPostEdited ? item.edited_at : null,
           formatTime: formatPostTime,

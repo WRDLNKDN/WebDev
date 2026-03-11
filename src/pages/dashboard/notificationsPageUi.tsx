@@ -1,10 +1,13 @@
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
@@ -74,6 +77,10 @@ type RowProps = {
     decision: 'accept' | 'decline',
   ) => void;
   markAsRead: (id: string) => void;
+  dismissRow: (id: string) => void;
+  deleteRow: (id: string) => void;
+  dismissingId: string | null;
+  deletingId: string | null;
 };
 
 const NotificationRowItem = ({
@@ -81,6 +88,10 @@ const NotificationRowItem = ({
   actingRequestId,
   handleConnectionDecision,
   markAsRead,
+  dismissRow,
+  deleteRow,
+  dismissingId,
+  deletingId,
 }: RowProps) => (
   <ListItem key={row.id} disablePadding divider>
     {row.type === 'connection_request' && row.connection_request_pending ? (
@@ -115,6 +126,30 @@ const NotificationRowItem = ({
           spacing={1}
           sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ justifyContent: 'flex-end' }}
+          >
+            <IconButton
+              size="small"
+              aria-label="Dismiss notification"
+              disabled={dismissingId === row.id || deletingId === row.id}
+              onClick={() => dismissRow(row.id)}
+              sx={{ color: 'text.secondary' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Delete notification"
+              disabled={dismissingId === row.id || deletingId === row.id}
+              onClick={() => deleteRow(row.id)}
+              sx={{ color: 'text.secondary' }}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Stack>
           <Button
             size="small"
             variant="contained"
@@ -239,6 +274,34 @@ const NotificationRowItem = ({
               sx={{ fontSize: 16, color: 'primary.main', ml: 1, flexShrink: 0 }}
             />
           )}
+          <Stack
+            direction="row"
+            spacing={0.25}
+            sx={{ ml: 0.5, flexShrink: 0 }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+          >
+            <IconButton
+              size="small"
+              aria-label="Dismiss notification"
+              disabled={dismissingId === row.id || deletingId === row.id}
+              onClick={() => dismissRow(row.id)}
+              sx={{ color: 'text.secondary' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Delete notification"
+              disabled={dismissingId === row.id || deletingId === row.id}
+              onClick={() => deleteRow(row.id)}
+              sx={{ color: 'text.secondary' }}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Stack>
         </Box>
       </ListItemButton>
     )}
@@ -252,6 +315,8 @@ type NotificationsViewProps = {
   loading: boolean;
   unreadCount: number;
   markingRead: boolean;
+  dismissingId: string | null;
+  deletingId: string | null;
   markAllAsRead: () => void;
   actingRequestId: string | null;
   handleConnectionDecision: (
@@ -259,6 +324,8 @@ type NotificationsViewProps = {
     decision: 'accept' | 'decline',
   ) => void;
   markAsRead: (id: string) => void;
+  dismissRow: (id: string) => void;
+  deleteRow: (id: string) => void;
 };
 
 export const NotificationsView = ({
@@ -268,10 +335,14 @@ export const NotificationsView = ({
   loading,
   unreadCount,
   markingRead,
+  dismissingId,
+  deletingId,
   markAllAsRead,
   actingRequestId,
   handleConnectionDecision,
   markAsRead,
+  dismissRow,
+  deleteRow,
 }: NotificationsViewProps) => (
   <Box sx={{ py: 3 }}>
     <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto', px: 2 }}>
@@ -342,6 +413,10 @@ export const NotificationsView = ({
                   actingRequestId={actingRequestId}
                   handleConnectionDecision={handleConnectionDecision}
                   markAsRead={markAsRead}
+                  dismissRow={dismissRow}
+                  deleteRow={deleteRow}
+                  dismissingId={dismissingId}
+                  deletingId={deletingId}
                 />
               ))}
           </List>

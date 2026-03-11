@@ -71,6 +71,7 @@ export const THEME_COMPONENTS = {
         borderRadius: 8,
         minHeight: 44,
         padding: '8px 24px',
+        fontWeight: 700,
         '&:focus-visible': FOCUS_RING,
       },
       containedPrimary: {
@@ -134,6 +135,13 @@ export const THEME_COMPONENTS = {
         color: '#e8e8e8',
         '&.Mui-focused': { color: '#42a5f5' },
       },
+      asterisk: {
+        color: PALETTE.error.main,
+      },
+    },
+  },
+  MuiFormLabel: {
+    styleOverrides: {
       asterisk: {
         color: PALETTE.error.main,
       },
@@ -224,6 +232,7 @@ export const THEME_COMPONENTS = {
       root: {
         fontSize: '0.875rem',
         height: 32,
+        borderWidth: 2,
         '&:focus-visible': FOCUS_RING,
       },
       label: { fontWeight: 500 },
@@ -255,7 +264,35 @@ export const THEME_COMPONENTS = {
         fontWeight: 600,
         minHeight: 48,
         fontSize: '1rem',
+        borderBottom: '3px solid transparent',
         '&:focus-visible': FOCUS_RING,
+        '&.Mui-selected': {
+          fontWeight: 800,
+          textDecoration: 'underline',
+          textUnderlineOffset: '5px',
+          borderBottomColor: PALETTE.primary.main,
+        },
+      },
+    },
+  },
+  MuiTabs: {
+    styleOverrides: {
+      indicator: {
+        height: 4,
+        borderRadius: 999,
+        backgroundColor: PALETTE.primary.light,
+      },
+    },
+  },
+  MuiToggleButton: {
+    styleOverrides: {
+      root: {
+        '&.Mui-selected': {
+          fontWeight: 800,
+          textDecoration: 'underline',
+          textUnderlineOffset: '4px',
+          borderWidth: 2,
+        },
       },
     },
   },

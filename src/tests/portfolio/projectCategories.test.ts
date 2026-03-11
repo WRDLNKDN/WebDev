@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatProjectCategories,
+  getProjectCategorySelection,
+  isPredefinedProjectCategory,
   normalizeProjectCategories,
+  normalizeCustomProjectCategory,
   parseProjectCategories,
+  PORTFOLIO_OTHER_CATEGORY_OPTION,
 } from '../../lib/portfolio/categoryUtils';
 
 describe('portfolio category parsing', () => {
@@ -38,5 +42,32 @@ describe('portfolio category parsing', () => {
       normalizeProjectCategories([' DevOps ', 'devops', '', '  ', 'UI/UX']),
     ).toEqual(['DevOps', 'UI/UX']);
     expect(normalizeProjectCategories(null)).toEqual([]);
+  });
+
+  it('detects predefined taxonomy values exactly', () => {
+    expect(isPredefinedProjectCategory('Data')).toBe(true);
+    expect(isPredefinedProjectCategory('data')).toBe(false);
+    expect(isPredefinedProjectCategory('Custom Category')).toBe(false);
+  });
+
+  it('derives picker state for predefined and custom categories', () => {
+    expect(getProjectCategorySelection(['Data'])).toEqual({
+      pickerValue: 'Data',
+      customCategory: '',
+    });
+    expect(getProjectCategorySelection(['My Custom Category'])).toEqual({
+      pickerValue: PORTFOLIO_OTHER_CATEGORY_OPTION,
+      customCategory: 'My Custom Category',
+    });
+    expect(getProjectCategorySelection(null)).toEqual({
+      pickerValue: null,
+      customCategory: '',
+    });
+  });
+
+  it('normalizes freeform custom categories without changing the label', () => {
+    expect(normalizeCustomProjectCategory('  Community   Tooling  ')).toBe(
+      'Community Tooling',
+    );
   });
 });

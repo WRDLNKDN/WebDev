@@ -20,10 +20,10 @@ import { ProfileStep } from '../../components/join/ProfileStep';
 import { JoinProgress } from '../../components/join/JoinProgress';
 import { ValuesStep } from '../../components/join/ValuesStep';
 import { WelcomeStep } from '../../components/join/WelcomeStep';
+import { CompleteStep } from '../../components/signup/CompleteStep';
 
 import { toMessage } from '../../lib/utils/errors';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
-import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import {
   APP_GLASS_BACKDROP,
   APP_GLASS_BORDER,
@@ -165,45 +165,13 @@ export const Join = () => {
     };
   }, [navigate, resetSignup, reconcileWithExistingProfile]);
 
-  useEffect(() => {
-    if (state.currentStep !== 'complete') return;
-    void (async () => {
-      try {
-        await import('../feed/Feed');
-      } catch {
-        // Redirect still proceeds if prefetch fails.
-      }
-      setJoinCompletionFlash();
-      navigate(
-        { pathname: '/feed', search: '?join=complete' },
-        { replace: true },
-      );
-    })();
-  }, [navigate, state.currentStep]);
-
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {
       welcome: <WelcomeStep />,
       identity: <IdentityStep />,
       values: <ValuesStep />,
       profile: <ProfileStep />,
-      complete: (
-        <Stack
-          spacing={2}
-          alignItems="center"
-          justifyContent="center"
-          sx={{ minHeight: 220 }}
-        >
-          <CircularProgress
-            size={24}
-            thickness={5}
-            aria-label="Finalizing Join"
-          />
-          <Typography variant="body2" sx={{ opacity: 0.85 }}>
-            Finalizing your profile and opening your Feed…
-          </Typography>
-        </Stack>
-      ),
+      complete: <CompleteStep />,
     };
     return steps[state.currentStep] || <WelcomeStep />;
   };

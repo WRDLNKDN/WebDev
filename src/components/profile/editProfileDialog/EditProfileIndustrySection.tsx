@@ -23,6 +23,7 @@ import {
   INPUT_STYLES,
   PURPLE_ACCENT,
 } from './constants';
+import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
 import {
   appendSubIndustrySelection,
   findMatchingSubIndustryOption,
@@ -93,17 +94,19 @@ export const EditProfileIndustrySection = ({
   return (
     <Box sx={{ mt: 2 }}>
       <Typography
-        variant="overline"
+        variant="caption"
         sx={{
-          letterSpacing: 2,
-          fontWeight: 'bold',
-          color: PURPLE_ACCENT,
+          ...FORM_SECTION_HEADING_SX,
           display: 'block',
-          mb: 1.25,
+          mb: 0.75,
           lineHeight: 1.2,
         }}
       >
-        INDUSTRY
+        Industry Coverage
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Choose the primary industries and sub-industries members can use to
+        discover you.
       </Typography>
       <Stack spacing={2.25}>
         {formData.industries.map((group, idx) => (

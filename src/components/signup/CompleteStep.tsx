@@ -33,7 +33,7 @@ export const CompleteStep = () => {
 
   const handleGoHome = () => {
     resetSignup();
-    navigate('/');
+    navigate('/feed', { replace: true });
   };
 
   return (
@@ -94,7 +94,7 @@ export const CompleteStep = () => {
             fullWidth
             disabled={!bumperFinished}
           >
-            {bumperFinished ? 'Go to homepage' : 'Playing bumper...'}
+            {bumperFinished ? 'Continue to Feed' : 'Playing bumper...'}
           </Button>
         </Stack>
       </Paper>

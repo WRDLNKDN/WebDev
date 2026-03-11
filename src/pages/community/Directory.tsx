@@ -45,6 +45,12 @@ import {
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { filterSelectMenuProps } from '../../theme/filterControls';
+import {
+  FORM_FILTER_SELECT_SX,
+  FORM_OUTLINED_FIELD_SX,
+  FORM_SECTION_HEADING_SX,
+  FORM_SECTION_PANEL_SX,
+} from '../../lib/ui/formSurface';
 
 const PAGE_SIZE = 25;
 const DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -460,14 +466,19 @@ export const Directory = () => {
         <Paper
           elevation={0}
           sx={{
+            ...FORM_SECTION_PANEL_SX,
             p: { xs: 2, sm: 2.5, md: 3 },
             borderRadius: 3,
-            bgcolor: 'rgba(18,22,36,0.85)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255,255,255,0.09)',
             mb: { xs: 2, md: 3 },
           }}
         >
+          <Typography
+            variant="caption"
+            sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
+          >
+            Member Discovery
+          </Typography>
           <Typography
             variant="h5"
             sx={{
@@ -508,18 +519,11 @@ export const Directory = () => {
               }}
               sx={{
                 flex: 1,
+                ...FORM_OUTLINED_FIELD_SX,
                 '& .MuiOutlinedInput-root': {
                   height: FILTER_CONTROL_HEIGHT,
                   minHeight: FILTER_CONTROL_HEIGHT,
-                  bgcolor: 'rgba(255,255,255,0.04)',
                   borderRadius: 2,
-                  color: '#fff',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.14)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#3b82f6',
-                    borderWidth: '1.5px',
-                  },
                 },
                 '& .MuiInputBase-input::placeholder': {
                   color: 'rgba(255,255,255,0.3)',
@@ -555,22 +559,7 @@ export const Directory = () => {
                 sx={{
                   height: FILTER_CONTROL_HEIGHT,
                   minHeight: FILTER_CONTROL_HEIGHT,
-                  borderRadius: 2,
-                  bgcolor: 'rgba(255,255,255,0.04)',
-                  color: 'rgba(255,255,255,0.85)',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255,255,255,0.14)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255,255,255,0.25)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3b82f6',
-                    borderWidth: '1.5px',
-                  },
-                  '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.45)' },
+                  ...FORM_FILTER_SELECT_SX,
                   '& .MuiSelect-select': {
                     py: '9px',
                     pl: 1.75,

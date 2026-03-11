@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/auth/supabaseClient';
+import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
   getPortfolioUrlSafetyError,
@@ -109,11 +110,11 @@ export const updateProjectItem = async ({
   const { data, error: updateError } = await supabase
     .from('portfolio_items')
     .update({
-      title: updates.title,
-      description: updates.description,
+      title: updates.title.trim(),
+      description: updates.description.trim() || null,
       project_url: projectUrlTrimmed,
       image_url: finalImageUrl,
-      tech_stack: updates.tech_stack,
+      tech_stack: normalizeProjectCategories(updates.tech_stack, 1),
       is_highlighted: Boolean(updates.is_highlighted),
       normalized_url: normalizedUrl,
       embed_url: embedUrl ?? undefined,

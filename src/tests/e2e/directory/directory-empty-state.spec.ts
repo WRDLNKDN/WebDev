@@ -2,8 +2,7 @@ import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
-// fixme: authenticated E2E (session/profile stub) fails; unit tests cover directory empty state logic
-test.describe.fixme('Directory empty state', () => {
+test.describe('Directory empty state', () => {
   test('sanity: session from init after first nav — app-main and directory-page visible', async ({
     page,
   }) => {
@@ -75,32 +74,46 @@ test.describe.fixme('Directory empty state', () => {
     const { stubAdminRpc: stubAdmin } = await seedSignedInSession(
       page.context(),
     );
+    let releaseDirectoryResponse: () => void = () => {};
+    const directoryResponseReleased = new Promise<void>((resolve) => {
+      releaseDirectoryResponse = resolve;
+    });
+    let sawDirectoryRequest = false;
     await stubAdmin(page);
+    await stubAppSurface(page);
     await page.route('**/api/directory*', async (route) => {
       if (route.request().method() !== 'GET') {
         await route.fulfill({ status: 204, body: '' });
         return;
       }
-      await new Promise((r) => setTimeout(r, 800));
+      sawDirectoryRequest = true;
+      await directoryResponseReleased;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ data: [], hasMore: false }),
       });
     });
-    await stubAppSurface(page);
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.startsWith('directory_cache_v1')) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    });
     await page.goto('/directory', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
       timeout: 25_000,
     });
-    await expect(page.getByTestId('directory-page')).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect
+      .poll(() => sawDirectoryRequest, { timeout: 8_000 })
+      .toBeTruthy();
 
-    const loadingOrEmpty = page
-      .getByTestId('directory-empty-state')
-      .or(page.locator('[role="progressbar"]'));
-    await expect(loadingOrEmpty.first()).toBeVisible({ timeout: 8_000 });
+    await expect(
+      page.getByRole('progressbar', { name: /loading application/i }),
+    ).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId('directory-empty-state')).toHaveCount(0);
+    releaseDirectoryResponse();
   });
 });

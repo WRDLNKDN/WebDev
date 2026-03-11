@@ -18,6 +18,7 @@ import {
   INPUT_STYLES,
   PURPLE_ACCENT,
 } from './constants';
+import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
 import type { EditProfileFormData } from './types';
 
 type Props = {
@@ -35,11 +36,9 @@ type Props = {
 
 const FieldHeading = ({ children }: { children: string }) => (
   <Typography
-    variant="overline"
+    variant="caption"
     sx={{
-      letterSpacing: 2,
-      fontWeight: 'bold',
-      color: PURPLE_ACCENT,
+      ...FORM_SECTION_HEADING_SX,
       display: 'block',
       mb: 0.5,
     }}
@@ -61,6 +60,19 @@ export const EditProfileDetailsSection = ({
   onVisibilityChange,
 }: Props) => (
   <>
+    <Box>
+      <Typography
+        variant="caption"
+        sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
+      >
+        Directory And Profile Details
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
+        Keep your discovery settings, skills, and bio aligned across profile and
+        directory surfaces.
+      </Typography>
+    </Box>
+
     <Box>
       <FieldHeading>NICHE OR FIELD</FieldHeading>
       <TextField
@@ -140,9 +152,12 @@ export const EditProfileDetailsSection = ({
           disabled={busy}
           sx={{
             textTransform: 'none',
-            borderColor: BORDER_COLOR,
+            borderColor: 'rgba(255,255,255,0.2)',
             color: 'white',
-            '&:hover': { borderColor: PURPLE_ACCENT },
+            '&:hover': {
+              borderColor: PURPLE_ACCENT,
+              bgcolor: 'rgba(255,255,255,0.04)',
+            },
           }}
         >
           Add or Edit Links
@@ -224,12 +239,15 @@ export const EditProfileDetailsSection = ({
           disabled={!canSave}
           startIcon={busy ? <CircularProgress size={16} /> : null}
           sx={{
-            bgcolor: PURPLE_ACCENT,
+            background: `linear-gradient(90deg, ${PURPLE_ACCENT} 0%, ${GRADIENT_END} 100%)`,
             color: 'white',
             textTransform: 'none',
             fontSize: '0.95rem',
             px: 3,
-            '&:hover': { bgcolor: GRADIENT_END },
+            '&:hover': {
+              background: `linear-gradient(90deg, ${PURPLE_ACCENT} 0%, ${GRADIENT_END} 100%)`,
+              filter: 'brightness(1.05)',
+            },
           }}
         >
           {checkingHandle ? 'Checking...' : 'Save Changes'}

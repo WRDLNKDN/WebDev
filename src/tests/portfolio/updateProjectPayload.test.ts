@@ -143,6 +143,25 @@ describe('useProfile.updateProject payload mapping', () => {
     });
   });
 
+  it('stores an empty description as null and limits categories to one value', async () => {
+    const api = useProfile();
+
+    await api.updateProject('project-1', {
+      title: 'Updated Artifact',
+      description: '   ',
+      image_url: '',
+      project_url: 'https://example.com/artifact.pdf',
+      tech_stack: ['Data', 'AI/ML'],
+      is_highlighted: false,
+    });
+
+    expect(state.capturedUpdatePayload).toMatchObject({
+      title: 'Updated Artifact',
+      description: null,
+      tech_stack: ['Data'],
+    });
+  });
+
   it('keeps thumbnail generation disabled when manual image exists', async () => {
     const api = useProfile();
 

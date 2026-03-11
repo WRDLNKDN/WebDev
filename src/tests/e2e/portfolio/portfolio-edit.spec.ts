@@ -248,6 +248,11 @@ test.describe('Portfolio artifact editing', () => {
         .getByTestId('portfolio-section-data')
         .getByText('Updated dashboard artifact description.'),
     ).toBeVisible();
+    await expect(
+      page
+        .getByTestId('portfolio-section-data')
+        .locator('img[alt="Updated Artifact"]'),
+    ).toBeVisible();
   });
 
   test('blocks save when edited artifact URL is invalid', async ({

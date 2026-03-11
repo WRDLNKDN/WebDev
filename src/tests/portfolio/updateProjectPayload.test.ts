@@ -171,4 +171,47 @@ describe('useProfile.updateProject payload mapping', () => {
       (state.capturedUpdatePayload as { embed_url?: string }).embed_url,
     ).toBeUndefined();
   });
+
+  it('uploads edited preview media and persists the returned public URL', async () => {
+    const upload = vi.fn(async () => ({ error: null }));
+    const getPublicUrl = vi.fn(() => ({
+      data: {
+        publicUrl:
+          'https://cdn.example.com/project-images/user-1/project-123.png',
+      },
+    }));
+
+    supabaseMock.storage.from.mockReturnValue({
+      upload,
+      getPublicUrl,
+    });
+
+    const api = useProfile();
+    const imageFile = new File(['preview'], 'preview.png', {
+      type: 'image/png',
+    });
+
+    await api.updateProject(
+      'project-1',
+      {
+        title: 'Updated Artifact',
+        description: 'Updated details',
+        image_url: '',
+        project_url: 'https://example.com/artifact.pdf',
+        tech_stack: ['Data'],
+        is_highlighted: false,
+      },
+      imageFile,
+    );
+
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(getPublicUrl).toHaveBeenCalledTimes(1);
+    expect(state.capturedUpdatePayload).toMatchObject({
+      image_url:
+        'https://cdn.example.com/project-images/user-1/project-123.png',
+      tech_stack: ['Data'],
+      thumbnail_status: null,
+      thumbnail_url: null,
+    });
+  });
 });

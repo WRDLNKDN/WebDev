@@ -1,55 +1,5 @@
-import { createTheme } from '@mui/material/styles';
-
-// HUMAN OS COLOR PALETTE (Dark Mode Verified)
-const PALETTE = {
-  mode: 'dark' as const,
-  primary: {
-    main: '#42a5f5', // WCAG AA Safe on #121212
-    light: '#90caf9',
-    dark: '#1565c0',
-    contrastText: '#000000',
-  },
-  secondary: {
-    main: '#ec407a', // Pink is valid for accents
-    contrastText: '#000000',
-  },
-  background: {
-    default: '#121212', // Standard Dark Mode base
-    paper: '#1e1e1e', // Slightly elevated surface
-  },
-  text: {
-    primary: '#ffffff', // 21:1 Contrast
-    secondary: '#e8e8e8', // AAA: 7:1+ on #121212 (was #e0e0e0)
-    disabled: '#9e9e9e',
-  },
-  error: {
-    main: '#ef5350',
-    contrastText: '#000000',
-  },
-  warning: {
-    main: '#ffb74d',
-    contrastText: '#000000',
-  },
-  success: {
-    main: '#66bb6a',
-    contrastText: '#000000',
-  },
-  info: {
-    main: '#29b6f6',
-    contrastText: '#000000',
-  },
-};
-
-// SECTION 508 / WCAG FOCUS STYLE
-// "The Blue Halo" - High visibility focus ring for keyboard users
-const FOCUS_RING = {
-  outline: '3px solid #90caf9',
-  outlineOffset: '2px',
-};
-
-/** Sitewide font stack: local/system sans to avoid blocking external font fetches. */
-const FONT_FAMILY =
-  '"Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+import { alpha, createTheme } from '@mui/material/styles';
+import { FONT_FAMILY, FOCUS_RING, PALETTE } from './themeConstants';
 
 const theme = createTheme({
   palette: PALETTE,
@@ -219,10 +169,24 @@ const theme = createTheme({
           minHeight: 44, // WCAG 2.5.5 (Target Size)
           padding: '8px 24px',
           fontWeight: 700,
+          transition:
+            'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease, text-decoration-color 120ms ease',
           '&:focus-visible': FOCUS_RING,
+          '&:hover': {
+            textDecoration: 'underline',
+            textUnderlineOffset: '4px',
+            boxShadow: 'inset 0 -2px 0 currentColor',
+            transform: 'translateY(-1px)',
+          },
+          '&[aria-pressed="true"], &[aria-selected="true"]': {
+            fontWeight: 800,
+            textDecoration: 'underline',
+            textUnderlineOffset: '4px',
+            boxShadow: 'inset 0 -2px 0 currentColor',
+          },
         },
         containedPrimary: {
-          '&:hover': { backgroundColor: '#1565c0' }, // Clear hover state
+          '&:hover': { backgroundColor: PALETTE.primary.dark },
         },
       },
     },
@@ -232,16 +196,26 @@ const theme = createTheme({
           '&:focus-visible': FOCUS_RING,
           // Ensure visual bounds match touch target
           padding: 12,
+          transition:
+            'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease',
+          '&:hover': {
+            transform: 'scale(1.04)',
+            boxShadow: 'inset 0 0 0 1px currentColor',
+          },
+          '&[aria-pressed="true"], &[aria-selected="true"]': {
+            boxShadow: 'inset 0 0 0 2px currentColor',
+            backgroundColor: 'rgba(255,255,255,0.08)',
+          },
         },
       },
     },
     MuiLink: {
       styleOverrides: {
         root: {
-          color: '#90caf9',
+          color: PALETTE.primary.light,
           textDecoration: 'underline', // Crucial for color-blind users (Use of Color rule)
           textUnderlineOffset: '4px',
-          '&:hover': { color: '#42a5f5' },
+          '&:hover': { color: PALETTE.primary.main },
           '&:focus-visible': {
             ...FOCUS_RING,
             borderRadius: '2px',
@@ -267,10 +241,10 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#90caf9',
+            borderColor: PALETTE.primary.light,
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#42a5f5',
+            borderColor: PALETTE.primary.main,
             borderWidth: 2,
           },
         },
@@ -283,7 +257,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           color: '#e8e8e8', // AAA 7:1 label
-          '&.Mui-focused': { color: '#42a5f5' },
+          '&.Mui-focused': { color: PALETTE.primary.main },
         },
         // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
         asterisk: {
@@ -375,8 +349,23 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           minHeight: 48, // WCAG Touch Target
-          '&:focus-visible': { backgroundColor: 'rgba(66, 165, 245, 0.12)' },
-          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+          transition:
+            'background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease',
+          '&:focus-visible': {
+            backgroundColor: alpha(PALETTE.primary.main, 0.16),
+            boxShadow: 'inset 3px 0 0 currentColor',
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            boxShadow: 'inset 3px 0 0 currentColor',
+            transform: 'translateX(1px)',
+          },
+          '&.Mui-selected': {
+            fontWeight: 700,
+            textDecoration: 'underline',
+            textUnderlineOffset: '4px',
+            boxShadow: 'inset 3px 0 0 currentColor',
+          },
         },
       },
     },
@@ -388,7 +377,16 @@ const theme = createTheme({
           fontSize: '0.875rem',
           height: 32,
           borderWidth: 2,
+          transition:
+            'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease',
           '&:focus-visible': FOCUS_RING,
+          '&:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow: 'inset 0 0 0 1px currentColor',
+          },
+          '&[aria-pressed="true"], &.MuiChip-filled': {
+            boxShadow: 'inset 0 0 0 2px currentColor',
+          },
         },
         label: { fontWeight: 500 },
       },
@@ -401,14 +399,14 @@ const theme = createTheme({
           alignItems: 'center',
         },
         standardError: {
-          backgroundColor: 'rgba(239, 83, 80, 0.1)',
-          color: '#ffcdd2',
-          border: '1px solid #ef5350',
+          backgroundColor: alpha(PALETTE.error.main, 0.12),
+          color: '#ffd6d6',
+          border: `1px solid ${PALETTE.error.main}`,
         },
         standardInfo: {
-          backgroundColor: 'rgba(41, 182, 246, 0.1)',
-          color: '#b3e5fc',
-          border: '1px solid #29b6f6',
+          backgroundColor: alpha(PALETTE.info.main, 0.12),
+          color: '#d9ffff',
+          border: `1px solid ${PALETTE.info.main}`,
         },
       },
     },
@@ -425,7 +423,7 @@ const theme = createTheme({
             fontWeight: 800,
             textDecoration: 'underline',
             textUnderlineOffset: '5px',
-            borderBottomColor: '#42a5f5',
+            borderBottomColor: PALETTE.primary.main,
           },
         },
       },
@@ -435,7 +433,7 @@ const theme = createTheme({
         indicator: {
           height: 4,
           borderRadius: 999,
-          backgroundColor: '#90caf9',
+          backgroundColor: PALETTE.primary.light,
         },
       },
     },

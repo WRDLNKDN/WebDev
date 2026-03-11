@@ -127,6 +127,7 @@ import {
   getFeedReactionCount,
 } from '../../components/post/sharedReactions';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { INTERACTION_COLORS } from '../../theme/themeConstants';
 
 const FEED_LIMIT = 20;
 const FEED_POST_IMAGE_MAX_BYTES = 6 * 1024 * 1024; // 6MB (match chat attachments)
@@ -143,7 +144,16 @@ const AD_IMPRESSION_CAP_PER_SESSION = (() => {
 const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
 const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
-const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.72)';
+const FEED_ACTION_MUTED_COLOR = INTERACTION_COLORS.muted;
+const FEED_COMMENT_ACTION_COLOR = INTERACTION_COLORS.comment;
+const FEED_REPOST_ACTION_COLOR = INTERACTION_COLORS.repost;
+const FEED_SEND_ACTION_COLOR = INTERACTION_COLORS.send;
+const FEED_SAVE_ACTION_COLOR = INTERACTION_COLORS.save;
+const FEED_ACTION_SELECTED_TEXT_SX = {
+  fontWeight: 700,
+  textDecoration: 'underline',
+  textUnderlineOffset: '4px',
+} as const;
 
 type FeedCachePayload = {
   items: FeedItem[];
@@ -1173,24 +1183,23 @@ const FeedCard = ({
         {/* Post action bar: React | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
         <Box
           sx={{
-            mt: 0.75,
+            mt: 2.15,
             width: '100%',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'nowrap',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: { xs: 0.25, sm: 0.5 },
+            justifyContent: 'flex-start',
+            columnGap: 2.5,
+            rowGap: 0.5,
             borderTop: 1,
             borderColor: 'divider',
-            pt: { xs: 1.1, sm: 1.25 },
-            pb: 0.35,
+            pt: 1,
+            pb: 0.75,
             '& > *': {
               minHeight: { xs: 40, sm: 36 },
               display: 'flex',
               alignItems: 'center',
-              flex: '1 1 0',
-              minWidth: 0,
             },
           }}
         >
@@ -1209,31 +1218,44 @@ const FeedCard = ({
                 item.viewer_reaction ?? undefined,
               )
             }
-            sx={{ width: '100%' }}
+            sx={{}}
           />
           <Button
             size="small"
             onClick={() => actions.onCommentToggle(item.id)}
             sx={{
               textTransform: 'none',
-              color: commentsExpanded ? '#60A5FA' : FEED_ACTION_MUTED_COLOR,
+              color: commentsExpanded
+                ? FEED_COMMENT_ACTION_COLOR
+                : FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
-              width: '100%',
               minHeight: 0,
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 0.75, sm: 0.5 },
-              px: 1,
+              flexDirection: { xs: 'row', sm: 'row' },
+              gap: 0.625,
+              pt: 1,
+              pb: 0.75,
+              px: 0,
               borderRadius: 2,
-              justifyContent: 'center',
               transition:
                 'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+              '& .MuiSvgIcon-root, & .MuiTypography-root': {
+                color: 'inherit',
+              },
+              '& .MuiTypography-root': {
+                fontWeight: 600,
+              },
+              ...(commentsExpanded
+                ? {
+                    '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
+                  }
+                : null),
               '&:hover': {
-                bgcolor: 'rgba(96, 165, 250, 0.08)',
-                color: '#60A5FA',
-                transform: 'scale(1.04)',
+                bgcolor: 'transparent',
+                color: FEED_COMMENT_ACTION_COLOR,
+                transform: 'scale(1.08)',
               },
             }}
+            aria-pressed={commentsExpanded}
           >
             <ChatBubbleOutlineOutlinedIcon
               sx={{ fontSize: { xs: 22, sm: 20 } }}
@@ -1253,20 +1275,25 @@ const FeedCard = ({
               textTransform: 'none',
               color: FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
-              width: '100%',
               minHeight: 0,
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 0.75, sm: 0.5 },
-              px: 1,
+              flexDirection: { xs: 'row', sm: 'row' },
+              gap: 0.625,
+              pt: 1,
+              pb: 0.75,
+              px: 0,
               borderRadius: 2,
-              justifyContent: 'center',
               transition:
                 'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+              '& .MuiSvgIcon-root, & .MuiTypography-root': {
+                color: 'inherit',
+              },
+              '& .MuiTypography-root': {
+                fontWeight: 600,
+              },
               '&:hover': {
-                bgcolor: 'rgba(167, 139, 250, 0.08)',
-                color: '#A78BFA',
-                transform: 'scale(1.04)',
+                bgcolor: 'transparent',
+                color: FEED_REPOST_ACTION_COLOR,
+                transform: 'scale(1.08)',
               },
             }}
           >
@@ -1286,20 +1313,25 @@ const FeedCard = ({
               textTransform: 'none',
               color: FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
-              width: '100%',
               minHeight: 0,
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 0.75, sm: 0.5 },
-              px: 1,
+              flexDirection: { xs: 'row', sm: 'row' },
+              gap: 0.625,
+              pt: 1,
+              pb: 0.75,
+              px: 0,
               borderRadius: 2,
-              justifyContent: 'center',
               transition:
                 'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+              '& .MuiSvgIcon-root, & .MuiTypography-root': {
+                color: 'inherit',
+              },
+              '& .MuiTypography-root': {
+                fontWeight: 600,
+              },
               '&:hover': {
-                bgcolor: 'rgba(56, 189, 248, 0.08)',
-                color: '#38BDF8',
-                transform: 'scale(1.04)',
+                bgcolor: 'transparent',
+                color: FEED_SEND_ACTION_COLOR,
+                transform: 'scale(1.08)',
               },
             }}
           >
@@ -1321,27 +1353,38 @@ const FeedCard = ({
             }
             sx={{
               textTransform: 'none',
-              color: item.viewer_saved ? '#FBBF24' : FEED_ACTION_MUTED_COLOR,
+              color: item.viewer_saved
+                ? FEED_SAVE_ACTION_COLOR
+                : FEED_ACTION_MUTED_COLOR,
               minWidth: 0,
-              width: '100%',
               minHeight: 0,
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 0.25, sm: 0.5 },
-              py: { xs: 0.75, sm: 0.5 },
-              px: 1,
+              flexDirection: { xs: 'row', sm: 'row' },
+              gap: 0.625,
+              pt: 1,
+              pb: 0.75,
+              px: 0,
               borderRadius: 2,
-              justifyContent: 'center',
               transition:
                 'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+              '& .MuiSvgIcon-root, & .MuiTypography-root': {
+                color: 'inherit',
+              },
+              '& .MuiTypography-root': {
+                fontWeight: 600,
+              },
+              ...(item.viewer_saved
+                ? {
+                    '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
+                  }
+                : null),
               '&:hover': {
-                bgcolor: item.viewer_saved
-                  ? 'rgba(251, 191, 36, 0.12)'
-                  : 'rgba(251, 191, 36, 0.08)',
-                color: '#FBBF24',
-                transform: 'scale(1.04)',
+                bgcolor: 'transparent',
+                color: FEED_SAVE_ACTION_COLOR,
+                transform: 'scale(1.08)',
               },
             }}
             aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
+            aria-pressed={item.viewer_saved}
           >
             {item.viewer_saved ? (
               <BookmarkIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />

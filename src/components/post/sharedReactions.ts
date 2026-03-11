@@ -3,6 +3,7 @@ import type {
   FeedItem,
   ReactionType,
 } from '../../lib/api/feedsApi';
+import { REACTION_COLORS } from '../../constants/reactionColors';
 
 export type SharedReactionOption<T extends string = string> = {
   value: T;
@@ -26,12 +27,32 @@ export type FeedReactionSummaryItem = SharedReactionOption<ReactionType> & {
 };
 
 export const REACTION_OPTIONS: SharedReactionOption<ReactionType>[] = [
-  { value: 'like', label: 'Thumbs Up', emoji: '👍', color: '#22C55E' },
-  { value: 'love', label: 'Heart', emoji: '❤️', color: '#F87171' },
-  { value: 'laughing', label: 'Laugh', emoji: '😂', color: '#FBBF24' },
-  { value: 'inspiration', label: 'Surprised', emoji: '😮', color: '#60A5FA' },
-  { value: 'rage', label: 'Sad', emoji: '😢', color: '#94A3B8' },
-  { value: 'care', label: 'Prayer Hands', emoji: '🙏', color: '#F59E0B' },
+  {
+    value: 'like',
+    label: 'Thumbs Up',
+    emoji: '👍',
+    color: REACTION_COLORS.like,
+  },
+  { value: 'love', label: 'Heart', emoji: '❤️', color: REACTION_COLORS.love },
+  {
+    value: 'laughing',
+    label: 'Laugh',
+    emoji: '😂',
+    color: REACTION_COLORS.laughing,
+  },
+  {
+    value: 'inspiration',
+    label: 'Surprised',
+    emoji: '😮',
+    color: REACTION_COLORS.inspiration,
+  },
+  { value: 'rage', label: 'Sad', emoji: '😢', color: REACTION_COLORS.rage },
+  {
+    value: 'care',
+    label: 'Prayer Hands',
+    emoji: '🙏',
+    color: REACTION_COLORS.care,
+  },
 ];
 
 export const CHAT_REACTION_OPTIONS: SharedReactionOption<string>[] =

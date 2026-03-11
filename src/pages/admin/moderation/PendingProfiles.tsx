@@ -8,8 +8,8 @@ export const PendingProfiles = () => {
           Pending Profiles
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          This page shows all pending profiles awaiting review. Functionality
-          coming soon.
+          Manual profile approval is no longer part of account creation.
+          Functionality coming soon.
         </Typography>
       </Container>
     </Box>

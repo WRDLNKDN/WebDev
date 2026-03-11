@@ -166,7 +166,10 @@ export const ChatPage = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        maxHeight: '100%',
         minWidth: 0,
         width: '100%',
         display: 'flex',
@@ -183,6 +186,7 @@ export const ChatPage = () => {
           display: 'flex',
           flex: 1,
           minHeight: 0,
+          height: '100%',
           minWidth: 0,
           maxWidth: '100%',
           ...GLASS_CARD,
@@ -217,9 +221,11 @@ export const ChatPage = () => {
             flex: 1,
             display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
             flexDirection: 'column',
+            minHeight: 0,
             minWidth: 0,
             maxWidth: '100%',
             overflowX: 'hidden',
+            overflowY: 'hidden',
           }}
         >
           {roomId ? (

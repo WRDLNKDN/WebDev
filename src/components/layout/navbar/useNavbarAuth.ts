@@ -235,7 +235,7 @@ export const useNavbarAuth = ({
   useEffect(() => {
     if (path !== '/feed') return;
     if (!consumeJoinCompletionFlash()) return;
-    setSnack('Join complete. Welcome to the Feed.');
+    setSnack('Your account is ready. Welcome to the Feed.');
   }, [path]);
 
   return {

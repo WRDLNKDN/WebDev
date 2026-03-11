@@ -1,7 +1,9 @@
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DoNotDisturbAltIcon from '@mui/icons-material/DoNotDisturbAlt';
 import {
   Alert,
   Box,
@@ -153,8 +155,10 @@ const NotificationRowItem = ({
           <Button
             size="small"
             variant="contained"
+            startIcon={<CheckCircleOutlineIcon />}
             onClick={() => handleConnectionDecision(row, 'accept')}
             disabled={actingRequestId === row.id}
+            aria-label="Approve connection request"
             sx={{
               width: { xs: '100%', sm: 'auto' },
               bgcolor: 'success.main',
@@ -171,8 +175,10 @@ const NotificationRowItem = ({
           <Button
             size="small"
             variant="contained"
+            startIcon={<DoNotDisturbAltIcon />}
             onClick={() => handleConnectionDecision(row, 'decline')}
             disabled={actingRequestId === row.id}
+            aria-label="Decline connection request"
             sx={{
               width: { xs: '100%', sm: 'auto' },
               bgcolor: 'error.main',

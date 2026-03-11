@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -15,6 +16,7 @@ import {
   INDUSTRY_PRIMARY_OPTIONS,
 } from '../../constants/industryTaxonomy';
 import { filterSelectMenuProps } from '../../theme/filterControls';
+import { INTERACTION_COLORS } from '../../theme/themeConstants';
 
 const CONNECTION_LABEL: Record<string, string> = {
   not_connected: 'Not connected',
@@ -24,6 +26,13 @@ const CONNECTION_LABEL: Record<string, string> = {
 };
 
 const FILTER_CONTROL_HEIGHT = 40;
+const ACTIVE_FILTER_SX = {
+  color: '#fff',
+  fontWeight: 700,
+  textDecoration: 'underline',
+  textUnderlineOffset: '4px',
+  boxShadow: `inset 0 0 0 1px ${INTERACTION_COLORS.comment}`,
+} as const;
 
 const filterChipSx = {
   height: FILTER_CONTROL_HEIGHT,
@@ -40,6 +49,7 @@ const filterChipSx = {
     bgcolor: 'rgba(255,255,255,0.1)',
     borderColor: 'rgba(255,255,255,0.3)',
   },
+  '&[aria-pressed="true"]': ACTIVE_FILTER_SX,
   '& .MuiButton-endIcon': { ml: 0.5 },
 } as const;
 
@@ -55,7 +65,7 @@ const chipSelectSx = {
     borderColor: 'rgba(255,255,255,0.3)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#3b82f6',
+    borderColor: INTERACTION_COLORS.comment,
     borderWidth: '1.5px',
   },
   bgcolor: 'rgba(255,255,255,0.05)',
@@ -72,6 +82,7 @@ const chipSelectSx = {
     boxSizing: 'border-box',
   },
   '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.5)', right: 6 },
+  '&[aria-pressed="true"]': ACTIVE_FILTER_SX,
 } as const;
 
 type Props = {
@@ -149,10 +160,11 @@ export const DirectoryFilterChips = ({
               color: primaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
               minWidth: 110,
             },
+            ...(primaryIndustry ? ACTIVE_FILTER_SX : null),
             ...(primaryIndustry
               ? {
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3b82f6 !important',
+                    borderColor: `${INTERACTION_COLORS.comment} !important`,
                   },
                 }
               : {}),
@@ -185,10 +197,11 @@ export const DirectoryFilterChips = ({
                 color: secondaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
                 minWidth: 100,
               },
+              ...(secondaryIndustry ? ACTIVE_FILTER_SX : null),
               ...(secondaryIndustry
                 ? {
                     '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#3b82f6 !important',
+                      borderColor: `${INTERACTION_COLORS.comment} !important`,
                     },
                   }
                 : {}),
@@ -209,7 +222,11 @@ export const DirectoryFilterChips = ({
             variant="outlined"
             startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
             onClick={() => setShowSecondaryIndustryFilter(true)}
-            sx={filterChipSx}
+            aria-pressed={showSecondaryIndustryFilter}
+            sx={{
+              ...filterChipSx,
+              ...(showSecondaryIndustryFilter ? ACTIVE_FILTER_SX : null),
+            }}
           >
             Add secondary filter
           </Button>
@@ -231,10 +248,11 @@ export const DirectoryFilterChips = ({
               color: connectionStatus ? '#fff' : 'rgba(255,255,255,0.7)',
               minWidth: 95,
             },
+            ...(connectionStatus ? ACTIVE_FILTER_SX : null),
             ...(connectionStatus
               ? {
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3b82f6 !important',
+                    borderColor: `${INTERACTION_COLORS.comment} !important`,
                   },
                 }
               : {}),
@@ -278,12 +296,14 @@ export const DirectoryFilterChips = ({
               color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
               '& fieldset': {
                 borderColor: locationInput
-                  ? '#3b82f6'
+                  ? INTERACTION_COLORS.comment
                   : 'rgba(255,255,255,0.18)',
                 borderWidth: '1.5px',
               },
               '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-              '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+              '&.Mui-focused fieldset': {
+                borderColor: INTERACTION_COLORS.comment,
+              },
               '& input': {
                 py: '9px',
                 px: 1.5,
@@ -291,6 +311,12 @@ export const DirectoryFilterChips = ({
                 maxWidth: { xs: '100%', sm: 180 },
                 fontWeight: locationInput ? 600 : 500,
                 boxSizing: 'border-box',
+                ...(locationInput
+                  ? {
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '4px',
+                    }
+                  : null),
               },
               '& input::placeholder': {
                 color: 'rgba(255,255,255,0.5)',
@@ -314,13 +340,18 @@ export const DirectoryFilterChips = ({
         {q.trim() ? (
           <Chip
             size="small"
+            icon={<FilterAltOutlinedIcon fontSize="small" />}
             label={`"${q.length > 20 ? `${q.slice(0, 20)}…` : q}"`}
             onDelete={() => updateUrl({ q: '' })}
             sx={{
-              bgcolor: 'rgba(59,130,246,0.15)',
-              border: '1px solid rgba(59,130,246,0.35)',
-              color: '#93c5fd',
+              bgcolor: 'rgba(0,163,224,0.15)',
+              border: `1px solid ${INTERACTION_COLORS.comment}`,
+              color: '#d9f7ff',
               height: 28,
+              fontWeight: 700,
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
+              '& .MuiChip-icon': { color: 'inherit' },
             }}
           />
         ) : null}
@@ -337,6 +368,7 @@ export const DirectoryFilterChips = ({
               border: '1px solid rgba(255,255,255,0.15)',
               color: 'rgba(255,255,255,0.75)',
               height: 28,
+              '& .MuiChip-deleteIcon': { color: 'inherit' },
             }}
           />
         ))}

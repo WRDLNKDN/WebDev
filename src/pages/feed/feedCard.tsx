@@ -1,3 +1,12 @@
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import CodeIcon from '@mui/icons-material/Code';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import LinkIcon from '@mui/icons-material/Link';
+import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
+import ThumbDownOffAltOutlinedIcon from '@mui/icons-material/ThumbDownOffAltOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useMemo, useState } from 'react';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import { PostCard } from '../../components/post';
@@ -115,6 +124,11 @@ export const FeedCard = ({
     return ordered;
   }, [bodyGifUrls, postAttachmentImages]);
   const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
+  const canonicalPostUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/feed?post=${item.id}`
+      : `/feed?post=${item.id}`;
+  const embedSnippet = `<blockquote data-weirdlkn-post="${item.id}">${bodyTextWithoutGifUrls || body || displayName}</blockquote>`;
   const likeCount = item.like_count ?? 0;
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
@@ -183,32 +197,84 @@ export const FeedCard = ({
               />
             ) : undefined,
         }}
-        actionMenu={
-          isOwner
-            ? {
-                visible: !isEditingPost,
-                ariaLabel: 'Post options',
-                items: [
-                  ...(item.kind === 'post'
-                    ? [
-                        {
-                          label: 'Edit',
-                          onClick: () => {
-                            setEditPostDraft(body);
-                            setIsEditingPost(true);
-                          },
-                        },
-                      ]
-                    : []),
+        actionMenu={{
+          visible: !isEditingPost,
+          ariaLabel: 'Post options',
+          items: [
+            {
+              label: item.viewer_saved ? 'Unsave' : 'Save',
+              icon: item.viewer_saved ? (
+                <BookmarkIcon fontSize="small" />
+              ) : (
+                <BookmarkBorderIcon fontSize="small" />
+              ),
+              onClick: () =>
+                item.viewer_saved
+                  ? actions.onUnsave(item.id)
+                  : actions.onSave(item.id),
+            },
+            {
+              label: 'Copy link to post',
+              icon: <LinkIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(canonicalPostUrl),
+            },
+            {
+              label: 'Embed this post',
+              icon: <CodeIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(embedSnippet),
+            },
+            ...(!isOwner && handle
+              ? [
+                  {
+                    label: `Unfollow ${displayName}`,
+                    icon: <PersonOffOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo(
+                        `Unfollow for @${handle} is coming soon.`,
+                      ),
+                  },
+                ]
+              : []),
+            ...(!isOwner
+              ? [
+                  {
+                    label: 'Not interested',
+                    icon: <ThumbDownOffAltOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('We will show fewer posts like this.'),
+                  },
+                  {
+                    label: 'Report post',
+                    icon: <FlagOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('Report flow is coming soon.'),
+                  },
+                ]
+              : []),
+            ...(isOwner && item.kind === 'post'
+              ? [
+                  {
+                    label: 'Edit',
+                    icon: <EditOutlinedIcon fontSize="small" />,
+                    onClick: () => {
+                      setEditPostDraft(body);
+                      setIsEditingPost(true);
+                    },
+                  },
+                ]
+              : []),
+            ...(isOwner
+              ? [
                   {
                     label: 'Delete',
+                    icon: <DeleteOutlineIcon fontSize="small" />,
                     onClick: () => actions.onDelete(item.id),
                     danger: true,
                   },
-                ],
-              }
-            : null
-        }
+                ]
+              : []),
+          ],
+        }}
         sx={{ mb: 2 }}
       >
         <FeedCardPostContent

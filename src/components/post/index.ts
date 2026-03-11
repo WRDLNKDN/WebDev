@@ -6,3 +6,4 @@ export { PostCard } from './PostCard';
 export type { PostCardProps } from './PostCard';
 export { FeedReactionBar, REACTION_OPTIONS } from './FeedReactionBar';
 export type { FeedReactionBarProps } from './FeedReactionBar';
+export { ReactPickerButton } from './ReactPickerButton';

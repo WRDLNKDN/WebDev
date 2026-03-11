@@ -168,12 +168,15 @@ export const useChatActions = ({
       } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const existing = messages
-        .find((message) => message.id === messageId)
-        ?.reactions?.find(
-          (reaction) =>
-            reaction.user_id === session.user.id && reaction.emoji === emoji,
-        );
+      const existingReactions =
+        messages
+          .find((message) => message.id === messageId)
+          ?.reactions?.filter(
+            (reaction) => reaction.user_id === session.user.id,
+          ) ?? [];
+      const existing = existingReactions.find(
+        (reaction) => reaction.emoji === emoji,
+      );
 
       if (existing) {
         await supabase.from('chat_message_reactions').delete().match({
@@ -182,6 +185,13 @@ export const useChatActions = ({
           emoji,
         });
       } else {
+        if (existingReactions.length > 0) {
+          await supabase
+            .from('chat_message_reactions')
+            .delete()
+            .eq('message_id', messageId)
+            .eq('user_id', session.user.id);
+        }
         await supabase.from('chat_message_reactions').insert({
           message_id: messageId,
           user_id: session.user.id,

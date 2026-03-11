@@ -26,7 +26,7 @@ const FEED_ITEM = {
 };
 
 test.describe('Feed reaction picker', () => {
-  test('opens on hover and uses the correct Care/Happy colors', async ({
+  test('uses the shared emoji tray, stays open across hover, and shows the post menu', async ({
     page,
   }) => {
     const pageErrors: string[] = [];
@@ -97,7 +97,20 @@ test.describe('Feed reaction picker', () => {
 
     const reactButton = page.getByRole('button', { name: 'React' }).first();
     await expect(reactButton).toBeVisible();
+    await expect(reactButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
     await reactButton.scrollIntoViewIfNeeded();
+
+    const postOptionsButton = page.getByRole('button', {
+      name: 'Post options',
+    });
+    await expect(postOptionsButton).toBeVisible();
+    await postOptionsButton.click();
+    await expect(page.getByRole('menuitem', { name: 'Save' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', { name: 'Copy link' }),
+    ).toBeVisible();
+    await page.mouse.click(0, 0);
+
     await reactButton.hover({ force: true });
     let usedFocusFallback = false;
     if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
@@ -105,20 +118,25 @@ test.describe('Feed reaction picker', () => {
       usedFocusFallback = true;
     }
 
-    const careButton = page.getByRole('button', { name: 'Care' });
-    const happyButton = page.getByRole('button', { name: 'Happy' });
+    const laughButton = page.getByRole('button', { name: 'Laugh' });
+    const surprisedButton = page.getByRole('button', { name: 'Surprised' });
+    const prayerButton = page.getByRole('button', { name: 'Prayer Hands' });
 
-    await expect(careButton).toBeVisible({ timeout: 1000 });
-    await expect(happyButton).toBeVisible();
+    await expect(laughButton).toBeVisible({ timeout: 1000 });
+    await expect(surprisedButton).toBeVisible();
+    await expect(prayerButton).toBeVisible();
 
-    await expect(careButton).toHaveAttribute('data-reaction-color', '#9c27b0');
-    await expect(happyButton).toHaveAttribute('data-reaction-color', '#66bb6a');
+    await laughButton.hover({ force: true });
+    await expect(laughButton).toBeVisible();
+    await expect(laughButton).toContainText('😂');
+    await expect(surprisedButton).toContainText('😮');
+    await expect(prayerButton).toContainText('🙏');
 
     if (usedFocusFallback) {
       await page.mouse.click(0, 0);
     } else {
       await page.mouse.move(0, 0);
     }
-    await expect(careButton).toBeHidden({ timeout: 1500 });
+    await expect(laughButton).toBeHidden({ timeout: 1500 });
   });
 });

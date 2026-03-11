@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { REACTION_OPTIONS } from '../../components/post';
+import { getFeedReactionCount } from '../../components/post/sharedReactions';
 import type { FeedComment } from '../../lib/api/feedsApi';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import {
@@ -168,21 +169,9 @@ export const FeedCardCommentsList = ({
                   justifyContent: 'flex-start',
                 }}
               >
-                {REACTION_OPTIONS.map(({ type, Icon, IconOutlined, color }) => {
+                {REACTION_OPTIONS.map(({ type, emoji, color }) => {
                   const active = c.viewer_reaction === type;
-                  const count =
-                    type === 'like'
-                      ? (c.like_count ?? 0)
-                      : type === 'love'
-                        ? (c.love_count ?? 0)
-                        : type === 'inspiration'
-                          ? (c.inspiration_count ?? 0)
-                          : type === 'care'
-                            ? (c.care_count ?? 0)
-                            : type === 'laughing'
-                              ? (c.laughing_count ?? 0)
-                              : (c.rage_count ?? 0);
-                  const CurrentIcon = active ? Icon : IconOutlined;
+                  const count = getFeedReactionCount(c, type);
                   return (
                     <Button
                       key={`${c.id}-${type}`}
@@ -200,17 +189,11 @@ export const FeedCardCommentsList = ({
                         minWidth: 0,
                         px: { xs: 0.75, sm: 0.25 },
                         minHeight: { xs: 36, sm: 30 },
+                        gap: 0.4,
                         color: active ? color : 'text.secondary',
                       }}
-                      startIcon={
-                        <CurrentIcon
-                          sx={{
-                            fontSize: 16,
-                            color: active ? color : undefined,
-                          }}
-                        />
-                      }
                     >
+                      <span aria-hidden="true">{emoji}</span>
                       {count > 0 ? count : ''}
                     </Button>
                   );

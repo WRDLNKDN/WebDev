@@ -2,8 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+const API_URL = 'http://127.0.0.1:3001/api/health';
 const isCI = process.env.CI === 'true';
-const LOCAL_WORKERS = 6;
+const LOCAL_WORKERS = 4;
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '2');
 
 export default defineConfig({
@@ -34,12 +35,20 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
 
-  webServer: {
-    command: isCI ? 'npm run e2e:serve:ci' : 'npm run e2e:serve',
-    url: BASE_URL,
-    reuseExistingServer: !isCI,
-    timeout: 180_000,
-  },
+  webServer: [
+    {
+      command: 'npm run e2e:serve:backend',
+      url: API_URL,
+      reuseExistingServer: !isCI,
+      timeout: 180_000,
+    },
+    {
+      command: 'npm run e2e:serve:frontend',
+      url: BASE_URL,
+      reuseExistingServer: !isCI,
+      timeout: 180_000,
+    },
+  ],
 
   projects: [
     {
@@ -53,6 +62,16 @@ export default defineConfig({
         actionTimeout: 20_000,
         navigationTimeout: 60_000,
         expect: { timeout: 20_000 },
+      },
+      timeout: 90_000,
+    },
+    {
+      name: 'msedge',
+      use: {
+        ...devices['Desktop Edge'],
+        channel: 'msedge',
+        actionTimeout: 20_000,
+        navigationTimeout: 60_000,
       },
       timeout: 90_000,
     },

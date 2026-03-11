@@ -31,6 +31,8 @@
     "test:e2e:ui": "playwright test -c config/playwright/playwright.config.ts --ui",
     "e2e:serve": "concurrently -k -n VITE,API \"vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort\" \"tsx backend/server.ts\"",
     "e2e:serve:ci": "vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort",
+    "e2e:serve:frontend": "vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort",
+    "e2e:serve:backend": "tsx backend/server.ts",
     "--- DATABASE (Physical Layer) ---": "",
     "supabase:start": "npx supabase@latest start",
     "supabase:stop": "npx supabase@latest stop",

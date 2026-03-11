@@ -58,6 +58,20 @@ export function getProjectCategorySelection(
   };
 }
 
+export function getPrimaryProjectCategory(
+  categories: string[] | null | undefined,
+): string | null {
+  const [primaryCategory] = normalizeProjectCategories(categories, 1);
+  return primaryCategory ?? null;
+}
+
+export function getProjectDisplayCategories(
+  categories: string[] | null | undefined,
+): string[] {
+  const primaryCategory = getPrimaryProjectCategory(categories);
+  return primaryCategory ? [primaryCategory] : [];
+}
+
 export function parseProjectCategories(
   input: string,
   maxCategories: number = MAX_PROJECT_CATEGORIES,

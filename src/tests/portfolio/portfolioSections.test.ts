@@ -24,7 +24,7 @@ const makeProject = (
 describe('buildPortfolioCategorySections', () => {
   it('groups projects into category sections and keeps project order', () => {
     const projects = [
-      makeProject('p1', ['Case Study', 'DevOps']),
+      makeProject('p1', ['Case Study']),
       makeProject('p2', ['DevOps']),
       makeProject('p3', ['UI/UX']),
     ];
@@ -36,22 +36,28 @@ describe('buildPortfolioCategorySections', () => {
       'DevOps',
       'UI/UX',
     ]);
-    expect(sections[1]?.projects.map((p) => p.id)).toEqual(['p1', 'p2']);
+    expect(sections[1]?.projects.map((p) => p.id)).toEqual(['p2']);
   });
 
   it('orders sections by first artifact appearance', () => {
     const sections = buildPortfolioCategorySections([
       makeProject('p1', ['Data']),
-      makeProject('p2', ['Case Study', 'DevOps']),
+      makeProject('p2', ['Case Study']),
       makeProject('p3', ['Case Study']),
     ]);
 
-    expect(sections.map((s) => s.category)).toEqual([
-      'Data',
-      'Case Study',
-      'DevOps',
-    ]);
+    expect(sections.map((s) => s.category)).toEqual(['Data', 'Case Study']);
     expect(sections[1]?.projects.map((p) => p.id)).toEqual(['p2', 'p3']);
+  });
+
+  it('falls back to the first normalized legacy category only', () => {
+    const sections = buildPortfolioCategorySections([
+      makeProject('p1', ['  Case Study ', 'DevOps', 'UI/UX']),
+      makeProject('p2', ['DevOps']),
+    ]);
+
+    expect(sections.map((s) => s.category)).toEqual(['Case Study', 'DevOps']);
+    expect(sections[0]?.projects.map((p) => p.id)).toEqual(['p1']);
   });
 
   it('creates an Uncategorized section for projects without categories', () => {

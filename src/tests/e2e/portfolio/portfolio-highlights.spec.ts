@@ -185,6 +185,17 @@ test.describe('Portfolio highlights carousel', () => {
       },
     );
     await expect(
+      page
+        .getByTestId('portfolio-highlight-slide-mobile-highlight')
+        .getByText('Case Study'),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByTestId('portfolio-highlight-slide-mobile-highlight')
+        .locator('.MuiChip-label')
+        .filter({ hasText: 'Mobile' }),
+    ).toHaveCount(0);
+    await expect(
       page.getByTestId('portfolio-section-mobile').getByRole('button', {
         name: /mobile grid card/i,
       }),

@@ -5,11 +5,17 @@ import {
   CircularProgress,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
+import {
+  FORM_OUTLINED_FIELD_SX,
+  FORM_SECTION_HEADING_SX,
+  FORM_SECTION_PANEL_SX,
+} from '../../lib/ui/formSurface';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { POLICY_VERSION } from '../../types/join';
@@ -109,6 +115,18 @@ const ProfileStep = () => {
         sx={{ width: '100%', maxWidth: 520, alignItems: 'center' }}
       >
         <ProfileStepHero />
+        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
+          <Typography
+            variant="caption"
+            sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
+          >
+            Profile Basics
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Set the name members will see across your profile, directory, and
+            feed.
+          </Typography>
+        </Box>
 
         {/* Error */}
         {combinedError && (
@@ -128,50 +146,38 @@ const ProfileStep = () => {
         )}
 
         {/* Name input */}
-        <TextField
-          label="Your display name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          fullWidth
-          placeholder="How should we call you?"
-          required
-          error={!displayName.trim() && displayName.length > 0}
-          helperText={
-            !displayName.trim() && displayName.length > 0
-              ? 'Name is required'
-              : 'Visible across the community'
-          }
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              color: '#fff',
-              bgcolor: 'rgba(255,255,255,0.04)',
-              borderRadius: 1.5,
-              '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-              '&.Mui-focused fieldset': { borderColor: '#38bdf8' },
-            },
-            '& .MuiInputLabel-root': {
-              color: 'rgba(255,255,255,0.6)',
-              '&.Mui-focused': { color: '#38bdf8' },
-            },
-            '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.4)' },
-            '& .MuiInputBase-input::placeholder': {
-              color: 'rgba(255,255,255,0.25)',
-              opacity: 1,
-            },
-          }}
-        />
+        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
+          <TextField
+            label="Your display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            fullWidth
+            placeholder="How should we call you?"
+            required
+            error={!displayName.trim() && displayName.length > 0}
+            helperText={
+              !displayName.trim() && displayName.length > 0
+                ? 'Name is required'
+                : 'Visible across the community'
+            }
+            sx={FORM_OUTLINED_FIELD_SX}
+          />
+        </Box>
 
-        <ProfileStepPreviewCard previewName={previewName} />
+        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
+          <ProfileStepPreviewCard previewName={previewName} />
+        </Box>
 
-        <ProfileStepMarketingOptIn
-          checked={marketingOptIn}
-          disabled={submitting}
-          onChange={(checked) => {
-            setMarketingOptIn(checked);
-            setLocalError(null);
-          }}
-        />
+        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
+          <ProfileStepMarketingOptIn
+            checked={marketingOptIn}
+            disabled={submitting}
+            onChange={(checked) => {
+              setMarketingOptIn(checked);
+              setLocalError(null);
+            }}
+          />
+        </Box>
 
         {/* Back (left) + Launch (right) */}
         <Box

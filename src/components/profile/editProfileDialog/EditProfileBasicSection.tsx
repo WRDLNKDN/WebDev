@@ -10,6 +10,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
 import type { DashboardProfile } from '../../../types/profile';
 import { AvatarReplacementBox } from '../../avatar/AvatarReplacementBox';
 import { AVATAR_GRADIENT, INPUT_BG, INPUT_STYLES } from './constants';
@@ -56,6 +57,19 @@ export const EditProfileBasicSection = ({
   onPresetSelect,
 }: Props) => (
   <>
+    <Box>
+      <Typography
+        variant="caption"
+        sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
+      >
+        Identity
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Control how your name, handle, avatar, and pronouns appear across the
+        platform.
+      </Typography>
+    </Box>
+
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
       <Box sx={{ position: 'relative' }}>
         <Avatar
@@ -114,10 +128,9 @@ export const EditProfileBasicSection = ({
       <Typography
         variant="caption"
         sx={{
-          color: 'rgba(255,255,255,0.6)',
+          ...FORM_SECTION_HEADING_SX,
           display: 'block',
           mb: 0.5,
-          fontWeight: 500,
         }}
       >
         Handle
@@ -138,6 +151,12 @@ export const EditProfileBasicSection = ({
     </Box>
 
     <Box>
+      <Typography
+        variant="caption"
+        sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.5 }}
+      >
+        Pronouns
+      </Typography>
       <FormControl fullWidth variant="filled" disabled={busy} sx={INPUT_STYLES}>
         <Select
           value={formData.pronouns || ''}

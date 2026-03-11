@@ -186,7 +186,9 @@ test.describe('Add Project dialog UX', () => {
     await expect(customCategoryField).toBeVisible();
     await customCategoryField.fill('Community Tooling');
     await expect(
-      dialog.getByText('17/40 characters', { exact: true }),
+      dialog.getByText('17/40 characters. Saved exactly as entered.', {
+        exact: true,
+      }),
     ).toBeVisible();
   });
 

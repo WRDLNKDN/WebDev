@@ -1,3 +1,8 @@
+import {
+  FORM_DIALOG_SX,
+  FORM_SECTION_PANEL_SX,
+} from '../../../lib/ui/formSurface';
+
 // Brand colors matching the profile editor visual system.
 export const GRADIENT_START = '#00C4CC';
 export const GRADIENT_END = '#FF22C9';
@@ -8,17 +13,12 @@ export const INPUT_BG = '#28282d';
 export const BORDER_COLOR = 'rgba(255,255,255,0.08)';
 
 export const GLASS_MODAL = {
-  bgcolor: DARK_BG,
-  backdropFilter: 'blur(20px)',
-  border: `1px solid ${BORDER_COLOR}`,
-  color: 'white',
-  borderRadius: 3,
-  position: 'relative',
-  overflow: 'visible',
-  boxShadow: '0 24px 48px rgba(0,0,0,0.9)',
+  ...FORM_DIALOG_SX,
   maxWidth: '540px',
   width: '100%',
 };
+
+export const SECTION_PANEL_SX = FORM_SECTION_PANEL_SX;
 
 export const INPUT_HEIGHT = 32;
 export const INPUT_PADDING = '4px 12px';
@@ -39,7 +39,7 @@ export const INPUT_STYLES = {
     },
     '&.Mui-focused': {
       bgcolor: 'rgba(50, 50, 55, 0.95)',
-      borderColor: PURPLE_ACCENT,
+      borderColor: GRADIENT_START,
     },
     '&:before, &:after': { display: 'none' },
   },

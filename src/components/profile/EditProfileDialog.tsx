@@ -32,6 +32,7 @@ import {
   GLASS_MODAL,
   HANDLE_CHECK_DEBOUNCE_MS,
   PURPLE_ACCENT,
+  SECTION_PANEL_SX,
   safeStr,
 } from './editProfileDialog/constants';
 import { EditProfileDetailsSection } from './editProfileDialog/EditProfileDetailsSection';
@@ -440,68 +441,81 @@ export const EditProfileDialog = ({
             </Box>
           ) : (
             <Stack spacing={2}>
-              <EditProfileBasicSection
-                busy={busy}
-                formData={formData}
-                previewURL={previewURL}
-                checkingHandle={checkingHandle}
-                handleAvailable={handleAvailable}
-                fileInputRef={fileInputRef}
-                currentAvatar={currentAvatar}
-                currentResolvedAvatarUrl={currentResolvedAvatarUrl}
-                uploadedAvatarUrl={uploadedAvatarUrl}
-                profile={profile}
-                selectedPresetUrl={selectedPresetUrl}
-                onFileChange={(e) => void handleFileChange(e)}
-                onPresetSelect={(preset) => void handlePresetSelect(preset)}
-                onHandleChange={(value) => {
-                  const normalized = value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9-]/g, '');
-                  latestHandleRef.current = normalized;
-                  setFormData((prev) => ({ ...prev, handle: normalized }));
-                  if (handleCheckTimeoutRef.current)
-                    clearTimeout(handleCheckTimeoutRef.current);
-                  if (normalized.length < 3) return setHandleAvailable(null);
-                  handleCheckTimeoutRef.current = setTimeout(() => {
-                    handleCheckTimeoutRef.current = null;
-                    void checkHandle(normalized);
-                  }, HANDLE_CHECK_DEBOUNCE_MS);
-                }}
-                onPronounsChange={(value) =>
-                  setFormData((prev) => ({ ...prev, pronouns: value }))
-                }
-              />
+              <Typography variant="body2" color="text.secondary">
+                Keep your public identity, directory discoverability, and
+                profile details aligned across the platform.
+              </Typography>
 
-              <EditProfileIndustrySection
-                busy={busy}
-                formData={formData}
-                onChange={(updater) => setFormData((prev) => updater(prev))}
-              />
+              <Box sx={SECTION_PANEL_SX}>
+                <EditProfileBasicSection
+                  busy={busy}
+                  formData={formData}
+                  previewURL={previewURL}
+                  checkingHandle={checkingHandle}
+                  handleAvailable={handleAvailable}
+                  fileInputRef={fileInputRef}
+                  currentAvatar={currentAvatar}
+                  currentResolvedAvatarUrl={currentResolvedAvatarUrl}
+                  uploadedAvatarUrl={uploadedAvatarUrl}
+                  profile={profile}
+                  selectedPresetUrl={selectedPresetUrl}
+                  onFileChange={(e) => void handleFileChange(e)}
+                  onPresetSelect={(preset) => void handlePresetSelect(preset)}
+                  onHandleChange={(value) => {
+                    const normalized = value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9-]/g, '');
+                    latestHandleRef.current = normalized;
+                    setFormData((prev) => ({ ...prev, handle: normalized }));
+                    if (handleCheckTimeoutRef.current)
+                      clearTimeout(handleCheckTimeoutRef.current);
+                    if (normalized.length < 3) return setHandleAvailable(null);
+                    handleCheckTimeoutRef.current = setTimeout(() => {
+                      handleCheckTimeoutRef.current = null;
+                      void checkHandle(normalized);
+                    }, HANDLE_CHECK_DEBOUNCE_MS);
+                  }}
+                  onPronounsChange={(value) =>
+                    setFormData((prev) => ({ ...prev, pronouns: value }))
+                  }
+                />
+              </Box>
 
-              <EditProfileDetailsSection
-                busy={busy}
-                checkingHandle={checkingHandle}
-                canSave={!busy && handleAvailable !== false && !checkingHandle}
-                onManageLinks={
-                  onManageLinks
-                    ? () => handleRequestClose(onManageLinks)
-                    : undefined
-                }
-                onClose={handleRequestClose}
-                onSave={() => void handleSave()}
-                bioInputRef={bioInputRef}
-                formData={formData}
-                onChange={(field, value) =>
-                  setFormData((prev) => ({ ...prev, [field]: value }))
-                }
-                onVisibilityChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    profile_visibility: value,
-                  }))
-                }
-              />
+              <Box sx={SECTION_PANEL_SX}>
+                <EditProfileIndustrySection
+                  busy={busy}
+                  formData={formData}
+                  onChange={(updater) => setFormData((prev) => updater(prev))}
+                />
+              </Box>
+
+              <Box sx={SECTION_PANEL_SX}>
+                <EditProfileDetailsSection
+                  busy={busy}
+                  checkingHandle={checkingHandle}
+                  canSave={
+                    !busy && handleAvailable !== false && !checkingHandle
+                  }
+                  onManageLinks={
+                    onManageLinks
+                      ? () => handleRequestClose(onManageLinks)
+                      : undefined
+                  }
+                  onClose={handleRequestClose}
+                  onSave={() => void handleSave()}
+                  bioInputRef={bioInputRef}
+                  formData={formData}
+                  onChange={(field, value) =>
+                    setFormData((prev) => ({ ...prev, [field]: value }))
+                  }
+                  onVisibilityChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      profile_visibility: value,
+                    }))
+                  }
+                />
+              </Box>
             </Stack>
           )}
         </DialogContent>

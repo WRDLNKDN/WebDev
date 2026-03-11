@@ -40,6 +40,7 @@ export const ReactPickerButton = <T extends string = string>({
     null,
   );
   const [open, setOpen] = useState(false);
+  const [clickPinned, setClickPinned] = useState(false);
 
   const selected = useMemo(
     () => options.find((option) => option.value === selectedValue) ?? null,
@@ -59,6 +60,7 @@ export const ReactPickerButton = <T extends string = string>({
   };
 
   const scheduleClose = () => {
+    if (clickPinned) return;
     clearHoverCloseTimeout();
     hoverCloseTimeoutRef.current = setTimeout(() => {
       setOpen(false);
@@ -73,7 +75,13 @@ export const ReactPickerButton = <T extends string = string>({
   );
 
   return (
-    <ClickAwayListener onClickAway={() => setOpen(false)}>
+    <ClickAwayListener
+      onClickAway={() => {
+        clearHoverCloseTimeout();
+        setClickPinned(false);
+        setOpen(false);
+      }}
+    >
       <Box
         onMouseEnter={openTray}
         onMouseLeave={scheduleClose}
@@ -90,7 +98,11 @@ export const ReactPickerButton = <T extends string = string>({
           size="small"
           onClick={() => {
             clearHoverCloseTimeout();
-            setOpen((prev) => !prev);
+            setClickPinned((prev) => {
+              const nextPinned = !prev;
+              setOpen(nextPinned);
+              return nextPinned;
+            });
           }}
           data-testid={buttonTestId}
           aria-label={buttonLabel}
@@ -174,6 +186,7 @@ export const ReactPickerButton = <T extends string = string>({
                     data-reaction-color={option.color}
                     onClick={() => {
                       onToggleReaction(option.value);
+                      setClickPinned(false);
                       setOpen(false);
                     }}
                     sx={{

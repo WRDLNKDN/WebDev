@@ -122,7 +122,10 @@ import {
   PostCard,
   REACTION_OPTIONS,
 } from '../../components/post';
-import { getFeedReactionCount } from '../../components/post/sharedReactions';
+import {
+  buildFeedReactionSummary,
+  getFeedReactionCount,
+} from '../../components/post/sharedReactions';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { INTERACTION_COLORS } from '../../theme/themeConstants';
 
@@ -639,20 +642,21 @@ const FeedCard = ({
     careCount +
     laughingCount +
     rageCount;
-  const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
-    ...reaction,
-    count: getFeedReactionCount(
-      {
-        like_count: likeCount,
-        love_count: loveCount,
-        inspiration_count: inspirationCount,
-        care_count: careCount,
-        laughing_count: laughingCount,
-        rage_count: rageCount,
-      },
-      reaction.type,
-    ),
-  })).filter((reaction) => reaction.count > 0);
+  const reactionSummary = buildFeedReactionSummary(
+    {
+      like_count: likeCount,
+      love_count: loveCount,
+      inspiration_count: inspirationCount,
+      care_count: careCount,
+      laughing_count: laughingCount,
+      rage_count: rageCount,
+    },
+    viewerReaction,
+  ).map((reaction) => ({
+    type: reaction.value,
+    emoji: reaction.emoji,
+    color: reaction.color,
+  }));
   const isPostEdited = Boolean(item.edited_at);
   const imageLightboxUrl = imagePreviewState.url;
   const actorAvatar =
@@ -1128,7 +1132,7 @@ const FeedCard = ({
                   alignItems="center"
                   sx={{ '& > *:not(:first-of-type)': { ml: -0.55 } }}
                 >
-                  {reactionSummary.slice(0, 3).map(({ type, emoji, color }) => (
+                  {reactionSummary.map(({ type, emoji, color }) => (
                     <Box
                       key={type}
                       sx={{

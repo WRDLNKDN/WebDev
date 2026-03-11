@@ -196,18 +196,7 @@ export const EditProfileDialog = ({
         formData,
         avatarUrl: uploadedAvatarUrl ?? profile?.avatar ?? null,
       }),
-    [
-      formData.bio,
-      formData.handle,
-      formData.location,
-      formData.niche_field,
-      formData.profile_visibility,
-      formData.pronouns,
-      formData.skills,
-      formData.industries,
-      profile?.avatar,
-      uploadedAvatarUrl,
-    ],
+    [formData, profile?.avatar, uploadedAvatarUrl],
   );
 
   const isDirty = initialSnapshotRef.current !== draftSnapshot;

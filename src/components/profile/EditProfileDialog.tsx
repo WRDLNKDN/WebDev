@@ -1,8 +1,10 @@
 import { Close as CloseIcon } from '@mui/icons-material';
 import {
   Box,
+  Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -13,7 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
@@ -51,6 +53,26 @@ type EditProfileDialogProps = {
   onAvatarChanged?: () => void;
   focusBioOnOpen?: boolean;
 };
+
+function buildProfileDraftSnapshot(params: {
+  formData: EditProfileFormData;
+  avatarUrl: string | null;
+}): string {
+  return JSON.stringify({
+    handle: params.formData.handle.trim(),
+    pronouns: params.formData.pronouns.trim(),
+    bio: params.formData.bio,
+    skills: params.formData.skills,
+    industries: params.formData.industries.map((group) => ({
+      industry: group.industry.trim(),
+      sub_industries: group.sub_industries.map((value) => value.trim()),
+    })),
+    niche_field: params.formData.niche_field.trim(),
+    location: params.formData.location.trim(),
+    profile_visibility: params.formData.profile_visibility,
+    avatar: params.avatarUrl,
+  });
+}
 
 export const EditProfileDialog = ({
   open,
@@ -92,6 +114,9 @@ export const EditProfileDialog = ({
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
     null,
   );
+  const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
+  const initialSnapshotRef = useRef('');
+  const pendingActionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!open || !focusBioOnOpen) return;
@@ -137,7 +162,7 @@ export const EditProfileDialog = ({
             },
           ];
 
-    setFormData({
+    const nextFormData: EditProfileFormData = {
       handle,
       pronouns: safeStr(profile.pronouns),
       bio: safeStr(creds.bio),
@@ -151,13 +176,41 @@ export const EditProfileDialog = ({
       industries,
       niche_field: safeStr(prof.niche_field),
       location: safeStr(prof.location),
-      profile_visibility:
-        prof.profile_visibility === 'connections_only'
-          ? 'connections_only'
-          : 'members_only',
-    });
+      profile_visibility: (prof.profile_visibility === 'connections_only'
+        ? 'connections_only'
+        : 'members_only') as EditProfileFormData['profile_visibility'],
+    };
+    setFormData(nextFormData);
     setUploadedAvatarUrl(null);
+    setUnsavedConfirmOpen(false);
+    pendingActionRef.current = null;
+    initialSnapshotRef.current = buildProfileDraftSnapshot({
+      formData: nextFormData,
+      avatarUrl: profile.avatar ?? null,
+    });
   }, [open, profile]);
+
+  const draftSnapshot = useMemo(
+    () =>
+      buildProfileDraftSnapshot({
+        formData,
+        avatarUrl: uploadedAvatarUrl ?? profile?.avatar ?? null,
+      }),
+    [
+      formData.bio,
+      formData.handle,
+      formData.location,
+      formData.niche_field,
+      formData.profile_visibility,
+      formData.pronouns,
+      formData.skills,
+      formData.industries,
+      profile?.avatar,
+      uploadedAvatarUrl,
+    ],
+  );
+
+  const isDirty = initialSnapshotRef.current !== draftSnapshot;
 
   useEffect(
     () => () => {
@@ -224,7 +277,13 @@ export const EditProfileDialog = ({
       });
       setToastMessage('Profile updated successfully!');
       setShowToast(true);
-      setTimeout(onClose, 1200);
+      initialSnapshotRef.current = draftSnapshot;
+      const pendingAction = pendingActionRef.current;
+      pendingActionRef.current = null;
+      setTimeout(() => {
+        onClose();
+        pendingAction?.();
+      }, 1200);
     } catch (cause) {
       console.error(cause);
       setToastMessage(toMessage(cause));
@@ -302,141 +361,209 @@ export const EditProfileDialog = ({
     }
   };
 
+  const handleRequestClose = (nextAction?: () => void) => {
+    if (busy) return;
+    if (!isDirty) {
+      pendingActionRef.current = null;
+      onClose();
+      nextAction?.();
+      return;
+    }
+    pendingActionRef.current = nextAction ?? null;
+    setUnsavedConfirmOpen(true);
+  };
+
+  const handleDialogClose = (
+    _event: object,
+    _reason: 'backdropClick' | 'escapeKeyDown',
+  ) => {
+    handleRequestClose();
+  };
+
+  const handleDiscardAndClose = () => {
+    setUnsavedConfirmOpen(false);
+    const pendingAction = pendingActionRef.current;
+    pendingActionRef.current = null;
+    onClose();
+    pendingAction?.();
+  };
+
+  const handleConfirmSave = async () => {
+    setUnsavedConfirmOpen(false);
+    await handleSave();
+  };
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullScreen={fullScreen}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{ sx: GLASS_MODAL }}
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pb: 2,
-          borderBottom: `1px solid ${BORDER_COLOR}`,
-        }}
+    <>
+      <Dialog
+        open={open}
+        onClose={handleDialogClose}
+        fullScreen={fullScreen}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: GLASS_MODAL }}
       >
-        <Typography
-          variant="h6"
-          component="span"
+        <DialogTitle
           sx={{
-            fontWeight: 600,
-            background: AVATAR_GRADIENT,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pb: 2,
+            borderBottom: `1px solid ${BORDER_COLOR}`,
           }}
         >
-          EDIT <span style={{ color: PURPLE_ACCENT }}>PROFILE</span>
-        </Typography>
-        <Tooltip title="Close">
-          <span>
-            <IconButton
-              onClick={onClose}
-              disabled={busy}
-              aria-label="Close"
-              sx={{
-                color: 'rgba(255,255,255,0.6)',
-                '&:hover': {
-                  color: 'white',
-                  bgcolor: 'rgba(255,255,255,0.05)',
-                },
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </DialogTitle>
-      <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
-        {busy && !uploadedAvatarUrl ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress sx={{ color: PURPLE_ACCENT }} />
+          <Typography
+            variant="h6"
+            component="span"
+            sx={{
+              fontWeight: 600,
+              background: AVATAR_GRADIENT,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            EDIT <span style={{ color: PURPLE_ACCENT }}>PROFILE</span>
+          </Typography>
+          <Tooltip title="Close">
+            <span>
+              <IconButton
+                onClick={() => handleRequestClose()}
+                disabled={busy}
+                aria-label="Close"
+                sx={{
+                  color: 'rgba(255,255,255,0.6)',
+                  '&:hover': {
+                    color: 'white',
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                  },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
+          {busy && !uploadedAvatarUrl ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress sx={{ color: PURPLE_ACCENT }} />
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              <EditProfileBasicSection
+                busy={busy}
+                formData={formData}
+                previewURL={previewURL}
+                checkingHandle={checkingHandle}
+                handleAvailable={handleAvailable}
+                fileInputRef={fileInputRef}
+                currentAvatar={currentAvatar}
+                currentResolvedAvatarUrl={currentResolvedAvatarUrl}
+                uploadedAvatarUrl={uploadedAvatarUrl}
+                profile={profile}
+                selectedPresetUrl={selectedPresetUrl}
+                onFileChange={(e) => void handleFileChange(e)}
+                onPresetSelect={(preset) => void handlePresetSelect(preset)}
+                onHandleChange={(value) => {
+                  const normalized = value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9-]/g, '');
+                  latestHandleRef.current = normalized;
+                  setFormData((prev) => ({ ...prev, handle: normalized }));
+                  if (handleCheckTimeoutRef.current)
+                    clearTimeout(handleCheckTimeoutRef.current);
+                  if (normalized.length < 3) return setHandleAvailable(null);
+                  handleCheckTimeoutRef.current = setTimeout(() => {
+                    handleCheckTimeoutRef.current = null;
+                    void checkHandle(normalized);
+                  }, HANDLE_CHECK_DEBOUNCE_MS);
+                }}
+                onPronounsChange={(value) =>
+                  setFormData((prev) => ({ ...prev, pronouns: value }))
+                }
+              />
+
+              <EditProfileIndustrySection
+                busy={busy}
+                formData={formData}
+                onChange={(updater) => setFormData((prev) => updater(prev))}
+              />
+
+              <EditProfileDetailsSection
+                busy={busy}
+                checkingHandle={checkingHandle}
+                canSave={!busy && handleAvailable !== false && !checkingHandle}
+                onManageLinks={
+                  onManageLinks
+                    ? () => handleRequestClose(onManageLinks)
+                    : undefined
+                }
+                onClose={handleRequestClose}
+                onSave={() => void handleSave()}
+                bioInputRef={bioInputRef}
+                formData={formData}
+                onChange={(field, value) =>
+                  setFormData((prev) => ({ ...prev, [field]: value }))
+                }
+                onVisibilityChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    profile_visibility: value,
+                  }))
+                }
+              />
+            </Stack>
+          )}
+        </DialogContent>
+
+        <Snackbar
+          open={showToast}
+          autoHideDuration={4000}
+          onClose={() => setShowToast(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #2c1e12 0%, #1a1a1a 100%)',
+              border: '1px solid #d4af37',
+              color: '#f5f5f5',
+              p: 2,
+              borderRadius: 1,
+              boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)',
+            }}
+          >
+            {toastMessage}
           </Box>
-        ) : (
-          <Stack spacing={2}>
-            <EditProfileBasicSection
-              busy={busy}
-              formData={formData}
-              previewURL={previewURL}
-              checkingHandle={checkingHandle}
-              handleAvailable={handleAvailable}
-              fileInputRef={fileInputRef}
-              currentAvatar={currentAvatar}
-              currentResolvedAvatarUrl={currentResolvedAvatarUrl}
-              uploadedAvatarUrl={uploadedAvatarUrl}
-              profile={profile}
-              selectedPresetUrl={selectedPresetUrl}
-              onFileChange={(e) => void handleFileChange(e)}
-              onPresetSelect={(preset) => void handlePresetSelect(preset)}
-              onHandleChange={(value) => {
-                const normalized = value
-                  .toLowerCase()
-                  .replace(/[^a-z0-9-]/g, '');
-                latestHandleRef.current = normalized;
-                setFormData((prev) => ({ ...prev, handle: normalized }));
-                if (handleCheckTimeoutRef.current)
-                  clearTimeout(handleCheckTimeoutRef.current);
-                if (normalized.length < 3) return setHandleAvailable(null);
-                handleCheckTimeoutRef.current = setTimeout(() => {
-                  handleCheckTimeoutRef.current = null;
-                  void checkHandle(normalized);
-                }, HANDLE_CHECK_DEBOUNCE_MS);
-              }}
-              onPronounsChange={(value) =>
-                setFormData((prev) => ({ ...prev, pronouns: value }))
-              }
-            />
+        </Snackbar>
+      </Dialog>
 
-            <EditProfileIndustrySection
-              busy={busy}
-              formData={formData}
-              onChange={(updater) => setFormData((prev) => updater(prev))}
-            />
-
-            <EditProfileDetailsSection
-              busy={busy}
-              checkingHandle={checkingHandle}
-              canSave={!busy && handleAvailable !== false && !checkingHandle}
-              onManageLinks={onManageLinks}
-              onClose={onClose}
-              onSave={() => void handleSave()}
-              bioInputRef={bioInputRef}
-              formData={formData}
-              onChange={(field, value) =>
-                setFormData((prev) => ({ ...prev, [field]: value }))
-              }
-              onVisibilityChange={(value) =>
-                setFormData((prev) => ({ ...prev, profile_visibility: value }))
-              }
-            />
-          </Stack>
-        )}
-      </DialogContent>
-
-      <Snackbar
-        open={showToast}
-        autoHideDuration={4000}
-        onClose={() => setShowToast(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      <Dialog
+        open={unsavedConfirmOpen}
+        onClose={() => setUnsavedConfirmOpen(false)}
+        aria-labelledby="edit-profile-unsaved-title"
+        aria-describedby="edit-profile-unsaved-desc"
       >
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #2c1e12 0%, #1a1a1a 100%)',
-            border: '1px solid #d4af37',
-            color: '#f5f5f5',
-            p: 2,
-            borderRadius: 1,
-            boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)',
-          }}
-        >
-          {toastMessage}
-        </Box>
-      </Snackbar>
-    </Dialog>
+        <DialogTitle id="edit-profile-unsaved-title">
+          Unsaved changes
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="edit-profile-unsaved-desc">
+            You have unsaved profile changes. Save before closing?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUnsavedConfirmOpen(false)} color="inherit">
+            Continue Editing
+          </Button>
+          <Button onClick={handleDiscardAndClose} color="inherit">
+            Discard
+          </Button>
+          <Button variant="contained" onClick={() => void handleConfirmSave()}>
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };

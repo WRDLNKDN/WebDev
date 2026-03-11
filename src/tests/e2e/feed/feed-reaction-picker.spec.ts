@@ -16,9 +16,9 @@ const FEED_ITEM = {
     avatar: null,
     bio: 'Senior Engineering Manager',
   },
-  like_count: 0,
-  love_count: 0,
-  inspiration_count: 0,
+  like_count: 1,
+  love_count: 1,
+  inspiration_count: 1,
   care_count: 0,
   laughing_count: 0,
   rage_count: 0,
@@ -27,7 +27,7 @@ const FEED_ITEM = {
 };
 
 test.describe('Feed reaction picker', () => {
-  test('uses the shared emoji tray, stays open across hover, and shows the post menu', async ({
+  test('stays stable on click and persists Laugh and Rage in the post summary', async ({
     page,
   }) => {
     const pageErrors: string[] = [];
@@ -52,7 +52,24 @@ test.describe('Feed reaction picker', () => {
     await stubAdminRpc(page);
     await stubAppSurface(page);
 
+    const submittedReactions: string[] = [];
     const fulfillFeedList = async (route: Route) => {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as {
+          kind?: string;
+          type?: string;
+        };
+        if (body.kind === 'reaction' && body.type) {
+          submittedReactions.push(body.type);
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: { ok: true } }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -116,32 +133,37 @@ test.describe('Feed reaction picker', () => {
     ).toBeVisible();
     await page.mouse.click(0, 0);
 
-    await reactButton.hover({ force: true });
-    let usedFocusFallback = false;
-    if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
-      await reactButton.focus();
-      usedFocusFallback = true;
-    }
-
     const laughButton = page.getByRole('button', { name: 'Laugh' });
-    const surprisedButton = page.getByRole('button', { name: 'Surprised' });
-    const prayerButton = page.getByRole('button', { name: 'Prayer Hands' });
+    const sadButton = page.getByRole('button', { name: 'Sad' });
 
+    await reactButton.click();
     await expect(laughButton).toBeVisible({ timeout: 1000 });
-    await expect(surprisedButton).toBeVisible();
-    await expect(prayerButton).toBeVisible();
-
-    await laughButton.hover({ force: true });
+    await page.waitForTimeout(700);
+    await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await expect(laughButton).toBeVisible();
-    await expect(laughButton).toContainText('😂');
-    await expect(surprisedButton).toContainText('😮');
-    await expect(prayerButton).toContainText('🙏');
-
-    if (usedFocusFallback) {
-      await page.mouse.click(0, 0);
-    } else {
-      await page.mouse.move(0, 0);
-    }
+    await laughButton.click();
     await expect(laughButton).toBeHidden({ timeout: 1500 });
+    await expect(page.getByText('4 reactions')).toBeVisible();
+    await expect(
+      page
+        .locator('span[aria-hidden="true"]')
+        .filter({ hasText: '😂' })
+        .first(),
+    ).toBeVisible();
+
+    await reactButton.click();
+    await expect(sadButton).toBeVisible({ timeout: 1000 });
+    await page.waitForTimeout(700);
+    await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
+    await sadButton.click();
+    await expect(sadButton).toBeHidden({ timeout: 1500 });
+    await expect(page.getByText('4 reactions')).toBeVisible();
+    await expect(
+      page
+        .locator('span[aria-hidden="true"]')
+        .filter({ hasText: '😢' })
+        .first(),
+    ).toBeVisible();
+    expect(submittedReactions).toEqual(['laughing', 'rage']);
   });
 });

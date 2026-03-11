@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Divider,
   FormControl,
   MenuItem,
   Select,
@@ -135,10 +136,7 @@ export const EditProfileDetailsSection = ({
         </Typography>
         <Button
           variant="outlined"
-          onClick={() => {
-            onClose();
-            onManageLinks();
-          }}
+          onClick={onManageLinks}
           disabled={busy}
           sx={{
             textTransform: 'none',
@@ -191,35 +189,52 @@ export const EditProfileDetailsSection = ({
       />
     </Box>
 
-    <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
-      <Button
-        onClick={onClose}
-        disabled={busy}
-        sx={{
-          color: 'rgba(255,255,255,0.7)',
-          textTransform: 'none',
-          fontSize: '0.95rem',
-          '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
-        }}
-      >
-        Cancel
-      </Button>
-      <Button
-        variant="contained"
-        onClick={onSave}
-        disabled={!canSave}
-        startIcon={busy ? <CircularProgress size={16} /> : null}
-        sx={{
-          bgcolor: PURPLE_ACCENT,
-          color: 'white',
-          textTransform: 'none',
-          fontSize: '0.95rem',
-          px: 3,
-          '&:hover': { bgcolor: GRADIENT_END },
-        }}
-      >
-        {checkingHandle ? 'Checking...' : 'Save Changes'}
-      </Button>
-    </Stack>
+    <Box
+      sx={{
+        position: 'sticky',
+        bottom: 0,
+        zIndex: 2,
+        mt: 1,
+        mx: -3,
+        px: 3,
+        pt: 2,
+        pb: 1,
+        background:
+          'linear-gradient(180deg, rgba(20,20,24,0) 0%, rgba(20,20,24,0.96) 18%, rgba(20,20,24,0.99) 100%)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
+      <Stack direction="row" spacing={2} justifyContent="flex-end">
+        <Button
+          onClick={onClose}
+          disabled={busy}
+          sx={{
+            color: 'rgba(255,255,255,0.7)',
+            textTransform: 'none',
+            fontSize: '0.95rem',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={onSave}
+          disabled={!canSave}
+          startIcon={busy ? <CircularProgress size={16} /> : null}
+          sx={{
+            bgcolor: PURPLE_ACCENT,
+            color: 'white',
+            textTransform: 'none',
+            fontSize: '0.95rem',
+            px: 3,
+            '&:hover': { bgcolor: GRADIENT_END },
+          }}
+        >
+          {checkingHandle ? 'Checking...' : 'Save Changes'}
+        </Button>
+      </Stack>
+    </Box>
   </>
 );

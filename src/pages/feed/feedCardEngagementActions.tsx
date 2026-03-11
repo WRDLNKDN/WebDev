@@ -4,8 +4,8 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import { Box, Button, Typography } from '@mui/material';
-import { FeedReactionBar, REACTION_OPTIONS } from '../../components/post';
-import { getFeedReactionCount } from '../../components/post/sharedReactions';
+import { FeedReactionBar } from '../../components/post';
+import { buildFeedReactionSummary } from '../../components/post/sharedReactions';
 import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
 import type { FeedCardActions } from './feedCardTypes';
 
@@ -69,20 +69,21 @@ export const FeedCardEngagementActions = ({
     careCount +
     laughingCount +
     rageCount;
-  const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
-    ...reaction,
-    count: getFeedReactionCount(
-      {
-        like_count: likeCount,
-        love_count: loveCount,
-        inspiration_count: inspirationCount,
-        care_count: careCount,
-        laughing_count: laughingCount,
-        rage_count: rageCount,
-      },
-      reaction.type,
-    ),
-  })).filter((reaction) => reaction.count > 0);
+  const reactionSummary = buildFeedReactionSummary(
+    {
+      like_count: likeCount,
+      love_count: loveCount,
+      inspiration_count: inspirationCount,
+      care_count: careCount,
+      laughing_count: laughingCount,
+      rage_count: rageCount,
+    },
+    viewerReaction,
+  ).map((reaction) => ({
+    type: reaction.value,
+    emoji: reaction.emoji,
+    color: reaction.color,
+  }));
   return (
     <>
       {(totalReactions > 0 || commentCount > 0) && (
@@ -104,7 +105,7 @@ export const FeedCardEngagementActions = ({
                   '& > *:not(:first-of-type)': { ml: -0.55 },
                 }}
               >
-                {reactionSummary.slice(0, 3).map(({ type, emoji, color }) => (
+                {reactionSummary.map(({ type, emoji, color }) => (
                   <Box
                     key={type}
                     sx={{

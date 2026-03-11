@@ -14,9 +14,49 @@ export const PORTFOLIO_CATEGORY_OPTIONS = [
   'AI/ML',
   'Writing',
 ] as const;
+export const PORTFOLIO_OTHER_CATEGORY_OPTION = 'Other' as const;
+export const MAX_CUSTOM_PROJECT_CATEGORY_LENGTH = 40;
+
+const PORTFOLIO_CATEGORY_OPTION_SET = new Set<string>(
+  PORTFOLIO_CATEGORY_OPTIONS,
+);
 
 const normalizeCategory = (value: string): string =>
   value.trim().replace(/\s+/g, ' ');
+
+export function normalizeCustomProjectCategory(value: string): string {
+  return normalizeCategory(value);
+}
+
+export function isPredefinedProjectCategory(value: string): boolean {
+  return PORTFOLIO_CATEGORY_OPTION_SET.has(normalizeCategory(value));
+}
+
+export function getProjectCategorySelection(
+  categories: string[] | null | undefined,
+): {
+  pickerValue:
+    | (typeof PORTFOLIO_CATEGORY_OPTIONS)[number]
+    | typeof PORTFOLIO_OTHER_CATEGORY_OPTION
+    | null;
+  customCategory: string;
+} {
+  const [primaryCategory = ''] = normalizeProjectCategories(categories, 1);
+  if (!primaryCategory) {
+    return { pickerValue: null, customCategory: '' };
+  }
+  if (isPredefinedProjectCategory(primaryCategory)) {
+    return {
+      pickerValue:
+        primaryCategory as (typeof PORTFOLIO_CATEGORY_OPTIONS)[number],
+      customCategory: '',
+    };
+  }
+  return {
+    pickerValue: PORTFOLIO_OTHER_CATEGORY_OPTION,
+    customCategory: primaryCategory,
+  };
+}
 
 export function parseProjectCategories(
   input: string,

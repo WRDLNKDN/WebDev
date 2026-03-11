@@ -33,7 +33,7 @@ export const CompleteStep = () => {
 
   const handleGoHome = () => {
     resetSignup();
-    navigate('/');
+    navigate('/feed', { replace: true });
   };
 
   return (
@@ -82,8 +82,8 @@ export const CompleteStep = () => {
               You are all set
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Your signup request has been submitted. Once approved, you will
-              appear in the member directory.
+              Your account has been created and your profile is now live in the
+              member directory.
             </Typography>
           </Box>
 
@@ -94,7 +94,7 @@ export const CompleteStep = () => {
             fullWidth
             disabled={!bumperFinished}
           >
-            {bumperFinished ? 'Go to homepage' : 'Playing bumper...'}
+            {bumperFinished ? 'Continue to Feed' : 'Playing bumper...'}
           </Button>
         </Stack>
       </Paper>

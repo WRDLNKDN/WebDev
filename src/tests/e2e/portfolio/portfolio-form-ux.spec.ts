@@ -110,9 +110,7 @@ test.describe('Add Project dialog UX', () => {
   test('aligns helper text with field edges', async ({ page }) => {
     const dialog = await openAddProjectDialog(page);
 
-    const categoriesField = dialog.getByPlaceholder(
-      'Select one or more categories',
-    );
+    const categoriesField = dialog.getByPlaceholder('Select a category');
     const categoriesHelper = dialog.getByText(
       'Used to organize Portfolio Showcase sections.',
     );
@@ -140,5 +138,24 @@ test.describe('Add Project dialog UX', () => {
     expect(
       Math.abs((urlFieldBox?.x ?? 0) - (urlHelperBox?.x ?? 0)),
     ).toBeLessThanOrEqual(8);
+  });
+
+  test('shows a custom category field when Other is selected', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    const categoryField = dialog.getByRole('combobox', { name: 'Category' });
+    await categoryField.click();
+    await page.getByRole('option', { name: 'Other' }).click();
+
+    const customCategoryField = dialog.getByRole('textbox', {
+      name: 'Custom Category',
+    });
+    await expect(customCategoryField).toBeVisible();
+    await customCategoryField.fill('Community Tooling');
+    await expect(
+      dialog.getByText('17/40 characters', { exact: true }),
+    ).toBeVisible();
   });
 });

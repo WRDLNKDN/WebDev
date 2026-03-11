@@ -166,6 +166,8 @@ test.describe('Feed reaction picker', () => {
     }
 
     const laughButton = page.getByRole('button', { name: 'Laugh' });
+    const surprisedButton = page.getByRole('button', { name: 'Surprised' });
+    const prayerButton = page.getByRole('button', { name: 'Prayer Hands' });
     const sadButton = page.getByRole('button', { name: 'Sad' });
 
     await reactButton.click();

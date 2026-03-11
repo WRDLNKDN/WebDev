@@ -74,14 +74,14 @@ test.describe('Add Project dialog UX', () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 30_000 });
 
-    const addArtifactButton = page.getByRole('button', {
-      name: /add links, resume, or project/i,
+    const addMenuButton = page.getByRole('button', {
+      name: /add resume or project/i,
     });
-    await expect(addArtifactButton).toBeVisible({ timeout: 30_000 });
-    await expect(addArtifactButton).toBeEnabled({ timeout: 30_000 });
-    await addArtifactButton.click();
+    await expect(addMenuButton).toBeVisible({ timeout: 30_000 });
+    await expect(addMenuButton).toBeEnabled({ timeout: 30_000 });
+    await addMenuButton.click();
 
-    await page.getByRole('menuitem', { name: /add project/i }).click();
+    await page.getByRole('menuitem', { name: /\+ add project/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/new project/i);
     return dialog;

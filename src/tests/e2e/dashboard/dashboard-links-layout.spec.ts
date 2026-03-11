@@ -15,23 +15,32 @@ test.describe('Dashboard links and profile layout regressions', () => {
 
     // ---- HEADER LEFT ALIGN CHECK ----
 
-    const heading = page.getByRole('heading').first();
+    const identityHeader = page.getByTestId('identity-header');
+    await expect(identityHeader).toBeVisible();
+
+    const heading = identityHeader.getByRole('heading').first();
     await expect(heading).toBeVisible();
 
-    const headerContainer = heading.locator(
-      'xpath=ancestor::*[self::section or self::div][1]',
-    );
+    const layoutMetrics = await identityHeader.evaluate((container) => {
+      const headingEl = container.querySelector('h1, h2, h3, h4, h5, h6');
+      if (!headingEl) {
+        return null;
+      }
 
-    const [headingBox, containerBox] = await Promise.all([
-      heading.boundingBox(),
-      headerContainer.boundingBox(),
-    ]);
+      const headingRect = headingEl.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
 
-    expect(headingBox).not.toBeNull();
-    expect(containerBox).not.toBeNull();
+      return {
+        headingX: headingRect.x,
+        containerX: containerRect.x,
+      };
+    });
+
+    expect(layoutMetrics).not.toBeNull();
 
     // heading should not be centered or pushed right (left-aligned)
-    const leftOffset = (headingBox?.x ?? 0) - (containerBox?.x ?? 0);
+    const leftOffset =
+      (layoutMetrics?.headingX ?? 0) - (layoutMetrics?.containerX ?? 0);
 
     expect(leftOffset).toBeLessThan(400);
 

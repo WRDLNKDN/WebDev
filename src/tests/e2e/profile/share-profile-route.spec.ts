@@ -23,7 +23,7 @@ test.describe('Share profile route', () => {
     await expect(page.getByText('404')).toBeVisible({ timeout: 25_000 });
   });
 
-  test('public profile with socials shows LINKS in Identity (collapsible)', async ({
+  test('public profile with socials shows LINKS in Identity with collapsible groups', async ({
     page,
   }) => {
     test.setTimeout(60_000);
@@ -66,9 +66,14 @@ test.describe('Share profile route', () => {
     ).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByRole('button', { name: 'LINKS' })).toBeVisible({
+    await expect(page.getByText('LINKS', { exact: true })).toBeVisible({
       timeout: 5_000,
     });
+    const professionalGroup = page.getByTestId('link-group-Professional');
+    await expect(professionalGroup).toBeVisible({ timeout: 5_000 });
+    await expect(
+      professionalGroup.getByRole('link', { name: /linkedin/i }),
+    ).toBeVisible();
     await expect(
       page.getByRole('heading', { name: /portfolio/i }),
     ).not.toBeAttached();

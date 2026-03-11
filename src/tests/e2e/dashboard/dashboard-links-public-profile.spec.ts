@@ -66,14 +66,24 @@ test.describe('Issue #609 - Public Profile grouped links', () => {
     await expect(firstLink.locator('svg').first()).toBeVisible();
   });
 
-  test('LINKS section is expanded by default and can be collapsed', async ({
+  test('link groups are expanded by default and can be collapsed', async ({
     page,
   }) => {
     const identitySection = page.getByTestId('identity-header');
     await expect(identitySection.getByRole('link').first()).toBeVisible();
+    const professionalGroup = identitySection.getByTestId(
+      'link-group-Professional',
+    );
+    await expect(
+      professionalGroup.getByRole('link', { name: /GitHub/i }),
+    ).toBeVisible();
 
-    const toggleBtn = identitySection.getByRole('button', { name: /links/i });
+    const toggleBtn = professionalGroup.getByRole('button', {
+      name: /professional/i,
+    });
     await toggleBtn.click();
-    await expect(identitySection.getByRole('link').first()).not.toBeVisible();
+    await expect(
+      professionalGroup.getByRole('link', { name: /GitHub/i }),
+    ).not.toBeVisible();
   });
 });

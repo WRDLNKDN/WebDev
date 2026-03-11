@@ -1,10 +1,10 @@
 import { expect, test, type Route } from '../fixtures';
-import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 const FEED_ITEM = {
   id: 'post-reaction-1',
-  user_id: USER_ID,
+  user_id: 'another-user',
   kind: 'post',
   payload: { body: 'Reaction target post' },
   parent_id: null,
@@ -107,7 +107,10 @@ test.describe('Feed reaction picker', () => {
     await postOptionsButton.click();
     await expect(page.getByRole('menuitem', { name: 'Save' })).toBeVisible();
     await expect(
-      page.getByRole('menuitem', { name: 'Copy link' }),
+      page.getByRole('menuitem', { name: 'Copy link to post' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', { name: /Not interested/i }),
     ).toBeVisible();
     await page.mouse.click(0, 0);
 

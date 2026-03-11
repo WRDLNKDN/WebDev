@@ -6,18 +6,25 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
+import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import EventIcon from '@mui/icons-material/Event';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import ForumIcon from '@mui/icons-material/Forum';
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import LinkIcon from '@mui/icons-material/Link';
 import MessageIcon from '@mui/icons-material/Message';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import ThumbDownOffAltOutlinedIcon from '@mui/icons-material/ThumbDownOffAltOutlined';
 import {
   Box,
   Button,
@@ -579,6 +586,11 @@ const FeedCard = ({
     return ordered;
   }, [bodyGifUrls, postAttachmentImages]);
   const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
+  const canonicalPostUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/feed?post=${item.id}`
+      : `/feed?post=${item.id}`;
+  const embedSnippet = `<blockquote data-weirdlkn-post="${item.id}">${bodyTextWithoutGifUrls || body || displayName}</blockquote>`;
   const likeCount = item.like_count ?? 0;
   const loveCount = item.love_count ?? 0;
   const inspirationCount = item.inspiration_count ?? 0;
@@ -857,32 +869,84 @@ const FeedCard = ({
               </Stack>
             ) : undefined,
         }}
-        actionMenu={
-          isOwner
-            ? {
-                visible: !isEditingPost,
-                ariaLabel: 'Post options',
-                items: [
-                  ...(item.kind === 'post'
-                    ? [
-                        {
-                          label: 'Edit',
-                          onClick: () => {
-                            setEditPostDraft(body);
-                            setIsEditingPost(true);
-                          },
-                        },
-                      ]
-                    : []),
+        actionMenu={{
+          visible: !isEditingPost,
+          ariaLabel: 'Post options',
+          items: [
+            {
+              label: item.viewer_saved ? 'Unsave' : 'Save',
+              icon: item.viewer_saved ? (
+                <BookmarkIcon fontSize="small" />
+              ) : (
+                <BookmarkBorderIcon fontSize="small" />
+              ),
+              onClick: () =>
+                item.viewer_saved
+                  ? actions.onUnsave(item.id)
+                  : actions.onSave(item.id),
+            },
+            {
+              label: 'Copy link to post',
+              icon: <LinkIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(canonicalPostUrl),
+            },
+            {
+              label: 'Embed this post',
+              icon: <CodeIcon fontSize="small" />,
+              onClick: () => actions.onCopyLink(embedSnippet),
+            },
+            ...(!isOwner && handle
+              ? [
+                  {
+                    label: `Unfollow ${displayName}`,
+                    icon: <PersonOffOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo(
+                        `Unfollow for @${handle} is coming soon.`,
+                      ),
+                  },
+                ]
+              : []),
+            ...(!isOwner
+              ? [
+                  {
+                    label: 'Not interested',
+                    icon: <ThumbDownOffAltOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('We will show fewer posts like this.'),
+                  },
+                  {
+                    label: 'Report post',
+                    icon: <FlagOutlinedIcon fontSize="small" />,
+                    onClick: () =>
+                      actions.onMenuInfo('Report flow is coming soon.'),
+                  },
+                ]
+              : []),
+            ...(isOwner && item.kind === 'post'
+              ? [
+                  {
+                    label: 'Edit',
+                    icon: <EditOutlinedIcon fontSize="small" />,
+                    onClick: () => {
+                      setEditPostDraft(body);
+                      setIsEditingPost(true);
+                    },
+                  },
+                ]
+              : []),
+            ...(isOwner
+              ? [
                   {
                     label: 'Delete',
+                    icon: <DeleteOutlineIcon fontSize="small" />,
                     onClick: () => actions.onDelete(item.id),
                     danger: true,
                   },
-                ],
-              }
-            : null
-        }
+                ]
+              : []),
+          ],
+        }}
         sx={{ mb: 2 }}
       >
         {isEditingPost ? (

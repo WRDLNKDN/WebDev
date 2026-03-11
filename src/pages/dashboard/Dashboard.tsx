@@ -32,6 +32,7 @@ import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
+import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -591,6 +592,12 @@ export const Dashboard = () => {
               </Menu>
             </>
           }
+        />
+
+        <DashboardLinksSection
+          loading={loading}
+          socials={socialsArray}
+          onOpenLinks={() => setIsLinksOpen(true)}
         />
 
         <Paper

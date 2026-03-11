@@ -4,8 +4,8 @@ const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const API_URL = 'http://127.0.0.1:3001/api/health';
 const isCI = process.env.CI === 'true';
-const LOCAL_WORKERS = 4;
-const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '2');
+const LOCAL_WORKERS = 2;
+const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
 
 export default defineConfig({
   testDir: '../../src/tests/e2e',

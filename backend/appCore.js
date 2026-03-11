@@ -937,6 +937,20 @@ app.get('/api/feeds', requireAuth, async (req, res) => {
     const list = rows;
     const hasMore = list.length > limit;
     const page = hasMore ? list.slice(0, limit) : list;
+    const actorIds = [
+      ...new Set(page.map((row) => row.user_id).filter(Boolean)),
+    ];
+    const actorBioById = {};
+    if (actorIds.length > 0) {
+      const { data: actorProfiles } = await adminSupabase
+        .from('profiles')
+        .select('id, bio')
+        .in('id', actorIds);
+      for (const profile of actorProfiles ?? []) {
+        actorBioById[profile.id] =
+          typeof profile.bio === 'string' ? profile.bio : null;
+      }
+    }
     const last = page[page.length - 1];
     const sortAt = savedOnly
       ? last?.saved_at
@@ -960,6 +974,7 @@ app.get('/api/feeds', requireAuth, async (req, res) => {
         handle: row.actor_handle ?? null,
         display_name: row.actor_display_name ?? null,
         avatar: row.actor_avatar ?? null,
+        bio: actorBioById[row.user_id] ?? null,
       },
       like_count: Number(row.like_count ?? 0),
       love_count: Number(row.love_count ?? 0),
@@ -1276,7 +1291,7 @@ app.get('/api/feeds/items/:postId/comments', requireAuth, async (req, res) => {
   if (userIds.length > 0) {
     const { data: profiles } = await adminSupabase
       .from('profiles')
-      .select('id, handle, display_name, avatar')
+      .select('id, handle, display_name, avatar, bio')
       .in('id', userIds);
     for (const p of profiles ?? []) {
       const id = p.id;
@@ -1361,6 +1376,7 @@ app.get('/api/feeds/items/:postId/comments', requireAuth, async (req, res) => {
         handle: p?.handle ?? null,
         display_name: p?.display_name ?? null,
         avatar: avatar ?? null,
+        bio: p?.bio ?? null,
       },
     };
   });

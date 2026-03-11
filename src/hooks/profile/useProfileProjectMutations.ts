@@ -1,6 +1,9 @@
 import { supabase } from '../../lib/auth/supabaseClient';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
-import { getPortfolioUrlSafetyError } from '../../lib/portfolio/linkValidation';
+import {
+  getPortfolioUrlSafetyError,
+  sanitizePortfolioUrlInput,
+} from '../../lib/portfolio/linkValidation';
 import { toMessage } from '../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../types/portfolio';
 import { isExternalProjectUrl } from './useProfileHelpers';
@@ -51,7 +54,7 @@ export const updateProjectItem = async ({
   updates: NewProject;
   imageFile?: File;
 } & Params) => {
-  const url = updates.project_url?.trim() ?? '';
+  const url = sanitizePortfolioUrlInput(updates.project_url ?? '');
   if (!url) throw new Error('View project URL is required');
   if (!isExternalProjectUrl(url)) {
     throw new Error('Project URL must be an external URL (e.g. https://...).');
@@ -81,7 +84,7 @@ export const updateProjectItem = async ({
     finalImageUrl = publicUrl;
   }
 
-  const projectUrlTrimmed = updates.project_url.trim();
+  const projectUrlTrimmed = sanitizePortfolioUrlInput(updates.project_url);
   const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
   if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
 

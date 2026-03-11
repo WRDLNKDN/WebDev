@@ -73,6 +73,7 @@ const FieldLabel = ({ text, tooltip, required = false }: FieldLabelProps) => (
   <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
     <Typography
       variant="caption"
+      component="span"
       sx={{
         textTransform: 'uppercase',
         letterSpacing: 0.3,
@@ -80,7 +81,14 @@ const FieldLabel = ({ text, tooltip, required = false }: FieldLabelProps) => (
       }}
     >
       {text}
-      {required ? ' *' : ''}
+      {required ? (
+        <Box
+          component="span"
+          sx={{ color: 'error.main', fontWeight: 700, ml: 0.35 }}
+        >
+          *
+        </Box>
+      ) : null}
     </Typography>
     <Tooltip title={tooltip}>
       <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />

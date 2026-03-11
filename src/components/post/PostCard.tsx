@@ -37,7 +37,16 @@ export const PostCard = ({
   <Card
     variant="outlined"
     sx={[
-      { borderRadius: 2, minWidth: 0, position: 'relative' as const },
+      {
+        borderRadius: 2.75,
+        minWidth: 0,
+        position: 'relative' as const,
+        borderColor: 'rgba(255,255,255,0.1)',
+        bgcolor: 'rgba(24,28,35,0.96)',
+        boxShadow:
+          '0 20px 38px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.02) inset',
+        overflow: 'hidden',
+      },
       ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
     ]}
   >
@@ -53,10 +62,11 @@ export const PostCard = ({
     <CardContent
       sx={[
         {
-          pt: { xs: 1.25, sm: 2 },
-          pb: { xs: 0.75, sm: 1 },
+          pt: { xs: 1.35, sm: 1.65 },
+          pb: { xs: 0.75, sm: 0.95 },
           '&:last-child': { pb: { xs: 1.25, sm: 2 } },
-          px: { xs: 1.5, sm: 2 },
+          px: { xs: 1.35, sm: 1.65 },
+          pr: { xs: 6.25, sm: 6.75 },
         },
         ...(Array.isArray(contentSx)
           ? contentSx
@@ -68,7 +78,7 @@ export const PostCard = ({
       <Box sx={{ minWidth: 0 }}>
         <PostAuthor {...author} />
         {/* Align body/actions with right edge of avatar */}
-        <Box sx={{ minWidth: 0, ml: { xs: 6, sm: 7 } }}>{children}</Box>
+        <Box sx={{ minWidth: 0, ml: { xs: 5.75, sm: 6.5 } }}>{children}</Box>
       </Box>
     </CardContent>
   </Card>

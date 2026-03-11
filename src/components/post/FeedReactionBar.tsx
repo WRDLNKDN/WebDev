@@ -41,14 +41,15 @@ export const FeedReactionBar = (props: FeedReactionBarProps) => {
       }}
       buttonLabel="React"
       sx={{
-        width: '100%',
         pt: 1,
         pb: 0.75,
         px: 0,
         ...sx,
       }}
       buttonSx={{
+        minWidth: 0,
         width: '100%',
+        justifyContent: 'center',
       }}
       traySx={{
         minWidth: 'max-content',

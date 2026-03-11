@@ -78,7 +78,7 @@ export const Home = () => {
 
   const [videoFailed, setVideoFailed] = useState(false);
 
-  const [showContent, setShowContent] = useState(true);
+  const [showContent, setShowContent] = useState(prefersReducedMotion);
 
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
@@ -303,6 +303,7 @@ export const Home = () => {
             onError={() => {
               setVideoFailed(true);
               setHeroPhase('dimmed');
+              setShowContent(true);
             }}
             aria-hidden="true"
           >

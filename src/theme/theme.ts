@@ -218,6 +218,7 @@ const theme = createTheme({
           borderRadius: 8,
           minHeight: 44, // WCAG 2.5.5 (Target Size)
           padding: '8px 24px',
+          fontWeight: 700,
           '&:focus-visible': FOCUS_RING,
         },
         containedPrimary: {
@@ -285,6 +286,13 @@ const theme = createTheme({
           '&.Mui-focused': { color: '#42a5f5' },
         },
         // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
+        asterisk: {
+          color: PALETTE.error.main,
+        },
+      },
+    },
+    MuiFormLabel: {
+      styleOverrides: {
         asterisk: {
           color: PALETTE.error.main,
         },
@@ -379,6 +387,7 @@ const theme = createTheme({
         root: {
           fontSize: '0.875rem',
           height: 32,
+          borderWidth: 2,
           '&:focus-visible': FOCUS_RING,
         },
         label: { fontWeight: 500 },
@@ -410,7 +419,35 @@ const theme = createTheme({
           fontWeight: 600,
           minHeight: 48,
           fontSize: '1rem',
+          borderBottom: '3px solid transparent',
           '&:focus-visible': FOCUS_RING,
+          '&.Mui-selected': {
+            fontWeight: 800,
+            textDecoration: 'underline',
+            textUnderlineOffset: '5px',
+            borderBottomColor: '#42a5f5',
+          },
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        indicator: {
+          height: 4,
+          borderRadius: 999,
+          backgroundColor: '#90caf9',
+        },
+      },
+    },
+    MuiToggleButton: {
+      styleOverrides: {
+        root: {
+          '&.Mui-selected': {
+            fontWeight: 800,
+            textDecoration: 'underline',
+            textUnderlineOffset: '4px',
+            borderWidth: 2,
+          },
         },
       },
     },

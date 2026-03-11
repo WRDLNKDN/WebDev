@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getCategoryForPlatform } from '../../constants/platforms';
+import { sanitizePortfolioUrlInput } from '../../lib/portfolio/linkValidation';
 import {
   detectPlatformFromUrl,
   findDuplicateNormalizedUrl,
@@ -67,5 +68,14 @@ describe('detectPlatformFromUrl', () => {
       'Games',
     );
     expect(getCategoryForPlatform('GitHub')).toBe('Professional');
+  });
+
+  it('sanitizes duplicated protocol input for portfolio URLs', () => {
+    expect(
+      sanitizePortfolioUrlInput('https: https://www.google.com/project'),
+    ).toBe('https://www.google.com/project');
+    expect(
+      sanitizePortfolioUrlInput('https:// https://www.google.com/project'),
+    ).toBe('https://www.google.com/project');
   });
 });

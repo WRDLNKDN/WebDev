@@ -33,6 +33,32 @@ export const useChatDataLoader = ({
 }: Params) => {
   const fetchRoom = useCallback(
     async (id: string): Promise<boolean> => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+      if (!currentUserId) {
+        setError('This chat could not be found. You may not have access.');
+        setRoom(null);
+        setMessages([]);
+        return false;
+      }
+
+      const { data: membershipRow, error: membershipErr } = await supabase
+        .from('chat_room_members')
+        .select('room_id')
+        .eq('room_id', id)
+        .eq('user_id', currentUserId)
+        .is('left_at', null)
+        .maybeSingle();
+
+      if (membershipErr || !membershipRow) {
+        setError('This chat could not be found. You may not have access.');
+        setRoom(null);
+        setMessages([]);
+        return false;
+      }
+
       const { data: roomData, error: roomErr } = await supabase
         .from('chat_rooms')
         .select('*')

@@ -53,7 +53,7 @@ export const AuthCallbackStatusCard = ({
               color: 'white',
             }}
           >
-            {error ? '[SYNC_ERROR]' : 'Synchronizing...'}
+            {error ? 'Sign-in problem' : 'Signing you in...'}
           </Typography>
 
           {error ? (
@@ -92,8 +92,7 @@ export const AuthCallbackStatusCard = ({
               variant="body1"
               sx={{ opacity: 0.7, maxWidth: 300, mx: 'auto' }}
             >
-              Establishing secure handshake between Google Identity and **Human
-              OS** environment.
+              Finishing sign-in and loading your account.
             </Typography>
           )}
         </Box>
@@ -103,10 +102,10 @@ export const AuthCallbackStatusCard = ({
             variant="caption"
             sx={{
               opacity: 0.4,
-              letterSpacing: 2,
+              letterSpacing: 0,
             }}
           >
-            VERIFYING_AUTH_TOKEN_SECTOR_01
+            This should only take a moment.
           </Typography>
         )}
       </Stack>

@@ -86,6 +86,25 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
     ).toBeVisible();
   });
 
+  test('unsaved changes prompt appears after adding a link without saving', async ({
+    page,
+  }) => {
+    const dialog = page.getByRole('dialog', { name: /manage links/i });
+
+    await dialog.getByRole('combobox', { name: /platform/i }).click();
+    await page.getByRole('option', { name: 'Behance' }).click();
+    await dialog
+      .getByPlaceholder(/https:\/\/example\.com/i)
+      .fill('https://behance.net/unsaved-link');
+    await dialog.getByRole('button', { name: /\+ add to list/i }).click();
+
+    await dialog.getByRole('button', { name: /close/i }).click();
+
+    await expect(
+      page.getByRole('dialog', { name: /unsaved changes/i }),
+    ).toBeVisible();
+  });
+
   test('Games category shows the expected platform list with Other last', async ({
     page,
   }) => {

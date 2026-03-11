@@ -114,6 +114,7 @@ export const Navbar = () => {
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
@@ -426,9 +427,9 @@ export const Navbar = () => {
         <Toolbar
           sx={{
             py: 0.5,
-            px: { xs: 1, sm: 2 },
+            px: { xs: 0.75, sm: 1.25, md: 1.5 },
             minHeight: { xs: 48, sm: 56 },
-            gap: { xs: 0.5, sm: 1 },
+            gap: { xs: 0.35, sm: 0.75, md: 1 },
             overflow: 'visible',
           }}
         >
@@ -454,7 +455,7 @@ export const Navbar = () => {
             sx={{
               mr: isMobile ? 0.5 : 2,
               minHeight: { xs: 40, sm: 48 },
-              gap: 3,
+              gap: isCompactDesktop ? 1.25 : 3,
               overflow: 'visible',
               flexShrink: isMobile ? 1 : 0,
               minWidth: 0,
@@ -495,7 +496,7 @@ export const Navbar = () => {
               />
             </Box>
             {/* Search: recessed bar, placeholder "I'm looking for..." — hidden on /join (public header) */}
-            {!isMobile && !forcePublicHeader && (
+            {!isMobile && !isCompactDesktop && !forcePublicHeader && (
               <Box
                 ref={setSearchAnchorEl}
                 sx={{ position: 'relative', minWidth: 240 }}
@@ -697,7 +698,8 @@ export const Navbar = () => {
                   sx={{
                     color: 'warning.main',
                     textTransform: 'none',
-                    fontSize: '1rem',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    px: isCompactDesktop ? 1 : 1.5,
                   }}
                 >
                   Admin
@@ -712,7 +714,8 @@ export const Navbar = () => {
                       sx={{
                         color: 'rgba(255,255,255,0.85)',
                         textTransform: 'none',
-                        fontSize: '1rem',
+                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                        px: isCompactDesktop ? 1 : 1.5,
                         ...(isDashboardActive && {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
@@ -731,7 +734,8 @@ export const Navbar = () => {
                       sx={{
                         color: 'rgba(255,255,255,0.85)',
                         textTransform: 'none',
-                        fontSize: '1rem',
+                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                        px: isCompactDesktop ? 1 : 1.5,
                         ...(isDirectoryActive && {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
@@ -750,7 +754,8 @@ export const Navbar = () => {
                       sx={{
                         color: 'rgba(255,255,255,0.85)',
                         textTransform: 'none',
-                        fontSize: '1rem',
+                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                        px: isCompactDesktop ? 1 : 1.5,
                         ...(isEventsActive && {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
@@ -769,7 +774,8 @@ export const Navbar = () => {
                       sx={{
                         color: 'rgba(255,255,255,0.85)',
                         textTransform: 'none',
-                        fontSize: '1rem',
+                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                        px: isCompactDesktop ? 1 : 1.5,
                         ...(isFeedActive && {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
@@ -793,7 +799,8 @@ export const Navbar = () => {
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
                     textTransform: 'none',
-                    fontSize: '1rem',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    px: isCompactDesktop ? 1 : 1.5,
                   }}
                 >
                   Store

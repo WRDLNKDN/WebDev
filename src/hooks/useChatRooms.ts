@@ -103,6 +103,12 @@ export function useChatRooms() {
       const withMembers: ChatRoomWithMembers[] = [];
       for (const room of roomData ?? []) {
         const membersData = membersByRoom.get(room.id) ?? [];
+        const currentUserIsMember = membersData.some(
+          (member) => member.user_id === session.user.id,
+        );
+        if (!currentUserIsMember) {
+          continue;
+        }
         if (room.room_type === 'dm' && membersData.length === 2) {
           const other = membersData.find(
             (member) => member.user_id !== session.user.id,

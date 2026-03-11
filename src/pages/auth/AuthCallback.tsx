@@ -49,8 +49,8 @@ export const AuthCallback = () => {
       ?.trim()
       .toLowerCase() || 'dev';
   const callbackTimeoutMs = /android/i.test(navigator.userAgent)
-    ? 20000
-    : 30000;
+    ? 16000
+    : 12000;
 
   const copyDebugInfo = async () => {
     if (
@@ -89,6 +89,8 @@ export const AuthCallback = () => {
 
   useEffect(() => {
     let cancelled = false;
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       setTimedOut(true);
@@ -114,28 +116,34 @@ export const AuthCallback = () => {
         devLog('🔵 AuthCallback: next parameter =', next);
         devLog('🔵 AuthCallback: Full URL =', window.location.href);
 
-        await new Promise((r) => setTimeout(r, 600));
-
-        let { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        if (!data.session && authCode) {
-          devLog('🔵 AuthCallback: No session yet, exchanging auth code');
-          const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(authCode);
-          if (exchangeError) throw exchangeError;
-          ({ data, error: sessionError } = await supabase.auth.getSession());
+        let exchangedCode = false;
+        let session = null;
+        let sessionError = null;
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          const { data, error } = await supabase.auth.getSession();
+          sessionError = error;
           if (sessionError) throw sessionError;
+          if (data.session) {
+            session = data.session;
+            break;
+          }
+          if (!exchangedCode && authCode) {
+            exchangedCode = true;
+            devLog('🔵 AuthCallback: No session yet, exchanging auth code');
+            const { error: exchangeError } =
+              await supabase.auth.exchangeCodeForSession(authCode);
+            if (exchangeError) throw exchangeError;
+            continue;
+          }
+          if (attempt < 4) {
+            await sleep(180);
+          }
         }
-        if (!data.session) {
-          await new Promise((r) => setTimeout(r, 400));
-          ({ data, error: sessionError } = await supabase.auth.getSession());
-          if (sessionError) throw sessionError;
-        }
-        if (!data.session) {
+        if (!session) {
           throw new Error('No session found after OAuth handshake.');
         }
 
-        const user = data.session.user;
+        const user = session.user;
         providerForLogRef.current = mapSupabaseProvider(user);
         void updateLastActive(supabase, user.id);
 
@@ -154,11 +162,17 @@ export const AuthCallback = () => {
               return { data, error };
             };
 
-            let { data: profile, error: profileError } = await fetchProfile();
-            if (!profile) {
-              await new Promise((r) => setTimeout(r, 500));
-              if (cancelled) return;
-              ({ data: profile, error: profileError } = await fetchProfile());
+            let profile = null;
+            let profileError = null;
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+              const result = await fetchProfile();
+              profile = result.data;
+              profileError = result.error;
+              if (profile || profileError) break;
+              if (attempt < 2) {
+                await sleep(180);
+                if (cancelled) return;
+              }
             }
 
             if (profile && isProfileOnboarded(profile)) {
@@ -186,7 +200,6 @@ export const AuthCallback = () => {
               timestamp: new Date().toISOString(),
             });
             goToStep('values');
-            await new Promise((r) => setTimeout(r, 200));
             navigate('/join', { replace: true });
           } else {
             const needsOnboarding =
@@ -210,16 +223,17 @@ export const AuthCallback = () => {
                 return { data, error: null };
               };
 
-              let { data: profile, error: profileError } = await fetchProfile();
-              if (!profile) {
-                await new Promise((r) => setTimeout(r, 800));
-                if (cancelled) return;
-                ({ data: profile, error: profileError } = await fetchProfile());
-              }
-              if (!profile) {
-                await new Promise((r) => setTimeout(r, 1000));
-                if (cancelled) return;
-                ({ data: profile, error: profileError } = await fetchProfile());
+              let profile = null;
+              let profileError = null;
+              for (let attempt = 0; attempt < 4; attempt += 1) {
+                const result = await fetchProfile();
+                profile = result.data;
+                profileError = result.error;
+                if (profile || profileError) break;
+                if (attempt < 3) {
+                  await sleep(200);
+                  if (cancelled) return;
+                }
               }
               if (cancelled) return;
 
@@ -257,7 +271,6 @@ export const AuthCallback = () => {
                   timestamp: new Date().toISOString(),
                 });
                 goToStep('values');
-                await new Promise((r) => setTimeout(r, 200));
                 navigate('/join', { replace: true });
                 return;
               }

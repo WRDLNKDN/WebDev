@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -74,6 +75,7 @@ export const EditLinksDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
+  const [linksDirty, setLinksDirty] = useState(false);
   const wasOpenRef = useRef(false);
   const initialLinksRef = useRef<SocialLink[]>([]);
 
@@ -90,6 +92,7 @@ export const EditLinksDialog = ({
       setNewLabel('');
       setAddAttempted(false);
       setUnsavedConfirmOpen(false);
+      setLinksDirty(false);
     }
     wasOpenRef.current = open;
   }, [open, currentLinks]);
@@ -115,6 +118,7 @@ export const EditLinksDialog = ({
     <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
       <Typography
         variant="caption"
+        component="span"
         sx={{
           textTransform: 'uppercase',
           letterSpacing: 0.3,
@@ -122,12 +126,78 @@ export const EditLinksDialog = ({
         }}
       >
         {text}
-        {required ? ' *' : ''}
+        {required ? (
+          <Box
+            component="span"
+            sx={{ color: 'error.main', fontWeight: 700, ml: 0.35 }}
+          >
+            *
+          </Box>
+        ) : null}
       </Typography>
       <Tooltip title={tooltip}>
         <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
       </Tooltip>
     </Stack>
+  );
+
+  const getPlatformGroupLabel = useCallback(
+    (platformValue: string, category: LinkCategory | ''): string => {
+      if (platformValue === OTHER_PLATFORM) return 'Custom';
+
+      switch (category) {
+        case 'Professional':
+          if (['Figma', 'Dribbble', 'Behance'].includes(platformValue)) {
+            return 'Design';
+          }
+          if (['Calendly', 'Notion'].includes(platformValue)) {
+            return 'Workflow';
+          }
+          return 'Development';
+        case 'Social':
+          if (
+            ['Discord', 'Reddit', 'Threads', 'Mastodon'].includes(platformValue)
+          ) {
+            return 'Community';
+          }
+          return 'Social Networks';
+        case 'Content':
+          if (['YouTube', 'Twitch'].includes(platformValue)) {
+            return 'Video';
+          }
+          return 'Publishing';
+        case 'Games':
+          if (
+            [
+              'Epic Games Store',
+              'Nintendo eShop',
+              'PlayStation Store',
+              'Steam',
+              'Xbox / Microsoft Store',
+            ].includes(platformValue)
+          ) {
+            return 'Storefronts';
+          }
+          if (
+            [
+              'Armor Games',
+              'Game Jolt',
+              'itch.io',
+              'Kongregate',
+              'Newgrounds',
+              'Roblox',
+            ].includes(platformValue)
+          ) {
+            return 'Community Platforms';
+          }
+          return 'Playable & Dev';
+        case 'Custom':
+          return 'Custom';
+        default:
+          return 'Platforms';
+      }
+    },
+    [OTHER_PLATFORM],
   );
 
   const availablePlatforms = useMemo(
@@ -136,9 +206,12 @@ export const EditLinksDialog = ({
         ? [
             ...PLATFORM_OPTIONS.filter((p) => p.category === newCategory),
             { label: 'Other', value: OTHER_PLATFORM, category: newCategory },
-          ]
+          ].map((platform) => ({
+            ...platform,
+            group: getPlatformGroupLabel(platform.value, newCategory),
+          }))
         : [],
-    [newCategory],
+    [getPlatformGroupLabel, newCategory],
   );
 
   const hasValidUrl = (() => {
@@ -197,6 +270,16 @@ export const EditLinksDialog = ({
   const platformError = addAttempted && !newPlatform.trim();
   const categoryError = addAttempted && !newCategory;
 
+  const addFormHasContent = useMemo(() => {
+    const normalizedDraftUrl = newUrl.trim();
+    return (
+      newCategory !== 'Professional' ||
+      Boolean(newPlatform.trim()) ||
+      Boolean(newLabel.trim()) ||
+      (Boolean(normalizedDraftUrl) && normalizedDraftUrl !== 'https://')
+    );
+  }, [newCategory, newLabel, newPlatform, newUrl]);
+
   const hasUnsavedChanges = useMemo(() => {
     const initial = initialLinksRef.current;
     if (links.length !== initial.length) return true;
@@ -211,8 +294,8 @@ export const EditLinksDialog = ({
       )
         return true;
     }
-    return Boolean(newCategory || newPlatform.trim() || newUrl.trim());
-  }, [links, newCategory, newPlatform, newUrl]);
+    return linksDirty || addFormHasContent;
+  }, [addFormHasContent, links, linksDirty]);
 
   const sortedLinks = useMemo(() => sortSocialLinksForEdit(links), [links]);
 
@@ -253,6 +336,7 @@ export const EditLinksDialog = ({
     };
 
     setLinks((prev) => [...prev, newLinkItem]);
+    setLinksDirty(true);
     setNewPlatform('');
     setNewUrl('https://');
     setNewLabel('');
@@ -270,6 +354,7 @@ export const EditLinksDialog = ({
   }, [onClose]);
 
   const handleDelete = (id: string) => {
+    setLinksDirty(true);
     setLinks((prev) => prev.filter((l) => l.id !== id));
   };
 
@@ -397,32 +482,109 @@ export const EditLinksDialog = ({
                       required
                       tooltip="Select the service this URL points to."
                     />
-                    <Select
-                      value={newPlatform}
-                      displayEmpty
-                      renderValue={(v) => v || 'Select platform'}
-                      MenuProps={filterSelectMenuProps}
-                      sx={dialogSelectSx}
-                      inputProps={{ 'aria-label': 'Platform' }}
-                      onChange={(e) => setNewPlatform(e.target.value)}
-                    >
-                      <MenuItem value="">Select platform</MenuItem>
-                      {availablePlatforms.map((p) => (
-                        <MenuItem key={p.value} value={p.value}>
+                    <Autocomplete
+                      disabled={!newCategory}
+                      options={availablePlatforms}
+                      value={
+                        availablePlatforms.find(
+                          (p) => p.value === newPlatform,
+                        ) ?? null
+                      }
+                      onChange={(_, value) =>
+                        setNewPlatform(value?.value ?? '')
+                      }
+                      getOptionLabel={(option) => option.label}
+                      isOptionEqualToValue={(option, value) =>
+                        option.value === value.value
+                      }
+                      groupBy={(option) => option.group}
+                      autoHighlight
+                      selectOnFocus
+                      clearOnBlur={false}
+                      handleHomeEndKeys
+                      popupIcon={<InfoOutlinedIcon sx={{ opacity: 0 }} />}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            mt: 0.75,
+                            borderRadius: 2,
+                            bgcolor: 'rgba(20,20,20,0.98)',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.55)',
+                          },
+                        },
+                        popper: {
+                          modifiers: [
+                            {
+                              name: 'offset',
+                              options: { offset: [0, 8] },
+                            },
+                          ],
+                        },
+                      }}
+                      renderGroup={(params) => (
+                        <Box key={params.key}>
+                          <Box
+                            sx={{
+                              px: 1.5,
+                              py: 1,
+                              bgcolor: 'rgba(255,255,255,0.04)',
+                              borderTop: '1px solid rgba(255,255,255,0.05)',
+                            }}
+                          >
+                            <Typography
+                              variant="overline"
+                              sx={{
+                                color: 'text.secondary',
+                                letterSpacing: 1,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {params.group}
+                            </Typography>
+                          </Box>
+                          {params.children}
+                        </Box>
+                      )}
+                      renderOption={(props, option) => (
+                        <Box component="li" {...props} key={option.value}>
                           <Stack
                             direction="row"
                             spacing={1}
                             alignItems="center"
                           >
                             <LinkIcon
-                              platform={p.value}
+                              platform={option.value}
                               sx={{ width: 18, fontSize: '1rem' }}
                             />
-                            <Typography variant="body2">{p.label}</Typography>
+                            <Typography variant="body2">
+                              {option.label}
+                            </Typography>
                           </Stack>
-                        </MenuItem>
-                      ))}
-                    </Select>
+                        </Box>
+                      )}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Search platform"
+                          error={platformError}
+                          inputProps={{
+                            ...params.inputProps,
+                            'aria-label': 'Platform',
+                          }}
+                          sx={{
+                            ...dialogSelectSx,
+                            '& .MuiInputBase-root': {
+                              ...dialogSelectSx,
+                              pr: 1,
+                            },
+                            '& .MuiAutocomplete-input': {
+                              py: '9px !important',
+                            },
+                          }}
+                        />
+                      )}
+                    />
                     {platformError && (
                       <FormHelperText>Platform is required.</FormHelperText>
                     )}

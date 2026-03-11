@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 const AUTO_ADVANCE_MS = 3500;
@@ -134,10 +135,7 @@ export const PortfolioHighlightsCarousel = ({
           {highlightedProjects.map((project, index) => {
             const previewMediaUrl = getPreviewMediaUrl(project);
             const projectUrl = project.project_url?.trim() ?? '';
-            const categories = (project.tech_stack ?? [])
-              .map((tag) => String(tag).trim())
-              .filter(Boolean)
-              .slice(0, 4);
+            const categories = getProjectDisplayCategories(project.tech_stack);
 
             return (
               <Box

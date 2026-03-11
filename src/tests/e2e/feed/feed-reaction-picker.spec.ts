@@ -27,7 +27,7 @@ const FEED_ITEM = {
 };
 
 test.describe('Feed reaction picker', () => {
-  test('stays stable on click and persists Laugh and Rage in the post summary', async ({
+  test('stays stable on click and persists Laugh and Sad in the post summary', async ({
     page,
   }) => {
     const pageErrors: string[] = [];

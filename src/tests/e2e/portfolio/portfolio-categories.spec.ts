@@ -75,16 +75,14 @@ test.describe('Portfolio categories on public profile', () => {
       .evaluateAll((nodes) =>
         nodes.map((node) => node.getAttribute('data-testid')),
       );
-    expect(sectionOrder.slice(0, 3)).toEqual([
+    expect(sectionOrder.slice(0, 2)).toEqual([
       'portfolio-section-data',
       'portfolio-section-case-study',
-      'portfolio-section-devops',
     ]);
 
     await expect(
       page.getByTestId('portfolio-section-case-study'),
     ).toBeVisible();
-    await expect(page.getByTestId('portfolio-section-devops')).toBeVisible();
     await expect(page.getByTestId('portfolio-section-data')).toBeVisible();
     await expect(
       page
@@ -103,6 +101,7 @@ test.describe('Portfolio categories on public profile', () => {
       .click();
     const previewDialog = page.getByRole('dialog');
     await expect(previewDialog).toBeVisible();
-    await expect(previewDialog.getByText('LongTail')).toBeVisible();
+    await expect(previewDialog.getByText('Case Study')).toBeVisible();
+    await expect(previewDialog.getByText('LongTail')).not.toBeVisible();
   });
 });

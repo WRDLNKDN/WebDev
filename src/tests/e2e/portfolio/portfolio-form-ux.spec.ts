@@ -20,7 +20,13 @@ async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
 }
 
 test.describe('Add Project dialog UX', () => {
+  let portfolioItems: Array<Record<string, unknown>>;
+  let postedPortfolioPayloads: Array<Record<string, unknown>>;
+
   test.beforeEach(async ({ page, context }) => {
+    portfolioItems = [];
+    postedPortfolioPayloads = [];
+
     const { stubAdminRpc } = await seedSignedInSession(context, {
       handle: 'member',
     });
@@ -60,10 +66,35 @@ test.describe('Add Project dialog UX', () => {
     });
 
     await page.route('**/rest/v1/portfolio_items*', async (route) => {
-      if (route.request().method() === 'GET') {
-        await fulfillPostgrest(route, []);
+      const method = route.request().method();
+
+      if (method === 'GET') {
+        await fulfillPostgrest(route, [...portfolioItems]);
         return;
       }
+
+      if (method === 'POST') {
+        const payload = route.request().postDataJSON() as Record<
+          string,
+          unknown
+        >;
+        postedPortfolioPayloads.push(payload);
+
+        const insertedRow = {
+          id: `project-${portfolioItems.length + 1}`,
+          owner_id: USER_ID,
+          created_at: new Date('2026-03-11T12:00:00.000Z').toISOString(),
+          sort_order: portfolioItems.length,
+          thumbnail_url: null,
+          thumbnail_status: payload.image_url ? null : 'pending',
+          ...payload,
+        };
+
+        portfolioItems.push(insertedRow);
+        await fulfillPostgrest(route, insertedRow);
+        return;
+      }
+
       await route.fulfill({ status: 204, body: '' });
     });
   });
@@ -155,7 +186,71 @@ test.describe('Add Project dialog UX', () => {
     await expect(customCategoryField).toBeVisible();
     await customCategoryField.fill('Community Tooling');
     await expect(
-      dialog.getByText('17/40 characters', { exact: true }),
+      dialog.getByText('17/40 characters. Saved exactly as entered.', {
+        exact: true,
+      }),
     ).toBeVisible();
+  });
+
+  test('saves a project with Other using the exact custom category value', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByLabel('Project Name').fill('Custom Category Project');
+    await dialog.getByRole('combobox', { name: 'Category' }).click();
+    await page.getByRole('option', { name: 'Other' }).click();
+    await dialog
+      .getByRole('textbox', { name: 'Custom Category' })
+      .fill('Community Tooling');
+    await dialog
+      .getByLabel('Project URL')
+      .fill('https://example.com/custom-category-project');
+
+    await dialog.getByRole('button', { name: /add to portfolio/i }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+
+    expect(postedPortfolioPayloads).toHaveLength(1);
+    expect(postedPortfolioPayloads[0]).toMatchObject({
+      title: 'Custom Category Project',
+      tech_stack: ['Community Tooling'],
+    });
+
+    await expect(page.getByText('Custom Category Project')).toBeVisible();
+    await page.getByLabel('Edit project Custom Category Project').click();
+
+    const editDialog = page.getByRole('dialog');
+    await expect(editDialog).toContainText(/edit project/i);
+    await expect(
+      editDialog.getByRole('combobox', { name: 'Category' }),
+    ).toHaveValue('Other');
+    await expect(
+      editDialog.getByRole('textbox', { name: 'Custom Category' }),
+    ).toHaveValue('Community Tooling');
+  });
+
+  test('saves a project without a description', async ({ page }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByLabel('Project Name').fill('No Description Project');
+    await dialog.getByRole('combobox', { name: 'Category' }).click();
+    await page.getByRole('option', { name: 'Data' }).click();
+    await dialog
+      .getByLabel('Project URL')
+      .fill('https://example.com/no-description-project');
+
+    await expect(dialog.getByText(/add a description/i)).not.toBeVisible();
+
+    await dialog.getByRole('button', { name: /add to portfolio/i }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+
+    expect(postedPortfolioPayloads).toHaveLength(1);
+    expect(postedPortfolioPayloads[0]).toMatchObject({
+      title: 'No Description Project',
+      description: null,
+      tech_stack: ['Data'],
+    });
+
+    await expect(page.getByText('No Description Project')).toBeVisible();
   });
 });

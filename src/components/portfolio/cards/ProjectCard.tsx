@@ -9,6 +9,7 @@ import type { SxProps, Theme } from '@mui/material';
 import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import { getLinkType } from '../../../lib/portfolio/linkUtils';
 import { CANDY_BLUEY } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
@@ -100,10 +101,7 @@ export const ProjectCard = ({
       borderColor: 'rgba(0,196,204,0.65)',
     },
   } as const;
-  const categories = (project.tech_stack ?? [])
-    .map((tag) => String(tag).trim())
-    .filter(Boolean)
-    .slice(0, 4);
+  const categories = getProjectDisplayCategories(project.tech_stack);
 
   return (
     <Paper

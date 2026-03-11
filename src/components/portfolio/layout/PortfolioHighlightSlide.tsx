@@ -1,6 +1,7 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 const getPreviewMediaUrl = (project: PortfolioItem): string | null =>
@@ -26,10 +27,7 @@ export const PortfolioHighlightSlide = ({
 }: PortfolioHighlightSlideProps) => {
   const previewMediaUrl = getPreviewMediaUrl(project);
   const projectUrl = project.project_url?.trim() ?? '';
-  const categories = (project.tech_stack ?? [])
-    .map((tag) => String(tag).trim())
-    .filter(Boolean)
-    .slice(0, 4);
+  const categories = getProjectDisplayCategories(project.tech_stack);
 
   return (
     <Box

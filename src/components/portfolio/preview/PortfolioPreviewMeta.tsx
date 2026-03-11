@@ -1,4 +1,5 @@
 import { Box, Chip, Typography } from '@mui/material';
+import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 type PortfolioPreviewMetaProps = {
@@ -8,6 +9,8 @@ type PortfolioPreviewMetaProps = {
 export const PortfolioPreviewMeta = ({
   project,
 }: PortfolioPreviewMetaProps) => {
+  const categories = getProjectDisplayCategories(project?.tech_stack);
+
   return (
     <>
       {project?.description && (
@@ -28,25 +31,21 @@ export const PortfolioPreviewMeta = ({
           {project.description}
         </Typography>
       )}
-      {Array.isArray(project?.tech_stack) && project.tech_stack.length > 0 && (
+      {categories.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
-          {project.tech_stack
-            .map((tag) => String(tag).trim())
-            .filter(Boolean)
-            .slice(0, 8)
-            .map((tag) => (
-              <Chip
-                key={`preview-tag-${tag}`}
-                label={tag}
-                size="small"
-                sx={{
-                  borderRadius: 1,
-                  bgcolor: 'rgba(255,255,255,0.08)',
-                  color: 'text.secondary',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                }}
-              />
-            ))}
+          {categories.map((tag) => (
+            <Chip
+              key={`preview-tag-${tag}`}
+              label={tag}
+              size="small"
+              sx={{
+                borderRadius: 1,
+                bgcolor: 'rgba(255,255,255,0.08)',
+                color: 'text.secondary',
+                border: '1px solid rgba(255,255,255,0.16)',
+              }}
+            />
+          ))}
         </Box>
       )}
     </>

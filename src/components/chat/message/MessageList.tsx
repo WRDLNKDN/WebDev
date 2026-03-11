@@ -1,7 +1,7 @@
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
-import { Box, Button, IconButton, Menu, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import React, { useRef, useEffect, useState } from 'react';
-import { PostCard } from '../../post';
+import { PostCard, ReactPickerButton } from '../../post';
+import { CHAT_REACTION_OPTIONS } from '../../post/sharedReactions';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import {
   fetchChatLinkPreview,
@@ -33,8 +33,6 @@ type MessageListProps = {
   typingAvatarUrl?: string | null;
   showTyping?: boolean;
 };
-
-const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 function formatMessageTime(iso: string): string {
   const date = new Date(iso);
@@ -69,11 +67,6 @@ export const MessageList = ({
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
-  const [reactionMenuAnchor, setReactionMenuAnchor] =
-    useState<HTMLElement | null>(null);
-  const [reactionMenuMessageId, setReactionMenuMessageId] = useState<
-    string | null
-  >(null);
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
@@ -468,82 +461,26 @@ export const MessageList = ({
                   </Box>
                 )}
                 {canAct && (
-                  <IconButton
-                    type="button"
-                    size="small"
-                    onClick={(e) => {
-                      setReactionMenuAnchor(e.currentTarget);
-                      setReactionMenuMessageId(msg.id);
-                    }}
-                    aria-label="Add reaction"
-                    sx={{
-                      color: 'rgba(255,255,255,0.7)',
-                      p: 0.25,
-                      '&:hover': {
-                        color: 'rgba(255,255,255,0.9)',
-                        bgcolor: 'rgba(255,255,255,0.06)',
-                      },
-                    }}
-                  >
-                    <EmojiEmotionsOutlinedIcon sx={{ fontSize: '1rem' }} />
-                  </IconButton>
+                  <ReactPickerButton
+                    options={CHAT_REACTION_OPTIONS}
+                    selectedValue={
+                      msg.reactions?.find(
+                        (reaction) => reaction.user_id === currentUserId,
+                      )?.emoji ?? null
+                    }
+                    onToggleReaction={(emoji) => onReaction?.(msg.id, emoji)}
+                    buttonLabel="React"
+                    sx={{ pt: 0, pb: 0, px: 0 }}
+                    buttonSx={{ minHeight: 28, py: 0.15, px: 0.5 }}
+                    traySx={{ left: 0, bottom: 'calc(100% + 8px)' }}
+                    emojiSize="1.25rem"
+                  />
                 )}
               </Box>
             </PostCard>
           </Box>
         );
       })}
-
-      <Menu
-        anchorEl={reactionMenuAnchor}
-        open={Boolean(reactionMenuAnchor)}
-        onClose={() => {
-          setReactionMenuAnchor(null);
-          setReactionMenuMessageId(null);
-        }}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: 2,
-              bgcolor: 'rgba(40,44,52,0.98)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              py: 0.5,
-              px: 0.5,
-            },
-          },
-        }}
-        MenuListProps={{
-          sx: { display: 'flex', gap: 0.25, flexWrap: 'wrap', maxWidth: 220 },
-        }}
-      >
-        {COMMON_EMOJIS.map((emoji) => (
-          <Box
-            key={emoji}
-            component="button"
-            type="button"
-            onClick={() => {
-              if (reactionMenuMessageId)
-                onReaction?.(reactionMenuMessageId, emoji);
-              setReactionMenuAnchor(null);
-              setReactionMenuMessageId(null);
-            }}
-            sx={{
-              cursor: 'pointer',
-              fontSize: '1.25rem',
-              p: 0.75,
-              borderRadius: 1,
-              border: 'none',
-              bgcolor: 'transparent',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            {emoji}
-          </Box>
-        ))}
-      </Menu>
 
       {showTyping && typingAvatarUrl && (
         <Box

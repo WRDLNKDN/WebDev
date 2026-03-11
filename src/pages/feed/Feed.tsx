@@ -113,6 +113,7 @@ import {
   PostCard,
   REACTION_OPTIONS,
 } from '../../components/post';
+import { getFeedReactionCount } from '../../components/post/sharedReactions';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 
 const FEED_LIMIT = 20;
@@ -369,6 +370,8 @@ type FeedCardActions = {
   onSend: (item: FeedItem) => void;
   onSave: (postId: string) => void;
   onUnsave: (postId: string) => void;
+  onCopyLink: (url: string) => void;
+  onMenuInfo: (message: string) => void;
   onCommentToggle: (postId: string) => void;
   onDelete: (postId: string) => void;
   onEditPost: (postId: string, body: string) => Promise<void>;
@@ -593,18 +596,17 @@ const FeedCard = ({
     rageCount;
   const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
     ...reaction,
-    count:
-      reaction.type === 'like'
-        ? likeCount
-        : reaction.type === 'love'
-          ? loveCount
-          : reaction.type === 'inspiration'
-            ? inspirationCount
-            : reaction.type === 'care'
-              ? careCount
-              : reaction.type === 'laughing'
-                ? laughingCount
-                : rageCount,
+    count: getFeedReactionCount(
+      {
+        like_count: likeCount,
+        love_count: loveCount,
+        inspiration_count: inspirationCount,
+        care_count: careCount,
+        laughing_count: laughingCount,
+        rage_count: rageCount,
+      },
+      reaction.type,
+    ),
   })).filter((reaction) => reaction.count > 0);
   const isPostEdited = Boolean(item.edited_at);
   const imageLightboxUrl = imagePreviewState.url;
@@ -1028,7 +1030,7 @@ const FeedCard = ({
                   alignItems="center"
                   sx={{ '& > *:not(:first-of-type)': { ml: -0.55 } }}
                 >
-                  {reactionSummary.slice(0, 3).map(({ type, Icon, color }) => (
+                  {reactionSummary.slice(0, 3).map(({ type, emoji, color }) => (
                     <Box
                       key={type}
                       sx={{
@@ -1041,9 +1043,10 @@ const FeedCard = ({
                         bgcolor: 'rgba(12,18,29,0.92)',
                         border: '1px solid rgba(255,255,255,0.12)',
                         color,
+                        fontSize: '0.72rem',
                       }}
                     >
-                      <Icon sx={{ fontSize: 12, color: 'inherit' }} />
+                      <span aria-hidden="true">{emoji}</span>
                     </Box>
                   ))}
                 </Stack>
@@ -1393,23 +1396,9 @@ const FeedCard = ({
                               }}
                             >
                               {REACTION_OPTIONS.map(
-                                ({ type, Icon, IconOutlined, color }) => {
+                                ({ type, emoji, color }) => {
                                   const active = c.viewer_reaction === type;
-                                  const count =
-                                    type === 'like'
-                                      ? (c.like_count ?? 0)
-                                      : type === 'love'
-                                        ? (c.love_count ?? 0)
-                                        : type === 'inspiration'
-                                          ? (c.inspiration_count ?? 0)
-                                          : type === 'care'
-                                            ? (c.care_count ?? 0)
-                                            : type === 'laughing'
-                                              ? (c.laughing_count ?? 0)
-                                              : (c.rage_count ?? 0);
-                                  const CurrentIcon = active
-                                    ? Icon
-                                    : IconOutlined;
+                                  const count = getFeedReactionCount(c, type);
                                   return (
                                     <Button
                                       key={`${c.id}-${type}`}
@@ -1429,19 +1418,13 @@ const FeedCard = ({
                                         minWidth: 0,
                                         px: { xs: 0.75, sm: 0.25 },
                                         minHeight: { xs: 36, sm: 30 },
+                                        gap: 0.4,
                                         color: active
                                           ? color
                                           : 'text.secondary',
                                       }}
-                                      startIcon={
-                                        <CurrentIcon
-                                          sx={{
-                                            fontSize: 16,
-                                            color: active ? color : undefined,
-                                          }}
-                                        />
-                                      }
                                     >
+                                      <span aria-hidden="true">{emoji}</span>
                                       {count > 0 ? count : ''}
                                     </Button>
                                   );
@@ -2708,6 +2691,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     onSend: handleSend,
     onSave: (postId) => void handleSave(postId),
     onUnsave: (postId) => void handleUnsave(postId),
+    onCopyLink: (url) => void handleCopyLink(url),
+    onMenuInfo: (message) => setSnack(message),
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
     onEditPost: handleEditPost,

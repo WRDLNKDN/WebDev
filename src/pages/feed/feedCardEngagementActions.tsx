@@ -5,6 +5,7 @@ import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import { Box, Button, Typography } from '@mui/material';
 import { FeedReactionBar, REACTION_OPTIONS } from '../../components/post';
+import { getFeedReactionCount } from '../../components/post/sharedReactions';
 import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
 import type { FeedCardActions } from './feedCardTypes';
 
@@ -65,18 +66,17 @@ export const FeedCardEngagementActions = ({
     rageCount;
   const reactionSummary = REACTION_OPTIONS.map((reaction) => ({
     ...reaction,
-    count:
-      reaction.type === 'like'
-        ? likeCount
-        : reaction.type === 'love'
-          ? loveCount
-          : reaction.type === 'inspiration'
-            ? inspirationCount
-            : reaction.type === 'care'
-              ? careCount
-              : reaction.type === 'laughing'
-                ? laughingCount
-                : rageCount,
+    count: getFeedReactionCount(
+      {
+        like_count: likeCount,
+        love_count: loveCount,
+        inspiration_count: inspirationCount,
+        care_count: careCount,
+        laughing_count: laughingCount,
+        rage_count: rageCount,
+      },
+      reaction.type,
+    ),
   })).filter((reaction) => reaction.count > 0);
   return (
     <>
@@ -99,7 +99,7 @@ export const FeedCardEngagementActions = ({
                   '& > *:not(:first-of-type)': { ml: -0.55 },
                 }}
               >
-                {reactionSummary.slice(0, 3).map(({ type, Icon, color }) => (
+                {reactionSummary.slice(0, 3).map(({ type, emoji, color }) => (
                   <Box
                     key={type}
                     sx={{
@@ -112,9 +112,10 @@ export const FeedCardEngagementActions = ({
                       bgcolor: 'rgba(12,18,29,0.92)',
                       border: '1px solid rgba(255,255,255,0.12)',
                       color,
+                      fontSize: '0.72rem',
                     }}
                   >
-                    <Icon sx={{ fontSize: 12, color: 'inherit' }} />
+                    <span aria-hidden="true">{emoji}</span>
                   </Box>
                 ))}
               </Box>

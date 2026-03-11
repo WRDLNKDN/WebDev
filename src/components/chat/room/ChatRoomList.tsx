@@ -1,4 +1,7 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import AddIcon from '@mui/icons-material/Add';
 import {
   Box,
   Button,
@@ -55,31 +58,98 @@ export const ChatRoomList = ({
       }}
     >
       <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
+        <Typography variant="h6" sx={{ mb: 1.5 }}>
           Messages
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {onStartDm && (
+        {(onStartDm || onCreateGroup) && (
+          <Box
+            sx={{
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 2,
+              p: 1.25,
+              background:
+                'linear-gradient(180deg, rgba(80,120,255,0.12) 0%, rgba(8,12,24,0.28) 100%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}
+          >
             <Button
-              size="small"
-              variant="outlined"
+              fullWidth
               onClick={onStartDm}
-              sx={{ textTransform: 'none' }}
+              startIcon={<AddIcon />}
+              sx={{
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                color: 'white',
+                fontSize: '1rem',
+                fontWeight: 600,
+                mb: 1,
+                px: 1.25,
+                py: 1.1,
+                borderRadius: 1.5,
+                border: '1px solid rgba(120,170,255,0.2)',
+                background:
+                  'linear-gradient(180deg, rgba(31,44,86,0.9) 0%, rgba(11,18,37,0.92) 100%)',
+                '&:hover': {
+                  background:
+                    'linear-gradient(180deg, rgba(37,52,100,0.96) 0%, rgba(14,22,44,0.98) 100%)',
+                },
+              }}
             >
-              New chat
+              Start Conversation
             </Button>
-          )}
-          {onCreateGroup && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={onCreateGroup}
-              sx={{ textTransform: 'none' }}
-            >
-              New group
-            </Button>
-          )}
-        </Box>
+
+            <Box sx={{ display: 'grid', gap: 1 }}>
+              {onStartDm && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={onStartDm}
+                  startIcon={<AddCommentOutlinedIcon />}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    textTransform: 'none',
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.16)',
+                    backgroundColor: 'rgba(13, 18, 33, 0.82)',
+                    borderRadius: 1.5,
+                    px: 1.25,
+                    py: 0.95,
+                    '&:hover': {
+                      borderColor: 'rgba(140,190,255,0.38)',
+                      backgroundColor: 'rgba(18, 25, 46, 0.92)',
+                    },
+                  }}
+                >
+                  New chat
+                </Button>
+              )}
+              {onCreateGroup && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={onCreateGroup}
+                  startIcon={<GroupOutlinedIcon />}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    textTransform: 'none',
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.16)',
+                    backgroundColor: 'rgba(13, 18, 33, 0.82)',
+                    borderRadius: 1.5,
+                    px: 1.25,
+                    py: 0.95,
+                    '&:hover': {
+                      borderColor: 'rgba(140,190,255,0.38)',
+                      backgroundColor: 'rgba(18, 25, 46, 0.92)',
+                    },
+                  }}
+                >
+                  New group
+                </Button>
+              )}
+            </Box>
+          </Box>
+        )}
       </Box>
       <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
         {loading ? (

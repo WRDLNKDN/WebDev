@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/auth/supabaseClient';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
+import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import {
   getPortfolioUrlSafetyError,
   sanitizePortfolioUrlInput,
@@ -96,11 +97,11 @@ export const addProjectItem = async ({
     .from('portfolio_items')
     .insert({
       owner_id: session.user.id,
-      title: newProject.title,
-      description: newProject.description,
+      title: newProject.title.trim(),
+      description: newProject.description.trim() || null,
       project_url: projectUrlTrimmed,
       image_url: finalImageUrl,
-      tech_stack: newProject.tech_stack,
+      tech_stack: normalizeProjectCategories(newProject.tech_stack, 1),
       is_highlighted: Boolean(newProject.is_highlighted),
       sort_order: maxOrder,
       normalized_url: normalizedUrl,

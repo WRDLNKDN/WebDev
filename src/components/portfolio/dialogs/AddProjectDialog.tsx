@@ -25,7 +25,12 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  getProjectCategorySelection,
+  isPredefinedProjectCategory,
+  MAX_CUSTOM_PROJECT_CATEGORY_LENGTH,
+  normalizeCustomProjectCategory,
   PORTFOLIO_CATEGORY_OPTIONS,
+  PORTFOLIO_OTHER_CATEGORY_OPTION,
   normalizeProjectCategories,
 } from '../../../lib/portfolio/categoryUtils';
 import {
@@ -34,6 +39,7 @@ import {
   sanitizePortfolioUrlInput,
   validatePortfolioUrl,
 } from '../../../lib/portfolio/linkValidation';
+import { containsProfanity } from '../../../lib/utils/profanityFilter';
 import { normalizeUrlForDedup } from '../../../lib/utils/linkPlatform';
 import { toMessage } from '../../../lib/utils/errors';
 import type { NewProject, PortfolioItem } from '../../../types/portfolio';
@@ -123,6 +129,12 @@ export const AddProjectDialog = ({
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [urlTouched, setUrlTouched] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<
+    | (typeof PORTFOLIO_CATEGORY_OPTIONS)[number]
+    | typeof PORTFOLIO_OTHER_CATEGORY_OPTION
+    | null
+  >(null);
+  const [customCategory, setCustomCategory] = useState('');
 
   const isEdit = Boolean(initialProject && projectId);
 
@@ -159,14 +171,22 @@ export const AddProjectDialog = ({
 
   useEffect(() => {
     if (open && isEdit && initialProject) {
+      const categorySelection = getProjectCategorySelection(
+        initialProject.tech_stack ?? [],
+      );
       setFormData({
         title: initialProject.title,
         description: initialProject.description ?? '',
         image_url: initialProject.image_url ?? '',
         project_url: initialProject.project_url ?? '',
-        tech_stack: normalizeProjectCategories(initialProject.tech_stack ?? []),
+        tech_stack: normalizeProjectCategories(
+          initialProject.tech_stack ?? [],
+          1,
+        ),
         is_highlighted: Boolean(initialProject.is_highlighted),
       });
+      setSelectedCategory(categorySelection.pickerValue);
+      setCustomCategory(categorySelection.customCategory);
       setPreviewUrl(
         typeof initialProject.image_url === 'string' &&
           initialProject.image_url.trim().length > 0
@@ -177,6 +197,8 @@ export const AddProjectDialog = ({
       setSelectedFile(undefined);
     } else if (open) {
       setFormData(emptyForm);
+      setSelectedCategory(null);
+      setCustomCategory('');
       setPreviewUrl(null);
       setPreviewLoadFailed(false);
       setSelectedFile(undefined);
@@ -207,13 +229,33 @@ export const AddProjectDialog = ({
 
   const isExternalUrl = (url: string) =>
     /^https?:\/\//i.test(sanitizePortfolioUrlInput(url));
-  const normalizedCategories = normalizeProjectCategories(formData.tech_stack);
+  const normalizedCustomCategory =
+    normalizeCustomProjectCategory(customCategory);
+  const customCategoryHasProfanity = containsProfanity(
+    normalizedCustomCategory,
+  );
+  const selectedCategoryValue =
+    selectedCategory === PORTFOLIO_OTHER_CATEGORY_OPTION
+      ? normalizedCustomCategory
+      : selectedCategory;
+  const normalizedCategories = selectedCategoryValue
+    ? normalizeProjectCategories([selectedCategoryValue], 1)
+    : [];
   const url = sanitizePortfolioUrlInput(formData.project_url);
   const hasTitle = Boolean(formData.title.trim());
-  const hasDescription = Boolean(formData.description.trim());
   const hasCategories = normalizedCategories.length > 0;
   const hasUrl = Boolean(url);
   const hasValidProtocol = !hasUrl || isExternalUrl(url);
+  const customCategoryError =
+    selectedCategory !== PORTFOLIO_OTHER_CATEGORY_OPTION
+      ? ''
+      : !normalizedCustomCategory
+        ? 'Enter a custom category.'
+        : normalizedCustomCategory.length > MAX_CUSTOM_PROJECT_CATEGORY_LENGTH
+          ? `Custom categories must be ${MAX_CUSTOM_PROJECT_CATEGORY_LENGTH} characters or fewer.`
+          : customCategoryHasProfanity
+            ? 'Custom categories cannot contain profanity.'
+            : '';
   const urlSafetyError =
     hasUrl && hasValidProtocol ? getPortfolioUrlSafetyError(url) : '';
   const normalizedFormUrl = hasUrl ? normalizeUrlForDedup(url) : '';
@@ -252,8 +294,8 @@ export const AddProjectDialog = ({
               : '';
   const blockers: string[] = [];
   if (!hasTitle) blockers.push('add a project name');
-  if (!hasDescription) blockers.push('add a description');
   if (!hasCategories) blockers.push('select at least one category');
+  if (customCategoryError) blockers.push('fix the custom category');
   if (!hasUrl) blockers.push('add a project URL');
   if (hasUrl && !hasValidProtocol) blockers.push('fix URL format (http/https)');
   if (urlSafetyError) blockers.push('use a professional project URL');
@@ -296,9 +338,12 @@ export const AddProjectDialog = ({
         return;
       }
     }
-    const selectedCategories = normalizeProjectCategories(formData.tech_stack);
-    if (selectedCategories.length === 0) {
-      setSubmitError('Select at least one category.');
+    if (normalizedCategories.length === 0) {
+      setSubmitError('Select a category.');
+      return;
+    }
+    if (customCategoryError) {
+      setSubmitError(customCategoryError);
       return;
     }
     try {
@@ -306,8 +351,9 @@ export const AddProjectDialog = ({
       await onSubmit(
         {
           ...formData,
+          description: formData.description.trim(),
           project_url: url,
-          tech_stack: selectedCategories,
+          tech_stack: normalizedCategories,
         },
         selectedFile,
         projectId,
@@ -484,35 +530,44 @@ export const AddProjectDialog = ({
 
               <Box>
                 <FieldLabel
-                  text="Categories"
+                  text="Category"
                   required
-                  tooltip="Choose one or more categories to organize this artifact."
+                  tooltip="Choose one category to organize this artifact."
                 />
                 <Autocomplete
-                  multiple
-                  disableCloseOnSelect
-                  options={normalizeProjectCategories([
+                  options={[
                     ...PORTFOLIO_CATEGORY_OPTIONS,
-                    ...(formData.tech_stack ?? []),
-                  ])}
-                  value={normalizeProjectCategories(formData.tech_stack)}
+                    PORTFOLIO_OTHER_CATEGORY_OPTION,
+                  ]}
+                  value={selectedCategory}
                   onChange={(_, next) => {
+                    setSelectedCategory(next);
                     setFormData((prev) => ({
                       ...prev,
-                      tech_stack: normalizeProjectCategories(next),
+                      tech_stack:
+                        next && next !== PORTFOLIO_OTHER_CATEGORY_OPTION
+                          ? [next]
+                          : next === PORTFOLIO_OTHER_CATEGORY_OPTION &&
+                              normalizedCustomCategory
+                            ? [normalizedCustomCategory]
+                            : [],
                     }));
+                    if (
+                      next &&
+                      next !== PORTFOLIO_OTHER_CATEGORY_OPTION &&
+                      isPredefinedProjectCategory(next)
+                    ) {
+                      setCustomCategory('');
+                    }
                   }}
+                  isOptionEqualToValue={(option, value) => option === value}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       fullWidth
                       required
-                      label="Categories"
-                      placeholder={
-                        (formData.tech_stack?.length ?? 0) > 0
-                          ? ''
-                          : 'Select one or more categories'
-                      }
+                      label="Category"
+                      placeholder={selectedCategory ? '' : 'Select a category'}
                       helperText="Used to organize Portfolio Showcase sections."
                       variant="outlined"
                       size="small"
@@ -520,7 +575,7 @@ export const AddProjectDialog = ({
                         htmlInput: {
                           ...params.inputProps,
                           'data-field-tooltip':
-                            'Choose one or more categories to organize this artifact.',
+                            'Choose one category to organize this artifact.',
                         },
                       }}
                       sx={{
@@ -532,6 +587,53 @@ export const AddProjectDialog = ({
                   )}
                 />
               </Box>
+
+              {selectedCategory === PORTFOLIO_OTHER_CATEGORY_OPTION && (
+                <Box>
+                  <FieldLabel
+                    text="Custom Category"
+                    required
+                    tooltip="Enter a custom category for projects that do not fit the predefined list."
+                  />
+                  <TextField
+                    fullWidth
+                    required
+                    value={customCategory}
+                    onChange={(e) => {
+                      const nextValue = e.target.value.slice(
+                        0,
+                        MAX_CUSTOM_PROJECT_CATEGORY_LENGTH,
+                      );
+                      setCustomCategory(nextValue);
+                      setFormData((prev) => ({
+                        ...prev,
+                        tech_stack: normalizeCustomProjectCategory(nextValue)
+                          ? [normalizeCustomProjectCategory(nextValue)]
+                          : [],
+                      }));
+                    }}
+                    placeholder="Enter custom category"
+                    variant="outlined"
+                    size="small"
+                    error={Boolean(customCategoryError)}
+                    helperText={
+                      customCategoryError ||
+                      `${normalizedCustomCategory.length}/${MAX_CUSTOM_PROJECT_CATEGORY_LENGTH} characters`
+                    }
+                    inputProps={{
+                      maxLength: MAX_CUSTOM_PROJECT_CATEGORY_LENGTH,
+                      'aria-label': 'Custom Category',
+                      'data-field-tooltip':
+                        'Enter a custom category for projects that do not fit the predefined list.',
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': { borderRadius: 1 },
+                      '& .MuiInputBase-input': { py: 1.35 },
+                      '& .MuiFormHelperText-root': { mx: 0 },
+                    }}
+                  />
+                </Box>
+              )}
 
               <Box>
                 <FieldLabel
@@ -574,12 +676,10 @@ export const AddProjectDialog = ({
               <Box>
                 <FieldLabel
                   text="Description"
-                  required
                   tooltip="Short summary shown in the project card and preview."
                 />
                 <TextField
                   fullWidth
-                  required
                   multiline
                   rows={2}
                   value={formData.description}

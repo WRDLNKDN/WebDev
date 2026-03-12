@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useJoin } from '../../context/useJoin';
 import {
@@ -56,38 +56,41 @@ export const IdentityStep = () => {
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
-  const advanceFromSession = (
-    session: Awaited<
-      ReturnType<typeof supabase.auth.getSession>
-    >['data']['session'],
-  ) => {
-    if (
-      !session?.user ||
-      hasAdvanced.current ||
-      !state.completedSteps.includes('welcome')
-    ) {
-      return false;
-    }
+  const advanceFromSession = useCallback(
+    (
+      session: Awaited<
+        ReturnType<typeof supabase.auth.getSession>
+      >['data']['session'],
+    ) => {
+      if (
+        !session?.user ||
+        hasAdvanced.current ||
+        !state.completedSteps.includes('welcome')
+      ) {
+        return false;
+      }
 
-    hasAdvanced.current = true;
-    const provider = mapSupabaseProvider(session.user);
+      hasAdvanced.current = true;
+      const provider = mapSupabaseProvider(session.user);
 
-    setIdentity({
-      provider,
-      userId: session.user.id,
-      email: session.user.email || '',
-      termsAccepted: true,
-      guidelinesAccepted: true,
-      policyVersion: POLICY_VERSION,
-      timestamp: new Date().toISOString(),
-    });
+      setIdentity({
+        provider,
+        userId: session.user.id,
+        email: session.user.email || '',
+        termsAccepted: true,
+        guidelinesAccepted: true,
+        policyVersion: POLICY_VERSION,
+        timestamp: new Date().toISOString(),
+      });
 
-    window.setTimeout(() => {
-      markComplete('identity');
-      goToStep('values');
-    }, 0);
-    return true;
-  };
+      window.setTimeout(() => {
+        markComplete('identity');
+        goToStep('values');
+      }, 0);
+      return true;
+    },
+    [goToStep, markComplete, setIdentity, state.completedSteps],
+  );
 
   // State verification: ensure user has viewed WelcomeStep to prevent zombie sessions
   useEffect(() => {
@@ -138,7 +141,7 @@ export const IdentityStep = () => {
     return () => {
       sub.subscription.unsubscribe();
     };
-  }, [goToStep, markComplete, setIdentity, state.completedSteps]);
+  }, [advanceFromSession]);
 
   useEffect(() => {
     return () => {

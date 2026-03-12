@@ -51,7 +51,7 @@ test.describe('Footer layout', () => {
       'href',
       'https://www.instagram.com/wrdlnkdn/',
     );
-    await expect(github).toHaveAttribute('href', 'https://github.com/wrdlnkdn');
+    await expect(github).toHaveAttribute('href', 'https://github.com/WRDLNKDN');
     await expect(instagram).toHaveAttribute('target', '_blank');
     await expect(github).toHaveAttribute('target', '_blank');
     await expect(instagram).toHaveAttribute('rel', 'noopener noreferrer');

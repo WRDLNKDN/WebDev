@@ -38,7 +38,7 @@ export const FOOTER_SOCIAL_LINKS: FooterSocialLink[] = [
   },
   {
     label: 'GitHub',
-    href: 'https://github.com/wrdlnkdn',
+    href: 'https://github.com/WRDLNKDN',
   },
 ];
 

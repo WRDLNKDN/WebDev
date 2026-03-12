@@ -116,7 +116,7 @@ export const NavbarMobileDrawer = ({
               )}
               <Button
                 component={RouterLink}
-                to="/join"
+                to="/signin"
                 onClick={() => setDrawerOpen(false)}
                 sx={{
                   justifyContent: 'flex-start',

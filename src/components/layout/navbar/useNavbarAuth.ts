@@ -211,12 +211,12 @@ export const useNavbarAuth = ({
   }, [navigate, path]);
 
   const openSignIn = useCallback(async () => {
-    if (path === '/join') return;
+    if (path === '/signin') return;
     setDrawerOpen(false);
     try {
-      await import('../../../pages/auth/Join');
+      await import('../../../pages/auth/SignIn');
     } finally {
-      navigate('/join');
+      navigate('/signin');
     }
   }, [navigate, path]);
 

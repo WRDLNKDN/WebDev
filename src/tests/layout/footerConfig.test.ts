@@ -46,4 +46,13 @@ describe('footerConfig', () => {
       'GitHub',
     ]);
   });
+
+  it('keeps instagram and github pointed at the canonical WRDLNKDN profiles', () => {
+    expect(
+      FOOTER_SOCIAL_LINKS.find((link) => link.label === 'Instagram')?.href,
+    ).toBe('https://www.instagram.com/wrdlnkdn/');
+    expect(
+      FOOTER_SOCIAL_LINKS.find((link) => link.label === 'GitHub')?.href,
+    ).toBe('https://github.com/WRDLNKDN');
+  });
 });

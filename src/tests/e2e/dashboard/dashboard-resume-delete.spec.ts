@@ -47,7 +47,9 @@ test.describe('Dashboard resume delete', () => {
       timeout: 35_000,
     });
 
-    await expect(page.getByText('PORTFOLIO SHOWCASE')).toBeVisible({
+    await expect(
+      page.getByText('PORTFOLIO SHOWCASE', { exact: true }),
+    ).toBeVisible({
       timeout: 30_000,
     });
     const deleteResumeBtn = page.getByRole('button', {

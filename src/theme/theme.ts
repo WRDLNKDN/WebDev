@@ -1,5 +1,12 @@
 import { alpha, createTheme } from '@mui/material/styles';
-import { FONT_FAMILY, FOCUS_RING, PALETTE } from './themeConstants';
+import {
+  ACTION_COLORS,
+  FONT_FAMILY,
+  FOCUS_RING,
+  PALETTE,
+  SURFACE_COLORS,
+  TEXT_COLORS,
+} from './themeConstants';
 
 const theme = createTheme({
   palette: PALETTE,
@@ -115,18 +122,18 @@ const theme = createTheme({
           },
           // Single scroll container (Layout and Join use this class for scrollbar styling)
           '.app-scroll-container': {
-            scrollbarColor: '#6b6b6b #2b2b2b',
+            scrollbarColor: `${ACTION_COLORS.primary} ${SURFACE_COLORS.paper}`,
             '&::-webkit-scrollbar': {
-              backgroundColor: '#2b2b2b',
+              backgroundColor: SURFACE_COLORS.paper,
             },
             '&::-webkit-scrollbar-thumb': {
               borderRadius: 8,
-              backgroundColor: '#6b6b6b',
+              backgroundColor: ACTION_COLORS.primary,
               minHeight: 24,
-              border: '3px solid #2b2b2b',
+              border: `3px solid ${SURFACE_COLORS.paper}`,
             },
             '&::-webkit-scrollbar-thumb:focus': {
-              backgroundColor: '#959595',
+              backgroundColor: PALETTE.primary.light,
             },
           },
           'input, textarea, button, select, option, optgroup': {
@@ -217,8 +224,8 @@ const theme = createTheme({
               borderRadius: '18px !important',
               color: '#f5f9ff !important',
               background:
-                'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%) !important',
-              border: '1px solid rgba(173,203,255,0.24) !important',
+                'linear-gradient(180deg, rgba(56,132,210,0.2) 0%, rgba(45,111,173,0.18) 100%) !important',
+              border: '1px solid rgba(141,188,229,0.28) !important',
               boxShadow:
                 '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04) !important',
               backdropFilter: 'blur(12px)',
@@ -229,7 +236,7 @@ const theme = createTheme({
                 inset: 1,
                 borderRadius: '16px',
                 background:
-                  'radial-gradient(circle at 28% 24%, rgba(255,255,255,0.18), rgba(255,255,255,0.03) 45%, rgba(132,154,214,0.08) 100%)',
+                  'radial-gradient(circle at 28% 24%, rgba(255,255,255,0.18), rgba(255,255,255,0.03) 45%, rgba(56,132,210,0.12) 100%)',
                 pointerEvents: 'none',
               },
               '&::after': {
@@ -240,7 +247,7 @@ const theme = createTheme({
                 width: '62%',
                 height: '62%',
                 background:
-                  'radial-gradient(circle, rgba(96,208,255,0.7) 0%, rgba(96,208,255,0.28) 38%, rgba(96,208,255,0) 74%)',
+                  'radial-gradient(circle, rgba(141,188,229,0.72) 0%, rgba(141,188,229,0.28) 38%, rgba(141,188,229,0) 74%)',
                 pointerEvents: 'none',
                 opacity: 0.9,
               },
@@ -253,16 +260,16 @@ const theme = createTheme({
                 transform: 'scale(1.04)',
                 color: '#ffffff !important',
                 background:
-                  'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%) !important',
-                borderColor: 'rgba(191,219,254,0.44) !important',
+                  'linear-gradient(180deg, rgba(141,188,229,0.24) 0%, rgba(45,111,173,0.22) 100%) !important',
+                borderColor: 'rgba(141,188,229,0.5) !important',
                 boxShadow:
-                  '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 18px rgba(96,208,255,0.18) !important',
+                  '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 18px rgba(141,188,229,0.2) !important',
               },
               '&.Mui-disabled': {
                 color: 'rgba(241,245,249,0.5) !important',
-                borderColor: 'rgba(173,203,255,0.14) !important',
+                borderColor: 'rgba(156,187,217,0.18) !important',
                 background:
-                  'linear-gradient(180deg, rgba(118,137,190,0.1) 0%, rgba(92,109,163,0.08) 100%) !important',
+                  'linear-gradient(180deg, rgba(156,187,217,0.12) 0%, rgba(45,111,173,0.08) 100%) !important',
               },
             },
           '&.MuiIconButton-sizeSmall[aria-label*="close" i], &.MuiIconButton-sizeSmall[aria-label*="delete" i], &.MuiIconButton-sizeSmall[aria-label*="remove" i], &.MuiIconButton-sizeSmall[aria-label*="trash" i]':
@@ -300,7 +307,7 @@ const theme = createTheme({
           minHeight: 44, // Touch target safety
           '&::placeholder': {
             opacity: 1,
-            color: '#bdbdbd', // AAA 7:1 on #121212 (was #a0a0a0)
+            color: TEXT_COLORS.disabled,
           },
         },
       },
@@ -325,7 +332,7 @@ const theme = createTheme({
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: '#e8e8e8', // AAA 7:1 label
+          color: TEXT_COLORS.secondary,
           '&.Mui-focused': { color: PALETTE.primary.main },
         },
         // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
@@ -345,7 +352,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           fontSize: '0.875rem', // Ensure error text isn't microscopic
-          color: '#e8e8e8', // AAA 7:1
+          color: TEXT_COLORS.secondary,
         },
       },
     },
@@ -372,13 +379,13 @@ const theme = createTheme({
         },
         track: {
           opacity: 0.5,
-          backgroundColor: '#9e9e9e',
+          backgroundColor: ACTION_COLORS.primaryDisabled,
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
-        icon: { color: '#e8e8e8' },
+        icon: { color: TEXT_COLORS.secondary },
       },
     },
 
@@ -458,7 +465,7 @@ const theme = createTheme({
           },
           '&.MuiChip-deletable': {
             paddingRight: 4,
-            borderColor: 'rgba(173,203,255,0.2)',
+            borderColor: 'rgba(141,188,229,0.26)',
             boxShadow:
               '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
           },
@@ -472,8 +479,8 @@ const theme = createTheme({
           borderRadius: 12,
           padding: 4,
           background:
-            'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%)',
-          border: '1px solid rgba(173,203,255,0.22)',
+            'linear-gradient(180deg, rgba(56,132,210,0.2) 0%, rgba(45,111,173,0.18) 100%)',
+          border: '1px solid rgba(141,188,229,0.26)',
           boxShadow:
             '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
           transition:
@@ -481,10 +488,10 @@ const theme = createTheme({
           '&:hover': {
             color: '#ffffff',
             background:
-              'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%)',
-            borderColor: 'rgba(191,219,254,0.4)',
+              'linear-gradient(180deg, rgba(141,188,229,0.24) 0%, rgba(45,111,173,0.2) 100%)',
+            borderColor: 'rgba(141,188,229,0.42)',
             boxShadow:
-              '0 12px 24px rgba(4,10,25,0.3), 0 0 12px rgba(96,208,255,0.16)',
+              '0 12px 24px rgba(4,10,25,0.3), 0 0 12px rgba(141,188,229,0.18)',
             transform: 'scale(1.04)',
           },
         },
@@ -499,12 +506,12 @@ const theme = createTheme({
         },
         standardError: {
           backgroundColor: alpha(PALETTE.error.main, 0.12),
-          color: '#ffd6d6',
+          color: '#F39188',
           border: `1px solid ${PALETTE.error.main}`,
         },
         standardInfo: {
           backgroundColor: alpha(PALETTE.info.main, 0.12),
-          color: '#d9ffff',
+          color: PALETTE.primary.light,
           border: `1px solid ${PALETTE.info.main}`,
         },
       },
@@ -552,10 +559,10 @@ const theme = createTheme({
       styleOverrides: {
         tooltip: {
           fontFamily: FONT_FAMILY,
-          backgroundColor: '#424242',
-          color: '#ffffff',
+          backgroundColor: SURFACE_COLORS.panel,
+          color: TEXT_COLORS.primary,
           fontSize: '0.875rem',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(141,188,229,0.18)',
         },
       },
     },
@@ -589,7 +596,7 @@ const theme = createTheme({
           },
         },
         text: {
-          fill: '#121212', // Matches our Background Dark
+          fill: SURFACE_COLORS.canvas,
           fontWeight: 800,
         },
       },

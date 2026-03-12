@@ -24,8 +24,8 @@ const Loading = () => (
       justifyContent: 'center',
       alignItems: 'center',
       padding: '4rem 1rem',
-      background: '#121212',
-      color: '#ffffff',
+      background: '#05070F',
+      color: '#FFFFFF',
     }}
   >
     <div

@@ -151,7 +151,7 @@ export const ChatMessageRow = ({
           bgcolor: isOwn ? 'rgba(37, 99, 235, 0.34)' : 'rgba(17, 24, 39, 0.6)',
           borderColor: isOwn
             ? 'rgba(147,197,253,0.55)'
-            : 'rgba(255,255,255,0.12)',
+            : 'rgba(156,187,217,0.26)',
         }}
         contentSx={{ pt: 1.5, pb: 1, px: 1.5 }}
       >
@@ -167,7 +167,7 @@ export const ChatMessageRow = ({
               style={{
                 padding: '8px',
                 borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.2)',
+                border: '1px solid rgba(141,188,229,0.38)',
                 background: 'rgba(0,0,0,0.2)',
                 color: 'white',
                 minWidth: 200,
@@ -243,7 +243,7 @@ export const ChatMessageRow = ({
               textDecoration: 'none',
               borderRadius: 1.5,
               overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid rgba(156,187,217,0.30)',
               bgcolor: 'rgba(0,0,0,0.25)',
             }}
           >
@@ -317,9 +317,9 @@ export const ChatMessageRow = ({
                     px: 0.5,
                     py: 0.15,
                     borderRadius: 1,
-                    bgcolor: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                    bgcolor: 'rgba(56,132,210,0.14)',
+                    border: '1px solid rgba(156,187,217,0.18)',
+                    '&:hover': { bgcolor: 'rgba(156,187,217,0.22)' },
                   }}
                 >
                   {emoji}
@@ -339,7 +339,7 @@ export const ChatMessageRow = ({
                 p: 0.25,
                 '&:hover': {
                   color: 'rgba(255,255,255,0.9)',
-                  bgcolor: 'rgba(255,255,255,0.06)',
+                  bgcolor: 'rgba(56,132,210,0.14)',
                 },
               }}
             >

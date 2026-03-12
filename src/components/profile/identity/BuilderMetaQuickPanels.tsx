@@ -10,7 +10,7 @@ interface QuickPanelProps {
 
 const QUICK_PANEL_INNER = {
   borderRadius: 3,
-  border: '1px solid rgba(255,255,255,0.08)',
+  border: '1px solid rgba(156,187,217,0.18)',
   bgcolor: 'rgba(0,0,0,0.2)',
   p: 3,
   height: '100%',
@@ -89,7 +89,7 @@ export const BuilderMetaQuickPanels = ({
               size="small"
               variant="outlined"
               onClick={onManageLinks}
-              sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              sx={{ borderColor: 'rgba(141,188,229,0.50)', color: 'white' }}
             >
               Manage Links
             </Button>
@@ -105,7 +105,7 @@ export const BuilderMetaQuickPanels = ({
               size="small"
               variant="outlined"
               onClick={onManageSkills ?? (() => {})}
-              sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+              sx={{ borderColor: 'rgba(141,188,229,0.50)', color: 'white' }}
             >
               Manage Skills
             </Button>

@@ -70,7 +70,7 @@ export const DirectoryRow = ({
               width: { xs: 56, md: 52 },
               height: { xs: 56, md: 52 },
               bgcolor: 'primary.dark',
-              border: '2px solid rgba(255,255,255,0.1)',
+              border: '2px solid rgba(156,187,217,0.22)',
             }}
           />
         </Box>

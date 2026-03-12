@@ -217,7 +217,7 @@ export const ChatPage = () => {
             minWidth: { xs: 0, md: 320, lg: 340 },
             maxWidth: '100%',
             flexShrink: 0,
-            borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
+            borderRight: { xs: 'none', md: '1px solid rgba(156,187,217,0.22)' },
             flexDirection: 'column',
           }}
         >

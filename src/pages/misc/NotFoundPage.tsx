@@ -214,7 +214,7 @@ export const NotFoundPage = () => {
                 size="large"
                 onClick={() => navigate('/dashboard')}
                 sx={{
-                  bgcolor: '#fff',
+                  bgcolor: '#FFFFFF',
                   color: '#000',
                   '&:hover': { bgcolor: '#e0e0e0' },
                 }}
@@ -226,9 +226,9 @@ export const NotFoundPage = () => {
                 size="large"
                 onClick={() => navigate('/')}
                 sx={{
-                  color: '#fff',
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  '&:hover': { borderColor: '#fff' },
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(141,188,229,0.38)',
+                  '&:hover': { borderColor: '#FFFFFF' },
                 }}
               >
                 Back to Home

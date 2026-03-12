@@ -135,7 +135,7 @@ export const SignIn = () => {
             borderRadius: 3,
             border: APP_GLASS_BORDER,
             bgcolor: APP_GLASS_SURFACE,
-            color: '#ffffff',
+            color: '#FFFFFF',
             backdropFilter: 'blur(12px)',
             boxShadow: APP_GLASS_SHADOW,
           }}

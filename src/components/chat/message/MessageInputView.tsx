@@ -100,7 +100,7 @@ export const MessageInputView = ({
               px: 1,
               py: 0.5,
               borderRadius: 1,
-              bgcolor: 'rgba(255,255,255,0.08)',
+              bgcolor: 'rgba(156,187,217,0.18)',
             }}
           >
             {f.name}{' '}
@@ -159,8 +159,8 @@ export const MessageInputView = ({
             color: 'white',
             borderRadius: 1.5,
             minHeight: 40,
-            '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
-            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
+            '& fieldset': { borderColor: 'rgba(156,187,217,0.30)' },
+            '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.42)' },
           },
         }}
         inputProps={{ 'aria-label': 'Message', title: 'Type a message' }}
@@ -344,7 +344,7 @@ export const MessageInputView = ({
             lazyLoadEmojis
           />
         </Box>
-        <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+        <Divider sx={{ borderColor: 'rgba(156,187,217,0.26)' }} />
         <Box
           sx={{
             px: 1.5,
@@ -375,7 +375,7 @@ export const MessageInputView = ({
               aria-label={ariaLabel}
               sx={{
                 minWidth: 0,
-                borderColor: 'rgba(255,255,255,0.3)',
+                borderColor: 'rgba(141,188,229,0.50)',
                 color: 'text.primary',
                 textTransform: 'none',
               }}

@@ -81,7 +81,7 @@ export const ChatRoomList = ({
       sx={{
         width: { xs: '100%', md: 320, lg: 340 },
         minWidth: 0,
-        borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
+        borderRight: { xs: 'none', md: '1px solid rgba(156,187,217,0.22)' },
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -253,7 +253,7 @@ export const ChatRoomList = ({
               onClick={() => navigate(`${base}/${room.id}`)}
               sx={{
                 ...(roomId === room.id ? GLASS_CARD : {}),
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid rgba(56,132,210,0.14)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.75,

@@ -55,11 +55,11 @@ export const DivergencePage = () => {
             variant="outlined"
             onClick={() => navigate('/')}
             sx={{
-              borderColor: 'rgba(255,255,255,0.3)',
+              borderColor: 'rgba(141,188,229,0.50)',
               color: 'white',
               '&:hover': {
-                borderColor: '#fff',
-                bgcolor: 'rgba(255,255,255,0.05)',
+                borderColor: '#FFFFFF',
+                bgcolor: 'rgba(56,132,210,0.12)',
               },
             }}
           >

@@ -152,9 +152,9 @@ export const ValuesStep = () => {
             size="small"
             sx={{
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.04)',
-                color: '#fff',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                bgcolor: 'rgba(56,132,210,0.10)',
+                color: '#FFFFFF',
+                '& fieldset': { borderColor: 'rgba(141,188,229,0.38)' },
                 '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.35)' },
               },
               '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.6)' },
@@ -170,12 +170,12 @@ export const ValuesStep = () => {
               sx={{
                 borderWidth: 1.5,
                 borderColor: 'rgba(255,255,255,0.6)',
-                color: '#fff',
+                color: '#FFFFFF',
                 textTransform: 'none',
                 fontWeight: 600,
                 '&:hover': {
                   borderColor: 'rgba(255,255,255,0.85)',
-                  bgcolor: 'rgba(255,255,255,0.08)',
+                  bgcolor: 'rgba(156,187,217,0.18)',
                 },
                 '&.Mui-disabled': {
                   borderColor: 'rgba(255,255,255,0.35)',

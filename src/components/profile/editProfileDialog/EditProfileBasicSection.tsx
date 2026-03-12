@@ -170,7 +170,7 @@ export const EditProfileBasicSection = ({
               sx: {
                 bgcolor: INPUT_BG,
                 color: 'white',
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(156,187,217,0.18)',
               },
             },
           }}

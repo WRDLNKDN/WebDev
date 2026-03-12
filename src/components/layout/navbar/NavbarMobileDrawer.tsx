@@ -59,7 +59,7 @@ export const NavbarMobileDrawer = ({
         sx: {
           width: 280,
           bgcolor: 'rgba(18, 18, 18, 0.98)',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
+          borderRight: '1px solid rgba(156,187,217,0.18)',
         },
       }}
     >
@@ -161,8 +161,8 @@ export const NavbarMobileDrawer = ({
                     textTransform: 'none',
                     py: 1.5,
                     ...(isFeedActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                     }),
                   }}
                 >
@@ -180,8 +180,8 @@ export const NavbarMobileDrawer = ({
                     textTransform: 'none',
                     py: 1.5,
                     ...(isDirectoryActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                     }),
                   }}
                 >
@@ -199,8 +199,8 @@ export const NavbarMobileDrawer = ({
                     textTransform: 'none',
                     py: 1.5,
                     ...(isEventsActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                     }),
                   }}
                 >
@@ -218,8 +218,8 @@ export const NavbarMobileDrawer = ({
                     textTransform: 'none',
                     py: 1.5,
                     ...(isDashboardActive && {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                     }),
                   }}
                 >
@@ -238,8 +238,8 @@ export const NavbarMobileDrawer = ({
                     py: 1.5,
                     ...(path === '/chat-full' || path.startsWith('/chat-full/')
                       ? {
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                          bgcolor: 'rgba(156,187,217,0.26)',
+                          '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                         }
                       : {}),
                   }}

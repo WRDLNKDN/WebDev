@@ -48,7 +48,7 @@ const menuPaperSx = {
   minWidth: 200,
   borderRadius: 2,
   bgcolor: 'rgba(30,30,30,0.98)',
-  border: '1px solid rgba(255,255,255,0.12)',
+  border: '1px solid rgba(156,187,217,0.26)',
 };
 
 const addButtonSx = {

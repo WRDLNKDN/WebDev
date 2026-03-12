@@ -50,7 +50,7 @@ export const DirectoryRowActions = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const actionButtonSx = {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
     color: 'white',
     minHeight: { xs: 38, sm: 34 },
     px: { xs: 1.25, sm: 1.4 },
@@ -204,7 +204,7 @@ export const DirectoryRowActions = ({
                   mt: 1.25,
                   borderRadius: 2,
                   bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(156,187,217,0.26)',
                 },
               },
             }}

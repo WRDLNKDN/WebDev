@@ -28,7 +28,7 @@ export const ResumeCardFooter = ({
       pt: 1.25,
       pb: 0.75,
       minHeight: 40,
-      borderTop: '1px solid rgba(255,255,255,0.08)',
+      borderTop: '1px solid rgba(156,187,217,0.18)',
     }}
   >
     <Box
@@ -58,7 +58,7 @@ export const ResumeCardFooter = ({
               height: 32,
               padding: 0,
               color: '#b9c3dd',
-              border: '1px solid rgba(255,255,255,0.28)',
+              border: '1px solid rgba(141,188,229,0.48)',
               borderRadius: 1,
               '& .MuiSvgIcon-root': { fontSize: '1rem' },
               '&:hover': {

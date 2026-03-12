@@ -530,7 +530,7 @@ export const EditLinksDialog = ({
                             mt: 0.75,
                             borderRadius: 2,
                             bgcolor: 'rgba(20,20,20,0.98)',
-                            border: '1px solid rgba(255,255,255,0.12)',
+                            border: '1px solid rgba(156,187,217,0.26)',
                             boxShadow: '0 20px 40px rgba(0,0,0,0.55)',
                           },
                         },
@@ -549,8 +549,8 @@ export const EditLinksDialog = ({
                             sx={{
                               px: 1.5,
                               py: 1,
-                              bgcolor: 'rgba(255,255,255,0.04)',
-                              borderTop: '1px solid rgba(255,255,255,0.05)',
+                              bgcolor: 'rgba(56,132,210,0.10)',
+                              borderTop: '1px solid rgba(56,132,210,0.12)',
                             }}
                           >
                             <Typography
@@ -790,9 +790,9 @@ export const EditLinksDialog = ({
                             borderRadius: 2,
                             border: '1px solid',
                             borderColor: 'divider',
-                            bgcolor: 'rgba(255,255,255,0.04)',
+                            bgcolor: 'rgba(56,132,210,0.10)',
                             '&:hover': {
-                              borderColor: 'rgba(255,255,255,0.2)',
+                              borderColor: 'rgba(141,188,229,0.38)',
                             },
                           }}
                         >

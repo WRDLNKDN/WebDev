@@ -120,7 +120,7 @@ export const useWeirdlingRunnerEngine = ({
         ctx.strokeRect(obs.x + 2, dy + 2, obs.width - 4, drawerHeight - 4);
         ctx.fillStyle = '#bdc3c7';
         ctx.fillRect(obs.x + obs.width / 2 - 8, dy + 8, 16, 4);
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(obs.x + obs.width / 2 - 6, dy + 14, 12, 3);
       }
     };
@@ -152,7 +152,7 @@ export const useWeirdlingRunnerEngine = ({
       ctx.moveTo(cx + 8, cy - 4);
       ctx.lineTo(cx + 2, cy - 1);
       ctx.stroke();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
       ctx.arc(cx - 5, cy + 3, 2, 0, Math.PI * 2);
       ctx.arc(cx + 5, cy + 3, 2, 0, Math.PI * 2);
@@ -213,7 +213,7 @@ export const useWeirdlingRunnerEngine = ({
       ctx.fillRect(x, y, w, h);
       ctx.fillStyle = '#000';
       ctx.fillRect(x + 2, y + 10, w - 4, 8);
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(x + 5, y + 12, 4, 2);
       ctx.fillRect(x + 20, y + 12, 4, 2);
       ctx.strokeStyle = '#000';

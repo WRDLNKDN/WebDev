@@ -67,7 +67,7 @@ export const DirectoryResults = ({
           textAlign: 'center',
           borderRadius: 3,
           bgcolor: 'rgba(18,22,36,0.7)',
-          border: '1px dashed rgba(255,255,255,0.1)',
+          border: '1px dashed rgba(156,187,217,0.22)',
         }}
         data-testid="directory-empty-state"
       >
@@ -97,11 +97,11 @@ export const DirectoryResults = ({
                 px: 4,
                 py: 1.25,
                 borderRadius: 2,
-                borderColor: 'rgba(255,255,255,0.3)',
+                borderColor: 'rgba(141,188,229,0.50)',
                 color: 'rgba(255,255,255,0.9)',
                 '&:hover': {
                   borderColor: 'rgba(255,255,255,0.5)',
-                  bgcolor: 'rgba(255,255,255,0.06)',
+                  bgcolor: 'rgba(56,132,210,0.14)',
                 },
               }}
               data-testid="directory-clear-filters"
@@ -133,13 +133,13 @@ export const DirectoryResults = ({
               onClick={onLoadMore}
               disabled={loadingMore}
               sx={{
-                borderColor: 'rgba(255,255,255,0.2)',
+                borderColor: 'rgba(141,188,229,0.38)',
                 color: 'rgba(255,255,255,0.7)',
                 textTransform: 'none',
                 fontWeight: 600,
                 '&:hover': {
                   borderColor: 'rgba(255,255,255,0.4)',
-                  bgcolor: 'rgba(255,255,255,0.04)',
+                  bgcolor: 'rgba(56,132,210,0.10)',
                 },
               }}
             >

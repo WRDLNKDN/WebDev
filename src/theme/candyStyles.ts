@@ -10,8 +10,8 @@ const SUBTLE_GRID = {
     position: 'absolute' as const,
     inset: 0,
     backgroundImage: `
-      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)
+      linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
     `,
     backgroundSize: '24px 24px',
     pointerEvents: 'none' as const,
@@ -29,42 +29,42 @@ export const PAGE_BACKGROUND = {
   ...SUBTLE_GRID,
 } as const;
 
-export const APP_GLASS_BORDER = '1px solid rgba(255,255,255,0.12)';
-export const APP_GLASS_SURFACE = 'rgba(16, 18, 24, 0.72)';
-export const APP_GLASS_SURFACE_STRONG = 'rgba(16, 18, 24, 0.82)';
+export const APP_GLASS_BORDER = '1px solid rgba(156,187,217,0.26)';
+export const APP_GLASS_SURFACE = 'rgba(17,24,39,0.76)';
+export const APP_GLASS_SURFACE_STRONG = 'rgba(17,24,39,0.86)';
 export const APP_GLASS_SHADOW = '0 18px 60px rgba(0,0,0,0.55)';
 export const APP_GLASS_BACKDROP = 'blur(12px)';
 export const APP_PAGE_OVERLAY =
-  'linear-gradient(180deg, rgba(8,8,10,0.78) 0%, rgba(8,8,10,0.9) 100%)';
+  'linear-gradient(180deg, rgba(5,7,15,0.78) 0%, rgba(5,7,15,0.92) 100%)';
 
 export const NAVBAR_GLASS = {
   bgcolor: APP_GLASS_SURFACE,
   backgroundColor: APP_GLASS_SURFACE,
   backgroundImage: 'none',
-  color: '#ffffff',
+  color: '#FFFFFF',
   backdropFilter: APP_GLASS_BACKDROP,
-  borderBottom: '1px solid rgba(255,255,255,0.08)',
+  borderBottom: '1px solid rgba(156,187,217,0.18)',
 } as const;
 
 /** @deprecated Use PAGE_BACKGROUND. Kept for legacy SYNERGY_BG usage. */
 export const SYNERGY_BG = 'url("/assets/background-desktop.png")';
 export const PROFILE_BG = 'url("/assets/profile-bg.png")';
-export const CARD_BG = 'rgba(30, 30, 30, 0.65)';
+export const CARD_BG = 'rgba(17,24,39,0.78)';
 export const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
-export const EMPTY_STATE_BG = 'rgba(18, 18, 18, 0.8)';
-export const HERO_CARD_BG = 'rgba(30, 30, 30, 0.85)';
-export const GRID_CARD_BG = 'rgba(255, 255, 255, 0.05)';
-export const MISSION_SECTION_BG = 'rgba(0, 0, 0, 0.9)';
+export const EMPTY_STATE_BG = 'rgba(17,24,39,0.84)';
+export const HERO_CARD_BG = 'rgba(17,24,39,0.88)';
+export const GRID_CARD_BG = 'rgba(56,132,210,0.12)';
+export const MISSION_SECTION_BG = 'rgba(5,7,15,0.92)';
 
 // --- THE CANDY UI SYSTEM ---
 
 // 1. HAZARD RED (Action/Empty States)
 export const CANDY_HAZARD = {
-  background: 'rgba(20, 0, 0, 0.3)',
+  background: 'rgba(78,21,18,0.32)',
   backdropFilter: 'blur(4px)',
-  border: '2px dashed #ff4d4d',
-  color: '#ff4d4d',
-  boxShadow: '0 0 15px rgba(255, 0, 0, 0.05)',
+  border: '2px dashed #E13D2D',
+  color: '#F39188',
+  boxShadow: '0 0 15px rgba(225, 61, 45, 0.08)',
   transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   cursor: 'pointer',
   display: 'flex',
@@ -76,19 +76,20 @@ export const CANDY_HAZARD = {
   '&:hover': {
     transform: 'scale(1.02) translateY(-4px)',
     borderStyle: 'solid',
-    borderColor: '#ff9999',
-    background: 'linear-gradient(160deg, #ff4d4d 0%, #b30000 100%)',
-    color: 'white',
-    boxShadow: `0 0 40px rgba(255, 0, 0, 0.6), inset 2px 2px 6px rgba(255,255,255,0.4)`,
+    borderColor: '#F39188',
+    background: 'linear-gradient(160deg, #E13D2D 0%, #BF3426 100%)',
+    color: '#FFFFFF',
+    boxShadow:
+      '0 0 40px rgba(225, 61, 45, 0.45), inset 2px 2px 6px rgba(255,255,255,0.3)',
   },
 };
 
 // 2. SUCCESS GREEN (Verified States — sleeker)
 export const CANDY_SUCCESS = {
-  background: 'rgba(0, 24, 0, 0.25)',
+  background: 'rgba(31, 74, 40, 0.28)',
   backdropFilter: 'blur(8px)',
-  border: '1px solid rgba(0, 230, 118, 0.4)',
-  color: '#00e676',
+  border: '1px solid rgba(77,209,102,0.42)',
+  color: '#4DD166',
   boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
   transition: 'all 0.25s ease',
   cursor: 'pointer',
@@ -99,24 +100,24 @@ export const CANDY_SUCCESS = {
   position: 'relative',
   overflow: 'hidden',
   '&:hover': {
-    borderColor: 'rgba(0, 230, 118, 0.6)',
-    boxShadow: '0 4px 20px rgba(0, 230, 118, 0.12)',
+    borderColor: 'rgba(77,209,102,0.62)',
+    boxShadow: '0 4px 20px rgba(77,209,102,0.16)',
   },
 };
 
 // 3. BLUEY (Content/Profile Cards — sleeker)
 export const CANDY_BLUEY = {
-  background: 'rgba(0, 20, 40, 0.35)',
+  background: 'rgba(17,24,39,0.5)',
   backdropFilter: 'blur(8px)',
-  border: '1px solid rgba(66, 165, 245, 0.35)',
-  color: '#42a5f5',
+  border: '1px solid rgba(56,132,210,0.38)',
+  color: '#3884D2',
   boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
   transition: 'all 0.25s ease',
   position: 'relative',
   overflow: 'hidden',
   '&:hover': {
-    borderColor: 'rgba(66, 165, 245, 0.55)',
-    boxShadow: '0 4px 20px rgba(66, 165, 245, 0.15)',
+    borderColor: 'rgba(141,188,229,0.58)',
+    boxShadow: '0 4px 20px rgba(56,132,210,0.18)',
   },
 };
 
@@ -129,16 +130,16 @@ export const GLASS_CARD = {
   bgcolor: APP_GLASS_SURFACE,
   backdropFilter: APP_GLASS_BACKDROP,
   boxShadow: APP_GLASS_SHADOW,
-  color: '#fff',
+  color: '#FFFFFF',
   overflow: 'hidden' as const,
 };
 
 // 5. Dashed add card (neutral — Portfolio "Add Project" / "Add Resume")
 export const DASHED_CARD_NEUTRAL = {
-  background: 'rgba(30, 30, 30, 0.6)',
+  background: 'rgba(17,24,39,0.72)',
   backdropFilter: 'blur(8px)',
-  border: '2px dashed rgba(255,255,255,0.25)',
-  color: '#fff',
+  border: '2px dashed rgba(141,188,229,0.42)',
+  color: '#FFFFFF',
   boxShadow: '0 0 20px rgba(0,0,0,0.3)',
   transition: 'all 0.25s ease',
   cursor: 'pointer' as const,
@@ -147,9 +148,9 @@ export const DASHED_CARD_NEUTRAL = {
   alignItems: 'center',
   justifyContent: 'center',
   '&:hover': {
-    borderColor: 'rgba(255,255,255,0.45)',
-    background: 'rgba(40, 40, 40, 0.7)',
-    boxShadow: '0 0 24px rgba(66, 165, 245, 0.12)',
+    borderColor: 'rgba(141,188,229,0.62)',
+    background: 'rgba(24,34,53,0.84)',
+    boxShadow: '0 0 24px rgba(56,132,210,0.18)',
   },
 };
 

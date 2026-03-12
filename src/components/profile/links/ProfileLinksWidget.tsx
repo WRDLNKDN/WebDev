@@ -92,8 +92,8 @@ export const ProfileLinksWidget = ({
           p: 1,
           borderRadius: 1.5,
           border: '1px solid',
-          borderColor: isOwner ? 'rgba(255,255,255,0.12)' : 'transparent',
-          '&:hover': isOwner ? { borderColor: 'rgba(255,255,255,0.25)' } : {},
+          borderColor: isOwner ? 'rgba(156,187,217,0.26)' : 'transparent',
+          '&:hover': isOwner ? { borderColor: 'rgba(141,188,229,0.42)' } : {},
         }}
       >
         <Link
@@ -163,9 +163,9 @@ export const ProfileLinksWidget = ({
             key={group.category}
             data-testid={`link-group-${group.category}`}
             sx={{
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(156,187,217,0.18)',
               borderRadius: 2,
-              bgcolor: 'rgba(255,255,255,0.02)',
+              bgcolor: 'rgba(56,132,210,0.06)',
               overflow: 'hidden',
             }}
           >

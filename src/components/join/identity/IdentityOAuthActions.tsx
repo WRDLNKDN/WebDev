@@ -18,14 +18,14 @@ const oauthButtonSx = {
   whiteSpace: 'nowrap',
   borderWidth: 2,
   borderColor: 'rgba(255,255,255,0.5)',
-  color: '#fff',
-  bgcolor: 'rgba(255,255,255,0.06)',
+  color: '#FFFFFF',
+  bgcolor: 'rgba(56,132,210,0.14)',
   '&:hover': {
     borderColor: 'rgba(255,255,255,0.8)',
-    bgcolor: 'rgba(255,255,255,0.12)',
+    bgcolor: 'rgba(156,187,217,0.26)',
   },
   '&.Mui-disabled': {
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(141,188,229,0.42)',
     color: 'rgba(255,255,255,0.72)',
   },
 };
@@ -53,7 +53,7 @@ export const IdentityOAuthActions = ({
         py: 1,
         px: 1.5,
         bgcolor: 'rgba(0, 200, 255, 0.06)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
         borderLeft: '4px solid #4ade80',
         borderRadius: '8px',
       }}

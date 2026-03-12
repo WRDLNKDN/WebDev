@@ -77,8 +77,8 @@ export const ModerationFilters = ({
     sx={{
       p: 2,
       mb: 3,
-      borderColor: 'rgba(255,255,255,0.08)',
-      bgcolor: 'rgba(255,255,255,0.02)',
+      borderColor: 'rgba(156,187,217,0.18)',
+      bgcolor: 'rgba(56,132,210,0.06)',
     }}
   >
     <Stack
@@ -146,8 +146,8 @@ export const ModerationEmptyState = () => (
       py: 8,
       px: 3,
       textAlign: 'center',
-      borderColor: 'rgba(255,255,255,0.08)',
-      bgcolor: 'rgba(255,255,255,0.02)',
+      borderColor: 'rgba(156,187,217,0.18)',
+      bgcolor: 'rgba(56,132,210,0.06)',
     }}
   >
     <VideoLibraryOutlinedIcon
@@ -188,13 +188,13 @@ export const ModerationTable = ({
     component={Paper}
     variant="outlined"
     sx={{
-      borderColor: 'rgba(255,255,255,0.12)',
-      '& .MuiTableRow-root:hover': { bgcolor: 'rgba(255,255,255,0.03)' },
+      borderColor: 'rgba(156,187,217,0.26)',
+      '& .MuiTableRow-root:hover': { bgcolor: 'rgba(56,132,210,0.08)' },
     }}
   >
     <Table
       size="small"
-      sx={{ '& td, & th': { borderColor: 'rgba(255,255,255,0.08)' } }}
+      sx={{ '& td, & th': { borderColor: 'rgba(156,187,217,0.18)' } }}
     >
       <TableHead>
         <TableRow>

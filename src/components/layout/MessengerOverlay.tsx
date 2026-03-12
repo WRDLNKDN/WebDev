@@ -44,7 +44,7 @@ export const MessengerOverlay = () => {
   const drawerTopMobile = 56 + bannerOffsetPx;
   const chatEnabled = useFeatureFlag('chat');
   const floatingButtonBg = 'rgba(12, 18, 29, 0.96)';
-  const floatingButtonBorder = 'rgba(255,255,255,0.18)';
+  const floatingButtonBorder = 'rgba(141,188,229,0.34)';
 
   const {
     rooms,

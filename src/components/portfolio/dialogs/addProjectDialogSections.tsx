@@ -117,7 +117,7 @@ export const AddProjectDialogSections = ({
             width: '100%',
             maxWidth: { xs: '100%', md: 360 },
             aspectRatio: PROJECT_IMAGE_RATIO,
-            border: '2px dashed rgba(255,255,255,0.2)',
+            border: '2px dashed rgba(141,188,229,0.38)',
             borderRadius: 1,
             display: 'flex',
             alignItems: 'center',
@@ -328,7 +328,7 @@ export const AddProjectDialogSections = ({
         p: { xs: 1.5, md: 1.75 },
         border: '1px solid rgba(255,255,255,0.22)',
         borderRadius: 1,
-        bgcolor: 'rgba(255,255,255,0.02)',
+        bgcolor: 'rgba(56,132,210,0.06)',
       }}
     >
       <Stack spacing={0.5}>
@@ -376,12 +376,12 @@ export const AddProjectDialogSections = ({
       direction="row"
       justifyContent="space-between"
       spacing={2}
-      sx={{ mt: 2.5, pt: 1.75, borderTop: '1px solid rgba(255,255,255,0.15)' }}
+      sx={{ mt: 2.5, pt: 1.75, borderTop: '1px solid rgba(156,187,217,0.30)' }}
     >
       <Button
         onClick={onClose}
         disabled={busy}
-        sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+        sx={{ color: 'white', borderColor: 'rgba(141,188,229,0.50)' }}
         variant="outlined"
       >
         Cancel
@@ -403,9 +403,9 @@ export const SOLO_GRADIENT_STYLE = SOLO_GRADIENT;
 export const GLASS_MODAL_STYLE = {
   bgcolor: '#141414',
   backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
+    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  border: '1px solid rgba(156,187,217,0.22)',
   color: 'white',
   borderRadius: 1.5,
   position: 'relative',

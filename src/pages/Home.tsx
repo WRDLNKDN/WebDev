@@ -144,7 +144,7 @@ export const Home = () => {
                 borderRadius: 4,
                 bgcolor: HERO_CARD_BG,
                 backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid rgba(156,187,217,0.22)',
                 textAlign: 'center',
               }}
             >
@@ -242,7 +242,7 @@ export const Home = () => {
                   sx={{
                     p: 3,
                     bgcolor: GRID_CARD_BG,
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(56,132,210,0.12)',
                   }}
                 >
                   <Stack spacing={2}>
@@ -273,7 +273,7 @@ export const Home = () => {
         sx={{
           py: 3,
           bgcolor: 'black',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
+          borderTop: '1px solid rgba(156,187,217,0.22)',
         }}
       >
         <Container maxWidth="sm">

@@ -13,7 +13,7 @@ export const WeirdlingLoadingBar = () => {
         sx={{
           width: '100%',
           height: 4,
-          bgcolor: 'rgba(255,255,255,0.1)',
+          bgcolor: 'rgba(156,187,217,0.22)',
           borderRadius: 2,
           overflow: 'hidden',
         }}

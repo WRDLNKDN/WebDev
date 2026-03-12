@@ -159,7 +159,7 @@ export const LinkCard = ({
           px: 1.25,
           py: 0.75,
           minHeight: 40,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          borderTop: '1px solid rgba(156,187,217,0.18)',
         }}
       >
         <Tooltip title="Open link">
@@ -173,7 +173,7 @@ export const LinkCard = ({
             aria-label={`Open ${title}`}
             sx={{
               color: 'inherit',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+              '&:hover': { bgcolor: 'rgba(156,187,217,0.22)' },
             }}
           >
             <OpenInNewIcon sx={{ fontSize: 18 }} />

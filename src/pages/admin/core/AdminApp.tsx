@@ -110,7 +110,7 @@ export const AdminApp = () => {
                 maxWidth: 400,
                 p: 4,
                 borderRadius: 3,
-                border: '1px solid rgba(255,255,255,0.12)',
+                border: '1px solid rgba(156,187,217,0.26)',
                 bgcolor: 'rgba(16, 18, 24, 0.8)',
                 color: 'rgba(255,255,255,0.96)',
               }}

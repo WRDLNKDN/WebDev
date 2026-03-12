@@ -89,8 +89,8 @@ export const NavbarMobileDrawerExplore = ({
             minHeight: 40,
             py: 0.5,
             ...(isGroupsActive && {
-              bgcolor: 'rgba(255,255,255,0.12)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+              bgcolor: 'rgba(156,187,217,0.26)',
+              '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
             }),
           }}
         >

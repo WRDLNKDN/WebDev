@@ -13,12 +13,12 @@ import type { PortfolioItem } from '../../../types/portfolio';
 
 const GLASS_MODAL = {
   bgcolor: '#1a1a1d',
-  border: '1px solid rgba(255,255,255,0.14)',
+  border: '1px solid rgba(156,187,217,0.28)',
   borderRadius: 2.5,
   color: 'white',
   overflow: 'hidden',
   backdropFilter: 'blur(20px)',
-  boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)',
+  boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(56,132,210,0.14)',
   margin: '32px auto',
   maxHeight: 'calc(100vh - 64px)',
   display: 'flex',
@@ -71,8 +71,8 @@ export const PortfolioPreviewModal = ({
             px: 1.5,
             py: 1.25,
             borderRadius: 1.5,
-            bgcolor: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            bgcolor: 'rgba(56,132,210,0.10)',
+            border: '1px solid rgba(156,187,217,0.22)',
           }}
         >
           <InfoOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
@@ -92,8 +92,8 @@ export const PortfolioPreviewModal = ({
             px: 2,
             textAlign: 'center',
             borderRadius: 1,
-            border: '1px solid rgba(255,255,255,0.16)',
-            bgcolor: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(156,187,217,0.32)',
+            bgcolor: 'rgba(56,132,210,0.08)',
           }}
         >
           <Typography color="text.secondary" gutterBottom>
@@ -271,8 +271,8 @@ export const PortfolioPreviewModal = ({
               px: 2,
               textAlign: 'center',
               borderRadius: 1,
-              border: '1px solid rgba(255,255,255,0.16)',
-              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(156,187,217,0.32)',
+              bgcolor: 'rgba(56,132,210,0.08)',
             }}
           >
             <Typography color="text.secondary" gutterBottom>

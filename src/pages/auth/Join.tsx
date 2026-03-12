@@ -59,7 +59,7 @@ const CARD_SX = {
   boxShadow: APP_GLASS_SHADOW,
   p: { xs: 1.5, sm: 2, md: 3 },
   pb: { xs: 2.5, sm: 3, md: 3.5 },
-  color: '#fff',
+  color: '#FFFFFF',
   minWidth: 0,
   overflow: 'visible',
 };

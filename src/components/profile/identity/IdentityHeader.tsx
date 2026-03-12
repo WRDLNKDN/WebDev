@@ -109,13 +109,13 @@ export const IdentityHeader = ({
         sx={{
           mt: 0.5,
           my: 1,
-          borderColor: 'rgba(255,255,255,0.3)',
+          borderColor: 'rgba(141,188,229,0.50)',
           color: 'white',
           textTransform: 'none',
           fontSize: '0.9rem',
           '&:hover': {
             borderColor: 'rgba(255,255,255,0.5)',
-            bgcolor: 'rgba(255,255,255,0.06)',
+            bgcolor: 'rgba(56,132,210,0.14)',
           },
         }}
       >
@@ -152,7 +152,7 @@ export const IdentityHeader = ({
         borderRadius: 4,
         bgcolor: CARD_BG,
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.12)',
+        border: '1px solid rgba(156,187,217,0.26)',
         boxShadow: BANNER_GLOW,
         mb: { xs: 2, sm: 3, md: 4 },
         position: 'relative',

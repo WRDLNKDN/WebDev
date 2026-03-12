@@ -519,13 +519,13 @@ export const Navbar = () => {
                     height: 40,
                     minWidth: 220,
                     maxWidth: 320,
-                    bgcolor: 'rgba(255,255,255,0.06)',
+                    bgcolor: 'rgba(56,132,210,0.14)',
                     borderRadius: '999px',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(156,187,217,0.18)',
                     transition: 'border-color 0.2s, background-color 0.2s',
                     '&:focus-within': {
-                      bgcolor: 'rgba(255,255,255,0.08)',
-                      borderColor: 'rgba(255,255,255,0.18)',
+                      bgcolor: 'rgba(156,187,217,0.18)',
+                      borderColor: 'rgba(141,188,229,0.34)',
                     },
                   }}
                 >
@@ -592,7 +592,7 @@ export const Navbar = () => {
                       maxHeight: 320,
                       overflow: 'auto',
                       bgcolor: 'rgba(30,30,30,0.98)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      border: '1px solid rgba(156,187,217,0.26)',
                     }}
                   >
                     {searchLoading ? (
@@ -653,7 +653,7 @@ export const Navbar = () => {
                               sx={{
                                 color: 'white',
                                 '&:hover': {
-                                  bgcolor: 'rgba(255,255,255,0.08)',
+                                  bgcolor: 'rgba(156,187,217,0.18)',
                                 },
                               }}
                             >
@@ -720,7 +720,7 @@ export const Navbar = () => {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
                           borderRadius: 0,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
                     >
@@ -740,7 +740,7 @@ export const Navbar = () => {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
                           borderRadius: 0,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
                     >
@@ -760,7 +760,7 @@ export const Navbar = () => {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
                           borderRadius: 0,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
                     >
@@ -780,7 +780,7 @@ export const Navbar = () => {
                           color: 'white',
                           borderBottom: '2px solid rgba(255,255,255,0.6)',
                           borderRadius: 0,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
                     >
@@ -836,7 +836,7 @@ export const Navbar = () => {
                         minWidth: 0,
                         px: 1,
                         '&:hover': {
-                          bgcolor: 'rgba(255,255,255,0.06)',
+                          bgcolor: 'rgba(56,132,210,0.14)',
                           color: 'white',
                         },
                       }}
@@ -855,7 +855,7 @@ export const Navbar = () => {
                       minWidth: 0,
                       px: 1,
                       '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.06)',
+                        bgcolor: 'rgba(56,132,210,0.14)',
                         color: 'white',
                       },
                     }}
@@ -885,8 +885,8 @@ export const Navbar = () => {
                           color: 'rgba(255,255,255,0.85)',
                           ...(path === '/dashboard/notifications' && {
                             color: 'white',
-                            bgcolor: 'rgba(255,255,255,0.12)',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                            bgcolor: 'rgba(156,187,217,0.26)',
+                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                           }),
                         }}
                       >
@@ -917,7 +917,7 @@ export const Navbar = () => {
                         p: 0.25,
                         color: 'inherit',
                         borderRadius: 9999,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                       }}
                     >
                       <Box
@@ -958,7 +958,7 @@ export const Navbar = () => {
                           minWidth: 180,
                           borderRadius: 2,
                           bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(255,255,255,0.12)',
+                          border: '1px solid rgba(156,187,217,0.26)',
                         },
                       },
                     }}
@@ -1048,7 +1048,7 @@ export const Navbar = () => {
                         pointerEvents: 'auto',
                         '&:hover': {
                           color: 'white',
-                          bgcolor: 'rgba(255,255,255,0.06)',
+                          bgcolor: 'rgba(56,132,210,0.14)',
                         },
                       }}
                     >
@@ -1072,7 +1072,7 @@ export const Navbar = () => {
                       pointerEvents: 'auto',
                       '&:hover': {
                         color: 'white',
-                        bgcolor: 'rgba(255,255,255,0.06)',
+                        bgcolor: 'rgba(56,132,210,0.14)',
                       },
                     }}
                   >
@@ -1100,8 +1100,8 @@ export const Navbar = () => {
                         sx={{
                           color: 'white',
                           ...(path === '/dashboard/notifications' && {
-                            bgcolor: 'rgba(255,255,255,0.12)',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                            bgcolor: 'rgba(156,187,217,0.26)',
+                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                           }),
                         }}
                       >
@@ -1132,7 +1132,7 @@ export const Navbar = () => {
                         p: 0.25,
                         color: 'inherit',
                         borderRadius: 9999,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                        '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                       }}
                     >
                       <Box
@@ -1176,7 +1176,7 @@ export const Navbar = () => {
           sx: {
             width: 280,
             bgcolor: 'rgba(18, 18, 18, 0.98)',
-            borderRight: '1px solid rgba(255,255,255,0.08)',
+            borderRight: '1px solid rgba(156,187,217,0.18)',
           },
         }}
       >
@@ -1261,8 +1261,8 @@ export const Navbar = () => {
                       textTransform: 'none',
                       py: 1.5,
                       ...(isDashboardActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        bgcolor: 'rgba(156,187,217,0.26)',
+                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                       }),
                     }}
                   >
@@ -1280,8 +1280,8 @@ export const Navbar = () => {
                       textTransform: 'none',
                       py: 1.5,
                       ...(isDirectoryActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        bgcolor: 'rgba(156,187,217,0.26)',
+                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                       }),
                     }}
                   >
@@ -1299,8 +1299,8 @@ export const Navbar = () => {
                       textTransform: 'none',
                       py: 1.5,
                       ...(isEventsActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        bgcolor: 'rgba(156,187,217,0.26)',
+                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                       }),
                     }}
                   >
@@ -1318,8 +1318,8 @@ export const Navbar = () => {
                       textTransform: 'none',
                       py: 1.5,
                       ...(isFeedActive && {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                        bgcolor: 'rgba(156,187,217,0.26)',
+                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                       }),
                     }}
                   >
@@ -1356,8 +1356,8 @@ export const Navbar = () => {
                       ...(path === '/chat-full' ||
                       path.startsWith('/chat-full/')
                         ? {
-                            bgcolor: 'rgba(255,255,255,0.12)',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                            bgcolor: 'rgba(156,187,217,0.26)',
+                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                           }
                         : {}),
                     }}
@@ -1424,8 +1424,8 @@ export const Navbar = () => {
                   minHeight: 40,
                   py: 0.5,
                   ...(isGroupsActive && {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    bgcolor: 'rgba(156,187,217,0.26)',
+                    '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                   }),
                 }}
               >
@@ -1608,7 +1608,7 @@ export const Navbar = () => {
       <Backdrop
         open={joinLoading}
         sx={{
-          color: '#fff',
+          color: '#FFFFFF',
           zIndex: (theme) => theme.zIndex.drawer + 2,
           flexDirection: 'column',
           gap: 1.25,

@@ -14,7 +14,7 @@ import {
 import { useState } from 'react';
 import { AVATAR_PRESETS, type AvatarPreset } from '../../config/avatarPresets';
 
-const BORDER_COLOR = 'rgba(255,255,255,0.08)';
+const BORDER_COLOR = 'rgba(156,187,217,0.18)';
 const PURPLE_ACCENT = '#B366FF';
 
 export interface AvatarReplacementBoxProps {
@@ -124,7 +124,7 @@ export const AvatarReplacementBox = ({
                   : {
                       borderColor: selected
                         ? PURPLE_ACCENT
-                        : 'rgba(255,255,255,0.2)',
+                        : 'rgba(141,188,229,0.38)',
                       boxShadow: selected
                         ? '0 0 12px rgba(179,102,255,0.3)'
                         : '0 0 8px rgba(0,0,0,0.3)',

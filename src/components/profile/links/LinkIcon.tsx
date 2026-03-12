@@ -47,7 +47,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'github':
       Icon = GitHub;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
     case 'gitlab':
       Icon = Code;
@@ -60,7 +60,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'dev.to':
       Icon = Code;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
     case 'behance':
       Icon = Palette;
@@ -76,13 +76,13 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'notion':
       Icon = Description;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
 
     // --- SOCIAL / COMMUNITY ---
     case 'x':
       Icon = X;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
     case 'twitter':
       Icon = Twitter;
@@ -98,7 +98,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'tiktok':
       Icon = MusicNote;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
     case 'reddit':
       Icon = Reddit;
@@ -114,7 +114,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'threads':
       Icon = Share;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
 
     // --- CONTENT ---
@@ -128,7 +128,7 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       break;
     case 'medium':
       Icon = Article;
-      brandColor = '#ffffff';
+      brandColor = '#FFFFFF';
       break;
     case 'substack':
       Icon = RssFeed;

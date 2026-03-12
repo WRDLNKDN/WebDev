@@ -27,7 +27,7 @@ const CONNECTION_LABEL: Record<string, string> = {
 
 const FILTER_CONTROL_HEIGHT = 40;
 const ACTIVE_FILTER_SX = {
-  color: '#fff',
+  color: '#FFFFFF',
   fontWeight: 700,
   textDecoration: 'underline',
   textUnderlineOffset: '4px',
@@ -38,16 +38,16 @@ const filterChipSx = {
   height: FILTER_CONTROL_HEIGHT,
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
-  border: '1.5px solid rgba(255,255,255,0.18)',
-  bgcolor: 'rgba(255,255,255,0.05)',
+  border: '1.5px solid rgba(141,188,229,0.34)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
   textTransform: 'none',
   px: 1.5,
   '&:hover': {
-    bgcolor: 'rgba(255,255,255,0.1)',
-    borderColor: 'rgba(255,255,255,0.3)',
+    bgcolor: 'rgba(156,187,217,0.22)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '&[aria-pressed="true"]': ACTIVE_FILTER_SX,
   '& .MuiButton-endIcon': { ml: 0.5 },
@@ -58,17 +58,17 @@ const chipSelectSx = {
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(141,188,229,0.34)',
     borderWidth: '1.5px',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
     borderColor: INTERACTION_COLORS.comment,
     borderWidth: '1.5px',
   },
-  bgcolor: 'rgba(255,255,255,0.05)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
@@ -157,7 +157,7 @@ export const DirectoryFilterChips = ({
             '& .MuiSelect-select': {
               ...chipSelectSx['& .MuiSelect-select'],
               fontWeight: primaryIndustry ? 600 : 500,
-              color: primaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
+              color: primaryIndustry ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
               minWidth: 110,
             },
             ...(primaryIndustry ? ACTIVE_FILTER_SX : null),
@@ -194,7 +194,7 @@ export const DirectoryFilterChips = ({
               '& .MuiSelect-select': {
                 ...chipSelectSx['& .MuiSelect-select'],
                 fontWeight: secondaryIndustry ? 600 : 500,
-                color: secondaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
+                color: secondaryIndustry ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
                 minWidth: 100,
               },
               ...(secondaryIndustry ? ACTIVE_FILTER_SX : null),
@@ -245,7 +245,7 @@ export const DirectoryFilterChips = ({
             '& .MuiSelect-select': {
               ...chipSelectSx['& .MuiSelect-select'],
               fontWeight: connectionStatus ? 600 : 500,
-              color: connectionStatus ? '#fff' : 'rgba(255,255,255,0.7)',
+              color: connectionStatus ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
               minWidth: 95,
             },
             ...(connectionStatus ? ACTIVE_FILTER_SX : null),
@@ -293,14 +293,14 @@ export const DirectoryFilterChips = ({
               ...chipSelectSx,
               height: FILTER_CONTROL_HEIGHT,
               minHeight: FILTER_CONTROL_HEIGHT,
-              color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
+              color: locationInput ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
               '& fieldset': {
                 borderColor: locationInput
                   ? INTERACTION_COLORS.comment
-                  : 'rgba(255,255,255,0.18)',
+                  : 'rgba(141,188,229,0.34)',
                 borderWidth: '1.5px',
               },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+              '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.50)' },
               '&.Mui-focused fieldset': {
                 borderColor: INTERACTION_COLORS.comment,
               },
@@ -364,8 +364,8 @@ export const DirectoryFilterChips = ({
               updateUrl({ skills: skills.filter((x) => x !== s).join(',') })
             }
             sx={{
-              bgcolor: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.15)',
+              bgcolor: 'rgba(56,132,210,0.16)',
+              border: '1px solid rgba(156,187,217,0.30)',
               color: 'rgba(255,255,255,0.75)',
               height: 28,
               '& .MuiChip-deleteIcon': { color: 'inherit' },

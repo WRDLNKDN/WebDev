@@ -27,7 +27,7 @@ export const filterSelectSx = {
   flexShrink: 0,
   '& .MuiSelect-select': selectInputInnerSx,
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.23)',
+    borderColor: 'rgba(156,187,217,0.3)',
   },
 };
 
@@ -67,17 +67,17 @@ export const dialogSelectSx = {
   height: DIALOG_CONTROL_HEIGHT,
   minHeight: DIALOG_CONTROL_HEIGHT,
   borderRadius: 2,
-  bgcolor: 'rgba(255,255,255,0.05)',
-  color: 'rgba(255,255,255,0.85)',
+  bgcolor: 'rgba(56,132,210,0.08)',
+  color: 'rgba(255,255,255,0.88)',
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(156,187,217,0.26)',
     borderWidth: '1.5px',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.5)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#3b82f6',
+    borderColor: '#3884D2',
     borderWidth: '1.5px',
   },
   '& .MuiSelect-select': {
@@ -102,7 +102,7 @@ export const dialogSelectSx = {
     pointerEvents: 'none',
   },
   '& .MuiSelect-icon': {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(156,187,217,0.82)',
     right: 8,
   },
 };
@@ -113,14 +113,14 @@ export const dialogTextFieldSx = {
     height: DIALOG_CONTROL_HEIGHT,
     minHeight: DIALOG_CONTROL_HEIGHT,
     borderRadius: 2,
-    bgcolor: 'rgba(255,255,255,0.05)',
-    color: 'rgba(255,255,255,0.85)',
+    bgcolor: 'rgba(56,132,210,0.08)',
+    color: 'rgba(255,255,255,0.88)',
     '& fieldset': {
-      borderColor: 'rgba(255,255,255,0.18)',
+      borderColor: 'rgba(156,187,217,0.26)',
       borderWidth: '1.5px',
     },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&.Mui-focused fieldset': { borderColor: '#3b82f6', borderWidth: '1.5px' },
+    '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.5)' },
+    '&.Mui-focused fieldset': { borderColor: '#3884D2', borderWidth: '1.5px' },
     '& .MuiOutlinedInput-input': {
       py: '9px',
       px: 1.75,

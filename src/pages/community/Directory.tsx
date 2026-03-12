@@ -82,16 +82,16 @@ const filterChipSx = {
   height: FILTER_CONTROL_HEIGHT,
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
-  border: '1.5px solid rgba(255,255,255,0.18)',
-  bgcolor: 'rgba(255,255,255,0.05)',
+  border: '1.5px solid rgba(141,188,229,0.34)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
   textTransform: 'none',
   px: 1.5,
   '&:hover': {
-    bgcolor: 'rgba(255,255,255,0.1)',
-    borderColor: 'rgba(255,255,255,0.3)',
+    bgcolor: 'rgba(156,187,217,0.22)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '& .MuiButton-endIcon': { ml: 0.5 },
 } as const;
@@ -102,17 +102,17 @@ const chipSelectSx = {
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(141,188,229,0.34)',
     borderWidth: '1.5px',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#3b82f6',
+    borderColor: '#3884D2',
     borderWidth: '1.5px',
   },
-  bgcolor: 'rgba(255,255,255,0.05)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
@@ -604,7 +604,7 @@ export const Directory = () => {
                   borderRadius: 2,
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'rgba(141,188,229,0.50)',
                   opacity: 1,
                   fontSize: '0.875rem',
                 },
@@ -844,7 +844,7 @@ export const Directory = () => {
                       ...(connectionStatus
                         ? {
                             '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#3b82f6 !important',
+                              borderColor: '#3884D2 !important',
                             },
                           }
                         : {}),
@@ -1214,11 +1214,11 @@ export const Directory = () => {
                     px: 4,
                     py: 1.25,
                     borderRadius: 2,
-                    borderColor: 'rgba(255,255,255,0.3)',
+                    borderColor: 'rgba(141,188,229,0.50)',
                     color: 'rgba(255,255,255,0.9)',
                     '&:hover': {
                       borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(255,255,255,0.06)',
+                      bgcolor: 'rgba(56,132,210,0.14)',
                     },
                   }}
                   data-testid="directory-clear-filters"
@@ -1254,13 +1254,13 @@ export const Directory = () => {
                   onClick={() => void load(true, rows.length)}
                   disabled={loadingMore}
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.2)',
+                    borderColor: 'rgba(141,188,229,0.38)',
                     color: 'rgba(255,255,255,0.7)',
                     textTransform: 'none',
                     fontWeight: 600,
                     '&:hover': {
                       borderColor: 'rgba(255,255,255,0.4)',
-                      bgcolor: 'rgba(255,255,255,0.04)',
+                      bgcolor: 'rgba(56,132,210,0.10)',
                     },
                   }}
                 >

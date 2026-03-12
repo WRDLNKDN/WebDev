@@ -6,7 +6,7 @@ export const THEME_STEPPER_COMPONENTS = {
       label: {
         color: 'rgba(255,255,255,0.92)',
         '&.Mui-active': {
-          color: '#ffffff',
+          color: '#FFFFFF',
           fontWeight: 700,
         },
         '&.Mui-completed': {
@@ -28,7 +28,7 @@ export const THEME_STEPPER_COMPONENTS = {
         },
       },
       text: {
-        fill: '#121212',
+        fill: '#05070F',
         fontWeight: 800,
       },
     },
@@ -36,7 +36,7 @@ export const THEME_STEPPER_COMPONENTS = {
   MuiStepConnector: {
     styleOverrides: {
       line: {
-        borderColor: 'rgba(255,255,255,0.18)',
+        borderColor: 'rgba(141,188,229,0.34)',
       },
     },
   },

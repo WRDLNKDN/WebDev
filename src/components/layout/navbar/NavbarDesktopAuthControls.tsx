@@ -79,7 +79,7 @@ export const NavbarDesktopAuthControls = ({
                 fontSize: '1rem',
                 minWidth: 0,
                 px: 1,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
               }}
             >
               Join
@@ -95,7 +95,7 @@ export const NavbarDesktopAuthControls = ({
               fontSize: '1rem',
               minWidth: 0,
               px: 1,
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+              '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
             }}
           >
             Sign in
@@ -123,8 +123,8 @@ export const NavbarDesktopAuthControls = ({
                   color: 'rgba(255,255,255,0.85)',
                   ...(path === '/dashboard/notifications' && {
                     color: 'white',
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    bgcolor: 'rgba(156,187,217,0.26)',
+                    '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                   }),
                 }}
               >
@@ -153,7 +153,7 @@ export const NavbarDesktopAuthControls = ({
                 p: 0.25,
                 color: 'inherit',
                 borderRadius: 9999,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
               }}
             >
               <Box
@@ -192,7 +192,7 @@ export const NavbarDesktopAuthControls = ({
                   minWidth: 180,
                   borderRadius: 2,
                   bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(156,187,217,0.26)',
                 },
               },
             }}

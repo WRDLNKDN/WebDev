@@ -83,6 +83,29 @@ test.describe('Chat file upload', () => {
     });
 
     await page.route('**/rest/v1/chat_messages*', async (route) => {
+      if (route.request().method() === 'POST') {
+        const payload = route.request().postDataJSON() as {
+          content?: string | null;
+          room_id?: string;
+          sender_id?: string;
+        };
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'msg-e2e-1',
+            room_id: payload.room_id ?? E2E_ROOM_ID,
+            sender_id: payload.sender_id ?? USER_ID,
+            content: payload.content ?? null,
+            is_system_message: false,
+            is_deleted: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -165,6 +188,67 @@ test.describe('Chat file upload', () => {
     expect(layoutMetrics.appScrollHasOverflow).toBe(false);
     expect(layoutMetrics.messageScrollCanOwnOverflow).toBe(true);
     expect(layoutMetrics.inputBottomWithinViewport).toBe(true);
+  });
+
+  test('pressing Enter sends the message and keeps focus in the input', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubChatRoom(page);
+
+    let resolveSend: (() => void) | null = null;
+    const sendStarted = new Promise<void>((resolve) => {
+      resolveSend = resolve;
+    });
+
+    await page.route('**/rest/v1/chat_messages*', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+
+      resolveSend?.();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const payload = route.request().postDataJSON() as {
+        content?: string | null;
+        room_id?: string;
+        sender_id?: string;
+      };
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'msg-e2e-enter-focus',
+          room_id: payload.room_id ?? E2E_ROOM_ID,
+          sender_id: payload.sender_id ?? USER_ID,
+          content: payload.content ?? null,
+          is_system_message: false,
+          is_deleted: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
+
+    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    await expect(messageInput).toBeVisible({ timeout: 35_000 });
+    await messageInput.click();
+    await messageInput.fill('Enter keeps focus');
+    await expect(messageInput).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await sendStarted;
+
+    await expect(messageInput).toBeFocused();
+    await expect(messageInput).toHaveValue('');
+    await expect(messageInput).toBeEnabled();
   });
 
   test('keeps header and composer usable on mobile and supports keyboard navigation through the composer controls', async ({

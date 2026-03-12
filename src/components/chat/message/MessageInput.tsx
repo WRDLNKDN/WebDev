@@ -93,6 +93,7 @@ type MessageInputProps = {
   onTyping?: () => void;
   onStopTyping?: () => void;
   disabled?: boolean;
+  sending?: boolean;
 };
 
 export const MessageInput = ({
@@ -100,15 +101,24 @@ export const MessageInput = ({
   onTyping,
   onStopTyping,
   disabled,
+  sending = false,
 }: MessageInputProps) => {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
+    null,
+  );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const submitBlocked =
+    disabled ||
+    sending ||
+    uploading ||
+    (!text.trim() && pendingFiles.length === 0);
 
   const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
@@ -135,7 +145,7 @@ export const MessageInput = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (disabled || (!text.trim() && pendingFiles.length === 0)) return;
+    if (submitBlocked) return;
 
     setError(null);
     const paths: string[] = [];
@@ -197,6 +207,9 @@ export const MessageInput = ({
       meta.length > 0 ? meta : undefined,
     );
     setText('');
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
   };
 
   const handleEmojiClick = (data: EmojiClickData) => {
@@ -280,6 +293,7 @@ export const MessageInput = ({
         }}
       >
         <TextField
+          inputRef={messageInputRef}
           multiline
           maxRows={expanded ? 6 : 2}
           value={text}
@@ -365,7 +379,7 @@ export const MessageInput = ({
               <IconButton
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || uploading}
+                disabled={disabled || sending || uploading}
                 aria-label="Attach image"
                 sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
               >
@@ -378,7 +392,7 @@ export const MessageInput = ({
               <IconButton
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || uploading}
+                disabled={disabled || sending || uploading}
                 aria-label="Attach file"
                 sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
               >
@@ -391,7 +405,9 @@ export const MessageInput = ({
               <IconButton
                 type="button"
                 onClick={() => setGifPickerOpen(true)}
-                disabled={disabled || uploading || pendingFiles.length >= 1}
+                disabled={
+                  disabled || sending || uploading || pendingFiles.length >= 1
+                }
                 aria-label="Add GIF"
                 sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
               >
@@ -403,7 +419,7 @@ export const MessageInput = ({
             <IconButton
               type="button"
               onClick={(e) => setEmojiAnchor(e.currentTarget)}
-              disabled={disabled || uploading}
+              disabled={disabled || sending || uploading}
               aria-label="Add emoji"
               sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
             >
@@ -446,11 +462,7 @@ export const MessageInput = ({
             <span>
               <IconButton
                 type="submit"
-                disabled={
-                  disabled ||
-                  uploading ||
-                  (!text.trim() && pendingFiles.length === 0)
-                }
+                disabled={submitBlocked}
                 aria-label="Send message"
                 sx={{ color: INPUT_SEPARATOR_GREEN, p: 0.75 }}
               >

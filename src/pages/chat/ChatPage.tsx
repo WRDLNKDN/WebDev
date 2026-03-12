@@ -322,7 +322,8 @@ export const ChatPage = () => {
                 onSend={sendMessage}
                 onTyping={startTyping}
                 onStopTyping={stopTyping}
-                disabled={sending || chatLoading}
+                disabled={chatLoading}
+                sending={sending}
               />
             </>
           ) : (

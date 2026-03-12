@@ -2191,7 +2191,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         });
       }
     },
-    [navigate],
+    [navigate, showToast],
   );
 
   useEffect(() => {
@@ -2627,7 +2627,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         await handleAuthError(e, 'Failed to repost');
       }
     },
-    [handleAuthError, loadPage, session?.access_token],
+    [handleAuthError, loadPage, session?.access_token, showToast],
   );
 
   const handleSend = useCallback((item: FeedItem) => {
@@ -2829,10 +2829,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     [expandedCommentsPostId, handleAuthError, session?.access_token],
   );
 
-  const handleCopyLink = useCallback(async (url: string) => {
-    await navigator.clipboard.writeText(url);
-    showToast({ message: 'Link copied', severity: 'success' });
-  }, []);
+  const handleCopyLink = useCallback(
+    async (url: string) => {
+      await navigator.clipboard.writeText(url);
+      showToast({ message: 'Link copied', severity: 'success' });
+    },
+    [showToast],
+  );
 
   const handleFeedViewChange = useCallback(
     async (

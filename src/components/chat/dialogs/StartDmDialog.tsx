@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 
 type ConnectionProfile = {
@@ -35,6 +35,7 @@ export const StartDmDialog = ({
   onSelect,
   startError,
 }: StartDmDialogProps) => {
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
@@ -145,6 +146,14 @@ export const StartDmDialog = ({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || connections.length === 0) return;
+    const focusHandle = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [connections.length, open]);
+
   const handleSelect = async (userId: string) => {
     setLoading(true);
     setError(null);
@@ -180,7 +189,7 @@ export const StartDmDialog = ({
           <TextField
             fullWidth
             size="small"
-            autoFocus
+            inputRef={searchInputRef}
             placeholder="Search connections by name or handle…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

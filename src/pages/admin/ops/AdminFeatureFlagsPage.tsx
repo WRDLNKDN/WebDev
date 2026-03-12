@@ -79,7 +79,7 @@ export const AdminFeatureFlagsPage = () => {
         });
       }
     },
-    [setFlag],
+    [setFlag, showToast],
   );
 
   const categories: FlagCategory[] = FLAG_CATEGORIES;

@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { shouldSubmitWithModifier } from '../../../lib/ui/dialogFormUtils';
 import type { ChatReportCategory } from '../../../types/chat';
 
@@ -43,10 +43,19 @@ export const ReportDialog = ({
   reportedMessageId,
   reportedUserId,
 }: ReportDialogProps) => {
+  const detailsInputRef = useRef<HTMLInputElement | null>(null);
   const [category, setCategory] = useState<ChatReportCategory>('other');
   const [freeText, setFreeText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      detailsInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!reportedMessageId && !reportedUserId) return;
@@ -103,7 +112,7 @@ export const ReportDialog = ({
           </FormControl>
           <TextField
             fullWidth
-            autoFocus
+            inputRef={detailsInputRef}
             multiline
             rows={3}
             label="Additional details (optional)"

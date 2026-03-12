@@ -28,6 +28,7 @@ import {
   shouldSubmitWithModifier,
 } from '../../../lib/ui/dialogFormUtils';
 import type { SelectChangeEvent } from '@mui/material';
+import { useEffect, useRef } from 'react';
 import type { ContentSubmissionRow } from '../../../lib/api/contentApi';
 import {
   FILTER_CONTROL_MIN_HEIGHT,
@@ -335,48 +336,65 @@ export const RejectSubmissionDialog = ({
   onReasonChange,
   onCancel,
   onConfirm,
-}: RejectDialogProps) => (
-  <Dialog
-    open={open}
-    onClose={(_event, reason) => {
-      if (shouldCloseDialogFromReason(reason)) onCancel();
-    }}
-  >
-    <Box
-      component="form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onConfirm();
+}: RejectDialogProps) => {
+  const reasonInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      reasonInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onCancel();
       }}
     >
-      <DialogTitle>Reject submission</DialogTitle>
-      <DialogContent>
-        <TextField
-          fullWidth
-          autoFocus
-          multiline
-          rows={3}
-          label="Reason (optional)"
-          value={reason}
-          onChange={(e) => onReasonChange(e.target.value)}
-          onKeyDown={(event) => {
-            if (!shouldSubmitWithModifier(event) || busy) return;
-            event.preventDefault();
-            onConfirm();
-          }}
-          helperText="Press Cmd/Ctrl+Enter to reject."
-          placeholder="Content does not match community guidelines."
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button type="submit" color="error" variant="contained" disabled={busy}>
-          Reject
-        </Button>
-      </DialogActions>
-    </Box>
-  </Dialog>
-);
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm();
+        }}
+      >
+        <DialogTitle>Reject submission</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            inputRef={reasonInputRef}
+            multiline
+            rows={3}
+            label="Reason (optional)"
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            onKeyDown={(event) => {
+              if (!shouldSubmitWithModifier(event) || busy) return;
+              event.preventDefault();
+              onConfirm();
+            }}
+            helperText="Press Cmd/Ctrl+Enter to reject."
+            placeholder="Content does not match community guidelines."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onCancel}>Cancel</Button>
+          <Button
+            type="submit"
+            color="error"
+            variant="contained"
+            disabled={busy}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+};
 
 type PlaylistOption = { id: string; slug: string; title: string };
 

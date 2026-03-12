@@ -13,7 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { toMessage } from '../../../lib/utils/errors';
 
@@ -40,6 +40,7 @@ export const CreateGroupDialog = ({
   onCreate,
   currentUserId,
 }: CreateGroupDialogProps) => {
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState('');
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -77,6 +78,14 @@ export const CreateGroupDialog = ({
       cancelled = true;
     };
   }, [open, currentUserId]);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
 
   const toggle = (id: string) => {
     setProfiles((prev) => {
@@ -133,7 +142,7 @@ export const CreateGroupDialog = ({
           </Typography>
           <TextField
             fullWidth
-            autoFocus
+            inputRef={nameInputRef}
             label="Group name"
             value={name}
             onChange={(e) => setName(e.target.value)}

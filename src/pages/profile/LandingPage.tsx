@@ -116,7 +116,7 @@ export const LandingPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [viewer, profile]);
+  }, [viewer, profile, showToast]);
 
   const follow = useCallback(async () => {
     if (!viewer || !profile || viewer.id === profile.id) return;
@@ -137,7 +137,7 @@ export const LandingPage = () => {
     } finally {
       setConnectionLoading(false);
     }
-  }, [viewer, profile]);
+  }, [viewer, profile, showToast]);
 
   const unfollow = useCallback(async () => {
     if (!viewer || !profile) return;
@@ -156,7 +156,7 @@ export const LandingPage = () => {
     } finally {
       setConnectionLoading(false);
     }
-  }, [viewer, profile]);
+  }, [viewer, profile, showToast]);
 
   // /profile/:handle is owner-only. Non-owners get 404 (no leak). Use RPC so only owner can load by handle.
   useEffect(() => {
@@ -214,7 +214,7 @@ export const LandingPage = () => {
       }
     };
     void fetchOwnerProfile();
-  }, [handle, isSecretHandle]);
+  }, [handle, isSecretHandle, showToast]);
 
   if (loading) return <LandingPageSkeleton />;
 

@@ -16,6 +16,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { useEffect, useRef } from 'react';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 
 const GLASS_MODAL = {
@@ -45,6 +46,16 @@ export const SettingsDialog = ({
 }: SettingsDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const primaryActionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      primaryActionRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
+
   const handleEditProfile = () => {
     onEditProfile();
     onClose();
@@ -98,8 +109,8 @@ export const SettingsDialog = ({
         </Typography>
         <List disablePadding>
           <ListItemButton
+            ref={primaryActionRef}
             onClick={handleEditProfile}
-            autoFocus
             sx={{ py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>

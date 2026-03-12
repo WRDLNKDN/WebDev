@@ -141,6 +141,7 @@ export const MessengerOverlay = () => {
       <IconButton
         onClick={openOverlay}
         aria-label="Open messages"
+        data-testid="messenger-open-button"
         size="medium"
         sx={{
           position: 'fixed',
@@ -191,6 +192,7 @@ export const MessengerOverlay = () => {
             onRemoveChat={handleRemoveChat}
             onToggleFavorite={toggleFavorite}
             onBackdropClick={messenger.closeOverlay}
+            onClose={messenger.closeOverlay}
           />,
           document.body,
         )}

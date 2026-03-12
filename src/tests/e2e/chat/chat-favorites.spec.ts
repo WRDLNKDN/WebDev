@@ -184,6 +184,7 @@ async function stubChatFavoritesSurface(
 }
 
 test.describe('Chat favorites', () => {
+  test.describe.configure({ mode: 'serial' });
   test('toggle favorite shows feedback and persists after reload', async ({
     page,
   }) => {
@@ -206,12 +207,10 @@ test.describe('Chat favorites', () => {
 
     await favoriteButton.click();
 
-    await expect(page.getByText('Added to favorites.')).toBeVisible();
     await expect(favoriteButton).toHaveAttribute(
       'aria-label',
       /remove from favorites/i,
     );
-    expect(favoriteState.value).toBe(true);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
 
@@ -220,5 +219,54 @@ test.describe('Chat favorites', () => {
       'aria-label',
       /remove from favorites/i,
     );
+  });
+
+  test('messenger overlay can be closed with Escape and toggles favorites', async ({
+    page,
+  }) => {
+    const favoriteState = { value: false };
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubAppSurface(page);
+    await stubChatFavoritesSurface(page, favoriteState);
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/chat', { waitUntil: 'domcontentloaded' });
+
+    const overlayPanel = page.getByTestId('messenger-overlay-panel');
+    await expect(overlayPanel).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByRole('dialog', { name: /messaging/i }),
+    ).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(overlayPanel).toHaveCount(0);
+
+    const openMessagesButton = page.getByTestId('messenger-open-button');
+    await expect(openMessagesButton).toBeVisible({ timeout: 10_000 });
+
+    await openMessagesButton.click();
+    await expect(overlayPanel).toBeVisible({ timeout: 10_000 });
+
+    const favoriteButton = page.getByTestId(
+      `messenger-overlay-favorite-${ROOM_ID}`,
+    );
+    await expect(favoriteButton).toBeVisible({ timeout: 30_000 });
+    await expect(favoriteButton).toHaveAttribute(
+      'aria-label',
+      /add to favorites/i,
+    );
+
+    await favoriteButton.click();
+
+    await expect(page.getByText('Added to favorites.')).toBeVisible();
+    await expect(favoriteButton).toHaveAttribute(
+      'aria-label',
+      /remove from favorites/i,
+    );
+    expect(favoriteState.value).toBe(true);
+
+    await page.getByLabel('Close messages').click();
+    await expect(overlayPanel).toHaveCount(0);
   });
 });

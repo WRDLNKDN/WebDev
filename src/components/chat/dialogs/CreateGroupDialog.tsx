@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Checkbox,
   Dialog,
@@ -118,55 +119,67 @@ export const CreateGroupDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Create group</DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Add members now (you can invite more later via the ⋮ menu).
-        </Typography>
-        <TextField
-          fullWidth
-          label="Group name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Design team"
-          sx={{ mt: 1, mb: 2 }}
-        />
-        {error && (
-          <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-            {error}
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleCreate();
+        }}
+      >
+        <DialogTitle>Create group</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Add members now (you can invite more later via the ⋮ menu).
           </Typography>
-        )}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Invite members ({selectedCount}/{MAX_MEMBERS})
-        </Typography>
-        <List sx={{ maxHeight: 300, overflow: 'auto' }}>
-          {profiles.map((p) => (
-            <ListItemButton key={p.id} onClick={() => toggle(p.id)}>
-              <ListItemIcon>
-                <Checkbox
-                  edge="start"
-                  checked={p.selected}
-                  disabled={!p.selected && selectedCount >= MAX_MEMBERS}
+          <TextField
+            fullWidth
+            autoFocus
+            label="Group name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Design team"
+            sx={{ mt: 1, mb: 2 }}
+          />
+          {error && (
+            <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Invite members ({selectedCount}/{MAX_MEMBERS})
+          </Typography>
+          <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+            {profiles.map((p) => (
+              <ListItemButton key={p.id} onClick={() => toggle(p.id)}>
+                <ListItemIcon>
+                  <Checkbox
+                    edge="start"
+                    checked={p.selected}
+                    disabled={!p.selected && selectedCount >= MAX_MEMBERS}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={p.display_name || p.handle || p.id}
+                  secondary={p.handle ? `@${p.handle}` : null}
                 />
-              </ListItemIcon>
-              <ListItemText
-                primary={p.display_name || p.handle || p.id}
-                secondary={p.handle ? `@${p.handle}` : null}
-              />
-            </ListItemButton>
-          ))}
-        </List>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={() => void handleCreate()}
-          disabled={submitting || !name.trim()}
-        >
-          {submitting ? 'Creating…' : 'Create'}
-        </Button>
-      </DialogActions>
+              </ListItemButton>
+            ))}
+          </List>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            Press Enter to create the group.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={submitting || !name.trim()}
+          >
+            {submitting ? 'Creating…' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Box>
     </Dialog>
   );
 };

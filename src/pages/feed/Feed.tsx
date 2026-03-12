@@ -50,7 +50,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Snackbar,
   Stack,
   TextField,
   ToggleButton,
@@ -94,6 +93,7 @@ import {
 } from '../../lib/api/feedsApi';
 import { consumeSignOutRedirect, signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useAppToast } from '../../context/AppToastContext';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import {
   getOrCreateSessionAdSeed,
@@ -2104,7 +2104,6 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     },
     [session?.user?.id],
   );
-  const [snack, setSnack] = useState<string | null>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
@@ -2126,6 +2125,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const [feedViewPreference, setFeedViewPreference] =
     useState<FeedViewPreference>('anyone');
   const { avatarUrl } = useCurrentUserAvatar();
+  const { showToast } = useAppToast();
   const feedCacheKey = useMemo(
     () =>
       session?.user?.id
@@ -2185,7 +2185,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       } else {
         // Just show error, don't redirect
         console.warn('⚠️ Feed: API error (not redirecting):', raw);
-        setSnack(toMessage(error) || fallback);
+        showToast({
+          message: toMessage(error) || fallback,
+          severity: 'error',
+        });
       }
     },
     [navigate],
@@ -2520,19 +2523,26 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!session?.user) {
-      setSnack('Please sign in again before uploading images.');
+      showToast({
+        message: 'Please sign in again before uploading images.',
+        severity: 'error',
+      });
       e.target.value = '';
       return;
     }
     if (!isSupportedImageFile(file)) {
-      setSnack('Only JPG, PNG, GIF, and WebP images are allowed.');
+      showToast({
+        message: 'Only JPG, PNG, GIF, and WebP images are allowed.',
+        severity: 'warning',
+      });
       e.target.value = '';
       return;
     }
     if (file.size > FEED_POST_IMAGE_MAX_BYTES) {
-      setSnack(
-        `Image too large (${Math.ceil(file.size / (1024 * 1024))}MB). Max is 6MB per file.`,
-      );
+      showToast({
+        message: `Image too large (${Math.ceil(file.size / (1024 * 1024))}MB). Max is 6MB per file.`,
+        severity: 'warning',
+      });
       e.target.value = '';
       return;
     }
@@ -2554,11 +2564,12 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       setComposerImages((prev) => [...prev, publicUrl]);
     } catch (err) {
       const details = toMessage(err);
-      setSnack(
-        details
+      showToast({
+        message: details
           ? `Image upload failed: ${details}`
           : 'Image upload failed. Please try again.',
-      );
+        severity: 'error',
+      });
     } finally {
       setImageUploading(false);
       e.target.value = '';
@@ -2610,7 +2621,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           originalId,
           accessToken: session.access_token,
         });
-        setSnack('Reposted');
+        showToast({ message: 'Reposted', severity: 'success' });
         await loadPage();
       } catch (e) {
         await handleAuthError(e, 'Failed to repost');
@@ -2820,7 +2831,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
   const handleCopyLink = useCallback(async (url: string) => {
     await navigator.clipboard.writeText(url);
-    setSnack('Link copied');
+    showToast({ message: 'Link copied', severity: 'success' });
   }, []);
 
   const handleFeedViewChange = useCallback(
@@ -2871,7 +2882,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     onSave: (postId) => void handleSave(postId),
     onUnsave: (postId) => void handleUnsave(postId),
     onCopyLink: (url) => void handleCopyLink(url),
-    onMenuInfo: (message) => setSnack(message),
+    onMenuInfo: (message) => showToast({ message }),
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
     onEditPost: handleEditPost,
@@ -3844,10 +3855,16 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               const d = new Date(`${scheduleDate}T${scheduleTime}`);
               if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
                 setComposerScheduledAt(d.toISOString());
-                setSnack(`Post scheduled for ${d.toLocaleString()}`);
+                showToast({
+                  message: `Post scheduled for ${d.toLocaleString()}`,
+                  severity: 'success',
+                });
                 setScheduleDialogOpen(false);
               } else {
-                setSnack('Please choose a future date and time.');
+                showToast({
+                  message: 'Please choose a future date and time.',
+                  severity: 'warning',
+                });
               }
             }}
             sx={{ textTransform: 'none' }}
@@ -3863,14 +3880,6 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         onClose={() => setShareModalItem(null)}
         onCopyLink={handleCopyLink}
         mobile={isSmallScreen}
-      />
-
-      <Snackbar
-        open={Boolean(snack)}
-        autoHideDuration={4000}
-        onClose={() => setSnack(null)}
-        message={snack}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );

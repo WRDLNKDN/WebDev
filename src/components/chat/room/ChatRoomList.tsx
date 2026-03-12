@@ -1,12 +1,12 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
-import AddIcon from '@mui/icons-material/Add';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonIcon from '@mui/icons-material/Person';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
+  Chip,
   Box,
   Button,
   FormControl,
@@ -79,18 +79,52 @@ export const ChatRoomList = ({
   return (
     <Box
       sx={{
-        width: { xs: '100%', md: 280 },
+        width: { xs: '100%', md: 320, lg: 340 },
         minWidth: 0,
         borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <Typography variant="h6" sx={{ mb: 1.5 }}>
-          Messages
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          background:
+            'linear-gradient(180deg, rgba(10,16,34,0.88) 0%, rgba(10,16,34,0.62) 100%)',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ mb: 1.25 }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6">Messages</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Keep up with DMs and group threads
+            </Typography>
+          </Box>
+          <Chip
+            size="small"
+            label={`${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'}`}
+            sx={{
+              borderRadius: 999,
+              bgcolor: 'rgba(255,255,255,0.08)',
+              color: 'text.secondary',
+              fontWeight: 700,
+            }}
+          />
+        </Stack>
+        <Stack
+          direction={{ xs: 'column', lg: 'row' }}
+          spacing={1}
+          sx={{ mb: 1.25 }}
+          data-testid="chat-room-list-controls"
+        >
           <FormControl size="small" fullWidth>
             <InputLabel id="chat-room-filter-label">Filter</InputLabel>
             <Select
@@ -125,96 +159,74 @@ export const ChatRoomList = ({
           </FormControl>
         </Stack>
         {(onStartDm || onCreateGroup) && (
-          <Box
+          <Stack
+            direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
+            spacing={1}
             sx={{
-              border: '1px solid rgba(255,255,255,0.14)',
-              borderRadius: 2,
-              p: 1.25,
-              background:
-                'linear-gradient(180deg, rgba(80,120,255,0.12) 0%, rgba(8,12,24,0.28) 100%)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              pt: 0.25,
             }}
           >
-            <Button
-              fullWidth
-              onClick={onStartDm}
-              startIcon={<AddIcon />}
-              sx={{
-                justifyContent: 'flex-start',
-                textTransform: 'none',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: 600,
-                mb: 1,
-                px: 1.25,
-                py: 1.1,
-                borderRadius: 1.5,
-                border: '1px solid rgba(120,170,255,0.2)',
-                background:
-                  'linear-gradient(180deg, rgba(31,44,86,0.9) 0%, rgba(11,18,37,0.92) 100%)',
-                '&:hover': {
+            {onStartDm && (
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={onStartDm}
+                startIcon={<AddCommentOutlinedIcon />}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  color: 'white',
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  px: 1.35,
+                  py: 0.95,
                   background:
-                    'linear-gradient(180deg, rgba(37,52,100,0.96) 0%, rgba(14,22,44,0.98) 100%)',
-                },
-              }}
-            >
-              Start Conversation
-            </Button>
-
-            <Box sx={{ display: 'grid', gap: 1 }}>
-              {onStartDm && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={onStartDm}
-                  startIcon={<AddCommentOutlinedIcon />}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    textTransform: 'none',
-                    color: 'white',
-                    borderColor: 'rgba(255,255,255,0.16)',
-                    backgroundColor: 'rgba(13, 18, 33, 0.82)',
-                    borderRadius: 1.5,
-                    px: 1.25,
-                    py: 0.95,
-                    '&:hover': {
-                      borderColor: 'rgba(140,190,255,0.38)',
-                      backgroundColor: 'rgba(18, 25, 46, 0.92)',
-                    },
-                  }}
-                >
-                  New chat
-                </Button>
-              )}
-              {onCreateGroup && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={onCreateGroup}
-                  startIcon={<GroupOutlinedIcon />}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    textTransform: 'none',
-                    color: 'white',
-                    borderColor: 'rgba(255,255,255,0.16)',
-                    backgroundColor: 'rgba(13, 18, 33, 0.82)',
-                    borderRadius: 1.5,
-                    px: 1.25,
-                    py: 0.95,
-                    '&:hover': {
-                      borderColor: 'rgba(140,190,255,0.38)',
-                      backgroundColor: 'rgba(18, 25, 46, 0.92)',
-                    },
-                  }}
-                >
-                  New group
-                </Button>
-              )}
-            </Box>
-          </Box>
+                    'linear-gradient(180deg, rgba(39,63,122,0.96) 0%, rgba(19,31,62,0.98) 100%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                  '&:hover': {
+                    background:
+                      'linear-gradient(180deg, rgba(46,73,140,0.98) 0%, rgba(22,35,70,1) 100%)',
+                  },
+                }}
+              >
+                New chat
+              </Button>
+            )}
+            {onCreateGroup && (
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={onCreateGroup}
+                startIcon={<GroupOutlinedIcon />}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.16)',
+                  backgroundColor: 'rgba(13, 18, 33, 0.82)',
+                  borderRadius: 1.5,
+                  px: 1.25,
+                  py: 0.95,
+                  '&:hover': {
+                    borderColor: 'rgba(140,190,255,0.38)',
+                    backgroundColor: 'rgba(18, 25, 46, 0.92)',
+                  },
+                }}
+              >
+                New group
+              </Button>
+            )}
+          </Stack>
         )}
       </Box>
-      <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
+      <List
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          py: 0,
+          px: 0.5,
+        }}
+      >
         {loading ? (
           <ListItemButton disabled>
             <Typography variant="body2" color="text.secondary">
@@ -244,6 +256,11 @@ export const ChatRoomList = ({
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex',
                 alignItems: 'center',
+                gap: 0.75,
+                py: 1.15,
+                px: { xs: 1.25, sm: 1.5 },
+                borderRadius: 1.5,
+                my: 0.25,
               }}
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>

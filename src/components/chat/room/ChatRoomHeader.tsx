@@ -181,15 +181,16 @@ export const ChatRoomHeader = ({
   return (
     <Box
       sx={{
-        px: { xs: 1, sm: 1.5 },
-        py: { xs: 1, sm: 1.5 },
+        px: { xs: 0.75, sm: 1.5 },
+        py: { xs: 0.85, sm: 1.5 },
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
         alignItems: 'center',
-        gap: { xs: 0.5, sm: 1 },
+        gap: { xs: 0.35, sm: 1 },
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
       {!closeIcon && (
@@ -200,8 +201,9 @@ export const ChatRoomHeader = ({
           sx={{
             color: 'white',
             minWidth: 0,
-            mr: 0.5,
-            px: { xs: 0.5, sm: 1 },
+            mr: { xs: 0, sm: 0.5 },
+            px: { xs: 0.35, sm: 1 },
+            flexShrink: 0,
             '& .MuiButton-startIcon': { mr: { xs: 0, sm: 0.5 } },
           }}
         >
@@ -217,6 +219,8 @@ export const ChatRoomHeader = ({
           alignItems: 'center',
           gap: { xs: 0.75, sm: 1.25 },
           minWidth: 0,
+          order: { xs: 2, sm: 0 },
+          width: { xs: 'calc(100% - 88px)', sm: 'auto' },
         }}
       >
         <ProfileAvatar
@@ -244,6 +248,8 @@ export const ChatRoomHeader = ({
           alignItems: 'center',
           gap: 0.25,
           flexShrink: 0,
+          ml: 'auto',
+          order: { xs: 1, sm: 0 },
         }}
       >
         {onToggleFavorite && (

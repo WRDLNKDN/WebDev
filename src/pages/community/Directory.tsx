@@ -147,8 +147,10 @@ export const Directory = () => {
   const [showSecondaryIndustryFilter, setShowSecondaryIndustryFilter] =
     useState(false);
   useEffect(() => {
-    if (secondaryIndustry) setShowSecondaryIndustryFilter(true);
-  }, [secondaryIndustry]);
+    setShowSecondaryIndustryFilter(
+      Boolean(primaryIndustry || secondaryIndustry),
+    );
+  }, [primaryIndustry, secondaryIndustry]);
 
   const [rows, setRows] = useState<DirectoryMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -496,6 +498,10 @@ export const Directory = () => {
     ...skills,
   ].filter(Boolean).length;
 
+  const mobileControlsToggleLabel = mobileControlsOpen
+    ? 'Hide filters'
+    : 'Filters & sort';
+
   if (!session && !loading) {
     return (
       <Box
@@ -618,13 +624,14 @@ export const Directory = () => {
                 startIcon={<TuneIcon />}
                 onClick={() => setMobileControlsOpen((prev) => !prev)}
                 data-testid="directory-mobile-controls-toggle"
+                aria-expanded={mobileControlsOpen}
                 sx={{
                   ...filterChipSx,
                   minWidth: 0,
                   px: 1.5,
                 }}
               >
-                {mobileControlsOpen ? 'Hide filters' : 'Filters & sort'}
+                {mobileControlsToggleLabel}
               </Button>
               {activeFilterCount > 0 && (
                 <Typography
@@ -912,7 +919,7 @@ export const Directory = () => {
               </Stack>
 
               {/* Active filter chips row (query + skills + clear all) */}
-              {(q.trim() || skills.length > 0 || hasActiveFilters) && (
+              {hasActiveFilters && (
                 <Stack
                   direction="row"
                   flexWrap="wrap"
@@ -922,6 +929,7 @@ export const Directory = () => {
                 >
                   {q.trim() && (
                     <Chip
+                      data-testid="directory-active-filter-q"
                       size="small"
                       label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
                       onDelete={() => updateUrl({ q: '' })}
@@ -933,9 +941,71 @@ export const Directory = () => {
                       }}
                     />
                   )}
+                  {primaryIndustry && (
+                    <Chip
+                      data-testid="directory-active-filter-primary-industry"
+                      size="small"
+                      label={`Industry: ${primaryIndustry}`}
+                      onDelete={() =>
+                        updateUrl({
+                          primary_industry: '',
+                          secondary_industry: '',
+                        })
+                      }
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {secondaryIndustry && (
+                    <Chip
+                      data-testid="directory-active-filter-secondary-industry"
+                      size="small"
+                      label={`Sub-industry: ${secondaryIndustry}`}
+                      onDelete={() => updateUrl({ secondary_industry: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {location && (
+                    <Chip
+                      data-testid="directory-active-filter-location"
+                      size="small"
+                      label={`Location: ${location}`}
+                      onDelete={() => updateUrl({ location: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {connectionStatus && (
+                    <Chip
+                      data-testid="directory-active-filter-connection"
+                      size="small"
+                      label={`Connection: ${CONNECTION_LABEL[connectionStatus] ?? connectionStatus}`}
+                      onDelete={() => updateUrl({ connection_status: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
                   {skills.map((s) => (
                     <Chip
                       key={s}
+                      data-testid={`directory-active-filter-skill-${s}`}
                       size="small"
                       label={s}
                       onDelete={() =>
@@ -1045,13 +1115,14 @@ export const Directory = () => {
               startIcon={<TuneIcon />}
               onClick={() => setMobileControlsOpen((prev) => !prev)}
               data-testid="directory-mobile-toolbar-toggle"
+              aria-expanded={mobileControlsOpen}
               sx={{
                 ...filterChipSx,
                 minWidth: 0,
                 px: 1.5,
               }}
             >
-              Filters & sort
+              {mobileControlsToggleLabel}
             </Button>
           ) : (
             <FormControl

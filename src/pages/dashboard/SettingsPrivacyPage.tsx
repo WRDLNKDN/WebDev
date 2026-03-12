@@ -1,12 +1,14 @@
 import {
   Alert,
-  Box,
   FormControlLabel,
+  LinearProgress,
+  Paper,
   Stack,
   Switch,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
+import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
   buildMarketingEmailConsentUpdate,
@@ -16,6 +18,7 @@ import {
 import { toMessage } from '../../lib/utils/errors';
 
 export const SettingsPrivacyPage = () => {
+  const { showToast } = useAppToast();
   const [marketingEmail, setMarketingEmail] = useState(false);
   const [marketingPush, setMarketingPush] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,47 +51,65 @@ export const SettingsPrivacyPage = () => {
     void load();
   }, [load]);
 
-  const handleMarketingEmailChange = useCallback(async (checked: boolean) => {
-    setError(null);
-    setSaving(true);
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user?.id) {
-      setError('You need to sign in to update preferences.');
+  const handleMarketingEmailChange = useCallback(
+    async (checked: boolean) => {
+      setError(null);
+      setSaving(true);
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.user?.id) {
+        setError('You need to sign in to update preferences.');
+        setSaving(false);
+        return;
+      }
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(buildMarketingEmailConsentUpdate(checked))
+        .eq('id', session.session.user.id);
       setSaving(false);
-      return;
-    }
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(buildMarketingEmailConsentUpdate(checked))
-      .eq('id', session.session.user.id);
-    setSaving(false);
-    if (updateError) {
-      setError(toMessage(updateError));
-      return;
-    }
-    setMarketingEmail(checked);
-  }, []);
+      if (updateError) {
+        setError(toMessage(updateError));
+        return;
+      }
+      setMarketingEmail(checked);
+      showToast({
+        message: checked
+          ? 'Marketing emails enabled.'
+          : 'Marketing emails disabled.',
+        severity: 'success',
+      });
+    },
+    [showToast],
+  );
 
-  const handleMarketingPushChange = useCallback(async (checked: boolean) => {
-    setError(null);
-    setSaving(true);
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user?.id) {
-      setError('You need to sign in to update preferences.');
+  const handleMarketingPushChange = useCallback(
+    async (checked: boolean) => {
+      setError(null);
+      setSaving(true);
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.user?.id) {
+        setError('You need to sign in to update preferences.');
+        setSaving(false);
+        return;
+      }
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(buildMarketingPushConsentUpdate(checked))
+        .eq('id', session.session.user.id);
       setSaving(false);
-      return;
-    }
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(buildMarketingPushConsentUpdate(checked))
-      .eq('id', session.session.user.id);
-    setSaving(false);
-    if (updateError) {
-      setError(toMessage(updateError));
-      return;
-    }
-    setMarketingPush(checked);
-  }, []);
+      if (updateError) {
+        setError(toMessage(updateError));
+        return;
+      }
+      setMarketingPush(checked);
+      showToast({
+        message: checked
+          ? 'Marketing push notifications enabled.'
+          : 'Marketing push notifications disabled.',
+        severity: 'success',
+      });
+    },
+    [showToast],
+  );
 
   if (loading) {
     return (
@@ -110,12 +131,20 @@ export const SettingsPrivacyPage = () => {
         these settings.
       </Typography>
       {error && (
-        <Alert severity="info" onClose={() => setError(null)}>
+        <Alert severity="error" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
+      {saving ? <LinearProgress aria-label="Saving privacy settings" /> : null}
 
-      <Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.5 },
+          borderColor: 'rgba(255,255,255,0.08)',
+          bgcolor: 'rgba(255,255,255,0.02)',
+        }}
+      >
         <FormControlLabel
           control={
             <Switch
@@ -138,9 +167,16 @@ export const SettingsPrivacyPage = () => {
         >
           Promotional and product marketing emails. Off by default.
         </Typography>
-      </Box>
+      </Paper>
 
-      <Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.5 },
+          borderColor: 'rgba(255,255,255,0.08)',
+          bgcolor: 'rgba(255,255,255,0.02)',
+        }}
+      >
         <FormControlLabel
           control={
             <Switch
@@ -163,7 +199,7 @@ export const SettingsPrivacyPage = () => {
         >
           Promotional push notifications. Off by default.
         </Typography>
-      </Box>
+      </Paper>
     </Stack>
   );
 };

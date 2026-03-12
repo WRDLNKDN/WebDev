@@ -23,6 +23,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import {
+  shouldCloseDialogFromReason,
+  shouldSubmitWithModifier,
+} from '../../../lib/ui/dialogFormUtils';
 import type { SelectChangeEvent } from '@mui/material';
 import type { ContentSubmissionRow } from '../../../lib/api/contentApi';
 import {
@@ -332,30 +336,45 @@ export const RejectSubmissionDialog = ({
   onCancel,
   onConfirm,
 }: RejectDialogProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>Reject submission</DialogTitle>
-    <DialogContent>
-      <TextField
-        fullWidth
-        multiline
-        rows={3}
-        label="Reason (optional)"
-        value={reason}
-        onChange={(e) => onReasonChange(e.target.value)}
-        placeholder="Content does not match community guidelines."
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button
-        color="error"
-        variant="contained"
-        onClick={onConfirm}
-        disabled={busy}
-      >
-        Reject
-      </Button>
-    </DialogActions>
+  <Dialog
+    open={open}
+    onClose={(_event, reason) => {
+      if (shouldCloseDialogFromReason(reason)) onCancel();
+    }}
+  >
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onConfirm();
+      }}
+    >
+      <DialogTitle>Reject submission</DialogTitle>
+      <DialogContent>
+        <TextField
+          fullWidth
+          autoFocus
+          multiline
+          rows={3}
+          label="Reason (optional)"
+          value={reason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          onKeyDown={(event) => {
+            if (!shouldSubmitWithModifier(event) || busy) return;
+            event.preventDefault();
+            onConfirm();
+          }}
+          helperText="Press Cmd/Ctrl+Enter to reject."
+          placeholder="Content does not match community guidelines."
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" color="error" variant="contained" disabled={busy}>
+          Reject
+        </Button>
+      </DialogActions>
+    </Box>
   </Dialog>
 );
 
@@ -380,34 +399,47 @@ export const PublishSubmissionDialog = ({
   onCancel,
   onConfirm,
 }: PublishDialogProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>Publish to playlist</DialogTitle>
-    <DialogContent>
-      <FormControl fullWidth sx={{ mt: 1 }}>
-        <InputLabel>Playlist</InputLabel>
-        <Select
-          value={selectedPlaylist}
-          label="Playlist"
-          onChange={(e) => onPlaylistChange(e.target.value)}
+  <Dialog
+    open={open}
+    onClose={(_event, reason) => {
+      if (shouldCloseDialogFromReason(reason)) onCancel();
+    }}
+  >
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onConfirm();
+      }}
+    >
+      <DialogTitle>Publish to playlist</DialogTitle>
+      <DialogContent>
+        <FormControl fullWidth sx={{ mt: 1 }}>
+          <InputLabel>Playlist</InputLabel>
+          <Select
+            value={selectedPlaylist}
+            label="Playlist"
+            onChange={(e) => onPlaylistChange(e.target.value)}
+          >
+            {playlists.map((p) => (
+              <MenuItem key={p.id} value={p.id}>
+                {p.title} ({p.slug})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={busy || !selectedPlaylist}
         >
-          {playlists.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.title} ({p.slug})
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button
-        variant="contained"
-        onClick={onConfirm}
-        disabled={busy || !selectedPlaylist}
-      >
-        Publish
-      </Button>
-    </DialogActions>
+          Publish
+        </Button>
+      </DialogActions>
+    </Box>
   </Dialog>
 );
 

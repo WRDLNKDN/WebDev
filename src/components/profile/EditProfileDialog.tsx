@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  Snackbar,
   Stack,
   Tooltip,
   Typography,
@@ -17,6 +16,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
+import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
 import { toMessage } from '../../lib/utils/errors';
@@ -110,14 +110,13 @@ export const EditProfileDialog = ({
   const [busy, setBusy] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
   const [checkingHandle, setCheckingHandle] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
     null,
   );
   const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
   const initialSnapshotRef = useRef('');
   const pendingActionRef = useRef<(() => void) | null>(null);
+  const { showToast } = useAppToast();
 
   useEffect(() => {
     if (!open || !focusBioOnOpen) return;
@@ -232,8 +231,7 @@ export const EditProfileDialog = ({
     if (handleAvailable === false || checkingHandle) return;
     const validation = validateIndustryGroups(formData.industries);
     if (!validation.ok) {
-      setToastMessage(validation.message);
-      setShowToast(true);
+      showToast({ message: validation.message, severity: 'warning' });
       return;
     }
 
@@ -265,8 +263,10 @@ export const EditProfileDialog = ({
           skills: skillsArr.length ? skillsArr : undefined,
         },
       });
-      setToastMessage('Profile updated successfully!');
-      setShowToast(true);
+      showToast({
+        message: 'Profile updated successfully!',
+        severity: 'success',
+      });
       initialSnapshotRef.current = draftSnapshot;
       const pendingAction = pendingActionRef.current;
       pendingActionRef.current = null;
@@ -276,8 +276,7 @@ export const EditProfileDialog = ({
       }, 1200);
     } catch (cause) {
       console.error(cause);
-      setToastMessage(toMessage(cause));
-      setShowToast(true);
+      showToast({ message: toMessage(cause), severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -289,8 +288,7 @@ export const EditProfileDialog = ({
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 6 * 1024 * 1024) {
-      setToastMessage('File too large. Max 6MB.');
-      setShowToast(true);
+      showToast({ message: 'File too large. Max 6MB.', severity: 'warning' });
       event.target.value = '';
       return;
     }
@@ -299,14 +297,12 @@ export const EditProfileDialog = ({
       const url = await onUpload(file);
       if (url) {
         setUploadedAvatarUrl(url);
-        setToastMessage('Avatar updated.');
-        setShowToast(true);
+        showToast({ message: 'Avatar updated.', severity: 'success' });
         onAvatarChanged?.();
       }
     } catch (cause) {
       console.error(cause);
-      setToastMessage(toMessage(cause));
-      setShowToast(true);
+      showToast({ message: toMessage(cause), severity: 'error' });
     } finally {
       setBusy(false);
       event.target.value = '';
@@ -339,13 +335,11 @@ export const EditProfileDialog = ({
         use_weirdling_avatar: false,
       } as Partial<DashboardProfile>);
       setUploadedAvatarUrl(preset.image_url);
-      setToastMessage('Avatar updated.');
-      setShowToast(true);
+      showToast({ message: 'Avatar updated.', severity: 'success' });
       onAvatarChanged?.();
     } catch (cause) {
       console.error(cause);
-      setToastMessage(toMessage(cause));
-      setShowToast(true);
+      showToast({ message: toMessage(cause), severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -519,26 +513,6 @@ export const EditProfileDialog = ({
             </Stack>
           )}
         </DialogContent>
-
-        <Snackbar
-          open={showToast}
-          autoHideDuration={4000}
-          onClose={() => setShowToast(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Box
-            sx={{
-              background: 'linear-gradient(135deg, #2c1e12 0%, #1a1a1a 100%)',
-              border: '1px solid #d4af37',
-              color: '#f5f5f5',
-              p: 2,
-              borderRadius: 1,
-              boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)',
-            }}
-          >
-            {toastMessage}
-          </Box>
-        </Snackbar>
       </Dialog>
 
       <Dialog

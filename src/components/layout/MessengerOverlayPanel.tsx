@@ -1,5 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommentIcon from '@mui/icons-material/AddComment';
+import CloseIcon from '@mui/icons-material/Close';
 import GroupsIcon from '@mui/icons-material/Groups';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -24,6 +25,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
+import { useEffect } from 'react';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import {
   CHAT_ROOM_FILTER_OPTIONS,
@@ -62,6 +64,7 @@ type Props = {
   onRemoveChat: (e: React.MouseEvent, roomId: string) => void;
   onToggleFavorite: (roomId: string, isFavorite: boolean) => void;
   onBackdropClick: () => void;
+  onClose: () => void;
 };
 
 export const MessengerOverlayPanel = ({
@@ -88,6 +91,7 @@ export const MessengerOverlayPanel = ({
   onRemoveChat,
   onToggleFavorite,
   onBackdropClick,
+  onClose,
 }: Props) => {
   const filteredRooms = deriveVisibleChatRooms(rooms, {
     currentUserId,
@@ -96,11 +100,23 @@ export const MessengerOverlayPanel = ({
     searchQuery,
   });
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <>
       <Box
         aria-hidden
         onClick={onBackdropClick}
+        data-testid="messenger-overlay-backdrop"
         sx={{
           position: 'fixed',
           inset: 0,
@@ -112,6 +128,10 @@ export const MessengerOverlayPanel = ({
       />
 
       <Box
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="messenger-overlay-title"
+        data-testid="messenger-overlay-panel"
         onClick={(e) => e.stopPropagation()}
         sx={{
           ...GLASS_CARD,
@@ -157,9 +177,22 @@ export const MessengerOverlayPanel = ({
             <Avatar src={avatarUrl ?? undefined} sx={{ width: 36, height: 36 }}>
               {session?.user?.user_metadata?.name?.[0] ?? '?'}
             </Avatar>
-            <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
+            <Typography
+              id="messenger-overlay-title"
+              variant="subtitle1"
+              fontWeight={600}
+              sx={{ flex: 1 }}
+            >
               Messaging
             </Typography>
+            <IconButton
+              aria-label="Close messages"
+              onClick={onClose}
+              size="small"
+              sx={{ color: 'text.secondary' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
             <IconButton
               aria-label="Messaging options"
               onClick={(e) => menuButtonClick(e.currentTarget)}
@@ -368,6 +401,7 @@ export const MessengerOverlayPanel = ({
                           ? 'Remove from favorites'
                           : 'Add to favorites'
                       }
+                      data-testid={`messenger-overlay-favorite-${r.id}`}
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -386,6 +420,7 @@ export const MessengerOverlayPanel = ({
                     </IconButton>
                     <IconButton
                       aria-label="Remove chat"
+                      data-testid={`messenger-overlay-remove-${r.id}`}
                       size="small"
                       onClick={(e) => onRemoveChat(e, r.id)}
                       sx={{

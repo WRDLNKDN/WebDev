@@ -9,6 +9,7 @@ import {
   buildAdvertiserUpdatePayload,
 } from '../../../lib/admin/advertiserPayload';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import { useAppToast } from '../../../context/AppToastContext';
 import { toMessage } from '../../../lib/utils/errors';
 import { AdminAdvertiserDialog } from './AdminAdvertiserDialog';
 import { AdminAdvertisersHeader } from './AdminAdvertisersHeader';
@@ -40,7 +41,6 @@ export const AdminAdvertisersPage = () => {
   >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -50,6 +50,7 @@ export const AdminAdvertisersPage = () => {
   const [editingLogoUrl, setEditingLogoUrl] = useState<string | null>(null);
   const [metricsWindowDays, setMetricsWindowDays] =
     useState<MetricsWindowDays>(30);
+  const { showToast } = useAppToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,7 +101,6 @@ export const AdminAdvertisersPage = () => {
     setEditingLogoUrl(null);
     setForm(emptyForm);
     setError(null);
-    setSuccess(null);
     setDialogOpen(true);
   };
 
@@ -110,7 +110,6 @@ export const AdminAdvertisersPage = () => {
     setEditingLogoUrl(row.logo_url ?? null);
     setForm(formFromRow(row));
     setError(null);
-    setSuccess(null);
     setDialogOpen(true);
   };
 
@@ -139,7 +138,6 @@ export const AdminAdvertisersPage = () => {
     setPreviewUrl(objectUrl);
     setUploadingImage(true);
     setError(null);
-    setSuccess(null);
     try {
       const publicUrl = await uploadAdImage(file);
       if (editingId) {
@@ -158,11 +156,12 @@ export const AdminAdvertisersPage = () => {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
       setForm((current) => ({ ...current, image_url: publicUrl }));
-      setSuccess(
-        editingId
+      showToast({
+        message: editingId
           ? 'Image updated.'
           : 'Image uploaded. Save the ad to apply this change.',
-      );
+        severity: 'success',
+      });
     } catch (cause) {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
@@ -175,12 +174,11 @@ export const AdminAdvertisersPage = () => {
 
   const handleRemoveImage = async () => {
     setError(null);
-    setSuccess(null);
     releasePreviewUrl();
 
     if (!editingId) {
       setForm((current) => ({ ...current, image_url: '' }));
-      setSuccess('Image removed.');
+      showToast({ message: 'Image removed.', severity: 'success' });
       return;
     }
 
@@ -193,7 +191,7 @@ export const AdminAdvertisersPage = () => {
       if (updateError) throw updateError;
 
       setForm((current) => ({ ...current, image_url: '' }));
-      setSuccess('Image removed.');
+      showToast({ message: 'Image removed.', severity: 'success' });
       notifyAdvertiserUpdate();
       await load();
     } catch (cause) {
@@ -215,7 +213,6 @@ export const AdminAdvertisersPage = () => {
 
     setSaving(true);
     setError(null);
-    setSuccess(null);
     try {
       const payload = { ...form, links };
       if (editingId) {
@@ -232,7 +229,10 @@ export const AdminAdvertisersPage = () => {
       }
 
       notifyAdvertiserUpdate();
-      setSuccess(editingId ? 'Advertiser updated.' : 'Advertiser added.');
+      showToast({
+        message: editingId ? 'Advertiser updated.' : 'Advertiser added.',
+        severity: 'success',
+      });
       closeDialog();
       await load();
     } catch (cause) {
@@ -289,16 +289,6 @@ export const AdminAdvertisersPage = () => {
           {error}
         </Alert>
       ) : null}
-      {success ? (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
-        </Alert>
-      ) : null}
-
       <AdminAdvertisersStateView
         loading={loading}
         rows={rows}

@@ -1,15 +1,13 @@
 import {
-  Alert,
   Box,
   LinearProgress,
-  Portal,
-  Snackbar,
   Stack,
   Switch,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
+import { useAppToast } from '../../../context/AppToastContext';
 import { useFeatureFlags } from '../../../context/FeatureFlagsContext';
 import { describeFlag, FLAG_LABELS, humanizeFlagKey } from './featureFlagUtils';
 
@@ -50,15 +48,7 @@ const FLAG_CATEGORIES: FlagCategory[] = [
 export const AdminFeatureFlagsPage = () => {
   const { flags, loading, setFlag, refetch } = useFeatureFlags();
   const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const { showToast } = useAppToast();
 
   useEffect(() => {
     void refetch();
@@ -70,16 +60,14 @@ export const AdminFeatureFlagsPage = () => {
       try {
         await setFlag(key, enabled);
         const label = FLAG_LABELS[key] ?? humanizeFlagKey(key);
-        setToast({
-          open: true,
+        showToast({
           message: `${label} turned ${enabled ? 'on' : 'off'}.`,
           severity: 'success',
         });
       } catch (error) {
         console.error('[FeatureFlags] toggle failed:', error);
         const label = FLAG_LABELS[key] ?? humanizeFlagKey(key);
-        setToast({
-          open: true,
+        showToast({
           message: `Failed to update ${label}.`,
           severity: 'error',
         });
@@ -233,39 +221,6 @@ export const AdminFeatureFlagsPage = () => {
           ))}
         </Box>
       )}
-      <Portal>
-        <Snackbar
-          open={toast.open}
-          autoHideDuration={4000}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') return;
-            setToast((prev) => ({ ...prev, open: false }));
-          }}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          sx={{
-            left: '50% !important',
-            right: 'auto !important',
-            transform: 'translateX(-50%) !important',
-            bottom: 'max(16px, env(safe-area-inset-bottom)) !important',
-          }}
-        >
-          <Alert
-            severity={toast.severity}
-            variant="filled"
-            sx={{
-              width: 'max-content',
-              maxWidth: 'min(92vw, 560px)',
-              borderRadius: 1.5,
-              boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-              '& .MuiAlert-message': {
-                fontWeight: 600,
-              },
-            }}
-          >
-            {toast.message}
-          </Alert>
-        </Snackbar>
-      </Portal>
     </Stack>
   );
 };

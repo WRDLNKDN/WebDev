@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { dismissToast, enqueueToast } from '../../context/AppToastContext';
+import {
+  dismissToast,
+  enqueueToast,
+  getToastAccessibilityProps,
+} from '../../context/AppToastContext';
 
 describe('AppToastContext queue helpers', () => {
   it('enqueues new toasts in order', () => {
@@ -52,5 +56,67 @@ describe('AppToastContext queue helpers', () => {
     ]);
 
     expect(nextQueue).toEqual([{ id: 2, message: 'Second' }]);
+  });
+
+  it('deduplicates consecutive identical toasts', () => {
+    const queue = enqueueToast(
+      [
+        {
+          id: 1,
+          message: 'Saved',
+          severity: 'success',
+        },
+      ],
+      {
+        message: 'Saved',
+        severity: 'success',
+      },
+      () => 2,
+    );
+
+    expect(queue).toEqual([
+      {
+        id: 1,
+        message: 'Saved',
+        severity: 'success',
+      },
+    ]);
+  });
+
+  it('caps the queue to the newest four toasts', () => {
+    const queue = [
+      { id: 1, message: 'One' },
+      { id: 2, message: 'Two' },
+      { id: 3, message: 'Three' },
+      { id: 4, message: 'Four' },
+    ];
+
+    const nextQueue = enqueueToast(
+      queue,
+      {
+        message: 'Five',
+      },
+      () => 5,
+    );
+
+    expect(nextQueue.map((item) => item.message)).toEqual([
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+    ]);
+  });
+
+  it('announces errors assertively and success politely', () => {
+    expect(getToastAccessibilityProps('error')).toMatchObject({
+      role: 'alert',
+      'aria-live': 'assertive',
+      'aria-atomic': 'true',
+    });
+    expect(getToastAccessibilityProps('success')).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
+    });
   });
 });

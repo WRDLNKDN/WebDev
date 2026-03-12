@@ -205,15 +205,16 @@ export const ChatPage = () => {
           minWidth: 0,
           maxWidth: '100%',
           ...GLASS_CARD,
-          m: { xs: 1, sm: 2 },
+          m: { xs: 0.75, sm: 1.25, md: 2 },
           overflow: 'hidden',
+          borderRadius: { xs: 2.5, md: 3 },
         }}
       >
         <Box
           sx={{
             display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-            width: { xs: '100%', md: 280 },
-            minWidth: { xs: 0, md: 280 },
+            width: { xs: '100%', md: 320, lg: 340 },
+            minWidth: { xs: 0, md: 320, lg: 340 },
             maxWidth: '100%',
             flexShrink: 0,
             borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
@@ -242,6 +243,8 @@ export const ChatPage = () => {
             maxWidth: '100%',
             overflowX: 'hidden',
             overflowY: 'hidden',
+            background:
+              'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)',
           }}
         >
           {roomId ? (

@@ -1,6 +1,7 @@
 import { Box, Button, Container, Typography } from '@mui/material';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
+import { toMessage } from '../../lib/utils/errors';
 
 interface Props {
   children?: ReactNode;
@@ -8,16 +9,22 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMessage: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
+    errorMessage:
+      'An unexpected error halted this screen. Refresh and try again.',
   };
 
-  public static getDerivedStateFromError(_: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+    return {
+      hasError: true,
+      errorMessage: toMessage(error),
+    };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -46,8 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
               [SYSTEM_HALT]
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
-              Logic mismatch detected in this sector. The Human OS has initiated
-              a protective rewind.
+              {this.state.errorMessage}
             </Typography>
             <Button
               variant="contained"

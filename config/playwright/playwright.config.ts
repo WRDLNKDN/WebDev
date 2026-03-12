@@ -41,12 +41,20 @@ export default defineConfig({
       url: API_URL,
       reuseExistingServer: !isCI,
       timeout: 180_000,
+      gracefulShutdown: {
+        signal: 'SIGTERM',
+        timeout: 5_000,
+      },
     },
     {
       command: 'npm run e2e:serve:frontend',
       url: BASE_URL,
       reuseExistingServer: !isCI,
       timeout: 180_000,
+      gracefulShutdown: {
+        signal: 'SIGTERM',
+        timeout: 5_000,
+      },
     },
   ],
 

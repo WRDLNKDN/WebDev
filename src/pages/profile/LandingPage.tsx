@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Container,
   Grid,
-  Snackbar,
   Stack,
   Typography,
 } from '@mui/material';
@@ -40,6 +39,7 @@ const DivergencePage = lazy(async () => {
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
@@ -62,7 +62,6 @@ export const LandingPage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [followCheckDone, setFollowCheckDone] = useState(false);
-  const [snack, setSnack] = useState<string | null>(null);
   const [previewProject, setPreviewProject] = useState<PortfolioItem | null>(
     null,
   );
@@ -70,6 +69,7 @@ export const LandingPage = () => {
     null,
   );
   const { avatarUrl: currentUserAvatarUrl } = useCurrentUserAvatar();
+  const { showToast } = useAppToast();
 
   // Easter Egg Check
   const isSecretHandle =
@@ -130,7 +130,10 @@ export const LandingPage = () => {
       setIsFollowing(true);
     } catch (e) {
       console.error('Follow failed:', e);
-      setSnack("We couldn't connect right now. Please try again.");
+      showToast({
+        message: "We couldn't connect right now. Please try again.",
+        severity: 'error',
+      });
     } finally {
       setConnectionLoading(false);
     }
@@ -149,7 +152,7 @@ export const LandingPage = () => {
       setIsFollowing(false);
     } catch (e) {
       console.error('Unfollow failed:', e);
-      setSnack(toMessage(e));
+      showToast({ message: toMessage(e), severity: 'error' });
     } finally {
       setConnectionLoading(false);
     }
@@ -204,7 +207,7 @@ export const LandingPage = () => {
         setProjects((projectsData || []) as PortfolioItem[]);
       } catch (err) {
         console.error('Profile load error:', err);
-        setSnack(toMessage(err));
+        showToast({ message: toMessage(err), severity: 'error' });
         setProfile(null);
       } finally {
         setLoading(false);
@@ -491,13 +494,6 @@ export const LandingPage = () => {
         project={previewProject}
         open={Boolean(previewProject)}
         onClose={() => setPreviewProject(null)}
-      />
-      <Snackbar
-        open={Boolean(snack)}
-        autoHideDuration={6000}
-        onClose={() => setSnack(null)}
-        message={snack}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </>
   );

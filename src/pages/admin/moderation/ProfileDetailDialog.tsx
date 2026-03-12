@@ -8,8 +8,11 @@ import {
   Box,
   Divider,
   Chip,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import type { ProfileRow } from '../core/adminApi';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 
 type Props = {
   open: boolean;
@@ -18,12 +21,22 @@ type Props = {
 };
 
 export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   if (!profile) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Profile Details</DialogTitle>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onClose();
+      }}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen}
+    >
+      <DialogTitle sx={{ pr: 6 }}>Profile Details</DialogTitle>
+      <DialogContent dividers>
         <Box sx={{ py: 2 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" sx={{ opacity: 0.7 }}>
@@ -112,7 +125,7 @@ export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>

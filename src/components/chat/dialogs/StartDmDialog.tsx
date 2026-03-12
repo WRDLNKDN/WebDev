@@ -180,9 +180,17 @@ export const StartDmDialog = ({
           <TextField
             fullWidth
             size="small"
+            autoFocus
             placeholder="Search connections by name or handle…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' || loading) return;
+              const firstMatch = filteredConnections[0];
+              if (!firstMatch) return;
+              event.preventDefault();
+              void handleSelect(firstMatch.id);
+            }}
             sx={{
               mb: 1,
               '& .MuiInputBase-root': {
@@ -242,6 +250,11 @@ export const StartDmDialog = ({
               No connections match &quot;{searchQuery.trim()}&quot;.
             </Typography>
           )}
+        {!loadingList && filteredConnections.length > 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            Press Enter to start a chat with the first result.
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

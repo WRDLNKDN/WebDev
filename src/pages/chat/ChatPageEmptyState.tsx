@@ -17,16 +17,44 @@ export const ChatPageEmptyState = ({
       justifyContent: 'center',
       flexDirection: 'column',
       gap: 2,
+      px: 2,
+      textAlign: 'center',
     }}
   >
-    <Typography variant="h6" color="text.secondary">
-      Select a conversation or start a new chat
+    <Typography
+      variant="overline"
+      sx={{ letterSpacing: 1.6, color: 'text.secondary' }}
+    >
+      Messaging
     </Typography>
-    <Box sx={{ display: 'flex', gap: 2 }}>
-      <Button variant="contained" onClick={onStartDm}>
+    <Typography variant="h5" sx={{ maxWidth: 420 }}>
+      Pick a conversation or start one that actually matters.
+    </Typography>
+    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 480 }}>
+      Direct messages stay quick, and groups are better when you need to pull in
+      more weirdlings.
+    </Typography>
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 1.25,
+        flexDirection: { xs: 'column', sm: 'row' },
+        width: { xs: '100%', sm: 'auto' },
+        maxWidth: 420,
+      }}
+    >
+      <Button
+        variant="contained"
+        onClick={onStartDm}
+        sx={{ width: { xs: '100%', sm: 'auto' }, textTransform: 'none' }}
+      >
         New 1:1 chat
       </Button>
-      <Button variant="outlined" onClick={onCreateGroup}>
+      <Button
+        variant="outlined"
+        onClick={onCreateGroup}
+        sx={{ width: { xs: '100%', sm: 'auto' }, textTransform: 'none' }}
+      >
         New group
       </Button>
     </Box>

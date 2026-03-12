@@ -1,6 +1,8 @@
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
+  Box,
+  Button,
   IconButton,
   Slide,
   Snackbar,
@@ -11,6 +13,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -36,22 +39,50 @@ type AppToastContextValue = {
 
 const AppToastContext = createContext<AppToastContextValue | null>(null);
 
+const MAX_TOAST_QUEUE = 4;
+
+function isDuplicateToast(
+  existing: ToastItem | undefined,
+  incoming: Omit<ToastItem, 'id'>,
+) {
+  if (!existing) return false;
+
+  return (
+    existing.message === incoming.message &&
+    existing.severity === incoming.severity &&
+    existing.action?.label === incoming.action?.label
+  );
+}
+
 export function enqueueToast(
   queue: ToastItem[],
   toast: Omit<ToastItem, 'id'>,
   idFactory: () => number = () => Date.now() + Math.floor(Math.random() * 1000),
 ) {
+  if (isDuplicateToast(queue[queue.length - 1], toast)) {
+    return queue;
+  }
+
   return [
     ...queue,
     {
       ...toast,
       id: idFactory(),
     },
-  ];
+  ].slice(-MAX_TOAST_QUEUE);
 }
 
 export function dismissToast(queue: ToastItem[]) {
   return queue.slice(1);
+}
+
+export function getToastAccessibilityProps(severity?: AlertColor) {
+  const assertive = severity === 'error' || severity === 'warning';
+  return {
+    role: assertive ? 'alert' : 'status',
+    'aria-live': assertive ? ('assertive' as const) : ('polite' as const),
+    'aria-atomic': 'true' as const,
+  };
 }
 
 const SlideTransition = (props: SlideProps) => {
@@ -64,6 +95,7 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
   const [queue, setQueue] = useState<ToastItem[]>([]);
 
   const currentToast = queue[0] ?? null;
+  const toastA11y = getToastAccessibilityProps(currentToast?.severity);
 
   const dismissCurrentToast = useCallback(() => {
     setQueue((prev) => dismissToast(prev));
@@ -74,6 +106,18 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const value = useMemo(() => ({ showToast }), [showToast]);
+
+  useEffect(() => {
+    if (!currentToast) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      dismissCurrentToast();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentToast, dismissCurrentToast]);
 
   return (
     <AppToastContext.Provider value={value}>
@@ -92,7 +136,10 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
         }}
         TransitionComponent={SlideTransition}
         sx={{
-          bottom: { xs: 18, sm: 28 },
+          bottom: {
+            xs: 'max(18px, env(safe-area-inset-bottom))',
+            sm: 'max(28px, env(safe-area-inset-bottom))',
+          },
           '& .MuiPaper-root': {
             minWidth: { xs: 'calc(100vw - 24px)', sm: 360 },
             maxWidth: { xs: 'calc(100vw - 24px)', sm: 520 },
@@ -105,28 +152,40 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
           severity={currentToast?.severity ?? 'info'}
           variant="filled"
           onClose={dismissCurrentToast}
+          role={toastA11y.role}
+          aria-live={toastA11y['aria-live']}
+          aria-atomic={toastA11y['aria-atomic']}
           action={
-            <>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                ml: 1,
+              }}
+            >
               {currentToast?.action ? (
-                <IconButton
+                <Button
                   size="small"
                   color="inherit"
-                  aria-label={currentToast.action.label}
                   onClick={() => {
                     currentToast.action?.onClick();
                     dismissCurrentToast();
                   }}
+                  sx={{
+                    minWidth: 0,
+                    px: 0.75,
+                    py: 0.25,
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    lineHeight: 1.2,
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    {currentToast.action.label}
-                  </span>
-                </IconButton>
+                  {currentToast.action.label}
+                </Button>
               ) : null}
               <IconButton
                 size="small"
@@ -136,13 +195,21 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
               >
                 <CloseIcon fontSize="small" />
               </IconButton>
-            </>
+            </Box>
           }
           sx={{
-            alignItems: 'center',
+            alignItems: { xs: 'flex-start', sm: 'center' },
             width: '100%',
+            '& .MuiAlert-action': {
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              pt: { xs: 0.25, sm: 0 },
+              pl: { xs: 1, sm: 2 },
+              mr: 0,
+            },
             '& .MuiAlert-message': {
               fontWeight: 600,
+              overflowWrap: 'anywhere',
+              pr: 0.5,
             },
           }}
         >

@@ -5,6 +5,7 @@ import {
   validateAdImageFile,
 } from '../../../lib/api/adminAdvertisersApi';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import { useAppToast } from '../../../context/AppToastContext';
 import { toMessage } from '../../../lib/utils/errors';
 import {
   emptyForm,
@@ -28,6 +29,7 @@ export const AdminPartnersPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { showToast } = useAppToast();
 
   const load = async () => {
     setLoading(true);
@@ -80,6 +82,10 @@ export const AdminPartnersPage = () => {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
       setForm((prev) => ({ ...prev, image_url: publicUrl }));
+      showToast({
+        message: 'Image uploaded. Save the partner to apply this change.',
+        severity: 'success',
+      });
     } catch (err) {
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);
@@ -119,6 +125,10 @@ export const AdminPartnersPage = () => {
           .insert(payload);
         if (insertError) throw insertError;
       }
+      showToast({
+        message: editingId ? 'Partner updated.' : 'Partner added.',
+        severity: 'success',
+      });
       closeDialog();
       await load();
     } catch (e: unknown) {

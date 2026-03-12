@@ -10,6 +10,10 @@ const hasBackendEnv = Boolean(
 );
 const useBackendServer =
   process.env.PLAYWRIGHT_USE_BACKEND === 'true' || hasBackendEnv;
+const frontendCommand = useBackendServer
+  ? 'npm run e2e:serve:frontend'
+  : 'PLAYWRIGHT_FRONTEND_ONLY=true npm run e2e:serve:frontend';
+const canReuseFrontendServer = !isCI && useBackendServer;
 const LOCAL_WORKERS = 2;
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
 
@@ -63,9 +67,9 @@ export default defineConfig({
         ]
       : []),
     {
-      command: 'npm run e2e:serve:frontend',
+      command: frontendCommand,
       url: BASE_URL,
-      reuseExistingServer: !isCI,
+      reuseExistingServer: canReuseFrontendServer,
       timeout: 180_000,
       gracefulShutdown: {
         signal: 'SIGTERM',

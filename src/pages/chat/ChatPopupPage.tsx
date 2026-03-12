@@ -219,7 +219,8 @@ export const ChatPopupPage = () => {
             onSend={sendMessage}
             onTyping={startTyping}
             onStopTyping={stopTyping}
-            disabled={sending || loading}
+            disabled={loading}
+            sending={sending}
           />
         )}
       </Box>

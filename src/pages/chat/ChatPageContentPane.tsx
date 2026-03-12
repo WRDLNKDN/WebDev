@@ -168,7 +168,8 @@ export const ChatPageContentPane = ({
           onSend={onSendMessage}
           onTyping={onTyping}
           onStopTyping={onStopTyping}
-          disabled={sending || chatLoading}
+          disabled={chatLoading}
+          sending={sending}
         />
       </>
     ) : (

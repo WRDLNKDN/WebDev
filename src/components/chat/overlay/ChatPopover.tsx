@@ -246,7 +246,8 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
               onSend={sendMessage}
               onTyping={startTyping}
               onStopTyping={stopTyping}
-              disabled={sending}
+              disabled={false}
+              sending={sending}
             />
           </Box>
         )}

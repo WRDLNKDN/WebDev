@@ -14,6 +14,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { GLASS_CARD } from '../../../theme/candyStyles';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 
 type ChatRoomListProps = {
   rooms: ChatRoomWithMembers[];
@@ -197,11 +198,9 @@ export const ChatRoomList = ({
                       onRemoveChat(room.id);
                     }}
                     sx={{
+                      ...compactGlassDangerIconButtonSx,
                       ml: 'auto',
                       flexShrink: 0,
-                      bgcolor: 'rgba(0,0,0,0.6)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'error.main', color: 'white' },
                     }}
                   >
                     <DeleteIcon fontSize="small" />

@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { GLASS_CARD } from '../../../theme/candyStyles';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import type { Weirdling } from '../../../types/weirdling';
 
 interface WeirdlingCardProps {
@@ -113,12 +114,10 @@ export const WeirdlingCard = ({
                 onClick={() => onDeleteRequest(weirdling)}
                 aria-label={`Delete ${weirdling.displayName}`}
                 sx={{
+                  ...compactGlassDangerIconButtonSx,
                   position: 'absolute',
                   top: 4,
                   right: 4,
-                  bgcolor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
                 }}
               >
                 <DeleteIcon fontSize="small" />

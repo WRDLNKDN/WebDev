@@ -456,8 +456,38 @@ const theme = createTheme({
           '&[aria-pressed="true"], &.MuiChip-filled': {
             boxShadow: 'inset 0 0 0 2px currentColor',
           },
+          '&.MuiChip-deletable': {
+            paddingRight: 4,
+            borderColor: 'rgba(173,203,255,0.2)',
+            boxShadow:
+              '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+          },
         },
         label: { fontWeight: 500 },
+        deleteIcon: {
+          marginRight: 4,
+          marginLeft: 8,
+          color: '#f5f9ff',
+          fontSize: '1rem',
+          borderRadius: 12,
+          padding: 4,
+          background:
+            'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%)',
+          border: '1px solid rgba(173,203,255,0.22)',
+          boxShadow:
+            '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
+          transition:
+            'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease',
+          '&:hover': {
+            color: '#ffffff',
+            background:
+              'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%)',
+            borderColor: 'rgba(191,219,254,0.4)',
+            boxShadow:
+              '0 12px 24px rgba(4,10,25,0.3), 0 0 12px rgba(96,208,255,0.16)',
+            transform: 'scale(1.04)',
+          },
+        },
       },
     },
     MuiAlert: {

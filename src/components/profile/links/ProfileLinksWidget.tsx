@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import {
   getSocialLinkPlatform,
   getSocialLinkTitle,
@@ -138,15 +139,8 @@ export const ProfileLinksWidget = ({
               }}
               aria-label={`Remove ${linkTitle}`}
               sx={{
+                ...compactGlassDangerIconButtonSx,
                 flexShrink: 0,
-                p: 0.25,
-                minWidth: 0,
-                minHeight: 0,
-                color: 'error.main',
-                '&:hover': {
-                  bgcolor: 'error.main',
-                  color: 'error.contrastText',
-                },
               }}
             >
               <CloseIcon fontSize="small" />

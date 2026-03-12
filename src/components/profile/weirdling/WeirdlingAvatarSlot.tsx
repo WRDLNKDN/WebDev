@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { tinyGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import type { Weirdling } from '../../../types/weirdling';
 
 interface WeirdlingAvatarSlotProps {
@@ -63,15 +64,11 @@ export const WeirdlingAvatarSlot = ({
                 void onRemove(w.id);
               }}
               sx={{
+                ...tinyGlassDangerIconButtonSx,
                 position: 'absolute',
                 top: -4,
                 right: -4,
                 zIndex: 1,
-                bgcolor: 'background.paper',
-                color: 'text.secondary',
-                width: 24,
-                height: 24,
-                '&:hover': { bgcolor: 'action.hover', color: 'error.main' },
               }}
             >
               <CloseIcon sx={{ fontSize: 16 }} />

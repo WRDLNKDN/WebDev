@@ -6,6 +6,7 @@ import {
   getShortLinkLabel,
 } from '../../../lib/utils/linkPlatform';
 import { CANDY_BLUEY } from '../../../theme/candyStyles';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import type { SocialLink } from '../../../types/profile';
 import { LinkIcon } from '../../profile/links/LinkIcon';
 
@@ -189,11 +190,7 @@ export const LinkCard = ({
               }}
               aria-label={`Remove ${title}`}
               sx={{
-                color: 'error.main',
-                '&:hover': {
-                  bgcolor: 'error.main',
-                  color: 'error.contrastText',
-                },
+                ...compactGlassDangerIconButtonSx,
               }}
             >
               <CloseIcon sx={{ fontSize: 16 }} />

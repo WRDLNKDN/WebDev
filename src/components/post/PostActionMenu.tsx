@@ -37,6 +37,7 @@ export const PostActionMenu = ({
 }: PostActionMenuProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
+  const menuId = open ? 'post-action-menu' : undefined;
 
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -54,23 +55,40 @@ export const PostActionMenu = ({
           size="small"
           onClick={handleOpen}
           aria-label={ariaLabel}
+          aria-controls={menuId}
           aria-haspopup="true"
           aria-expanded={open}
           sx={{
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             color: 'rgba(255,255,255,0.82)',
-            borderRadius: '999px',
-            bgcolor: 'rgba(255,255,255,0.09)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            boxShadow: '0 8px 18px rgba(0,0,0,0.22)',
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '18px',
+            bgcolor: 'rgba(132,154,214,0.14)',
+            border: '1px solid rgba(173,203,255,0.18)',
+            boxShadow:
+              '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12)',
             transition:
               'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: 1,
+              borderRadius: '16px',
+              background:
+                'radial-gradient(circle at 30% 28%, rgba(255,255,255,0.16), rgba(255,255,255,0.02) 48%, rgba(132,154,214,0.08) 100%)',
+              pointerEvents: 'none',
+            },
             '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.14)',
-              borderColor: 'rgba(255,255,255,0.2)',
+              bgcolor: 'rgba(148,175,232,0.18)',
+              borderColor: 'rgba(191,219,254,0.32)',
               color: '#fff',
               transform: 'scale(1.04)',
+            },
+            '&:focus-visible': {
+              outline: '2px solid rgba(191,219,254,0.78)',
+              outlineOffset: 2,
             },
           }}
         >
@@ -78,24 +96,31 @@ export const PostActionMenu = ({
         </IconButton>
       </Tooltip>
       <Menu
+        id={menuId}
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{
-          elevation: 0,
-          sx: {
-            mt: 0.9,
-            minWidth: 268,
-            borderRadius: 2,
-            color: '#f8fafc',
-            border: '1px solid rgba(125,211,252,0.82)',
-            bgcolor: 'rgba(16,22,31,0.985)',
-            boxShadow:
-              '0 24px 44px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
-            backdropFilter: 'blur(14px)',
-            py: 0.85,
+        slotProps={{
+          root: {
+            sx: { zIndex: 1600 },
+          },
+          paper: {
+            elevation: 0,
+            sx: {
+              zIndex: 1600,
+              mt: 0.9,
+              minWidth: 268,
+              borderRadius: 2,
+              color: '#f8fafc',
+              border: '1px solid rgba(125,211,252,0.82)',
+              bgcolor: 'rgba(16,22,31,0.985)',
+              boxShadow:
+                '0 24px 44px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
+              backdropFilter: 'blur(14px)',
+              py: 0.85,
+            },
           },
         }}
       >

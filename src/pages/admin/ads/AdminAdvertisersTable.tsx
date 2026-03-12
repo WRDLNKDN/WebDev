@@ -17,6 +17,7 @@ import type {
   MetricsWindowDays,
 } from './adminAdvertisersTypes';
 import { getCtr } from './adminAdvertisersTypes';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 
 type Props = {
   rows: AdvertiserRow[];
@@ -134,9 +135,7 @@ export const AdminAdvertisersTable = ({
                 onClick={() => onDelete(row.id)}
                 aria-label="Delete"
                 sx={{
-                  bgcolor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
+                  ...compactGlassDangerIconButtonSx,
                 }}
               >
                 <DeleteIcon fontSize="small" />

@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import {
+  canonicalizeDmRooms,
+  pickCanonicalDmRoom,
+} from '../lib/chat/canonicalDm';
 import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
 import type { ChatRoom, ChatRoomMember } from '../types/chat';
@@ -8,6 +12,126 @@ import type { ChatRoomWithMembers } from './chatTypes';
 export function useChatRooms() {
   const [rooms, setRooms] = useState<ChatRoomWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchCanonicalDmRoomId = useCallback(
+    async (currentUserId: string, otherUserId: string) => {
+      const { data: candidateMembers, error: memberError } = await supabase
+        .from('chat_room_members')
+        .select('room_id, user_id, role, joined_at, left_at')
+        .in('user_id', [currentUserId, otherUserId]);
+
+      if (memberError) throw memberError;
+      if (!candidateMembers?.length) return null;
+
+      const memberRowsByRoom = new Map<string, ChatRoomMember[]>();
+      for (const member of candidateMembers) {
+        const existing = memberRowsByRoom.get(member.room_id) ?? [];
+        existing.push({
+          room_id: member.room_id,
+          user_id: member.user_id,
+          role: member.role === 'admin' ? 'admin' : 'member',
+          joined_at: member.joined_at,
+          left_at: member.left_at,
+        });
+        memberRowsByRoom.set(member.room_id, existing);
+      }
+
+      const activeSharedRoomIds = Array.from(memberRowsByRoom.entries())
+        .filter(([, members]) => {
+          const activeMemberIds = new Set(
+            members
+              .filter((member) => member.left_at === null)
+              .map((member) => member.user_id),
+          );
+          return (
+            activeMemberIds.has(currentUserId) &&
+            activeMemberIds.has(otherUserId) &&
+            activeMemberIds.size === 2
+          );
+        })
+        .map(([roomId]) => roomId);
+
+      if (activeSharedRoomIds.length === 0) return null;
+
+      const { data: roomData, error: roomError } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .eq('room_type', 'dm')
+        .in('id', activeSharedRoomIds);
+
+      if (roomError) throw roomError;
+      if (!roomData?.length) return null;
+
+      let summaryMap = new Map<
+        string,
+        {
+          last_content: string | null;
+          last_created_at: string;
+          last_is_deleted: boolean;
+          unread_count: number;
+        }
+      >();
+
+      const { data: summaries, error: summariesError } = await supabase.rpc(
+        'chat_room_summaries',
+        {
+          p_room_ids: roomData.map((room) => room.id),
+          p_user_id: currentUserId,
+        },
+      );
+      if (summariesError) {
+        console.warn('chat_room_summaries failed:', summariesError.message);
+      } else {
+        type SummaryRow = {
+          room_id: string;
+          last_content: string | null;
+          last_created_at: string;
+          last_is_deleted: boolean;
+          unread_count: number;
+        };
+
+        summaryMap = new Map(
+          ((summaries ?? []) as SummaryRow[]).map((summary) => [
+            summary.room_id,
+            {
+              last_content: summary.last_content,
+              last_created_at: summary.last_created_at,
+              last_is_deleted: summary.last_is_deleted,
+              unread_count: Number(summary.unread_count ?? 0),
+            },
+          ]),
+        );
+      }
+
+      const candidateRooms: ChatRoomWithMembers[] = (roomData ?? []).map(
+        (room) => {
+          const summary = summaryMap.get(room.id);
+          const members = (memberRowsByRoom.get(room.id) ?? [])
+            .filter((member) => member.left_at === null)
+            .map((member) => ({
+              ...member,
+              profile: null,
+            }));
+
+          return {
+            ...(room as ChatRoom),
+            members,
+            last_message_preview: summary
+              ? sanitizeChatRoomPreview(
+                  summary.last_content,
+                  summary.last_is_deleted,
+                )
+              : undefined,
+            last_message_at: summary?.last_created_at,
+            unread_count: summary?.unread_count,
+          };
+        },
+      );
+
+      return pickCanonicalDmRoom(candidateRooms, currentUserId)?.id ?? null;
+    },
+    [],
+  );
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -174,7 +298,7 @@ export function useChatRooms() {
         });
       }
 
-      setRooms(withMembers);
+      setRooms(canonicalizeDmRooms(withMembers, session.user.id));
     } catch (cause) {
       console.warn('fetchRooms failed:', toMessage(cause));
       setRooms([]);
@@ -210,6 +334,15 @@ export function useChatRooms() {
       } = await supabase.auth.getSession();
       if (!session?.user) return null;
 
+      const existingRoomId = await fetchCanonicalDmRoomId(
+        session.user.id,
+        otherUserId,
+      );
+      if (existingRoomId) {
+        await fetchRooms();
+        return existingRoomId;
+      }
+
       const { data: roomId, error } = await supabase.rpc('chat_create_dm', {
         p_other_user_id: otherUserId,
       });
@@ -224,10 +357,13 @@ export function useChatRooms() {
             : null;
       if (!id) return null;
 
+      const canonicalRoomId =
+        (await fetchCanonicalDmRoomId(session.user.id, otherUserId)) ?? id;
+
       await fetchRooms();
-      return id;
+      return canonicalRoomId;
     },
-    [fetchRooms],
+    [fetchCanonicalDmRoomId, fetchRooms],
   );
 
   const createGroup = useCallback(

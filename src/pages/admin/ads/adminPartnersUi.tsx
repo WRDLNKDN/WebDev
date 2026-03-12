@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import type { RefObject } from 'react';
 import { AD_IMAGE_ALLOWED_LABEL } from '../../../lib/api/adminAdvertisersApi';
+import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 
 export type PartnerRow = {
   id: string;
@@ -242,9 +243,7 @@ export const PartnersTable = ({
                 onClick={() => onDelete(row.id)}
                 aria-label="Delete"
                 sx={{
-                  bgcolor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
+                  ...compactGlassDangerIconButtonSx,
                 }}
               >
                 <DeleteIcon fontSize="small" />

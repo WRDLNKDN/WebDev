@@ -18,6 +18,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import { GLASS_CARD } from '../../theme/candyStyles';
+import { compactGlassDangerIconButtonSx } from '../../theme/iconActionStyles';
 
 type Props = {
   mobile: boolean;
@@ -338,11 +339,9 @@ export const MessengerOverlayPanel = ({
                     size="small"
                     onClick={(e) => onRemoveChat(e, r.id)}
                     sx={{
+                      ...compactGlassDangerIconButtonSx,
                       ml: 'auto',
                       flexShrink: 0,
-                      bgcolor: 'rgba(0,0,0,0.6)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'error.main', color: 'white' },
                     }}
                   >
                     <DeleteIcon fontSize="small" />

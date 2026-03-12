@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useState } from 'react';
+import { tinyGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import type { Weirdling } from '../../../types/weirdling';
 
 interface WeirdlingBannerSlotProps {
@@ -59,15 +60,11 @@ export const WeirdlingBannerSlot = ({
             aria-label={`Remove ${current.displayName}`}
             onClick={() => void onRemove(current.id)}
             sx={{
+              ...tinyGlassDangerIconButtonSx,
               position: 'absolute',
               top: 4,
               right: 4,
               zIndex: 1,
-              bgcolor: 'rgba(0,0,0,0.6)',
-              color: 'white',
-              width: 24,
-              height: 24,
-              '&:hover': { bgcolor: 'error.main' },
             }}
           >
             <CloseIcon sx={{ fontSize: 14 }} />

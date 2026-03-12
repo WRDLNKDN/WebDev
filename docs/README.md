@@ -70,6 +70,8 @@ Central index for WRDLNKDN WebDev documentation.
   — Visual constraints, safety rules, and contribution patterns for Weirdlings.
 - [Development](./development/copilot-instructions.md) — Copilot / dev tooling
   instructions.
+- [Interaction contract](./development/interaction-contract.md) — Canonical
+  rules for dialogs, forms, toasts, keyboard shortcuts, and responsive behavior.
 - [Feed post buttons](./development/feed-post-buttons.md) — Post and Link button
   behavior in the Feed composer.
 - [Home scroll analytics queries](./development/home-scroll-analytics.md) — How

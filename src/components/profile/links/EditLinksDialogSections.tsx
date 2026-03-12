@@ -330,7 +330,7 @@ export const CurrentLinksSection = ({
                   borderRadius: 2,
                   border: '1px solid',
                   borderColor: 'divider',
-                  bgcolor: 'rgba(255,255,255,0.04)',
+                  bgcolor: 'rgba(56,132,210,0.10)',
                 }}
               >
                 <Stack

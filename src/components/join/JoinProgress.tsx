@@ -72,7 +72,7 @@ export const JoinProgress = ({
                       height: 28,
                       borderRadius: '50%',
                       border: isActive
-                        ? '2.5px solid #3b82f6'
+                        ? '2.5px solid #3884D2'
                         : '2px solid rgba(255,255,255,0.22)',
                       bgcolor: isActive
                         ? 'rgba(59,130,246,0.15)'
@@ -88,7 +88,7 @@ export const JoinProgress = ({
                           width: 10,
                           height: 10,
                           borderRadius: '50%',
-                          bgcolor: '#3b82f6',
+                          bgcolor: '#3884D2',
                         }}
                       />
                     )}
@@ -103,7 +103,7 @@ export const JoinProgress = ({
                     color: isCompleted
                       ? '#4ade80'
                       : isActive
-                        ? '#fff'
+                        ? '#FFFFFF'
                         : 'rgba(255,255,255,0.4)',
                   }}
                 >
@@ -120,7 +120,7 @@ export const JoinProgress = ({
                     mt: '13px',
                     bgcolor: completedSteps.includes(step)
                       ? 'rgba(74,222,128,0.45)'
-                      : 'rgba(255,255,255,0.1)',
+                      : 'rgba(156,187,217,0.22)',
                     alignSelf: 'flex-start',
                   }}
                 />

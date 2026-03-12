@@ -129,8 +129,8 @@ export const AdminFeatureFlagsPage = () => {
               sx={{
                 minWidth: 0,
                 borderRadius: 2,
-                bgcolor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                bgcolor: 'rgba(56,132,210,0.12)',
+                border: '1px solid rgba(156,187,217,0.18)',
                 p: 1.5,
               }}
             >
@@ -170,8 +170,8 @@ export const AdminFeatureFlagsPage = () => {
                       maxWidth: { xs: '100%', lg: 430 },
                       mr: 'auto',
                       borderRadius: 1.5,
-                      bgcolor: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      bgcolor: 'rgba(56,132,210,0.08)',
+                      border: '1px solid rgba(56,132,210,0.16)',
                     }}
                   >
                     <Stack spacing={0} sx={{ minWidth: 0, flex: 1 }}>

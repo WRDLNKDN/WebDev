@@ -160,8 +160,8 @@ export const MessageList = ({
             onClick={onLoadOlder}
             disabled={loadingOlder}
             sx={{
-              border: '1px solid rgba(255,255,255,0.2)',
-              bgcolor: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(141,188,229,0.38)',
+              bgcolor: 'rgba(56,132,210,0.10)',
               color: 'text.secondary',
               textTransform: 'none',
             }}
@@ -270,7 +270,7 @@ export const MessageList = ({
                   : 'rgba(17, 24, 39, 0.6)',
                 borderColor: isOwn
                   ? 'rgba(147,197,253,0.55)'
-                  : 'rgba(255,255,255,0.12)',
+                  : 'rgba(156,187,217,0.26)',
                 minWidth: 0,
                 width: '100%',
                 maxWidth: '100%',
@@ -289,7 +289,7 @@ export const MessageList = ({
                     style={{
                       padding: '8px',
                       borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.2)',
+                      border: '1px solid rgba(141,188,229,0.38)',
                       background: 'rgba(0,0,0,0.2)',
                       color: 'white',
                       width: '100%',
@@ -370,7 +370,7 @@ export const MessageList = ({
                     textDecoration: 'none',
                     borderRadius: 1.5,
                     overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: '1px solid rgba(156,187,217,0.30)',
                     bgcolor: 'rgba(0,0,0,0.25)',
                   }}
                 >
@@ -449,9 +449,9 @@ export const MessageList = ({
                           px: 0.5,
                           py: 0.15,
                           borderRadius: 1,
-                          bgcolor: 'rgba(255,255,255,0.06)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                          bgcolor: 'rgba(56,132,210,0.14)',
+                          border: '1px solid rgba(156,187,217,0.18)',
+                          '&:hover': { bgcolor: 'rgba(156,187,217,0.22)' },
                         }}
                       >
                         {emoji}
@@ -499,7 +499,7 @@ export const MessageList = ({
               width: 24,
               height: 24,
               borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.2)',
+              border: '1px solid rgba(141,188,229,0.38)',
               objectFit: 'cover',
             }}
           />
@@ -546,7 +546,7 @@ const AttachmentPreview = ({
         maxHeight: 220,
         borderRadius: 1,
         overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.2)',
+        border: '1px solid rgba(141,188,229,0.38)',
       }}
     >
       {isImage && signedUrl ? (

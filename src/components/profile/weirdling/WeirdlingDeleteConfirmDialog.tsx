@@ -34,7 +34,7 @@ export const WeirdlingDeleteConfirmDialog = ({
       sx: {
         bgcolor: 'background.paper',
         borderRadius: 2,
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
       },
     }}
   >

@@ -31,9 +31,9 @@ const BG_SX = {
 };
 
 const SIDEBAR_WIDTH = 260;
-const ADMIN_TEXT_PRIMARY = 'rgba(255,255,255,0.96)';
-const ADMIN_TEXT_SECONDARY = 'rgba(255,255,255,0.78)';
-const ADMIN_TEXT_MUTED = 'rgba(255,255,255,0.62)';
+const ADMIN_TEXT_PRIMARY = '#FFFFFF';
+const ADMIN_TEXT_SECONDARY = 'rgba(255,255,255,0.88)';
+const ADMIN_TEXT_MUTED = 'rgba(255,255,255,0.72)';
 
 type NavItem = {
   label: string;
@@ -92,8 +92,8 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
         width: SIDEBAR_WIDTH,
         flexShrink: 0,
         borderRadius: 2,
-        borderColor: 'rgba(255,255,255,0.12)',
-        bgcolor: 'rgba(16, 18, 24, 0.6)',
+        borderColor: 'rgba(156,187,217,0.26)',
+        bgcolor: 'rgba(17,24,39,0.78)',
         p: 1,
         color: ADMIN_TEXT_PRIMARY,
         '& .MuiListItemText-primary': {
@@ -118,12 +118,12 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                   color: ADMIN_TEXT_SECONDARY,
                   '&:hover': {
                     color: ADMIN_TEXT_PRIMARY,
-                    bgcolor: 'rgba(255,255,255,0.06)',
+                    bgcolor: 'rgba(56,132,210,0.14)',
                   },
                   '&.Mui-selected': {
-                    bgcolor: 'rgba(255,255,255,0.08)',
+                    bgcolor: 'rgba(56,132,210,0.18)',
                     color: ADMIN_TEXT_PRIMARY,
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
+                    '&:hover': { bgcolor: 'rgba(56,132,210,0.24)' },
                   },
                 }}
               >
@@ -189,8 +189,8 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                 variant="outlined"
                 sx={{
                   borderRadius: 3,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  bgcolor: 'rgba(16, 18, 24, 0.70)',
+                  border: '1px solid rgba(156,187,217,0.26)',
+                  bgcolor: 'rgba(17,24,39,0.84)',
                   backdropFilter: 'blur(12px)',
                   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
                   p: { xs: 3, sm: 4 },
@@ -204,14 +204,14 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                     },
                   '& .MuiTableCell-root': {
                     color: ADMIN_TEXT_PRIMARY,
-                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderColor: 'rgba(156,187,217,0.22)',
                   },
                   '& .MuiTableCell-head': {
                     color: ADMIN_TEXT_PRIMARY,
                     fontWeight: 700,
                   },
                   '& .MuiDivider-root': {
-                    borderColor: 'rgba(255,255,255,0.12)',
+                    borderColor: 'rgba(156,187,217,0.26)',
                   },
                   '& .MuiChip-root': {
                     color: ADMIN_TEXT_PRIMARY,
@@ -227,22 +227,22 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                   },
                   '& .MuiInputBase-root': {
                     color: ADMIN_TEXT_PRIMARY,
-                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    backgroundColor: 'rgba(56,132,210,0.10)',
                   },
                   '& .MuiInputBase-input::placeholder': {
                     color: ADMIN_TEXT_MUTED,
                     opacity: 1,
                   },
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255,255,255,0.18)',
+                    borderColor: 'rgba(141,188,229,0.34)',
                   },
                   '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline':
                     {
-                      borderColor: 'rgba(255,255,255,0.3)',
+                      borderColor: 'rgba(141,188,229,0.50)',
                     },
                   '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline':
                     {
-                      borderColor: 'rgba(45,212,191,0.72)',
+                      borderColor: '#3884D2',
                     },
                   '& .MuiSelect-icon': {
                     color: ADMIN_TEXT_SECONDARY,
@@ -254,7 +254,7 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                     color: ADMIN_TEXT_PRIMARY,
                   },
                   '& a': {
-                    color: '#7dd3fc',
+                    color: '#8DBCE5',
                   },
                   '& .MuiCard-root, & .MuiPaper-root': {
                     color: ADMIN_TEXT_PRIMARY,

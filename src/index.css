@@ -1,5 +1,23 @@
 /* src/index.css */
 
+:root {
+  --color-bg-default: #05070f;
+  --color-bg-paper: #111827;
+  --color-bg-raised: #0b1220;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.88);
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-link: #8dbce5;
+  --color-link-hover: #3884d2;
+  --color-primary: #3884d2;
+  --color-primary-hover: #2d6fad;
+  --color-primary-disabled: #9cbbd9;
+  --color-secondary: #a744c2;
+  --color-success: #4dd166;
+  --color-warning: #ee9932;
+  --color-error: #e13d2d;
+}
+
 /* Reset + sane defaults */
 *,
 *::before,
@@ -11,6 +29,7 @@ html,
 body,
 #root {
   margin: 0;
+  background-color: var(--color-bg-default);
 }
 
 html,
@@ -29,8 +48,8 @@ html {
 
 body {
   font-family: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  background-color: #121212;
-  color: #ffffff;
+  background-color: var(--color-bg-default);
+  color: var(--color-text-primary);
   line-height: 1.5;
   overflow-x: hidden;
   overflow-y: hidden;
@@ -49,11 +68,12 @@ body {
 
 /* Links */
 a {
-  color: #2563eb;
+  color: var(--color-link);
   text-decoration: none;
 }
 
 a:hover {
+  color: var(--color-link-hover);
   text-decoration: underline;
 }
 

@@ -150,7 +150,7 @@ export const ProjectPage = () => {
           p: 4,
           borderRadius: 3,
           bgcolor: 'rgba(30,30,30,0.7)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(156,187,217,0.22)',
         }}
       >
         <Box
@@ -172,7 +172,7 @@ export const ProjectPage = () => {
               startIcon={<EditIcon />}
               onClick={() => setEditOpen(true)}
               sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
+                borderColor: 'rgba(141,188,229,0.50)',
                 color: 'white',
                 width: { xs: '100%', sm: 'auto' },
               }}

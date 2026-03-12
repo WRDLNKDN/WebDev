@@ -110,7 +110,7 @@ export const ResumeCard = ({
                 flexShrink: 0,
                 overflow: 'hidden',
                 bgcolor: 'rgba(0,0,0,0.5)',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                borderBottom: '1px solid rgba(156,187,217,0.18)',
               }}
             >
               <Box
@@ -138,7 +138,7 @@ export const ResumeCard = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 bgcolor: 'rgba(0,0,0,0.2)',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                borderBottom: '1px solid rgba(156,187,217,0.18)',
               }}
             >
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -239,7 +239,7 @@ export const ResumeCard = ({
               pt: 1.25,
               pb: 0.75,
               minHeight: 40,
-              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderTop: '1px solid rgba(156,187,217,0.18)',
             }}
           >
             <Box
@@ -280,7 +280,7 @@ export const ResumeCard = ({
                         height: 32,
                         padding: 0,
                         color: '#b9c3dd',
-                        border: '1px solid rgba(255,255,255,0.28)',
+                        border: '1px solid rgba(141,188,229,0.48)',
                         borderRadius: 1,
                         '& .MuiSvgIcon-root': { fontSize: '1rem' },
                         '&:hover': {
@@ -308,7 +308,7 @@ export const ResumeCard = ({
                         height: 32,
                         padding: 0,
                         color: '#b9c3dd',
-                        border: '1px solid rgba(255,255,255,0.28)',
+                        border: '1px solid rgba(141,188,229,0.48)',
                         borderRadius: 1,
                         '& .MuiSvgIcon-root': { fontSize: '1rem' },
                         '&:hover': {

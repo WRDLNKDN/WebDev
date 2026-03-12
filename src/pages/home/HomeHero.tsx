@@ -120,7 +120,7 @@ export const HomeHero = ({
             component="h1"
             variant="h1"
             sx={{
-              color: '#fff',
+              color: '#FFFFFF',
               fontWeight: 700,
               letterSpacing: '0.02em',
               fontSize: { xs: '3rem', sm: '3.5rem', md: '4rem' },

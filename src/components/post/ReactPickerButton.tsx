@@ -171,7 +171,7 @@ export const ReactPickerButton = <T extends string = string>({
               bgcolor: 'rgba(20,22,27,0.96)',
               border: '1px solid rgba(255,255,255,0.10)',
               boxShadow:
-                '0 14px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03) inset',
+                '0 14px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(56,132,210,0.08) inset',
               ...traySx,
             }}
           >
@@ -196,10 +196,10 @@ export const ReactPickerButton = <T extends string = string>({
                       borderRadius: '999px',
                       border: active
                         ? `2px solid ${option.color}`
-                        : '1px solid rgba(255,255,255,0.08)',
+                        : '1px solid rgba(156,187,217,0.18)',
                       bgcolor: active
                         ? 'rgba(255,255,255,0.10)'
-                        : 'rgba(255,255,255,0.04)',
+                        : 'rgba(56,132,210,0.10)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -209,7 +209,7 @@ export const ReactPickerButton = <T extends string = string>({
                         'transform 120ms ease, background-color 120ms ease, border-color 120ms ease',
                       '&:hover': {
                         transform: 'translateY(-2px) scale(1.05)',
-                        bgcolor: 'rgba(255,255,255,0.12)',
+                        bgcolor: 'rgba(156,187,217,0.26)',
                         borderColor: option.color,
                       },
                     }}

@@ -203,7 +203,7 @@ export const Bumper = ({
           <Typography
             component="span"
             sx={{
-              color: '#fff',
+              color: '#FFFFFF',
               fontWeight: 800,
               letterSpacing: '0.04em',
               fontSize: {

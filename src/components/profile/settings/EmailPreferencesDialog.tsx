@@ -17,9 +17,9 @@ import { supabase } from '../../../lib/auth/supabaseClient';
 const GLASS_MODAL = {
   bgcolor: '#141414',
   backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
+    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  border: '1px solid rgba(156,187,217,0.22)',
   color: 'white',
   borderRadius: 3,
 };

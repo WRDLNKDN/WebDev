@@ -53,24 +53,24 @@ export const ChatRoomList = ({
       sx={{
         width: { xs: '100%', md: 280 },
         minWidth: 0,
-        borderRight: { xs: 'none', md: '1px solid rgba(255,255,255,0.1)' },
+        borderRight: { xs: 'none', md: '1px solid rgba(156,187,217,0.22)' },
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <Box sx={{ p: 2, borderBottom: '1px solid rgba(156,187,217,0.22)' }}>
         <Typography variant="h6" sx={{ mb: 1.5 }}>
           Messages
         </Typography>
         {(onStartDm || onCreateGroup) && (
           <Box
             sx={{
-              border: '1px solid rgba(255,255,255,0.14)',
+              border: '1px solid rgba(156,187,217,0.28)',
               borderRadius: 2,
               p: 1.25,
               background:
                 'linear-gradient(180deg, rgba(80,120,255,0.12) 0%, rgba(8,12,24,0.28) 100%)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              boxShadow: 'inset 0 1px 0 rgba(156,187,217,0.18)',
             }}
           >
             <Button
@@ -110,7 +110,7 @@ export const ChatRoomList = ({
                     justifyContent: 'flex-start',
                     textTransform: 'none',
                     color: 'white',
-                    borderColor: 'rgba(255,255,255,0.16)',
+                    borderColor: 'rgba(156,187,217,0.32)',
                     backgroundColor: 'rgba(13, 18, 33, 0.82)',
                     borderRadius: 1.5,
                     px: 1.25,
@@ -134,7 +134,7 @@ export const ChatRoomList = ({
                     justifyContent: 'flex-start',
                     textTransform: 'none',
                     color: 'white',
-                    borderColor: 'rgba(255,255,255,0.16)',
+                    borderColor: 'rgba(156,187,217,0.32)',
                     backgroundColor: 'rgba(13, 18, 33, 0.82)',
                     borderRadius: 1.5,
                     px: 1.25,
@@ -173,7 +173,7 @@ export const ChatRoomList = ({
               onClick={() => navigate(`${base}/${room.id}`)}
               sx={{
                 ...(roomId === room.id ? GLASS_CARD : {}),
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid rgba(56,132,210,0.14)',
                 display: 'flex',
                 alignItems: 'center',
               }}

@@ -64,7 +64,7 @@ export const ExploreSidebar = () => {
           px: 2,
           py: 1.5,
           borderBottom: '1px solid',
-          borderColor: 'rgba(255,255,255,0.08)',
+          borderColor: 'rgba(156,187,217,0.18)',
         }}
       >
         <Typography variant="subtitle1" fontWeight={700}>

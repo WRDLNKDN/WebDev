@@ -116,8 +116,8 @@ export const SettingsLayout = () => {
                     sx={{
                       borderRadius: 1,
                       '&.Mui-selected': {
-                        bgcolor: 'rgba(255,255,255,0.08)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
+                        bgcolor: 'rgba(156,187,217,0.18)',
+                        '&:hover': { bgcolor: 'rgba(156,187,217,0.26)' },
                       },
                     }}
                   >

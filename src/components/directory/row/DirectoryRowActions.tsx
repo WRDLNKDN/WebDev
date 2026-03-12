@@ -37,7 +37,7 @@ export const DirectoryRowActions = ({
   onBlock,
 }: DirectoryRowActionsProps) => {
   const actionButtonSx = {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
     color: 'white',
     minHeight: { xs: 40, sm: 32 },
     '& .MuiButton-startIcon, & .MuiButton-endIcon': { mx: 0 },
@@ -169,7 +169,7 @@ export const DirectoryRowActions = ({
                   mt: 1.25,
                   borderRadius: 2,
                   bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(156,187,217,0.26)',
                 },
               },
             }}

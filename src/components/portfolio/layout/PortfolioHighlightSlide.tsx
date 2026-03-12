@@ -66,8 +66,8 @@ export const PortfolioHighlightSlide = ({
             aspectRatio: { xs: '4 / 3', sm: '16 / 9' },
             borderRadius: 2.5,
             overflow: 'hidden',
-            bgcolor: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            bgcolor: 'rgba(56,132,210,0.10)',
+            border: '1px solid rgba(156,187,217,0.18)',
             cursor: onOpenPreview ? 'pointer' : 'default',
           }}
         >
@@ -124,9 +124,9 @@ export const PortfolioHighlightSlide = ({
                   size="small"
                   label={category}
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.08)',
+                    bgcolor: 'rgba(156,187,217,0.18)',
                     color: 'text.secondary',
-                    border: '1px solid rgba(255,255,255,0.16)',
+                    border: '1px solid rgba(156,187,217,0.32)',
                   }}
                 />
               ))}

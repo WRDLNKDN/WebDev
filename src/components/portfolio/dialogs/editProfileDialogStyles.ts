@@ -4,7 +4,7 @@ export const AVATAR_GRADIENT = `linear-gradient(135deg, ${GRADIENT_START} 0%, ${
 export const PURPLE_ACCENT = '#B366FF';
 export const DARK_BG = '#1a1a1f';
 export const INPUT_BG = '#28282d';
-export const BORDER_COLOR = 'rgba(255,255,255,0.08)';
+export const BORDER_COLOR = 'rgba(156,187,217,0.18)';
 
 export const GLASS_MODAL = {
   bgcolor: DARK_BG,
@@ -29,7 +29,7 @@ export const INPUT_STYLES = {
     minHeight: '48px',
     '&:hover': {
       bgcolor: 'rgba(50, 50, 55, 0.9)',
-      borderColor: 'rgba(255,255,255,0.12)',
+      borderColor: 'rgba(156,187,217,0.26)',
     },
     '&.Mui-focused': {
       bgcolor: 'rgba(50, 50, 55, 0.95)',

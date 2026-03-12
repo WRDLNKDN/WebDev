@@ -379,7 +379,7 @@ export const AddProjectDialog = ({
     >
       <DialogTitle
         sx={{
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          borderBottom: '1px solid rgba(156,187,217,0.22)',
           p: { xs: 2, md: 2.5 },
         }}
       >
@@ -458,7 +458,7 @@ export const AddProjectDialog = ({
                   width: '100%',
                   maxWidth: { xs: '100%', md: 360 },
                   aspectRatio: PROJECT_IMAGE_RATIO,
-                  border: '2px dashed rgba(255,255,255,0.2)',
+                  border: '2px dashed rgba(141,188,229,0.38)',
                   borderRadius: 1,
                   display: 'flex',
                   alignItems: 'center',
@@ -526,8 +526,8 @@ export const AddProjectDialog = ({
                 sx={{
                   p: 1.25,
                   borderRadius: 1,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  bgcolor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(156,187,217,0.26)',
+                  bgcolor: 'rgba(56,132,210,0.08)',
                 }}
               >
                 <Typography
@@ -550,10 +550,10 @@ export const AddProjectDialog = ({
                         color: item.ready ? '#D8FFF5' : 'rgba(255,255,255,0.8)',
                         bgcolor: item.ready
                           ? 'rgba(0, 196, 140, 0.14)'
-                          : 'rgba(255,255,255,0.06)',
+                          : 'rgba(56,132,210,0.14)',
                         border: item.ready
                           ? '1px solid rgba(0, 196, 140, 0.3)'
-                          : '1px solid rgba(255,255,255,0.12)',
+                          : '1px solid rgba(156,187,217,0.26)',
                       }}
                     />
                   ))}
@@ -886,13 +886,13 @@ export const AddProjectDialog = ({
           sx={{
             mt: 2.5,
             pt: 1.75,
-            borderTop: '1px solid rgba(255,255,255,0.15)',
+            borderTop: '1px solid rgba(156,187,217,0.30)',
           }}
         >
           <Button
             onClick={onClose}
             disabled={busy}
-            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+            sx={{ color: 'white', borderColor: 'rgba(141,188,229,0.50)' }}
             variant="outlined"
           >
             Cancel

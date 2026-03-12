@@ -77,13 +77,13 @@ export const NavbarSearch = ({
           height: 40,
           minWidth: 220,
           maxWidth: 320,
-          bgcolor: 'rgba(255,255,255,0.06)',
+          bgcolor: 'rgba(56,132,210,0.14)',
           borderRadius: '999px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(156,187,217,0.18)',
           transition: 'border-color 0.2s, background-color 0.2s',
           '&:focus-within': {
-            bgcolor: 'rgba(255,255,255,0.08)',
-            borderColor: 'rgba(255,255,255,0.18)',
+            bgcolor: 'rgba(156,187,217,0.18)',
+            borderColor: 'rgba(141,188,229,0.34)',
           },
         }}
       >
@@ -144,7 +144,7 @@ export const NavbarSearch = ({
             maxHeight: 320,
             overflow: 'auto',
             bgcolor: 'rgba(30,30,30,0.98)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            border: '1px solid rgba(156,187,217,0.26)',
           }}
         >
           {searchLoading ? (
@@ -196,7 +196,7 @@ export const NavbarSearch = ({
                     sx={{
                       color: 'white',
                       '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.08)',
+                        bgcolor: 'rgba(156,187,217,0.18)',
                       },
                     }}
                   >

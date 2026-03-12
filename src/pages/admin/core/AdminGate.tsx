@@ -22,12 +22,12 @@ const BG_SX = {
 const CARD_SX = {
   position: 'relative',
   borderRadius: 3,
-  border: '1px solid rgba(255,255,255,0.12)',
+  border: '1px solid rgba(156,187,217,0.26)',
   bgcolor: 'rgba(16, 18, 24, 0.70)',
   backdropFilter: 'blur(12px)',
   boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
   p: { xs: 3, sm: 4 },
-  color: '#fff',
+  color: '#FFFFFF',
 };
 
 export const AdminGate = ({ children }: Props) => {

@@ -77,16 +77,16 @@ const filterChipSx = {
   height: FILTER_CONTROL_HEIGHT,
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
-  border: '1.5px solid rgba(255,255,255,0.18)',
-  bgcolor: 'rgba(255,255,255,0.05)',
+  border: '1.5px solid rgba(141,188,229,0.34)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
   textTransform: 'none',
   px: 1.5,
   '&:hover': {
-    bgcolor: 'rgba(255,255,255,0.1)',
-    borderColor: 'rgba(255,255,255,0.3)',
+    bgcolor: 'rgba(156,187,217,0.22)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '& .MuiButton-endIcon': { ml: 0.5 },
 } as const;
@@ -97,17 +97,17 @@ const chipSelectSx = {
   minHeight: FILTER_CONTROL_HEIGHT,
   borderRadius: 5,
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(141,188,229,0.34)',
     borderWidth: '1.5px',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#3b82f6',
+    borderColor: '#3884D2',
     borderWidth: '1.5px',
   },
-  bgcolor: 'rgba(255,255,255,0.05)',
+  bgcolor: 'rgba(56,132,210,0.12)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 500,
   fontSize: '0.8rem',
@@ -526,7 +526,7 @@ export const Directory = () => {
                   borderRadius: 2,
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'rgba(141,188,229,0.50)',
                   opacity: 1,
                   fontSize: '0.875rem',
                 },
@@ -544,7 +544,7 @@ export const Directory = () => {
                   color: 'rgba(255,255,255,0.45)',
                   fontSize: '0.8rem',
                   top: '-2px',
-                  '&.Mui-focused': { color: '#3b82f6' },
+                  '&.Mui-focused': { color: '#3884D2' },
                   '&.MuiInputLabel-shrink': { top: 0 },
                 }}
               >
@@ -623,14 +623,16 @@ export const Directory = () => {
                     '& .MuiSelect-select': {
                       ...chipSelectSx['& .MuiSelect-select'],
                       fontWeight: primaryIndustry ? 600 : 500,
-                      color: primaryIndustry ? '#fff' : 'rgba(255,255,255,0.7)',
+                      color: primaryIndustry
+                        ? '#FFFFFF'
+                        : 'rgba(255,255,255,0.7)',
                       minWidth: 110,
                     },
                     ...(primaryIndustry
                       ? {
-                          borderColor: '#3b82f6',
+                          borderColor: '#3884D2',
                           '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#3b82f6 !important',
+                            borderColor: '#3884D2 !important',
                           },
                         }
                       : {}),
@@ -664,14 +666,14 @@ export const Directory = () => {
                         ...chipSelectSx['& .MuiSelect-select'],
                         fontWeight: secondaryIndustry ? 600 : 500,
                         color: secondaryIndustry
-                          ? '#fff'
+                          ? '#FFFFFF'
                           : 'rgba(255,255,255,0.7)',
                         minWidth: 100,
                       },
                       ...(secondaryIndustry
                         ? {
                             '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#3b82f6 !important',
+                              borderColor: '#3884D2 !important',
                             },
                           }
                         : {}),
@@ -721,14 +723,14 @@ export const Directory = () => {
                       ...chipSelectSx['& .MuiSelect-select'],
                       fontWeight: connectionStatus ? 600 : 500,
                       color: connectionStatus
-                        ? '#fff'
+                        ? '#FFFFFF'
                         : 'rgba(255,255,255,0.7)',
                       minWidth: 95,
                     },
                     ...(connectionStatus
                       ? {
                           '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#3b82f6 !important',
+                            borderColor: '#3884D2 !important',
                           },
                         }
                       : {}),
@@ -770,17 +772,19 @@ export const Directory = () => {
                       ...chipSelectSx,
                       height: FILTER_CONTROL_HEIGHT,
                       minHeight: FILTER_CONTROL_HEIGHT,
-                      color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
+                      color: locationInput
+                        ? '#FFFFFF'
+                        : 'rgba(255,255,255,0.7)',
                       '& fieldset': {
                         borderColor: locationInput
-                          ? '#3b82f6'
-                          : 'rgba(255,255,255,0.18)',
+                          ? '#3884D2'
+                          : 'rgba(141,188,229,0.34)',
                         borderWidth: '1.5px',
                       },
                       '&:hover fieldset': {
-                        borderColor: 'rgba(255,255,255,0.3)',
+                        borderColor: 'rgba(141,188,229,0.50)',
                       },
-                      '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                      '&.Mui-focused fieldset': { borderColor: '#3884D2' },
                       '& input': {
                         py: '9px',
                         px: 1.5,
@@ -833,8 +837,8 @@ export const Directory = () => {
                       })
                     }
                     sx={{
-                      bgcolor: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.15)',
+                      bgcolor: 'rgba(56,132,210,0.16)',
+                      border: '1px solid rgba(156,187,217,0.30)',
                       color: 'rgba(255,255,255,0.75)',
                       height: 28,
                     }}
@@ -897,7 +901,7 @@ export const Directory = () => {
               textAlign: 'center',
               borderRadius: 3,
               bgcolor: 'rgba(18,22,36,0.7)',
-              border: '1px dashed rgba(255,255,255,0.1)',
+              border: '1px dashed rgba(156,187,217,0.22)',
             }}
             data-testid="directory-empty-state"
           >
@@ -937,11 +941,11 @@ export const Directory = () => {
                     px: 4,
                     py: 1.25,
                     borderRadius: 2,
-                    borderColor: 'rgba(255,255,255,0.3)',
+                    borderColor: 'rgba(141,188,229,0.50)',
                     color: 'rgba(255,255,255,0.9)',
                     '&:hover': {
                       borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(255,255,255,0.06)',
+                      bgcolor: 'rgba(56,132,210,0.14)',
                     },
                   }}
                   data-testid="directory-clear-filters"
@@ -955,13 +959,13 @@ export const Directory = () => {
                 variant="contained"
                 size="large"
                 sx={{
-                  bgcolor: '#3b82f6',
+                  bgcolor: '#3884D2',
                   fontWeight: 700,
                   textTransform: 'none',
                   px: 4,
                   py: 1.25,
                   borderRadius: 2,
-                  '&:hover': { bgcolor: '#2563eb' },
+                  '&:hover': { bgcolor: '#3884D2' },
                 }}
               >
                 Join the Community
@@ -990,13 +994,13 @@ export const Directory = () => {
                   onClick={() => void load(true, rows.length)}
                   disabled={loadingMore}
                   sx={{
-                    borderColor: 'rgba(255,255,255,0.2)',
+                    borderColor: 'rgba(141,188,229,0.38)',
                     color: 'rgba(255,255,255,0.7)',
                     textTransform: 'none',
                     fontWeight: 600,
                     '&:hover': {
                       borderColor: 'rgba(255,255,255,0.4)',
-                      bgcolor: 'rgba(255,255,255,0.04)',
+                      bgcolor: 'rgba(56,132,210,0.10)',
                     },
                   }}
                 >

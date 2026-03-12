@@ -84,7 +84,7 @@ export const NavbarMobileAuthControls = ({
                 pointerEvents: 'auto',
                 '&:hover': {
                   color: 'white',
-                  bgcolor: 'rgba(255,255,255,0.06)',
+                  bgcolor: 'rgba(56,132,210,0.14)',
                 },
               }}
             >
@@ -108,7 +108,7 @@ export const NavbarMobileAuthControls = ({
               pointerEvents: 'auto',
               '&:hover': {
                 color: 'white',
-                bgcolor: 'rgba(255,255,255,0.06)',
+                bgcolor: 'rgba(56,132,210,0.14)',
               },
             }}
           >
@@ -136,8 +136,8 @@ export const NavbarMobileAuthControls = ({
                 sx={{
                   color: 'white',
                   ...(path === '/dashboard/notifications' && {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' },
+                    bgcolor: 'rgba(156,187,217,0.26)',
+                    '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
                   }),
                 }}
               >
@@ -166,7 +166,7 @@ export const NavbarMobileAuthControls = ({
                 p: 0.25,
                 color: 'inherit',
                 borderRadius: 9999,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
               }}
             >
               <Box

@@ -23,7 +23,7 @@ export const GroupsPage = () => {
     borderColor: 'rgba(255,255,255,0.42)',
     '&:hover': {
       borderColor: 'rgba(255,255,255,0.62)',
-      bgcolor: 'rgba(255,255,255,0.05)',
+      bgcolor: 'rgba(56,132,210,0.12)',
     },
   } as const;
   const groupRooms = useMemo(

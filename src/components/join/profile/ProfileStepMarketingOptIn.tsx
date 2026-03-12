@@ -23,7 +23,7 @@ export const ProfileStepMarketingOptIn = ({
           size="small"
           sx={{
             mt: '-2px',
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(141,188,229,0.50)',
             '&.Mui-checked': { color: '#38bdf8' },
             p: '6px',
           }}

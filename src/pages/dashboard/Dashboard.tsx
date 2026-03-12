@@ -112,9 +112,9 @@ const DashboardIndustriesBlock = ({
               key={group.industry}
               data-testid={`dashboard-industry-group-${group.industry}`}
               sx={{
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(156,187,217,0.18)',
                 borderRadius: 2,
-                bgcolor: 'rgba(255,255,255,0.02)',
+                bgcolor: 'rgba(56,132,210,0.06)',
                 overflow: 'hidden',
               }}
             >
@@ -567,7 +567,7 @@ export const Dashboard = () => {
                       minWidth: 200,
                       borderRadius: 2,
                       bgcolor: 'rgba(30,30,30,0.98)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      border: '1px solid rgba(156,187,217,0.26)',
                     },
                   },
                 }}
@@ -710,7 +710,7 @@ export const Dashboard = () => {
                           minWidth: 200,
                           borderRadius: 2,
                           bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(255,255,255,0.12)',
+                          border: '1px solid rgba(156,187,217,0.26)',
                         },
                       },
                     }}
@@ -786,7 +786,7 @@ export const Dashboard = () => {
                           minWidth: 200,
                           borderRadius: 2,
                           bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(255,255,255,0.12)',
+                          border: '1px solid rgba(156,187,217,0.26)',
                         },
                       },
                     }}

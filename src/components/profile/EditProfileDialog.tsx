@@ -425,7 +425,7 @@ export const EditProfileDialog = ({
                   color: 'rgba(255,255,255,0.6)',
                   '&:hover': {
                     color: 'white',
-                    bgcolor: 'rgba(255,255,255,0.05)',
+                    bgcolor: 'rgba(56,132,210,0.12)',
                   },
                 }}
               >

@@ -84,7 +84,7 @@ export const WeirdlingAvatarSlot = ({
                 height: 64,
                 borderRadius: 2,
                 objectFit: 'cover',
-                border: '1px solid rgba(255,255,255,0.2)',
+                border: '1px solid rgba(141,188,229,0.38)',
                 mb: 0.5,
               }}
             />
@@ -109,7 +109,7 @@ export const WeirdlingAvatarSlot = ({
             size="small"
             startIcon={<EditIcon sx={{ fontSize: 14 }} />}
             sx={{
-              borderColor: 'rgba(255,255,255,0.3)',
+              borderColor: 'rgba(141,188,229,0.50)',
               color: 'white',
               py: 0.25,
               px: 1,

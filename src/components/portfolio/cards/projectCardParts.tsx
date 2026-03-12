@@ -13,7 +13,7 @@ import type { PortfolioItem } from '../../../types/portfolio';
 export const ownerActionSx = {
   bgcolor: 'transparent',
   color: '#b9c3dd',
-  border: '1px solid rgba(255,255,255,0.28)',
+  border: '1px solid rgba(141,188,229,0.48)',
   borderRadius: 1,
   minWidth: 32,
   width: 32,
@@ -47,7 +47,7 @@ export const ProjectCardMedia = ({
           flexShrink: 0,
           bgcolor: 'rgba(0,0,0,0.5)',
           overflow: 'hidden',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid rgba(156,187,217,0.18)',
         }}
       >
         <Box
@@ -72,7 +72,7 @@ export const ProjectCardMedia = ({
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'rgba(0,0,0,0.2)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: '1px solid rgba(156,187,217,0.18)',
       }}
     >
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -217,7 +217,7 @@ export const ProjectCardContent = ({
               borderRadius: 999,
               fontSize: '0.75rem',
               color: 'text.secondary',
-              bgcolor: 'rgba(255,255,255,0.06)',
+              bgcolor: 'rgba(56,132,210,0.14)',
               maxWidth: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -321,7 +321,7 @@ export const ProjectCardActions = ({
       pt: 1.25,
       pb: 0.75,
       minHeight: 40,
-      borderTop: '1px solid rgba(255,255,255,0.08)',
+      borderTop: '1px solid rgba(156,187,217,0.18)',
     }}
   >
     <Box

@@ -16,9 +16,9 @@ import {
 const GLASS_MODAL = {
   bgcolor: '#141414',
   backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
+    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  border: '1px solid rgba(156,187,217,0.22)',
   color: 'white',
   borderRadius: 3,
 };
@@ -81,7 +81,7 @@ export const SettingsDialog = ({
         <List disablePadding>
           <ListItemButton
             onClick={handleEditProfile}
-            sx={{ py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            sx={{ py: 2, borderBottom: '1px solid rgba(56,132,210,0.14)' }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <EditIcon sx={{ color: 'primary.main' }} />
@@ -93,7 +93,7 @@ export const SettingsDialog = ({
           </ListItemButton>
           <ListItemButton
             onClick={handleManageLinks}
-            sx={{ py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            sx={{ py: 2, borderBottom: '1px solid rgba(56,132,210,0.14)' }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <LinkIcon sx={{ color: 'primary.main' }} />

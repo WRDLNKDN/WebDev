@@ -41,10 +41,10 @@ export const PostCard = ({
         borderRadius: 2.75,
         minWidth: 0,
         position: 'relative' as const,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(156,187,217,0.22)',
         bgcolor: 'rgba(24,28,35,0.96)',
         boxShadow:
-          '0 20px 38px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.02) inset',
+          '0 20px 38px rgba(0,0,0,0.18), 0 0 0 1px rgba(56,132,210,0.06) inset',
         overflow: 'hidden',
       },
       ...(Array.isArray(sx) ? sx : sx ? [sx] : []),

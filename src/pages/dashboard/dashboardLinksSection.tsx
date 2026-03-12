@@ -96,7 +96,7 @@ const DashboardLinkCategory = ({ group }: { group: DashboardLinkGroup }) => {
       sx={{
         minWidth: 0,
         borderRadius: 3,
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
         bgcolor: 'rgba(0,0,0,0.18)',
         overflow: 'hidden',
       }}
@@ -116,7 +116,7 @@ const DashboardLinkCategory = ({ group }: { group: DashboardLinkGroup }) => {
           px: 1.5,
           py: 1.25,
           cursor: 'pointer',
-          '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+          '&:hover': { bgcolor: 'rgba(56,132,210,0.10)' },
         }}
         aria-expanded={expanded}
         aria-label={`${group.heading} links`}
@@ -173,8 +173,8 @@ const DashboardLinkCategory = ({ group }: { group: DashboardLinkGroup }) => {
                   py: 0.9,
                   borderRadius: 2,
                   color: 'text.primary',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  bgcolor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(156,187,217,0.18)',
+                  bgcolor: 'rgba(56,132,210,0.08)',
                   '&:hover': {
                     color: 'primary.main',
                     borderColor: 'rgba(45, 212, 191, 0.45)',

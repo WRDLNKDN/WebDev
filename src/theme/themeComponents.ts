@@ -98,7 +98,7 @@ export const THEME_COMPONENTS = {
               'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%) !important',
             border: '1px solid rgba(173,203,255,0.24) !important',
             boxShadow:
-              '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04) !important',
+              '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26), 0 0 0 1px rgba(56,132,210,0.10) !important',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             '&::before': {
@@ -107,7 +107,7 @@ export const THEME_COMPONENTS = {
               inset: 1,
               borderRadius: '16px',
               background:
-                'radial-gradient(circle at 28% 24%, rgba(255,255,255,0.18), rgba(255,255,255,0.03) 45%, rgba(132,154,214,0.08) 100%)',
+                'radial-gradient(circle at 28% 24%, rgba(141,188,229,0.34), rgba(56,132,210,0.08) 45%, rgba(132,154,214,0.08) 100%)',
               pointerEvents: 'none',
             },
             '&::after': {
@@ -128,12 +128,12 @@ export const THEME_COMPONENTS = {
               fontSize: '1.65rem !important',
             },
             '&:hover': {
-              color: '#ffffff !important',
+              color: '#FFFFFF !important',
               background:
                 'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%) !important',
               borderColor: 'rgba(191,219,254,0.44) !important',
               boxShadow:
-                '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 18px rgba(96,208,255,0.18) !important',
+                '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(156,187,217,0.32), 0 0 18px rgba(96,208,255,0.18) !important',
             },
             '&.Mui-disabled': {
               color: 'rgba(241,245,249,0.5) !important',
@@ -158,10 +158,10 @@ export const THEME_COMPONENTS = {
   MuiLink: {
     styleOverrides: {
       root: {
-        color: '#90caf9',
+        color: '#8DBCE5',
         textDecoration: 'underline',
         textUnderlineOffset: '4px',
-        '&:hover': { color: '#42a5f5' },
+        '&:hover': { color: '#3884D2' },
         '&:focus-visible': {
           ...FOCUS_RING,
           borderRadius: '2px',
@@ -185,15 +185,15 @@ export const THEME_COMPONENTS = {
       root: {
         borderRadius: 8,
         '&:hover .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#90caf9',
+          borderColor: '#8DBCE5',
         },
         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#42a5f5',
+          borderColor: '#3884D2',
           borderWidth: 2,
         },
       },
       notchedOutline: {
-        borderColor: 'rgba(255, 255, 255, 0.23)',
+        borderColor: 'rgba(156,187,217,0.34)',
       },
     },
   },
@@ -201,7 +201,7 @@ export const THEME_COMPONENTS = {
     styleOverrides: {
       root: {
         color: '#e8e8e8',
-        '&.Mui-focused': { color: '#42a5f5' },
+        '&.Mui-focused': { color: '#3884D2' },
       },
       asterisk: {
         color: PALETTE.error.main,
@@ -274,14 +274,14 @@ export const THEME_COMPONENTS = {
     styleOverrides: {
       paper: {
         borderRadius: 16,
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
       },
     },
   },
   MuiMenu: {
     styleOverrides: {
       paper: {
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
         borderRadius: 8,
       },
     },
@@ -306,7 +306,7 @@ export const THEME_COMPONENTS = {
           paddingRight: 4,
           borderColor: 'rgba(173,203,255,0.2)',
           boxShadow:
-            '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+            '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(56,132,210,0.14)',
         },
       },
       label: { fontWeight: 500 },
@@ -321,11 +321,11 @@ export const THEME_COMPONENTS = {
           'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%)',
         border: '1px solid rgba(173,203,255,0.22)',
         boxShadow:
-          '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
+          '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(156,187,217,0.26)',
         transition:
           'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease',
         '&:hover': {
-          color: '#ffffff',
+          color: '#FFFFFF',
           background:
             'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%)',
           borderColor: 'rgba(191,219,254,0.4)',
@@ -399,9 +399,9 @@ export const THEME_COMPONENTS = {
       tooltip: {
         fontFamily: FONT_FAMILY,
         backgroundColor: '#424242',
-        color: '#ffffff',
+        color: '#FFFFFF',
         fontSize: '0.875rem',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid rgba(156,187,217,0.22)',
       },
     },
   },

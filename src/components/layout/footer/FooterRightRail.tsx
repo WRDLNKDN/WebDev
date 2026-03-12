@@ -98,7 +98,7 @@ export const FooterRightRail = ({
           boxSizing: 'border-box',
           cursor: 'pointer',
           boxShadow:
-            '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(255,255,255,0.16)',
+            '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(156,187,217,0.32)',
           transition: reduceMotion
             ? 'none'
             : 'box-shadow 140ms ease, background 140ms ease, border-color 140ms ease',
@@ -107,7 +107,7 @@ export const FooterRightRail = ({
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0))',
+              'linear-gradient(180deg, rgba(156,187,217,0.32), rgba(255,255,255,0))',
             pointerEvents: 'none',
           },
           '&:hover': {
@@ -116,7 +116,7 @@ export const FooterRightRail = ({
               'linear-gradient(135deg, #0b5550 0%, #0f7a74 42%, #17b9a5 100%)',
             borderColor: 'rgba(255,255,255,0.38)',
             boxShadow:
-              '0 10px 22px rgba(20,184,166,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+              '0 10px 22px rgba(20,184,166,0.3), inset 0 1px 0 rgba(141,188,229,0.38)',
           },
           '&:focus-visible': {
             outline: '2px solid',

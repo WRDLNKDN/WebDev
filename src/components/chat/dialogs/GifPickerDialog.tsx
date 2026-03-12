@@ -115,7 +115,7 @@ export const GifPickerDialog = ({
         sx: {
           bgcolor: 'background.paper',
           borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(156,187,217,0.22)',
           maxHeight: { xs: '85vh', sm: '90vh' },
           m: { xs: 1, sm: 2 },
         },

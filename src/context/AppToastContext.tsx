@@ -40,6 +40,17 @@ type AppToastContextValue = {
 const AppToastContext = createContext<AppToastContextValue | null>(null);
 
 const MAX_TOAST_QUEUE = 4;
+const visuallyHiddenSx = {
+  border: 0,
+  clip: 'rect(0 0 0 0)',
+  height: 1,
+  margin: -1,
+  overflow: 'hidden',
+  padding: 0,
+  position: 'absolute',
+  whiteSpace: 'nowrap',
+  width: 1,
+} as const;
 
 function isDuplicateToast(
   existing: ToastItem | undefined,
@@ -83,6 +94,20 @@ export function getToastAccessibilityProps(severity?: AlertColor) {
     'aria-live': assertive ? ('assertive' as const) : ('polite' as const),
     'aria-atomic': 'true' as const,
   };
+}
+
+export function getToastSeverityLabel(severity?: AlertColor) {
+  switch (severity) {
+    case 'success':
+      return 'Success';
+    case 'error':
+      return 'Error';
+    case 'warning':
+      return 'Warning';
+    case 'info':
+    default:
+      return 'Info';
+  }
 }
 
 const SlideTransition = (props: SlideProps) => {
@@ -213,6 +238,10 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
             },
           }}
         >
+          <Box component="span" sx={visuallyHiddenSx}>
+            {getToastSeverityLabel(currentToast?.severity)} notification. Press
+            Escape to dismiss.
+          </Box>
           {currentToast?.message ?? ''}
         </Alert>
       </Snackbar>

@@ -1,5 +1,6 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
+  Chip,
   Alert,
   Box,
   LinearProgress,
@@ -73,6 +74,7 @@ export const SettingsAppearancePage = () => {
               onClick={() => void handleThemeChange(option.id)}
               aria-pressed={active}
               sx={{
+                minHeight: 220,
                 p: 0,
                 textAlign: 'left',
                 borderRadius: 3,
@@ -94,6 +96,12 @@ export const SettingsAppearancePage = () => {
                   outline: '3px solid',
                   outlineColor: 'primary.main',
                   outlineOffset: 2,
+                },
+                '@media (prefers-reduced-motion: reduce)': {
+                  transition: 'none',
+                  '&:hover': {
+                    transform: 'none',
+                  },
                 },
               }}
             >
@@ -165,13 +173,25 @@ export const SettingsAppearancePage = () => {
                     {option.label}
                   </Typography>
                   {active ? (
-                    <CheckCircleIcon
-                      fontSize="small"
-                      color="primary"
-                      aria-label="Active theme"
-                    />
+                    <CheckCircleIcon fontSize="small" color="primary" />
                   ) : null}
                 </Stack>
+                <Box sx={{ minHeight: 32 }}>
+                  {active ? (
+                    <Chip
+                      size="small"
+                      color="primary"
+                      icon={<CheckCircleIcon />}
+                      label="Current theme"
+                      aria-label={`${option.label} is the current theme`}
+                      sx={{ fontWeight: 700 }}
+                    />
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      Select theme
+                    </Typography>
+                  )}
+                </Box>
                 <Typography variant="body2" color="text.secondary">
                   {option.description}
                 </Typography>

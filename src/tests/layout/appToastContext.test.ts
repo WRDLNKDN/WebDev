@@ -3,6 +3,7 @@ import {
   dismissToast,
   enqueueToast,
   getToastAccessibilityProps,
+  getToastSeverityLabel,
 } from '../../context/AppToastContext';
 
 describe('AppToastContext queue helpers', () => {
@@ -118,5 +119,13 @@ describe('AppToastContext queue helpers', () => {
       'aria-live': 'polite',
       'aria-atomic': 'true',
     });
+  });
+
+  it('provides readable severity labels for screen readers', () => {
+    expect(getToastSeverityLabel('success')).toBe('Success');
+    expect(getToastSeverityLabel('warning')).toBe('Warning');
+    expect(getToastSeverityLabel('error')).toBe('Error');
+    expect(getToastSeverityLabel('info')).toBe('Info');
+    expect(getToastSeverityLabel()).toBe('Info');
   });
 });

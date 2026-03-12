@@ -30,6 +30,8 @@ Current surfaced product work includes:
   and highlight support
 - Profile Portfolio Showcase with responsive category sections and a highlights
   carousel
+- User-selectable site themes with persistent `Light`, `Ocean`, `Forest`, and
+  `Space` appearance modes under Dashboard Settings
 - Share-profile, donate, and advertise flows delivered as contained modals
 - Full repo quality gates covering typecheck, eslint, markdownlint, prettier,
   Vitest, and Playwright
@@ -86,6 +88,8 @@ workflows**, independent of specific implementation details.
   [docs/auth-requirements.md](./docs/auth-requirements.md)
 - **Weirdling architecture (visual rules & contributing):**
   [docs/architecture/weirdling-architecture-guide.md](./docs/architecture/weirdling-architecture-guide.md)
+- **Theme preferences (appearance settings and implementation):**
+  [docs/product/theme-preferences.md](./docs/product/theme-preferences.md)
 
 ---
 

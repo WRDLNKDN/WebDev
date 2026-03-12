@@ -10,6 +10,21 @@ import {
 export function createAppTheme(themeId: AppThemeId = 'ocean') {
   const preset = THEME_PRESETS[themeId] ?? THEME_PRESETS.ocean;
   const PALETTE = preset.palette ?? DEFAULT_PALETTE;
+  const isLight = PALETTE.mode === 'light';
+  const surfaceBorder = alpha(
+    isLight ? '#0F172A' : '#FFFFFF',
+    isLight ? 0.16 : 0.12,
+  );
+  const menuHoverBackground = alpha(
+    PALETTE.primary.main,
+    isLight ? 0.08 : 0.14,
+  );
+  const alertTextColor = {
+    error: isLight ? '#7F1D1D' : '#FFD6D6',
+    info: isLight ? '#0C4A6E' : '#D9FFFF',
+    success: isLight ? '#14532D' : '#D8FFE7',
+    warning: isLight ? '#78350F' : '#FFF0C2',
+  };
   const FOCUS_RING = {
     ...DEFAULT_FOCUS_RING,
     outline: `3px solid ${preset.focus}`,
@@ -129,18 +144,27 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             },
             // Single scroll container (Layout and Join use this class for scrollbar styling)
             '.app-scroll-container': {
-              scrollbarColor: '#6b6b6b #2b2b2b',
+              scrollbarColor: `${alpha(PALETTE.text.primary, 0.45)} ${alpha(
+                PALETTE.background.paper,
+                isLight ? 0.4 : 0.9,
+              )}`,
               '&::-webkit-scrollbar': {
-                backgroundColor: '#2b2b2b',
+                backgroundColor: alpha(
+                  PALETTE.background.paper,
+                  isLight ? 0.4 : 0.9,
+                ),
               },
               '&::-webkit-scrollbar-thumb': {
                 borderRadius: 8,
-                backgroundColor: '#6b6b6b',
+                backgroundColor: alpha(PALETTE.text.primary, 0.45),
                 minHeight: 24,
-                border: '3px solid #2b2b2b',
+                border: `3px solid ${alpha(
+                  PALETTE.background.paper,
+                  isLight ? 0.4 : 0.9,
+                )}`,
               },
               '&::-webkit-scrollbar-thumb:focus': {
-                backgroundColor: '#959595',
+                backgroundColor: alpha(PALETTE.text.primary, 0.62),
               },
             },
             'input, textarea, button, select, option, optgroup': {
@@ -160,6 +184,16 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             'a[href]:focus-visible': {
               textDecoration: 'underline',
               textUnderlineOffset: '3px',
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              '*, *::before, *::after': {
+                animationDelay: '0ms !important',
+                animationDuration: '0.01ms !important',
+                animationIterationCount: '1 !important',
+                scrollBehavior: 'auto !important',
+                transitionDelay: '0ms !important',
+                transitionDuration: '0.01ms !important',
+              },
             },
           },
         },
@@ -197,6 +231,12 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               textDecoration: 'underline',
               textUnderlineOffset: '4px',
               boxShadow: 'inset 0 -2px 0 currentColor',
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              '&:hover': {
+                transform: 'none',
+              },
             },
           },
           containedPrimary: {
@@ -289,6 +329,12 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
                   fontSize: '1.45rem !important',
                 },
               },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              '&:hover': {
+                transform: 'none',
+              },
+            },
           },
         },
       },
@@ -314,7 +360,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             minHeight: 44, // Touch target safety
             '&::placeholder': {
               opacity: 1,
-              color: '#bdbdbd', // AAA 7:1 on #121212 (was #a0a0a0)
+              color: alpha(PALETTE.text.secondary, isLight ? 0.82 : 0.92),
             },
           },
         },
@@ -332,14 +378,14 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             },
           },
           notchedOutline: {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
+            borderColor: surfaceBorder,
           },
         },
       },
       MuiInputLabel: {
         styleOverrides: {
           root: {
-            color: '#e8e8e8', // AAA 7:1 label
+            color: PALETTE.text.secondary,
             '&.Mui-focused': { color: PALETTE.primary.main },
           },
           // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
@@ -359,7 +405,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           root: {
             fontSize: '0.875rem', // Ensure error text isn't microscopic
-            color: '#e8e8e8', // AAA 7:1
+            color: PALETTE.text.secondary,
           },
         },
       },
@@ -392,7 +438,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
       },
       MuiSelect: {
         styleOverrides: {
-          icon: { color: '#e8e8e8' },
+          icon: { color: PALETTE.text.secondary },
         },
       },
 
@@ -408,7 +454,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           root: {
             borderRadius: 12,
-            border: '1px solid rgba(255, 255, 255, 0.12)', // Visual definition for low vision
+            border: `1px solid ${surfaceBorder}`, // Visual definition for low vision
           },
         },
       },
@@ -416,14 +462,14 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           paper: {
             borderRadius: 16,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: `1px solid ${surfaceBorder}`,
           },
         },
       },
       MuiMenu: {
         styleOverrides: {
           paper: {
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: `1px solid ${surfaceBorder}`,
             borderRadius: 8,
           },
         },
@@ -439,7 +485,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               boxShadow: 'inset 3px 0 0 currentColor',
             },
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backgroundColor: menuHoverBackground,
               boxShadow: 'inset 3px 0 0 currentColor',
               transform: 'translateX(1px)',
             },
@@ -448,6 +494,12 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               textDecoration: 'underline',
               textUnderlineOffset: '4px',
               boxShadow: 'inset 3px 0 0 currentColor',
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              '&:hover': {
+                transform: 'none',
+              },
             },
           },
         },
@@ -475,6 +527,12 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               borderColor: 'rgba(173,203,255,0.2)',
               boxShadow:
                 '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              '&:hover': {
+                transform: 'none',
+              },
             },
           },
           label: { fontWeight: 500 },
@@ -513,13 +571,23 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
           },
           standardError: {
             backgroundColor: alpha(PALETTE.error.main, 0.12),
-            color: '#ffd6d6',
+            color: alertTextColor.error,
             border: `1px solid ${PALETTE.error.main}`,
           },
           standardInfo: {
             backgroundColor: alpha(PALETTE.info.main, 0.12),
-            color: '#d9ffff',
+            color: alertTextColor.info,
             border: `1px solid ${PALETTE.info.main}`,
+          },
+          standardSuccess: {
+            backgroundColor: alpha(PALETTE.success.main, 0.12),
+            color: alertTextColor.success,
+            border: `1px solid ${PALETTE.success.main}`,
+          },
+          standardWarning: {
+            backgroundColor: alpha(PALETTE.warning.main, 0.12),
+            color: alertTextColor.warning,
+            border: `1px solid ${PALETTE.warning.main}`,
           },
         },
       },
@@ -558,6 +626,9 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               textDecoration: 'underline',
               textUnderlineOffset: '4px',
               borderWidth: 2,
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
             },
           },
         },

@@ -58,6 +58,8 @@ Central index for WRDLNKDN WebDev documentation.
 - [Directory API](./directory.md) — Member discovery, search, filters,
   connection actions (authenticated only).
 - [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.
+- [Theme preferences](./product/theme-preferences.md) — Appearance settings,
+  available themes, persistence, and implementation references.
 - [Chat MVP spec](./chat/MVP_CHAT_SPEC.md) — 1:1 and group messaging.
 - [Chat report email setup](./chat/REPORT_EMAIL_SETUP.md) — Email notifications
   for chat reports.

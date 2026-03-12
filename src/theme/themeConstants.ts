@@ -159,16 +159,16 @@ export const THEME_PRESETS: Record<
       warning: {
         main: '#D97706',
         dark: '#92400E',
-        contrastText: '#ffffff',
+        contrastText: '#111827',
       },
       success: {
         main: '#059669',
         dark: '#047857',
-        contrastText: '#ffffff',
+        contrastText: '#111827',
       },
       info: {
-        main: '#0284C7',
-        dark: '#0369A1',
+        main: '#075985',
+        dark: '#0C4A6E',
         contrastText: '#ffffff',
       },
     },

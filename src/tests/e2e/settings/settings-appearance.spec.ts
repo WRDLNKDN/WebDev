@@ -131,4 +131,48 @@ test.describe('Settings Appearance', () => {
       )
       .toBe('forest');
   });
+
+  test('respects reduced motion on theme cards', async ({ page, context }) => {
+    test.setTimeout(90_000);
+    const { stubAdminRpc } = await seedSignedInSession(context);
+    await stubAdminRpc(page);
+    await stubAppearanceSettingsSurface(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+
+    await page.goto('/dashboard/settings/appearance', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 45_000,
+    });
+
+    const oceanButton = page.getByRole('button', { name: /ocean/i });
+    await oceanButton.hover();
+
+    const motionState = await oceanButton.evaluate((element) => {
+      const parseCssTimeToMs = (value: string) =>
+        value
+          .split(',')
+          .map((part) => part.trim())
+          .map((part) =>
+            part.endsWith('ms')
+              ? Number.parseFloat(part)
+              : Number.parseFloat(part) * 1000,
+          )
+          .filter((value) => Number.isFinite(value));
+
+      const styles = window.getComputedStyle(element);
+      return {
+        transitionMs: Math.max(
+          0,
+          ...parseCssTimeToMs(styles.transitionDuration),
+          ...parseCssTimeToMs(styles.transitionDelay),
+        ),
+        transform: styles.transform,
+      };
+    });
+
+    expect(motionState.transitionMs).toBeLessThanOrEqual(1);
+    expect(motionState.transform).toBe('none');
+  });
 });

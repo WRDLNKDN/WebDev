@@ -59,6 +59,12 @@ test.describe('Directory empty state', () => {
     const clearFiltersBtn = page.getByTestId('directory-clear-filters');
     await expect(clearFiltersBtn).toBeVisible();
     await expect(clearFiltersBtn).toHaveText(/clear filters/i);
+    await expect(
+      page.getByRole('link', { name: /join the community/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: /join the community/i }),
+    ).toHaveCount(0);
 
     await clearFiltersBtn.click();
     await expect(page).toHaveURL(

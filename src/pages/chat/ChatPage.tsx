@@ -14,6 +14,10 @@ import { StartDmDialog } from '../../components/chat/dialogs/StartDmDialog';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  getDefaultChatDocumentTitle,
+  resolveChatDocumentTitle,
+} from '../../lib/chat/documentTitle';
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 export const ChatPage = () => {
@@ -42,6 +46,7 @@ export const ChatPage = () => {
     createDm,
     createGroup,
     fetchRooms,
+    toggleFavorite,
   } = useChatRooms();
   const {
     room,
@@ -97,6 +102,15 @@ export const ChatPage = () => {
     })();
   }, [session]);
 
+  useEffect(() => {
+    if (!roomId) {
+      document.title = getDefaultChatDocumentTitle();
+      return;
+    }
+
+    document.title = resolveChatDocumentTitle(room, uid, roomId);
+  }, [room, roomId, uid]);
+
   const handleStartDm = async (userId: string) => {
     setStartDmError(null);
     try {
@@ -127,6 +141,7 @@ export const ChatPage = () => {
   };
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
+  const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -212,6 +227,7 @@ export const ChatPage = () => {
             onStartDm={() => setStartDmOpen(true)}
             onCreateGroup={() => setCreateGroupOpen(true)}
             onRemoveChat={handleRemoveChat}
+            onToggleFavorite={toggleFavorite}
             chatPathPrefix="/chat-full"
           />
         </Box>
@@ -250,6 +266,16 @@ export const ChatPage = () => {
                   setGroupDialogMode('manage');
                   setGroupDialogOpen(true);
                 }}
+                isFavorite={Boolean(activeRoom?.is_favorite)}
+                onToggleFavorite={
+                  roomId
+                    ? () =>
+                        void toggleFavorite(
+                          roomId,
+                          Boolean(activeRoom?.is_favorite),
+                        )
+                    : undefined
+                }
                 onBack={() => navigate('/chat-full')}
               />
 

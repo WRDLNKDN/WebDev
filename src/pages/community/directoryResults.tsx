@@ -7,7 +7,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type { DirectoryMember } from '../../lib/api/directoryApi';
 
@@ -110,23 +109,6 @@ export const DirectoryResults = ({
               Clear filters
             </Button>
           ) : null}
-          <Button
-            component={RouterLink}
-            to="/join"
-            variant="contained"
-            size="large"
-            sx={{
-              bgcolor: '#3b82f6',
-              fontWeight: 700,
-              textTransform: 'none',
-              px: 4,
-              py: 1.25,
-              borderRadius: 2,
-              '&:hover': { bgcolor: '#2563eb' },
-            }}
-          >
-            Join the Community
-          </Button>
         </Stack>
       </Paper>
     ) : (

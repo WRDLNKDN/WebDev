@@ -7,6 +7,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
   Button,
@@ -41,6 +43,8 @@ type ChatRoomHeaderProps = {
   closeIcon?: boolean;
   /** When provided, opens this room in a new window (LinkedIn-style pop out) */
   onPopOut?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 };
 
 export const ChatRoomHeader = ({
@@ -57,6 +61,8 @@ export const ChatRoomHeader = ({
   onBack,
   closeIcon,
   onPopOut,
+  isFavorite,
+  onToggleFavorite,
 }: ChatRoomHeaderProps) => {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -240,6 +246,25 @@ export const ChatRoomHeader = ({
           flexShrink: 0,
         }}
       >
+        {onToggleFavorite && (
+          <Tooltip
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <IconButton
+              onClick={onToggleFavorite}
+              aria-label={
+                isFavorite ? 'Remove from favorites' : 'Add to favorites'
+              }
+              sx={{ color: isFavorite ? '#f5c451' : 'rgba(255,255,255,0.75)' }}
+            >
+              {isFavorite ? (
+                <StarIcon fontSize="small" />
+              ) : (
+                <StarBorderIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="Chat options">
           <IconButton
             onClick={(e) => setMenuAnchor(e.currentTarget)}

@@ -19,6 +19,7 @@ export type ChatRoomWithMembers = ChatRoom & {
   last_message_preview?: string | null;
   last_message_at?: string | null;
   unread_count?: number;
+  is_favorite?: boolean;
 };
 
 export type MessageWithExtras = ChatMessage & {

@@ -2,17 +2,35 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import GroupsIcon from '@mui/icons-material/Groups';
+import PersonIcon from '@mui/icons-material/Person';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
   Button,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItemButton,
+  MenuItem,
+  Select,
+  Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
+import {
+  CHAT_ROOM_FILTER_OPTIONS,
+  CHAT_ROOM_SORT_OPTIONS,
+  deriveVisibleChatRooms,
+  getChatRoomLabel,
+  type ChatRoomFilter,
+  type ChatRoomSort,
+} from '../../../lib/chat/roomListState';
 import { GLASS_CARD } from '../../../theme/candyStyles';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 
@@ -23,11 +41,14 @@ type ChatRoomListProps = {
   onCreateGroup?: () => void;
   onStartDm?: () => void;
   onRemoveChat?: (roomId: string) => void;
+  onToggleFavorite?: (roomId: string, isFavorite: boolean) => void;
   /** Base path for room links (e.g. /chat-full so room clicks stay on full chat page). Default /chat. */
   chatPathPrefix?: string;
 };
 
 const DEFAULT_CHAT_PREFIX = '/chat';
+const DM_ICON_COLOR = '#3884D2';
+const GROUP_ICON_COLOR = '#4DD166';
 
 export const ChatRoomList = ({
   rooms,
@@ -36,17 +57,24 @@ export const ChatRoomList = ({
   onCreateGroup,
   onStartDm,
   onRemoveChat,
+  onToggleFavorite,
   chatPathPrefix = DEFAULT_CHAT_PREFIX,
 }: ChatRoomListProps) => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
+  const [filter, setFilter] = useState<ChatRoomFilter>('all');
+  const [sort, setSort] = useState<ChatRoomSort>('recent');
   const base = chatPathPrefix.replace(/\/$/, '');
 
-  const getRoomLabel = (room: ChatRoomWithMembers) => {
-    if (room.room_type === 'group' && room.name) return room.name;
-    const other = room.members?.find((m) => m.user_id !== currentUserId);
-    return other?.profile?.display_name || other?.profile?.handle || 'User';
-  };
+  const visibleRooms = useMemo(
+    () =>
+      deriveVisibleChatRooms(rooms, {
+        currentUserId,
+        filter,
+        sort,
+      }),
+    [currentUserId, filter, rooms, sort],
+  );
 
   return (
     <Box
@@ -62,6 +90,40 @@ export const ChatRoomList = ({
         <Typography variant="h6" sx={{ mb: 1.5 }}>
           Messages
         </Typography>
+        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="chat-room-filter-label">Filter</InputLabel>
+            <Select
+              labelId="chat-room-filter-label"
+              value={filter}
+              label="Filter"
+              onChange={(event) =>
+                setFilter(event.target.value as ChatRoomFilter)
+              }
+            >
+              {CHAT_ROOM_FILTER_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="chat-room-sort-label">Sort</InputLabel>
+            <Select
+              labelId="chat-room-sort-label"
+              value={sort}
+              label="Sort"
+              onChange={(event) => setSort(event.target.value as ChatRoomSort)}
+            >
+              {CHAT_ROOM_SORT_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
         {(onStartDm || onCreateGroup) && (
           <Box
             sx={{
@@ -165,8 +227,14 @@ export const ChatRoomList = ({
               No conversations yet
             </Typography>
           </ListItemButton>
+        ) : visibleRooms.length === 0 ? (
+          <ListItemButton disabled>
+            <Typography variant="body2" color="text.secondary">
+              No conversations match this view
+            </Typography>
+          </ListItemButton>
         ) : (
-          rooms.map((room) => (
+          visibleRooms.map((room) => (
             <ListItemButton
               key={room.id}
               selected={roomId === room.id}
@@ -179,15 +247,83 @@ export const ChatRoomList = ({
               }}
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="body2" fontWeight={600}>
-                  {getRoomLabel(room)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {room.room_type === 'group'
-                    ? `${room.members?.length ?? 0} members`
-                    : '1:1'}
+                <Stack direction="row" alignItems="center" spacing={0.75}>
+                  {room.room_type === 'group' ? (
+                    <GroupsIcon
+                      aria-hidden
+                      sx={{
+                        fontSize: 18,
+                        color: GROUP_ICON_COLOR,
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <PersonIcon
+                      aria-hidden
+                      sx={{
+                        fontSize: 18,
+                        color: DM_ICON_COLOR,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <Typography variant="body2" fontWeight={600} noWrap>
+                    {getChatRoomLabel(room, currentUserId)}
+                  </Typography>
+                  {room.is_favorite ? (
+                    <StarIcon
+                      sx={{ fontSize: 14, color: '#f5c451', flexShrink: 0 }}
+                    />
+                  ) : null}
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {room.last_message_preview ||
+                    (room.room_type === 'group'
+                      ? `${room.members?.length ?? 0} members`
+                      : '1:1')}
                 </Typography>
               </Box>
+              {onToggleFavorite && (
+                <Tooltip
+                  title={
+                    room.is_favorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites'
+                  }
+                >
+                  <IconButton
+                    aria-label={
+                      room.is_favorite
+                        ? 'Remove from favorites'
+                        : 'Add to favorites'
+                    }
+                    data-testid={`chat-room-favorite-${room.id}`}
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(room.id, Boolean(room.is_favorite));
+                    }}
+                    sx={{
+                      color: room.is_favorite ? '#f5c451' : 'text.secondary',
+                    }}
+                  >
+                    {room.is_favorite ? (
+                      <StarIcon fontSize="small" />
+                    ) : (
+                      <StarBorderIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              )}
               {onRemoveChat && (
                 <Tooltip title="Remove chat">
                   <IconButton

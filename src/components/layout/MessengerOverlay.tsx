@@ -17,6 +17,11 @@ import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
+import type {
+  ChatRoomFilter,
+  ChatRoomSort,
+} from '../../lib/chat/roomListState';
+import { getChatRoomLabel } from '../../lib/chat/roomListState';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { MessengerOverlayPanel } from './MessengerOverlayPanel';
 
@@ -32,7 +37,8 @@ export const MessengerOverlay = () => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [messageTab, setMessageTab] = useState<'focused' | 'other'>('focused');
+  const [filter, setFilter] = useState<ChatRoomFilter>('all');
+  const [sort, setSort] = useState<ChatRoomSort>('recent');
   const bannerOffsetPx = useUatBannerOffset();
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
@@ -47,6 +53,7 @@ export const MessengerOverlay = () => {
     createDm,
     createGroup,
     fetchRooms,
+    toggleFavorite,
   } = useChatRooms();
 
   useEffect(() => {
@@ -122,11 +129,7 @@ export const MessengerOverlay = () => {
 
   const openOverlay = messenger?.openOverlay;
   const getRoomLabel = useCallback(
-    (r: ChatRoomWithMembers) => {
-      if (r.room_type === 'group' && r.name) return r.name;
-      const other = r.members?.find((m) => m.user_id !== session?.user?.id);
-      return other?.profile?.display_name || other?.profile?.handle || 'User';
-    },
+    (r: ChatRoomWithMembers) => getChatRoomLabel(r, session?.user?.id),
     [session?.user?.id],
   );
 
@@ -170,19 +173,23 @@ export const MessengerOverlay = () => {
             drawerTopMobile={drawerTopMobile}
             drawerWidth={DRAWER_WIDTH}
             avatarUrl={avatarUrl}
+            currentUserId={session.user.id}
             session={session}
             menuButtonClick={setMenuAnchor}
             onStartDm={() => setStartDmOpen(true)}
             onCreateGroup={() => setCreateGroupOpen(true)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            messageTab={messageTab}
-            setMessageTab={setMessageTab}
+            filter={filter}
+            setFilter={setFilter}
+            sort={sort}
+            setSort={setSort}
             roomsLoading={roomsLoading}
             rooms={rooms}
             getRoomLabel={getRoomLabel}
             onOpenRoom={handleOpenRoom}
             onRemoveChat={handleRemoveChat}
+            onToggleFavorite={toggleFavorite}
             onBackdropClick={messenger.closeOverlay}
           />,
           document.body,

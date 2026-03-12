@@ -10,6 +10,7 @@ import {
 
 import { AppOverlayRoutes, AppRouteTree } from './app/routing/AppRouteTree';
 import { AvatarProvider } from './context/AvatarContext';
+import { AppToastProvider } from './context/AppToastContext';
 import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
 import { JoinProvider } from './context/JoinProvider';
 import { supabase } from './lib/auth/supabaseClient';
@@ -71,19 +72,21 @@ const AppShell = () => {
     <ThemeProvider theme={theme}>
       <AuthBoot />
 
-      <JoinProvider>
-        <AvatarProvider>
-          <FeatureFlagsProvider>
-            <Suspense fallback={<Loading />}>
-              <AppRouteTree
-                redirectUToProfile={<RedirectUToProfile />}
-                routesLocation={backgroundLocation ?? location}
-              />
-              {backgroundLocation ? <AppOverlayRoutes /> : null}
-            </Suspense>
-          </FeatureFlagsProvider>
-        </AvatarProvider>
-      </JoinProvider>
+      <AppToastProvider>
+        <JoinProvider>
+          <AvatarProvider>
+            <FeatureFlagsProvider>
+              <Suspense fallback={<Loading />}>
+                <AppRouteTree
+                  redirectUToProfile={<RedirectUToProfile />}
+                  routesLocation={backgroundLocation ?? location}
+                />
+                {backgroundLocation ? <AppOverlayRoutes /> : null}
+              </Suspense>
+            </FeatureFlagsProvider>
+          </AvatarProvider>
+        </JoinProvider>
+      </AppToastProvider>
     </ThemeProvider>
   );
 };

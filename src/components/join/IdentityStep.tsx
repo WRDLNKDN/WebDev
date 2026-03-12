@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useJoin } from '../../context/useJoin';
 import {
@@ -16,6 +16,7 @@ import {
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { useOAuthReturnReset } from '../../lib/auth/useOAuthReturnReset';
 import type { IdentityProvider } from '../../types/join';
 import {
@@ -55,6 +56,42 @@ export const IdentityStep = () => {
 
   const canProceed = termsAccepted && guidelinesAccepted;
 
+  const advanceFromSession = useCallback(
+    (
+      session: Awaited<
+        ReturnType<typeof supabase.auth.getSession>
+      >['data']['session'],
+    ) => {
+      if (
+        !session?.user ||
+        hasAdvanced.current ||
+        !state.completedSteps.includes('welcome')
+      ) {
+        return false;
+      }
+
+      hasAdvanced.current = true;
+      const provider = mapSupabaseProvider(session.user);
+
+      setIdentity({
+        provider,
+        userId: session.user.id,
+        email: session.user.email || '',
+        termsAccepted: true,
+        guidelinesAccepted: true,
+        policyVersion: POLICY_VERSION,
+        timestamp: new Date().toISOString(),
+      });
+
+      window.setTimeout(() => {
+        markComplete('identity');
+        goToStep('values');
+      }, 0);
+      return true;
+    },
+    [goToStep, markComplete, setIdentity, state.completedSteps],
+  );
+
   // State verification: ensure user has viewed WelcomeStep to prevent zombie sessions
   useEffect(() => {
     if (!state.completedSteps.includes('welcome')) {
@@ -75,7 +112,7 @@ export const IdentityStep = () => {
         const {
           data: { session },
           error: sessionError,
-        } = await supabase.auth.getSession();
+        } = await getSessionWithTimeout();
 
         if (sessionError) {
           console.error('Session error:', sessionError);
@@ -83,30 +120,8 @@ export const IdentityStep = () => {
           return;
         }
 
-        if (
-          session?.user &&
-          !hasAdvanced.current &&
-          state.completedSteps.includes('welcome')
-        ) {
+        if (advanceFromSession(session)) {
           console.log('Session found, advancing to values step');
-          hasAdvanced.current = true;
-
-          const provider = mapSupabaseProvider(session.user);
-
-          setIdentity({
-            provider,
-            userId: session.user.id,
-            email: session.user.email || '',
-            termsAccepted: true,
-            guidelinesAccepted: true,
-            policyVersion: POLICY_VERSION,
-            timestamp: new Date().toISOString(),
-          });
-
-          await new Promise((resolve) => setTimeout(resolve, 0));
-
-          markComplete('identity');
-          goToStep('values');
         }
       } catch (err) {
         console.error('Error checking authentication:', err);
@@ -116,7 +131,17 @@ export const IdentityStep = () => {
     };
 
     void checkAuthentication();
-  }, [goToStep, markComplete, setIdentity, state.completedSteps]);
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (advanceFromSession(session)) {
+        setCheckingAuth(false);
+      }
+    });
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, [advanceFromSession]);
 
   useEffect(() => {
     return () => {

@@ -10,7 +10,7 @@ import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
 import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { FeedCardActions } from './feedCardTypes';
 
-const FEED_ACTION_MUTED_COLOR = INTERACTION_COLORS.muted;
+const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
 const FEED_COMMENT_ACTION_COLOR = INTERACTION_COLORS.comment;
 const FEED_REPOST_ACTION_COLOR = INTERACTION_COLORS.repost;
 const FEED_SEND_ACTION_COLOR = INTERACTION_COLORS.send;

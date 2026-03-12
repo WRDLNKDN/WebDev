@@ -209,12 +209,12 @@ test.describe('Dashboard portfolio showcase management', () => {
       .fill('https://example.com/portfolio-launch');
 
     const categoriesInput = dialog.getByRole('combobox', {
-      name: 'Categories',
+      name: 'Category',
     });
     await categoriesInput.click();
     await categoriesInput.fill('Data');
     await page.getByRole('option', { name: 'Data' }).click();
-    await page.keyboard.press('Escape');
+    await dialog.getByLabel('Project URL').click();
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });

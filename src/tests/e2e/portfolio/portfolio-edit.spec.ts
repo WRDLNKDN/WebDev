@@ -213,13 +213,13 @@ test.describe('Portfolio artifact editing', () => {
       .fill('https://example.com/updated-artifact.pdf');
 
     const categoriesInput = dialog.getByRole('combobox', {
-      name: 'Categories',
+      name: 'Category',
     });
     await categoriesInput.click();
     await categoriesInput.fill('Data');
     await page.getByRole('option', { name: 'Data' }).click();
-    // Ensure autocomplete popper closes before interacting with following controls.
-    await page.keyboard.press('Escape');
+    // Move focus out of the category control without closing the dialog.
+    await dialog.getByLabel('Project URL').click();
 
     await dialog.locator('input[type="file"]').setInputFiles(IMAGE_FIXTURE);
 

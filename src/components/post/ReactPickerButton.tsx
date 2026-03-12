@@ -10,7 +10,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { SharedReactionOption } from './sharedReactions';
 
-const MUTED_COLOR = INTERACTION_COLORS.muted;
+// Keep the reaction entry button aligned with the rest of the feed action bar.
+const MUTED_COLOR = 'rgba(255,255,255,0.65)';
 const HOVER_COLOR = INTERACTION_COLORS.react;
 
 export type ReactPickerButtonProps<T extends string = string> = {

@@ -21,6 +21,7 @@ import {
 } from '../../lib/utils/errors';
 import { signInWithOAuth } from '../../lib/auth/signInWithOAuth';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { useOAuthReturnReset } from '../../lib/auth/useOAuthReturnReset';
 import {
   APP_GLASS_BORDER,
@@ -42,7 +43,7 @@ export const SignIn = () => {
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSessionWithTimeout();
       if (!cancelled) setSession(!!data.session);
     };
     void check();

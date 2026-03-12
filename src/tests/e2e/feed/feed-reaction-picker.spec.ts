@@ -135,13 +135,13 @@ test.describe('Feed reaction picker', () => {
     await reactButton.scrollIntoViewIfNeeded();
 
     await commentButton.hover();
-    await expect(commentButton).toHaveCSS('color', 'rgb(0, 114, 178)');
+    await expect(commentButton).toHaveCSS('color', 'rgb(56, 132, 210)');
     await repostButton.hover();
-    await expect(repostButton).toHaveCSS('color', 'rgb(204, 121, 167)');
+    await expect(repostButton).toHaveCSS('color', 'rgb(167, 68, 194)');
     await sendButton.hover();
-    await expect(sendButton).toHaveCSS('color', 'rgb(86, 180, 233)');
+    await expect(sendButton).toHaveCSS('color', 'rgb(56, 132, 210)');
     await saveButton.hover();
-    await expect(saveButton).toHaveCSS('color', 'rgb(240, 228, 66)');
+    await expect(saveButton).toHaveCSS('color', 'rgb(255, 255, 76)');
 
     const postOptionsButton = page.getByRole('button', {
       name: 'Post options',
@@ -158,7 +158,7 @@ test.describe('Feed reaction picker', () => {
     await page.mouse.click(0, 0);
 
     await reactButton.hover({ force: true });
-    await expect(reactButton).toHaveCSS('color', 'rgb(0, 158, 115)');
+    await expect(reactButton).toHaveCSS('color', 'rgb(77, 209, 102)');
     let usedFocusFallback = false;
     if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
       await reactButton.focus();
@@ -179,10 +179,10 @@ test.describe('Feed reaction picker', () => {
     await expect(surprisedButton).toContainText('😮');
     await expect(prayerButton).toContainText('🙏');
     await laughButton.click();
-    await expect(reactButton).toHaveCSS('color', 'rgb(240, 228, 66)');
+    await expect(reactButton).toHaveCSS('color', 'rgb(255, 255, 76)');
 
     await saveButton.click();
-    await expect(saveButton).toHaveCSS('color', 'rgb(240, 228, 66)');
+    await expect(saveButton).toHaveCSS('color', 'rgb(255, 255, 76)');
     await expect(saveButton).toContainText('Saved');
 
     if (usedFocusFallback) {

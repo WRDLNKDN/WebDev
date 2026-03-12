@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import type { RefObject } from 'react';
 import { AD_IMAGE_ALLOWED_LABEL } from '../../../lib/api/adminAdvertisersApi';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 
 export type PartnerRow = {
@@ -280,193 +281,213 @@ export const PartnerEditorDialog = ({
   previewUrl,
   saving,
   handleSave,
-}: DialogProps) => (
-  <Dialog
-    open={open}
-    onClose={closeDialog}
-    maxWidth="sm"
-    fullWidth
-    PaperProps={{ sx: { borderRadius: 2, bgcolor: 'background.paper' } }}
-  >
-    <DialogTitle
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        pr: 1,
+}: DialogProps) => {
+  const isSubmitDisabled =
+    saving || !form.company_name.trim() || !form.url.trim();
+
+  return (
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) closeDialog();
       }}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 2, bgcolor: 'background.paper' } }}
     >
-      Partner Editor
-      <IconButton
-        size="small"
-        onClick={closeDialog}
-        aria-label="Close"
-        sx={{ ml: 1 }}
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSave();
+        }}
       >
-        <CloseIcon />
-      </IconButton>
-    </DialogTitle>
-    <DialogContent dividers>
-      <Stack spacing={2.5} sx={{ pt: 1 }}>
-        <Box>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleImageUpload}
-            style={{ display: 'none' }}
-          />
-          <Box
-            onClick={() => fileInputRef.current?.click()}
-            sx={{
-              border: '2px dashed',
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 4,
-              textAlign: 'center',
-              cursor: uploadingImage ? 'wait' : 'pointer',
-              bgcolor:
-                previewUrl || form.image_url ? 'action.hover' : 'transparent',
-              ...(!uploadingImage && {
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'action.hover',
-                },
-              }),
-            }}
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Partner Editor
+          <IconButton
+            size="small"
+            onClick={closeDialog}
+            aria-label="Close"
+            sx={{ ml: 1 }}
           >
-            {previewUrl || form.image_url ? (
-              <Box>
-                <Box
-                  component="img"
-                  src={previewUrl ?? form.image_url ?? ''}
-                  alt="Partner image"
-                  sx={{
-                    maxWidth: '100%',
-                    maxHeight: 200,
-                    borderRadius: 1,
-                    mb: 1,
-                    objectFit: 'contain',
-                  }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {uploadingImage ? 'Uploading…' : 'Click to replace image'}
-                </Typography>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <Box>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+              <Box
+                onClick={() => fileInputRef.current?.click()}
+                sx={{
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                  cursor: uploadingImage ? 'wait' : 'pointer',
+                  bgcolor:
+                    previewUrl || form.image_url
+                      ? 'action.hover'
+                      : 'transparent',
+                  ...(!uploadingImage && {
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      bgcolor: 'action.hover',
+                    },
+                  }),
+                }}
+              >
+                {previewUrl || form.image_url ? (
+                  <Box>
+                    <Box
+                      component="img"
+                      src={previewUrl ?? form.image_url ?? ''}
+                      alt="Partner image"
+                      sx={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
+                        borderRadius: 1,
+                        mb: 1,
+                        objectFit: 'contain',
+                      }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {uploadingImage ? 'Uploading…' : 'Click to replace image'}
+                    </Typography>
+                  </Box>
+                ) : uploadingImage ? (
+                  <Stack alignItems="center" spacing={1}>
+                    <CircularProgress size={32} />
+                    <Typography variant="body2" color="text.secondary">
+                      Uploading…
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <>
+                    <CloudUploadIcon
+                      sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
+                    />
+                    <Typography variant="body1" fontWeight={500}>
+                      Upload Partner Image
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      1200x400 hero or square logo (max 50MB,{' '}
+                      {AD_IMAGE_ALLOWED_LABEL})
+                    </Typography>
+                  </>
+                )}
               </Box>
-            ) : uploadingImage ? (
-              <Stack alignItems="center" spacing={1}>
-                <CircularProgress size={32} />
-                <Typography variant="body2" color="text.secondary">
-                  Uploading…
-                </Typography>
-              </Stack>
-            ) : (
-              <>
-                <CloudUploadIcon
-                  sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
+            </Box>
+
+            <TextField
+              label="Company *"
+              value={form.company_name}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, company_name: e.target.value }))
+              }
+              fullWidth
+              required
+            />
+            <TextField
+              label="Title"
+              value={form.title}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, title: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Description"
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+              fullWidth
+              multiline
+              rows={4}
+            />
+            <TextField
+              label="Partner URL *"
+              value={form.url}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, url: e.target.value }))
+              }
+              fullWidth
+              required
+              placeholder="https://example.com"
+            />
+            <TextField
+              label="Logo URL (optional)"
+              value={form.logo_url}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, logo_url: e.target.value }))
+              }
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={3} alignItems="center">
+              <TextField
+                label="Sort Order"
+                type="number"
+                value={form.sort_order}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sort_order: parseInt(e.target.value, 10) || 0,
+                  }))
+                }
+                inputProps={{ min: 0 }}
+                sx={{ width: 120 }}
+              />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Switch
+                  checked={form.active}
+                  onChange={(_, checked) =>
+                    setForm((prev) => ({ ...prev, active: checked }))
+                  }
                 />
-                <Typography variant="body1" fontWeight={500}>
-                  Upload Partner Image
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  1200x400 hero or square logo (max 50MB,{' '}
-                  {AD_IMAGE_ALLOWED_LABEL})
-                </Typography>
-              </>
-            )}
-          </Box>
-        </Box>
-
-        <TextField
-          label="Company *"
-          value={form.company_name}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, company_name: e.target.value }))
-          }
-          fullWidth
-          required
-        />
-        <TextField
-          label="Title"
-          value={form.title}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, title: e.target.value }))
-          }
-          fullWidth
-        />
-        <TextField
-          label="Description"
-          value={form.description}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, description: e.target.value }))
-          }
-          fullWidth
-          multiline
-          rows={4}
-        />
-        <TextField
-          label="Partner URL *"
-          value={form.url}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, url: e.target.value }))
-          }
-          fullWidth
-          required
-          placeholder="https://example.com"
-        />
-        <TextField
-          label="Logo URL (optional)"
-          value={form.logo_url}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, logo_url: e.target.value }))
-          }
-          fullWidth
-        />
-
-        <Stack direction="row" spacing={3} alignItems="center">
-          <TextField
-            label="Sort Order"
-            type="number"
-            value={form.sort_order}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                sort_order: parseInt(e.target.value, 10) || 0,
-              }))
-            }
-            inputProps={{ min: 0 }}
-            sx={{ width: 120 }}
-          />
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Switch
-              checked={form.active}
-              onChange={(_, checked) =>
-                setForm((prev) => ({ ...prev, active: checked }))
-              }
-            />
-            <Typography variant="body2">Active</Typography>
+                <Typography variant="body2">Active</Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Switch
+                  checked={form.featured}
+                  onChange={(_, checked) =>
+                    setForm((prev) => ({ ...prev, featured: checked }))
+                  }
+                />
+                <Typography variant="body2">Featured</Typography>
+              </Stack>
+            </Stack>
           </Stack>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Switch
-              checked={form.featured}
-              onChange={(_, checked) =>
-                setForm((prev) => ({ ...prev, featured: checked }))
-              }
-            />
-            <Typography variant="body2">Featured</Typography>
-          </Stack>
-        </Stack>
-      </Stack>
-    </DialogContent>
-    <DialogActions sx={{ px: 3, py: 2 }}>
-      <Button onClick={closeDialog}>Cancel</Button>
-      <Button
-        variant="contained"
-        onClick={handleSave}
-        disabled={saving || !form.company_name.trim() || !form.url.trim()}
-      >
-        {saving ? <CircularProgress size={20} /> : 'Save Partner'}
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mr: 'auto', display: { xs: 'none', sm: 'block' } }}
+          >
+            Press Enter to save.
+          </Typography>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={isSubmitDisabled}>
+            {saving ? <CircularProgress size={20} /> : 'Save Partner'}
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+};

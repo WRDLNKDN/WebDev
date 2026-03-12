@@ -28,6 +28,7 @@ export interface NerdCreds {
   status_message?: string;
   status_emoji?: string;
   theme_song_url?: string;
+  app_theme?: 'light' | 'ocean' | 'forest' | 'space';
   bio?: string;
   portfolio?: PortfolioItem[];
   resume_file_name?: string | null;

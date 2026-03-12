@@ -286,10 +286,11 @@ export const MessageInput = ({
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: { xs: 'stretch', sm: 'flex-end' },
           gap: 0.5,
           minWidth: 0,
           width: '100%',
+          flexDirection: { xs: 'column', sm: 'row' },
         }}
       >
         <TextField
@@ -328,9 +329,10 @@ export const MessageInput = ({
               bgcolor: 'rgba(40,44,52,0.9)',
               color: 'white',
               borderRadius: 1.5,
-              minHeight: 40,
-              '& fieldset': { borderColor: 'rgba(156,187,217,0.30)' },
-              '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.42)' },
+              minHeight: { xs: 48, sm: 40 },
+              alignItems: expanded ? 'flex-start' : 'center',
+              '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
+              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
             },
           }}
           inputProps={{ 'aria-label': 'Message', title: 'Type a message' }}
@@ -340,7 +342,11 @@ export const MessageInput = ({
             type="button"
             onClick={() => setExpanded((e) => !e)}
             aria-label={expanded ? 'Collapse input' : 'Expand input'}
-            sx={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}
+            sx={{
+              color: 'rgba(255,255,255,0.7)',
+              flexShrink: 0,
+              alignSelf: { xs: 'flex-end', sm: 'auto' },
+            }}
           >
             <KeyboardArrowUpIcon fontSize="small" />
           </IconButton>
@@ -350,7 +356,7 @@ export const MessageInput = ({
         data-testid="chat-message-toolbar"
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: { xs: 'stretch', sm: 'center' },
           justifyContent: 'space-between',
           gap: 0.5,
           minWidth: 0,
@@ -365,6 +371,7 @@ export const MessageInput = ({
             gap: 0.25,
             minWidth: 0,
             flexWrap: 'wrap',
+            width: { xs: '100%', sm: 'auto' },
           }}
         >
           <input
@@ -433,9 +440,10 @@ export const MessageInput = ({
             alignItems: 'center',
             gap: 0.5,
             minWidth: 0,
-            ml: { xs: 'auto', sm: 0 },
+            width: { xs: '100%', sm: 'auto' },
+            ml: { xs: 0, sm: 0 },
             flexWrap: 'wrap',
-            justifyContent: 'flex-end',
+            justifyContent: { xs: 'space-between', sm: 'flex-end' },
           }}
         >
           <Typography

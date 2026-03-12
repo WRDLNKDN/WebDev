@@ -3,16 +3,24 @@ import EmailIcon from '@mui/icons-material/Email';
 import {
   Box,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
   IconButton,
+  LinearProgress,
+  Stack,
   Switch,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import { useAppToast } from '../../../context/AppToastContext';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import { toMessage } from '../../../lib/utils/errors';
 
 const GLASS_MODAL = {
   bgcolor: '#141414',
@@ -40,6 +48,8 @@ export const EmailPreferencesDialog = ({
   open,
   onClose,
 }: EmailPreferencesDialogProps) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [prefs, setPrefs] = useState<MarketingPrefs>({
     marketing_email_enabled: false,
     marketing_opt_in: false,
@@ -48,6 +58,7 @@ export const EmailPreferencesDialog = ({
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useAppToast();
 
   const loadPrefs = useCallback(async () => {
     const { data: session } = await supabase.auth.getSession();
@@ -86,15 +97,22 @@ export const EmailPreferencesDialog = ({
   const handleChange = useCallback(
     async (key: keyof MarketingPrefs, value: boolean) => {
       const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user?.id) return;
+      if (!session?.session?.user?.id) {
+        showToast({
+          message: 'Sign in again to update email preferences.',
+          severity: 'warning',
+        });
+        return;
+      }
       setSaving(true);
+      const previous = prefs;
       try {
         const next = { ...prefs, [key]: value };
         if (key === 'marketing_email_enabled') {
           next.marketing_opt_in = value;
         }
         setPrefs(next);
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             marketing_email_enabled: next.marketing_email_enabled,
@@ -110,19 +128,33 @@ export const EmailPreferencesDialog = ({
               }),
           })
           .eq('id', session.session.user.id);
+        if (error) throw error;
+        showToast({
+          message: 'Email preferences updated.',
+          severity: 'success',
+        });
+      } catch (error) {
+        setPrefs(previous);
+        showToast({
+          message: toMessage(error),
+          severity: 'error',
+        });
       } finally {
         setSaving(false);
       }
     },
-    [prefs],
+    [prefs, showToast],
   );
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onClose();
+      }}
       maxWidth="sm"
       fullWidth
+      fullScreen={fullScreen}
       aria-label="Email preferences"
       PaperProps={{ sx: GLASS_MODAL }}
     >
@@ -141,11 +173,31 @@ export const EmailPreferencesDialog = ({
           <CloseIcon />
         </IconButton>
       </Tooltip>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          pr: 6,
+          pb: 1,
+        }}
+      >
         <EmailIcon fontSize="small" />
         Email preferences
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pb: 2 }} dividers>
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Toggle updates here and they save immediately. Press Esc to close
+            when you are done.
+          </Typography>
+          {saving ? (
+            <LinearProgress
+              aria-label="Saving email preferences"
+              sx={{ borderRadius: 999 }}
+            />
+          ) : null}
+        </Stack>
         {loading ? (
           <Typography variant="body2" color="text.secondary">
             Loading…
@@ -217,6 +269,15 @@ export const EmailPreferencesDialog = ({
           </Box>
         )}
       </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, pt: 1.5 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mr: 'auto' }}
+        >
+          Changes save automatically.
+        </Typography>
+      </DialogActions>
     </Dialog>
   );
 };

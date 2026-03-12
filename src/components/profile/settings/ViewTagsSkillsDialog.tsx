@@ -4,11 +4,15 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   IconButton,
   Stack,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 
 export interface ViewTagsSkillsDialogProps {
   open: boolean;
@@ -28,15 +32,20 @@ export const ViewTagsSkillsDialog = ({
   builderTags = [],
   skills = [],
 }: ViewTagsSkillsDialogProps) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const hasTags = Boolean(tagline?.trim()) || builderTags.length > 0;
   const hasSkills = skills.length > 0;
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onClose();
+      }}
       maxWidth="sm"
       fullWidth
+      fullScreen={fullScreen}
       aria-label="Tags & Skills"
     >
       <Tooltip title="Close">
@@ -49,7 +58,8 @@ export const ViewTagsSkillsDialog = ({
           <CloseIcon />
         </IconButton>
       </Tooltip>
-      <DialogContent sx={{ pt: 5 }}>
+      <DialogTitle sx={{ pr: 6, pb: 0.5 }}>Tags & Skills</DialogTitle>
+      <DialogContent sx={{ pt: 1.5 }}>
         <Stack spacing={3}>
           {hasTags || hasSkills ? (
             <>

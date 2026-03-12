@@ -24,6 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import type { ProfileRow, ProfileStatus } from '../../../types/types';
 import {
   FILTER_CONTROL_MIN_HEIGHT,
@@ -422,34 +423,47 @@ export const ModerationConfirmDialog = ({
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>{title}</DialogTitle>
-    <DialogContent>
-      <DialogContentText sx={{ mb: showHardDelete ? 1 : 0 }}>
-        {body}
-      </DialogContentText>
-      {showHardDelete && (
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={hardDeleteAuthUsers}
-              onChange={(e) => setHardDeleteAuthUsers(e.target.checked)}
-            />
-          }
-          label="Also delete auth users (dangerous)"
-        />
-      )}
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button
-        color={destructive ? 'error' : 'primary'}
-        variant="contained"
-        onClick={onConfirm}
-      >
-        Confirm
-      </Button>
-    </DialogActions>
+  <Dialog
+    open={open}
+    onClose={(_event, reason) => {
+      if (shouldCloseDialogFromReason(reason)) onCancel();
+    }}
+  >
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onConfirm();
+      }}
+    >
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ mb: showHardDelete ? 1 : 0 }}>
+          {body}
+        </DialogContentText>
+        {showHardDelete && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hardDeleteAuthUsers}
+                onChange={(e) => setHardDeleteAuthUsers(e.target.checked)}
+              />
+            }
+            label="Also delete auth users (dangerous)"
+          />
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button
+          type="submit"
+          color={destructive ? 'error' : 'primary'}
+          variant="contained"
+        >
+          Confirm
+        </Button>
+      </DialogActions>
+    </Box>
   </Dialog>
 );
 

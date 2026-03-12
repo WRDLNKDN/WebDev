@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 import { AD_IMAGE_ALLOWED_LABEL } from '../../../lib/api/adminAdvertisersApi';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import { MAX_LINKS, type FormState } from './adminAdvertisersTypes';
 
 type Props = {
@@ -255,129 +256,147 @@ export const AdminAdvertiserDialog = ({
   onImageUpload,
   onImageRemove,
   onSave,
-}: Props) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    maxWidth="sm"
-    fullWidth
-    PaperProps={{ sx: { borderRadius: 2, bgcolor: 'background.paper' } }}
-  >
-    <DialogTitle
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        pr: 1,
+}: Props) => {
+  const isSubmitDisabled =
+    saving ||
+    uploadingImage ||
+    !form.company_name.trim() ||
+    !form.title.trim() ||
+    !form.url.trim();
+
+  return (
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onClose();
       }}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 2, bgcolor: 'background.paper' } }}
     >
-      Advertiser Ad Editor
-      <IconButton
-        size="small"
-        onClick={onClose}
-        aria-label="Close"
-        sx={{ ml: 1 }}
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave();
+        }}
       >
-        <CloseIcon />
-      </IconButton>
-    </DialogTitle>
-    <DialogContent dividers>
-      <Stack spacing={2.5} sx={{ pt: 1 }}>
-        <ImageUploadField
-          editingId={editingId}
-          form={form}
-          previewUrl={previewUrl}
-          uploadingImage={uploadingImage}
-          saving={saving}
-          onImageUpload={onImageUpload}
-          onImageRemove={onImageRemove}
-        />
-        <TextField
-          label="Company"
-          value={form.company_name}
-          onChange={(e) =>
-            onFormChange((f) => ({ ...f, company_name: e.target.value }))
-          }
-          fullWidth
-        />
-        <TextField
-          label="Title *"
-          value={form.title}
-          onChange={(e) =>
-            onFormChange((f) => ({ ...f, title: e.target.value }))
-          }
-          fullWidth
-          required
-          placeholder="e.g. Sponsor spotlight"
-        />
-        <TextField
-          label="Description"
-          value={form.description}
-          onChange={(e) =>
-            onFormChange((f) => ({ ...f, description: e.target.value }))
-          }
-          fullWidth
-          multiline
-          rows={4}
-          placeholder="Describe your product or service…"
-        />
-        <TextField
-          label="Main URL"
-          value={form.url}
-          onChange={(e) => onFormChange((f) => ({ ...f, url: e.target.value }))}
-          fullWidth
-          required
-          placeholder="https://example.com"
-        />
-        <LinkEditor form={form} onFormChange={onFormChange} />
-        <Stack direction="row" spacing={3} alignItems="center">
-          <TextField
-            label="Sort Order"
-            type="number"
-            value={form.sort_order}
-            onChange={(event) =>
-              onFormChange((f) => ({
-                ...f,
-                sort_order: parseInt(event.target.value, 10) || 0,
-              }))
-            }
-            inputProps={{ min: 0 }}
-            sx={{ width: 100 }}
-          />
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Switch
-              checked={form.active}
-              onChange={(_, checked) =>
-                onFormChange((f) => ({ ...f, active: checked }))
-              }
-              color="primary"
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Advertiser Ad Editor
+          <IconButton
+            size="small"
+            onClick={onClose}
+            aria-label="Close"
+            sx={{ ml: 1 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <ImageUploadField
+              editingId={editingId}
+              form={form}
+              previewUrl={previewUrl}
+              uploadingImage={uploadingImage}
+              saving={saving}
+              onImageUpload={onImageUpload}
+              onImageRemove={onImageRemove}
             />
-            <Typography variant="body2">Active</Typography>
+            <TextField
+              label="Company"
+              value={form.company_name}
+              onChange={(e) =>
+                onFormChange((f) => ({ ...f, company_name: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Title *"
+              value={form.title}
+              onChange={(e) =>
+                onFormChange((f) => ({ ...f, title: e.target.value }))
+              }
+              fullWidth
+              required
+              placeholder="e.g. Sponsor spotlight"
+            />
+            <TextField
+              label="Description"
+              value={form.description}
+              onChange={(e) =>
+                onFormChange((f) => ({ ...f, description: e.target.value }))
+              }
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="Describe your product or service…"
+            />
+            <TextField
+              label="Main URL"
+              value={form.url}
+              onChange={(e) =>
+                onFormChange((f) => ({ ...f, url: e.target.value }))
+              }
+              fullWidth
+              required
+              placeholder="https://example.com"
+            />
+            <LinkEditor form={form} onFormChange={onFormChange} />
+            <Stack direction="row" spacing={3} alignItems="center">
+              <TextField
+                label="Sort Order"
+                type="number"
+                value={form.sort_order}
+                onChange={(event) =>
+                  onFormChange((f) => ({
+                    ...f,
+                    sort_order: parseInt(event.target.value, 10) || 0,
+                  }))
+                }
+                inputProps={{ min: 0 }}
+                sx={{ width: 100 }}
+              />
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Switch
+                  checked={form.active}
+                  onChange={(_, checked) =>
+                    onFormChange((f) => ({ ...f, active: checked }))
+                  }
+                  color="primary"
+                />
+                <Typography variant="body2">Active</Typography>
+              </Stack>
+            </Stack>
           </Stack>
-        </Stack>
-      </Stack>
-    </DialogContent>
-    <DialogActions sx={{ px: 3, py: 2 }}>
-      <Button onClick={onClose}>Cancel</Button>
-      <Button
-        variant="contained"
-        onClick={onSave}
-        disabled={
-          saving ||
-          uploadingImage ||
-          !form.company_name.trim() ||
-          !form.title.trim() ||
-          !form.url.trim()
-        }
-      >
-        {saving ? (
-          <CircularProgress size={20} />
-        ) : uploadingImage ? (
-          'Uploading image…'
-        ) : (
-          'Save Ad'
-        )}
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mr: 'auto', display: { xs: 'none', sm: 'block' } }}
+          >
+            Press Enter to save.
+          </Typography>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={isSubmitDisabled}>
+            {saving ? (
+              <CircularProgress size={20} />
+            ) : uploadingImage ? (
+              'Uploading image…'
+            ) : (
+              'Save Ad'
+            )}
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+};

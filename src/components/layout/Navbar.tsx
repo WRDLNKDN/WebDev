@@ -30,7 +30,6 @@ import {
   MenuItem,
   Paper,
   Popper,
-  Snackbar,
   Stack,
   Toolbar,
   Tooltip,
@@ -41,6 +40,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -106,7 +106,6 @@ export const Navbar = () => {
   );
   const searchPopperRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [snack, setSnack] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(
     null,
@@ -117,6 +116,7 @@ export const Navbar = () => {
   const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
+  const { showToast } = useAppToast();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const showAuthedHeader =
@@ -364,7 +364,7 @@ export const Navbar = () => {
       navigate('/', { replace: true });
     } catch (error) {
       console.error(error);
-      setSnack(toMessage(error));
+      showToast({ message: toMessage(error), severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -1605,13 +1605,6 @@ export const Navbar = () => {
           </List>
         </Box>
       </Drawer>
-      <Snackbar
-        open={Boolean(snack)}
-        autoHideDuration={6000}
-        onClose={() => setSnack(null)}
-        message={snack}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
       <Backdrop
         open={joinLoading}
         sx={{

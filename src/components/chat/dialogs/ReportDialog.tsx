@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -11,7 +12,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { shouldSubmitWithModifier } from '../../../lib/ui/dialogFormUtils';
 import type { ChatReportCategory } from '../../../types/chat';
 
 type ReportDialogProps = {
@@ -41,10 +43,19 @@ export const ReportDialog = ({
   reportedMessageId,
   reportedUserId,
 }: ReportDialogProps) => {
+  const detailsInputRef = useRef<HTMLInputElement | null>(null);
   const [category, setCategory] = useState<ChatReportCategory>('other');
   const [freeText, setFreeText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      detailsInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!reportedMessageId && !reportedUserId) return;
@@ -69,47 +80,61 @@ export const ReportDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Report</DialogTitle>
-      <DialogContent sx={{ pt: 1 }}>
-        {error && (
-          <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-            {error}
-          </Typography>
-        )}
-        <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
-          <InputLabel>Category</InputLabel>
-          <Select
-            value={category}
-            label="Category"
-            onChange={(e) => setCategory(e.target.value as ChatReportCategory)}
-          >
-            {CATEGORIES.map((c) => (
-              <MenuItem key={c.value} value={c.value}>
-                {c.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          fullWidth
-          multiline
-          rows={3}
-          label="Additional details (optional)"
-          value={freeText}
-          onChange={(e) => setFreeText(e.target.value)}
-          placeholder="Describe what happened…"
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? 'Submitting…' : 'Submit report'}
-        </Button>
-      </DialogActions>
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit();
+        }}
+      >
+        <DialogTitle>Report</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          {error && (
+            <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+          )}
+          <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={category}
+              label="Category"
+              onChange={(e) =>
+                setCategory(e.target.value as ChatReportCategory)
+              }
+            >
+              {CATEGORIES.map((c) => (
+                <MenuItem key={c.value} value={c.value}>
+                  {c.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            inputRef={detailsInputRef}
+            multiline
+            rows={3}
+            label="Additional details (optional)"
+            value={freeText}
+            onChange={(e) => setFreeText(e.target.value)}
+            onKeyDown={(event) => {
+              if (shouldSubmitWithModifier(event) && !submitting) {
+                event.preventDefault();
+                void handleSubmit();
+              }
+            }}
+            placeholder="Describe what happened…"
+            helperText="Press Ctrl+Enter or Cmd+Enter to submit."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={submitting}>
+            {submitting ? 'Submitting…' : 'Submit report'}
+          </Button>
+        </DialogActions>
+      </Box>
     </Dialog>
   );
 };

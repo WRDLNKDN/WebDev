@@ -50,6 +50,7 @@ import {
   PublicProfilePage,
   SavedPage,
   SettingsLayout,
+  SettingsAppearancePage,
   SettingsNotificationsPage,
   SettingsPrivacyPage,
   SignIn,
@@ -215,9 +216,10 @@ export const AppRouteTree = ({
           </RequireFeatureFlag>
         }
       >
+        <Route path="appearance" element={<SettingsAppearancePage />} />
         <Route
           index
-          element={<Navigate to="/dashboard/settings/notifications" replace />}
+          element={<Navigate to="/dashboard/settings/appearance" replace />}
         />
         <Route path="notifications" element={<SettingsNotificationsPage />} />
         <Route

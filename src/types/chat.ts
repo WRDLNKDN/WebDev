@@ -79,6 +79,7 @@ export type ChatRoomWithDetails = ChatRoom & {
   >;
   last_message?: ChatMessage | null;
   unread_count?: number;
+  is_favorite?: boolean;
 };
 
 export const CHAT_ALLOWED_MIME = [

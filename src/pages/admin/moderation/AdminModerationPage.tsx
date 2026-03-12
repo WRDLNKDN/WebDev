@@ -24,6 +24,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   TextField,
   Typography,
 } from '@mui/material';
@@ -44,6 +45,7 @@ import {
 } from '../../../theme/filterControls';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 import { useAdminSession } from '../core/AdminSessionContext';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 
 const formatStatus = (status: string) => {
   switch (status) {
@@ -303,7 +305,11 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
         </Button>
       </Stack>
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mb: 2 }}>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={1}
+        sx={{ mb: 2, '& > *': { width: { xs: '100%', md: 'auto' } } }}
+      >
         <Button
           variant="contained"
           disabled={bulkDisabled}
@@ -393,114 +399,124 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
           </Box>
         )}
 
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={allChecked}
-                  indeterminate={!allChecked && someChecked}
-                  onChange={toggleAll}
-                  inputProps={{ 'aria-label': 'select all' }}
-                />
-              </TableCell>
-              <TableCell>Handle</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
+        <TableContainer
+          sx={{
+            overflowX: 'auto',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.08)',
+            bgcolor: 'rgba(255,255,255,0.02)',
+          }}
+        >
+          <Table size="small" sx={{ minWidth: 760 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={allChecked}
+                    indeterminate={!allChecked && someChecked}
+                    onChange={toggleAll}
+                    inputProps={{ 'aria-label': 'select all' }}
+                  />
+                </TableCell>
+                <TableCell>Handle</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell>Updated</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
 
-          <TableBody>
-            {rows.map((r) => {
-              const s = formatStatus(r.status);
-              return (
-                <TableRow key={r.id} hover>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selected.has(r.id)}
-                      onChange={() => toggle(r.id)}
-                      inputProps={{ 'aria-label': `select ${r.handle}` }}
-                    />
-                  </TableCell>
+            <TableBody>
+              {rows.map((r) => {
+                const s = formatStatus(r.status);
+                return (
+                  <TableRow key={r.id} hover>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selected.has(r.id)}
+                        onChange={() => toggle(r.id)}
+                        inputProps={{ 'aria-label': `select ${r.handle}` }}
+                      />
+                    </TableCell>
 
-                  <TableCell>{r.handle}</TableCell>
+                    <TableCell>{r.handle}</TableCell>
 
-                  <TableCell>
-                    <Chip size="small" label={s.label} color={s.color} />
-                  </TableCell>
+                    <TableCell>
+                      <Chip size="small" label={s.label} color={s.color} />
+                    </TableCell>
 
-                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.created_at
-                      ? new Date(r.created_at).toLocaleString()
-                      : '—'}
-                  </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleString()
+                        : '—'}
+                    </TableCell>
 
-                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {r.updated_at
-                      ? new Date(r.updated_at).toLocaleString()
-                      : '—'}
-                  </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {r.updated_at
+                        ? new Date(r.updated_at).toLocaleString()
+                        : '—'}
+                    </TableCell>
 
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                    <Button size="small" onClick={() => setDetails(r)}>
-                      View
-                    </Button>
-
-                    {r.status !== 'approved' && (
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          setConfirm({
-                            title: `Approve ${r.handle}?`,
-                            body: 'This will make the profile public.',
-                            action: async () =>
-                              run(() => approveProfiles(token, [r.id])),
-                          })
-                        }
-                      >
-                        Approve
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                      <Button size="small" onClick={() => setDetails(r)}>
+                        View
                       </Button>
-                    )}
 
-                    {r.status !== 'rejected' && (
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          setConfirm({
-                            title: `Reject ${r.handle}?`,
-                            body: 'This will keep the profile hidden from public.',
-                            action: async () =>
-                              run(() => rejectProfiles(token, [r.id])),
-                          })
-                        }
-                      >
-                        Reject
-                      </Button>
-                    )}
+                      {r.status !== 'approved' && (
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            setConfirm({
+                              title: `Approve ${r.handle}?`,
+                              body: 'This will make the profile public.',
+                              action: async () =>
+                                run(() => approveProfiles(token, [r.id])),
+                            })
+                          }
+                        >
+                          Approve
+                        </Button>
+                      )}
+
+                      {r.status !== 'rejected' && (
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            setConfirm({
+                              title: `Reject ${r.handle}?`,
+                              body: 'This will keep the profile hidden from public.',
+                              action: async () =>
+                                run(() => rejectProfiles(token, [r.id])),
+                            })
+                          }
+                        >
+                          Reject
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+
+              {rows.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <Typography sx={{ py: 2, opacity: 0.8 }}>
+                      No results.
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              );
-            })}
-
-            {rows.length === 0 && !loading && (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Typography sx={{ py: 2, opacity: 0.8 }}>
-                    No results.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
 
       <Stack
-        direction="row"
-        alignItems="center"
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
+        spacing={1}
         sx={{ mt: 2 }}
       >
         <Typography variant="caption" sx={{ opacity: 0.8 }}>
@@ -536,7 +552,8 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
 
       <Dialog
         open={!!confirm}
-        onClose={() => {
+        onClose={(_event, reason) => {
+          if (!shouldCloseDialogFromReason(reason)) return;
           setConfirm(null);
           setHardDeleteAuthUsers(false);
         }}

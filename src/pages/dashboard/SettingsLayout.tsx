@@ -1,7 +1,9 @@
+import PaletteIcon from '@mui/icons-material/Palette';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import {
   Box,
+  Chip,
   Container,
   List,
   ListItemButton,
@@ -24,6 +26,11 @@ import { SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG } from '../../lib/featureFlags/
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const NAV_ITEMS = [
+  {
+    label: 'Appearance',
+    to: '/dashboard/settings/appearance',
+    icon: <PaletteIcon />,
+  },
   {
     label: 'Notifications',
     to: '/dashboard/settings/notifications',
@@ -86,6 +93,30 @@ export const SettingsLayout = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Manage your account preferences.
         </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 1,
+            mb: 3,
+          }}
+        >
+          <Chip
+            label="Esc closes dialogs"
+            size="small"
+            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+          />
+          <Chip
+            label="Changes save in place"
+            size="small"
+            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+          />
+          <Chip
+            label="Mobile-safe layout"
+            size="small"
+            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+          />
+        </Box>
 
         <Box
           sx={{
@@ -102,6 +133,8 @@ export const SettingsLayout = () => {
               width: { xs: '100%', md: 220 },
               flexShrink: 0,
               p: 1,
+              position: { md: 'sticky' },
+              top: { md: 96 },
             }}
           >
             <List disablePadding>

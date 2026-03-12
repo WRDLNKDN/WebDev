@@ -4,12 +4,14 @@ import {
   canonicalizeDmRooms,
   pickCanonicalDmRoom,
 } from '../lib/chat/canonicalDm';
+import { useAppToast } from '../context/AppToastContext';
 import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
 import type { ChatRoom, ChatRoomMember } from '../types/chat';
 import type { ChatRoomWithMembers } from './chatTypes';
 
 export function useChatRooms() {
+  const { showToast } = useAppToast();
   const [rooms, setRooms] = useState<ChatRoomWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -162,6 +164,12 @@ export function useChatRooms() {
         .select('*')
         .in('id', roomIds);
 
+      const { data: roomPreferences } = await supabase
+        .from('chat_room_preferences')
+        .select('room_id, is_favorite')
+        .eq('user_id', session.user.id)
+        .in('room_id', roomIds);
+
       const { data: blocks } = await supabase
         .from('chat_blocks')
         .select('blocker_id, blocked_user_id')
@@ -223,6 +231,12 @@ export function useChatRooms() {
           },
         ]),
       );
+      const preferenceMap = new Map(
+        (roomPreferences ?? []).map((preference) => [
+          preference.room_id,
+          Boolean(preference.is_favorite),
+        ]),
+      );
 
       const withMembers: ChatRoomWithMembers[] = [];
       for (const room of roomData ?? []) {
@@ -251,6 +265,7 @@ export function useChatRooms() {
             ...member,
             profile: profileMap.get(member.user_id) ?? null,
           })) as ChatRoomWithMembers['members'],
+          is_favorite: preferenceMap.get(room.id) ?? false,
         });
       }
 
@@ -323,8 +338,12 @@ export function useChatRooms() {
         .eq('room_id', targetRoomId)
         .eq('user_id', session.user.id);
       await fetchRooms();
+      showToast({
+        message: 'Conversation removed.',
+        severity: 'info',
+      });
     },
-    [fetchRooms],
+    [fetchRooms, showToast],
   );
 
   const createDm = useCallback(
@@ -340,6 +359,10 @@ export function useChatRooms() {
       );
       if (existingRoomId) {
         await fetchRooms();
+        showToast({
+          message: 'Conversation ready.',
+          severity: 'success',
+        });
         return existingRoomId;
       }
 
@@ -361,9 +384,13 @@ export function useChatRooms() {
         (await fetchCanonicalDmRoomId(session.user.id, otherUserId)) ?? id;
 
       await fetchRooms();
+      showToast({
+        message: 'Conversation started.',
+        severity: 'success',
+      });
       return canonicalRoomId;
     },
-    [fetchCanonicalDmRoomId, fetchRooms],
+    [fetchCanonicalDmRoomId, fetchRooms, showToast],
   );
 
   const createGroup = useCallback(
@@ -401,9 +428,70 @@ export function useChatRooms() {
       if (!id) return null;
 
       await fetchRooms();
+      showToast({
+        message: 'Group created.',
+        severity: 'success',
+      });
       return id as string;
     },
-    [fetchRooms],
+    [fetchRooms, showToast],
+  );
+
+  const toggleFavorite = useCallback(
+    async (roomId: string, isFavorite: boolean) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      setRooms((prev) =>
+        prev.map((room) =>
+          room.id === roomId ? { ...room, is_favorite: !isFavorite } : room,
+        ),
+      );
+
+      try {
+        if (isFavorite) {
+          const { error } = await supabase
+            .from('chat_room_preferences')
+            .delete()
+            .eq('room_id', roomId)
+            .eq('user_id', session.user.id);
+          if (error) throw error;
+          showToast({
+            message: 'Removed from favorites.',
+            severity: 'info',
+          });
+          return;
+        }
+
+        const { error } = await supabase.from('chat_room_preferences').upsert(
+          {
+            room_id: roomId,
+            user_id: session.user.id,
+            is_favorite: true,
+          },
+          { onConflict: 'room_id,user_id' },
+        );
+        if (error) throw error;
+        showToast({
+          message: 'Added to favorites.',
+          severity: 'success',
+        });
+      } catch (cause) {
+        console.warn('toggleFavorite failed:', toMessage(cause));
+        setRooms((prev) =>
+          prev.map((room) =>
+            room.id === roomId ? { ...room, is_favorite: isFavorite } : room,
+          ),
+        );
+        showToast({
+          message: toMessage(cause),
+          severity: 'error',
+        });
+      }
+    },
+    [showToast],
   );
 
   return {
@@ -413,5 +501,6 @@ export function useChatRooms() {
     removeChat,
     createDm,
     createGroup,
+    toggleFavorite,
   };
 }

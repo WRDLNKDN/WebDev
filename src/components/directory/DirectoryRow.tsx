@@ -5,7 +5,6 @@ import {
   getProfileLink,
   type DirectoryMember,
 } from '../../lib/api/directoryApi';
-import { CARD_BG } from '../../theme/candyStyles';
 import { DirectoryRowActions } from './row/DirectoryRowActions';
 
 const DIRECTORY_TEXT_SECONDARY = 'rgba(255,255,255,0.82)';
@@ -42,22 +41,21 @@ export const DirectoryRow = ({
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 1.5, md: 2 },
-        borderRadius: 2,
-        bgcolor: CARD_BG,
-        border: '1px solid rgba(156,187,217,0.18)',
+        p: { xs: 1.25, md: 1.4 },
+        borderRadius: 1.5,
+        bgcolor: 'rgba(18, 22, 36, 0.74)',
+        border: '1px solid rgba(255,255,255,0.08)',
         overflow: 'hidden',
-        transition: 'border-color 140ms ease, transform 140ms ease',
+        transition: 'border-color 140ms ease',
         '&:hover': {
-          borderColor: 'rgba(141,188,229,0.38)',
-          transform: 'translateY(-1px)',
+          borderColor: 'rgba(255,255,255,0.16)',
         },
       }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
-        spacing={{ xs: 1.5, md: 2 }}
-        alignItems="flex-start"
+        spacing={{ xs: 1.25, md: 1.5 }}
+        alignItems={{ xs: 'flex-start', md: 'center' }}
       >
         <Box
           component={RouterLink}
@@ -69,8 +67,8 @@ export const DirectoryRow = ({
             src={avatarUrl ?? undefined}
             alt={displayName}
             sx={{
-              width: 60,
-              height: 60,
+              width: { xs: 56, md: 52 },
+              height: { xs: 56, md: 52 },
               bgcolor: 'primary.dark',
               border: '2px solid rgba(156,187,217,0.22)',
             }}
@@ -87,6 +85,8 @@ export const DirectoryRow = ({
               color: 'white',
               textDecoration: 'none',
               width: 'fit-content',
+              fontSize: { xs: '1.2rem', md: '1.05rem' },
+              lineHeight: 1.15,
               '&:hover': { color: 'primary.light' },
             }}
           >
@@ -104,7 +104,7 @@ export const DirectoryRow = ({
           {member.pronouns && (
             <Typography
               variant="body2"
-              sx={{ color: DIRECTORY_TEXT_SECONDARY }}
+              sx={{ color: DIRECTORY_TEXT_SECONDARY, lineHeight: 1.25 }}
             >
               {member.pronouns}
             </Typography>
@@ -113,7 +113,7 @@ export const DirectoryRow = ({
             <Typography
               variant="body2"
               color="primary.main"
-              sx={{ fontWeight: 600 }}
+              sx={{ fontWeight: 600, lineHeight: 1.3, mt: 0.15 }}
             >
               {member.tagline}
             </Typography>
@@ -132,7 +132,7 @@ export const DirectoryRow = ({
             </Typography>
           )}
           {member.skills?.length > 0 && (
-            <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 1 }}>
+            <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 0.75 }}>
               {member.skills.slice(0, 3).map((skill) => (
                 <Chip
                   key={skill}
@@ -140,7 +140,8 @@ export const DirectoryRow = ({
                   size="small"
                   onClick={() => onSkillClick(skill)}
                   sx={{
-                    height: 24,
+                    height: 22,
+                    fontSize: '0.72rem',
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'primary.dark' },
                   }}
@@ -153,7 +154,7 @@ export const DirectoryRow = ({
               variant="body2"
               sx={{
                 color: DIRECTORY_TEXT_SECONDARY,
-                mt: 1,
+                mt: 0.75,
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',

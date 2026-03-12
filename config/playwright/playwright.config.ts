@@ -4,8 +4,20 @@ const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const API_URL = 'http://127.0.0.1:3001/api/health';
 const isCI = process.env.CI === 'true';
+const hasBackendEnv = Boolean(
+  process.env.SUPABASE_URL?.trim() &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+);
+const useBackendServer =
+  process.env.PLAYWRIGHT_USE_BACKEND === 'true' || hasBackendEnv;
 const LOCAL_WORKERS = 2;
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
+
+if (!useBackendServer) {
+  console.warn(
+    '[playwright] Skipping backend webServer: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are unset.',
+  );
+}
 
 export default defineConfig({
   testDir: '../../src/tests/e2e',
@@ -36,17 +48,29 @@ export default defineConfig({
   },
 
   webServer: [
-    {
-      command: 'npm run e2e:serve:backend',
-      url: API_URL,
-      reuseExistingServer: !isCI,
-      timeout: 180_000,
-    },
+    ...(useBackendServer
+      ? [
+          {
+            command: 'npm run e2e:serve:backend',
+            url: API_URL,
+            reuseExistingServer: !isCI,
+            timeout: 180_000,
+            gracefulShutdown: {
+              signal: 'SIGTERM',
+              timeout: 5_000,
+            },
+          },
+        ]
+      : []),
     {
       command: 'npm run e2e:serve:frontend',
       url: BASE_URL,
       reuseExistingServer: !isCI,
       timeout: 180_000,
+      gracefulShutdown: {
+        signal: 'SIGTERM',
+        timeout: 5_000,
+      },
     },
   ],
 

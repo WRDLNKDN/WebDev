@@ -38,6 +38,10 @@ import {
   dialogTextFieldSx,
   filterSelectMenuProps,
 } from '../../../theme/filterControls';
+import {
+  shouldCloseDialogFromReason,
+  shouldSubmitWithModifier,
+} from '../../../lib/ui/dialogFormUtils';
 import { getPortfolioUrlSafetyError } from '../../../lib/portfolio/linkValidation';
 import {
   detectPlatformFromUrl,
@@ -389,7 +393,7 @@ export const EditLinksDialog = ({
       <Dialog
         open={open}
         onClose={(_ev, reason) => {
-          if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+          if (shouldCloseDialogFromReason(reason)) {
             handleRequestClose();
           }
         }}
@@ -407,7 +411,14 @@ export const EditLinksDialog = ({
             <CloseIcon />
           </IconButton>
         </Tooltip>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent
+          sx={{ pt: 2.5 }}
+          onKeyDown={(event) => {
+            if (!shouldSubmitWithModifier(event) || isSubmitting) return;
+            event.preventDefault();
+            void handleSave();
+          }}
+        >
           <Stack spacing={4} sx={{ mt: 1 }}>
             {saveError && (
               <Alert severity="error" onClose={() => setSaveError(null)}>
@@ -451,6 +462,16 @@ export const EditLinksDialog = ({
                         setNewPlatform(
                           category === 'Custom' ? OTHER_PLATFORM : '',
                         );
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === 'Enter' &&
+                          !event.metaKey &&
+                          !event.ctrlKey
+                        ) {
+                          event.preventDefault();
+                          handleAddLink();
+                        }
                       }}
                     >
                       <MenuItem value="">Choose Category</MenuItem>
@@ -567,6 +588,16 @@ export const EditLinksDialog = ({
                         <TextField
                           {...params}
                           placeholder="Search platform"
+                          onKeyDown={(event) => {
+                            if (
+                              event.key === 'Enter' &&
+                              !event.metaKey &&
+                              !event.ctrlKey
+                            ) {
+                              event.preventDefault();
+                              handleAddLink();
+                            }
+                          }}
                           error={platformError}
                           inputProps={{
                             ...params.inputProps,
@@ -615,6 +646,16 @@ export const EditLinksDialog = ({
                       setNewCategory(detectedCategory);
                       setNewPlatform(detected);
                     }}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === 'Enter' &&
+                        !event.metaKey &&
+                        !event.ctrlKey
+                      ) {
+                        event.preventDefault();
+                        handleAddLink();
+                      }
+                    }}
                     disabled={!newCategory}
                     error={Boolean(
                       (newUrl.trim() &&
@@ -652,6 +693,16 @@ export const EditLinksDialog = ({
                       fullWidth
                       value={newLabel}
                       onChange={(e) => setNewLabel(e.target.value)}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === 'Enter' &&
+                          !event.metaKey &&
+                          !event.ctrlKey
+                        ) {
+                          event.preventDefault();
+                          handleAddLink();
+                        }
+                      }}
                       sx={dialogTextFieldSx}
                     />
                   </Box>
@@ -811,6 +862,13 @@ export const EditLinksDialog = ({
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mr: 'auto', display: { xs: 'none', sm: 'block' } }}
+          >
+            Cmd/Ctrl+Enter saves changes.
+          </Typography>
           <Button onClick={handleRequestClose} color="inherit">
             Cancel
           </Button>

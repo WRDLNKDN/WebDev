@@ -15,7 +15,6 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Snackbar,
   Stack,
   Typography,
 } from '@mui/material';
@@ -37,6 +36,7 @@ import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
+import { useAppToast } from '../../context/AppToastContext';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
@@ -226,7 +226,10 @@ export const Dashboard = () => {
     useState<HTMLElement | null>(null);
   const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [editFocusBio, setEditFocusBio] = useState(false);
+  const profileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const editDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useAppToast();
 
   useEffect(() => {
     const init = async () => {
@@ -304,7 +307,6 @@ export const Dashboard = () => {
   const { avatarUrl: ctxAvatarUrl, refresh: refreshAvatar } =
     useCurrentUserAvatar();
 
-  const [snack, setSnack] = useState<string | null>(null);
   /** After saving links in the dialog, show this so links appear immediately. */
   const [savedLinksOverride, setSavedLinksOverride] = useState<
     SocialLink[] | null
@@ -393,7 +395,7 @@ export const Dashboard = () => {
       await uploadResume(file);
       await refresh();
     } catch (e) {
-      setSnack(toMessage(e));
+      showToast({ message: toMessage(e), severity: 'error' });
     }
   };
   const handleResumeInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -424,6 +426,28 @@ export const Dashboard = () => {
     setIsProjectDialogOpen(false);
     setEditingProject(null);
   };
+  const rememberEditDialogTrigger = () => {
+    if (typeof document === 'undefined') return;
+    const activeElement = document.activeElement;
+    editDialogReturnFocusRef.current =
+      activeElement instanceof HTMLElement ? activeElement : null;
+  };
+  const openEditProfileDialog = (options?: { focusBio?: boolean }) => {
+    rememberEditDialogTrigger();
+    setProfileMenuAnchor(null);
+    setEditFocusBio(Boolean(options?.focusBio));
+    setIsEditOpen(true);
+  };
+  const closeEditProfileDialog = () => {
+    setIsEditOpen(false);
+    setEditFocusBio(false);
+    const returnFocusTarget =
+      editDialogReturnFocusRef.current ?? profileMenuButtonRef.current;
+    setTimeout(() => {
+      returnFocusTarget?.focus();
+      editDialogReturnFocusRef.current = null;
+    }, 0);
+  };
   const resumePreviewProject = buildResumePreviewItem({
     url: profile?.resume_url,
     fileName: resumeFileName,
@@ -448,9 +472,7 @@ export const Dashboard = () => {
           onAddBio={
             bioIsPlaceholder
               ? () => {
-                  setProfileMenuAnchor(null);
-                  setEditFocusBio(true);
-                  setIsEditOpen(true);
+                  openEditProfileDialog({ focusBio: true });
                 }
               : undefined
           }
@@ -509,6 +531,7 @@ export const Dashboard = () => {
                 sx={{ flexWrap: 'wrap' }}
               >
                 <Button
+                  ref={profileMenuButtonRef}
                   variant="outlined"
                   size="small"
                   onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
@@ -574,8 +597,7 @@ export const Dashboard = () => {
               >
                 <MenuItem
                   onClick={() => {
-                    setProfileMenuAnchor(null);
-                    setIsEditOpen(true);
+                    openEditProfileDialog();
                   }}
                   sx={{ py: 1.25 }}
                 >
@@ -864,7 +886,10 @@ export const Dashboard = () => {
                               onUpload={handleResumeUpload}
                               onRetryThumbnail={() => {
                                 void retryResumeThumbnail().catch((e) => {
-                                  setSnack(toMessage(e));
+                                  showToast({
+                                    message: toMessage(e),
+                                    severity: 'error',
+                                  });
                                 });
                               }}
                               retryThumbnailBusy={updating}
@@ -873,7 +898,10 @@ export const Dashboard = () => {
                                   await deleteResume();
                                   void refresh();
                                 } catch (e) {
-                                  setSnack(toMessage(e));
+                                  showToast({
+                                    message: toMessage(e),
+                                    severity: 'error',
+                                  });
                                 }
                               }}
                               deleteBusy={updating}
@@ -890,21 +918,21 @@ export const Dashboard = () => {
                       try {
                         await reorderPortfolioItems(orderedIds);
                       } catch (e) {
-                        setSnack(toMessage(e));
+                        showToast({ message: toMessage(e), severity: 'error' });
                       }
                     }}
                     onDelete={async (id) => {
                       try {
                         await deleteProject(id);
                       } catch (e) {
-                        setSnack(toMessage(e));
+                        showToast({ message: toMessage(e), severity: 'error' });
                       }
                     }}
                     onToggleHighlight={async (id, isHighlighted) => {
                       try {
                         await toggleProjectHighlight(id, isHighlighted);
                       } catch (e) {
-                        setSnack(toMessage(e));
+                        showToast({ message: toMessage(e), severity: 'error' });
                       }
                     }}
                     onEdit={(project) => {
@@ -951,14 +979,17 @@ export const Dashboard = () => {
                   'regenerate_profile_share_token',
                 );
                 if (error) {
-                  setSnack(toMessage(error));
+                  showToast({ message: toMessage(error), severity: 'error' });
                   return;
                 }
                 setShareToken(typeof data === 'string' ? data : null);
                 setRegenerateConfirmOpen(false);
-                setSnack('New link generated. Previous link no longer works.');
+                showToast({
+                  message: 'New link generated. Previous link no longer works.',
+                  severity: 'success',
+                });
               } catch (e) {
-                setSnack(toMessage(e));
+                showToast({ message: toMessage(e), severity: 'error' });
               } finally {
                 setRegenerating(false);
               }
@@ -974,12 +1005,7 @@ export const Dashboard = () => {
 
       <EditProfileDialog
         open={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          setEditFocusBio(false);
-          void refresh();
-          void refreshAvatar();
-        }}
+        onClose={closeEditProfileDialog}
         profile={profile}
         focusBioOnOpen={editFocusBio}
         avatarFallback={
@@ -1045,22 +1071,16 @@ export const Dashboard = () => {
           const url = buildShareProfileUrl(shareToken);
           try {
             await navigator.clipboard.writeText(url);
-            setSnack('Link copied to clipboard.');
+            showToast({
+              message: 'Link copied to clipboard.',
+              severity: 'success',
+            });
           } catch {
-            setSnack('Could not copy link.');
+            showToast({ message: 'Could not copy link.', severity: 'error' });
           }
         }}
         onRegenerate={() => setRegenerateConfirmOpen(true)}
         regenerateBusy={regenerating}
-      />
-
-      <Snackbar
-        open={Boolean(snack)}
-        autoHideDuration={6000}
-        onClose={() => setSnack(null)}
-        message={snack}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ mb: { xs: 'env(safe-area-inset-bottom)', md: 0 } }}
       />
     </Box>
   );

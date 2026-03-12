@@ -8,9 +8,13 @@ import { MessageList } from '../../components/chat/message/MessageList';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
 import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
-import { useChat, useReportMessage } from '../../hooks/useChat';
+import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  getDefaultChatDocumentTitle,
+  resolveChatDocumentTitle,
+} from '../../lib/chat/documentTitle';
 
 /**
  * Standalone popout chat window (LinkedIn-style).
@@ -33,6 +37,7 @@ export const ChatPopupPage = () => {
 
   const uid = session?.user?.id ?? undefined;
 
+  const { rooms, toggleFavorite } = useChatRooms();
   const {
     room,
     messages,
@@ -61,6 +66,7 @@ export const ChatPopupPage = () => {
   );
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
+  const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -87,6 +93,15 @@ export const ChatPopupPage = () => {
       setIsAdmin(data === true);
     })();
   }, [session]);
+
+  useEffect(() => {
+    if (!roomId) {
+      document.title = getDefaultChatDocumentTitle();
+      return;
+    }
+
+    document.title = resolveChatDocumentTitle(room, uid, roomId);
+  }, [room, roomId, uid]);
 
   const handleLeave = async () => {
     await leaveRoom();
@@ -157,6 +172,13 @@ export const ChatPopupPage = () => {
             setGroupDialogMode('manage');
             setGroupDialogOpen(true);
           }}
+          isFavorite={Boolean(activeRoom?.is_favorite)}
+          onToggleFavorite={
+            roomId
+              ? () =>
+                  void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+              : undefined
+          }
           onBack={() =>
             window.opener ? window.close() : window.history.back()
           }

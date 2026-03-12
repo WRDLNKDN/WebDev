@@ -23,7 +23,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import {
+  shouldCloseDialogFromReason,
+  shouldSubmitWithModifier,
+} from '../../../lib/ui/dialogFormUtils';
 import type { SelectChangeEvent } from '@mui/material';
+import { useEffect, useRef } from 'react';
 import type { ContentSubmissionRow } from '../../../lib/api/contentApi';
 import {
   FILTER_CONTROL_MIN_HEIGHT,
@@ -331,33 +336,65 @@ export const RejectSubmissionDialog = ({
   onReasonChange,
   onCancel,
   onConfirm,
-}: RejectDialogProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>Reject submission</DialogTitle>
-    <DialogContent>
-      <TextField
-        fullWidth
-        multiline
-        rows={3}
-        label="Reason (optional)"
-        value={reason}
-        onChange={(e) => onReasonChange(e.target.value)}
-        placeholder="Content does not match community guidelines."
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button
-        color="error"
-        variant="contained"
-        onClick={onConfirm}
-        disabled={busy}
+}: RejectDialogProps) => {
+  const reasonInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      reasonInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onCancel();
+      }}
+    >
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm();
+        }}
       >
-        Reject
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+        <DialogTitle>Reject submission</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            inputRef={reasonInputRef}
+            multiline
+            rows={3}
+            label="Reason (optional)"
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            onKeyDown={(event) => {
+              if (!shouldSubmitWithModifier(event) || busy) return;
+              event.preventDefault();
+              onConfirm();
+            }}
+            helperText="Press Cmd/Ctrl+Enter to reject."
+            placeholder="Content does not match community guidelines."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onCancel}>Cancel</Button>
+          <Button
+            type="submit"
+            color="error"
+            variant="contained"
+            disabled={busy}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+};
 
 type PlaylistOption = { id: string; slug: string; title: string };
 
@@ -380,34 +417,47 @@ export const PublishSubmissionDialog = ({
   onCancel,
   onConfirm,
 }: PublishDialogProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>Publish to playlist</DialogTitle>
-    <DialogContent>
-      <FormControl fullWidth sx={{ mt: 1 }}>
-        <InputLabel>Playlist</InputLabel>
-        <Select
-          value={selectedPlaylist}
-          label="Playlist"
-          onChange={(e) => onPlaylistChange(e.target.value)}
+  <Dialog
+    open={open}
+    onClose={(_event, reason) => {
+      if (shouldCloseDialogFromReason(reason)) onCancel();
+    }}
+  >
+    <Box
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onConfirm();
+      }}
+    >
+      <DialogTitle>Publish to playlist</DialogTitle>
+      <DialogContent>
+        <FormControl fullWidth sx={{ mt: 1 }}>
+          <InputLabel>Playlist</InputLabel>
+          <Select
+            value={selectedPlaylist}
+            label="Playlist"
+            onChange={(e) => onPlaylistChange(e.target.value)}
+          >
+            {playlists.map((p) => (
+              <MenuItem key={p.id} value={p.id}>
+                {p.title} ({p.slug})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={busy || !selectedPlaylist}
         >
-          {playlists.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.title} ({p.slug})
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button
-        variant="contained"
-        onClick={onConfirm}
-        disabled={busy || !selectedPlaylist}
-      >
-        Publish
-      </Button>
-    </DialogActions>
+          Publish
+        </Button>
+      </DialogActions>
+    </Box>
   </Dialog>
 );
 

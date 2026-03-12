@@ -4,6 +4,22 @@ import { stubAppSurface } from '../utils/stubAppSurface';
 
 test.describe.configure({ timeout: 90_000 });
 
+async function chooseDialogSelectOption(
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator,
+  label: 'Category' | 'Platform',
+  optionName: string,
+) {
+  const select = dialog.getByLabel(label);
+  await expect(select).toBeVisible();
+  await select.click({ force: true });
+
+  const option = page.getByRole('option', { name: optionName, exact: true });
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(option).toBeHidden();
+}
+
 test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
   test.beforeEach(async ({ page, context }) => {
     await seedSignedInSession(context);
@@ -47,8 +63,7 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
   }) => {
     const dialog = page.getByRole('dialog', { name: /manage links/i });
 
-    await dialog.getByRole('combobox', { name: /platform/i }).click();
-    await page.getByRole('option', { name: 'Behance' }).click();
+    await chooseDialogSelectOption(page, dialog, 'Platform', 'Behance');
     await dialog
       .getByPlaceholder(/https:\/\/example\.com/i)
       .fill('https://behance.net/testuser');
@@ -91,8 +106,7 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
   }) => {
     const dialog = page.getByRole('dialog', { name: /manage links/i });
 
-    await dialog.getByRole('combobox', { name: /platform/i }).click();
-    await page.getByRole('option', { name: 'Behance' }).click();
+    await chooseDialogSelectOption(page, dialog, 'Platform', 'Behance');
     await dialog
       .getByPlaceholder(/https:\/\/example\.com/i)
       .fill('https://behance.net/unsaved-link');
@@ -109,16 +123,14 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
     page,
   }) => {
     const dialog = page.getByRole('dialog', { name: /manage links/i });
-    await dialog.getByRole('combobox', { name: /category/i }).click();
-    await page.getByRole('option', { name: 'Games' }).click();
+    await chooseDialogSelectOption(page, dialog, 'Category', 'Games');
 
-    await dialog.getByRole('combobox', { name: /platform/i }).click();
+    await dialog.getByLabel('Platform').click({ force: true });
     const options = page.locator('[role="option"]');
     await expect(options.first()).toBeVisible();
     const labels = await options.allTextContents();
 
     expect(labels).toEqual([
-      'Select platform',
       'Armor Games',
       'Epic Games Store',
       'Game Jolt',

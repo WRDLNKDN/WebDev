@@ -5,13 +5,19 @@ import LinkIcon from '@mui/icons-material/Link';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Tooltip,
+  Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { useEffect, useRef } from 'react';
+import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 
 const GLASS_MODAL = {
   bgcolor: '#141414',
@@ -38,6 +44,18 @@ export const SettingsDialog = ({
   onManageLinks,
   onEmailPreferences,
 }: SettingsDialogProps) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const primaryActionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const focusHandle = window.setTimeout(() => {
+      primaryActionRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(focusHandle);
+  }, [open]);
+
   const handleEditProfile = () => {
     onEditProfile();
     onClose();
@@ -56,9 +74,12 @@ export const SettingsDialog = ({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(_event, reason) => {
+        if (shouldCloseDialogFromReason(reason)) onClose();
+      }}
       maxWidth="sm"
       fullWidth
+      fullScreen={fullScreen}
       aria-label="Settings"
       PaperProps={{ sx: GLASS_MODAL }}
     >
@@ -77,9 +98,18 @@ export const SettingsDialog = ({
           <CloseIcon />
         </IconButton>
       </Tooltip>
-      <DialogContent sx={{ pt: 5, px: 0, pb: 0 }}>
+      <DialogTitle sx={{ pr: 6, pb: 0.5 }}>Settings</DialogTitle>
+      <DialogContent sx={{ pt: 1.5, px: 0, pb: 0 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ px: 3, pb: 1.5 }}
+        >
+          Use Esc to close, or jump straight into the next edit flow.
+        </Typography>
         <List disablePadding>
           <ListItemButton
+            ref={primaryActionRef}
             onClick={handleEditProfile}
             sx={{ py: 2, borderBottom: '1px solid rgba(56,132,210,0.14)' }}
           >

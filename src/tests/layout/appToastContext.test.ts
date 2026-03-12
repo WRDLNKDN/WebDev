@@ -1,0 +1,131 @@
+import { describe, expect, it } from 'vitest';
+import {
+  dismissToast,
+  enqueueToast,
+  getToastAccessibilityProps,
+  getToastSeverityLabel,
+} from '../../context/AppToastContext';
+
+describe('AppToastContext queue helpers', () => {
+  it('enqueues new toasts in order', () => {
+    const queue = enqueueToast(
+      [
+        {
+          id: 1,
+          message: 'First',
+          severity: 'info',
+        },
+      ],
+      {
+        message: 'Second',
+        severity: 'success',
+      },
+      () => 2,
+    );
+
+    expect(queue.map((item) => item.message)).toEqual(['First', 'Second']);
+    expect(queue[1]?.id).toBe(2);
+  });
+
+  it('preserves toast action metadata', () => {
+    const action = { label: 'Undo', onClick: () => undefined };
+    const queue = enqueueToast(
+      [],
+      {
+        message: 'Saved',
+        severity: 'success',
+        action,
+      },
+      () => 7,
+    );
+
+    expect(queue[0]).toMatchObject({
+      id: 7,
+      message: 'Saved',
+      severity: 'success',
+      action: {
+        label: 'Undo',
+      },
+    });
+    expect(queue[0]?.action?.onClick).toBe(action.onClick);
+  });
+
+  it('dismisses only the current toast', () => {
+    const nextQueue = dismissToast([
+      { id: 1, message: 'First' },
+      { id: 2, message: 'Second' },
+    ]);
+
+    expect(nextQueue).toEqual([{ id: 2, message: 'Second' }]);
+  });
+
+  it('deduplicates consecutive identical toasts', () => {
+    const queue = enqueueToast(
+      [
+        {
+          id: 1,
+          message: 'Saved',
+          severity: 'success',
+        },
+      ],
+      {
+        message: 'Saved',
+        severity: 'success',
+      },
+      () => 2,
+    );
+
+    expect(queue).toEqual([
+      {
+        id: 1,
+        message: 'Saved',
+        severity: 'success',
+      },
+    ]);
+  });
+
+  it('caps the queue to the newest four toasts', () => {
+    const queue = [
+      { id: 1, message: 'One' },
+      { id: 2, message: 'Two' },
+      { id: 3, message: 'Three' },
+      { id: 4, message: 'Four' },
+    ];
+
+    const nextQueue = enqueueToast(
+      queue,
+      {
+        message: 'Five',
+      },
+      () => 5,
+    );
+
+    expect(nextQueue.map((item) => item.message)).toEqual([
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+    ]);
+  });
+
+  it('announces errors assertively and success politely', () => {
+    expect(getToastAccessibilityProps('error')).toMatchObject({
+      role: 'alert',
+      'aria-live': 'assertive',
+      'aria-atomic': 'true',
+    });
+    expect(getToastAccessibilityProps('success')).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
+    });
+  });
+
+  it('provides readable severity labels for screen readers', () => {
+    expect(getToastSeverityLabel('success')).toBe('Success');
+    expect(getToastSeverityLabel('warning')).toBe('Warning');
+    expect(getToastSeverityLabel('error')).toBe('Error');
+    expect(getToastSeverityLabel('info')).toBe('Info');
+    expect(getToastSeverityLabel()).toBe('Info');
+  });
+});

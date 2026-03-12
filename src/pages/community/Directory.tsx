@@ -1,11 +1,13 @@
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AddIcon from '@mui/icons-material/Add';
+import TuneIcon from '@mui/icons-material/Tune';
 import {
   Alert,
   Box,
   Button,
   Chip,
+  Collapse,
   CircularProgress,
   Container,
   Dialog,
@@ -21,11 +23,14 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTheme } from '@mui/material/styles';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
+import { useAppToast } from '../../context/AppToastContext';
 import type {
   ConnectionState,
   DirectoryMember,
@@ -127,6 +132,9 @@ const chipSelectSx = {
 } as const;
 
 export const Directory = () => {
+  const theme = useTheme();
+  const isMobileFilters = useMediaQuery(theme.breakpoints.down('sm'));
+  const { showToast } = useAppToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') ?? '';
   const primaryIndustry = searchParams.get('primary_industry') ?? '';
@@ -139,8 +147,10 @@ export const Directory = () => {
   const [showSecondaryIndustryFilter, setShowSecondaryIndustryFilter] =
     useState(false);
   useEffect(() => {
-    if (secondaryIndustry) setShowSecondaryIndustryFilter(true);
-  }, [secondaryIndustry]);
+    setShowSecondaryIndustryFilter(
+      Boolean(primaryIndustry || secondaryIndustry),
+    );
+  }, [primaryIndustry, secondaryIndustry]);
 
   const [rows, setRows] = useState<DirectoryMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,6 +169,7 @@ export const Directory = () => {
   } | null>(null);
   // Location filter inline edit state
   const [locationInput, setLocationInput] = useState(location);
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
 
   const skills = useMemo(
@@ -328,11 +339,40 @@ export const Directory = () => {
     setLocationInput(location);
   }, [location]);
 
+  const clearAllFilters = useCallback(
+    (message?: string) => {
+      updateUrl({
+        q: '',
+        primary_industry: '',
+        secondary_industry: '',
+        location: '',
+        connection_status: '',
+        skills: '',
+      });
+      setShowSecondaryIndustryFilter(false);
+      setLocationInput('');
+      if (isMobileFilters) {
+        setMobileControlsOpen(false);
+      }
+      if (message) {
+        showToast({
+          message,
+          severity: 'info',
+        });
+      }
+    },
+    [isMobileFilters, showToast, updateUrl],
+  );
+
   const handleConnect = async (id: string) => {
     setBusy(true);
     try {
       await connectRequest(supabase, id);
       await load(false);
+      showToast({
+        message: 'Connection request sent.',
+        severity: 'success',
+      });
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -345,6 +385,10 @@ export const Directory = () => {
     try {
       await acceptRequest(supabase, id);
       await load(false);
+      showToast({
+        message: 'Connection accepted.',
+        severity: 'success',
+      });
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -357,6 +401,10 @@ export const Directory = () => {
     try {
       await declineRequest(supabase, id);
       await load(false);
+      showToast({
+        message: 'Connection request declined.',
+        severity: 'info',
+      });
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -378,6 +426,10 @@ export const Directory = () => {
       await disconnect(supabase, disconnectTarget.id);
       setDisconnectTarget(null);
       await load(false);
+      showToast({
+        message: 'Connection removed.',
+        severity: 'info',
+      });
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -403,6 +455,10 @@ export const Directory = () => {
       await disconnect(supabase, blockTarget.id);
       setRows((prev) => prev.filter((r) => r.id !== blockTarget.id));
       setBlockTarget(null);
+      showToast({
+        message: 'Member blocked.',
+        severity: 'success',
+      });
     } catch (e) {
       setError(toMessage(e));
     } finally {
@@ -423,6 +479,28 @@ export const Directory = () => {
     connectionStatus ||
     skills.length
   );
+  useEffect(() => {
+    if (!isMobileFilters) {
+      setMobileControlsOpen(false);
+      return;
+    }
+    if (hasActiveFilters) {
+      setMobileControlsOpen(true);
+    }
+  }, [hasActiveFilters, isMobileFilters]);
+
+  const activeFilterCount = [
+    q.trim(),
+    primaryIndustry,
+    secondaryIndustry,
+    location,
+    connectionStatus,
+    ...skills,
+  ].filter(Boolean).length;
+
+  const mobileControlsToggleLabel = mobileControlsOpen
+    ? 'Hide filters'
+    : 'Filters & sort';
 
   if (!session && !loading) {
     return (
@@ -467,10 +545,10 @@ export const Directory = () => {
           elevation={0}
           sx={{
             ...FORM_SECTION_PANEL_SX,
-            p: { xs: 2, sm: 2.5, md: 3 },
+            p: { xs: 1.75, sm: 2, md: 2.25 },
             borderRadius: 3,
             backdropFilter: 'blur(16px)',
-            mb: { xs: 2, md: 3 },
+            mb: 1.5,
           }}
         >
           <Typography
@@ -483,19 +561,19 @@ export const Directory = () => {
             variant="h5"
             sx={{
               fontWeight: 700,
-              mb: 2,
+              mb: 1.5,
               fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' },
             }}
           >
             Discover Members
           </Typography>
 
-          {/* Search row: full-width input + sort on the right */}
+          {/* Search row */}
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.5}
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            sx={{ mb: 2 }}
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ mb: 1.25 }}
           >
             <TextField
               fullWidth
@@ -532,11 +610,524 @@ export const Directory = () => {
                 },
               }}
             />
+          </Stack>
 
-            {/* Sort control */}
+          {isMobileFilters && (
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 1 }}
+            >
+              <Button
+                variant="outlined"
+                startIcon={<TuneIcon />}
+                onClick={() => setMobileControlsOpen((prev) => !prev)}
+                data-testid="directory-mobile-controls-toggle"
+                aria-expanded={mobileControlsOpen}
+                sx={{
+                  ...filterChipSx,
+                  minWidth: 0,
+                  px: 1.5,
+                }}
+              >
+                {mobileControlsToggleLabel}
+              </Button>
+              {activeFilterCount > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}
+                >
+                  {activeFilterCount} active
+                </Typography>
+              )}
+            </Stack>
+          )}
+
+          <Collapse in={!isMobileFilters || mobileControlsOpen}>
+            <Box data-testid="directory-filters">
+              {isMobileFilters && (
+                <FormControl size="small" fullWidth sx={{ mb: 1.25 }}>
+                  <InputLabel
+                    id="dir-sort-mobile-label"
+                    sx={{
+                      color: 'rgba(255,255,255,0.45)',
+                      fontSize: '0.8rem',
+                      top: '-2px',
+                      '&.Mui-focused': { color: '#3b82f6' },
+                      '&.MuiInputLabel-shrink': { top: 0 },
+                    }}
+                  >
+                    Sort results
+                  </InputLabel>
+                  <Select
+                    labelId="dir-sort-mobile-label"
+                    label="Sort results"
+                    value={sort}
+                    onChange={(e) => updateUrl({ sort: e.target.value })}
+                    MenuProps={filterSelectMenuProps}
+                    sx={{
+                      height: FILTER_CONTROL_HEIGHT,
+                      minHeight: FILTER_CONTROL_HEIGHT,
+                      ...FORM_FILTER_SELECT_SX,
+                      '& .MuiSelect-select': {
+                        py: '9px',
+                        pl: 1.75,
+                        pr: '32px !important',
+                        minHeight: FILTER_CONTROL_HEIGHT,
+                        boxSizing: 'border-box',
+                      },
+                    }}
+                  >
+                    <MenuItem value="recently_active">Recently Active</MenuItem>
+                    <MenuItem value="alphabetical">Alphabetical</MenuItem>
+                    <MenuItem value="newest">Newest Members</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+              {/* Filter controls row: dropdowns together, location on far right */}
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                alignItems="center"
+                gap={1}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'rgba(255,255,255,0.4)',
+                    fontWeight: 600,
+                    mr: 0.25,
+                    flexShrink: 0,
+                  }}
+                >
+                  Filters:
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {/* Primary industry chip-select */}
+                  <Select
+                    value={primaryIndustry}
+                    displayEmpty
+                    inputProps={{ 'aria-label': 'Primary Industry' }}
+                    renderValue={(v) => v || 'Primary Industry'}
+                    onChange={(e) => {
+                      const nextPrimary = e.target.value;
+                      const allowed =
+                        getSecondaryOptionsForPrimary(nextPrimary);
+                      updateUrl({
+                        primary_industry: nextPrimary,
+                        secondary_industry: allowed.includes(secondaryIndustry)
+                          ? secondaryIndustry
+                          : '',
+                      });
+                    }}
+                    MenuProps={filterSelectMenuProps}
+                    IconComponent={KeyboardArrowDownIcon}
+                    sx={{
+                      ...chipSelectSx,
+                      '& .MuiSelect-select': {
+                        ...chipSelectSx['& .MuiSelect-select'],
+                        fontWeight: primaryIndustry ? 600 : 500,
+                        color: primaryIndustry
+                          ? '#fff'
+                          : 'rgba(255,255,255,0.7)',
+                        minWidth: 110,
+                      },
+                      ...(primaryIndustry
+                        ? {
+                            borderColor: '#3b82f6',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#3b82f6 !important',
+                            },
+                          }
+                        : {}),
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>Any industry</em>
+                    </MenuItem>
+                    {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </Select>
+
+                  {/* Sub-industry: only show if primary is set OR already active */}
+                  {primaryIndustry || showSecondaryIndustryFilter ? (
+                    <Select
+                      value={secondaryIndustry}
+                      displayEmpty
+                      inputProps={{ 'aria-label': 'Sub-industry' }}
+                      renderValue={(v) => v || 'Sub-industry'}
+                      onChange={(e) =>
+                        updateUrl({ secondary_industry: e.target.value })
+                      }
+                      MenuProps={filterSelectMenuProps}
+                      IconComponent={KeyboardArrowDownIcon}
+                      sx={{
+                        ...chipSelectSx,
+                        '& .MuiSelect-select': {
+                          ...chipSelectSx['& .MuiSelect-select'],
+                          fontWeight: secondaryIndustry ? 600 : 500,
+                          color: secondaryIndustry
+                            ? '#fff'
+                            : 'rgba(255,255,255,0.7)',
+                          minWidth: 100,
+                        },
+                        ...(secondaryIndustry
+                          ? {
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#3b82f6 !important',
+                              },
+                            }
+                          : {}),
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>Any sub-industry</em>
+                      </MenuItem>
+                      {getSecondaryOptionsForPrimary(primaryIndustry).map(
+                        (opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ),
+                      )}
+                    </Select>
+                  ) : (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={
+                        <AddIcon sx={{ fontSize: '0.9rem !important' }} />
+                      }
+                      onClick={() => setShowSecondaryIndustryFilter(true)}
+                      sx={filterChipSx}
+                    >
+                      Add secondary filter
+                    </Button>
+                  )}
+
+                  {/* Connection status chip-select */}
+                  <Select
+                    value={connectionStatus}
+                    displayEmpty
+                    inputProps={{ 'aria-label': 'Connection' }}
+                    renderValue={(v) =>
+                      v ? (CONNECTION_LABEL[v] ?? v) : 'Connection'
+                    }
+                    onChange={(e) =>
+                      updateUrl({ connection_status: e.target.value })
+                    }
+                    MenuProps={filterSelectMenuProps}
+                    IconComponent={KeyboardArrowDownIcon}
+                    sx={{
+                      ...chipSelectSx,
+                      '& .MuiSelect-select': {
+                        ...chipSelectSx['& .MuiSelect-select'],
+                        fontWeight: connectionStatus ? 600 : 500,
+                        color: connectionStatus
+                          ? '#fff'
+                          : 'rgba(255,255,255,0.7)',
+                        minWidth: 95,
+                      },
+                      ...(connectionStatus
+                        ? {
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#3884D2 !important',
+                            },
+                          }
+                        : {}),
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>Any</em>
+                    </MenuItem>
+                    <MenuItem value="not_connected">Not connected</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="pending_received">
+                      Pending received
+                    </MenuItem>
+                    <MenuItem value="connected">Connected</MenuItem>
+                  </Select>
+                </Box>
+
+                {/* Location — pushed to the right on wider screens */}
+                <Box
+                  component="form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    updateUrl({ location: locationInput });
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ml: { md: 'auto' },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    placeholder="Location"
+                    value={locationInput}
+                    onChange={(e) => setLocationInput(e.target.value)}
+                    onBlur={() => updateUrl({ location: locationInput })}
+                    sx={{
+                      width: { xs: '100%', sm: 'auto' },
+                      '& .MuiOutlinedInput-root': {
+                        ...chipSelectSx,
+                        height: FILTER_CONTROL_HEIGHT,
+                        minHeight: FILTER_CONTROL_HEIGHT,
+                        color: locationInput ? '#fff' : 'rgba(255,255,255,0.7)',
+                        '& fieldset': {
+                          borderColor: locationInput
+                            ? '#3b82f6'
+                            : 'rgba(255,255,255,0.18)',
+                          borderWidth: '1.5px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(255,255,255,0.3)',
+                        },
+                        '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                        '& input': {
+                          py: '9px',
+                          px: 1.5,
+                          minWidth: 80,
+                          maxWidth: { xs: '100%', sm: 180 },
+                          fontWeight: locationInput ? 600 : 500,
+                          boxSizing: 'border-box',
+                        },
+                        '& input::placeholder': {
+                          color: 'rgba(255,255,255,0.5)',
+                          opacity: 1,
+                          fontSize: '0.8rem',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+              </Stack>
+
+              {/* Active filter chips row (query + skills + clear all) */}
+              {hasActiveFilters && (
+                <Stack
+                  direction="row"
+                  flexWrap="wrap"
+                  alignItems="center"
+                  gap={1}
+                  sx={{ mt: 1 }}
+                >
+                  {q.trim() && (
+                    <Chip
+                      data-testid="directory-active-filter-q"
+                      size="small"
+                      label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
+                      onDelete={() => updateUrl({ q: '' })}
+                      sx={{
+                        bgcolor: 'rgba(59,130,246,0.15)',
+                        border: '1px solid rgba(59,130,246,0.35)',
+                        color: '#93c5fd',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {primaryIndustry && (
+                    <Chip
+                      data-testid="directory-active-filter-primary-industry"
+                      size="small"
+                      label={`Industry: ${primaryIndustry}`}
+                      onDelete={() =>
+                        updateUrl({
+                          primary_industry: '',
+                          secondary_industry: '',
+                        })
+                      }
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {secondaryIndustry && (
+                    <Chip
+                      data-testid="directory-active-filter-secondary-industry"
+                      size="small"
+                      label={`Sub-industry: ${secondaryIndustry}`}
+                      onDelete={() => updateUrl({ secondary_industry: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {location && (
+                    <Chip
+                      data-testid="directory-active-filter-location"
+                      size="small"
+                      label={`Location: ${location}`}
+                      onDelete={() => updateUrl({ location: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {connectionStatus && (
+                    <Chip
+                      data-testid="directory-active-filter-connection"
+                      size="small"
+                      label={`Connection: ${CONNECTION_LABEL[connectionStatus] ?? connectionStatus}`}
+                      onDelete={() => updateUrl({ connection_status: '' })}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  )}
+                  {skills.map((s) => (
+                    <Chip
+                      key={s}
+                      data-testid={`directory-active-filter-skill-${s}`}
+                      size="small"
+                      label={s}
+                      onDelete={() =>
+                        updateUrl({
+                          skills: skills.filter((x) => x !== s).join(','),
+                        })
+                      }
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.75)',
+                        height: 28,
+                      }}
+                    />
+                  ))}
+
+                  {/* Clear all */}
+                  {hasActiveFilters && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => clearAllFilters('Filters cleared.')}
+                      sx={{
+                        color: 'rgba(255,255,255,0.4)',
+                        textTransform: 'none',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        px: 0.5,
+                        '&:hover': {
+                          color: 'rgba(255,255,255,0.7)',
+                          bgcolor: 'transparent',
+                        },
+                      }}
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </Stack>
+              )}
+            </Box>
+          </Collapse>
+        </Paper>
+
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 1.5 }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
+        <Paper
+          key={`results-toolbar-${queryCacheKey}`}
+          elevation={0}
+          data-testid="directory-results-toolbar"
+          sx={{
+            px: { xs: 1.25, sm: 1.5, md: 1.75 },
+            py: 1,
+            mb: 1,
+            borderRadius: 2,
+            bgcolor: 'rgba(10,16,28,0.72)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.25,
+            flexWrap: 'wrap',
+            position: { xs: 'static', md: 'sticky' },
+            top: { md: 8 },
+            zIndex: 2,
+            backdropFilter: 'blur(14px)',
+            animation: 'directoryResultsFade 180ms ease-out',
+            '@keyframes directoryResultsFade': {
+              from: { opacity: 0, transform: 'translateY(6px)' },
+              to: { opacity: 1, transform: 'translateY(0)' },
+            },
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                display: 'block',
+                color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.08em',
+                lineHeight: 1.2,
+              }}
+            >
+              Results
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: 'rgba(255,255,255,0.84)' }}
+            >
+              {loading && rows.length === 0
+                ? 'Loading members...'
+                : `${rows.length} ${rows.length === 1 ? 'member' : 'members'}`}
+            </Typography>
+          </Box>
+
+          {isMobileFilters ? (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<TuneIcon />}
+              onClick={() => setMobileControlsOpen((prev) => !prev)}
+              data-testid="directory-mobile-toolbar-toggle"
+              aria-expanded={mobileControlsOpen}
+              sx={{
+                ...filterChipSx,
+                minWidth: 0,
+                px: 1.5,
+              }}
+            >
+              {mobileControlsToggleLabel}
+            </Button>
+          ) : (
             <FormControl
               size="small"
-              sx={{ flexShrink: 0, minWidth: { xs: '100%', sm: 170 } }}
+              sx={{ flexShrink: 0, minWidth: { xs: '100%', sm: 190 } }}
             >
               <InputLabel
                 id="dir-sort-label"
@@ -544,15 +1135,15 @@ export const Directory = () => {
                   color: 'rgba(255,255,255,0.45)',
                   fontSize: '0.8rem',
                   top: '-2px',
-                  '&.Mui-focused': { color: '#3884D2' },
+                  '&.Mui-focused': { color: '#3b82f6' },
                   '&.MuiInputLabel-shrink': { top: 0 },
                 }}
               >
-                Sort
+                Sort results
               </InputLabel>
               <Select
                 labelId="dir-sort-label"
-                label="Sort"
+                label="Sort results"
                 value={sort}
                 onChange={(e) => updateUrl({ sort: e.target.value })}
                 MenuProps={filterSelectMenuProps}
@@ -574,318 +1165,8 @@ export const Directory = () => {
                 <MenuItem value="newest">Newest Members</MenuItem>
               </Select>
             </FormControl>
-          </Stack>
-
-          <Box data-testid="directory-filters">
-            {/* Filter controls row: dropdowns together, location on far right */}
-            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'rgba(255,255,255,0.4)',
-                  fontWeight: 600,
-                  mr: 0.25,
-                  flexShrink: 0,
-                }}
-              >
-                Filters:
-              </Typography>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 1,
-                  minWidth: 0,
-                }}
-              >
-                {/* Primary industry chip-select */}
-                <Select
-                  value={primaryIndustry}
-                  displayEmpty
-                  inputProps={{ 'aria-label': 'Primary Industry' }}
-                  renderValue={(v) => v || 'Primary Industry'}
-                  onChange={(e) => {
-                    const nextPrimary = e.target.value;
-                    const allowed = getSecondaryOptionsForPrimary(nextPrimary);
-                    updateUrl({
-                      primary_industry: nextPrimary,
-                      secondary_industry: allowed.includes(secondaryIndustry)
-                        ? secondaryIndustry
-                        : '',
-                    });
-                  }}
-                  MenuProps={filterSelectMenuProps}
-                  IconComponent={KeyboardArrowDownIcon}
-                  sx={{
-                    ...chipSelectSx,
-                    '& .MuiSelect-select': {
-                      ...chipSelectSx['& .MuiSelect-select'],
-                      fontWeight: primaryIndustry ? 600 : 500,
-                      color: primaryIndustry
-                        ? '#FFFFFF'
-                        : 'rgba(255,255,255,0.7)',
-                      minWidth: 110,
-                    },
-                    ...(primaryIndustry
-                      ? {
-                          borderColor: '#3884D2',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#3884D2 !important',
-                          },
-                        }
-                      : {}),
-                  }}
-                >
-                  <MenuItem value="">
-                    <em>Any industry</em>
-                  </MenuItem>
-                  {INDUSTRY_PRIMARY_OPTIONS.map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
-                    </MenuItem>
-                  ))}
-                </Select>
-
-                {/* Sub-industry: only show if primary is set OR already active */}
-                {primaryIndustry || showSecondaryIndustryFilter ? (
-                  <Select
-                    value={secondaryIndustry}
-                    displayEmpty
-                    inputProps={{ 'aria-label': 'Sub-industry' }}
-                    renderValue={(v) => v || 'Sub-industry'}
-                    onChange={(e) =>
-                      updateUrl({ secondary_industry: e.target.value })
-                    }
-                    MenuProps={filterSelectMenuProps}
-                    IconComponent={KeyboardArrowDownIcon}
-                    sx={{
-                      ...chipSelectSx,
-                      '& .MuiSelect-select': {
-                        ...chipSelectSx['& .MuiSelect-select'],
-                        fontWeight: secondaryIndustry ? 600 : 500,
-                        color: secondaryIndustry
-                          ? '#FFFFFF'
-                          : 'rgba(255,255,255,0.7)',
-                        minWidth: 100,
-                      },
-                      ...(secondaryIndustry
-                        ? {
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#3884D2 !important',
-                            },
-                          }
-                        : {}),
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>Any sub-industry</em>
-                    </MenuItem>
-                    {getSecondaryOptionsForPrimary(primaryIndustry).map(
-                      (opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
-                ) : (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={
-                      <AddIcon sx={{ fontSize: '0.9rem !important' }} />
-                    }
-                    onClick={() => setShowSecondaryIndustryFilter(true)}
-                    sx={filterChipSx}
-                  >
-                    Add secondary filter
-                  </Button>
-                )}
-
-                {/* Connection status chip-select */}
-                <Select
-                  value={connectionStatus}
-                  displayEmpty
-                  inputProps={{ 'aria-label': 'Connection' }}
-                  renderValue={(v) =>
-                    v ? (CONNECTION_LABEL[v] ?? v) : 'Connection'
-                  }
-                  onChange={(e) =>
-                    updateUrl({ connection_status: e.target.value })
-                  }
-                  MenuProps={filterSelectMenuProps}
-                  IconComponent={KeyboardArrowDownIcon}
-                  sx={{
-                    ...chipSelectSx,
-                    '& .MuiSelect-select': {
-                      ...chipSelectSx['& .MuiSelect-select'],
-                      fontWeight: connectionStatus ? 600 : 500,
-                      color: connectionStatus
-                        ? '#FFFFFF'
-                        : 'rgba(255,255,255,0.7)',
-                      minWidth: 95,
-                    },
-                    ...(connectionStatus
-                      ? {
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#3884D2 !important',
-                          },
-                        }
-                      : {}),
-                  }}
-                >
-                  <MenuItem value="">
-                    <em>Any</em>
-                  </MenuItem>
-                  <MenuItem value="not_connected">Not connected</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="pending_received">Pending received</MenuItem>
-                  <MenuItem value="connected">Connected</MenuItem>
-                </Select>
-              </Box>
-
-              {/* Location — pushed to the right on wider screens */}
-              <Box
-                component="form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  updateUrl({ location: locationInput });
-                }}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  ml: { md: 'auto' },
-                  width: { xs: '100%', sm: 'auto' },
-                }}
-              >
-                <TextField
-                  size="small"
-                  placeholder="Location"
-                  value={locationInput}
-                  onChange={(e) => setLocationInput(e.target.value)}
-                  onBlur={() => updateUrl({ location: locationInput })}
-                  sx={{
-                    width: { xs: '100%', sm: 'auto' },
-                    '& .MuiOutlinedInput-root': {
-                      ...chipSelectSx,
-                      height: FILTER_CONTROL_HEIGHT,
-                      minHeight: FILTER_CONTROL_HEIGHT,
-                      color: locationInput
-                        ? '#FFFFFF'
-                        : 'rgba(255,255,255,0.7)',
-                      '& fieldset': {
-                        borderColor: locationInput
-                          ? '#3884D2'
-                          : 'rgba(141,188,229,0.34)',
-                        borderWidth: '1.5px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'rgba(141,188,229,0.50)',
-                      },
-                      '&.Mui-focused fieldset': { borderColor: '#3884D2' },
-                      '& input': {
-                        py: '9px',
-                        px: 1.5,
-                        minWidth: 80,
-                        maxWidth: { xs: '100%', sm: 180 },
-                        fontWeight: locationInput ? 600 : 500,
-                        boxSizing: 'border-box',
-                      },
-                      '& input::placeholder': {
-                        color: 'rgba(255,255,255,0.5)',
-                        opacity: 1,
-                        fontSize: '0.8rem',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-            </Stack>
-
-            {/* Active filter chips row (query + skills + clear all) */}
-            {(q.trim() || skills.length > 0 || hasActiveFilters) && (
-              <Stack
-                direction="row"
-                flexWrap="wrap"
-                alignItems="center"
-                gap={1}
-                sx={{ mt: 1.25 }}
-              >
-                {q.trim() && (
-                  <Chip
-                    size="small"
-                    label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
-                    onDelete={() => updateUrl({ q: '' })}
-                    sx={{
-                      bgcolor: 'rgba(59,130,246,0.15)',
-                      border: '1px solid rgba(59,130,246,0.35)',
-                      color: '#93c5fd',
-                      height: 28,
-                    }}
-                  />
-                )}
-                {skills.map((s) => (
-                  <Chip
-                    key={s}
-                    size="small"
-                    label={s}
-                    onDelete={() =>
-                      updateUrl({
-                        skills: skills.filter((x) => x !== s).join(','),
-                      })
-                    }
-                    sx={{
-                      bgcolor: 'rgba(56,132,210,0.16)',
-                      border: '1px solid rgba(156,187,217,0.30)',
-                      color: 'rgba(255,255,255,0.75)',
-                      height: 28,
-                    }}
-                  />
-                ))}
-
-                {/* Clear all */}
-                {hasActiveFilters && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => {
-                      updateUrl({
-                        q: '',
-                        primary_industry: '',
-                        secondary_industry: '',
-                        location: '',
-                        connection_status: '',
-                        skills: '',
-                      });
-                      setShowSecondaryIndustryFilter(false);
-                    }}
-                    sx={{
-                      color: 'rgba(255,255,255,0.4)',
-                      textTransform: 'none',
-                      fontSize: '0.78rem',
-                      fontWeight: 600,
-                      px: 0.5,
-                      '&:hover': {
-                        color: 'rgba(255,255,255,0.7)',
-                        bgcolor: 'transparent',
-                      },
-                    }}
-                  >
-                    Clear all
-                  </Button>
-                )}
-              </Stack>
-            )}
-          </Box>
+          )}
         </Paper>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
 
         {/* Results */}
         {loading && rows.length === 0 ? (
@@ -894,6 +1175,7 @@ export const Directory = () => {
           </Box>
         ) : rows.length === 0 ? (
           <Paper
+            key={`results-empty-${queryCacheKey}`}
             elevation={0}
             sx={{
               py: { xs: 6, md: 8 },
@@ -901,7 +1183,8 @@ export const Directory = () => {
               textAlign: 'center',
               borderRadius: 3,
               bgcolor: 'rgba(18,22,36,0.7)',
-              border: '1px dashed rgba(156,187,217,0.22)',
+              border: '1px dashed rgba(255,255,255,0.1)',
+              animation: 'directoryResultsFade 180ms ease-out',
             }}
             data-testid="directory-empty-state"
           >
@@ -924,17 +1207,7 @@ export const Directory = () => {
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={() => {
-                    updateUrl({
-                      q: '',
-                      primary_industry: '',
-                      secondary_industry: '',
-                      location: '',
-                      connection_status: '',
-                      skills: '',
-                    });
-                    setShowSecondaryIndustryFilter(false);
-                  }}
+                  onClick={() => clearAllFilters('Filters cleared.')}
                   sx={{
                     fontWeight: 700,
                     textTransform: 'none',
@@ -953,27 +1226,14 @@ export const Directory = () => {
                   Clear filters
                 </Button>
               )}
-              <Button
-                component={RouterLink}
-                to="/join"
-                variant="contained"
-                size="large"
-                sx={{
-                  bgcolor: '#3884D2',
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  px: 4,
-                  py: 1.25,
-                  borderRadius: 2,
-                  '&:hover': { bgcolor: '#3884D2' },
-                }}
-              >
-                Join the Community
-              </Button>
             </Stack>
           </Paper>
         ) : (
-          <Stack spacing={{ xs: 1.25, md: 1.75 }}>
+          <Stack
+            key={`results-list-${queryCacheKey}`}
+            spacing={0.9}
+            sx={{ animation: 'directoryResultsFade 180ms ease-out' }}
+          >
             {rows.map((member) => (
               <DirectoryRow
                 key={member.id}

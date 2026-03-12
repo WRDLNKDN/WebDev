@@ -1,7 +1,102 @@
 import AxeBuilder from '@axe-core/playwright';
+import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
+
+async function analyzeRouteAccessibility(page: Page, selector: string) {
+  const target = page.locator(selector);
+  const targetCount = await target.count();
+
+  const builder = new AxeBuilder({ page }).withTags([
+    'wcag2a',
+    'wcag2aa',
+    'wcag21aa',
+  ]);
+
+  if (targetCount > 0) {
+    builder.include(selector);
+  }
+
+  return builder.analyze();
+}
+
+async function stubSettingsSurface(
+  page: Page,
+  options: { privacyEnabled: boolean },
+) {
+  const profile = {
+    id: '11111111-1111-4111-8111-111111111111',
+    handle: 'member',
+    display_name: 'Member',
+    status: 'approved',
+    join_reason: ['networking'],
+    participation_style: ['builder'],
+    policy_version: '1.0',
+    marketing_email_enabled: false,
+    marketing_opt_in: false,
+    marketing_push_enabled: false,
+    push_enabled: false,
+    email_notifications_enabled: true,
+  };
+
+  await page.route('**/api/**', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, data: [] }),
+    });
+  });
+
+  await page.route('**/rest/v1/**', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
+  await page.route('**/rest/v1/rpc/is_admin', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(false),
+    });
+  });
+
+  await page.route('**/rest/v1/feature_flags*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          key: 'settings_privacy_marketing_consent',
+          enabled: options.privacyEnabled,
+        },
+      ]),
+    });
+  });
+
+  await page.route('**/rest/v1/profiles*', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(profile),
+      });
+      return;
+    }
+    await route.fulfill({ status: 204, body: '' });
+  });
+}
 
 /**
  * Project route sweep accessibility (WCAG 2a/2aa/21aa).
@@ -35,10 +130,10 @@ test.describe('Accessibility - route sweep (public)', () => {
         timeout: 45_000,
       });
 
-      const results = await new AxeBuilder({ page })
-        .include(`[data-testid="${mainTestId}"]`)
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-        .analyze();
+      const results = await analyzeRouteAccessibility(
+        page,
+        `[data-testid="${mainTestId}"]`,
+      );
 
       expect(results.violations).toEqual([]);
     });
@@ -49,6 +144,12 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
   const authRoutes = [
     { path: '/feed', name: 'Feed' },
     { path: '/directory', name: 'Directory' },
+    { path: '/dashboard/settings/appearance', name: 'Settings appearance' },
+    {
+      path: '/dashboard/settings/notifications',
+      name: 'Settings notifications',
+    },
+    { path: '/dashboard/settings/privacy', name: 'Settings privacy' },
   ];
 
   for (const { path, name } of authRoutes) {
@@ -59,16 +160,19 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
       const { stubAdminRpc } = await seedSignedInSession(page.context());
       await stubAdminRpc(page);
       await stubAppSurface(page);
+      if (path.startsWith('/dashboard/settings')) {
+        await stubSettingsSurface(page, { privacyEnabled: true });
+      }
 
       await page.goto(path, { waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId('app-main')).toBeVisible({
         timeout: 45_000,
       });
 
-      const results = await new AxeBuilder({ page })
-        .include('[data-testid="app-main"]')
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-        .analyze();
+      const results = await analyzeRouteAccessibility(
+        page,
+        '[data-testid="app-main"]',
+      );
 
       expect(results.violations).toEqual([]);
     });

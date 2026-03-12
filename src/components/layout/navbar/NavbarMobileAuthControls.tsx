@@ -77,12 +77,15 @@ export const NavbarMobileAuthControls = ({
                 minHeight: 40,
                 minWidth: 'auto',
                 px: 1.25,
-                color: 'text.secondary',
+                color: 'rgba(255,255,255,0.96)',
                 textTransform: 'none',
                 fontSize: '0.9375rem',
                 touchAction: 'manipulation',
                 pointerEvents: 'auto',
-                '&:hover': { color: 'white' },
+                '&:hover': {
+                  color: 'white',
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
               }}
             >
               Join
@@ -90,7 +93,7 @@ export const NavbarMobileAuthControls = ({
           )}
           <Button
             component={RouterLink}
-            to="/join"
+            to="/signin"
             onClick={() => setDrawerOpen(false)}
             aria-label="Sign in"
             size="small"
@@ -98,12 +101,15 @@ export const NavbarMobileAuthControls = ({
               minHeight: 40,
               minWidth: 'auto',
               px: 1.25,
-              color: 'text.secondary',
+              color: 'rgba(255,255,255,0.96)',
               textTransform: 'none',
               fontSize: '0.9375rem',
               touchAction: 'manipulation',
               pointerEvents: 'auto',
-              '&:hover': { color: 'white' },
+              '&:hover': {
+                color: 'white',
+                bgcolor: 'rgba(255,255,255,0.06)',
+              },
             }}
           >
             Sign in

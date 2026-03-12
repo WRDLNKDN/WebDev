@@ -1,3 +1,4 @@
+import PaletteIcon from '@mui/icons-material/Palette';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import {
@@ -25,6 +26,11 @@ import { SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG } from '../../lib/featureFlags/
 import { GLASS_CARD } from '../../theme/candyStyles';
 
 const NAV_ITEMS = [
+  {
+    label: 'Appearance',
+    to: '/dashboard/settings/appearance',
+    icon: <PaletteIcon />,
+  },
   {
     label: 'Notifications',
     to: '/dashboard/settings/notifications',

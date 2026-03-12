@@ -120,6 +120,11 @@ export const SettingsLayout = lazy(async () => {
   return { default: m.SettingsLayout };
 });
 
+export const SettingsAppearancePage = lazy(async () => {
+  const m = await import('../../pages/dashboard/SettingsAppearancePage');
+  return { default: m.SettingsAppearancePage };
+});
+
 export const SettingsNotificationsPage = lazy(async () => {
   const m = await import('../../pages/dashboard/SettingsNotificationsPage');
   return { default: m.SettingsNotificationsPage };

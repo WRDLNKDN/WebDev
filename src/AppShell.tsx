@@ -1,4 +1,3 @@
-import { ThemeProvider } from '@mui/material';
 import { Box, CircularProgress } from '@mui/material';
 import { Suspense, useEffect, useRef } from 'react';
 import {
@@ -10,12 +9,11 @@ import {
 
 import { AppOverlayRoutes, AppRouteTree } from './app/routing/AppRouteTree';
 import { AvatarProvider } from './context/AvatarContext';
+import { AppThemeProvider } from './context/AppThemeContext';
 import { AppToastProvider } from './context/AppToastContext';
 import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
 import { JoinProvider } from './context/JoinProvider';
 import { supabase } from './lib/auth/supabaseClient';
-import theme from './theme/theme';
-
 const Loading = () => (
   <Box
     component="main"
@@ -69,7 +67,7 @@ const AppShell = () => {
   )?.backgroundLocation;
 
   return (
-    <ThemeProvider theme={theme}>
+    <AppThemeProvider>
       <AuthBoot />
 
       <AppToastProvider>
@@ -87,7 +85,7 @@ const AppShell = () => {
           </AvatarProvider>
         </JoinProvider>
       </AppToastProvider>
-    </ThemeProvider>
+    </AppThemeProvider>
   );
 };
 

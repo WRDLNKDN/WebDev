@@ -4,6 +4,23 @@ import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
+async function analyzeRouteAccessibility(page: Page, selector: string) {
+  const target = page.locator(selector);
+  const targetCount = await target.count();
+
+  const builder = new AxeBuilder({ page }).withTags([
+    'wcag2a',
+    'wcag2aa',
+    'wcag21aa',
+  ]);
+
+  if (targetCount > 0) {
+    builder.include(selector);
+  }
+
+  return builder.analyze();
+}
+
 async function stubSettingsSurface(
   page: Page,
   options: { privacyEnabled: boolean },
@@ -113,10 +130,10 @@ test.describe('Accessibility - route sweep (public)', () => {
         timeout: 45_000,
       });
 
-      const results = await new AxeBuilder({ page })
-        .include(`[data-testid="${mainTestId}"]`)
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-        .analyze();
+      const results = await analyzeRouteAccessibility(
+        page,
+        `[data-testid="${mainTestId}"]`,
+      );
 
       expect(results.violations).toEqual([]);
     });
@@ -127,6 +144,7 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
   const authRoutes = [
     { path: '/feed', name: 'Feed' },
     { path: '/directory', name: 'Directory' },
+    { path: '/dashboard/settings/appearance', name: 'Settings appearance' },
     {
       path: '/dashboard/settings/notifications',
       name: 'Settings notifications',
@@ -151,10 +169,10 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
         timeout: 45_000,
       });
 
-      const results = await new AxeBuilder({ page })
-        .include('[data-testid="app-main"]')
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-        .analyze();
+      const results = await analyzeRouteAccessibility(
+        page,
+        '[data-testid="app-main"]',
+      );
 
       expect(results.violations).toEqual([]);
     });

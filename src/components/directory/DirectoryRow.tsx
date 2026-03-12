@@ -45,11 +45,11 @@ export const DirectoryRow = ({
         p: { xs: 1.5, md: 2 },
         borderRadius: 2,
         bgcolor: CARD_BG,
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(156,187,217,0.18)',
         overflow: 'hidden',
         transition: 'border-color 140ms ease, transform 140ms ease',
         '&:hover': {
-          borderColor: 'rgba(255,255,255,0.2)',
+          borderColor: 'rgba(141,188,229,0.38)',
           transform: 'translateY(-1px)',
         },
       }}
@@ -72,7 +72,7 @@ export const DirectoryRow = ({
               width: 60,
               height: 60,
               bgcolor: 'primary.dark',
-              border: '2px solid rgba(255,255,255,0.1)',
+              border: '2px solid rgba(156,187,217,0.22)',
             }}
           />
         </Box>

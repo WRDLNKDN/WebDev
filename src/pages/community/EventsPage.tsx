@@ -201,7 +201,7 @@ export const EventsPage = () => {
             borderRadius: 4,
             bgcolor: 'rgba(30, 30, 30, 0.65)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(156,187,217,0.22)',
             mb: 4,
           }}
         >

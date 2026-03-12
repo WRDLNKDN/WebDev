@@ -85,10 +85,10 @@ export const identityStepChecking = {
 
 export const identityStepInfoBox = {
   p: 1.5,
-  bgcolor: 'rgba(255,255,255,0.06)',
+  bgcolor: 'rgba(56,132,210,0.14)',
   borderRadius: 1,
   border: '1px solid',
-  borderColor: 'rgba(255,255,255,0.12)',
+  borderColor: 'rgba(156,187,217,0.26)',
 } as const;
 
 /** OAuth security note: informational only, not button-like */
@@ -157,10 +157,10 @@ export const profileStepAlert = {
 
 export const profileStepTextField = {
   '& .MuiOutlinedInput-root': {
-    color: '#fff',
+    color: '#FFFFFF',
     bgcolor: 'rgba(0,0,0,0.3)',
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '& fieldset': { borderColor: 'rgba(141,188,229,0.38)' },
+    '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.50)' },
     '&.Mui-focused fieldset': { borderColor: '#4caf50' },
     '&.Mui-error fieldset': { borderColor: '#f44336' },
   },
@@ -201,7 +201,7 @@ export const profileStepButtonRow = {
 
 export const profileStepBackButton = {
   '&:disabled': {
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(141,188,229,0.42)',
     color: 'rgba(255,255,255,0.72)', // AAA: readable disabled state
   },
 } as const;
@@ -214,7 +214,7 @@ export const profileStepSubmitButton = {
   fontSize: '1rem',
   fontWeight: 600,
   bgcolor: '#4caf50',
-  color: '#fff',
+  color: '#FFFFFF',
   '&:hover': { bgcolor: '#45a049' },
   '&:disabled': {
     bgcolor: 'rgba(76, 175, 80, 0.35)',

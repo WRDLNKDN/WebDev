@@ -1,13 +1,12 @@
 export const FORM_ACCENT_GRADIENT =
-  'linear-gradient(90deg, #00C4CC 0%, #7D2AE8 50%, #FF22C9 100%)';
+  'linear-gradient(90deg, #3884D2 0%, #4DD166 50%, #A744C2 100%)';
 
 export const FORM_DIALOG_SX = {
-  bgcolor: '#141414',
-  backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
+  bgcolor: '#111827',
+  backgroundImage: 'linear-gradient(rgba(56,132,210,0.12), rgba(5,7,15,0))',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  color: 'white',
+  border: '1px solid rgba(156,187,217,0.26)',
+  color: '#FFFFFF',
   borderRadius: 1.5,
   position: 'relative',
   overflow: 'hidden',
@@ -26,10 +25,10 @@ export const FORM_DIALOG_SX = {
 
 export const FORM_SECTION_PANEL_SX = {
   p: { xs: 1.5, md: 1.75 },
-  border: '1px solid rgba(255,255,255,0.12)',
+  border: '1px solid rgba(156,187,217,0.26)',
   borderRadius: 1.25,
-  bgcolor: 'rgba(255,255,255,0.03)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+  bgcolor: 'rgba(56,132,210,0.08)',
+  boxShadow: 'inset 0 1px 0 rgba(141,188,229,0.12)',
 } as const;
 
 export const FORM_SECTION_HEADING_SX = {
@@ -43,41 +42,41 @@ export const FORM_SECTION_HEADING_SX = {
 
 export const FORM_OUTLINED_FIELD_SX = {
   '& .MuiOutlinedInput-root': {
-    color: '#fff',
-    bgcolor: 'rgba(255,255,255,0.04)',
+    color: '#FFFFFF',
+    bgcolor: 'rgba(56,132,210,0.10)',
     borderRadius: 1.5,
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&.Mui-focused fieldset': { borderColor: '#00C4CC' },
+    '& fieldset': { borderColor: 'rgba(156,187,217,0.30)' },
+    '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.50)' },
+    '&.Mui-focused fieldset': { borderColor: '#3884D2' },
   },
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.6)',
-    '&.Mui-focused': { color: '#00C4CC' },
+    '&.Mui-focused': { color: '#3884D2' },
   },
   '& .MuiFormHelperText-root': {
     color: 'rgba(255,255,255,0.5)',
     ml: 0,
   },
   '& .MuiInputBase-input::placeholder': {
-    color: 'rgba(255,255,255,0.25)',
+    color: 'rgba(141,188,229,0.42)',
     opacity: 1,
   },
 } as const;
 
 export const FORM_FILTER_SELECT_SX = {
   borderRadius: 2,
-  bgcolor: 'rgba(255,255,255,0.04)',
+  bgcolor: 'rgba(56,132,210,0.10)',
   color: 'rgba(255,255,255,0.85)',
   fontWeight: 600,
   fontSize: '0.875rem',
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(156,187,217,0.30)',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(141,188,229,0.50)',
   },
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#00C4CC',
+    borderColor: '#3884D2',
     borderWidth: '1.5px',
   },
   '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.45)' },

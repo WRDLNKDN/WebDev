@@ -32,7 +32,7 @@ export class RootErrorBoundary extends Component<Props, State> {
             placeItems: 'center',
             padding: '2rem',
             background: '#05070f',
-            color: '#fff',
+            color: '#FFFFFF',
           }}
         >
           <section
@@ -72,7 +72,7 @@ export class RootErrorBoundary extends Component<Props, State> {
                 borderRadius: '999px',
                 padding: '0.85rem 1.4rem',
                 background: '#ff4d4d',
-                color: '#fff',
+                color: '#FFFFFF',
                 fontWeight: 700,
                 textDecoration: 'none',
                 cursor: 'pointer',

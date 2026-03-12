@@ -46,7 +46,8 @@ export const NotFoundPage = () => {
                   fontWeight: 800,
                   letterSpacing: -1,
                   mb: 1,
-                  background: 'linear-gradient(45deg, #fff 30%, #ef5350 90%)',
+                  background:
+                    'linear-gradient(45deg, #FFFFFF 30%, #ef5350 90%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -68,7 +69,7 @@ export const NotFoundPage = () => {
                 size="large"
                 onClick={() => navigate('/dashboard')}
                 sx={{
-                  bgcolor: '#fff',
+                  bgcolor: '#FFFFFF',
                   color: '#000',
                   '&:hover': { bgcolor: '#e0e0e0' },
                 }}
@@ -80,9 +81,9 @@ export const NotFoundPage = () => {
                 size="large"
                 onClick={() => navigate('/')}
                 sx={{
-                  color: '#fff',
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  '&:hover': { borderColor: '#fff' },
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(141,188,229,0.38)',
+                  '&:hover': { borderColor: '#FFFFFF' },
                 }}
               >
                 Back to Home

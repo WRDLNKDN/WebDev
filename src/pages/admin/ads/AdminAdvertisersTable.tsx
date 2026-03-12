@@ -38,7 +38,7 @@ export const AdminAdvertisersTable = ({
 }: Props) => (
   <Table
     size="small"
-    sx={{ '& td, & th': { borderColor: 'rgba(255,255,255,0.12)' } }}
+    sx={{ '& td, & th': { borderColor: 'rgba(156,187,217,0.26)' } }}
   >
     <TableHead>
       <TableRow>

@@ -2,8 +2,8 @@
 
 /**
  * The "Legacy Code Revival" - Calculates text contrast using the HSP color model.
- * Input: Hex (#ffffff) or RGB/RGBA (rgba(0,0,0,0.5))
- * Output: '#ffffff' (for dark backgrounds) or '#000000' (for light backgrounds)
+ * Input: Hex (#FFFFFF) or RGB/RGBA (rgba(0,0,0,0.5))
+ * Output: '#FFFFFF' (for dark backgrounds) or '#000000' (for light backgrounds)
  */
 export const getContrastColor = (color: string): string => {
   if (!color) return '#000000';
@@ -42,5 +42,5 @@ export const getContrastColor = (color: string): string => {
   // 3. The Threshold Check
   // If brightness is < 133.5, it's dark -> return White text
   // Otherwise, it's light -> return Black text
-  return hsp < 133.5 ? '#ffffff' : '#000000';
+  return hsp < 133.5 ? '#FFFFFF' : '#000000';
 };

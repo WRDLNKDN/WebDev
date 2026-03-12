@@ -211,7 +211,7 @@ const theme = createTheme({
           },
           '&[aria-pressed="true"], &[aria-selected="true"]': {
             boxShadow: 'inset 0 0 0 2px currentColor',
-            backgroundColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: 'rgba(156,187,217,0.18)',
           },
           '&[aria-label*="close" i], &[aria-label*="delete" i], &[aria-label*="remove" i], &[aria-label*="trash" i]':
             {
@@ -227,7 +227,7 @@ const theme = createTheme({
                 'linear-gradient(180deg, rgba(56,132,210,0.2) 0%, rgba(45,111,173,0.18) 100%) !important',
               border: '1px solid rgba(141,188,229,0.28) !important',
               boxShadow:
-                '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04) !important',
+                '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26), 0 0 0 1px rgba(56,132,210,0.10) !important',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               '&::before': {
@@ -236,7 +236,7 @@ const theme = createTheme({
                 inset: 1,
                 borderRadius: '16px',
                 background:
-                  'radial-gradient(circle at 28% 24%, rgba(255,255,255,0.18), rgba(255,255,255,0.03) 45%, rgba(56,132,210,0.12) 100%)',
+                  'radial-gradient(circle at 28% 24%, rgba(141,188,229,0.34), rgba(56,132,210,0.08) 45%, rgba(56,132,210,0.12) 100%)',
                 pointerEvents: 'none',
               },
               '&::after': {
@@ -258,12 +258,12 @@ const theme = createTheme({
               },
               '&:hover': {
                 transform: 'scale(1.04)',
-                color: '#ffffff !important',
+                color: '#FFFFFF !important',
                 background:
                   'linear-gradient(180deg, rgba(141,188,229,0.24) 0%, rgba(45,111,173,0.22) 100%) !important',
                 borderColor: 'rgba(141,188,229,0.5) !important',
                 boxShadow:
-                  '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 18px rgba(141,188,229,0.2) !important',
+                  '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(156,187,217,0.32), 0 0 18px rgba(141,188,229,0.2) !important',
               },
               '&.Mui-disabled': {
                 color: 'rgba(241,245,249,0.5) !important',
@@ -325,7 +325,7 @@ const theme = createTheme({
           },
         },
         notchedOutline: {
-          borderColor: 'rgba(255, 255, 255, 0.23)',
+          borderColor: 'rgba(156,187,217,0.34)',
         },
       },
     },
@@ -409,14 +409,14 @@ const theme = createTheme({
       styleOverrides: {
         paper: {
           borderRadius: 16,
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(156,187,217,0.22)',
         },
       },
     },
     MuiMenu: {
       styleOverrides: {
         paper: {
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(156,187,217,0.22)',
           borderRadius: 8,
         },
       },
@@ -467,7 +467,7 @@ const theme = createTheme({
             paddingRight: 4,
             borderColor: 'rgba(141,188,229,0.26)',
             boxShadow:
-              '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+              '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(56,132,210,0.14)',
           },
         },
         label: { fontWeight: 500 },
@@ -482,11 +482,11 @@ const theme = createTheme({
             'linear-gradient(180deg, rgba(56,132,210,0.2) 0%, rgba(45,111,173,0.18) 100%)',
           border: '1px solid rgba(141,188,229,0.26)',
           boxShadow:
-            '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
+            '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(156,187,217,0.26)',
           transition:
             'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease',
           '&:hover': {
-            color: '#ffffff',
+            color: '#FFFFFF',
             background:
               'linear-gradient(180deg, rgba(141,188,229,0.24) 0%, rgba(45,111,173,0.2) 100%)',
             borderColor: 'rgba(141,188,229,0.42)',
@@ -574,7 +574,7 @@ const theme = createTheme({
         label: {
           color: 'rgba(255,255,255,0.92)', // AAA 7:1 on dark (was 0.70)
           '&.Mui-active': {
-            color: '#ffffff',
+            color: '#FFFFFF',
             fontWeight: 700,
           },
           '&.Mui-completed': {
@@ -604,7 +604,7 @@ const theme = createTheme({
     MuiStepConnector: {
       styleOverrides: {
         line: {
-          borderColor: 'rgba(255,255,255,0.18)',
+          borderColor: 'rgba(141,188,229,0.34)',
         },
       },
     },

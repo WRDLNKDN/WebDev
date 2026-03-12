@@ -74,7 +74,7 @@ export const WeirdlingCard = ({
             py: 4,
             px: 2,
             textAlign: 'center',
-            border: '2px dashed rgba(255,255,255,0.2)',
+            border: '2px dashed rgba(141,188,229,0.38)',
             borderRadius: 2,
             mt: 2,
           }}
@@ -104,7 +104,7 @@ export const WeirdlingCard = ({
                   height: 96,
                   borderRadius: 2,
                   objectFit: 'cover',
-                  border: '2px solid rgba(255,255,255,0.15)',
+                  border: '2px solid rgba(156,187,217,0.30)',
                 }}
               />
             )}
@@ -148,7 +148,7 @@ export const WeirdlingCard = ({
               startIcon={<EditIcon sx={{ fontSize: 14 }} />}
               onClick={onEdit}
               sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
+                borderColor: 'rgba(141,188,229,0.50)',
                 color: 'white',
                 textTransform: 'none',
               }}

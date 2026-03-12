@@ -7,7 +7,7 @@ export const ProfileStepHero = () => {
         variant="h4"
         sx={{
           fontWeight: 800,
-          color: '#fff',
+          color: '#FFFFFF',
           mb: 1,
           fontSize: { xs: '1.75rem', sm: '2.1rem' },
           letterSpacing: '-0.01em',
@@ -19,7 +19,7 @@ export const ProfileStepHero = () => {
         variant="h6"
         sx={{
           fontWeight: 700,
-          color: '#fff',
+          color: '#FFFFFF',
           mb: 1.25,
           fontSize: { xs: '1rem', sm: '1.15rem' },
         }}

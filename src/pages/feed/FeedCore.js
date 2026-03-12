@@ -1038,7 +1038,7 @@ const Feed = ({ savedMode = false }) => {
           sx: {
             mb: { xs: 2, md: 3 },
             pb: { xs: 1.5, md: 2 },
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid rgba(156,187,217,0.18)',
           },
         },
         /* @__PURE__ */ React.createElement(
@@ -1107,7 +1107,7 @@ const Feed = ({ savedMode = false }) => {
                   px: 2,
                   py: 1.5,
                   borderBottom: '1px solid',
-                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderColor: 'rgba(156,187,217,0.18)',
                 },
               },
               /* @__PURE__ */ React.createElement(
@@ -1509,14 +1509,14 @@ const Feed = ({ savedMode = false }) => {
                   p: 2,
                   mb: 2,
                   borderRadius: 2,
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(156,187,217,0.26)',
                   bgcolor: 'rgba(36,38,41,0.6)',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'background-color 0.2s, border-color 0.2s',
                   '&:hover': {
                     bgcolor: 'rgba(50,52,55,0.8)',
-                    borderColor: 'rgba(255,255,255,0.18)',
+                    borderColor: 'rgba(141,188,229,0.34)',
                   },
                 },
               },
@@ -1534,7 +1534,7 @@ const Feed = ({ savedMode = false }) => {
                     py: 1,
                     px: 2,
                     borderRadius: '9999px',
-                    bgcolor: 'rgba(255,255,255,0.06)',
+                    bgcolor: 'rgba(56,132,210,0.14)',
                     color: 'text.secondary',
                     fontSize: '0.95rem',
                   },
@@ -1695,7 +1695,7 @@ const Feed = ({ savedMode = false }) => {
           sx: {
             bgcolor: 'background.paper',
             borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(156,187,217,0.22)',
           },
         },
       },
@@ -1709,7 +1709,7 @@ const Feed = ({ savedMode = false }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid rgba(156,187,217,0.18)',
           },
         },
         /* @__PURE__ */ React.createElement(
@@ -1822,7 +1822,7 @@ const Feed = ({ savedMode = false }) => {
             sx: {
               mt: 2,
               pt: 1.5,
-              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderTop: '1px solid rgba(156,187,217,0.18)',
               flexWrap: 'wrap',
               gap: 0.5,
             },
@@ -1962,7 +1962,7 @@ const Feed = ({ savedMode = false }) => {
           sx: {
             bgcolor: 'background.paper',
             borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(156,187,217,0.22)',
           },
         },
       },
@@ -1973,7 +1973,7 @@ const Feed = ({ savedMode = false }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid rgba(156,187,217,0.18)',
             pb: 2,
           },
         },

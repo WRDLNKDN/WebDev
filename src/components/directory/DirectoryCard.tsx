@@ -32,7 +32,7 @@ export const DirectoryCard = ({
         bgcolor: CARD_BG,
         textDecoration: 'none', // Remove link underline
         color: 'inherit',
-        border: '1px solid rgba(255,255,255,0.05)',
+        border: '1px solid rgba(56,132,210,0.12)',
         transition: 'all 0.2s ease-in-out',
         display: 'block', // Ensure the whole paper is clickable
         '&:hover': {

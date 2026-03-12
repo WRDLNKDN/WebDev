@@ -131,7 +131,7 @@ export const FeedCardEngagementActions = ({
                       alignItems: 'center',
                       justifyContent: 'center',
                       bgcolor: 'rgba(12,18,29,0.92)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      border: '1px solid rgba(156,187,217,0.26)',
                       color,
                       fontSize: '0.72rem',
                     }}

@@ -57,8 +57,8 @@ export const AdminAuthCallbackHealthPanel = ({
       data-testid="admin-auth-callback-health-panel"
       sx={{
         p: 2,
-        borderColor: 'rgba(255,255,255,0.12)',
-        bgcolor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(156,187,217,0.26)',
+        bgcolor: 'rgba(56,132,210,0.08)',
       }}
     >
       <Stack
@@ -115,7 +115,7 @@ export const AdminAuthCallbackHealthPanel = ({
               <Box
                 key={row.id}
                 sx={{
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(156,187,217,0.26)',
                   borderRadius: 1.5,
                   p: 1.25,
                 }}

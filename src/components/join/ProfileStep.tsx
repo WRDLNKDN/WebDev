@@ -199,12 +199,12 @@ const ProfileStep = () => {
             sx={{
               borderWidth: 1.5,
               borderColor: 'rgba(255,255,255,0.6)',
-              color: '#fff',
+              color: '#FFFFFF',
               textTransform: 'none',
               fontWeight: 600,
               '&:hover': {
                 borderColor: 'rgba(255,255,255,0.85)',
-                bgcolor: 'rgba(255,255,255,0.08)',
+                bgcolor: 'rgba(156,187,217,0.18)',
               },
               '&.Mui-disabled': {
                 borderColor: 'rgba(255,255,255,0.35)',
@@ -238,7 +238,7 @@ const ProfileStep = () => {
               letterSpacing: '0.01em',
               bgcolor: 'transparent',
               border: '1.5px solid rgba(56,189,248,0.55)',
-              color: '#fff',
+              color: '#FFFFFF',
               backdropFilter: 'blur(8px)',
               boxShadow: '0 0 20px rgba(56,189,248,0.08)',
               transition: 'all 0.2s ease',
@@ -248,8 +248,8 @@ const ProfileStep = () => {
                 boxShadow: '0 0 28px rgba(56,189,248,0.2)',
               },
               '&.Mui-disabled': {
-                borderColor: 'rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.3)',
+                borderColor: 'rgba(156,187,217,0.26)',
+                color: 'rgba(141,188,229,0.50)',
               },
             }}
           >

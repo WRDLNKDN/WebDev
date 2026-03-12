@@ -37,7 +37,7 @@ export const AttachmentPreview = ({
         maxHeight: 220,
         borderRadius: 1,
         overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.2)',
+        border: '1px solid rgba(141,188,229,0.38)',
       }}
     >
       {isImage && signedUrl ? (

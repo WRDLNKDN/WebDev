@@ -21,11 +21,11 @@ export const PortfolioPreviewMeta = ({
             mb: 1.5,
             whiteSpace: 'pre-wrap',
             lineHeight: 1.55,
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid rgba(156,187,217,0.18)',
             borderRadius: 1,
             px: 1.25,
             py: 1,
-            bgcolor: 'rgba(255,255,255,0.02)',
+            bgcolor: 'rgba(56,132,210,0.06)',
           }}
         >
           {project.description}
@@ -40,9 +40,9 @@ export const PortfolioPreviewMeta = ({
               size="small"
               sx={{
                 borderRadius: 1,
-                bgcolor: 'rgba(255,255,255,0.08)',
+                bgcolor: 'rgba(156,187,217,0.18)',
                 color: 'text.secondary',
-                border: '1px solid rgba(255,255,255,0.16)',
+                border: '1px solid rgba(156,187,217,0.32)',
               }}
             />
           ))}

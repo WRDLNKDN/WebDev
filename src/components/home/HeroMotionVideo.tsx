@@ -57,7 +57,7 @@ export const HeroMotionVideo = () => {
           maxWidth: 320,
           aspectRatio: '1',
           borderRadius: 2,
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(156,187,217,0.18)',
           background:
             'linear-gradient(135deg, rgba(66,165,245,0.15) 0%, rgba(236,64,122,0.15) 100%)',
         }}
@@ -79,7 +79,7 @@ export const HeroMotionVideo = () => {
         aspectRatio: '1',
         overflow: 'hidden',
         borderRadius: 2,
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(156,187,217,0.18)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
       }}
     >
@@ -154,8 +154,8 @@ export const HeroMotionVideo = () => {
               aria-label="Play with audio"
               sx={{
                 color: 'rgba(255,255,255,0.95)',
-                bgcolor: 'rgba(255,255,255,0.15)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
+                bgcolor: 'rgba(156,187,217,0.30)',
+                '&:hover': { bgcolor: 'rgba(141,188,229,0.42)' },
               }}
             >
               <VolumeUpIcon />

@@ -68,7 +68,7 @@ export const PostActionMenu = ({
             bgcolor: 'rgba(132,154,214,0.14)',
             border: '1px solid rgba(173,203,255,0.18)',
             boxShadow:
-              '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12)',
+              '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
             transition:
               'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
             '&::before': {
@@ -77,13 +77,13 @@ export const PostActionMenu = ({
               inset: 1,
               borderRadius: '16px',
               background:
-                'radial-gradient(circle at 30% 28%, rgba(255,255,255,0.16), rgba(255,255,255,0.02) 48%, rgba(132,154,214,0.08) 100%)',
+                'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
               pointerEvents: 'none',
             },
             '&:hover': {
               bgcolor: 'rgba(148,175,232,0.18)',
               borderColor: 'rgba(191,219,254,0.32)',
-              color: '#fff',
+              color: '#FFFFFF',
               transform: 'scale(1.04)',
             },
             '&:focus-visible': {
@@ -117,7 +117,7 @@ export const PostActionMenu = ({
               border: '1px solid rgba(125,211,252,0.82)',
               bgcolor: 'rgba(16,22,31,0.985)',
               boxShadow:
-                '0 24px 44px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
+                '0 24px 44px rgba(0,0,0,0.58), 0 0 0 1px rgba(56,132,210,0.10) inset',
               backdropFilter: 'blur(14px)',
               py: 0.85,
             },
@@ -146,7 +146,7 @@ export const PostActionMenu = ({
                 fontWeight: 600,
               },
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.06)',
+                bgcolor: 'rgba(56,132,210,0.14)',
               },
             }}
           >

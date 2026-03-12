@@ -30,7 +30,7 @@ export const PortfolioPreviewDialogHeader = ({
     <DialogTitle
       component="div"
       sx={{
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        borderBottom: '1px solid rgba(156,187,217,0.22)',
         py: 1.5,
         px: { xs: 2, md: 2.5 },
         flexShrink: 0,
@@ -60,9 +60,9 @@ export const PortfolioPreviewDialogHeader = ({
             size="small"
             sx={{
               borderRadius: 1,
-              bgcolor: 'rgba(255,255,255,0.08)',
+              bgcolor: 'rgba(156,187,217,0.18)',
               color: 'text.secondary',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid rgba(156,187,217,0.26)',
               fontWeight: 500,
             }}
           />
@@ -79,7 +79,7 @@ export const PortfolioPreviewDialogHeader = ({
                 aria-label="Download artifact"
                 sx={{
                   color: '#b9c3dd',
-                  border: '1px solid rgba(255,255,255,0.28)',
+                  border: '1px solid rgba(141,188,229,0.48)',
                   borderRadius: 1,
                   width: 32,
                   height: 32,
@@ -104,7 +104,7 @@ export const PortfolioPreviewDialogHeader = ({
                 aria-label="Open in new tab"
                 sx={{
                   color: '#b9c3dd',
-                  border: '1px solid rgba(255,255,255,0.28)',
+                  border: '1px solid rgba(141,188,229,0.48)',
                   borderRadius: 1,
                   width: 32,
                   height: 32,
@@ -127,7 +127,7 @@ export const PortfolioPreviewDialogHeader = ({
                   disabled
                   sx={{
                     color: 'text.disabled',
-                    border: '1px solid rgba(255,255,255,0.16)',
+                    border: '1px solid rgba(156,187,217,0.32)',
                     borderRadius: 1,
                     width: 32,
                     height: 32,
@@ -145,13 +145,13 @@ export const PortfolioPreviewDialogHeader = ({
               aria-label="Close preview"
               sx={{
                 color: '#b9c3dd',
-                border: '1px solid rgba(255,255,255,0.28)',
+                border: '1px solid rgba(141,188,229,0.48)',
                 borderRadius: 1,
                 width: 32,
                 height: 32,
                 '&:hover': {
                   color: 'white',
-                  bgcolor: 'rgba(255,255,255,0.08)',
+                  bgcolor: 'rgba(156,187,217,0.18)',
                   borderColor: 'rgba(255,255,255,0.4)',
                 },
               }}

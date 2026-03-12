@@ -183,16 +183,16 @@ const EventCardList = ({
         to={`/events/${ev.id}`}
         sx={{
           textDecoration: 'none',
-          color: '#ffffff',
+          color: '#FFFFFF',
           bgcolor: CARD_BG,
-          borderColor: 'rgba(255,255,255,0.08)',
+          borderColor: 'rgba(156,187,217,0.18)',
           opacity: past ? 0.85 : 1,
           borderRadius: 2,
           transition: past
             ? undefined
             : 'border-color 0.2s, background-color 0.2s',
           '&:hover': past
-            ? { opacity: 1, borderColor: 'rgba(255,255,255,0.18)' }
+            ? { opacity: 1, borderColor: 'rgba(141,188,229,0.34)' }
             : {
                 borderColor: 'primary.main',
                 bgcolor: 'rgba(40, 40, 40, 0.8)',
@@ -200,7 +200,7 @@ const EventCardList = ({
         }}
       >
         <CardContent sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={600} sx={{ color: '#ffffff' }}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: '#FFFFFF' }}>
             {ev.title}
           </Typography>
           <Stack
@@ -327,8 +327,8 @@ export const EventsContent = ({
             textAlign: 'center',
             borderRadius: 4,
             bgcolor: 'rgba(18, 18, 18, 0.8)',
-            border: '2px dashed rgba(255,255,255,0.1)',
-            color: '#ffffff',
+            border: '2px dashed rgba(156,187,217,0.22)',
+            color: '#FFFFFF',
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>

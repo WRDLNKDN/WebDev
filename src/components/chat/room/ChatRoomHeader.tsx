@@ -177,7 +177,7 @@ export const ChatRoomHeader = ({
       sx={{
         px: { xs: 1, sm: 1.5 },
         py: { xs: 1, sm: 1.5 },
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        borderBottom: '1px solid rgba(156,187,217,0.22)',
         display: 'flex',
         alignItems: 'center',
         gap: { xs: 0.5, sm: 1 },

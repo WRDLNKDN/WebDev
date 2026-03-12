@@ -52,7 +52,7 @@ export const DirectoryFilters = ({
       borderRadius: 3,
       bgcolor: 'rgba(18,22,36,0.85)',
       backdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255,255,255,0.09)',
+      border: '1px solid rgba(156,187,217,0.20)',
       mb: { xs: 2, md: 3 },
     }}
   >
@@ -96,18 +96,18 @@ export const DirectoryFilters = ({
           '& .MuiOutlinedInput-root': {
             height: FILTER_CONTROL_HEIGHT,
             minHeight: FILTER_CONTROL_HEIGHT,
-            bgcolor: 'rgba(255,255,255,0.04)',
+            bgcolor: 'rgba(56,132,210,0.10)',
             borderRadius: 2,
-            color: '#fff',
-            '& fieldset': { borderColor: 'rgba(255,255,255,0.14)' },
-            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
+            color: '#FFFFFF',
+            '& fieldset': { borderColor: 'rgba(156,187,217,0.28)' },
+            '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.42)' },
             '&.Mui-focused fieldset': {
-              borderColor: '#3b82f6',
+              borderColor: '#3884D2',
               borderWidth: '1.5px',
             },
           },
           '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(141,188,229,0.50)',
             opacity: 1,
             fontSize: '0.875rem',
           },
@@ -124,7 +124,7 @@ export const DirectoryFilters = ({
             color: 'rgba(255,255,255,0.45)',
             fontSize: '0.8rem',
             top: '-2px',
-            '&.Mui-focused': { color: '#3b82f6' },
+            '&.Mui-focused': { color: '#3884D2' },
             '&.MuiInputLabel-shrink': { top: 0 },
           }}
         >
@@ -140,18 +140,18 @@ export const DirectoryFilters = ({
             height: FILTER_CONTROL_HEIGHT,
             minHeight: FILTER_CONTROL_HEIGHT,
             borderRadius: 2,
-            bgcolor: 'rgba(255,255,255,0.04)',
+            bgcolor: 'rgba(56,132,210,0.10)',
             color: 'rgba(255,255,255,0.85)',
             fontWeight: 600,
             fontSize: '0.875rem',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'rgba(255,255,255,0.14)',
+              borderColor: 'rgba(156,187,217,0.28)',
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'rgba(255,255,255,0.25)',
+              borderColor: 'rgba(141,188,229,0.42)',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#3b82f6',
+              borderColor: '#3884D2',
               borderWidth: '1.5px',
             },
             '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.45)' },

@@ -152,11 +152,11 @@ export const EditProfileDetailsSection = ({
           disabled={busy}
           sx={{
             textTransform: 'none',
-            borderColor: 'rgba(255,255,255,0.2)',
+            borderColor: 'rgba(141,188,229,0.38)',
             color: 'white',
             '&:hover': {
               borderColor: PURPLE_ACCENT,
-              bgcolor: 'rgba(255,255,255,0.04)',
+              bgcolor: 'rgba(56,132,210,0.10)',
             },
           }}
         >
@@ -219,7 +219,7 @@ export const EditProfileDetailsSection = ({
         backdropFilter: 'blur(10px)',
       }}
     >
-      <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
+      <Divider sx={{ mb: 2, borderColor: 'rgba(156,187,217,0.18)' }} />
       <Stack direction="row" spacing={2} justifyContent="flex-end">
         <Button
           onClick={onClose}
@@ -228,7 +228,7 @@ export const EditProfileDetailsSection = ({
             color: 'rgba(255,255,255,0.7)',
             textTransform: 'none',
             fontSize: '0.95rem',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+            '&:hover': { bgcolor: 'rgba(56,132,210,0.12)' },
           }}
         >
           Cancel

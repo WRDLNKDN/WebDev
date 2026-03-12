@@ -147,7 +147,7 @@ export const WeirdlingCarousel = ({
             py: 6,
             px: 2,
             textAlign: 'center',
-            border: '2px dashed rgba(255,255,255,0.2)',
+            border: '2px dashed rgba(141,188,229,0.38)',
             borderRadius: 2,
           }}
         >
@@ -178,7 +178,7 @@ export const WeirdlingCarousel = ({
               p: 2,
               borderRadius: 3,
               bgcolor: 'rgba(0,0,0,0.25)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(156,187,217,0.18)',
             }}
           >
             {onRemove && current && (
@@ -209,7 +209,7 @@ export const WeirdlingCarousel = ({
                   height: { xs: 80, sm: 120 },
                   borderRadius: 3,
                   objectFit: 'cover',
-                  border: '2px solid rgba(255,255,255,0.15)',
+                  border: '2px solid rgba(156,187,217,0.30)',
                   flexShrink: 0,
                 }}
               />
@@ -242,7 +242,7 @@ export const WeirdlingCarousel = ({
                 sx={{
                   alignSelf: 'flex-start',
                   mt: 1,
-                  borderColor: 'rgba(255,255,255,0.3)',
+                  borderColor: 'rgba(141,188,229,0.50)',
                   color: 'white',
                 }}
               >

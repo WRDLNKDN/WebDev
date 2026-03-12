@@ -29,8 +29,8 @@ type ShareProfileDialogProps = {
 const SHARE_DIALOG_SX = {
   bgcolor: '#141414',
   backgroundImage:
-    'linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0))',
-  border: '1px solid rgba(255,255,255,0.1)',
+    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
+  border: '1px solid rgba(156,187,217,0.22)',
   color: 'white',
   borderRadius: 3,
   boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
@@ -69,7 +69,7 @@ export const ShareProfileDialog = ({
         </IconButton>
       </Tooltip>
     </DialogTitle>
-    <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+    <DialogContent dividers sx={{ borderColor: 'rgba(156,187,217,0.18)' }}>
       <Stack spacing={2.5}>
         <Typography variant="body2" color="text.secondary">
           Anyone with this link can view a read-only version of your profile.

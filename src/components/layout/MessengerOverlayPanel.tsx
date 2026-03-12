@@ -89,7 +89,7 @@ export const MessengerOverlayPanel = ({
           ? `calc(100vh - ${drawerTopMobile}px)`
           : `calc(100vh - ${drawerTopDesktop}px)`,
         zIndex: 1300,
-        borderLeft: '1px solid rgba(255,255,255,0.12)',
+        borderLeft: '1px solid rgba(156,187,217,0.26)',
         borderRadius: '8px 0 0 8px',
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -114,7 +114,7 @@ export const MessengerOverlayPanel = ({
         <Box
           sx={{
             p: 1.5,
-            borderBottom: '1px solid rgba(255,255,255,0.12)',
+            borderBottom: '1px solid rgba(156,187,217,0.26)',
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -290,7 +290,7 @@ export const MessengerOverlayPanel = ({
                   key={r.id}
                   onClick={() => onOpenRoom(r.id)}
                   sx={{
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    borderBottom: '1px solid rgba(56,132,210,0.14)',
                     display: 'flex',
                     alignItems: 'center',
                   }}

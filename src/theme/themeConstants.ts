@@ -5,7 +5,7 @@ export const BRAND_COLORS = {
   green: '#4DD166',
   blue: '#3884D2',
   purple: '#A744C2',
-  white: '#ffffff',
+  white: '#FFFFFF',
   black: '#000000',
 } as const;
 

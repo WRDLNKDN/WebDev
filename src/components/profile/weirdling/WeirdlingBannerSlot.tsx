@@ -51,7 +51,7 @@ export const WeirdlingBannerSlot = ({
           p: 1.5,
           borderRadius: 2,
           bgcolor: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(156,187,217,0.18)',
         }}
       >
         {onRemove && current && (
@@ -80,7 +80,7 @@ export const WeirdlingBannerSlot = ({
               height: 64,
               borderRadius: 2,
               objectFit: 'cover',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid rgba(156,187,217,0.30)',
               flexShrink: 0,
             }}
           />
@@ -107,7 +107,7 @@ export const WeirdlingBannerSlot = ({
               py: 0.25,
               px: 1,
               minWidth: 0,
-              borderColor: 'rgba(255,255,255,0.3)',
+              borderColor: 'rgba(141,188,229,0.50)',
               color: 'white',
               '& .MuiButton-startIcon': { mr: 0.5 },
             }}
@@ -147,7 +147,7 @@ export const WeirdlingBannerSlot = ({
                 bgcolor:
                   i === currentIndex % count
                     ? 'primary.main'
-                    : 'rgba(255,255,255,0.3)',
+                    : 'rgba(141,188,229,0.50)',
                 '&:hover': {
                   bgcolor:
                     i === currentIndex % count

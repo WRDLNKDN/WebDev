@@ -226,7 +226,7 @@ test.describe('Feed reaction picker', () => {
     const laughButton = page.getByRole('button', { name: 'Laugh' });
     const surprisedButton = page.getByRole('button', { name: 'Surprised' });
     const prayerButton = page.getByRole('button', { name: 'Prayer Hands' });
-    const sadButton = page.getByRole('button', { name: 'Sad' });
+    const rageButton = page.getByRole('button', { name: 'Rage' });
 
     await reactButton.click();
     await expect(laughButton).toBeVisible({ timeout: 1000 });
@@ -238,6 +238,11 @@ test.describe('Feed reaction picker', () => {
     await expect(prayerButton).toContainText('🙏');
     await laughButton.click();
     await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(originalCard.getByText('4 reactions')).toBeVisible();
+    await expect(originalCard.getByLabel('React')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     await saveButton.click();
     await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
@@ -260,11 +265,12 @@ test.describe('Feed reaction picker', () => {
     await expect(laughButton).toBeHidden({ timeout: 1500 });
 
     await reactButton.click();
-    await expect(sadButton).toBeVisible({ timeout: 1000 });
+    await expect(rageButton).toBeVisible({ timeout: 1000 });
     await page.waitForTimeout(700);
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
-    await sadButton.click();
-    await expect(sadButton).toBeHidden({ timeout: 1500 });
+    await rageButton.click();
+    await expect(rageButton).toBeHidden({ timeout: 1500 });
+    await expect(originalCard.getByText('4 reactions')).toBeVisible();
     expect(submittedReactions).toEqual(['laughing', 'rage']);
   });
 });

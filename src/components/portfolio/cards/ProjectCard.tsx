@@ -9,8 +9,13 @@ import type { SxProps, Theme } from '@mui/material';
 import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import { getLinkType } from '../../../lib/portfolio/linkUtils';
+import {
+  getProjectPreviewFallbackLabel,
+  getProjectPreviewMediaUrl,
+} from '../../../lib/portfolio/projectPreview';
 import { CANDY_BLUEY } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
 
@@ -80,11 +85,8 @@ export const ProjectCard = ({
       return null;
     }
   })();
-  // Step 2 + Step 3: manual image > server-generated thumbnail > image URL > fallback
-  const hasManualImage = Boolean(project.image_url);
-  const thumbnailUrl = hasManualImage
-    ? project.image_url
-    : project.thumbnail_url || (resolvedType === 'image' ? url : null);
+  const thumbnailUrl = getProjectPreviewMediaUrl(project);
+  const fallbackLabel = getProjectPreviewFallbackLabel(project);
   const ownerActionSx = {
     bgcolor: 'transparent',
     color: '#b9c3dd',
@@ -184,13 +186,14 @@ export const ProjectCard = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: 'rgba(0,0,0,0.2)',
             borderBottom: '1px solid rgba(156,187,217,0.18)',
           }}
         >
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            No image
-          </Typography>
+          <PortfolioPreviewFallback
+            project={project}
+            label={fallbackLabel}
+            compact
+          />
         </Box>
       ) : null}
 

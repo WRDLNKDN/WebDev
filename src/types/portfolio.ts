@@ -37,3 +37,8 @@ export type NewProject = {
   tech_stack: string[];
   is_highlighted: boolean;
 };
+
+export type ProjectUploadFiles = {
+  sourceFile?: File;
+  thumbnailFile?: File;
+};

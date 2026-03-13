@@ -1,11 +1,13 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
+import {
+  getProjectPreviewFallbackLabel,
+  getProjectPreviewMediaUrl,
+} from '../../../lib/portfolio/projectPreview';
 import type { PortfolioItem } from '../../../types/portfolio';
-
-const getPreviewMediaUrl = (project: PortfolioItem): string | null =>
-  project.image_url || project.thumbnail_url || null;
 
 const isExternalUrl = (url: string): boolean => {
   const trimmed = url.trim();
@@ -25,7 +27,8 @@ export const PortfolioHighlightSlide = ({
   activeIndex,
   onOpenPreview,
 }: PortfolioHighlightSlideProps) => {
-  const previewMediaUrl = getPreviewMediaUrl(project);
+  const previewMediaUrl = getProjectPreviewMediaUrl(project);
+  const fallbackLabel = getProjectPreviewFallbackLabel(project);
   const projectUrl = project.project_url?.trim() ?? '';
   const categories = getProjectDisplayCategories(project.tech_stack);
 
@@ -79,19 +82,7 @@ export const PortfolioHighlightSlide = ({
               sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <Stack
-              alignItems="center"
-              justifyContent="center"
-              sx={{
-                width: '100%',
-                height: '100%',
-                px: 3,
-                textAlign: 'center',
-                color: 'text.secondary',
-              }}
-            >
-              <Typography variant="body2">Preview media unavailable</Typography>
-            </Stack>
+            <PortfolioPreviewFallback project={project} label={fallbackLabel} />
           )}
         </Box>
 

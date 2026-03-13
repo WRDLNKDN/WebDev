@@ -2,11 +2,19 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
+  invokePortfolioThumbnailGeneration,
+  uploadPublicProjectAsset,
+} from '../../lib/portfolio/projectMedia';
+import {
   getPortfolioUrlSafetyError,
   sanitizePortfolioUrlInput,
 } from '../../lib/portfolio/linkValidation';
 import { toMessage } from '../../lib/utils/errors';
-import type { NewProject, PortfolioItem } from '../../types/portfolio';
+import type {
+  NewProject,
+  PortfolioItem,
+  ProjectUploadFiles,
+} from '../../types/portfolio';
 import { isExternalProjectUrl } from './useProfileHelpers';
 
 type Params = {
@@ -48,19 +56,13 @@ export const toggleProjectHighlightItem = async ({
 export const updateProjectItem = async ({
   projectId,
   updates,
-  imageFile,
+  files,
   setProjects,
 }: {
   projectId: string;
   updates: NewProject;
-  imageFile?: File;
+  files?: ProjectUploadFiles;
 } & Params) => {
-  const url = sanitizePortfolioUrlInput(updates.project_url ?? '');
-  if (!url) throw new Error('View project URL is required');
-  if (!isExternalProjectUrl(url)) {
-    throw new Error('Project URL must be an external URL (e.g. https://...).');
-  }
-
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -68,26 +70,40 @@ export const updateProjectItem = async ({
     throw new Error('You need to sign in to update a project.');
   }
 
-  let finalImageUrl = updates.image_url;
-  if (imageFile) {
-    const fileExt = imageFile.name.split('.').pop();
-    const fileName = `project-${Date.now()}.${fileExt}`;
-    const filePath = `${session.user.id}/${fileName}`;
+  const sourceFile = files?.sourceFile;
+  const thumbnailFile = files?.thumbnailFile;
 
-    const { error: uploadError } = await supabase.storage
-      .from('project-images')
-      .upload(filePath, imageFile);
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('project-images').getPublicUrl(filePath);
-    finalImageUrl = publicUrl;
+  let projectUrlTrimmed = sanitizePortfolioUrlInput(updates.project_url);
+  if (sourceFile) {
+    projectUrlTrimmed = await uploadPublicProjectAsset({
+      userId: session.user.id,
+      file: sourceFile,
+      bucket: 'project-sources',
+      prefix: 'project-source',
+    });
+  }
+  if (!projectUrlTrimmed) {
+    throw new Error('Choose a project source file or enter a Project URL.');
+  }
+  if (!sourceFile && !isExternalProjectUrl(projectUrlTrimmed)) {
+    throw new Error('Project URL must be an external URL (e.g. https://...).');
   }
 
-  const projectUrlTrimmed = sanitizePortfolioUrlInput(updates.project_url);
-  const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
-  if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  let finalImageUrl =
+    sanitizePortfolioUrlInput(updates.image_url ?? '') || null;
+  if (thumbnailFile) {
+    finalImageUrl = await uploadPublicProjectAsset({
+      userId: session.user.id,
+      file: thumbnailFile,
+      bucket: 'project-images',
+      prefix: 'project-thumbnail',
+    });
+  }
+
+  if (!sourceFile) {
+    const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
+    if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  }
 
   const linkType = getLinkType(projectUrlTrimmed);
   const normalizedUrl =
@@ -129,9 +145,18 @@ export const updateProjectItem = async ({
 
   if (updateError) throw new Error(toMessage(updateError));
 
+  let finalRow = data as PortfolioItem;
+  if (thumbnailStatus === 'pending') {
+    await invokePortfolioThumbnailGeneration();
+    const { data: refreshed } = await supabase
+      .from('portfolio_items')
+      .select('*')
+      .eq('id', projectId)
+      .maybeSingle();
+    if (refreshed) finalRow = refreshed as PortfolioItem;
+  }
+
   setProjects((prev) =>
-    prev.map((project) =>
-      project.id === projectId ? (data as PortfolioItem) : project,
-    ),
+    prev.map((project) => (project.id === projectId ? finalRow : project)),
   );
 };

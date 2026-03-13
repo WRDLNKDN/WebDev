@@ -17,7 +17,11 @@ import type {
   NerdCreds,
   SocialLink,
 } from '../../types/profile';
-import type { NewProject, PortfolioItem } from '../../types/portfolio';
+import type {
+  NewProject,
+  PortfolioItem,
+  ProjectUploadFiles,
+} from '../../types/portfolio';
 
 type ProfileUpdatePayload = Partial<DashboardProfile> & {
   nerd_creds?: Partial<NerdCreds>;
@@ -47,7 +51,7 @@ type DashboardDialogsProps = {
   onCloseProjectDialog: () => void;
   onProjectSubmit: (
     project: NewProject,
-    file?: File,
+    files?: ProjectUploadFiles,
     projectId?: string,
   ) => Promise<void>;
   editingProject: PortfolioItem | null;

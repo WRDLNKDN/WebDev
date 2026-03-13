@@ -10,10 +10,6 @@ import { useKonamiCode } from './hooks/useKonamiCode';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
 
 const AppShell = lazy(async () => import('./AppShell'));
-const PublicHomeSurface = lazy(async () => {
-  const m = await import('./app/PublicHomeSurface');
-  return { default: m.PublicHomeSurface };
-});
 
 const Loading = () => (
   <main
@@ -78,11 +74,9 @@ const App = () => {
     return <Navigate to="/" replace />;
   }
 
-  const isPublicHome = location.pathname === '/';
-
   return (
     <Suspense fallback={<Loading />}>
-      {isPublicHome ? <PublicHomeSurface /> : <AppShell />}
+      <AppShell />
     </Suspense>
   );
 };

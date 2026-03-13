@@ -1,20 +1,20 @@
 import { expect, test } from '../fixtures';
-
 test.describe('Home hero', () => {
   test('shows the updated pre-sign-in hero hierarchy', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const landing = page.getByTestId('signed-out-landing');
 
     await expect(
       page.getByRole('heading', { name: 'WRDLNKDN', level: 1 }),
     ).toBeVisible({ timeout: 30_000 });
 
-    const pronunciation = page.getByText('(Weird Link-uh-din)');
+    const pronunciation = landing.getByText('(Weird Link-uh-din)');
     await expect(pronunciation).toBeVisible();
     await expect(pronunciation).toHaveCSS('font-style', 'italic');
 
-    await expect(page.getByText('Business, but weirder.')).toBeVisible();
+    await expect(landing.getByText('Business, but weirder.')).toBeVisible();
     await expect(
-      page.getByText('A networking space for people who think differently'),
+      landing.getByText('A networking space for people who think differently'),
     ).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Join Us' })).toBeVisible();
@@ -79,5 +79,19 @@ test.describe('Home hero', () => {
     } else {
       await expect(page.locator('video')).toHaveCount(0);
     }
+  });
+
+  test('root uses the current shared shell with header and footer chrome', async ({
+    page,
+  }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByRole('link', { name: 'Go to home' })).toBeVisible({
+      timeout: 15_000,
+    });
+    const footer = page.getByTestId('site-footer');
+    await footer.scrollIntoViewIfNeeded();
+    await expect(footer).toBeVisible();
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible();
   });
 });

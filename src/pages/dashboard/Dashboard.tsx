@@ -1045,12 +1045,12 @@ export const Dashboard = () => {
         onClose={closeProjectDialog}
         existingProjects={projects}
         existingLinkUrls={socialsArray.map((s) => s.url)}
-        onSubmit={async (project, file, projectId) => {
+        onSubmit={async (project, files, projectId) => {
           if (projectId) {
-            await updateProject(projectId, project, file);
+            await updateProject(projectId, project, files);
             return;
           }
-          await addProject(project, file);
+          await addProject(project, files);
         }}
         initialProject={editingProject}
         projectId={editingProject?.id}

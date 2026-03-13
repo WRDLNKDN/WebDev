@@ -12,11 +12,20 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
+import { PortfolioPreviewFallback } from '../../components/portfolio/PortfolioPreviewFallback';
 import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
 import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/auth/supabaseClient';
-import type { NewProject, PortfolioItem } from '../../types/portfolio';
+import {
+  getProjectPreviewFallbackLabel,
+  getProjectPreviewMediaUrl,
+} from '../../lib/portfolio/projectPreview';
+import type {
+  NewProject,
+  PortfolioItem,
+  ProjectUploadFiles,
+} from '../../types/portfolio';
 
 function isExternalUrl(url: string): boolean {
   const t = url.trim();
@@ -91,11 +100,11 @@ export const ProjectPage = () => {
 
   const handleUpdate = async (
     updates: NewProject,
-    file?: File,
+    files?: ProjectUploadFiles,
     projectId?: string,
   ) => {
     if (!projectId) return;
-    await updateProject(projectId, updates, file);
+    await updateProject(projectId, updates, files);
     setEditOpen(false);
     // Refresh project
     const { data } = await supabase
@@ -110,6 +119,10 @@ export const ProjectPage = () => {
     session?.user?.id && project && project.owner_id === session.user.id,
   );
   const projectUrl = project?.project_url?.trim() ?? '';
+  const previewMediaUrl = project ? getProjectPreviewMediaUrl(project) : null;
+  const previewFallbackLabel = project
+    ? getProjectPreviewFallbackLabel(project)
+    : 'Project preview';
 
   if (loading) {
     return (
@@ -182,20 +195,38 @@ export const ProjectPage = () => {
           )}
         </Box>
 
-        {project.image_url && (
-          <Box
-            component="img"
-            src={project.image_url}
-            alt={project.title}
-            sx={{
-              width: '100%',
-              maxHeight: 360,
-              objectFit: 'cover',
-              borderRadius: 2,
-              mb: 3,
-            }}
-          />
-        )}
+        <Box
+          sx={{
+            width: '100%',
+            minHeight: 220,
+            maxHeight: 360,
+            borderRadius: 2,
+            mb: 3,
+            overflow: 'hidden',
+            border: '1px solid rgba(156,187,217,0.18)',
+            bgcolor: 'rgba(56,132,210,0.08)',
+          }}
+        >
+          {previewMediaUrl ? (
+            <Box
+              component="img"
+              src={previewMediaUrl}
+              alt={project.title}
+              sx={{
+                width: '100%',
+                height: '100%',
+                minHeight: 220,
+                maxHeight: 360,
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <PortfolioPreviewFallback
+              project={project}
+              label={previewFallbackLabel}
+            />
+          )}
+        </Box>
 
         <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mb: 3 }}>
           {project.description ?? ''}

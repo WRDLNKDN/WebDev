@@ -19,8 +19,8 @@ describe('REACTION_OPTIONS', () => {
     expect(laughing?.emoji).toBe('😂');
     expect(inspiration?.label).toBe('Surprised');
     expect(inspiration?.emoji).toBe('😮');
-    expect(rage?.label).toBe('Sad');
-    expect(rage?.emoji).toBe('😢');
+    expect(rage?.label).toBe('Rage');
+    expect(rage?.emoji).toBe('😡');
   });
 
   it('keeps chat and feed reaction trays aligned', () => {

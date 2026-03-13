@@ -203,6 +203,7 @@ export const FeedCard = ({
           children:
             item.kind === 'repost' ? (
               <FeedCardRepostMeta
+                repostDisplayName={displayName}
                 repostOriginalHandle={repostOriginalHandle}
                 repostOriginalName={repostOriginalName}
                 repostOriginalId={repostOriginalId}

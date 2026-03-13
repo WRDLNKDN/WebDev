@@ -13,6 +13,7 @@ import {
   deleteFeedPost,
   editFeedComment,
   editFeedPost,
+  setReaction,
 } from '../../lib/api/feedsApi';
 
 describe('feedsApi mutation routes', () => {
@@ -87,6 +88,61 @@ describe('feedsApi mutation routes', () => {
       { method: 'DELETE' },
       expect.objectContaining({
         accessToken: 'token-4',
+      }),
+    );
+  });
+
+  it('posts extended feed reactions with the expected payload types', async () => {
+    authedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await setReaction({
+      postId: 'post-3',
+      type: 'laughing',
+      accessToken: 'token-5',
+    });
+
+    await setReaction({
+      postId: 'post-4',
+      type: 'rage',
+      accessToken: 'token-6',
+    });
+
+    expect(authedFetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/feeds',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: 'reaction',
+          parent_id: 'post-3',
+          type: 'laughing',
+        }),
+      },
+      expect.objectContaining({
+        accessToken: 'token-5',
+        includeJsonContentType: true,
+      }),
+    );
+
+    expect(authedFetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/feeds',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: 'reaction',
+          parent_id: 'post-4',
+          type: 'rage',
+        }),
+      },
+      expect.objectContaining({
+        accessToken: 'token-6',
+        includeJsonContentType: true,
       }),
     );
   });

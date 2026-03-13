@@ -20,8 +20,8 @@ export const DirectoryEmptyState = ({
   const title = hasActiveFilters ? 'No members found' : 'No members yet';
   const description = hasActiveFilters
     ? isSearchActive
-      ? 'No members match your search or filters right now. Try broadening your search or clearing one of the filters.'
-      : 'No members match these filters right now. Try widening your search or removing a filter.'
+      ? 'No members match your filters right now. Try broadening your search or clearing one of the filters.'
+      : 'No members match your filters right now. Try widening your search or removing a filter.'
     : 'Try searching by name, skills, industry, or location, or check back later as more members join the directory.';
   const suggestions = hasActiveFilters
     ? [

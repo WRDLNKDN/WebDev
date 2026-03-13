@@ -43,7 +43,16 @@ export const FeedCardCommentsComposer = ({
   submittingComment,
 }: FeedCardCommentsComposerProps) => (
   <>
-    <Stack spacing={1} sx={{ mt: 1 }}>
+    <Stack
+      spacing={1.1}
+      sx={{
+        mt: 1.25,
+        p: { xs: 1, sm: 1.15 },
+        borderRadius: 2,
+        border: '1px solid rgba(156,187,217,0.18)',
+        bgcolor: 'rgba(8,13,22,0.52)',
+      }}
+    >
       {commentSelectedGif && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box
@@ -66,9 +75,16 @@ export const FeedCardCommentsComposer = ({
           </IconButton>
         </Box>
       )}
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        alignItems={{ xs: 'stretch', sm: 'flex-end' }}
+      >
         <TextField
           size="small"
+          multiline
+          minRows={2}
+          maxRows={6}
           placeholder="Add a comment…"
           value={commentDraft}
           onChange={(e) => setCommentDraft(e.target.value)}
@@ -78,48 +94,71 @@ export const FeedCardCommentsComposer = ({
               void onSubmit();
             }
           }}
-          sx={{ flex: 1 }}
+          sx={{
+            flex: 1,
+            width: '100%',
+            '& .MuiInputBase-root': {
+              alignItems: 'flex-start',
+              overflow: 'hidden',
+            },
+            '& textarea': {
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+            },
+          }}
         />
-        <Tooltip title="Attach file (coming soon)">
-          <span>
+        <Stack
+          direction="row"
+          spacing={0.25}
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: 0 }}
+        >
+          <Stack direction="row" spacing={0.25} alignItems="center">
+            <Tooltip title="Attach file (coming soon)">
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label="Attach file"
+                  disabled
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <AttachFileIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
             <IconButton
               size="small"
-              aria-label="Attach file"
-              disabled
+              aria-label="Add emoji"
+              onClick={(e: MouseEvent<HTMLElement>) =>
+                setCommentEmojiAnchor(e.currentTarget)
+              }
               sx={{ color: 'text.secondary' }}
             >
-              <AttachFileIcon fontSize="small" />
+              <EmojiEmotionsOutlinedIcon fontSize="small" />
             </IconButton>
-          </span>
-        </Tooltip>
-        <IconButton
-          size="small"
-          aria-label="Add emoji"
-          onClick={(e: MouseEvent<HTMLElement>) =>
-            setCommentEmojiAnchor(e.currentTarget)
-          }
-          sx={{ color: 'text.secondary' }}
-        >
-          <EmojiEmotionsOutlinedIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          aria-label="Add GIF"
-          onClick={() => setCommentGifPickerOpen(true)}
-          sx={{ color: 'text.secondary' }}
-        >
-          <GifBoxIcon fontSize="small" />
-        </IconButton>
-        <Button
-          size="small"
-          variant="contained"
-          onClick={() => void onSubmit()}
-          disabled={
-            (!commentDraft.trim() && !commentSelectedGif) || submittingComment
-          }
-        >
-          Post
-        </Button>
+            <IconButton
+              size="small"
+              aria-label="Add GIF"
+              onClick={() => setCommentGifPickerOpen(true)}
+              sx={{ color: 'text.secondary' }}
+            >
+              <GifBoxIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => void onSubmit()}
+            disabled={
+              (!commentDraft.trim() && !commentSelectedGif) || submittingComment
+            }
+            sx={{ minWidth: { xs: 88, sm: 72 } }}
+          >
+            Post
+          </Button>
+        </Stack>
       </Stack>
     </Stack>
     <GifPicker.GifPickerDialog

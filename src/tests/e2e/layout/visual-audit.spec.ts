@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { expect, test, type Route } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
@@ -49,10 +50,20 @@ async function stabilizePage(page: import('@playwright/test').Page) {
   });
 }
 
+function skipWhenSnapshotMissing(
+  testInfo: import('@playwright/test').TestInfo,
+  fileName: string,
+) {
+  test.skip(
+    !existsSync(testInfo.snapshotPath(fileName)),
+    `Missing visual baseline for ${fileName} on this platform.`,
+  );
+}
+
 test.describe('Visual audit baselines', () => {
-  test.beforeEach(async ({ page, browserName, context }) => {
+  test.beforeEach(async ({ page, context }, testInfo) => {
     test.skip(
-      browserName !== 'chromium',
+      testInfo.project.name !== 'chromium',
       'Visual baselines are kept in Chromium.',
     );
     const { stubAdminRpc } = await seedSignedInSession(context, {
@@ -63,7 +74,8 @@ test.describe('Visual audit baselines', () => {
     await stabilizePage(page);
   });
 
-  test('dashboard overview baseline', async ({ page }) => {
+  test('dashboard overview baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'dashboard-overview.png');
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     const appMain = page.getByTestId('app-main');
     await expect(appMain).toBeVisible({ timeout: 25_000 });
@@ -75,7 +87,8 @@ test.describe('Visual audit baselines', () => {
     });
   });
 
-  test('feed card baseline', async ({ page }) => {
+  test('feed card baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'feed-card-baseline.png');
     const fulfillFeedList = async (route: Route) => {
       await route.fulfill({
         status: 200,
@@ -107,7 +120,8 @@ test.describe('Visual audit baselines', () => {
     });
   });
 
-  test('feed mobile baseline', async ({ page }) => {
+  test('feed mobile baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'feed-card-mobile.png');
     const fulfillFeedList = async (route: Route) => {
       await route.fulfill({
         status: 200,
@@ -140,7 +154,8 @@ test.describe('Visual audit baselines', () => {
     });
   });
 
-  test('notifications request baseline', async ({ page }) => {
+  test('notifications request baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'dashboard-notifications-request.png');
     await page.route('**/rest/v1/notifications*', async (route) => {
       await route.fulfill({
         status: 200,
@@ -211,7 +226,8 @@ test.describe('Visual audit baselines', () => {
     );
   });
 
-  test('dashboard share dialog baseline', async ({ page }) => {
+  test('dashboard share dialog baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'dashboard-share-dialog.png');
     await page.route(
       '**/rest/v1/rpc/get_or_create_profile_share_token*',
       async (route) => {
@@ -245,7 +261,8 @@ test.describe('Visual audit baselines', () => {
     });
   });
 
-  test('dashboard links add button baseline', async ({ page }) => {
+  test('dashboard links add button baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'dashboard-links-add-button.png');
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     const linksSection = page.getByTestId('dashboard-links-section');
     await expect(linksSection).toBeVisible({
@@ -262,7 +279,8 @@ test.describe('Visual audit baselines', () => {
     });
   });
 
-  test('public profile baseline', async ({ page }) => {
+  test('public profile baseline', async ({ page }, testInfo) => {
+    skipWhenSnapshotMissing(testInfo, 'public-profile-baseline.png');
     await page.route('**/rest/v1/portfolio_items*', async (route) => {
       await route.fulfill({
         status: 200,

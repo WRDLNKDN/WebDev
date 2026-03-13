@@ -11,14 +11,15 @@ import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
+const BUMPER_WEIRDLING_IMAGE = '/assets/og_weirdlings/weirdling_1.png';
 
 const PHONETIC = '(Weird Link-uh-din)';
 const TAGLINE = 'Business, but weirder';
 const TYPING_MS = 45;
 const POP_DELAY_MS = 220;
 const TAGLINE_START_MS = 450;
-const POST_JOIN_PLAYBACK_RATE = 2;
-const DEFAULT_PLAYBACK_RATE = 1.75;
+const POST_JOIN_PLAYBACK_RATE = 2.15;
+const DEFAULT_PLAYBACK_RATE = 1.9;
 
 export type BumperProps = {
   /** Run typing + pop on mount (default true) */
@@ -272,7 +273,7 @@ export const Bumper = ({
         {/* Weirdling character (centered under the words) */}
         <Box
           component="img"
-          src="/assets/og_weirdlings/weirdling_1.png"
+          src={BUMPER_WEIRDLING_IMAGE}
           alt=""
           aria-hidden
           sx={{

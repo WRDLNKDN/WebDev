@@ -1,8 +1,5 @@
-import {
-  CHAT_ALLOWED_EXTENSIONS,
-  CHAT_ALLOWED_MIME,
-  CHAT_MAX_FILE_BYTES,
-} from '../../types/chat';
+import { CHAT_ALLOWED_EXTENSIONS, CHAT_ALLOWED_MIME } from '../../types/chat';
+import { getChatAttachmentProcessingPlan } from './attachmentProcessing';
 
 const EXTENSION_TO_MIME: Record<string, (typeof CHAT_ALLOWED_MIME)[number]> = {
   '.jpg': 'image/jpeg',
@@ -40,12 +37,16 @@ export function getChatAttachmentRejectionReason(file: {
   type?: string | null;
   name: string;
 }): string | null {
-  if (file.size > CHAT_MAX_FILE_BYTES) {
-    return 'File must be 2MB or smaller.';
-  }
   const normalized = normalizeChatAttachmentMime(file);
   if (!normalized) {
     return 'Unsupported type. Allowed: JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, TXT.';
+  }
+  const plan = getChatAttachmentProcessingPlan({
+    size: file.size,
+    type: normalized,
+  });
+  if (!plan.accepted) {
+    return plan.reason;
   }
   return null;
 }

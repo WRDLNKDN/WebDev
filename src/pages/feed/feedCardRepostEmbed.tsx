@@ -31,8 +31,10 @@ export const FeedCardRepostEmbed = ({
         mt: 1.35,
         borderRadius: 2.25,
         border: '1px solid rgba(156,187,217,0.26)',
-        bgcolor: 'rgba(7,12,21,0.7)',
-        boxShadow: '0 0 0 1px rgba(56,132,210,0.04) inset',
+        borderLeft: '3px solid rgba(141,188,229,0.42)',
+        bgcolor: 'rgba(7,12,21,0.78)',
+        boxShadow:
+          '0 0 0 1px rgba(56,132,210,0.05) inset, 0 16px 28px rgba(0,0,0,0.16)',
         px: { xs: 1.15, sm: 1.35 },
         py: { xs: 1.1, sm: 1.25 },
       }}

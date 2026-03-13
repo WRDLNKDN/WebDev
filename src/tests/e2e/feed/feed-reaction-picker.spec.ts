@@ -238,6 +238,7 @@ test.describe('Feed reaction picker', () => {
     await expect(prayerButton).toContainText('🙏');
     await laughButton.click();
     await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(reactButton).toContainText('Laugh');
 
     await saveButton.click();
     await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
@@ -246,11 +247,14 @@ test.describe('Feed reaction picker', () => {
     await repostButton.click();
     await expect(repostButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     await expect(repostButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(repostButton).toContainText('Reposted');
 
     await sendButton.click();
     await page.getByRole('button', { name: 'Copy link' }).click();
-    await expect(sendButton).toHaveCSS('color', 'rgb(141, 188, 229)');
-    await expect(sendButton).toHaveAttribute('aria-pressed', 'true');
+    const sentButton = originalCard.getByRole('button', { name: 'Sent' });
+    await expect(sentButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(sentButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(sentButton).toContainText('Sent');
 
     if (usedFocusFallback) {
       await page.mouse.click(0, 0);

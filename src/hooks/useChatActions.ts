@@ -2,10 +2,12 @@ import { startTransition, useCallback } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { resolveAttachmentMetaForSend } from '../lib/chat/attachmentMeta';
 import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
+import { getChatAttachmentProcessingPlan } from '../lib/chat/attachmentProcessing';
 import { toMessage } from '../lib/utils/errors';
-import { CHAT_MAX_FILE_BYTES } from '../types/chat';
 import type { ChatAttachmentMeta, ChatMessage } from '../types/chat';
 import type { ChatRoomWithMembers, MessageWithExtras } from './chatTypes';
+
+const ALLOWED_PROCESSED_CHAT_MEDIA_MIME = new Set(['video/mp4', 'video/webm']);
 
 type Params = {
   roomId: string | null;
@@ -83,13 +85,17 @@ export const useChatActions = ({
             const path = attachmentPaths[index];
             const fileName = path.split('/').at(-1) ?? '';
             const { mime, size } = resolved[index];
-            const normalizedMime = normalizeChatAttachmentMime({
-              name: fileName,
-              type: mime,
-            });
+            const normalizedMime =
+              normalizeChatAttachmentMime({
+                name: fileName,
+                type: mime,
+              }) ?? (ALLOWED_PROCESSED_CHAT_MEDIA_MIME.has(mime) ? mime : null);
             if (!normalizedMime) throw new Error('Unsupported attachment type');
-            if (size > CHAT_MAX_FILE_BYTES)
-              throw new Error('Attachment exceeds 2MB limit');
+            const plan = getChatAttachmentProcessingPlan({
+              size,
+              type: normalizedMime,
+            });
+            if (!plan.accepted) throw new Error(plan.reason);
 
             await supabase.from('chat_message_attachments').insert({
               message_id: msg.id,

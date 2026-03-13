@@ -55,6 +55,9 @@ export const INPUT_STYLES = {
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.6)',
     fontSize: '0.9rem',
+    '& .MuiFormLabel-asterisk': {
+      color: '#f44336',
+    },
   },
   '& .MuiInputBase-input': {
     color: 'white',

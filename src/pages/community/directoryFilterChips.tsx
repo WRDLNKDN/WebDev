@@ -1,9 +1,7 @@
-import AddIcon from '@mui/icons-material/Add';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
-  Button,
   Chip,
   MenuItem,
   Select,
@@ -24,33 +22,13 @@ const CONNECTION_LABEL: Record<string, string> = {
   pending_received: 'Pending received',
   connected: 'Connected',
 };
+const DIRECTORY_CONNECTION_FILTERS = ['not_connected', 'connected'] as const;
 
 const FILTER_CONTROL_HEIGHT = 40;
 const ACTIVE_FILTER_SX = {
   color: '#FFFFFF',
   fontWeight: 700,
-  textDecoration: 'underline',
-  textUnderlineOffset: '4px',
   boxShadow: `inset 0 0 0 1px ${INTERACTION_COLORS.comment}`,
-} as const;
-
-const filterChipSx = {
-  height: FILTER_CONTROL_HEIGHT,
-  minHeight: FILTER_CONTROL_HEIGHT,
-  borderRadius: 5,
-  border: '1.5px solid rgba(141,188,229,0.34)',
-  bgcolor: 'rgba(56,132,210,0.12)',
-  color: 'rgba(255,255,255,0.85)',
-  fontWeight: 500,
-  fontSize: '0.8rem',
-  textTransform: 'none',
-  px: 1.5,
-  '&:hover': {
-    bgcolor: 'rgba(156,187,217,0.22)',
-    borderColor: 'rgba(141,188,229,0.50)',
-  },
-  '&[aria-pressed="true"]': ACTIVE_FILTER_SX,
-  '& .MuiButton-endIcon': { ml: 0.5 },
 } as const;
 
 const chipSelectSx = {
@@ -93,8 +71,6 @@ type Props = {
   setLocationInput: (value: string) => void;
   skills: string[];
   connectionStatus: string;
-  showSecondaryIndustryFilter: boolean;
-  setShowSecondaryIndustryFilter: (value: boolean) => void;
   hasActiveFilters: boolean;
   updateUrl: (updates: Record<string, string>) => void;
 };
@@ -107,8 +83,6 @@ export const DirectoryFilterChips = ({
   setLocationInput,
   skills,
   connectionStatus,
-  showSecondaryIndustryFilter,
-  setShowSecondaryIndustryFilter,
   hasActiveFilters,
   updateUrl,
 }: Props) => (
@@ -180,7 +154,7 @@ export const DirectoryFilterChips = ({
           ))}
         </Select>
 
-        {primaryIndustry || showSecondaryIndustryFilter ? (
+        {primaryIndustry && (
           <Select
             value={secondaryIndustry}
             displayEmpty
@@ -216,24 +190,16 @@ export const DirectoryFilterChips = ({
               </MenuItem>
             ))}
           </Select>
-        ) : (
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
-            onClick={() => setShowSecondaryIndustryFilter(true)}
-            aria-pressed={showSecondaryIndustryFilter}
-            sx={{
-              ...filterChipSx,
-              ...(showSecondaryIndustryFilter ? ACTIVE_FILTER_SX : null),
-            }}
-          >
-            Add secondary filter
-          </Button>
         )}
 
         <Select
-          value={connectionStatus}
+          value={
+            DIRECTORY_CONNECTION_FILTERS.includes(
+              connectionStatus as (typeof DIRECTORY_CONNECTION_FILTERS)[number],
+            )
+              ? connectionStatus
+              : ''
+          }
           displayEmpty
           inputProps={{ 'aria-label': 'Connection' }}
           renderValue={(v) => (v ? (CONNECTION_LABEL[v] ?? v) : 'Connection')}
@@ -262,8 +228,6 @@ export const DirectoryFilterChips = ({
             <em>Any</em>
           </MenuItem>
           <MenuItem value="not_connected">Not connected</MenuItem>
-          <MenuItem value="pending">Pending</MenuItem>
-          <MenuItem value="pending_received">Pending received</MenuItem>
           <MenuItem value="connected">Connected</MenuItem>
         </Select>
       </Box>
@@ -311,12 +275,6 @@ export const DirectoryFilterChips = ({
                 maxWidth: { xs: '100%', sm: 180 },
                 fontWeight: locationInput ? 600 : 500,
                 boxSizing: 'border-box',
-                ...(locationInput
-                  ? {
-                      textDecoration: 'underline',
-                      textUnderlineOffset: '4px',
-                    }
-                  : null),
               },
               '& input::placeholder': {
                 color: 'rgba(255,255,255,0.5)',
@@ -349,8 +307,6 @@ export const DirectoryFilterChips = ({
               color: '#d9f7ff',
               height: 28,
               fontWeight: 700,
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
               '& .MuiChip-icon': { color: 'inherit' },
             }}
           />
@@ -372,36 +328,6 @@ export const DirectoryFilterChips = ({
             }}
           />
         ))}
-        {hasActiveFilters ? (
-          <Button
-            size="small"
-            variant="text"
-            onClick={() => {
-              updateUrl({
-                q: '',
-                primary_industry: '',
-                secondary_industry: '',
-                location: '',
-                connection_status: '',
-                skills: '',
-              });
-              setShowSecondaryIndustryFilter(false);
-            }}
-            sx={{
-              color: 'rgba(255,255,255,0.4)',
-              textTransform: 'none',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              px: 0.5,
-              '&:hover': {
-                color: 'rgba(255,255,255,0.7)',
-                bgcolor: 'transparent',
-              },
-            }}
-          >
-            Clear all
-          </Button>
-        ) : null}
       </Stack>
     ) : null}
   </Box>

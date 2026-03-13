@@ -41,20 +41,21 @@ export const DirectoryRow = ({
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 1.25, md: 1.4 },
-        borderRadius: 1.5,
+        p: { xs: 1.05, md: 1.1 },
+        borderRadius: 1.25,
         bgcolor: 'rgba(18, 22, 36, 0.74)',
         border: '1px solid rgba(255,255,255,0.08)',
         overflow: 'hidden',
-        transition: 'border-color 140ms ease',
+        transition: 'border-color 140ms ease, background-color 140ms ease',
         '&:hover': {
           borderColor: 'rgba(255,255,255,0.16)',
+          bgcolor: 'rgba(18, 22, 36, 0.82)',
         },
       }}
     >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
-        spacing={{ xs: 1.25, md: 1.5 }}
+        spacing={{ xs: 1, md: 1.1 }}
         alignItems={{ xs: 'flex-start', md: 'center' }}
       >
         <Box
@@ -67,8 +68,8 @@ export const DirectoryRow = ({
             src={avatarUrl ?? undefined}
             alt={displayName}
             sx={{
-              width: { xs: 56, md: 52 },
-              height: { xs: 56, md: 52 },
+              width: { xs: 54, md: 48 },
+              height: { xs: 54, md: 48 },
               bgcolor: 'primary.dark',
               border: '2px solid rgba(156,187,217,0.22)',
             }}
@@ -85,7 +86,7 @@ export const DirectoryRow = ({
               color: 'white',
               textDecoration: 'none',
               width: 'fit-content',
-              fontSize: { xs: '1.2rem', md: '1.05rem' },
+              fontSize: { xs: '1.08rem', md: '0.98rem' },
               lineHeight: 1.15,
               '&:hover': { color: 'primary.light' },
             }}

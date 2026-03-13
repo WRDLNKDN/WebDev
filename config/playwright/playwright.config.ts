@@ -75,6 +75,19 @@ export default defineConfig({
         signal: 'SIGTERM',
         timeout: 5_000,
       },
+      // Frontend-only runs (no backend env): ensure app has Supabase placeholders
+      // so the dev server and app load; specs stub rest/v1 and auth.
+      ...(useBackendServer
+        ? {}
+        : {
+            env: {
+              ...process.env,
+              VITE_SUPABASE_URL:
+                process.env.VITE_SUPABASE_URL || 'https://example.supabase.co',
+              VITE_SUPABASE_ANON_KEY:
+                process.env.VITE_SUPABASE_ANON_KEY || 'dummy-anon-key-for-e2e',
+            },
+          }),
     },
   ],
 

@@ -25,8 +25,6 @@ type Props = {
   skills: string[];
   connectionStatus: string;
   sort: string;
-  showSecondaryIndustryFilter: boolean;
-  setShowSecondaryIndustryFilter: (value: boolean) => void;
   hasActiveFilters: boolean;
   updateUrl: (updates: Record<string, string>) => void;
 };
@@ -40,8 +38,6 @@ export const DirectoryFilters = ({
   skills,
   connectionStatus,
   sort,
-  showSecondaryIndustryFilter,
-  setShowSecondaryIndustryFilter,
   hasActiveFilters,
   updateUrl,
 }: Props) => (
@@ -179,8 +175,6 @@ export const DirectoryFilters = ({
       setLocationInput={setLocationInput}
       skills={skills}
       connectionStatus={connectionStatus}
-      showSecondaryIndustryFilter={showSecondaryIndustryFilter}
-      setShowSecondaryIndustryFilter={setShowSecondaryIndustryFilter}
       hasActiveFilters={hasActiveFilters}
       updateUrl={updateUrl}
     />

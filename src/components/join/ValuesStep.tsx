@@ -157,7 +157,10 @@ export const ValuesStep = () => {
                 '& fieldset': { borderColor: 'rgba(141,188,229,0.38)' },
                 '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.35)' },
               },
-              '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.6)' },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255,255,255,0.6)',
+                '& .MuiFormLabel-asterisk': { color: '#f44336' },
+              },
             }}
           />
 

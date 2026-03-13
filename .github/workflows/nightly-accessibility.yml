@@ -19,6 +19,10 @@ jobs:
       VITE_SUPABASE_URL: 'https://example.supabase.co'
       VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
       E2E_PORT: '5173'
+      # Playwright backend webServer (optional): map repo secrets to expected names
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SRV_SERVICE_ROLE_KEY }}
+
       NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:

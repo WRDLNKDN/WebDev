@@ -7,26 +7,31 @@
  */
 
 import { Helmet } from 'react-helmet-async';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { Bumper } from '../../components/bumper/Bumper';
+import { resolveBumperNextPath } from '../../lib/utils/bumperRouting';
 import { setBumperShown } from '../../lib/utils/bumperSession';
 import { useJoin } from '../../context/useJoin';
 
 /** How long to show the bumper after Join before redirect when sound stays off (ms). */
-const POST_JOIN_BUMPER_MS = 6000;
+const POST_JOIN_BUMPER_MS = 3200;
+const POST_JOIN_CONTINUE_MS = 900;
 
 export const BumperPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromJoin = searchParams.get('from') === 'join';
-  const next = searchParams.get('next') ?? '/feed';
+  const next = resolveBumperNextPath(searchParams.get('next'));
   const { resetSignup } = useJoin();
   const [soundOn, setSoundOn] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
+  const hasNavigatedRef = useRef(false);
 
   const goNext = useCallback(() => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
     setBumperShown();
     navigate(next, { replace: true });
   }, [navigate, next]);
@@ -53,7 +58,10 @@ export const BumperPage = () => {
   // When from=join and we haven't redirected, show Continue button after a short delay so they can tap "Sound on" first
   useEffect(() => {
     if (!fromJoin) return;
-    const t = window.setTimeout(() => setShowContinue(true), 2000);
+    const t = window.setTimeout(
+      () => setShowContinue(true),
+      POST_JOIN_CONTINUE_MS,
+    );
     return () => window.clearTimeout(t);
   }, [fromJoin]);
 
@@ -62,7 +70,12 @@ export const BumperPage = () => {
       <Helmet>
         <title>WRDLNKDN Bumper | Business, but Weirder.</title>
       </Helmet>
-      <Bumper autoPlay postJoinMode={fromJoin} onSoundChange={setSoundOn} />
+      <Bumper
+        autoPlay
+        postJoinMode={fromJoin}
+        onComplete={fromJoin ? goNext : undefined}
+        onSoundChange={setSoundOn}
+      />
       {fromJoin && showContinue && (
         <Box
           sx={{

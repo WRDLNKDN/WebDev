@@ -1,13 +1,12 @@
 import {
   Box,
   Button,
-  Chip,
   Container,
   Paper,
   Stack,
   Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
 
@@ -59,18 +58,10 @@ const NOT_FOUND_WEIRDLINGS: NotFoundWeirdling[] = [
 
 export const NotFoundPage = () => {
   const navigate = useNavigate();
-  const [selectedIndex, setSelectedIndex] = useState(() =>
+  const [selectedIndex] = useState(() =>
     Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length),
   );
   const selectedWeirdling = NOT_FOUND_WEIRDLINGS[selectedIndex];
-  const availableVariants = useMemo(
-    () =>
-      NOT_FOUND_WEIRDLINGS.map((weirdling, index) => ({
-        ...weirdling,
-        index,
-      })),
-    [],
-  );
 
   return (
     <Box
@@ -78,6 +69,8 @@ export const NotFoundPage = () => {
         ...SIGNUP_BG,
         position: 'relative',
         overflow: 'hidden',
+        minHeight: '100%',
+        py: { xs: 3, sm: 4, md: 6 },
       }}
     >
       <Box
@@ -89,26 +82,55 @@ export const NotFoundPage = () => {
           pointerEvents: 'none',
         }}
       />
-      <Container maxWidth="sm">
+      <Container
+        maxWidth={false}
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          maxWidth: 'min(1120px, calc(100vw - 32px))',
+          minHeight: {
+            xs: 'calc(100vh - 180px)',
+            sm: 'calc(100vh - 220px)',
+          },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
         <Paper
           elevation={24}
           sx={{
             ...GLASS_CARD,
-            p: { xs: 3, sm: 5, md: 6 },
-            textAlign: 'center',
-            zIndex: 1,
+            width: '100%',
+            maxWidth: 980,
+            px: { xs: 2.5, sm: 4, md: 5.5 },
+            py: { xs: 3.5, sm: 4.5, md: 5.25 },
+            borderRadius: { xs: 4, md: 5 },
+            textAlign: { xs: 'center', md: 'left' },
             position: 'relative',
+            overflow: 'hidden',
             boxShadow: `0 18px 60px ${selectedWeirdling.glow}`,
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 42%)',
+              pointerEvents: 'none',
+            },
           }}
         >
-          <Stack spacing={{ xs: 3, sm: 4 }} alignItems="center">
+          <Stack spacing={{ xs: 3, sm: 4, md: 4.5 }}>
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '4.5rem', sm: '6rem' },
+                fontSize: { xs: '4.4rem', sm: '5.8rem', md: '7rem' },
                 fontWeight: 900,
                 opacity: 0.18,
-                letterSpacing: -5,
+                letterSpacing: { xs: -4, md: -6 },
+                lineHeight: 0.9,
+                alignSelf: { xs: 'center', md: 'flex-start' },
               }}
             >
               404
@@ -116,134 +138,124 @@ export const NotFoundPage = () => {
 
             <Box
               sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  md: 'minmax(0, 1.05fr) minmax(320px, 0.95fr)',
+                },
+                gap: { xs: 3, sm: 4, md: 5 },
+                alignItems: 'center',
                 width: '100%',
-                maxWidth: 280,
-                p: 1.5,
-                borderRadius: 5,
-                bgcolor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: `0 0 0 1px ${selectedWeirdling.glow}`,
               }}
             >
-              <Box
-                component="img"
-                src={selectedWeirdling.imageSrc}
-                alt={selectedWeirdling.name}
-                sx={{
-                  display: 'block',
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 22px 40px rgba(0,0,0,0.35))',
-                }}
-              />
-            </Box>
-
-            <Box sx={{ width: '100%' }}>
-              <Chip
-                label={selectedWeirdling.name}
-                sx={{
-                  mb: 1.25,
-                  bgcolor: 'rgba(255,255,255,0.08)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  border: `1px solid ${selectedWeirdling.accent}`,
-                }}
-              />
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 800,
-                  letterSpacing: -1,
-                  mb: 1,
-                  fontSize: { xs: '2rem', sm: '2.5rem' },
-                  background: `linear-gradient(45deg, #fff 25%, ${selectedWeirdling.accent} 95%)`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
+              <Stack
+                spacing={{ xs: 2.25, sm: 2.75, md: 3 }}
+                sx={{ order: { xs: 2, md: 1 }, minWidth: 0 }}
               >
-                {selectedWeirdling.message}
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ opacity: 0.78, maxWidth: 420, mx: 'auto' }}
-              >
-                This page is missing, moved, or never made it through the portal
-                in one piece.
-              </Typography>
-            </Box>
+                <Box>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      fontWeight: 900,
+                      letterSpacing: -1.2,
+                      mb: 1.25,
+                      fontSize: {
+                        xs: '2.1rem',
+                        sm: '2.5rem',
+                        md: '3rem',
+                      },
+                      lineHeight: 1.02,
+                      background: `linear-gradient(45deg, #fff 18%, ${selectedWeirdling.accent} 96%)`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    {selectedWeirdling.message}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      opacity: 0.8,
+                      maxWidth: { xs: 560, md: 460 },
+                      mx: { xs: 'auto', md: 0 },
+                      fontSize: { xs: '1rem', sm: '1.05rem' },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    This page is missing, moved, or never made it through the
+                    portal in one piece. Let&apos;s get you back to somewhere
+                    useful.
+                  </Typography>
+                </Box>
 
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ flexWrap: 'wrap', justifyContent: 'center', maxWidth: 520 }}
-            >
-              {availableVariants.map((weirdling) => (
-                <Button
-                  key={weirdling.name}
-                  variant={
-                    weirdling.index === selectedIndex ? 'contained' : 'text'
-                  }
-                  size="small"
-                  onClick={() => setSelectedIndex(weirdling.index)}
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
                   sx={{
-                    textTransform: 'none',
-                    borderRadius: 999,
-                    px: 1.5,
-                    color:
-                      weirdling.index === selectedIndex ? '#0b1020' : '#fff',
-                    bgcolor:
-                      weirdling.index === selectedIndex
-                        ? weirdling.accent
-                        : 'rgba(255,255,255,0.05)',
-                    '&:hover': {
-                      bgcolor:
-                        weirdling.index === selectedIndex
-                          ? weirdling.accent
-                          : 'rgba(255,255,255,0.1)',
+                    width: '100%',
+                    justifyContent: { md: 'flex-start' },
+                    '& > *': {
+                      minWidth: { sm: 190 },
                     },
                   }}
                 >
-                  {weirdling.name}
-                </Button>
-              ))}
-            </Stack>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={() => navigate('/dashboard')}
+                    sx={{
+                      bgcolor: '#FFFFFF',
+                      color: '#000',
+                      '&:hover': { bgcolor: '#e0e0e0' },
+                    }}
+                  >
+                    Return to Dashboard
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => navigate('/')}
+                    sx={{
+                      color: '#FFFFFF',
+                      borderColor: 'rgba(141,188,229,0.38)',
+                      '&:hover': { borderColor: '#FFFFFF' },
+                    }}
+                  >
+                    Back to Home
+                  </Button>
+                </Stack>
+              </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => navigate('/dashboard')}
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  color: '#000',
-                  '&:hover': { bgcolor: '#e0e0e0' },
-                }}
+              <Stack
+                spacing={2}
+                alignItems="center"
+                sx={{ order: { xs: 1, md: 2 } }}
               >
-                Return to Dashboard
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/')}
-                sx={{
-                  color: '#FFFFFF',
-                  borderColor: 'rgba(141,188,229,0.38)',
-                  '&:hover': { borderColor: '#FFFFFF' },
-                }}
-              >
-                Back to Home
-              </Button>
-            </Stack>
-
-            <Typography
-              variant="caption"
-              sx={{
-                opacity: 0.4,
-                letterSpacing: 2,
-              }}
-            >
-              PAGE_NOT_FOUND
-            </Typography>
+                <Box
+                  sx={{
+                    width: '100%',
+                    maxWidth: { xs: 320, sm: 360, md: 400 },
+                    p: { xs: 1.5, sm: 1.75, md: 2 },
+                    borderRadius: { xs: 5, md: 6 },
+                    bgcolor: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: `0 0 0 1px ${selectedWeirdling.glow}`,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={selectedWeirdling.imageSrc}
+                    alt={selectedWeirdling.name}
+                    sx={{
+                      display: 'block',
+                      width: '100%',
+                      height: 'auto',
+                      filter: 'drop-shadow(0 22px 40px rgba(0,0,0,0.35))',
+                    }}
+                  />
+                </Box>
+              </Stack>
+            </Box>
           </Stack>
         </Paper>
       </Container>

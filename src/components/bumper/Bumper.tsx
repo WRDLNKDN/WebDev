@@ -14,9 +14,11 @@ const CONCEPT_BUMPER_VIDEO = '/assets/video/concept-bumper.mp4';
 
 const PHONETIC = '(Weird Link-uh-din)';
 const TAGLINE = 'Business, but weirder';
-const TYPING_MS = 80;
-const POP_DELAY_MS = 400;
-const TAGLINE_START_MS = 800;
+const TYPING_MS = 45;
+const POP_DELAY_MS = 220;
+const TAGLINE_START_MS = 450;
+const POST_JOIN_PLAYBACK_RATE = 2;
+const DEFAULT_PLAYBACK_RATE = 1.75;
 
 export type BumperProps = {
   /** Run typing + pop on mount (default true) */
@@ -24,6 +26,8 @@ export type BumperProps = {
   className?: string;
   /** After signup: try playing with sound once (best-effort; may still need user tap) */
   postJoinMode?: boolean;
+  /** Notify when playback is complete in single-run mode. */
+  onComplete?: () => void;
   /** Notify when user enables/disables sound (e.g. so parent can avoid cutting off playback) */
   onSoundChange?: (soundOn: boolean) => void;
 };
@@ -32,6 +36,7 @@ export const Bumper = ({
   autoPlay = true,
   className,
   postJoinMode = false,
+  onComplete,
   onSoundChange,
 }: BumperProps) => {
   const [typed, setTyped] = useState('');
@@ -48,7 +53,7 @@ export const Bumper = ({
     if (postJoinMode) {
       try {
         video.muted = false;
-        video.playbackRate = 1.5;
+        video.playbackRate = POST_JOIN_PLAYBACK_RATE;
         await video.play();
         setSoundOn(true);
         onSoundChange?.(true);
@@ -59,7 +64,9 @@ export const Bumper = ({
     }
 
     video.muted = true;
-    video.playbackRate = 1.5;
+    video.playbackRate = postJoinMode
+      ? POST_JOIN_PLAYBACK_RATE
+      : DEFAULT_PLAYBACK_RATE;
     try {
       await video.play();
       setSoundOn(false);
@@ -74,7 +81,7 @@ export const Bumper = ({
     if (!video) return;
     video.muted = false;
     video.currentTime = 0;
-    video.playbackRate = 1.5;
+    video.playbackRate = POST_JOIN_PLAYBACK_RATE;
     try {
       await video.play();
       setSoundOn(true);
@@ -128,9 +135,10 @@ export const Bumper = ({
         src={CONCEPT_BUMPER_VIDEO}
         preload="auto"
         muted
-        loop
+        loop={!postJoinMode}
         playsInline
         onCanPlayThrough={handleCanPlayThrough}
+        onEnded={postJoinMode ? onComplete : undefined}
         sx={{
           position: 'absolute',
           inset: 0,

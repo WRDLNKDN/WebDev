@@ -221,16 +221,11 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease, text-decoration-color 120ms ease',
             '&:focus-visible': FOCUS_RING,
             '&:hover': {
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
-              boxShadow: 'inset 0 -2px 0 currentColor',
               transform: 'translateY(-1px)',
             },
             '&[aria-pressed="true"], &[aria-selected="true"]': {
               fontWeight: 800,
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
-              boxShadow: 'inset 0 -2px 0 currentColor',
+              boxShadow: 'inset 0 0 0 1px currentColor',
             },
             '@media (prefers-reduced-motion: reduce)': {
               transition: 'none',

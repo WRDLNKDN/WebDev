@@ -46,7 +46,7 @@ export const REACTION_OPTIONS: SharedReactionOption<ReactionType>[] = [
     emoji: '😮',
     color: REACTION_COLORS.inspiration,
   },
-  { value: 'rage', label: 'Sad', emoji: '😢', color: REACTION_COLORS.rage },
+  { value: 'rage', label: 'Rage', emoji: '😡', color: REACTION_COLORS.rage },
   {
     value: 'care',
     label: 'Prayer Hands',
@@ -85,6 +85,28 @@ export function getFeedReactionCount(
   }
 }
 
+export function getFeedDisplayedReactionCount(
+  source: FeedReactionCountSource,
+  type: ReactionType,
+  viewerReaction?: ReactionType | null,
+): number {
+  const count = getFeedReactionCount(source, type);
+  if (count > 0) return count;
+  return viewerReaction === type ? 1 : 0;
+}
+
+export function getFeedTotalReactionCount(
+  source: FeedReactionCountSource,
+  viewerReaction?: ReactionType | null,
+): number {
+  return REACTION_OPTIONS.reduce(
+    (total, reaction) =>
+      total +
+      getFeedDisplayedReactionCount(source, reaction.value, viewerReaction),
+    0,
+  );
+}
+
 export function buildFeedReactionSummary(
   source: FeedReactionCountSource,
   viewerReaction?: ReactionType | null,
@@ -92,7 +114,11 @@ export function buildFeedReactionSummary(
 ): FeedReactionSummaryItem[] {
   return REACTION_OPTIONS.map((reaction, index) => ({
     ...reaction,
-    count: getFeedReactionCount(source, reaction.value),
+    count: getFeedDisplayedReactionCount(
+      source,
+      reaction.value,
+      viewerReaction,
+    ),
     index,
   }))
     .filter((reaction) => reaction.count > 0)

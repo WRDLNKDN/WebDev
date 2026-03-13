@@ -39,7 +39,6 @@ const LayoutContent = () => {
   const { pathname } = useLocation();
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
-  const isHome = pathname === '/';
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
   const chatEnabled = useFeatureFlag('chat');
@@ -130,7 +129,7 @@ const LayoutContent = () => {
           </ErrorBoundary>
         </Box>
       </Box>
-      {!isHome && !isJoin && !isAdmin && (
+      {!isJoin && !isAdmin && (
         <Box component="footer" sx={{ flexShrink: 0 }}>
           <Suspense fallback={null}>
             <Footer />

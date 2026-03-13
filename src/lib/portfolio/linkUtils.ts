@@ -8,6 +8,7 @@ export const SUPPORTED_IMAGE_EXTENSIONS = [
   'jpeg',
   'png',
   'gif',
+  'webp',
 ] as const;
 
 export const SUPPORTED_DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx'] as const;
@@ -18,12 +19,15 @@ export const SUPPORTED_SPREADSHEET_EXTENSIONS = ['xls', 'xlsx'] as const;
 
 export const SUPPORTED_TEXT_EXTENSIONS = ['txt', 'md'] as const;
 
+export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'] as const;
+
 export const SUPPORTED_FILE_EXTENSIONS = [
   ...SUPPORTED_IMAGE_EXTENSIONS,
   ...SUPPORTED_DOCUMENT_EXTENSIONS,
   ...SUPPORTED_PRESENTATION_EXTENSIONS,
   ...SUPPORTED_SPREADSHEET_EXTENSIONS,
   ...SUPPORTED_TEXT_EXTENSIONS,
+  ...SUPPORTED_VIDEO_EXTENSIONS,
 ] as const;
 
 const GOOGLE_DOCS_HOST =
@@ -78,6 +82,7 @@ export type PortfolioLinkType =
   | 'google_doc'
   | 'google_sheet'
   | 'google_slides'
+  | 'video'
   | 'unsupported';
 
 /** Detect link type from URL (extension or Google host). */
@@ -121,6 +126,12 @@ export function getLinkType(url: string): PortfolioLinkType {
     )
   )
     return 'text';
+  if (
+    SUPPORTED_VIDEO_EXTENSIONS.includes(
+      ext as (typeof SUPPORTED_VIDEO_EXTENSIONS)[number],
+    )
+  )
+    return 'video';
 
   return 'unsupported';
 }
@@ -146,6 +157,8 @@ export function getLinkTypeLabel(type: PortfolioLinkType): string {
       return 'Google Sheet';
     case 'google_slides':
       return 'Google Slides';
+    case 'video':
+      return 'Video';
     default:
       return 'Link';
   }

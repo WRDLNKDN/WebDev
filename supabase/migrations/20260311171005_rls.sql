@@ -1,2 +1,0 @@
--- No RLS changes are required for the portfolio single-category update.
--- This migration intentionally leaves existing portfolio_items policies intact.

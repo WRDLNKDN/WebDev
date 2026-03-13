@@ -46,3 +46,9 @@ export function getPortfolioThumbnailStoragePathFromPublicUrl(
 ): string | null {
   return getBucketObjectPathFromPublicUrl(publicUrl, 'portfolio-thumbnails');
 }
+
+export function getProjectSourceStoragePathFromPublicUrl(
+  publicUrl: string,
+): string | null {
+  return getBucketObjectPathFromPublicUrl(publicUrl, 'project-sources');
+}

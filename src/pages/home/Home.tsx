@@ -11,6 +11,7 @@ import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import '../../components/home/homeLanding.css';
+import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
@@ -29,6 +30,36 @@ const SocialProof = lazy(async () => ({
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
   return mod.supabase;
+};
+
+const getStoredSessionTokens = async (): Promise<{
+  access_token: string;
+  refresh_token: string;
+} | null> => {
+  try {
+    const mod = await import('../../lib/auth/supabaseClient');
+    const raw = window.localStorage.getItem(mod.AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      access_token?: string;
+      refresh_token?: string;
+      currentSession?: {
+        access_token?: string;
+        refresh_token?: string;
+      };
+    } | null;
+    const direct =
+      parsed?.access_token && parsed?.refresh_token
+        ? parsed
+        : parsed?.currentSession;
+    if (!direct?.access_token || !direct.refresh_token) return null;
+    return {
+      access_token: direct.access_token,
+      refresh_token: direct.refresh_token,
+    };
+  } catch {
+    return null;
+  }
 };
 
 const resolvePostAuthPath = async (): Promise<'/' | '/dashboard' | '/feed'> => {
@@ -106,11 +137,34 @@ export const Home = () => {
     const loadAuthState = async () => {
       try {
         const supabase = await getSupabase();
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data: initialData, error: sessionError } =
+          await getSessionWithTimeout();
+        let data = initialData;
         if (!mounted) return;
 
         if (sessionError) {
           console.warn('Session check warning:', sessionError.message);
+        }
+
+        if (!data.session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (!mounted) return;
+          if (refreshed.session) {
+            data = refreshed;
+          }
+        }
+
+        if (!data.session) {
+          const storedTokens = await getStoredSessionTokens();
+          if (!mounted) return;
+          if (storedTokens) {
+            const { data: restored } =
+              await supabase.auth.setSession(storedTokens);
+            if (!mounted) return;
+            if (restored.session) {
+              data = restored;
+            }
+          }
         }
 
         const user = data.session?.user;
@@ -180,6 +234,8 @@ export const Home = () => {
         triggerAuthBootstrap();
       }
     };
+
+    triggerAuthBootstrap();
 
     window.addEventListener('pointerdown', triggerAuthBootstrap, {
       passive: true,

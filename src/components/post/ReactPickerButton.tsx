@@ -41,6 +41,7 @@ export const ReactPickerButton = <T extends string = string>({
   const hoverCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [clickPinned, setClickPinned] = useState(false);
 
@@ -70,6 +71,9 @@ export const ReactPickerButton = <T extends string = string>({
     }, 220);
   };
 
+  const isWithinRoot = (node: EventTarget | null) =>
+    node instanceof Node && rootRef.current?.contains(node);
+
   useEffect(
     () => () => {
       clearHoverCloseTimeout();
@@ -86,9 +90,18 @@ export const ReactPickerButton = <T extends string = string>({
       }}
     >
       <Box
+        ref={rootRef}
         onMouseEnter={openTray}
-        onMouseLeave={scheduleClose}
-        onFocus={openTray}
+        onMouseLeave={(event) => {
+          if (isWithinRoot(event.relatedTarget)) return;
+          scheduleClose();
+        }}
+        onFocusCapture={openTray}
+        onBlurCapture={(event) => {
+          if (clickPinned || isWithinRoot(event.relatedTarget)) return;
+          clearHoverCloseTimeout();
+          setOpen(false);
+        }}
         sx={{
           position: 'relative',
           display: 'inline-flex',
@@ -143,7 +156,6 @@ export const ReactPickerButton = <T extends string = string>({
               bgcolor: 'rgba(56,132,210,0.08)',
               borderColor: 'rgba(141,188,229,0.28)',
               color: HOVER_COLOR,
-              transform: 'scale(1.08)',
             },
             ...buttonSx,
           }}

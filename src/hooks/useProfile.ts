@@ -4,6 +4,7 @@ import { toMessage } from '../lib/utils/errors';
 import {
   type NewProject,
   type PortfolioItem,
+  type ProjectUploadFiles,
   RESUME_ITEM_ID,
 } from '../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../types/profile';
@@ -50,10 +51,13 @@ export function useProfile() {
     }
   };
 
-  const addProject = async (newProject: NewProject, imageFile?: File) => {
+  const addProject = async (
+    newProject: NewProject,
+    files?: ProjectUploadFiles,
+  ) => {
     try {
       setUpdating(true);
-      await addProjectItem({ newProject, imageFile, projects, setProjects });
+      await addProjectItem({ newProject, files, projects, setProjects });
     } catch (cause) {
       console.error('Add Project Error:', cause);
       throw new Error(toMessage(cause));
@@ -118,11 +122,11 @@ export function useProfile() {
   const updateProject = async (
     projectId: string,
     updates: NewProject,
-    imageFile?: File,
+    files?: ProjectUploadFiles,
   ) => {
     try {
       setUpdating(true);
-      await updateProjectItem({ projectId, updates, imageFile, setProjects });
+      await updateProjectItem({ projectId, updates, files, setProjects });
     } catch (cause) {
       console.error('Update Project Error:', cause);
       throw new Error(toMessage(cause));

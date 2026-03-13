@@ -125,6 +125,52 @@ begin
 end $$;
 
 -- -----------------------------
+-- Consolidated follow-up migrations
+-- -----------------------------
+
+-- No RLS changes were required for the portfolio single-category constraint.
+
+alter table public.chat_room_preferences enable row level security;
+
+drop policy if exists "Users can manage own chat room preferences"
+  on public.chat_room_preferences;
+create policy "Users can manage own chat room preferences"
+  on public.chat_room_preferences for all
+  to authenticated
+  using (
+    (select auth.uid()) = user_id
+    and public.chat_is_room_member(chat_room_preferences.room_id)
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and public.chat_is_room_member(chat_room_preferences.room_id)
+  );
+
+revoke all on table public.chat_room_preferences from anon, authenticated;
+grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
+
+drop policy if exists "Authenticated can upload project-sources" on storage.objects;
+create policy "Authenticated can upload project-sources"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'project-sources');
+
+drop policy if exists "Public read project-sources" on storage.objects;
+create policy "Public read project-sources"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'project-sources');
+
+drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
+create policy "Authenticated can delete own project-sources"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'project-sources'
+    and owner = auth.uid()
+  );
+
+-- -----------------------------
 -- Optional: add directory columns to profiles if missing (idempotent for existing DBs)
 -- -----------------------------
 do $$

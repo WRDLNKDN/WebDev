@@ -220,7 +220,7 @@ describe('useProfile.updateProject payload mapping', () => {
         tech_stack: ['Data'],
         is_highlighted: false,
       },
-      imageFile,
+      { thumbnailFile: imageFile },
     );
 
     expect(upload).toHaveBeenCalledTimes(1);

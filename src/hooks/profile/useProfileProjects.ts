@@ -1,5 +1,9 @@
 import { supabase } from '../../lib/auth/supabaseClient';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
+import {
+  invokePortfolioThumbnailGeneration,
+  uploadPublicProjectAsset,
+} from '../../lib/portfolio/projectMedia';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import {
   getPortfolioUrlSafetyError,
@@ -8,9 +12,14 @@ import {
 import {
   getPortfolioThumbnailStoragePathFromPublicUrl,
   getProjectImageStoragePathFromPublicUrl,
+  getProjectSourceStoragePathFromPublicUrl,
 } from '../../lib/portfolio/projectStorage';
 import { toMessage } from '../../lib/utils/errors';
-import type { NewProject, PortfolioItem } from '../../types/portfolio';
+import type {
+  NewProject,
+  PortfolioItem,
+  ProjectUploadFiles,
+} from '../../types/portfolio';
 import { ensureProfileExists, isExternalProjectUrl } from './useProfileHelpers';
 
 type CommonParams = {
@@ -19,20 +28,14 @@ type CommonParams = {
 
 export const addProjectItem = async ({
   newProject,
-  imageFile,
+  files,
   projects,
   setProjects,
 }: {
   newProject: NewProject;
-  imageFile?: File;
+  files?: ProjectUploadFiles;
   projects: PortfolioItem[];
 } & CommonParams) => {
-  const url = sanitizePortfolioUrlInput(newProject.project_url ?? '');
-  if (!url) throw new Error('View project URL is required');
-  if (!isExternalProjectUrl(url)) {
-    throw new Error('Project URL must be an external URL (e.g. https://...).');
-  }
-
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -46,26 +49,40 @@ export const addProjectItem = async ({
       'User',
   );
 
-  let finalImageUrl = newProject.image_url;
-  if (imageFile) {
-    const fileExt = imageFile.name.split('.').pop();
-    const fileName = `project-${Date.now()}.${fileExt}`;
-    const filePath = `${session.user.id}/${fileName}`;
+  const sourceFile = files?.sourceFile;
+  const thumbnailFile = files?.thumbnailFile;
 
-    const { error: uploadError } = await supabase.storage
-      .from('project-images')
-      .upload(filePath, imageFile);
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('project-images').getPublicUrl(filePath);
-    finalImageUrl = publicUrl;
+  let projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
+  if (sourceFile) {
+    projectUrlTrimmed = await uploadPublicProjectAsset({
+      userId: session.user.id,
+      file: sourceFile,
+      bucket: 'project-sources',
+      prefix: 'project-source',
+    });
+  }
+  if (!projectUrlTrimmed) {
+    throw new Error('Choose a project source file or enter a Project URL.');
+  }
+  if (!sourceFile && !isExternalProjectUrl(projectUrlTrimmed)) {
+    throw new Error('Project URL must be an external URL (e.g. https://...).');
   }
 
-  const projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
-  const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
-  if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  let finalImageUrl =
+    sanitizePortfolioUrlInput(newProject.image_url ?? '') || null;
+  if (thumbnailFile) {
+    finalImageUrl = await uploadPublicProjectAsset({
+      userId: session.user.id,
+      file: thumbnailFile,
+      bucket: 'project-images',
+      prefix: 'project-thumbnail',
+    });
+  }
+
+  if (!sourceFile) {
+    const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
+    if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  }
 
   const linkType = getLinkType(projectUrlTrimmed);
   const normalizedUrl =
@@ -113,8 +130,19 @@ export const addProjectItem = async ({
     .single();
   if (insertError) throw new Error(toMessage(insertError));
 
+  let finalRow = data as PortfolioItem;
+  if (thumbnailStatus === 'pending') {
+    await invokePortfolioThumbnailGeneration();
+    const { data: refreshed } = await supabase
+      .from('portfolio_items')
+      .select('*')
+      .eq('id', data.id)
+      .maybeSingle();
+    if (refreshed) finalRow = refreshed as PortfolioItem;
+  }
+
   setProjects((prev) =>
-    [...prev, data as PortfolioItem].sort(
+    [...prev, finalRow].sort(
       (a, b) =>
         (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
@@ -134,7 +162,7 @@ export const deleteProjectItem = async ({
 
   const { data: projectRow, error: projectFetchError } = await supabase
     .from('portfolio_items')
-    .select('id, owner_id, image_url, thumbnail_url')
+    .select('id, owner_id, image_url, project_url, thumbnail_url')
     .eq('id', projectId)
     .eq('owner_id', session.user.id)
     .maybeSingle();
@@ -143,6 +171,9 @@ export const deleteProjectItem = async ({
 
   const imageStoragePath = getProjectImageStoragePathFromPublicUrl(
     typeof projectRow.image_url === 'string' ? projectRow.image_url : '',
+  );
+  const sourceStoragePath = getProjectSourceStoragePathFromPublicUrl(
+    typeof projectRow.project_url === 'string' ? projectRow.project_url : '',
   );
   const thumbnailStoragePath = getPortfolioThumbnailStoragePathFromPublicUrl(
     typeof projectRow.thumbnail_url === 'string'
@@ -155,6 +186,13 @@ export const deleteProjectItem = async ({
       .from('project-images')
       .remove([imageStoragePath]);
     if (removeImageError) throw removeImageError;
+  }
+
+  if (sourceStoragePath) {
+    const { error: removeSourceError } = await supabase.storage
+      .from('project-sources')
+      .remove([sourceStoragePath]);
+    if (removeSourceError) throw removeSourceError;
   }
 
   if (thumbnailStoragePath) {

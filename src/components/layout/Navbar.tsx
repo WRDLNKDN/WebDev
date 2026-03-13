@@ -718,8 +718,6 @@ export const Navbar = () => {
                         px: isCompactDesktop ? 1 : 1.5,
                         ...(isDashboardActive && {
                           color: 'white',
-                          borderBottom: '2px solid rgba(255,255,255,0.6)',
-                          borderRadius: 0,
                           '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
@@ -738,8 +736,6 @@ export const Navbar = () => {
                         px: isCompactDesktop ? 1 : 1.5,
                         ...(isDirectoryActive && {
                           color: 'white',
-                          borderBottom: '2px solid rgba(255,255,255,0.6)',
-                          borderRadius: 0,
                           '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
@@ -758,8 +754,6 @@ export const Navbar = () => {
                         px: isCompactDesktop ? 1 : 1.5,
                         ...(isEventsActive && {
                           color: 'white',
-                          borderBottom: '2px solid rgba(255,255,255,0.6)',
-                          borderRadius: 0,
                           '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}
@@ -778,8 +772,6 @@ export const Navbar = () => {
                         px: isCompactDesktop ? 1 : 1.5,
                         ...(isFeedActive && {
                           color: 'white',
-                          borderBottom: '2px solid rgba(255,255,255,0.6)',
-                          borderRadius: 0,
                           '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }),
                       }}

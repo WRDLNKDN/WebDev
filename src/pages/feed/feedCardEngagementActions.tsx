@@ -21,7 +21,7 @@ const FEED_ACTION_BUTTON_SX = {
   flexDirection: { xs: 'row', sm: 'row' },
   gap: 0.625,
   pt: 1,
-  pb: 0.75,
+  pb: 0.55,
   px: 0,
   borderRadius: 2,
   transition:

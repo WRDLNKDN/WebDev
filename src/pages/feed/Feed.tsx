@@ -3104,13 +3104,15 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         sx={{
           maxWidth: 1200,
           mx: 'auto',
-          py: { xs: 2, md: 3 },
+          pt: { xs: 3.75, md: 5 },
+          pb: { xs: 2, md: 3 },
           px: { xs: 1, sm: 1.5, md: 2 },
         }}
       >
         {/* Page header: Welcome to your Feed + subtext (search is in navbar) */}
         <Box
           sx={{
+            pt: { xs: 0.5, md: 0.75 },
             mb: { xs: 2, md: 3 },
             pb: { xs: 1.5, md: 2 },
             borderBottom: '1px solid rgba(156,187,217,0.18)',
@@ -3659,17 +3661,33 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         maxWidth="sm"
         fullWidth
         fullScreen={isSmallScreen}
+        scroll="paper"
+        sx={{
+          '& .MuiBackdrop-root': {
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(4, 10, 25, 0.62)',
+          },
+        }}
         PaperProps={{
           sx: {
             bgcolor: 'background.paper',
-            borderRadius: isSmallScreen ? '20px 20px 0 0' : 2,
+            borderRadius: isSmallScreen ? '20px 20px 0 0' : 3,
             border: '1px solid rgba(156,187,217,0.22)',
+            boxShadow:
+              '0 32px 64px rgba(1, 6, 18, 0.46), inset 0 1px 0 rgba(255,255,255,0.06)',
+            width: 'min(100%, 680px)',
+            maxWidth: 'calc(100vw - 24px)',
+            maxHeight: isSmallScreen
+              ? '100dvh'
+              : 'min(760px, calc(100dvh - 48px))',
             ...(isSmallScreen
               ? {
                   m: 0,
                   width: '100%',
                   maxWidth: '100%',
-                  minHeight: '82vh',
+                  minHeight: '72dvh',
+                  maxHeight: '100dvh',
                   alignSelf: 'flex-end',
                 }
               : null),
@@ -3678,13 +3696,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       >
         <DialogTitle
           sx={{
-            pb: 1,
-            pt: 2,
-            px: 2,
+            pb: 1.25,
+            pt: { xs: 2, sm: 2.25 },
+            px: { xs: 1.75, sm: 2.25 },
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: '1px solid rgba(156,187,217,0.18)',
+            flexShrink: 0,
           }}
         >
           <Stack direction="row" alignItems="center" spacing={2}>
@@ -3710,31 +3729,69 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2, pb: 1 }}>
-          <InputBase
-            inputRef={composerRef}
-            placeholder="Share your thoughts..."
-            value={composerValue}
-            onChange={(e) => setComposerValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmitPost();
-              }
-            }}
-            fullWidth
-            multiline
-            minRows={4}
+        <DialogContent
+          sx={{
+            px: { xs: 1.75, sm: 2.25 },
+            pt: { xs: 2.25, sm: 2.75 },
+            pb: { xs: 1.4, sm: 1.6 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: { xs: 1.5, sm: 1.75 },
+            minHeight: { xs: 'auto', sm: 360 },
+            overflowY: 'auto',
+          }}
+        >
+          <Box
             sx={{
-              bgcolor: 'transparent',
-              px: 0,
-              py: 0,
-              fontSize: '1rem',
-              '&.Mui-focused': { outline: 'none' },
+              borderRadius: 2.5,
+              border: '1px solid rgba(156,187,217,0.16)',
+              bgcolor: 'rgba(7, 18, 34, 0.46)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+              transition:
+                'border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease',
+              '&:focus-within': {
+                borderColor: 'rgba(56,132,210,0.7)',
+                boxShadow:
+                  '0 0 0 1px rgba(56,132,210,0.18), inset 0 1px 0 rgba(255,255,255,0.04)',
+                bgcolor: 'rgba(9, 22, 42, 0.6)',
+              },
             }}
-          />
+          >
+            <InputBase
+              inputRef={composerRef}
+              placeholder="Share your thoughts..."
+              value={composerValue}
+              onChange={(e) => setComposerValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSubmitPost();
+                }
+              }}
+              fullWidth
+              multiline
+              minRows={5}
+              maxRows={14}
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                px: { xs: 1.2, sm: 1.35 },
+                py: { xs: 1.05, sm: 1.2 },
+                fontSize: '1rem',
+                lineHeight: 1.65,
+                '& textarea': {
+                  overflowY: 'auto !important',
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: 'rgba(255,255,255,0.42)',
+                  opacity: 1,
+                },
+                '&.Mui-focused': { outline: 'none' },
+              }}
+            />
+          </Box>
           {composerImages.length > 0 && (
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap">
+            <Stack direction="row" spacing={1} flexWrap="wrap">
               {composerImages.map((url, i) => (
                 <Box key={url} sx={{ position: 'relative' }}>
                   <Box
@@ -3771,92 +3828,120 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             </Stack>
           )}
           <Stack
-            direction="row"
-            alignItems="center"
-            spacing={0.75}
+            direction={{ xs: 'column', sm: 'row' }}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0.75 }}
             sx={{
-              mt: 2,
-              pt: 1.5,
+              mt: composerImages.length > 0 ? 0.1 : 0.4,
+              pt: { xs: 1.1, sm: 1.2 },
               borderTop: '1px solid rgba(156,187,217,0.18)',
-              flexWrap: 'wrap',
-              gap: 0.5,
+              gap: { xs: 0.8, sm: 0.6 },
+              flexShrink: 0,
             }}
           >
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              onChange={handleAddPostImage}
-              disabled={imageUploading}
-              style={{ display: 'none' }}
-              id="post-image-upload"
-            />
-            <IconButton
-              component="label"
-              htmlFor="post-image-upload"
-              size="small"
-              aria-label="Attach image"
-              disabled={imageUploading}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.75}
               sx={{
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
+                flexWrap: 'wrap',
+                gap: 0.5,
               }}
             >
-              <AttachFileIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Add GIF"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
-              }}
-              onClick={() => setGifPickerOpen(true)}
-            >
-              <GifBoxIcon fontSize="small" />
-            </IconButton>
-            {imageUploading && (
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <CircularProgress size={14} />
-                <Typography variant="caption" color="text.secondary">
-                  Uploading…
-                </Typography>
-              </Stack>
-            )}
-            <IconButton
-              size="small"
-              aria-label="Schedule post"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main', bgcolor: 'action.hover' },
-              }}
-              onClick={() => {
-                const d = new Date();
-                d.setDate(d.getDate() + 1);
-                setScheduleDate(d.toISOString().slice(0, 10));
-                setScheduleTime('09:30');
-                setScheduleDialogOpen(true);
-              }}
-            >
-              <ScheduleIcon fontSize="small" />
-            </IconButton>
-            {composerScheduledAt && (
-              <Typography
-                variant="caption"
-                color="primary.main"
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleAddPostImage}
+                disabled={imageUploading}
+                style={{ display: 'none' }}
+                id="post-image-upload"
+              />
+              <IconButton
+                component="label"
+                htmlFor="post-image-upload"
+                size="small"
+                aria-label="Attach image"
+                disabled={imageUploading}
+                sx={{
+                  color: 'text.secondary',
+                  transition:
+                    'color 140ms ease, background-color 140ms ease, transform 140ms ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                    bgcolor: 'action.hover',
+                    transform: 'translateY(-1px)',
+                  },
+                }}
               >
-                {new Date(composerScheduledAt).toLocaleString()}
-                <IconButton
-                  size="small"
-                  onClick={() => setComposerScheduledAt(null)}
-                  aria-label="Clear schedule"
-                  sx={{ p: 0, ml: 0.25 }}
+                <AttachFileIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Add GIF"
+                sx={{
+                  color: 'text.secondary',
+                  transition:
+                    'color 140ms ease, background-color 140ms ease, transform 140ms ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                    bgcolor: 'action.hover',
+                    transform: 'translateY(-1px)',
+                  },
+                }}
+                onClick={() => setGifPickerOpen(true)}
+              >
+                <GifBoxIcon fontSize="small" />
+              </IconButton>
+              {imageUploading && (
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <CircularProgress size={14} />
+                  <Typography variant="caption" color="text.secondary">
+                    Uploading…
+                  </Typography>
+                </Stack>
+              )}
+              <IconButton
+                size="small"
+                aria-label="Schedule post"
+                sx={{
+                  color: 'text.secondary',
+                  transition:
+                    'color 140ms ease, background-color 140ms ease, transform 140ms ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                    bgcolor: 'action.hover',
+                    transform: 'translateY(-1px)',
+                  },
+                }}
+                onClick={() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  setScheduleDate(d.toISOString().slice(0, 10));
+                  setScheduleTime('09:30');
+                  setScheduleDialogOpen(true);
+                }}
+              >
+                <ScheduleIcon fontSize="small" />
+              </IconButton>
+              {composerScheduledAt && (
+                <Typography
+                  variant="caption"
+                  color="primary.main"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}
                 >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Typography>
-            )}
-            <Box sx={{ flex: 1, minWidth: isSmallScreen ? '100%' : 8 }} />
+                  {new Date(composerScheduledAt).toLocaleString()}
+                  <IconButton
+                    size="small"
+                    onClick={() => setComposerScheduledAt(null)}
+                    aria-label="Clear schedule"
+                    sx={{ p: 0, ml: 0.25 }}
+                  >
+                    <CloseIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Typography>
+              )}
+            </Stack>
+            <Box sx={{ flex: 1, minWidth: { xs: 0, sm: 8 } }} />
             <Button
               variant="contained"
               size="small"
@@ -3869,9 +3954,12 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               sx={{
                 textTransform: 'none',
                 borderRadius: '9999px',
-                px: 2.5,
-                py: 0.75,
+                px: 2.75,
+                py: 0.9,
+                alignSelf: { xs: 'stretch', sm: 'center' },
                 width: { xs: '100%', sm: 'auto' },
+                minWidth: { sm: 112 },
+                boxShadow: '0 10px 24px rgba(56,132,210,0.24)',
                 '&:hover': { filter: 'brightness(1.08)' },
               }}
             >

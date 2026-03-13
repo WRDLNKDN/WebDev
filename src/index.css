@@ -74,7 +74,7 @@ a {
 
 a:hover {
   color: var(--color-link-hover);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Reset native button styles so MUI can control; keep cursor & pointer events */

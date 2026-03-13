@@ -74,20 +74,6 @@ export const EditProfileDetailsSection = ({
     </Box>
 
     <Box>
-      <FieldHeading>NICHE OR FIELD</FieldHeading>
-      <TextField
-        fullWidth
-        placeholder="Example: DevSecOps in FinTech"
-        value={formData.niche_field}
-        onChange={(e) => onChange('niche_field', e.target.value)}
-        disabled={busy}
-        variant="filled"
-        sx={INPUT_STYLES}
-        helperText="Used for search. Not used for filters."
-      />
-    </Box>
-
-    <Box>
       <FieldHeading>LOCATION</FieldHeading>
       <TextField
         fullWidth

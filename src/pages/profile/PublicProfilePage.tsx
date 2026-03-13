@@ -5,6 +5,7 @@ import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
+import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { buildPortfolioCategorySections } from '../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { NerdCreds } from '../../types/profile';
@@ -132,10 +133,10 @@ export const PublicProfilePage = () => {
     .filter(Boolean)
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
 
-  if (profile.niche_field) {
+  for (const value of parseNicheValues(profile.niche_field)) {
     industryChips.push({
-      label: profile.niche_field,
-      key: `niche-${profile.niche_field}`,
+      label: `Other: ${value}`,
+      key: `niche-${value}`,
     });
   }
 

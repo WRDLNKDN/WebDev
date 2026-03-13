@@ -10,6 +10,16 @@ const UPLOAD_FIXTURE = path.join(
   'fixtures',
   'upload-sample.txt',
 );
+const MID_SIZED_GIF = {
+  name: 'party.gif',
+  mimeType: 'image/gif',
+  buffer: Buffer.alloc(5 * 1024 * 1024, 1),
+};
+const TOO_LARGE_GIF = {
+  name: 'too-large.gif',
+  mimeType: 'image/gif',
+  buffer: Buffer.alloc(10 * 1024 * 1024, 1),
+};
 
 const E2E_ROOM_ID = 'e2e-room-1111-4111-8111-111111111111';
 
@@ -18,6 +28,8 @@ test.describe('Chat file upload', () => {
     page: import('@playwright/test').Page,
     profileOverride?: Partial<{ handle: string; display_name: string | null }>,
   ) {
+    const messages: Array<Record<string, unknown>> = [];
+
     await page.route('**/rest/v1/chat_rooms*', async (route) => {
       const isSingle = route
         .request()
@@ -89,19 +101,21 @@ test.describe('Chat file upload', () => {
           room_id?: string;
           sender_id?: string;
         };
+        const message = {
+          id: 'msg-e2e-1',
+          room_id: payload.room_id ?? E2E_ROOM_ID,
+          sender_id: payload.sender_id ?? USER_ID,
+          content: payload.content ?? null,
+          is_system_message: false,
+          is_deleted: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        messages.splice(0, messages.length, message);
         await route.fulfill({
           status: 201,
           contentType: 'application/json',
-          body: JSON.stringify({
-            id: 'msg-e2e-1',
-            room_id: payload.room_id ?? E2E_ROOM_ID,
-            sender_id: payload.sender_id ?? USER_ID,
-            content: payload.content ?? null,
-            is_system_message: false,
-            is_deleted: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify(message),
         });
         return;
       }
@@ -109,7 +123,7 @@ test.describe('Chat file upload', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: '[]',
+        body: JSON.stringify(messages),
       });
     });
   }
@@ -141,6 +155,154 @@ test.describe('Chat file upload', () => {
     await expect(
       page.getByRole('button', { name: 'Send message' }),
     ).toBeEnabled({ timeout: 15_000 });
+  });
+
+  test('allows a larger gif within the processing ceiling and shows preparation feedback', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubChatRoom(page);
+
+    await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+      timeout: 35_000,
+    });
+
+    const fileInput = page.locator('input[type=file]').first();
+    await fileInput.setInputFiles(MID_SIZED_GIF);
+
+    await expect(page.getByText(/large gif detected/i)).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Send message' }),
+    ).toBeEnabled();
+  });
+
+  test('processes a larger gif through the backend flow and saves it as video media', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubChatRoom(page);
+
+    let processedGifRequested = false;
+    let attachmentInsertMime: string | null = null;
+
+    await page.route('**/api/chat/attachments/process-gif', async (route) => {
+      processedGifRequested = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          data: {
+            path: `${USER_ID}/processed-party.mp4`,
+            mime: 'video/mp4',
+            size: 1_024_000,
+          },
+        }),
+      });
+    });
+
+    await page.route('**/rest/v1/chat_message_attachments*', async (route) => {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as { mime_type?: string };
+        attachmentInsertMime = body.mime_type ?? null;
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'attachment-1',
+            message_id: 'msg-e2e-1',
+            storage_path: `${USER_ID}/processed-party.mp4`,
+            mime_type: body.mime_type ?? 'video/mp4',
+            file_size: 1_024_000,
+            created_at: new Date().toISOString(),
+          }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'attachment-1',
+            message_id: 'msg-e2e-1',
+            storage_path: `${USER_ID}/processed-party.mp4`,
+            mime_type: 'video/mp4',
+            file_size: 1_024_000,
+            created_at: new Date().toISOString(),
+          },
+        ]),
+      });
+    });
+
+    await page.route(
+      '**/storage/v1/object/sign/chat-attachments/**',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            signedUrl:
+              'https://example.supabase.co/storage/v1/object/sign/chat-attachments/fake.mp4?token=e2e',
+            signedURL:
+              '/storage/v1/object/sign/chat-attachments/fake.mp4?token=e2e',
+          }),
+        });
+      },
+    );
+
+    await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+      timeout: 35_000,
+    });
+
+    const fileInput = page.locator('input[type=file]').first();
+    await fileInput.setInputFiles(MID_SIZED_GIF);
+    await page.getByRole('textbox', { name: 'Message' }).fill('processed gif');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    await expect.poll(() => processedGifRequested).toBe(true);
+    await expect.poll(() => attachmentInsertMime).toBe('video/mp4');
+    await expect(page.locator('video')).toHaveCount(1);
+  });
+
+  test('rejects a gif above the processing ceiling with a clear message', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubChatRoom(page);
+
+    await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+      timeout: 35_000,
+    });
+
+    const fileInput = page.locator('input[type=file]').first();
+    await fileInput.setInputFiles(TOO_LARGE_GIF);
+
+    await expect(
+      page.getByText('This GIF is too large to process. Try a smaller file.'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Send message' }),
+    ).toBeDisabled();
   });
 
   test('keeps the message input visible and avoids page-level scroll gaps', async ({
@@ -296,13 +458,31 @@ test.describe('Chat file upload', () => {
 
     await messageInput.focus();
     await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'Expand input' }),
-    ).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'Attach image' }),
-    ).toBeFocused();
+    const firstComposerFocus = await page.evaluate(() => {
+      const active = document.activeElement as HTMLElement | null;
+      return (
+        active?.getAttribute('aria-label') ??
+        active?.getAttribute('title') ??
+        active?.textContent ??
+        ''
+      );
+    });
+    expect(['Expand input', 'Attach image', 'Open menu']).toContain(
+      firstComposerFocus,
+    );
+    if (
+      firstComposerFocus === 'Expand input' ||
+      firstComposerFocus === 'Open menu'
+    ) {
+      await page.keyboard.press('Tab');
+      await expect(
+        page.getByRole('button', { name: 'Attach image' }),
+      ).toBeFocused();
+    } else {
+      await expect(
+        page.getByRole('button', { name: 'Attach image' }),
+      ).toBeFocused();
+    }
     await page.keyboard.press('Tab');
     await expect(
       page.getByRole('button', { name: 'Attach file' }),

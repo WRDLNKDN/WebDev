@@ -2,6 +2,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { Box, Button, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
+import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import type { SocialLink } from '../../types/profile';
 
@@ -61,49 +62,53 @@ const skillsPills = (skills: string[]) => (
   </Stack>
 );
 
-const industryPills = (industries: string[], nicheField?: string) => (
-  <Stack direction="row" flexWrap="wrap" gap={1}>
-    {industries.map((industry) => (
-      <Box
-        key={`industry-${industry}`}
-        data-testid="dashboard-pill"
-        sx={{
-          display: 'inline-flex',
-          width: 'fit-content',
-          maxWidth: '100%',
-          whiteSpace: 'nowrap',
-          px: 1.25,
-          py: 0.5,
-          borderRadius: 999,
-          bgcolor: 'rgba(66,165,245,0.15)',
-          border: '1px solid rgba(66,165,245,0.35)',
-          fontSize: '0.78rem',
-        }}
-      >
-        {industry}
-      </Box>
-    ))}
-    {nicheField ? (
-      <Box
-        data-testid="dashboard-pill"
-        sx={{
-          display: 'inline-flex',
-          width: 'fit-content',
-          maxWidth: '100%',
-          whiteSpace: 'nowrap',
-          px: 1.25,
-          py: 0.5,
-          borderRadius: 999,
-          bgcolor: 'rgba(66,165,245,0.1)',
-          border: '1px solid rgba(66,165,245,0.25)',
-          fontSize: '0.78rem',
-        }}
-      >
-        {nicheField}
-      </Box>
-    ) : null}
-  </Stack>
-);
+const industryPills = (industries: string[], nicheField?: string) => {
+  const otherValues = parseNicheValues(nicheField);
+  return (
+    <Stack direction="row" flexWrap="wrap" gap={1}>
+      {industries.map((industry) => (
+        <Box
+          key={`industry-${industry}`}
+          data-testid="dashboard-pill"
+          sx={{
+            display: 'inline-flex',
+            width: 'fit-content',
+            maxWidth: '100%',
+            whiteSpace: 'nowrap',
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 999,
+            bgcolor: 'rgba(66,165,245,0.15)',
+            border: '1px solid rgba(66,165,245,0.35)',
+            fontSize: '0.78rem',
+          }}
+        >
+          {industry}
+        </Box>
+      ))}
+      {otherValues.map((value) => (
+        <Box
+          key={`other-${value}`}
+          data-testid="dashboard-pill"
+          sx={{
+            display: 'inline-flex',
+            width: 'fit-content',
+            maxWidth: '100%',
+            whiteSpace: 'nowrap',
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 999,
+            bgcolor: 'rgba(66,165,245,0.1)',
+            border: '1px solid rgba(66,165,245,0.25)',
+            fontSize: '0.78rem',
+          }}
+        >
+          Other: {value}
+        </Box>
+      ))}
+    </Stack>
+  );
+};
 
 export const DashboardIdentitySection = ({
   displayName,

@@ -257,7 +257,7 @@ export const FeedCardEngagementActions = ({
             variant="caption"
             sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
           >
-            Repost
+            {viewerReposted ? 'Reposted' : 'Repost'}
           </Typography>
         </Button>
         <Button
@@ -276,7 +276,7 @@ export const FeedCardEngagementActions = ({
             variant="caption"
             sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
           >
-            Send
+            {viewerSent ? 'Sent' : 'Send'}
           </Typography>
         </Button>
         <Button

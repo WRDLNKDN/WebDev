@@ -42,6 +42,7 @@ import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
+import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
 import {
   buildPortfolioCategorySections,
@@ -266,8 +267,9 @@ export const LandingPage = () => {
   const industryChips = getIndustryDisplayLabels(profile)
     .filter(Boolean)
     .map((label) => ({ label: `Industry: ${label}`, key: label }));
-  if (nicheField)
-    industryChips.push({ label: nicheField, key: `niche-${nicheField}` });
+  for (const value of parseNicheValues(nicheField)) {
+    industryChips.push({ label: `Other: ${value}`, key: `niche-${value}` });
+  }
   const showLinksInIdentity = hasVisibleSocialLinks(profile.socials);
   const portfolioSections = buildPortfolioCategorySections(projects);
   const resumePreviewProject = buildResumePreviewItem({

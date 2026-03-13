@@ -20,8 +20,8 @@ export const CompleteStep = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    video.playbackRate = 1.2;
-    video.defaultPlaybackRate = 1.2;
+    video.playbackRate = 1.35;
+    video.defaultPlaybackRate = 1.35;
     video.muted = false;
     video.volume = 1;
 

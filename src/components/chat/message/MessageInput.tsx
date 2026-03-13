@@ -22,11 +22,12 @@ import {
   getChatAttachmentRejectionReason,
   normalizeChatAttachmentMime,
 } from '../../../lib/chat/attachmentValidation';
+import { getChatAttachmentProcessingPlan } from '../../../lib/chat/attachmentProcessing';
+import { processChatGifUpload } from '../../../lib/api/chatAttachmentsApi';
 import { GifPickerDialog } from '../dialogs/GifPickerDialog';
 import {
   type ChatAttachmentMeta,
   CHAT_ALLOWED_ACCEPT,
-  CHAT_MAX_FILE_BYTES,
 } from '../../../types/chat';
 import { toMessage } from '../../../lib/utils/errors';
 
@@ -106,6 +107,9 @@ export const MessageInput = ({
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
     null,
@@ -122,6 +126,7 @@ export const MessageInput = ({
 
   const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
+    setProcessingMessage(null);
     try {
       const res = await fetch(gifUrl);
       if (!res.ok) throw new Error('gif fetch failed');
@@ -137,8 +142,11 @@ export const MessageInput = ({
         setError(rejectionReason);
         return;
       }
+      const plan = getChatAttachmentProcessingPlan(file);
+      setProcessingMessage(plan.accepted ? plan.helperText : null);
       setPendingFiles([file]);
     } catch {
+      setProcessingMessage(null);
       setError("We couldn't add that GIF. Please try another one.");
     }
   };
@@ -177,25 +185,49 @@ export const MessageInput = ({
         }
 
         const basePath = `${session.user.id}/${Date.now()}`;
-
-        const blob = await stripExifIfImage(f);
-        if (blob.size > CHAT_MAX_FILE_BYTES) {
-          setError('File must be 2MB or smaller.');
+        const plan = getChatAttachmentProcessingPlan({
+          size: f.size,
+          type: mime,
+        });
+        if (!plan.accepted) {
+          setError(plan.reason);
           return;
         }
-        const ext = f.name.split('.').pop() || 'bin';
-        const path = `${basePath}_0.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('chat-attachments')
-          .upload(path, blob, { contentType: mime });
+        setProcessingMessage(plan.helperText);
 
-        if (uploadErr) {
-          setError(toMessage(uploadErr));
-          return;
+        if (plan.mode === 'gif_processing') {
+          const processed = await processChatGifUpload({
+            file: f,
+            accessToken: session.access_token,
+          });
+          paths.push(processed.path);
+          meta.push({
+            path: processed.path,
+            mime: processed.mime,
+            size: processed.size,
+          });
+        } else {
+          const blob = await stripExifIfImage(f);
+          const ext = f.name.split('.').pop() || 'bin';
+          const path = `${basePath}_0.${ext}`;
+          const { error: uploadErr } = await supabase.storage
+            .from('chat-attachments')
+            .upload(path, blob, { contentType: mime });
+
+          if (uploadErr) {
+            setProcessingMessage(null);
+            setError(toMessage(uploadErr));
+            return;
+          }
+          paths.push(path);
+          meta.push({ path, mime, size: blob.size });
         }
-        paths.push(path);
-        meta.push({ path, mime, size: blob.size });
         setPendingFiles([]);
+        setProcessingMessage(null);
+      } catch (cause) {
+        setProcessingMessage(null);
+        setError(toMessage(cause));
+        return;
       } finally {
         setUploading(false);
       }
@@ -207,6 +239,7 @@ export const MessageInput = ({
       meta.length > 0 ? meta : undefined,
     );
     setText('');
+    setProcessingMessage(null);
     requestAnimationFrame(() => {
       messageInputRef.current?.focus();
     });
@@ -230,9 +263,13 @@ export const MessageInput = ({
     const rejectionReason = getChatAttachmentRejectionReason(f);
     if (rejectionReason) {
       setError(rejectionReason);
+      setProcessingMessage(null);
       e.target.value = '';
       return;
     }
+    const plan = getChatAttachmentProcessingPlan(f);
+    setError(null);
+    setProcessingMessage(plan.accepted ? plan.helperText : null);
     setPendingFiles([f]);
     e.target.value = '';
   };
@@ -255,6 +292,11 @@ export const MessageInput = ({
       }}
     >
       {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
+      {processingMessage && !error ? (
+        <Box sx={{ fontSize: 12, color: 'rgba(141,188,229,0.88)' }}>
+          {processingMessage}
+        </Box>
+      ) : null}
       {pendingFiles.length > 0 && (
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {pendingFiles.map((f, i) => (

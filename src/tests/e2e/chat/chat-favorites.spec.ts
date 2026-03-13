@@ -3,7 +3,9 @@ import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 const ROOM_ID = 'e2e-room-favorite-1111-4111-8111-111111111111';
+const ROOM_ID_2 = 'e2e-room-favorite-2222-4222-8222-222222222222';
 const OTHER_USER_ID = 'favorite-other-user-1';
+const OTHER_USER_ID_2 = 'favorite-other-user-2';
 
 async function stubChatFavoritesSurface(
   page: import('@playwright/test').Page,
@@ -42,6 +44,13 @@ async function stubChatFavoritesSurface(
           last_is_deleted: false,
           unread_count: 0,
         },
+        {
+          room_id: ROOM_ID_2,
+          last_content: 'Older message',
+          last_created_at: new Date(Date.now() - 60_000).toISOString(),
+          last_is_deleted: false,
+          unread_count: 0,
+        },
       ]),
     });
   });
@@ -59,10 +68,18 @@ async function stubChatFavoritesSurface(
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    const roomTwo = {
+      id: ROOM_ID_2,
+      room_type: 'dm',
+      name: null,
+      created_by: USER_ID,
+      created_at: new Date(Date.now() - 60_000).toISOString(),
+      updated_at: new Date(Date.now() - 60_000).toISOString(),
+    };
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(isSingle ? room : [room]),
+      body: JSON.stringify(isSingle ? room : [room, roomTwo]),
     });
   });
 
@@ -100,6 +117,20 @@ async function stubChatFavoritesSurface(
           joined_at: new Date().toISOString(),
           left_at: null,
         },
+        {
+          room_id: ROOM_ID_2,
+          user_id: USER_ID,
+          role: 'member',
+          joined_at: new Date().toISOString(),
+          left_at: null,
+        },
+        {
+          room_id: ROOM_ID_2,
+          user_id: OTHER_USER_ID_2,
+          role: 'member',
+          joined_at: new Date().toISOString(),
+          left_at: null,
+        },
       ]),
     });
   });
@@ -125,24 +156,23 @@ async function stubChatFavoritesSurface(
     }
 
     if (method === 'POST') {
-      favoriteState.value = true;
+      const payload = route.request().postDataJSON() as {
+        room_id?: string;
+        user_id?: string;
+        is_favorite?: boolean;
+      };
+      favoriteState.value = Boolean(payload?.is_favorite);
       await route.fulfill({
-        status: 201,
+        status: 200,
         contentType: 'application/json',
         body: JSON.stringify([
           {
             room_id: ROOM_ID,
             user_id: USER_ID,
-            is_favorite: true,
+            is_favorite: favoriteState.value,
           },
         ]),
       });
-      return;
-    }
-
-    if (method === 'DELETE') {
-      favoriteState.value = false;
-      await route.fulfill({ status: 204, body: '' });
       return;
     }
 
@@ -168,6 +198,12 @@ async function stubChatFavoritesSurface(
           id: OTHER_USER_ID,
           handle: 'nick',
           display_name: 'Nick Clark',
+          avatar: null,
+        },
+        {
+          id: OTHER_USER_ID_2,
+          handle: 'april',
+          display_name: 'April Drake',
           avatar: null,
         },
       ]),
@@ -211,6 +247,9 @@ test.describe('Chat favorites', () => {
       'aria-label',
       /remove from favorites/i,
     );
+    await expect(
+      favoriteButton.getByTestId(`chat-room-favorite-icon-filled-${ROOM_ID}`),
+    ).toBeVisible();
 
     await page.reload({ waitUntil: 'domcontentloaded' });
 
@@ -219,6 +258,9 @@ test.describe('Chat favorites', () => {
       'aria-label',
       /remove from favorites/i,
     );
+    await expect(
+      favoriteButton.getByTestId(`chat-room-favorite-icon-filled-${ROOM_ID}`),
+    ).toBeVisible();
   });
 
   test('messenger overlay can be closed with Escape and toggles favorites', async ({
@@ -264,7 +306,20 @@ test.describe('Chat favorites', () => {
       'aria-label',
       /remove from favorites/i,
     );
+    await expect(
+      favoriteButton.getByTestId(
+        `messenger-overlay-favorite-icon-filled-${ROOM_ID}`,
+      ),
+    ).toBeVisible();
     expect(favoriteState.value).toBe(true);
+
+    const roomNames = page
+      .locator(
+        '[data-testid="messenger-overlay-panel"] .MuiListItemButton-root',
+      )
+      .locator('p.MuiTypography-body2');
+    await expect(roomNames.nth(0)).toContainText('Nick Clark');
+    await expect(roomNames.nth(1)).toContainText('April Drake');
 
     await page.getByLabel('Close messages').click();
     await expect(overlayPanel).toHaveCount(0);

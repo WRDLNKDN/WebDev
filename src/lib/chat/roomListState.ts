@@ -99,14 +99,16 @@ export function deriveVisibleChatRooms(
   });
 
   return [...filtered].sort((a, b) => {
+    const byFavorite =
+      Number(Boolean(b.is_favorite)) - Number(Boolean(a.is_favorite));
+    if (byFavorite !== 0) return byFavorite;
+
     if (sort === 'alphabetical') {
       return compareByAlphabetical(a, b, currentUserId);
     }
 
     if (sort === 'favorites') {
-      const byFavorite =
-        Number(Boolean(b.is_favorite)) - Number(Boolean(a.is_favorite));
-      return byFavorite || compareByRecent(a, b);
+      return compareByRecent(a, b);
     }
 
     if (sort === 'unread') {

@@ -38,7 +38,7 @@ export const MessengerOverlay = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<ChatRoomFilter>('all');
-  const [sort, setSort] = useState<ChatRoomSort>('recent');
+  const [sort, setSort] = useState<ChatRoomSort>('favorites');
   const bannerOffsetPx = useUatBannerOffset();
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;

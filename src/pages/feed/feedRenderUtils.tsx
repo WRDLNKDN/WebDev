@@ -237,11 +237,13 @@ export const ShareDialog = ({
   open,
   onClose,
   onCopyLink,
+  onComplete,
 }: {
   item: FeedItem | null;
   open: boolean;
   onClose: () => void;
   onCopyLink: (url: string) => void;
+  onComplete?: () => void;
 }) => {
   if (!item) return null;
   const postUrl =
@@ -259,6 +261,7 @@ export const ShareDialog = ({
             startIcon={<ContentCopyIcon />}
             onClick={() => {
               onCopyLink(postUrl);
+              onComplete?.();
               onClose();
             }}
           >
@@ -272,6 +275,9 @@ export const ShareDialog = ({
             target="_blank"
             rel="noopener noreferrer"
             component="a"
+            onClick={() => {
+              onComplete?.();
+            }}
           >
             Share to LinkedIn
           </Button>

@@ -136,7 +136,9 @@ test.describe('MVP route smoke', () => {
     await stubAppSurface(page);
   });
 
-  test('dashboard route loads without SYSTEM_HALT', async ({ page }) => {
+  test('dashboard route loads without hitting the error boundary', async ({
+    page,
+  }) => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
     await expect(
@@ -144,9 +146,7 @@ test.describe('MVP route smoke', () => {
     ).toBeVisible({
       timeout: 25_000,
     });
-    await expect(
-      page.getByRole('heading', { name: '[SYSTEM_HALT]' }),
-    ).not.toBeVisible();
+    await expect(page.getByTestId('error-boundary-fallback')).toHaveCount(0);
   });
 
   test('dashboard notifications route loads', async ({ page }) => {

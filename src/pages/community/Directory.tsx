@@ -29,6 +29,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
+import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import { useAppToast } from '../../context/AppToastContext';
 import type {
@@ -1174,60 +1175,18 @@ export const Directory = () => {
             <CircularProgress size={40} />
           </Box>
         ) : rows.length === 0 ? (
-          <Paper
+          <Box
             key={`results-empty-${queryCacheKey}`}
-            elevation={0}
             sx={{
-              py: { xs: 6, md: 8 },
-              px: 4,
-              textAlign: 'center',
-              borderRadius: 3,
-              bgcolor: 'rgba(18,22,36,0.7)',
-              border: '1px dashed rgba(255,255,255,0.1)',
               animation: 'directoryResultsFade 180ms ease-out',
             }}
-            data-testid="directory-empty-state"
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5 }}>
-              {hasActiveFilters ? 'No members found' : 'No results'}
-            </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              {hasActiveFilters
-                ? 'No members match your filters.'
-                : 'The directory is empty.'}
-            </Typography>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              justifyContent="center"
-              alignItems="center"
-              flexWrap="wrap"
-            >
-              {hasActiveFilters && (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => clearAllFilters('Filters cleared.')}
-                  sx={{
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    px: 4,
-                    py: 1.25,
-                    borderRadius: 2,
-                    borderColor: 'rgba(141,188,229,0.50)',
-                    color: 'rgba(255,255,255,0.9)',
-                    '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(56,132,210,0.14)',
-                    },
-                  }}
-                  data-testid="directory-clear-filters"
-                >
-                  Clear filters
-                </Button>
-              )}
-            </Stack>
-          </Paper>
+            <DirectoryEmptyState
+              hasActiveFilters={hasActiveFilters}
+              isSearchActive={q.trim().length > 0}
+              onClearFilters={() => clearAllFilters('Filters cleared.')}
+            />
+          </Box>
         ) : (
           <Stack
             key={`results-list-${queryCacheKey}`}

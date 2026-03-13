@@ -2,6 +2,7 @@ import { createContext } from 'react';
 import type {
   JoinState,
   JoinStep,
+  JoinSubmitResult,
   IdentityData,
   ValuesData,
   ProfileData,
@@ -31,7 +32,7 @@ export type JoinContextValue = {
   submitting: boolean;
   submitError: string | null;
   clearSubmitError: () => void;
-  submitRegistration: (profileData?: ProfileData) => Promise<void>;
+  submitRegistration: (profileData?: ProfileData) => Promise<JoinSubmitResult>;
 
   // Reset
   resetSignup: () => void;
@@ -58,6 +59,16 @@ export type JoinContextValue = {
       marketing_source?: string | null;
     },
   ) => void;
+
+  /** Session exists but no profile yet. Set identity; preserve values/profile/currentStep if user was mid-flow (e.g. re-auth). */
+  reconcileSessionNoProfile: (session: {
+    user: {
+      id: string;
+      email?: string;
+      identities?: { provider?: string }[];
+      app_metadata?: { provider?: string };
+    };
+  }) => void;
 
   // Convenience
   next: () => void;

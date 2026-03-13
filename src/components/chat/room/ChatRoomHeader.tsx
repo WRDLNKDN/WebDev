@@ -261,12 +261,33 @@ export const ChatRoomHeader = ({
               aria-label={
                 isFavorite ? 'Remove from favorites' : 'Add to favorites'
               }
-              sx={{ color: isFavorite ? '#f5c451' : 'rgba(255,255,255,0.75)' }}
+              sx={{
+                color: isFavorite ? '#f5c451' : 'rgba(255,255,255,0.75)',
+                bgcolor: isFavorite ? 'rgba(245,196,81,0.14)' : 'transparent',
+                border: isFavorite
+                  ? '1px solid rgba(245,196,81,0.28)'
+                  : '1px solid transparent',
+                boxShadow: isFavorite
+                  ? '0 0 0 1px rgba(245,196,81,0.08) inset'
+                  : 'none',
+                transition:
+                  'color 120ms ease, background-color 120ms ease, border-color 120ms ease',
+                '&:hover': {
+                  color: '#f5c451',
+                  bgcolor: 'rgba(245,196,81,0.18)',
+                },
+              }}
             >
               {isFavorite ? (
-                <StarIcon fontSize="small" />
+                <StarIcon
+                  fontSize="small"
+                  data-testid={`chat-room-header-favorite-icon-filled-${room?.id ?? 'unknown'}`}
+                />
               ) : (
-                <StarBorderIcon fontSize="small" />
+                <StarBorderIcon
+                  fontSize="small"
+                  data-testid={`chat-room-header-favorite-icon-outline-${room?.id ?? 'unknown'}`}
+                />
               )}
             </IconButton>
           </Tooltip>

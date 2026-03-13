@@ -67,7 +67,8 @@ const ProfileStep = () => {
     setProfile(profileData);
 
     try {
-      await submitRegistration(profileData);
+      const result = await submitRegistration(profileData);
+      if (result !== 'submitted') return;
       completeStep('profile');
 
       if (state.identity?.userId) {

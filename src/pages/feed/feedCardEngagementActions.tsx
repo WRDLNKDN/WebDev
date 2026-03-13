@@ -11,15 +11,9 @@ import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { FeedCardActions } from './feedCardTypes';
 
 const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
-const FEED_COMMENT_ACTION_COLOR = INTERACTION_COLORS.comment;
-const FEED_REPOST_ACTION_COLOR = INTERACTION_COLORS.repost;
-const FEED_SEND_ACTION_COLOR = INTERACTION_COLORS.send;
-const FEED_SAVE_ACTION_COLOR = INTERACTION_COLORS.save;
-const FEED_ACTION_SELECTED_TEXT_SX = {
-  fontWeight: 700,
-  textDecoration: 'underline',
-  textUnderlineOffset: '4px',
-} as const;
+const FEED_ACTION_ACTIVE_COLOR = INTERACTION_COLORS.focus;
+const FEED_ACTION_HOVER_COLOR = INTERACTION_COLORS.focus;
+const FEED_ACTION_SELECTED_TEXT_SX = { fontWeight: 700 } as const;
 const FEED_ACTION_BUTTON_SX = {
   textTransform: 'none',
   minWidth: 0,
@@ -33,6 +27,7 @@ const FEED_ACTION_BUTTON_SX = {
   transition:
     'color 120ms ease, transform 120ms ease, background-color 120ms ease',
   color: FEED_ACTION_MUTED_COLOR,
+  border: '1px solid transparent',
   '& .MuiButton-startIcon': {
     margin: 0,
   },
@@ -43,15 +38,34 @@ const FEED_ACTION_BUTTON_SX = {
     fontWeight: 600,
   },
   '&:hover': {
-    bgcolor: 'transparent',
+    bgcolor: 'rgba(56,132,210,0.08)',
+    borderColor: 'rgba(141,188,229,0.28)',
     transform: 'scale(1.08)',
   },
 } as const;
+
+const getActiveActionSx = (active: boolean) => ({
+  color: active ? FEED_ACTION_ACTIVE_COLOR : FEED_ACTION_MUTED_COLOR,
+  bgcolor: active ? 'rgba(56,132,210,0.12)' : 'transparent',
+  borderColor: active ? 'rgba(141,188,229,0.3)' : 'transparent',
+  boxShadow: active ? '0 0 0 1px rgba(56,132,210,0.08) inset' : 'none',
+  ...(active
+    ? {
+        '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
+      }
+    : null),
+  '&:hover': {
+    ...FEED_ACTION_BUTTON_SX['&:hover'],
+    color: FEED_ACTION_HOVER_COLOR,
+  },
+});
 
 type FeedCardEngagementActionsProps = {
   item: FeedItem;
   actions: FeedCardActions;
   viewerReaction: ReactionType | null;
+  viewerReposted: boolean;
+  viewerSent: boolean;
   likeCount: number;
   loveCount: number;
   inspirationCount: number;
@@ -67,6 +81,8 @@ export const FeedCardEngagementActions = ({
   item,
   actions,
   viewerReaction,
+  viewerReposted,
+  viewerSent,
   likeCount,
   loveCount,
   inspirationCount,
@@ -210,18 +226,7 @@ export const FeedCardEngagementActions = ({
           data-testid={`feed-action-comment-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: commentsExpanded
-              ? FEED_COMMENT_ACTION_COLOR
-              : FEED_ACTION_MUTED_COLOR,
-            ...(commentsExpanded
-              ? {
-                  '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
-                }
-              : null),
-            '&:hover': {
-              ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: FEED_COMMENT_ACTION_COLOR,
-            },
+            ...getActiveActionSx(commentsExpanded),
           }}
           aria-pressed={commentsExpanded}
         >
@@ -242,11 +247,9 @@ export const FeedCardEngagementActions = ({
           data-testid={`feed-action-repost-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            '&:hover': {
-              ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: FEED_REPOST_ACTION_COLOR,
-            },
+            ...getActiveActionSx(viewerReposted),
           }}
+          aria-pressed={viewerReposted}
         >
           <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
           <Typography
@@ -263,11 +266,9 @@ export const FeedCardEngagementActions = ({
           data-testid={`feed-action-send-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            '&:hover': {
-              ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: FEED_SEND_ACTION_COLOR,
-            },
+            ...getActiveActionSx(viewerSent),
           }}
+          aria-pressed={viewerSent}
         >
           <SendOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
           <Typography
@@ -288,18 +289,7 @@ export const FeedCardEngagementActions = ({
           data-testid={`feed-action-save-${item.id}`}
           sx={{
             ...FEED_ACTION_BUTTON_SX,
-            color: item.viewer_saved
-              ? FEED_SAVE_ACTION_COLOR
-              : FEED_ACTION_MUTED_COLOR,
-            ...(item.viewer_saved
-              ? {
-                  '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
-                }
-              : null),
-            '&:hover': {
-              ...FEED_ACTION_BUTTON_SX['&:hover'],
-              color: FEED_SAVE_ACTION_COLOR,
-            },
+            ...getActiveActionSx(Boolean(item.viewer_saved)),
           }}
           aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
           aria-pressed={item.viewer_saved}

@@ -41,6 +41,8 @@ export type FeedCardProps = {
   isOwner: boolean;
   viewerUserId?: string;
   viewerAvatarUrl?: string | null;
+  viewerReposted?: boolean;
+  viewerSent?: boolean;
   commentsExpanded: boolean;
   comments: FeedComment[];
   commentsLoading: boolean;

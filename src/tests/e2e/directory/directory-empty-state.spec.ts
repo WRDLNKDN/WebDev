@@ -47,23 +47,24 @@ test.describe('Directory empty state', () => {
     await page.goto('/directory?primary_industry=Technology+and+Software', {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByTestId('directory-empty-state')).toBeVisible({
+    const emptyState = page.getByTestId('directory-empty-state');
+    await expect(emptyState).toBeVisible({
       timeout: 10_000,
     });
     await expect(
-      page.getByRole('heading', { name: /no members found/i }),
+      emptyState.getByRole('heading', { name: /no members found/i }),
     ).toBeVisible();
     await expect(
-      page.getByText(/no members match your filters/i),
+      emptyState.getByText(/no members match your filters/i),
     ).toBeVisible();
     const clearFiltersBtn = page.getByTestId('directory-clear-filters');
     await expect(clearFiltersBtn).toBeVisible();
     await expect(clearFiltersBtn).toHaveText(/clear filters/i);
     await expect(
-      page.getByRole('link', { name: /join the community/i }),
+      emptyState.getByRole('link', { name: /join the community/i }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole('button', { name: /join the community/i }),
+      emptyState.getByRole('button', { name: /join the community/i }),
     ).toHaveCount(0);
 
     await clearFiltersBtn.click();
@@ -71,6 +72,46 @@ test.describe('Directory empty state', () => {
       (url) => !url.searchParams.has('primary_industry'),
       { timeout: 5_000 },
     );
+    await expect(page).toHaveURL(/\/directory(?:\?|$)/);
+  });
+
+  test('signed-in search empty state never routes toward join flow', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const { stubAdminRpc: stubAdmin } = await seedSignedInSession(
+      page.context(),
+    );
+    await stubAdmin(page);
+    await stubAppSurface(page);
+    await page.goto('/directory?q=no-matches-visual-regression', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 25_000,
+    });
+
+    const emptyState = page.getByTestId('directory-empty-state');
+    await expect(emptyState).toBeVisible({ timeout: 10_000 });
+    await expect(
+      emptyState.getByRole('heading', { name: /no members found|no results/i }),
+    ).toBeVisible();
+    await expect(
+      emptyState.getByRole('link', { name: /join the community/i }),
+    ).toHaveCount(0);
+    await expect(
+      emptyState.getByRole('button', { name: /join the community/i }),
+    ).toHaveCount(0);
+
+    const clearFiltersBtn = emptyState.getByTestId('directory-clear-filters');
+    await expect(clearFiltersBtn).toBeVisible();
+    await clearFiltersBtn.click();
+
+    await expect(page).toHaveURL(
+      (url) => !url.searchParams.has('q') && url.pathname === '/directory',
+      { timeout: 5_000 },
+    );
+    await expect(page).not.toHaveURL(/\/join(?:\?|$)/);
   });
 
   test('when results are loading, shows loading indicator not empty state', async ({

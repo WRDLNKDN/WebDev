@@ -1,12 +1,5 @@
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Stack } from '@mui/material';
+import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import type { DirectoryMember } from '../../lib/api/directoryApi';
 
@@ -16,6 +9,7 @@ type Props = {
   error: string | null;
   setError: (value: string | null) => void;
   hasActiveFilters: boolean;
+  isSearchActive?: boolean;
   hasMore: boolean;
   loadingMore: boolean;
   busy: boolean;
@@ -35,6 +29,7 @@ export const DirectoryResults = ({
   error,
   setError,
   hasActiveFilters,
+  isSearchActive = false,
   hasMore,
   loadingMore,
   busy,
@@ -59,58 +54,11 @@ export const DirectoryResults = ({
         <CircularProgress size={40} />
       </Box>
     ) : rows.length === 0 ? (
-      <Paper
-        elevation={0}
-        sx={{
-          py: { xs: 6, md: 8 },
-          px: 4,
-          textAlign: 'center',
-          borderRadius: 3,
-          bgcolor: 'rgba(18,22,36,0.7)',
-          border: '1px dashed rgba(156,187,217,0.22)',
-        }}
-        data-testid="directory-empty-state"
-      >
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5 }}>
-          {hasActiveFilters ? 'No members found' : 'No results'}
-        </Typography>
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          {hasActiveFilters
-            ? 'No members match your filters.'
-            : 'The directory is empty.'}
-        </Typography>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1.5}
-          justifyContent="center"
-          alignItems="center"
-          flexWrap="wrap"
-        >
-          {hasActiveFilters ? (
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={onClearFilters}
-              sx={{
-                fontWeight: 700,
-                textTransform: 'none',
-                px: 4,
-                py: 1.25,
-                borderRadius: 2,
-                borderColor: 'rgba(141,188,229,0.50)',
-                color: 'rgba(255,255,255,0.9)',
-                '&:hover': {
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  bgcolor: 'rgba(56,132,210,0.14)',
-                },
-              }}
-              data-testid="directory-clear-filters"
-            >
-              Clear filters
-            </Button>
-          ) : null}
-        </Stack>
-      </Paper>
+      <DirectoryEmptyState
+        hasActiveFilters={hasActiveFilters}
+        isSearchActive={isSearchActive}
+        onClearFilters={onClearFilters}
+      />
     ) : (
       <Stack spacing={{ xs: 1.25, md: 1.75 }}>
         {rows.map((member) => (

@@ -66,7 +66,12 @@ const CARD_SX = {
 
 export const Join = () => {
   const navigate = useNavigate();
-  const { state, resetSignup, reconcileWithExistingProfile } = useJoin();
+  const {
+    state,
+    resetSignup,
+    reconcileWithExistingProfile,
+    reconcileSessionNoProfile,
+  } = useJoin();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,17 +144,8 @@ export const Join = () => {
 
             reconcileWithExistingProfile(session, profile);
           } else {
-            // Session exists but no profile (new user or timing/RLS). Avoid showing Identity again —
-            // set identity from session and advance to Values so they don't loop to "Sign in".
-            const minimalProfile = {
-              display_name: null,
-              tagline: null,
-              join_reason: [] as string[],
-              participation_style: [] as string[],
-              additional_context: null,
-              policy_version: null,
-            };
-            reconcileWithExistingProfile(session, minimalProfile);
+            // Session exists but no profile. Set identity; preserve values/profile/currentStep if returning from re-auth.
+            reconcileSessionNoProfile(session);
           }
         }
       } catch (e: unknown) {
@@ -163,7 +159,12 @@ export const Join = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate, resetSignup, reconcileWithExistingProfile]);
+  }, [
+    navigate,
+    resetSignup,
+    reconcileWithExistingProfile,
+    reconcileSessionNoProfile,
+  ]);
 
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {

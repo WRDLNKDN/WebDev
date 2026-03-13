@@ -1,3 +1,4 @@
+import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import { Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -12,8 +13,12 @@ export const FeedCardRepostMeta = ({
   repostOriginalName,
   repostOriginalId,
 }: FeedCardRepostMetaProps) => (
-  <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.25 }}>
-    <Typography variant="caption" color="text.secondary">
+  <Stack direction="row" spacing={0.55} alignItems="center" sx={{ mt: 0.4 }}>
+    <RepeatOutlinedIcon sx={{ fontSize: 15, color: 'primary.light' }} />
+    <Typography
+      variant="caption"
+      sx={{ color: 'primary.light', fontWeight: 700, letterSpacing: '0.02em' }}
+    >
       Reposted from
     </Typography>
     {repostOriginalHandle ? (
@@ -22,7 +27,7 @@ export const FeedCardRepostMeta = ({
         to={`/profile/${repostOriginalHandle}`}
         variant="caption"
         sx={{
-          color: 'text.secondary',
+          color: 'text.primary',
           textDecoration: 'underline',
           '&:hover': { color: 'text.primary' },
         }}
@@ -40,7 +45,7 @@ export const FeedCardRepostMeta = ({
         to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
         variant="caption"
         sx={{
-          color: 'text.secondary',
+          color: 'primary.light',
           textDecoration: 'underline',
           '&:hover': { color: 'text.primary' },
         }}

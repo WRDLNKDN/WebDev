@@ -12,7 +12,8 @@ import type { SharedReactionOption } from './sharedReactions';
 
 // Keep the reaction entry button aligned with the rest of the feed action bar.
 const MUTED_COLOR = 'rgba(255,255,255,0.65)';
-const HOVER_COLOR = INTERACTION_COLORS.react;
+const ACTIVE_COLOR = INTERACTION_COLORS.focus;
+const HOVER_COLOR = INTERACTION_COLORS.focus;
 
 export type ReactPickerButtonProps<T extends string = string> = {
   options: SharedReactionOption<T>[];
@@ -112,7 +113,7 @@ export const ReactPickerButton = <T extends string = string>({
           aria-pressed={Boolean(selected)}
           sx={{
             textTransform: 'none',
-            color: selected?.color ?? MUTED_COLOR,
+            color: selected ? ACTIVE_COLOR : MUTED_COLOR,
             minHeight: { xs: 40, sm: 36 },
             py: { xs: 0.75, sm: 0.5 },
             px: 1,
@@ -121,21 +122,26 @@ export const ReactPickerButton = <T extends string = string>({
             justifyContent: 'center',
             gap: 0.625,
             borderRadius: 2,
+            border: '1px solid transparent',
+            bgcolor: selected ? 'rgba(56,132,210,0.12)' : 'transparent',
+            borderColor: selected ? 'rgba(141,188,229,0.3)' : 'transparent',
+            boxShadow: selected
+              ? '0 0 0 1px rgba(56,132,210,0.08) inset'
+              : 'none',
             transition:
-              'color 120ms ease, transform 120ms ease, background-color 120ms ease',
+              'color 120ms ease, transform 120ms ease, background-color 120ms ease, border-color 120ms ease',
             '& .MuiSvgIcon-root, & .MuiTypography-root': {
               color: 'inherit',
             },
             ...(selected
               ? {
                   fontWeight: 700,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '4px',
                 }
               : null),
             '&:hover': {
-              bgcolor: 'transparent',
-              color: selected?.color ?? HOVER_COLOR,
+              bgcolor: 'rgba(56,132,210,0.08)',
+              borderColor: 'rgba(141,188,229,0.28)',
+              color: HOVER_COLOR,
               transform: 'scale(1.08)',
             },
             ...buttonSx,

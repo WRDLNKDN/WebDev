@@ -44,6 +44,16 @@ export const GuestView = ({
     return (
       <div className="home-landing__cta-stack">
         <Link
+          to="/signin"
+          className={secondaryClass}
+          aria-label="Already a member? Sign In"
+          onClick={() =>
+            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
+          }
+        >
+          Already a member? Sign In
+        </Link>
+        <Link
           to="/join"
           className={primaryClass}
           role="button"
@@ -56,16 +66,6 @@ export const GuestView = ({
           }}
         >
           {joinLoading ? 'Opening Join…' : 'Join Us'}
-        </Link>
-        <Link
-          to="/signin"
-          className={secondaryClass}
-          aria-label="Already a member? Sign In"
-          onClick={() =>
-            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
-          }
-        >
-          Already a member? Sign In
         </Link>
       </div>
     );

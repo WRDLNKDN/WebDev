@@ -3,6 +3,7 @@ import type {
   IdentityData,
   JoinState,
   JoinStep,
+  JoinSubmitResult,
   ProfileData,
   ValuesData,
 } from '../types/join';
@@ -14,6 +15,8 @@ import {
   loadJoinState,
   submitJoinRegistration,
 } from './joinProviderUtils';
+import { supabase } from '../lib/auth/supabaseClient';
+import { getJoinSubmitAuthRedirect } from '../lib/auth/signInRouting';
 
 const STEPS: JoinStep[] = [
   'welcome',
@@ -118,6 +121,67 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem(LEGACY_SIGNUP_STORAGE_KEY);
   }, []);
 
+  /** Session exists but no profile yet. Set identity; preserve values/profile/currentStep if user was mid-flow (e.g. re-auth). */
+  const reconcileSessionNoProfile = useCallback(
+    (session: {
+      user: {
+        id: string;
+        email?: string;
+        identities?: { provider?: string }[];
+        app_metadata?: { provider?: string };
+      };
+    }) => {
+      const provider =
+        session.user.identities?.[0]?.provider ??
+        session.user.app_metadata?.provider ??
+        'google';
+      const identityProvider = provider === 'azure' ? 'microsoft' : 'google';
+      const identity: IdentityData = {
+        provider: identityProvider,
+        userId: session.user.id,
+        email: session.user.email ?? '',
+        termsAccepted: true,
+        guidelinesAccepted: true,
+        policyVersion: POLICY_VERSION,
+        timestamp: new Date().toISOString(),
+      };
+
+      setState((s) => {
+        const wasMidFlow =
+          (s.currentStep === 'values' || s.currentStep === 'profile') &&
+          (s.values != null || s.profile != null);
+        if (wasMidFlow) {
+          return {
+            ...s,
+            identity,
+            completedSteps: s.completedSteps.includes('identity')
+              ? s.completedSteps
+              : [
+                  'welcome',
+                  'identity',
+                  ...s.completedSteps.filter(
+                    (x) => x !== 'welcome' && x !== 'identity',
+                  ),
+                ],
+          };
+        }
+        const minimalProfile: ProfileData = {
+          displayName: undefined,
+          tagline: undefined,
+          marketingOptIn: false,
+        };
+        return {
+          currentStep: 'profile',
+          completedSteps: ['welcome', 'identity'],
+          identity,
+          values: null,
+          profile: minimalProfile,
+        };
+      });
+    },
+    [],
+  );
+
   const reconcileWithExistingProfile = useCallback(
     (
       session: {
@@ -193,10 +257,17 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const submitRegistration = useCallback(
-    async (profileData?: ProfileData) => {
+    async (profileData?: ProfileData): Promise<JoinSubmitResult> => {
       setSubmitting(true);
       setSubmitError(null);
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          window.location.assign(getJoinSubmitAuthRedirect());
+          return 'auth_required';
+        }
         await submitJoinRegistration({
           state,
           profileData,
@@ -204,6 +275,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
           setState,
           setSubmitError,
         });
+        return 'submitted';
       } finally {
         setSubmitting(false);
       }
@@ -228,6 +300,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       submitRegistration,
       resetSignup,
       reconcileWithExistingProfile,
+      reconcileSessionNoProfile,
       next,
       back,
     }),
@@ -244,6 +317,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       submitRegistration,
       resetSignup,
       reconcileWithExistingProfile,
+      reconcileSessionNoProfile,
       next,
       back,
     ],

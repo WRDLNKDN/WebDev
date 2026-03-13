@@ -39,6 +39,23 @@ import { compactGlassDangerIconButtonSx } from '../../theme/iconActionStyles';
 
 const DM_ICON_COLOR = '#3884D2';
 const GROUP_ICON_COLOR = '#4DD166';
+const FAVORITE_ACTIVE_SX = {
+  color: '#f5c451',
+  bgcolor: 'rgba(245,196,81,0.14)',
+  border: '1px solid rgba(245,196,81,0.28)',
+  boxShadow: '0 0 0 1px rgba(245,196,81,0.08) inset',
+  '&:hover': {
+    bgcolor: 'rgba(245,196,81,0.2)',
+  },
+} as const;
+const FAVORITE_IDLE_SX = {
+  color: 'text.secondary',
+  border: '1px solid transparent',
+  '&:hover': {
+    color: '#f5c451',
+    bgcolor: 'rgba(245,196,81,0.08)',
+  },
+} as const;
 
 type Props = {
   mobile: boolean;
@@ -408,14 +425,25 @@ export const MessengerOverlayPanel = ({
                         onToggleFavorite(r.id, Boolean(r.is_favorite));
                       }}
                       sx={{
-                        color: r.is_favorite ? '#f5c451' : 'text.secondary',
+                        borderRadius: 1.25,
+                        transition:
+                          'color 120ms ease, background-color 120ms ease, border-color 120ms ease',
+                        ...(r.is_favorite
+                          ? FAVORITE_ACTIVE_SX
+                          : FAVORITE_IDLE_SX),
                         ml: 0.25,
                       }}
                     >
                       {r.is_favorite ? (
-                        <StarIcon fontSize="small" />
+                        <StarIcon
+                          fontSize="small"
+                          data-testid={`messenger-overlay-favorite-icon-filled-${r.id}`}
+                        />
                       ) : (
-                        <StarBorderIcon fontSize="small" />
+                        <StarBorderIcon
+                          fontSize="small"
+                          data-testid={`messenger-overlay-favorite-icon-outline-${r.id}`}
+                        />
                       )}
                     </IconButton>
                     <IconButton

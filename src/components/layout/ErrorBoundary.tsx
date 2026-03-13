@@ -2,6 +2,10 @@ import { Box, Button, Container, Typography } from '@mui/material';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  buildErrorBoundaryCopy,
+  type ErrorBoundaryCopy,
+} from './errorBoundaryCopy';
 
 interface Props {
   children?: ReactNode;
@@ -9,21 +13,19 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  errorMessage: string;
+  copy: ErrorBoundaryCopy;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    errorMessage:
-      'An unexpected error halted this screen. Refresh and try again.',
+    copy: buildErrorBoundaryCopy(null),
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
     return {
       hasError: true,
-      errorMessage: toMessage(error),
+      copy: buildErrorBoundaryCopy(toMessage(error)),
     };
   }
 
@@ -36,6 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <Container maxWidth="sm">
           <Box
+            data-testid="error-boundary-fallback"
             sx={{
               mt: 10,
               p: 4,
@@ -48,21 +51,65 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             <Typography
               variant="h4"
-              sx={{ color: '#ff4d4d', mb: 2, fontWeight: 700 }}
+              sx={{ color: '#ff4d4d', mb: 1.5, fontWeight: 700 }}
             >
-              [SYSTEM_HALT]
+              {this.state.copy.title}
             </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
-              {this.state.errorMessage}
-            </Typography>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => window.location.assign('/')}
-              sx={{ fontWeight: 600 }}
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary', mb: 1.5 }}
             >
-              Restart Environment
-            </Button>
+              {this.state.copy.description}
+            </Typography>
+            {this.state.copy.detail && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  mb: 3,
+                  color: 'rgba(255,255,255,0.62)',
+                  wordBreak: 'break-word',
+                }}
+              >
+                Details: {this.state.copy.detail}
+              </Typography>
+            )}
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                mb: 3,
+                color: 'rgba(255,255,255,0.46)',
+                letterSpacing: '0.08em',
+              }}
+            >
+              Error code: {this.state.copy.code}
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 1.25,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => window.location.reload()}
+                sx={{ fontWeight: 600 }}
+              >
+                Reload page
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={() => window.location.assign('/')}
+                sx={{ fontWeight: 600 }}
+              >
+                Go to home
+              </Button>
+            </Box>
           </Box>
         </Container>
       );

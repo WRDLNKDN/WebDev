@@ -12,8 +12,13 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, Navigate } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  Navigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import { getSignInPostAuthPath } from '../../lib/auth/signInRouting';
 import {
   getErrorMessage,
   toMessage,
@@ -31,6 +36,7 @@ import {
 } from '../../theme/candyStyles';
 
 export const SignIn = () => {
+  const [searchParams] = useSearchParams();
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
   const [loading, setLoading] = useState(false);
@@ -56,11 +62,12 @@ export const SignIn = () => {
     };
   }, []);
 
-  const postAuthPath = feedEnabled
+  const defaultPostAuthPath = feedEnabled
     ? '/feed'
     : dashboardEnabled
       ? '/dashboard'
       : '/';
+  const postAuthPath = getSignInPostAuthPath(searchParams, defaultPostAuthPath);
 
   useOAuthReturnReset({
     loading,

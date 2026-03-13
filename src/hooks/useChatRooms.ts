@@ -443,40 +443,29 @@ export function useChatRooms() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) return;
+      const nextFavorite = !isFavorite;
 
       setRooms((prev) =>
         prev.map((room) =>
-          room.id === roomId ? { ...room, is_favorite: !isFavorite } : room,
+          room.id === roomId ? { ...room, is_favorite: nextFavorite } : room,
         ),
       );
 
       try {
-        if (isFavorite) {
-          const { error } = await supabase
-            .from('chat_room_preferences')
-            .delete()
-            .eq('room_id', roomId)
-            .eq('user_id', session.user.id);
-          if (error) throw error;
-          showToast({
-            message: 'Removed from favorites.',
-            severity: 'info',
-          });
-          return;
-        }
-
         const { error } = await supabase.from('chat_room_preferences').upsert(
           {
             room_id: roomId,
             user_id: session.user.id,
-            is_favorite: true,
+            is_favorite: nextFavorite,
           },
           { onConflict: 'room_id,user_id' },
         );
         if (error) throw error;
         showToast({
-          message: 'Added to favorites.',
-          severity: 'success',
+          message: nextFavorite
+            ? 'Added to favorites.'
+            : 'Removed from favorites.',
+          severity: nextFavorite ? 'success' : 'info',
         });
       } catch (cause) {
         console.warn('toggleFavorite failed:', toMessage(cause));

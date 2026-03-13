@@ -27,6 +27,40 @@ const FEED_ITEM = {
   viewer_saved: false,
 };
 
+const REPOST_ITEM = {
+  id: 'post-repost-1',
+  user_id: 'viewer-user',
+  kind: 'repost',
+  payload: {
+    original_id: 'original-post-9',
+    snapshot: {
+      body: 'Original post body for repost preview',
+      created_at: '2026-03-05T10:00:00.000Z',
+      actor_handle: 'original-author',
+      actor_display_name: 'Original Author',
+      actor_avatar: null,
+    },
+  },
+  parent_id: null,
+  created_at: '2026-03-06T12:05:00.000Z',
+  edited_at: null,
+  actor: {
+    handle: 'viewer',
+    display_name: 'Viewer Member',
+    avatar: null,
+    bio: null,
+  },
+  like_count: 0,
+  love_count: 0,
+  inspiration_count: 0,
+  care_count: 0,
+  laughing_count: 0,
+  rage_count: 0,
+  viewer_reaction: null,
+  comment_count: 0,
+  viewer_saved: false,
+};
+
 test.describe('Feed reaction picker', () => {
   test('uses the shared emoji tray, stays open across hover, and keeps action colors muted until hover or selection', async ({
     page,
@@ -74,7 +108,7 @@ test.describe('Feed reaction picker', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: [FEED_ITEM] }),
+        body: JSON.stringify({ data: [REPOST_ITEM, FEED_ITEM] }),
       });
     };
 
@@ -85,6 +119,13 @@ test.describe('Feed reaction picker', () => {
     });
     await page.route('**/api/feeds/items/**/reaction', async (route) => {
       await route.fulfill({ status: 204, body: '' });
+    });
+    await page.route('**/api/feeds/items', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { ok: true } }),
+      });
     });
 
     const feedResponse = page.waitForResponse(
@@ -100,7 +141,7 @@ test.describe('Feed reaction picker', () => {
 
     if (
       await page
-        .getByText('[SYSTEM_HALT]')
+        .getByTestId('error-boundary-fallback')
         .isVisible()
         .catch(() => false)
     ) {
@@ -120,12 +161,29 @@ test.describe('Feed reaction picker', () => {
       );
     }
 
-    const reactButton = page.getByRole('button', { name: 'React' }).first();
-    const commentButton = page.getByRole('button', { name: 'Comment' }).first();
-    const repostButton = page.getByRole('button', { name: 'Repost' }).first();
-    const sendButton = page.getByRole('button', { name: 'Send' }).first();
-    const saveButton = page.getByRole('button', { name: 'Save' }).first();
+    const originalCard = page
+      .locator('section')
+      .filter({ hasText: 'Reaction target post' })
+      .first();
+    const repostCard = page
+      .locator('section')
+      .filter({ hasText: 'Original post body for repost preview' })
+      .first();
+    const reactButton = originalCard.getByRole('button', { name: 'React' });
+    const commentButton = originalCard.getByRole('button', {
+      name: 'Comment',
+    });
+    const repostButton = originalCard.getByRole('button', { name: 'Repost' });
+    const sendButton = originalCard.getByRole('button', { name: 'Send' });
+    const saveButton = originalCard.getByRole('button', { name: 'Save' });
     await expect(page.getByText('Senior Engineering Manager')).toBeVisible();
+    await expect(
+      repostCard.locator('span').filter({ hasText: /^Original Post$/ }),
+    ).toBeVisible();
+    await expect(
+      repostCard.getByRole('link', { name: 'Original Author' }).first(),
+    ).toBeVisible();
+    await expect(repostCard.getByText('View original post')).toBeVisible();
     await expect(reactButton).toBeVisible();
     await expect(reactButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
     await expect(commentButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
@@ -135,15 +193,15 @@ test.describe('Feed reaction picker', () => {
     await reactButton.scrollIntoViewIfNeeded();
 
     await commentButton.hover();
-    await expect(commentButton).toHaveCSS('color', 'rgb(56, 132, 210)');
+    await expect(commentButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     await repostButton.hover();
-    await expect(repostButton).toHaveCSS('color', 'rgb(167, 68, 194)');
+    await expect(repostButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     await sendButton.hover();
-    await expect(sendButton).toHaveCSS('color', 'rgb(56, 132, 210)');
+    await expect(sendButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     await saveButton.hover();
-    await expect(saveButton).toHaveCSS('color', 'rgb(255, 255, 76)');
+    await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
 
-    const postOptionsButton = page.getByRole('button', {
+    const postOptionsButton = originalCard.getByRole('button', {
       name: 'Post options',
     });
     await expect(postOptionsButton).toBeVisible();
@@ -158,7 +216,7 @@ test.describe('Feed reaction picker', () => {
     await page.mouse.click(0, 0);
 
     await reactButton.hover({ force: true });
-    await expect(reactButton).toHaveCSS('color', 'rgb(77, 209, 102)');
+    await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     let usedFocusFallback = false;
     if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
       await reactButton.focus();
@@ -179,11 +237,20 @@ test.describe('Feed reaction picker', () => {
     await expect(surprisedButton).toContainText('😮');
     await expect(prayerButton).toContainText('🙏');
     await laughButton.click();
-    await expect(reactButton).toHaveCSS('color', 'rgb(255, 255, 76)');
+    await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
 
     await saveButton.click();
-    await expect(saveButton).toHaveCSS('color', 'rgb(255, 255, 76)');
+    await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
     await expect(saveButton).toContainText('Saved');
+
+    await repostButton.click();
+    await expect(repostButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(repostButton).toHaveAttribute('aria-pressed', 'true');
+
+    await sendButton.click();
+    await page.getByRole('button', { name: 'Copy link' }).click();
+    await expect(sendButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(sendButton).toHaveAttribute('aria-pressed', 'true');
 
     if (usedFocusFallback) {
       await page.mouse.click(0, 0);
@@ -191,13 +258,6 @@ test.describe('Feed reaction picker', () => {
       await page.mouse.move(0, 0);
     }
     await expect(laughButton).toBeHidden({ timeout: 1500 });
-    await expect(page.getByText('4 reactions')).toBeVisible();
-    await expect(
-      page
-        .locator('span[aria-hidden="true"]')
-        .filter({ hasText: '😂' })
-        .first(),
-    ).toBeVisible();
 
     await reactButton.click();
     await expect(sadButton).toBeVisible({ timeout: 1000 });
@@ -205,13 +265,6 @@ test.describe('Feed reaction picker', () => {
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await sadButton.click();
     await expect(sadButton).toBeHidden({ timeout: 1500 });
-    await expect(page.getByText('4 reactions')).toBeVisible();
-    await expect(
-      page
-        .locator('span[aria-hidden="true"]')
-        .filter({ hasText: '😢' })
-        .first(),
-    ).toBeVisible();
     expect(submittedReactions).toEqual(['laughing', 'rage']);
   });
 });

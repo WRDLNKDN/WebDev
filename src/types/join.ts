@@ -5,6 +5,8 @@ export type JoinStep =
   | 'profile'
   | 'complete';
 
+export type JoinSubmitResult = 'submitted' | 'auth_required';
+
 export type IdentityProvider = 'google' | 'microsoft';
 
 /** Policy version string for Terms and Community Guidelines (e.g. v2026.02). */

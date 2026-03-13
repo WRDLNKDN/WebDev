@@ -21,8 +21,6 @@ test.describe('Chat redirect', () => {
       )
       .toBeTruthy();
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 30_000 });
-    await expect(
-      page.getByRole('heading', { name: '[SYSTEM_HALT]' }),
-    ).not.toBeVisible();
+    await expect(page.getByTestId('error-boundary-fallback')).toHaveCount(0);
   });
 });

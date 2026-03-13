@@ -187,12 +187,12 @@ test.describe('Portfolio artifact editing', () => {
     await expect(page.getByTestId('app-main')).toBeVisible({
       timeout: 25_000,
     });
-    const systemHalt = page.getByRole('heading', { name: '[SYSTEM_HALT]' });
+    const systemHalt = page.getByTestId('error-boundary-fallback');
     if (await systemHalt.isVisible().catch(() => false)) {
       throw new Error(
         [pageErrors.join('\n\n'), consoleErrors.join('\n\n')]
           .filter(Boolean)
-          .join('\n\n') || 'Dashboard hit SYSTEM_HALT.',
+          .join('\n\n') || 'Dashboard hit the error boundary.',
       );
     }
     await expect(page.getByText('Legacy Artifact')).toBeVisible({

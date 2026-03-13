@@ -20,6 +20,7 @@ import { FeedCardCommentsSection } from './feedCardCommentsSection';
 import { FeedCardEngagementActions } from './feedCardEngagementActions';
 import { FeedCardImageDialog } from './feedCardImageDialog';
 import { FeedCardPostContent } from './feedCardPostContent';
+import { FeedCardRepostEmbed } from './feedCardRepostEmbed';
 import { FeedCardRepostMeta } from './feedCardRepostMeta';
 import type { FeedCardProps, PreviewImageSource } from './feedCardTypes';
 export {
@@ -35,6 +36,8 @@ export const FeedCard = ({
   isOwner,
   viewerUserId,
   viewerAvatarUrl,
+  viewerReposted = false,
+  viewerSent = false,
   commentsExpanded,
   comments,
   commentsLoading,
@@ -63,10 +66,16 @@ export const FeedCard = ({
     item.kind === 'repost' && item.payload?.snapshot
       ? (item.payload.snapshot as {
           body?: string;
+          created_at?: string;
           actor_handle?: string;
           actor_display_name?: string;
+          actor_avatar?: string;
         })
       : null;
+  const repostCommentary =
+    item.kind === 'repost'
+      ? (item.payload?.body as string) || (item.payload?.text as string) || ''
+      : '';
   const repostOriginalHandle =
     typeof snapshot?.actor_handle === 'string' && snapshot.actor_handle.trim()
       ? snapshot.actor_handle.trim()
@@ -80,8 +89,10 @@ export const FeedCard = ({
     item.kind === 'repost' && typeof item.payload?.original_id === 'string'
       ? item.payload.original_id
       : null;
+  const repostOriginalBody =
+    item.kind === 'repost' ? (snapshot?.body as string) || '' : '';
   const body =
-    (snapshot?.body as string) ||
+    repostCommentary ||
     (item.payload?.body as string) ||
     (item.payload?.text as string) ||
     (item.kind === 'external_link' && item.payload?.url
@@ -276,7 +287,18 @@ export const FeedCard = ({
               : []),
           ],
         }}
-        sx={{ mb: 2 }}
+        sx={
+          item.kind === 'repost'
+            ? {
+                mb: 2,
+                borderColor: 'rgba(141,188,229,0.3)',
+                boxShadow:
+                  '0 22px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(56,132,210,0.1) inset',
+                background:
+                  'linear-gradient(180deg, rgba(24,30,43,0.98) 0%, rgba(19,24,34,0.96) 100%)',
+              }
+            : { mb: 2 }
+        }
       >
         <FeedCardPostContent
           isEditingPost={isEditingPost}
@@ -296,10 +318,22 @@ export const FeedCard = ({
           url={url}
           label={label}
         />
+        {item.kind === 'repost' ? (
+          <FeedCardRepostEmbed
+            originalAvatarUrl={(snapshot?.actor_avatar as string) ?? null}
+            originalHandle={repostOriginalHandle}
+            originalName={repostOriginalName}
+            originalBody={repostOriginalBody}
+            originalCreatedAt={(snapshot?.created_at as string) ?? null}
+            repostOriginalId={repostOriginalId}
+          />
+        ) : null}
         <FeedCardEngagementActions
           item={item}
           actions={actions}
           viewerReaction={viewerReaction}
+          viewerReposted={viewerReposted}
+          viewerSent={viewerSent}
           likeCount={likeCount}
           loveCount={loveCount}
           inspirationCount={inspirationCount}

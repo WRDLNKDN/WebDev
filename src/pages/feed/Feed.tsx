@@ -145,15 +145,51 @@ const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_CACHE_KEY_PREFIX = 'feed_cache_v1';
 const ADVERTISERS_UPDATED_EVENT_KEY = 'feed_advertisers_updated_at';
 const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
-const FEED_COMMENT_ACTION_COLOR = INTERACTION_COLORS.comment;
-const FEED_REPOST_ACTION_COLOR = INTERACTION_COLORS.repost;
-const FEED_SEND_ACTION_COLOR = INTERACTION_COLORS.send;
-const FEED_SAVE_ACTION_COLOR = INTERACTION_COLORS.save;
-const FEED_ACTION_SELECTED_TEXT_SX = {
-  fontWeight: 700,
-  textDecoration: 'underline',
-  textUnderlineOffset: '4px',
+const FEED_ACTION_ACTIVE_COLOR = INTERACTION_COLORS.focus;
+const FEED_ACTION_SELECTED_TEXT_SX = { fontWeight: 700 } as const;
+const FEED_ACTION_BUTTON_SX = {
+  textTransform: 'none',
+  minWidth: 0,
+  minHeight: 0,
+  flexDirection: { xs: 'row', sm: 'row' },
+  gap: 0.625,
+  pt: 1,
+  pb: 0.75,
+  px: 0,
+  borderRadius: 2,
+  border: '1px solid transparent',
+  transition:
+    'color 120ms ease, transform 120ms ease, background-color 120ms ease, border-color 120ms ease',
+  color: FEED_ACTION_MUTED_COLOR,
+  '& .MuiButton-startIcon': {
+    margin: 0,
+  },
+  '& .MuiSvgIcon-root, & .MuiTypography-root': {
+    color: 'inherit',
+  },
+  '& .MuiTypography-root': {
+    fontWeight: 600,
+  },
+  '&:hover': {
+    bgcolor: 'rgba(56,132,210,0.08)',
+    borderColor: 'rgba(141,188,229,0.28)',
+    color: FEED_ACTION_ACTIVE_COLOR,
+    transform: 'scale(1.08)',
+  },
 } as const;
+
+const getActiveActionSx = (active: boolean) => ({
+  color: active ? FEED_ACTION_ACTIVE_COLOR : FEED_ACTION_MUTED_COLOR,
+  bgcolor: active ? 'rgba(56,132,210,0.12)' : 'transparent',
+  borderColor: active ? 'rgba(141,188,229,0.3)' : 'transparent',
+  boxShadow: active ? '0 0 0 1px rgba(56,132,210,0.08) inset' : 'none',
+  ...(active
+    ? {
+        '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
+      }
+    : null),
+  '&:hover': FEED_ACTION_BUTTON_SX['&:hover'],
+});
 
 type FeedCachePayload = {
   items: FeedItem[];
@@ -412,6 +448,8 @@ type FeedCardProps = {
   isOwner: boolean;
   viewerUserId?: string;
   viewerAvatarUrl?: string | null;
+  viewerReposted?: boolean;
+  viewerSent?: boolean;
   commentsExpanded: boolean;
   comments: FeedComment[];
   commentsLoading: boolean;
@@ -455,12 +493,14 @@ const ShareDialog = ({
   open,
   onClose,
   onCopyLink,
+  onComplete,
   mobile,
 }: {
   item: FeedItem | null;
   open: boolean;
   onClose: () => void;
   onCopyLink: (url: string) => void;
+  onComplete?: () => void;
   mobile: boolean;
 }) => {
   if (!item) return null;
@@ -497,6 +537,7 @@ const ShareDialog = ({
             startIcon={<ContentCopyIcon />}
             onClick={() => {
               onCopyLink(postUrl);
+              onComplete?.();
               onClose();
             }}
           >
@@ -510,6 +551,9 @@ const ShareDialog = ({
             target="_blank"
             rel="noopener noreferrer"
             component="a"
+            onClick={() => {
+              onComplete?.();
+            }}
           >
             Share to LinkedIn
           </Button>
@@ -522,12 +566,149 @@ const ShareDialog = ({
   );
 };
 
+const RepostEmbed = ({
+  originalAvatarUrl,
+  originalHandle,
+  originalName,
+  originalBody,
+  originalCreatedAt,
+  repostOriginalId,
+}: {
+  originalAvatarUrl?: string | null;
+  originalHandle: string | null;
+  originalName: string | null;
+  originalBody: string;
+  originalCreatedAt?: string | null;
+  repostOriginalId: string | null;
+}) => {
+  const displayName = originalName || originalHandle || 'Original member';
+  const hasBody = Boolean(originalBody.trim());
+
+  return (
+    <Box
+      sx={{
+        mt: 1.35,
+        borderRadius: 2.25,
+        border: '1px solid rgba(156,187,217,0.26)',
+        bgcolor: 'rgba(7,12,21,0.7)',
+        boxShadow: '0 0 0 1px rgba(56,132,210,0.04) inset',
+        px: { xs: 1.15, sm: 1.35 },
+        py: { xs: 1.1, sm: 1.25 },
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={0.75}
+        alignItems="center"
+        sx={{ mb: 0.95, color: 'text.secondary' }}
+      >
+        <RepeatOutlinedIcon sx={{ fontSize: 16, color: 'primary.light' }} />
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: 'primary.light',
+          }}
+        >
+          Original Post
+        </Typography>
+      </Stack>
+
+      <Stack direction="row" spacing={1} alignItems="flex-start">
+        <ProfileAvatar
+          src={originalAvatarUrl ?? undefined}
+          alt={displayName}
+          size="small"
+          component={originalHandle ? RouterLink : 'div'}
+          to={originalHandle ? `/profile/${originalHandle}` : undefined}
+        />
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            flexWrap="wrap"
+          >
+            {originalHandle ? (
+              <Typography
+                component={RouterLink}
+                to={`/profile/${originalHandle}`}
+                variant="body2"
+                sx={{
+                  color: 'text.primary',
+                  textDecoration: 'none',
+                  fontWeight: 700,
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                {displayName}
+              </Typography>
+            ) : (
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {displayName}
+              </Typography>
+            )}
+            {originalCreatedAt ? (
+              <Typography variant="caption" color="text.secondary">
+                • {formatPostTime(originalCreatedAt)}
+              </Typography>
+            ) : null}
+          </Stack>
+
+          {hasBody ? (
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{
+                mt: 0.7,
+                color: 'text.primary',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
+            >
+              {linkifyBody(originalBody)}
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
+              Original post content unavailable.
+            </Typography>
+          )}
+
+          {repostOriginalId ? (
+            <Typography
+              component={RouterLink}
+              to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+              variant="caption"
+              sx={{
+                mt: 0.95,
+                display: 'inline-flex',
+                color: 'primary.light',
+                textDecoration: 'none',
+                fontWeight: 600,
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              View original post
+            </Typography>
+          ) : null}
+        </Box>
+      </Stack>
+    </Box>
+  );
+};
+
 const FeedCard = ({
   item,
   actions,
   isOwner,
   viewerUserId,
   viewerAvatarUrl,
+  viewerReposted = false,
+  viewerSent = false,
   commentsExpanded,
   comments,
   commentsLoading,
@@ -561,10 +742,16 @@ const FeedCard = ({
     item.kind === 'repost' && item.payload?.snapshot
       ? (item.payload.snapshot as {
           body?: string;
+          created_at?: string;
           actor_handle?: string;
           actor_display_name?: string;
+          actor_avatar?: string;
         })
       : null;
+  const repostCommentary =
+    item.kind === 'repost'
+      ? (item.payload?.body as string) || (item.payload?.text as string) || ''
+      : '';
   const repostOriginalHandle =
     typeof snapshot?.actor_handle === 'string' && snapshot.actor_handle.trim()
       ? snapshot.actor_handle.trim()
@@ -578,8 +765,10 @@ const FeedCard = ({
     item.kind === 'repost' && typeof item.payload?.original_id === 'string'
       ? item.payload.original_id
       : null;
+  const repostOriginalBody =
+    item.kind === 'repost' ? (snapshot?.body as string) || '' : '';
   const body =
-    (snapshot?.body as string) ||
+    repostCommentary ||
     (item.payload?.body as string) ||
     (item.payload?.text as string) ||
     (item.kind === 'external_link' && item.payload?.url
@@ -865,11 +1054,21 @@ const FeedCard = ({
             item.kind === 'repost' ? (
               <Stack
                 direction="row"
-                spacing={0.5}
+                spacing={0.55}
                 alignItems="center"
-                sx={{ mt: 0.25 }}
+                sx={{ mt: 0.4 }}
               >
-                <Typography variant="caption" color="text.secondary">
+                <RepeatOutlinedIcon
+                  sx={{ fontSize: 15, color: 'primary.light' }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'primary.light',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                  }}
+                >
                   Reposted from
                 </Typography>
                 {repostOriginalHandle ? (
@@ -878,7 +1077,7 @@ const FeedCard = ({
                     to={`/profile/${repostOriginalHandle}`}
                     variant="caption"
                     sx={{
-                      color: 'text.secondary',
+                      color: 'text.primary',
                       textDecoration: 'underline',
                       '&:hover': { color: 'text.primary' },
                     }}
@@ -896,7 +1095,7 @@ const FeedCard = ({
                     to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
                     variant="caption"
                     sx={{
-                      color: 'text.secondary',
+                      color: 'primary.light',
                       textDecoration: 'underline',
                       '&:hover': { color: 'text.primary' },
                     }}
@@ -985,7 +1184,18 @@ const FeedCard = ({
               : []),
           ],
         }}
-        sx={{ mb: 2 }}
+        sx={
+          item.kind === 'repost'
+            ? {
+                mb: 2,
+                borderColor: 'rgba(141,188,229,0.3)',
+                boxShadow:
+                  '0 22px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(56,132,210,0.1) inset',
+                background:
+                  'linear-gradient(180deg, rgba(24,30,43,0.98) 0%, rgba(19,24,34,0.96) 100%)',
+              }
+            : { mb: 2 }
+        }
       >
         {isEditingPost ? (
           <Stack spacing={1} sx={{ mt: 1 }}>
@@ -1114,6 +1324,16 @@ const FeedCard = ({
             {label || url}
           </Typography>
         )}
+        {item.kind === 'repost' ? (
+          <RepostEmbed
+            originalAvatarUrl={(snapshot?.actor_avatar as string) ?? null}
+            originalHandle={repostOriginalHandle}
+            originalName={repostOriginalName}
+            originalBody={repostOriginalBody}
+            originalCreatedAt={(snapshot?.created_at as string) ?? null}
+            repostOriginalId={repostOriginalId}
+          />
+        ) : null}
         {/* Engagement row: reaction summary + comment count above actions */}
         {(totalReactions > 0 || commentCount > 0) && (
           <Box
@@ -1224,36 +1444,8 @@ const FeedCard = ({
             size="small"
             onClick={() => actions.onCommentToggle(item.id)}
             sx={{
-              textTransform: 'none',
-              color: commentsExpanded
-                ? FEED_COMMENT_ACTION_COLOR
-                : FEED_ACTION_MUTED_COLOR,
-              minWidth: 0,
-              minHeight: 0,
-              flexDirection: { xs: 'row', sm: 'row' },
-              gap: 0.625,
-              pt: 1,
-              pb: 0.75,
-              px: 0,
-              borderRadius: 2,
-              transition:
-                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
-              '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                color: 'inherit',
-              },
-              '& .MuiTypography-root': {
-                fontWeight: 600,
-              },
-              ...(commentsExpanded
-                ? {
-                    '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
-                  }
-                : null),
-              '&:hover': {
-                bgcolor: 'transparent',
-                color: FEED_COMMENT_ACTION_COLOR,
-                transform: 'scale(1.08)',
-              },
+              ...FEED_ACTION_BUTTON_SX,
+              ...getActiveActionSx(commentsExpanded),
             }}
             aria-pressed={commentsExpanded}
           >
@@ -1272,30 +1464,10 @@ const FeedCard = ({
             size="small"
             onClick={() => actions.onRepost(item)}
             sx={{
-              textTransform: 'none',
-              color: FEED_ACTION_MUTED_COLOR,
-              minWidth: 0,
-              minHeight: 0,
-              flexDirection: { xs: 'row', sm: 'row' },
-              gap: 0.625,
-              pt: 1,
-              pb: 0.75,
-              px: 0,
-              borderRadius: 2,
-              transition:
-                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
-              '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                color: 'inherit',
-              },
-              '& .MuiTypography-root': {
-                fontWeight: 600,
-              },
-              '&:hover': {
-                bgcolor: 'transparent',
-                color: FEED_REPOST_ACTION_COLOR,
-                transform: 'scale(1.08)',
-              },
+              ...FEED_ACTION_BUTTON_SX,
+              ...getActiveActionSx(viewerReposted),
             }}
+            aria-pressed={viewerReposted}
           >
             <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
             <Typography
@@ -1310,30 +1482,10 @@ const FeedCard = ({
             size="small"
             onClick={() => actions.onSend(item)}
             sx={{
-              textTransform: 'none',
-              color: FEED_ACTION_MUTED_COLOR,
-              minWidth: 0,
-              minHeight: 0,
-              flexDirection: { xs: 'row', sm: 'row' },
-              gap: 0.625,
-              pt: 1,
-              pb: 0.75,
-              px: 0,
-              borderRadius: 2,
-              transition:
-                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
-              '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                color: 'inherit',
-              },
-              '& .MuiTypography-root': {
-                fontWeight: 600,
-              },
-              '&:hover': {
-                bgcolor: 'transparent',
-                color: FEED_SEND_ACTION_COLOR,
-                transform: 'scale(1.08)',
-              },
+              ...FEED_ACTION_BUTTON_SX,
+              ...getActiveActionSx(viewerSent),
             }}
+            aria-pressed={viewerSent}
           >
             <SendOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
             <Typography
@@ -1352,36 +1504,8 @@ const FeedCard = ({
                 : actions.onSave(item.id)
             }
             sx={{
-              textTransform: 'none',
-              color: item.viewer_saved
-                ? FEED_SAVE_ACTION_COLOR
-                : FEED_ACTION_MUTED_COLOR,
-              minWidth: 0,
-              minHeight: 0,
-              flexDirection: { xs: 'row', sm: 'row' },
-              gap: 0.625,
-              pt: 1,
-              pb: 0.75,
-              px: 0,
-              borderRadius: 2,
-              transition:
-                'color 120ms ease, transform 120ms ease, background-color 120ms ease',
-              '& .MuiSvgIcon-root, & .MuiTypography-root': {
-                color: 'inherit',
-              },
-              '& .MuiTypography-root': {
-                fontWeight: 600,
-              },
-              ...(item.viewer_saved
-                ? {
-                    '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
-                  }
-                : null),
-              '&:hover': {
-                bgcolor: 'transparent',
-                color: FEED_SAVE_ACTION_COLOR,
-                transform: 'scale(1.08)',
-              },
+              ...FEED_ACTION_BUTTON_SX,
+              ...getActiveActionSx(Boolean(item.viewer_saved)),
             }}
             aria-label={item.viewer_saved ? 'Unsave' : 'Save'}
             aria-pressed={item.viewer_saved}
@@ -2117,6 +2241,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     string | null
   >(null);
   const [shareModalItem, setShareModalItem] = useState<FeedItem | null>(null);
+  const [repostedOriginalIds, setRepostedOriginalIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [sentPostIds, setSentPostIds] = useState<Set<string>>(() => new Set());
   const [composerOpen, setComposerOpen] = useState(false);
   const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
     Set<string>
@@ -2621,6 +2749,11 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           originalId,
           accessToken: session.access_token,
         });
+        setRepostedOriginalIds((prev) => {
+          const next = new Set(prev);
+          next.add(originalId);
+          return next;
+        });
         showToast({ message: 'Reposted', severity: 'success' });
         await loadPage();
       } catch (e) {
@@ -2632,6 +2765,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
   const handleSend = useCallback((item: FeedItem) => {
     setShareModalItem(item);
+  }, []);
+
+  const handleSendComplete = useCallback((postId: string) => {
+    setSentPostIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
   }, []);
 
   const handleSave = useCallback(
@@ -3442,6 +3583,18 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                           isOwner={session?.user?.id === entry.item.user_id}
                           viewerUserId={session?.user?.id}
                           viewerAvatarUrl={avatarUrl}
+                          viewerReposted={
+                            (entry.item.kind === 'repost' &&
+                              session?.user?.id === entry.item.user_id) ||
+                            repostedOriginalIds.has(
+                              entry.item.kind === 'repost' &&
+                                typeof entry.item.payload?.original_id ===
+                                  'string'
+                                ? (entry.item.payload.original_id as string)
+                                : entry.item.id,
+                            )
+                          }
+                          viewerSent={sentPostIds.has(entry.item.id)}
                           commentsExpanded={
                             expandedCommentsPostId === entry.item.id
                           }
@@ -3882,6 +4035,9 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         open={Boolean(shareModalItem)}
         onClose={() => setShareModalItem(null)}
         onCopyLink={handleCopyLink}
+        onComplete={() => {
+          if (shareModalItem) handleSendComplete(shareModalItem.id);
+        }}
         mobile={isSmallScreen}
       />
     </Box>

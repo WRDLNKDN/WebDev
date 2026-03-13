@@ -39,6 +39,7 @@ import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
+import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
@@ -95,7 +96,8 @@ const DashboardIndustriesBlock = ({
       ),
   );
 
-  if (groups.length === 0 && !nicheField) return null;
+  const otherValues = parseNicheValues(nicheField);
+  if (groups.length === 0 && otherValues.length === 0) return null;
 
   return (
     <Stack spacing={1.25} sx={{ width: '100%' }}>
@@ -186,14 +188,18 @@ const DashboardIndustriesBlock = ({
             </Box>
           );
         })}
-        {nicheField ? (
+        {otherValues.length > 0 ? (
           <Stack spacing={0.75} sx={{ pt: groups.length > 0 ? 0.5 : 0 }}>
             <Typography variant="caption" sx={sectionLabelSx}>
-              Niche field
+              Other
             </Typography>
-            <Box data-testid="dashboard-pill" sx={nichePillSx}>
-              {nicheField}
-            </Box>
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {otherValues.map((value) => (
+                <Box key={value} data-testid="dashboard-pill" sx={nichePillSx}>
+                  Other: {value}
+                </Box>
+              ))}
+            </Stack>
           </Stack>
         ) : null}
       </Stack>
@@ -497,11 +503,15 @@ export const Dashboard = () => {
                     {group.industry}
                   </Box>
                 ))}
-                {nicheField ? (
-                  <Box data-testid="dashboard-pill" sx={nichePillSx}>
-                    {nicheField}
+                {parseNicheValues(nicheField).map((value) => (
+                  <Box
+                    key={value}
+                    data-testid="dashboard-pill"
+                    sx={nichePillSx}
+                  >
+                    Other: {value}
                   </Box>
-                ) : null}
+                ))}
                 {selectedSkills.map((skill) => (
                   <Box
                     key={`skill-${skill}`}

@@ -520,6 +520,7 @@ const AttachmentPreview = ({
 }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const isImage = mimeType.startsWith('image/');
+  const isVideo = mimeType.startsWith('video/');
 
   React.useEffect(() => {
     let cancelled = false;
@@ -560,6 +561,24 @@ const AttachmentPreview = ({
             maxHeight: 220,
             objectFit: 'cover',
             display: 'block',
+          }}
+        />
+      ) : isVideo && signedUrl ? (
+        <Box
+          component="video"
+          src={signedUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls
+          sx={{
+            width: '100%',
+            height: 'auto',
+            maxHeight: 220,
+            objectFit: 'cover',
+            display: 'block',
+            bgcolor: 'black',
           }}
         />
       ) : (

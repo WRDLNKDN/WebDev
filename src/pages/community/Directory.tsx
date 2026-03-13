@@ -1299,7 +1299,7 @@ export const Directory = () => {
                   hasActiveFilters={hasActiveFilters}
                   isSearchActive={q.trim().length > 0}
                   onClearFilters={() => clearAllFilters('Filters cleared.')}
-                  clearFiltersLabel="Reset filters"
+                  clearFiltersLabel="Clear filters"
                 />
               </Box>
             ) : (

@@ -49,6 +49,7 @@ export const ReactPickerButton = <T extends string = string>({
     () => options.find((option) => option.value === selectedValue) ?? null,
     [options, selectedValue],
   );
+  const displayLabel = selected?.label ?? buttonLabel;
 
   const clearHoverCloseTimeout = () => {
     if (hoverCloseTimeoutRef.current) {
@@ -159,7 +160,17 @@ export const ReactPickerButton = <T extends string = string>({
             ...buttonSx,
           }}
         >
-          <EmojiEmotionsOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+          {selected ? (
+            <Box
+              component="span"
+              aria-hidden="true"
+              sx={{ fontSize: { xs: '1.05rem', sm: '1rem' }, lineHeight: 1 }}
+            >
+              {selected.emoji}
+            </Box>
+          ) : (
+            <EmojiEmotionsOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+          )}
           <Typography
             component="span"
             variant="caption"
@@ -169,7 +180,7 @@ export const ReactPickerButton = <T extends string = string>({
               color: 'inherit',
             }}
           >
-            {buttonLabel}
+            {displayLabel}
           </Typography>
         </Button>
         {open ? (

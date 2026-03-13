@@ -28,6 +28,10 @@ import {
   appendSubIndustrySelection,
   findMatchingSubIndustryOption,
 } from './industryKeyboard';
+import {
+  parseNicheValues,
+  serializeNicheValues,
+} from '../../../lib/profile/nicheValues';
 import type { EditProfileFormData } from './types';
 
 type Props = {
@@ -43,11 +47,13 @@ export const EditProfileIndustrySection = ({
   formData,
   onChange,
 }: Props) => {
+  const otherValues = parseNicheValues(formData.niche_field);
   const [inputValues, setInputValues] = useState<Record<number, string>>({});
   const [statusMessages, setStatusMessages] = useState<Record<number, string>>(
     {},
   );
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [otherInputValue, setOtherInputValue] = useState('');
 
   const setInputValue = (idx: number, value: string) => {
     setStatusMessages((prev) => ({ ...prev, [idx]: '' }));
@@ -88,6 +94,21 @@ export const EditProfileIndustrySection = ({
     }));
     clearInputValue(idx);
     setOpenIndex(idx);
+    return true;
+  };
+
+  const commitOtherValue = () => {
+    const nextValue = otherInputValue.trim();
+    if (!nextValue) return false;
+
+    const nextValues = parseNicheValues(
+      serializeNicheValues([...otherValues, nextValue]),
+    );
+    onChange((prev) => ({
+      ...prev,
+      niche_field: serializeNicheValues(nextValues),
+    }));
+    setOtherInputValue('');
     return true;
   };
 
@@ -338,6 +359,78 @@ export const EditProfileIndustrySection = ({
           Maximum 5 industries. Remove one to add another.
         </FormHelperText>
       )}
+
+      <Box sx={{ mt: 2.25 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            ...FORM_SECTION_HEADING_SX,
+            display: 'block',
+            mb: 0.75,
+          }}
+        >
+          Other
+        </Typography>
+        <Autocomplete
+          multiple
+          freeSolo
+          clearOnBlur
+          selectOnFocus
+          disabled={busy}
+          options={[]}
+          value={otherValues}
+          inputValue={otherInputValue}
+          onInputChange={(_, next, reason) => {
+            if (reason === 'reset') {
+              setOtherInputValue('');
+              return;
+            }
+            setOtherInputValue(next);
+          }}
+          onChange={(_, next) => {
+            const values = next.filter(
+              (value): value is string => typeof value === 'string',
+            );
+            onChange((prev) => ({
+              ...prev,
+              niche_field: serializeNicheValues(values),
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="filled"
+              placeholder="Add other specialties"
+              helperText="Press comma or Enter to add each value separately."
+              inputProps={{
+                ...params.inputProps,
+                'aria-label': 'Other industries',
+              }}
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' ||
+                  event.key === ',' ||
+                  event.key === 'Tab'
+                ) {
+                  const committed = commitOtherValue();
+                  if (committed) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }
+              }}
+              sx={{
+                ...INPUT_STYLES,
+                '& .MuiFilledInput-root': {
+                  ...INPUT_STYLES['& .MuiFilledInput-root'],
+                  minHeight: INPUT_HEIGHT,
+                  alignItems: 'center',
+                },
+              }}
+            />
+          )}
+        />
+      </Box>
     </Box>
   );
 };

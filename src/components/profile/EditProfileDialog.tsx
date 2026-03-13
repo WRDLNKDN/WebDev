@@ -19,6 +19,10 @@ import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
 import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
+import {
+  parseNicheValues,
+  serializeNicheValues,
+} from '../../lib/profile/nicheValues';
 import { toMessage } from '../../lib/utils/errors';
 import type {
   DashboardProfile,
@@ -68,7 +72,9 @@ function buildProfileDraftSnapshot(params: {
       industry: group.industry.trim(),
       sub_industries: group.sub_industries.map((value) => value.trim()),
     })),
-    niche_field: params.formData.niche_field.trim(),
+    niche_field: serializeNicheValues(
+      parseNicheValues(params.formData.niche_field),
+    ),
     location: params.formData.location.trim(),
     profile_visibility: params.formData.profile_visibility,
     avatar: params.avatarUrl,
@@ -174,7 +180,9 @@ export const EditProfileDialog = ({
             : '',
       ),
       industries,
-      niche_field: safeStr(prof.niche_field),
+      niche_field: serializeNicheValues(
+        parseNicheValues(safeStr(prof.niche_field)),
+      ),
       location: safeStr(prof.location),
       profile_visibility: (prof.profile_visibility === 'connections_only'
         ? 'connections_only'
@@ -255,7 +263,8 @@ export const EditProfileDialog = ({
         industry: first?.industry ?? null,
         secondary_industry: first?.sub_industries?.[0]?.trim() || null,
         industries: industriesToSave,
-        niche_field: formData.niche_field?.trim() || null,
+        niche_field:
+          serializeNicheValues(parseNicheValues(formData.niche_field)) || null,
         location: formData.location || null,
         profile_visibility: formData.profile_visibility,
         nerd_creds: {

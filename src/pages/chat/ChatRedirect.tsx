@@ -1,8 +1,10 @@
 import { useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMessenger } from '../../context/MessengerContext';
 import { useChatRooms } from '../../hooks/useChat';
+import { findCanonicalDmRoom } from '../../lib/chat/findCanonicalDmRoom';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Redirects /chat and /chat/:roomId:
@@ -18,6 +20,7 @@ export const ChatRedirect = () => {
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const messenger = useMessenger();
   const { rooms, createDm, loading } = useChatRooms();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const withUserId = searchParams.get('with');
   const handledTargetRef = useRef<string | null>(null);
   const redirectTargetKey = `${mobile ? 'mobile' : 'desktop'}|${roomId ?? ''}|${withUserId ?? ''}`;
@@ -35,6 +38,19 @@ export const ChatRedirect = () => {
   }, [loading, mobile, navigate]);
 
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!cancelled) setCurrentUserId(session?.user?.id ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (loading) return;
     if (handledTargetRef.current === redirectTargetKey) return;
 
@@ -50,15 +66,12 @@ export const ChatRedirect = () => {
         }
 
         if (withUserId) {
-          const existing = rooms.find(
-            (room) =>
-              room.room_type === 'dm' &&
-              room.members?.some((member) => member.user_id === withUserId),
-          );
-
-          if (existing) {
+          const canonicalExisting = currentUserId
+            ? findCanonicalDmRoom(rooms, currentUserId, withUserId)
+            : null;
+          if (canonicalExisting) {
             if (!cancelled) {
-              navigate(`/chat-full/${existing.id}`, { replace: true });
+              navigate(`/chat-full/${canonicalExisting.id}`, { replace: true });
             }
             return;
           }
@@ -87,11 +100,9 @@ export const ChatRedirect = () => {
       }
 
       if (withUserId && messenger) {
-        const existing = rooms.find(
-          (room) =>
-            room.room_type === 'dm' &&
-            room.members?.some((member) => member.user_id === withUserId),
-        );
+        const existing = currentUserId
+          ? findCanonicalDmRoom(rooms, currentUserId, withUserId)
+          : null;
 
         if (existing) {
           messenger.openPopOut(existing.id);
@@ -127,6 +138,7 @@ export const ChatRedirect = () => {
     };
   }, [
     createDm,
+    currentUserId,
     loading,
     messenger,
     mobile,

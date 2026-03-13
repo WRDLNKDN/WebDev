@@ -234,7 +234,7 @@ test.describe('Chat favorites', () => {
       waitUntil: 'domcontentloaded',
     });
 
-    const favoriteButton = page.getByTestId(`chat-room-favorite-${ROOM_ID}`);
+    let favoriteButton = page.getByTestId(`chat-room-favorite-${ROOM_ID}`);
     await expect(favoriteButton).toBeVisible({ timeout: 30_000 });
     await expect(favoriteButton).toHaveAttribute(
       'aria-label',
@@ -253,6 +253,7 @@ test.describe('Chat favorites', () => {
 
     await page.reload({ waitUntil: 'domcontentloaded' });
 
+    favoriteButton = page.getByTestId(`chat-room-favorite-${ROOM_ID}`);
     await expect(favoriteButton).toBeVisible({ timeout: 30_000 });
     await expect(favoriteButton).toHaveAttribute(
       'aria-label',

@@ -1,5 +1,9 @@
 /* global Buffer, URL, URLSearchParams, console, process */
 import crypto from 'crypto';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { execFile } from 'child_process';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -204,6 +208,39 @@ const errorMessage = (e, fallback) => {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string' && e.trim()) return e;
   return fallback;
+};
+const CHAT_GIF_PROCESSING_MAX_BYTES = 8 * 1024 * 1024;
+const CHAT_PROCESSED_MEDIA_MAX_BYTES = CHAT_GIF_PROCESSING_MAX_BYTES;
+const FFMPEG_BINARY = process.env.FFMPEG_PATH || 'ffmpeg';
+const runExecFile = (file, args) =>
+  new Promise((resolve, reject) => {
+    execFile(file, args, { maxBuffer: 10 * 1024 * 1024 }, (error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+const transcodeGifBufferToMp4 = async (buffer) => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wrdlnkdn-gif-'));
+  const inputPath = path.join(tempDir, 'input.gif');
+  const outputPath = path.join(tempDir, 'output.mp4');
+  try {
+    await fs.writeFile(inputPath, buffer);
+    await runExecFile(FFMPEG_BINARY, [
+      '-y',
+      '-i',
+      inputPath,
+      '-movflags',
+      '+faststart',
+      '-pix_fmt',
+      'yuv420p',
+      '-vf',
+      'fps=15,scale=min(960\\,iw):-2:flags=lanczos',
+      outputPath,
+    ]);
+    return await fs.readFile(outputPath);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
 };
 const readNerdCreds = async (userId) => {
   const { data } = await adminSupabase
@@ -857,6 +894,18 @@ app.post('/api/admin/profiles/delete', requireAdmin, async (req, res) => {
   }
   return res.json({ ok: true });
 });
+const FEED_EMOJI_REACTION_TYPES = [
+  'like',
+  'love',
+  'inspiration',
+  'care',
+  'laughing',
+  'rage',
+];
+const FEED_EMOJI_REACTION_FILTER = FEED_EMOJI_REACTION_TYPES.map(
+  (type) => `payload->>type.eq.${type}`,
+).join(',');
+
 app.get('/api/feeds', requireAuth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1056,13 +1105,12 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
       typeof body.parent_id === 'string' ? body.parent_id.trim() : null;
     const type =
       typeof body.type === 'string' ? body.type.trim().toLowerCase() : '';
-    const emojiTypes = ['like', 'love', 'inspiration', 'care'];
-    const isEmoji = emojiTypes.includes(type);
+    const isEmoji = FEED_EMOJI_REACTION_TYPES.includes(type);
     if (!parentId || (type !== 'comment' && !isEmoji)) {
       return sendApiError(
         res,
         400,
-        'parent_id and type (like|love|inspiration|care|comment) required',
+        'parent_id and type (like|love|inspiration|care|laughing|rage|comment) required',
       );
     }
     const payload2 = { type };
@@ -1079,9 +1127,7 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
         .delete()
         .eq('parent_id', parentId)
         .eq('user_id', userId)
-        .or(
-          'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
-        );
+        .or(FEED_EMOJI_REACTION_FILTER);
     }
     const { error: error2 } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
@@ -1236,9 +1282,7 @@ app.delete(
       .eq('kind', 'reaction')
       .eq('parent_id', postId)
       .eq('user_id', userId)
-      .or(
-        'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
-      );
+      .or(FEED_EMOJI_REACTION_FILTER);
     if (error) return sendApiError(res, 500, 'Server error');
     return res.status(204).send();
   },
@@ -1315,9 +1359,7 @@ app.get('/api/feeds/items/:postId/comments', requireAuth, async (req, res) => {
       .select('parent_id, payload, user_id')
       .eq('kind', 'reaction')
       .in('parent_id', commentIds)
-      .or(
-        'payload->>type.eq.like,payload->>type.eq.love,payload->>type.eq.inspiration,payload->>type.eq.care',
-      );
+      .or(FEED_EMOJI_REACTION_FILTER);
     reactionRows = rr ?? [];
   }
   const reactionMap = {};
@@ -1635,6 +1677,56 @@ app.get('/api/link-preview', requireAuth, async (req, res) => {
   if (!rawUrl) return sendApiError(res, 400, 'Missing url');
   const preview = await fetchLinkPreview(rawUrl);
   return res.json({ ok: true, data: preview });
+});
+const uploadChatGifFile = upload.single('file');
+app.post('/api/chat/attachments/process-gif', requireAuth, (req, res) => {
+  uploadChatGifFile(req, res, async (uploadErr) => {
+    if (uploadErr) return sendApiError(res, 400, 'GIF upload failed');
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+    const file = req.file;
+    if (!file || file.mimetype !== 'image/gif') {
+      return sendApiError(res, 400, 'GIF file required');
+    }
+    if (file.size > CHAT_GIF_PROCESSING_MAX_BYTES) {
+      return sendApiError(
+        res,
+        413,
+        'This GIF is too large to process. Try a smaller file.',
+      );
+    }
+
+    try {
+      const processedBuffer = await transcodeGifBufferToMp4(file.buffer);
+      if (processedBuffer.length > CHAT_PROCESSED_MEDIA_MAX_BYTES) {
+        return sendApiError(
+          res,
+          413,
+          'This GIF is too large to process. Try a smaller file.',
+        );
+      }
+      const storagePath = `${userId}/${Date.now()}-${crypto.randomUUID()}.mp4`;
+      const { error } = await adminSupabase.storage
+        .from('chat-attachments')
+        .upload(storagePath, processedBuffer, {
+          contentType: 'video/mp4',
+          upsert: false,
+        });
+      if (error) return sendApiError(res, 500, 'GIF processing failed');
+
+      return res.json({
+        ok: true,
+        data: {
+          path: storagePath,
+          mime: 'video/mp4',
+          size: processedBuffer.length,
+        },
+      });
+    } catch (cause) {
+      console.error('[chat/process-gif] failed', cause);
+      return sendApiError(res, 500, 'GIF processing failed');
+    }
+  });
 });
 app.post('/api/resumes/generate-thumbnail', requireAuth, async (req, res) => {
   const userId = req.userId;

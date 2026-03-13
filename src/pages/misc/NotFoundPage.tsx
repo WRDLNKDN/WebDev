@@ -58,7 +58,7 @@ const NOT_FOUND_WEIRDLINGS: NotFoundWeirdling[] = [
 
 export const NotFoundPage = () => {
   const navigate = useNavigate();
-  const [selectedIndex] = useState(() =>
+  const [selectedIndex, setSelectedIndex] = useState(() =>
     Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length),
   );
   const selectedWeirdling = NOT_FOUND_WEIRDLINGS[selectedIndex];
@@ -254,6 +254,53 @@ export const NotFoundPage = () => {
                     }}
                   />
                 </Box>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  flexWrap="wrap"
+                  justifyContent="center"
+                  sx={{ maxWidth: 440 }}
+                >
+                  {NOT_FOUND_WEIRDLINGS.map((weirdling, index) => {
+                    const isSelected = index === selectedIndex;
+                    return (
+                      <Button
+                        key={weirdling.name}
+                        type="button"
+                        variant={isSelected ? 'contained' : 'outlined'}
+                        size="small"
+                        onClick={() => setSelectedIndex(index)}
+                        aria-pressed={isSelected}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          borderRadius: 999,
+                          px: 1.5,
+                          py: 0.65,
+                          bgcolor: isSelected
+                            ? weirdling.accent
+                            : 'rgba(255,255,255,0.02)',
+                          color: isSelected ? '#08111f' : '#fff',
+                          borderColor: isSelected
+                            ? weirdling.accent
+                            : 'rgba(141,188,229,0.3)',
+                          boxShadow: isSelected
+                            ? `0 10px 24px ${weirdling.glow}`
+                            : 'none',
+                          '&:hover': {
+                            borderColor: weirdling.accent,
+                            bgcolor: isSelected
+                              ? weirdling.accent
+                              : 'rgba(255,255,255,0.06)',
+                          },
+                        }}
+                      >
+                        {weirdling.name}
+                      </Button>
+                    );
+                  })}
+                </Stack>
               </Stack>
             </Box>
           </Stack>

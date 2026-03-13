@@ -10,6 +10,9 @@ import type {
 import { POLICY_VERSION } from '../types/join';
 import { JoinContext, type JoinContextValue } from './JoinContext';
 import {
+  buildJoinIdentityFromSession,
+  hydrateJoinStateFromSession,
+  isJoinAuthError,
   JOIN_STORAGE_KEY,
   LEGACY_SIGNUP_STORAGE_KEY,
   loadJoinState,
@@ -131,20 +134,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
         app_metadata?: { provider?: string };
       };
     }) => {
-      const provider =
-        session.user.identities?.[0]?.provider ??
-        session.user.app_metadata?.provider ??
-        'google';
-      const identityProvider = provider === 'azure' ? 'microsoft' : 'google';
-      const identity: IdentityData = {
-        provider: identityProvider,
-        userId: session.user.id,
-        email: session.user.email ?? '',
-        termsAccepted: true,
-        guidelinesAccepted: true,
-        policyVersion: POLICY_VERSION,
-        timestamp: new Date().toISOString(),
-      };
+      const identity = buildJoinIdentityFromSession(session);
 
       setState((s) => {
         const wasMidFlow =
@@ -194,20 +184,9 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       },
       profile: ExistingProfile,
     ) => {
-      const provider =
-        session.user.identities?.[0]?.provider ??
-        session.user.app_metadata?.provider ??
-        'google';
-      const identityProvider = provider === 'azure' ? 'microsoft' : 'google';
-
       const identity: IdentityData = {
-        provider: identityProvider,
-        userId: session.user.id,
-        email: session.user.email ?? '',
-        termsAccepted: true,
-        guidelinesAccepted: true,
+        ...buildJoinIdentityFromSession(session),
         policyVersion: profile.policy_version ?? POLICY_VERSION,
-        timestamp: new Date().toISOString(),
       };
 
       const values: ValuesData = {
@@ -268,14 +247,25 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
           window.location.assign(getJoinSubmitAuthRedirect());
           return 'auth_required';
         }
+        const hydratedState = hydrateJoinStateFromSession(state, session);
+        if (hydratedState !== state) {
+          setState(hydratedState);
+        }
         await submitJoinRegistration({
-          state,
+          state: hydratedState,
           profileData,
           markComplete,
           setState,
           setSubmitError,
         });
         return 'submitted';
+      } catch (error) {
+        if (isJoinAuthError(error)) {
+          setSubmitError(null);
+          window.location.assign(getJoinSubmitAuthRedirect());
+          return 'auth_required';
+        }
+        throw error;
       } finally {
         setSubmitting(false);
       }

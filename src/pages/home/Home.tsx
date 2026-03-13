@@ -266,6 +266,17 @@ export const Home = () => {
     setShowContent(true);
   };
 
+  const handleHeroSkip = useCallback(() => {
+    if (showContent) return;
+    if (!prefersReducedMotion) {
+      setHeroPhase('dimmed');
+    }
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    setShowContent(true);
+  }, [prefersReducedMotion, showContent]);
+
   // 1.5x playback improves pacing; respect prefers-reduced-motion
   const setPlaybackRate = useCallback(() => {
     const el = videoRef.current;
@@ -285,7 +296,7 @@ export const Home = () => {
 
   return (
     <main className="home-landing" data-testid="signed-out-landing">
-      <section className="home-landing__hero">
+      <section className="home-landing__hero" onPointerDown={handleHeroSkip}>
         {!prefersReducedMotion && !videoFailed ? (
           <video
             ref={videoRef}

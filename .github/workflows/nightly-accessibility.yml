@@ -39,11 +39,3 @@ jobs:
 
       - name: ♿ Run accessibility suite
         run: npm run test:e2e -- src/tests/e2e/accessibility.spec.ts
-
-      - name: 📎 Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nightly-accessibility-playwright-report
-          path: playwright-report
-          retention-days: 14

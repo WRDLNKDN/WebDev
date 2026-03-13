@@ -10,6 +10,7 @@ type FeedCardCommentsSectionProps = {
   comments: FeedComment[];
   itemId: string;
   viewerUserId?: string;
+  viewerAvatarUrl?: string | null;
   actions: FeedCardActions;
   editingCommentId: string | null;
   setEditingCommentId: (value: string | null) => void;
@@ -35,6 +36,7 @@ export const FeedCardCommentsSection = ({
   comments,
   itemId,
   viewerUserId,
+  viewerAvatarUrl,
   actions,
   editingCommentId,
   setEditingCommentId,
@@ -69,6 +71,7 @@ export const FeedCardCommentsSection = ({
             comments={comments}
             itemId={itemId}
             viewerUserId={viewerUserId}
+            viewerAvatarUrl={viewerAvatarUrl}
             actions={actions}
             editingCommentId={editingCommentId}
             setEditingCommentId={setEditingCommentId}

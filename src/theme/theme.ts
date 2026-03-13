@@ -176,14 +176,10 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
                 'color 120ms ease, text-decoration-color 120ms ease, opacity 120ms ease',
             },
             'a[href]:hover': {
-              textDecoration: 'underline !important',
-              textUnderlineOffset: '3px',
-              textDecorationThickness: '2px',
               cursor: 'pointer',
             },
             'a[href]:focus-visible': {
-              textDecoration: 'underline',
-              textUnderlineOffset: '3px',
+              textDecoration: 'none',
             },
             '@media (prefers-reduced-motion: reduce)': {
               '*, *::before, *::after': {
@@ -221,11 +217,14 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
               'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease, text-decoration-color 120ms ease',
             '&:focus-visible': FOCUS_RING,
             '&:hover': {
+              textDecoration: 'none',
+              boxShadow: 'none',
               transform: 'translateY(-1px)',
             },
             '&[aria-pressed="true"], &[aria-selected="true"]': {
               fontWeight: 800,
-              boxShadow: 'inset 0 0 0 1px currentColor',
+              textDecoration: 'none',
+              boxShadow: 'none',
             },
             '@media (prefers-reduced-motion: reduce)': {
               transition: 'none',
@@ -337,8 +336,7 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           root: {
             color: PALETTE.primary.light,
-            textDecoration: 'underline', // Crucial for color-blind users (Use of Color rule)
-            textUnderlineOffset: '4px',
+            textDecoration: 'none',
             '&:hover': { color: PALETTE.primary.main },
             '&:focus-visible': {
               ...FOCUS_RING,
@@ -454,10 +452,53 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         },
       },
       MuiDialog: {
+        defaultProps: {
+          scroll: 'paper',
+          fullWidth: true,
+        },
         styleOverrides: {
+          root: {
+            '& .MuiBackdrop-root': {
+              backgroundColor: alpha('#040A19', 0.6),
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+            },
+          },
           paper: {
             borderRadius: 16,
             border: `1px solid ${surfaceBorder}`,
+            backgroundImage:
+              'linear-gradient(180deg, rgba(10,18,32,0.98), rgba(7,15,28,0.98))',
+            boxShadow:
+              '0 28px 64px rgba(1, 6, 18, 0.48), inset 0 1px 0 rgba(255,255,255,0.05)',
+            maxHeight: 'min(880px, calc(100dvh - 32px))',
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            padding: '20px 24px 16px',
+            borderBottom: `1px solid ${alpha(PALETTE.primary.light, 0.14)}`,
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            padding: '24px',
+            '&.MuiDialogContent-dividers': {
+              borderTop: `1px solid ${alpha(PALETTE.primary.light, 0.14)}`,
+              borderBottom: `1px solid ${alpha(PALETTE.primary.light, 0.14)}`,
+            },
+          },
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: {
+            padding: '16px 24px 24px',
+            gap: 12,
           },
         },
       },
@@ -593,13 +634,10 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             fontWeight: 600,
             minHeight: 48,
             fontSize: '1rem',
-            borderBottom: '3px solid transparent',
             '&:focus-visible': FOCUS_RING,
             '&.Mui-selected': {
               fontWeight: 800,
-              textDecoration: 'underline',
-              textUnderlineOffset: '5px',
-              borderBottomColor: PALETTE.primary.main,
+              textDecoration: 'none',
             },
           },
         },
@@ -618,8 +656,6 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
           root: {
             '&.Mui-selected': {
               fontWeight: 800,
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
               borderWidth: 2,
             },
             '@media (prefers-reduced-motion: reduce)': {

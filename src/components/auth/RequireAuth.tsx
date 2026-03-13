@@ -1,10 +1,11 @@
 import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
- * Route guard: redirects to /join when user is not signed in.
+ * Route guard: redirects to home when user is not signed in.
  * Use for Feed and other auth-required routes.
  */
 export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
@@ -17,7 +18,7 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
     let cancelled = false;
 
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSessionWithTimeout();
       if (!cancelled)
         setSession(
           data.session ? { user: { id: data.session.user.id } } : null,
@@ -56,7 +57,7 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
-    return <Navigate to="/join" replace state={{ from: location }} />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

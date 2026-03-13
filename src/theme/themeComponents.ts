@@ -159,8 +159,7 @@ export const THEME_COMPONENTS = {
     styleOverrides: {
       root: {
         color: '#8DBCE5',
-        textDecoration: 'underline',
-        textUnderlineOffset: '4px',
+        textDecoration: 'none',
         '&:hover': { color: '#3884D2' },
         '&:focus-visible': {
           ...FOCUS_RING,
@@ -271,10 +270,53 @@ export const THEME_COMPONENTS = {
     },
   },
   MuiDialog: {
+    defaultProps: {
+      scroll: 'paper',
+      fullWidth: true,
+    },
     styleOverrides: {
+      root: {
+        '& .MuiBackdrop-root': {
+          backgroundColor: 'rgba(4,10,25,0.6)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+        },
+      },
       paper: {
         borderRadius: 16,
         border: '1px solid rgba(156,187,217,0.22)',
+        backgroundImage:
+          'linear-gradient(180deg, rgba(10,18,32,0.98), rgba(7,15,28,0.98))',
+        boxShadow:
+          '0 28px 64px rgba(1, 6, 18, 0.48), inset 0 1px 0 rgba(255,255,255,0.05)',
+        maxHeight: 'min(880px, calc(100dvh - 32px))',
+      },
+    },
+  },
+  MuiDialogTitle: {
+    styleOverrides: {
+      root: {
+        padding: '20px 24px 16px',
+        borderBottom: '1px solid rgba(141,188,229,0.14)',
+      },
+    },
+  },
+  MuiDialogContent: {
+    styleOverrides: {
+      root: {
+        padding: '24px',
+        '&.MuiDialogContent-dividers': {
+          borderTop: '1px solid rgba(141,188,229,0.14)',
+          borderBottom: '1px solid rgba(141,188,229,0.14)',
+        },
+      },
+    },
+  },
+  MuiDialogActions: {
+    styleOverrides: {
+      root: {
+        padding: '16px 24px 24px',
+        gap: 12,
       },
     },
   },

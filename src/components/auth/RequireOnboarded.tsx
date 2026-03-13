@@ -9,6 +9,7 @@ import {
   setProfileValidated,
 } from '../../lib/profile/profileValidatedCache';
 import { consumeSignOutRedirect } from '../../lib/auth/signOut';
+import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { devLog, devWarn } from '../../lib/utils/devLog';
 
@@ -48,16 +49,16 @@ export const RequireOnboarded = ({
     const check = async () => {
       const runId = ++checkRunRef.current;
       // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
-      let { data } = await supabase.auth.getSession();
+      let { data } = await getSessionWithTimeout();
       if (!data.session) {
         await new Promise((r) => setTimeout(r, 400));
         if (cancelled) return;
-        ({ data } = await supabase.auth.getSession());
+        ({ data } = await getSessionWithTimeout());
       }
       if (!data.session) {
         await new Promise((r) => setTimeout(r, 400));
         if (cancelled) return;
-        ({ data } = await supabase.auth.getSession());
+        ({ data } = await getSessionWithTimeout());
       }
       if (cancelled || runId !== checkRunRef.current) return;
 
@@ -81,7 +82,7 @@ export const RequireOnboarded = ({
         // Final hydration grace pass before redirecting on fresh OAuth landings.
         await new Promise((r) => setTimeout(r, 900));
         if (cancelled || runId !== checkRunRef.current) return;
-        const { data: recheck } = await supabase.auth.getSession();
+        const { data: recheck } = await getSessionWithTimeout();
         if (recheck.session) {
           data = recheck;
         } else {
@@ -225,7 +226,7 @@ export const RequireOnboarded = ({
         // UAT hardening: SIGNED_OUT can be emitted transiently during token
         // churn. Re-verify/refresh before forcing redirect.
         void (async () => {
-          const { data: current } = await supabase.auth.getSession();
+          const { data: current } = await getSessionWithTimeout();
           if (cancelled) return;
           if (current.session) {
             void check();

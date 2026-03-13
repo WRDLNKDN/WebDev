@@ -350,6 +350,7 @@ export const FeedCard = ({
           comments={comments}
           itemId={item.id}
           viewerUserId={viewerUserId}
+          viewerAvatarUrl={viewerAvatarUrl}
           actions={actions}
           editingCommentId={editingCommentId}
           setEditingCommentId={setEditingCommentId}

@@ -52,6 +52,9 @@ export const FORM_OUTLINED_FIELD_SX = {
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.6)',
     '&.Mui-focused': { color: '#3884D2' },
+    '& .MuiFormLabel-asterisk': {
+      color: '#f44336',
+    },
   },
   '& .MuiFormHelperText-root': {
     color: 'rgba(255,255,255,0.5)',

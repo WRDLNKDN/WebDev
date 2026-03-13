@@ -26,6 +26,7 @@ import {
   signupStepSubtext,
 } from '../../theme/joinStyles';
 import { POLICY_VERSION } from '../../types/join';
+import { shouldAutoAdvanceIdentityStep } from './identity/identityStepNavigation';
 import { IdentityConsentSection } from './identity/IdentityConsentSection';
 import { IdentityOAuthActions } from './identity/IdentityOAuthActions';
 
@@ -65,7 +66,8 @@ export const IdentityStep = () => {
       if (
         !session?.user ||
         hasAdvanced.current ||
-        !state.completedSteps.includes('welcome')
+        !state.completedSteps.includes('welcome') ||
+        !shouldAutoAdvanceIdentityStep(state.completedSteps)
       ) {
         return false;
       }

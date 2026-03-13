@@ -170,6 +170,9 @@ export const profileStepTextField = {
     fontSize: '0.9375rem',
     '&.Mui-focused': { color: '#4caf50' },
     '&.Mui-error': { color: '#f44336' },
+    '& .MuiFormLabel-asterisk': {
+      color: '#f44336',
+    },
   },
   '& .MuiInputBase-input::placeholder': {
     color: 'rgba(255,255,255,0.92)',

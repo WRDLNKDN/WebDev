@@ -1,5 +1,11 @@
 import { supabase } from '../lib/auth/supabaseClient';
-import type { JoinState, JoinStep, ProfileData } from '../types/join';
+import {
+  POLICY_VERSION,
+  type IdentityData,
+  type JoinState,
+  type JoinStep,
+  type ProfileData,
+} from '../types/join';
 
 export const JOIN_STORAGE_KEY = 'wrdlnkdn-join-state';
 export const LEGACY_SIGNUP_STORAGE_KEY = 'wrdlnkdn-signup-state';
@@ -109,6 +115,74 @@ export const toFriendlyMessageFromUnknown = (e: unknown): string => {
     });
   }
   return `Something went wrong. Please try again or email us at ${SUPPORT_EMAIL} for help.`;
+};
+
+type JoinSessionLike = {
+  user: {
+    id: string;
+    email?: string;
+    identities?: { provider?: string }[];
+    app_metadata?: { provider?: string };
+  };
+};
+
+export const buildJoinIdentityFromSession = (
+  session: JoinSessionLike,
+): IdentityData => {
+  const provider =
+    session.user.identities?.[0]?.provider ??
+    session.user.app_metadata?.provider ??
+    'google';
+
+  return {
+    provider: provider === 'azure' ? 'microsoft' : 'google',
+    userId: session.user.id,
+    email: session.user.email ?? '',
+    termsAccepted: true,
+    guidelinesAccepted: true,
+    policyVersion: POLICY_VERSION,
+    timestamp: new Date().toISOString(),
+  };
+};
+
+export const hydrateJoinStateFromSession = (
+  state: JoinState,
+  session: JoinSessionLike,
+): JoinState => {
+  if (state.identity?.userId === session.user.id) {
+    return state;
+  }
+
+  const identity = buildJoinIdentityFromSession(session);
+  const completedSteps = [
+    'welcome',
+    'identity',
+    ...state.completedSteps.filter(
+      (step) => step !== 'welcome' && step !== 'identity',
+    ),
+  ] as JoinStep[];
+
+  return {
+    ...state,
+    identity,
+    completedSteps,
+  };
+};
+
+export const isJoinAuthError = (error: unknown): boolean => {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+
+  return (
+    message.includes('You must be signed in') ||
+    message.includes('Your session may have expired') ||
+    message.includes('row level security') ||
+    message.includes('policy')
+  );
 };
 
 type SubmitJoinRegistrationParams = {

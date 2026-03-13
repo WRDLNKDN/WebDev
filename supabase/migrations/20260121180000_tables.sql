@@ -22,6 +22,155 @@ begin
 end $$;
 
 -- -----------------------------
+-- Consolidated follow-up migrations
+-- -----------------------------
+
+-- Enforce the single-category portfolio model for future writes without
+-- rewriting any existing portfolio_items rows.
+alter table public.portfolio_items
+  drop constraint if exists portfolio_items_single_category_check;
+
+alter table public.portfolio_items
+  add constraint portfolio_items_single_category_check
+  check (cardinality(coalesce(tech_stack, '{}'::text[])) <= 1)
+  not valid;
+
+create or replace function public.chat_create_dm(p_other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_room_id uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_other_user_id is null or p_other_user_id = v_uid then
+    raise exception 'Invalid other user for DM';
+  end if;
+  if not public.are_chat_connections(v_uid, p_other_user_id) then
+    raise exception 'You can only start 1:1 chats with Connections.';
+  end if;
+  if public.chat_blocked(v_uid, p_other_user_id) then
+    raise exception 'You cannot message this member.';
+  end if;
+
+  select r.id
+    into v_room_id
+  from public.chat_rooms r
+  join public.chat_room_members mine
+    on mine.room_id = r.id
+   and mine.user_id = v_uid
+  join public.chat_room_members other_member
+    on other_member.room_id = r.id
+   and other_member.user_id = p_other_user_id
+  where r.room_type = 'dm'
+  order by coalesce(
+             (
+               select max(m.created_at)
+               from public.chat_messages m
+               where m.room_id = r.id
+             ),
+             r.updated_at,
+             r.created_at
+           ) desc,
+           r.created_at asc,
+           r.id asc
+  limit 1;
+
+  if v_room_id is not null then
+    insert into public.chat_room_members (room_id, user_id, role, left_at)
+    values
+      (v_room_id, v_uid, 'admin', null),
+      (v_room_id, p_other_user_id, 'member', null)
+    on conflict (room_id, user_id)
+    do update
+      set role = excluded.role,
+          left_at = null;
+
+    return v_room_id;
+  end if;
+
+  insert into public.chat_rooms (room_type, name, created_by)
+  values ('dm', null, v_uid)
+  returning id into v_room_id;
+
+  if v_room_id is null then
+    raise exception 'Could not create room';
+  end if;
+
+  insert into public.chat_room_members (room_id, user_id, role)
+  values (v_room_id, v_uid, 'admin'), (v_room_id, p_other_user_id, 'member');
+
+  return v_room_id;
+end;
+$$;
+
+revoke all on function public.chat_create_dm(uuid) from public;
+grant execute on function public.chat_create_dm(uuid) to authenticated;
+
+create table if not exists public.chat_room_preferences (
+  room_id uuid not null references public.chat_rooms(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  is_favorite boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (room_id, user_id)
+);
+
+create index if not exists idx_chat_room_preferences_user_id
+  on public.chat_room_preferences(user_id);
+
+create index if not exists idx_chat_room_preferences_user_favorite
+  on public.chat_room_preferences(user_id, is_favorite)
+  where is_favorite = true;
+
+comment on table public.chat_room_preferences is
+  'User-specific chat room preferences, such as favorites.';
+
+drop trigger if exists trg_chat_room_preferences_updated_at
+  on public.chat_room_preferences;
+create trigger trg_chat_room_preferences_updated_at
+before update on public.chat_room_preferences
+for each row
+execute function public.set_updated_at();
+
+-- project-sources: uploaded portfolio artifacts (file-backed project source URLs)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'project-sources',
+  'project-sources',
+  true,
+  2097152,
+  array[
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+    'text/markdown',
+    'video/mp4',
+    'video/webm',
+    'video/quicktime'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- -----------------------------
 -- Admin allowlist (NO RLS; grants in rls.sql)
 -- -----------------------------
 create table if not exists public.admin_allowlist (

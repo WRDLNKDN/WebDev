@@ -25,6 +25,7 @@ export function buildErrorBoundaryCopy(
   if (
     normalized.includes('loading chunk') ||
     normalized.includes('failed to fetch dynamically imported module') ||
+    normalized.includes('error loading dynamically imported module') ||
     normalized.includes('importing a module script failed')
   ) {
     return {

@@ -4,7 +4,9 @@ import {
   Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
   Stack,
@@ -25,6 +27,25 @@ import { AdvertiseIconField } from './AdvertiseIconField';
 import { AdvertiseRequestFields } from './AdvertiseRequestFields';
 
 const ICON_MAX_BYTES = 5 * 1024 * 1024;
+
+function hasAnyAdvertiseFormData(data: {
+  name: string;
+  email: string;
+  destinationUrl: string;
+  message: string;
+  adCopyDescription: string;
+  iconFile: File | null;
+}): boolean {
+  return (
+    data.name.trim() !== '' ||
+    data.email.trim() !== '' ||
+    data.destinationUrl.trim() !== '' ||
+    data.message.trim() !== '' ||
+    data.adCopyDescription.trim() !== '' ||
+    data.iconFile !== null
+  );
+}
+
 export const AdvertisePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,12 +59,24 @@ export const AdvertisePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AdvertiseFieldErrors>({});
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const backgroundLocation = (
     location.state as { backgroundLocation?: RouterLocation } | null
   )?.backgroundLocation;
 
+  const hasUnsavedChanges = hasAnyAdvertiseFormData({
+    name,
+    email,
+    destinationUrl,
+    message,
+    adCopyDescription,
+    iconFile,
+  });
+
   const closeModal = () => {
+    setConfirmCloseOpen(false);
     if (backgroundLocation) {
       navigate(
         {
@@ -56,6 +89,19 @@ export const AdvertisePage = () => {
       return;
     }
     navigate('/', { replace: true });
+  };
+
+  const requestClose = () => {
+    if (hasUnsavedChanges) {
+      setConfirmCloseOpen(true);
+      return;
+    }
+    closeModal();
+  };
+
+  const handleConfirmSaveAndSend = () => {
+    setConfirmCloseOpen(false);
+    formRef.current?.requestSubmit();
   };
 
   const clearFieldError = (field: keyof AdvertiseFieldErrors) => {
@@ -172,138 +218,199 @@ export const AdvertisePage = () => {
     !isValidAdvertiserDestinationUrl(destinationUrl.trim());
 
   return (
-    <Dialog
-      open
-      onClose={() => !submitting && closeModal()}
-      fullWidth
-      maxWidth="sm"
-      scroll="paper"
-      aria-labelledby="advertise-dialog-title"
-      aria-describedby="advertise-dialog-description"
-      PaperProps={{
-        component: 'form',
-        onSubmit: handleSubmit,
-        sx: {
-          maxHeight: 'min(92vh, 860px)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          mx: { xs: 1.5, sm: 2 },
-          width: { xs: 'calc(100% - 24px)', sm: '100%' },
-        },
-      }}
-    >
-      <DialogTitle id="advertise-dialog-title" sx={{ pr: 6, pb: 1.25 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Advertise with us
-        </Typography>
-        <IconButton
-          onClick={closeModal}
-          disabled={submitting}
-          aria-label="Close advertise modal"
-          sx={{ position: 'absolute', right: 10, top: 10 }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent
-        id="advertise-dialog-description"
-        dividers
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: '1 1 auto',
-          minHeight: 0,
-          gap: 2,
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
+    <>
+      <Dialog
+        open
+        onClose={() => !submitting && requestClose()}
+        fullWidth
+        maxWidth="sm"
+        scroll="paper"
+        aria-labelledby="advertise-dialog-title"
+        aria-describedby="advertise-dialog-description"
+        PaperProps={{
+          component: 'form',
+          ref: formRef,
+          onSubmit: handleSubmit,
+          sx: {
+            maxHeight: 'min(92vh, 860px)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            mx: { xs: 1.5, sm: 2 },
+            width: { xs: 'calc(100% - 24px)', sm: '100%' },
+          },
         }}
       >
-        <Typography variant="body1" color="text.secondary">
-          Interested in reaching the WRDLNKDN community? Send us a message.
-        </Typography>
-
-        {error ? (
-          <Alert severity="error" onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        ) : null}
-
-        <AdvertiseRequestFields
-          name={name}
-          email={email}
-          destinationUrl={destinationUrl}
-          destinationUrlIsInvalid={destinationUrlIsInvalid}
-          message={message}
-          adCopyDescription={adCopyDescription}
-          fieldErrors={fieldErrors}
-          onNameChange={(value) => {
-            setName(value);
-            clearFieldError('name');
+        <DialogTitle
+          id="advertise-dialog-title"
+          sx={{
+            position: 'relative',
+            pr: 6,
+            pb: 1.25,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 2,
           }}
-          onEmailChange={(value) => {
-            setEmail(value);
-            clearFieldError('email');
-          }}
-          onDestinationUrlChange={(value) => {
-            setDestinationUrl(value);
-            clearFieldError('destinationUrl');
-          }}
-          onMessageChange={(value) => {
-            setMessage(value);
-            clearFieldError('message');
-          }}
-          onAdCopyDescriptionChange={(value) => {
-            setAdCopyDescription(value);
-            clearFieldError('adCopyDescription');
-          }}
-        />
-        <AdvertiseIconField
-          iconFile={iconFile}
-          iconPreview={iconPreview}
-          iconInputRef={iconInputRef}
-          fieldError={fieldErrors.icon}
-          submitting={submitting}
-          onFileChange={handleIconChange}
-          onClear={clearIcon}
-        />
-
-        <Stack
-          direction={{ xs: 'column-reverse', sm: 'row' }}
-          spacing={1.5}
-          justifyContent="flex-end"
         >
-          <Button
-            onClick={closeModal}
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            Advertise with us
+          </Typography>
+          <IconButton
+            onClick={requestClose}
             disabled={submitting}
+            aria-label="Close advertise modal"
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              flexShrink: 0,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          id="advertise-dialog-description"
+          dividers
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            gap: 2,
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <Typography variant="body1" color="text.secondary">
+            Interested in reaching the WRDLNKDN community? Send us a message.
+          </Typography>
+
+          {error ? (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          ) : null}
+
+          <AdvertiseRequestFields
+            name={name}
+            email={email}
+            destinationUrl={destinationUrl}
+            destinationUrlIsInvalid={destinationUrlIsInvalid}
+            message={message}
+            adCopyDescription={adCopyDescription}
+            fieldErrors={fieldErrors}
+            onNameChange={(value) => {
+              setName(value);
+              clearFieldError('name');
+            }}
+            onEmailChange={(value) => {
+              setEmail(value);
+              clearFieldError('email');
+            }}
+            onDestinationUrlChange={(value) => {
+              setDestinationUrl(value);
+              clearFieldError('destinationUrl');
+            }}
+            onMessageChange={(value) => {
+              setMessage(value);
+              clearFieldError('message');
+            }}
+            onAdCopyDescriptionChange={(value) => {
+              setAdCopyDescription(value);
+              clearFieldError('adCopyDescription');
+            }}
+          />
+          <AdvertiseIconField
+            iconFile={iconFile}
+            iconPreview={iconPreview}
+            iconInputRef={iconInputRef}
+            fieldError={fieldErrors.icon}
+            submitting={submitting}
+            onFileChange={handleIconChange}
+            onClear={clearIcon}
+          />
+
+          <Stack
+            direction={{ xs: 'column-reverse', sm: 'row' }}
+            spacing={1.5}
+            justifyContent="flex-end"
+          >
+            <Button
+              onClick={requestClose}
+              disabled={submitting}
+              color="inherit"
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={
+                submitting ||
+                !isValidAdvertiserDestinationUrl(destinationUrl.trim())
+              }
+            >
+              {submitting ? (
+                <>
+                  <CircularProgress size={18} sx={{ mr: 1.25 }} />
+                  Sending...
+                </>
+              ) : (
+                'Send request'
+              )}
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmCloseOpen}
+        onClose={() => setConfirmCloseOpen(false)}
+        aria-labelledby="advertise-unsaved-title"
+        aria-describedby="advertise-unsaved-description"
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle id="advertise-unsaved-title">
+          You have unsaved changes
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="advertise-unsaved-description">
+            Are you sure you want to exit this form? Your entered data will be
+            lost unless you send the request.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, pb: 2 }}>
+          <Button
+            onClick={() => setConfirmCloseOpen(false)}
             color="inherit"
             variant="outlined"
           >
-            Cancel
+            Continue editing
           </Button>
           <Button
-            type="submit"
+            onClick={handleConfirmSaveAndSend}
             variant="contained"
             disabled={
               submitting ||
-              !isValidAdvertiserDestinationUrl(destinationUrl.trim())
+              !isValidAdvertiserDestinationUrl(destinationUrl.trim()) ||
+              !iconFile
             }
           >
-            {submitting ? (
-              <>
-                <CircularProgress size={18} sx={{ mr: 1.25 }} />
-                Sending...
-              </>
-            ) : (
-              'Send request'
-            )}
+            Save and send
           </Button>
-        </Stack>
-      </DialogContent>
-    </Dialog>
+          <Button onClick={closeModal} color="error" variant="outlined">
+            Discard and exit
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };

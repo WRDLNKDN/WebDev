@@ -1048,6 +1048,7 @@ begin
   ) stats on true
   where
     p.status = 'approved'
+    and fi.parent_id is null
     and (
       use_connections and fi.user_id = any(actor_ids)
       or not use_connections
@@ -1066,7 +1067,7 @@ end;
 $$;
 
 comment on function public.get_feed_page(uuid, timestamptz, uuid, int, text) is
-  'Returns feed items with reaction counts, scheduled filtering. scheduled_at null or passed.';
+  'Returns root feed items (post/repost/external_link only; excludes reactions/comments). Reaction counts, scheduled filtering.';
 
 -- get_saved_feed_page (Saved page: same row shape as get_feed_page, viewer_saved true)
 drop function if exists public.get_saved_feed_page(uuid, timestamptz, uuid, int) cascade;
@@ -1158,6 +1159,7 @@ begin
   where
     s.user_id = p_viewer_id
     and p.status = 'approved'
+    and fi.parent_id is null
     and (fi.scheduled_at is null or fi.scheduled_at <= now())
     and (
       p_cursor_created_at is null

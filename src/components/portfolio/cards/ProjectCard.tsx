@@ -214,9 +214,13 @@ export const ProjectCard = ({
           sx={{
             flexShrink: 0,
             minHeight: isShowcase ? undefined : 56,
+            minWidth: 0,
           }}
         >
-          <Box component="p" sx={{ m: 0, mb: 1.1, lineHeight: 1.25 }}>
+          <Box
+            component="p"
+            sx={{ m: 0, mb: 1.1, lineHeight: 1.25, minWidth: 0 }}
+          >
             <Typography
               component="span"
               variant="caption"
@@ -230,45 +234,45 @@ export const ProjectCard = ({
             >
               Title:{' '}
             </Typography>
-            {onOpenPreview || cardOpensArtifact ? (
-              <Typography
-                variant="h6"
-                component="span"
-                fontWeight={700}
-                noWrap={!isShowcase}
-                sx={{
-                  color: 'inherit',
-                  letterSpacing: 0.5,
-                  display: isShowcase ? '-webkit-box' : 'inline',
-                  WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-                  WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-                  overflow: 'hidden',
-                  '&:hover': { textDecoration: 'underline' },
-                }}
-              >
-                {project.title}
-              </Typography>
-            ) : (
-              <Typography
-                component={RouterLink}
-                to={`/projects/${project.id}`}
-                variant="h6"
-                fontWeight={700}
-                noWrap={!isShowcase}
-                sx={{
-                  color: 'inherit',
-                  textDecoration: 'none',
-                  letterSpacing: 0.5,
-                  display: isShowcase ? '-webkit-box' : 'inline',
-                  WebkitLineClamp: isShowcase ? { xs: 2, md: 1 } : undefined,
-                  WebkitBoxOrient: isShowcase ? 'vertical' : undefined,
-                  overflow: 'hidden',
-                  '&:hover': { textDecoration: 'underline' },
-                }}
-              >
-                {project.title}
-              </Typography>
-            )}
+            <Tooltip title={project.title} describeChild placement="top">
+              {onOpenPreview || cardOpensArtifact ? (
+                <Typography
+                  variant="h6"
+                  component="span"
+                  fontWeight={700}
+                  sx={{
+                    color: 'inherit',
+                    letterSpacing: 0.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: isShowcase ? 3 : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  {project.title}
+                </Typography>
+              ) : (
+                <Typography
+                  component={RouterLink}
+                  to={`/projects/${project.id}`}
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    letterSpacing: 0.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: isShowcase ? 3 : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  {project.title}
+                </Typography>
+              )}
+            </Tooltip>
           </Box>
           <Box
             component="p"

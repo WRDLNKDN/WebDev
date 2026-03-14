@@ -1,11 +1,38 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
+
+const RETRY_DELAY_MS = 500;
+const MAX_ATTEMPTS = 3;
+
+/**
+ * Lazy load with retry for dynamic imports. Mitigates chunk load failures
+ * on client-side navigation (e.g. Dashboard → Directory) where a full refresh
+ * would succeed. Retries with backoff so transient network/cache issues often resolve.
+ */
+function lazyWithRetry<T extends { default: ComponentType<unknown> }>(
+  importFn: () => Promise<T>,
+) {
+  return lazy(async () => {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        return await importFn();
+      } catch (e) {
+        lastError = e;
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        }
+      }
+    }
+    throw lastError;
+  });
+}
 
 export const LandingPage = lazy(async () => {
   const m = await import('../../pages/profile/LandingPage');
   return { default: m.LandingPage };
 });
 
-export const Dashboard = lazy(async () => {
+export const Dashboard = lazyWithRetry(async () => {
   const m = await import('../../pages/dashboard/Dashboard');
   return { default: m.Dashboard };
 });
@@ -25,7 +52,7 @@ export const ChatPage = lazy(async () => {
   return { default: m.ChatPage };
 });
 
-export const Feed = lazy(async () => {
+export const Feed = lazyWithRetry(async () => {
   const m = await import('../../pages/feed/Feed');
   return { default: m.Feed };
 });
@@ -55,7 +82,7 @@ export const Platform = lazy(async () => {
   return { default: m.Platform };
 });
 
-export const Directory = lazy(async () => {
+export const Directory = lazyWithRetry(async () => {
   const m = await import('../../pages/community/Directory');
   return { default: m.Directory };
 });

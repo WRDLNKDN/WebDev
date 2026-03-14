@@ -21,6 +21,18 @@ describe('buildErrorBoundaryCopy', () => {
     });
   });
 
+  test('maps dynamic import / chunk load failures to screen load message', () => {
+    expect(
+      buildErrorBoundaryCopy('error loading dynamically imported module'),
+    ).toEqual({
+      title: 'This screen did not finish loading',
+      description:
+        'Part of the app failed to download. Reload the page and try again.',
+      detail: 'error loading dynamically imported module',
+      code: 'SCREEN_LOAD_ERROR',
+    });
+  });
+
   test('falls back to a generic render error message', () => {
     expect(
       buildErrorBoundaryCopy('Cannot read properties of undefined'),

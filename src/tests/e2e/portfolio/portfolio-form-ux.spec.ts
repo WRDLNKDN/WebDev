@@ -204,7 +204,7 @@ test.describe('Add Project dialog UX', () => {
       .getByRole('textbox', { name: 'Custom Category' })
       .fill('Community Tooling');
     await dialog
-      .getByLabel('Project URL')
+      .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/custom-category-project');
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
@@ -236,7 +236,7 @@ test.describe('Add Project dialog UX', () => {
     await dialog.getByRole('combobox', { name: 'Category' }).click();
     await page.getByRole('option', { name: 'Data' }).click();
     await dialog
-      .getByLabel('Project URL')
+      .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/no-description-project');
 
     await expect(dialog.getByText(/add a description/i)).not.toBeVisible();

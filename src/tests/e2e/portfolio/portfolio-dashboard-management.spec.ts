@@ -205,7 +205,7 @@ test.describe('Dashboard portfolio showcase management', () => {
       .getByLabel('Description')
       .fill('Launch artifact managed from dashboard.');
     await dialog
-      .getByLabel('Project URL')
+      .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/portfolio-launch');
 
     const categoriesInput = dialog.getByRole('combobox', {
@@ -214,7 +214,7 @@ test.describe('Dashboard portfolio showcase management', () => {
     await categoriesInput.click();
     await categoriesInput.fill('Data');
     await page.getByRole('option', { name: 'Data' }).click();
-    await dialog.getByLabel('Project URL').click();
+    await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });

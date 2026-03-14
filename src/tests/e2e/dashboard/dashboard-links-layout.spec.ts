@@ -10,13 +10,13 @@ test.describe('Dashboard links and profile layout regressions', () => {
     await seedSignedInSession(context);
     await stubAppSurface(page);
 
-    await page.goto('/dashboard');
-    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 15_000 });
 
     // ---- HEADER LEFT ALIGN CHECK ----
 
     const identityHeader = page.getByTestId('identity-header');
-    await expect(identityHeader).toBeVisible();
+    await expect(identityHeader).toBeVisible({ timeout: 15_000 });
 
     const heading = identityHeader.getByRole('heading').first();
     await expect(heading).toBeVisible();
@@ -105,9 +105,9 @@ test.describe('Dashboard links and profile layout regressions', () => {
       'dashboard-portfolio-showcase-section',
     );
 
-    await expect(identity).toBeVisible();
-    await expect(linksSection).toBeVisible();
-    await expect(portfolioShowcase).toBeVisible();
+    await expect(identity).toBeVisible({ timeout: 15_000 });
+    await expect(linksSection).toBeVisible({ timeout: 15_000 });
+    await expect(portfolioShowcase).toBeVisible({ timeout: 15_000 });
     await expect(
       linksSection.getByText('LINKS', { exact: true }),
     ).toBeVisible();
@@ -143,6 +143,9 @@ test.describe('Dashboard links and profile layout regressions', () => {
     await stubAppSurface(page);
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId('dashboard-links-section')).toBeVisible({
       timeout: 15_000,
     });

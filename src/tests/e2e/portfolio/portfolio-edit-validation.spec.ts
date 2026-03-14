@@ -124,7 +124,9 @@ test.describe('Portfolio artifact edit validation', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/edit project/i);
-    await dialog.getByLabel('Project URL').fill('example.com/file.exe');
+    await dialog
+      .getByRole('textbox', { name: 'Project URL' })
+      .fill('example.com/file.exe');
     await expect(
       dialog.getByRole('button', { name: /save changes/i }),
     ).toBeDisabled();

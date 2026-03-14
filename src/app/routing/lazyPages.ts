@@ -8,7 +8,8 @@ const MAX_ATTEMPTS = 3;
  * on client-side navigation (e.g. Dashboard → Directory) where a full refresh
  * would succeed. Retries with backoff so transient network/cache issues often resolve.
  */
-function lazyWithRetry<T extends { default: ComponentType<unknown> }>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- lazy pages have varying prop types
+function lazyWithRetry<T extends { default: ComponentType<any> }>(
   importFn: () => Promise<T>,
 ) {
   return lazy(async () => {

@@ -209,7 +209,7 @@ test.describe('Portfolio artifact editing', () => {
       .getByLabel('Description')
       .fill('Updated dashboard artifact description.');
     await dialog
-      .getByLabel('Project URL')
+      .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/updated-artifact.pdf');
 
     const categoriesInput = dialog.getByRole('combobox', {
@@ -219,7 +219,7 @@ test.describe('Portfolio artifact editing', () => {
     await categoriesInput.fill('Data');
     await page.getByRole('option', { name: 'Data' }).click();
     // Move focus out of the category control without closing the dialog.
-    await dialog.getByLabel('Project URL').click();
+    await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 
     await dialog.locator('input[type="file"]').setInputFiles(IMAGE_FIXTURE);
 
@@ -359,7 +359,9 @@ test.describe('Portfolio artifact editing', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/edit project/i);
-    await dialog.getByLabel('Project URL').fill('example.com/file.exe');
+    await dialog
+      .getByRole('textbox', { name: 'Project URL' })
+      .fill('example.com/file.exe');
     await expect(
       dialog.getByRole('button', { name: /save changes/i }),
     ).toBeDisabled();
@@ -488,7 +490,9 @@ test.describe('Portfolio artifact editing', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/edit project/i);
-    await dialog.getByLabel('Project URL').fill('https://www.google.com');
+    await dialog
+      .getByRole('textbox', { name: 'Project URL' })
+      .fill('https://www.google.com');
 
     await dialog.getByRole('button', { name: /save changes/i }).click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });

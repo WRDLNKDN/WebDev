@@ -467,18 +467,6 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   />
                   <Box
                     component="img"
-                    src="/assets/og_weirdlings/werdling1_transparent.png"
-                    alt="WRDLNKDN Weirdling logo"
-                    sx={{
-                      display: { xs: 'none', sm: 'block' },
-                      width: { xs: 28, sm: 30, md: 34 },
-                      height: { xs: 28, sm: 30, md: 34 },
-                      objectFit: 'contain',
-                      objectPosition: 'center',
-                    }}
-                  />
-                  <Box
-                    component="img"
                     src="/assets/wrdlnkdn_logo.png"
                     alt="WRDLNKDN wordmark"
                     sx={{

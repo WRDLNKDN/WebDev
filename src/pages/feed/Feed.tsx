@@ -10,7 +10,6 @@ import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import EventIcon from '@mui/icons-material/Event';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -41,12 +40,10 @@ import {
   Link,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  Menu,
   MenuItem,
   Paper,
   Select,
@@ -54,7 +51,6 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -117,14 +113,10 @@ import {
   FeedAdCard,
   type FeedAdvertiser,
 } from '../../components/feed/FeedAdCard';
-import {
-  FeedReactionBar,
-  PostCard,
-  REACTION_OPTIONS,
-} from '../../components/post';
+import { FeedCardCommentsSection } from './feedCardCommentsSection';
+import { FeedReactionBar, PostCard } from '../../components/post';
 import {
   buildFeedReactionSummary,
-  getFeedReactionCount,
   getFeedTotalReactionCount,
 } from '../../components/post/sharedReactions';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -746,7 +738,6 @@ const FeedCard = ({
   const [commentEmojiAnchor, setCommentEmojiAnchor] =
     useState<HTMLElement | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
-  const COMMENT_EMOJIS = ['😀', '😂', '😍', '🔥', '🙌', '🙏', '👍', '🎉', '💯'];
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editPostDraft, setEditPostDraft] = useState('');
   const [savingPostEdit, setSavingPostEdit] = useState(false);
@@ -1559,353 +1550,35 @@ const FeedCard = ({
                 </Typography>
               </Stack>
             ) : (
-              <>
-                <List dense disablePadding>
-                  {comments.map((c) => (
-                    <ListItem
-                      key={c.id}
-                      alignItems="flex-start"
-                      disablePadding
-                      sx={{ py: 0.5 }}
-                    >
-                      <ListItemAvatar sx={{ minWidth: 48 }}>
-                        <ProfileAvatar
-                          src={c.actor?.avatar ?? undefined}
-                          alt={c.actor?.display_name || c.actor?.handle || '?'}
-                          size="small"
-                        />
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Stack spacing={0.125}>
-                            <Stack
-                              direction="row"
-                              spacing={0.75}
-                              alignItems="center"
-                            >
-                              <Typography variant="body2" fontWeight={600}>
-                                {c.actor?.display_name ||
-                                  c.actor?.handle ||
-                                  'Someone'}
-                              </Typography>
-                              {c.edited_at && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  Edited
-                                </Typography>
-                              )}
-                            </Stack>
-                            {c.actor?.bio ? (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  lineHeight: 1.3,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 1,
-                                  WebkitBoxOrient: 'vertical',
-                                }}
-                              >
-                                {c.actor.bio}
-                              </Typography>
-                            ) : null}
-                          </Stack>
-                        }
-                        secondary={
-                          <>
-                            {editingCommentId === c.id ? (
-                              <Stack spacing={1} sx={{ mt: 0.5 }}>
-                                <TextField
-                                  size="small"
-                                  multiline
-                                  minRows={2}
-                                  value={editCommentDraft}
-                                  onChange={(e) =>
-                                    setEditCommentDraft(e.target.value)
-                                  }
-                                />
-                                <Stack direction="row" spacing={1}>
-                                  <Button
-                                    size="small"
-                                    variant="contained"
-                                    onClick={() => {
-                                      void (async () => {
-                                        setSavingCommentEdit(true);
-                                        try {
-                                          await actions.onEditComment(
-                                            item.id,
-                                            c.id,
-                                            editCommentDraft,
-                                          );
-                                          setEditingCommentId(null);
-                                        } finally {
-                                          setSavingCommentEdit(false);
-                                        }
-                                      })();
-                                    }}
-                                    disabled={
-                                      savingCommentEdit ||
-                                      !editCommentDraft.trim()
-                                    }
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    onClick={() => setEditingCommentId(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </Stack>
-                              </Stack>
-                            ) : (
-                              <Stack spacing={0.5} component="span">
-                                {(() => {
-                                  const cb = c.body ?? '';
-                                  const gifUrls =
-                                    extractBodyUrls(cb).filter(isGifUrl);
-                                  const textOnly = removeGifUrlsFromBody(cb);
-                                  return (
-                                    <>
-                                      {textOnly && (
-                                        <Typography
-                                          variant="body2"
-                                          component="span"
-                                          sx={{ whiteSpace: 'pre-wrap' }}
-                                        >
-                                          {linkifyBody(textOnly)}
-                                        </Typography>
-                                      )}
-                                      {gifUrls.map((gifUrl) => (
-                                        <Box
-                                          key={gifUrl}
-                                          component="img"
-                                          src={gifUrl}
-                                          alt="GIF"
-                                          sx={{
-                                            maxWidth: 240,
-                                            maxHeight: 180,
-                                            objectFit: 'contain',
-                                            borderRadius: 1,
-                                          }}
-                                        />
-                                      ))}
-                                    </>
-                                  );
-                                })()}
-                              </Stack>
-                            )}
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              color="text.secondary"
-                            >
-                              {formatPostTime(c.created_at)}
-                            </Typography>
-                            <Stack
-                              direction="row"
-                              spacing={{ xs: 0.75, sm: 1 }}
-                              sx={{
-                                flexWrap: 'wrap',
-                                gap: { xs: 0.5, sm: 0 },
-                                justifyContent: 'flex-start',
-                              }}
-                            >
-                              {REACTION_OPTIONS.map(
-                                ({ type, emoji, color }) => {
-                                  const active = c.viewer_reaction === type;
-                                  const count = getFeedReactionCount(c, type);
-                                  return (
-                                    <Button
-                                      key={`${c.id}-${type}`}
-                                      size="small"
-                                      onClick={() => {
-                                        if (active) {
-                                          actions.onCommentRemoveReaction(
-                                            c.id,
-                                            c.viewer_reaction ?? undefined,
-                                          );
-                                        } else {
-                                          actions.onCommentReaction(c.id, type);
-                                        }
-                                      }}
-                                      sx={{
-                                        textTransform: 'none',
-                                        minWidth: 0,
-                                        px: { xs: 0.75, sm: 0.25 },
-                                        minHeight: { xs: 36, sm: 30 },
-                                        gap: 0.4,
-                                        color: active
-                                          ? color
-                                          : 'text.secondary',
-                                      }}
-                                    >
-                                      <span aria-hidden="true">{emoji}</span>
-                                      {count > 0 ? count : ''}
-                                    </Button>
-                                  );
-                                },
-                              )}
-                              {viewerUserId === c.user_id &&
-                                editingCommentId !== c.id && (
-                                  <>
-                                    <Button
-                                      size="small"
-                                      onClick={() => {
-                                        setEditingCommentId(c.id);
-                                        setEditCommentDraft(c.body);
-                                      }}
-                                      sx={{
-                                        textTransform: 'none',
-                                        minWidth: 0,
-                                        px: { xs: 0.75, sm: 0 },
-                                        minHeight: { xs: 36, sm: 30 },
-                                      }}
-                                    >
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      color="error"
-                                      onClick={() =>
-                                        void actions.onDeleteComment(
-                                          item.id,
-                                          c.id,
-                                        )
-                                      }
-                                      sx={{
-                                        textTransform: 'none',
-                                        minWidth: 0,
-                                        px: { xs: 0.75, sm: 0 },
-                                        minHeight: { xs: 36, sm: 30 },
-                                      }}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </>
-                                )}
-                            </Stack>
-                          </>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {commentSelectedGif && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box
-                        component="img"
-                        src={commentSelectedGif}
-                        alt="GIF preview"
-                        sx={{
-                          maxWidth: 120,
-                          maxHeight: 90,
-                          objectFit: 'contain',
-                          borderRadius: 1,
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => setCommentSelectedGif(null)}
-                        aria-label="Remove GIF"
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  )}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      size="small"
-                      placeholder="Add a comment…"
-                      value={commentDraft}
-                      onChange={(e) => setCommentDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          void handleAddComment();
-                        }
-                      }}
-                      sx={{ flex: 1 }}
-                    />
-                    <Tooltip title="Attach file (coming soon)">
-                      <span>
-                        <IconButton
-                          size="small"
-                          aria-label="Attach file"
-                          disabled
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          <AttachFileIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <IconButton
-                      size="small"
-                      aria-label="Add emoji"
-                      onClick={(e) => setCommentEmojiAnchor(e.currentTarget)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <EmojiEmotionsOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      aria-label="Add GIF"
-                      onClick={() => setCommentGifPickerOpen(true)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <GifBoxIcon fontSize="small" />
-                    </IconButton>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={() => void handleAddComment()}
-                      disabled={
-                        (!commentDraft.trim() && !commentSelectedGif) ||
-                        submittingComment
-                      }
-                    >
-                      Post
-                    </Button>
-                  </Stack>
-                </Stack>
-              </>
+              <FeedCardCommentsSection
+                commentsExpanded={commentsExpanded}
+                commentsLoading={commentsLoading}
+                comments={comments}
+                itemId={item.id}
+                viewerUserId={viewerUserId}
+                viewerAvatarUrl={viewerAvatarUrl}
+                actions={actions}
+                editingCommentId={editingCommentId}
+                setEditingCommentId={setEditingCommentId}
+                editCommentDraft={editCommentDraft}
+                setEditCommentDraft={setEditCommentDraft}
+                savingCommentEdit={savingCommentEdit}
+                setSavingCommentEdit={setSavingCommentEdit}
+                commentDraft={commentDraft}
+                setCommentDraft={setCommentDraft}
+                commentSelectedGif={commentSelectedGif}
+                setCommentSelectedGif={setCommentSelectedGif}
+                commentGifPickerOpen={commentGifPickerOpen}
+                setCommentGifPickerOpen={setCommentGifPickerOpen}
+                commentEmojiAnchor={commentEmojiAnchor}
+                setCommentEmojiAnchor={setCommentEmojiAnchor}
+                handleAddComment={handleAddComment}
+                submittingComment={submittingComment}
+              />
             )}
           </Box>
         )}
       </PostCard>
-      <GifPicker.GifPickerDialog
-        open={commentGifPickerOpen}
-        onClose={() => setCommentGifPickerOpen(false)}
-        onPick={(url) => setCommentSelectedGif(url)}
-        showContentFilter={false}
-        maxHeight={280}
-        cellHeight={90}
-      />
-      <Menu
-        anchorEl={commentEmojiAnchor}
-        open={Boolean(commentEmojiAnchor)}
-        onClose={() => setCommentEmojiAnchor(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        {COMMENT_EMOJIS.map((emoji) => (
-          <MenuItem
-            key={emoji}
-            onClick={() => {
-              setCommentDraft((prev) => `${prev}${emoji}`);
-              setCommentEmojiAnchor(null);
-            }}
-            sx={{ fontSize: 22, lineHeight: 1 }}
-          >
-            {emoji}
-          </MenuItem>
-        ))}
-      </Menu>
       <Dialog
         open={Boolean(imageLightboxUrl)}
         onClose={closeImageLightbox}
@@ -3453,9 +3126,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       '& .MuiToggleButton-root': {
                         textTransform: 'none',
                         fontSize: { xs: '0.85rem', sm: '0.8rem' },
+                        fontWeight: 400,
                         py: { xs: 0.9, sm: 0.5 },
                         px: { xs: 1.75, sm: 1.5 },
                         minHeight: { xs: 42, sm: 32 },
+                      },
+                      '& .MuiToggleButton-root.Mui-selected': {
+                        fontWeight: 400,
                       },
                     }}
                   >

@@ -38,6 +38,7 @@ import type {
 } from '../../lib/api/directoryApi';
 import {
   acceptRequest,
+  cancelRequest,
   connectRequest,
   declineRequest,
   disconnect,
@@ -408,6 +409,22 @@ export const Directory = () => {
       await load(false);
       showToast({
         message: 'Connection request declined.',
+        severity: 'info',
+      });
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancelRequest = async (id: string) => {
+    setBusy(true);
+    try {
+      await cancelRequest(supabase, id);
+      await load(false);
+      showToast({
+        message: 'Connection request cancelled.',
         severity: 'info',
       });
     } catch (e) {
@@ -1315,6 +1332,7 @@ export const Directory = () => {
                     onConnect={handleConnect}
                     onAccept={handleAccept}
                     onDecline={handleDecline}
+                    onCancelRequest={handleCancelRequest}
                     onDisconnect={handleDisconnectClick}
                     onBlock={handleBlockClick}
                     onSkillClick={handleSkillClick}

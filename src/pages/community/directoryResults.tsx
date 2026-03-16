@@ -18,6 +18,7 @@ type Props = {
   onConnect: (id: string) => Promise<void>;
   onAccept: (id: string) => Promise<void>;
   onDecline: (id: string) => Promise<void>;
+  onCancelRequest: (id: string) => Promise<void>;
   onDisconnect: (member: DirectoryMember) => void;
   onBlock: (member: DirectoryMember) => void;
   onSkillClick: (skill: string) => void;
@@ -38,6 +39,7 @@ export const DirectoryResults = ({
   onConnect,
   onAccept,
   onDecline,
+  onCancelRequest,
   onDisconnect,
   onBlock,
   onSkillClick,
@@ -68,6 +70,7 @@ export const DirectoryResults = ({
             onConnect={(id) => void onConnect(id)}
             onAccept={(id) => void onAccept(id)}
             onDecline={(id) => void onDecline(id)}
+            onCancelRequest={(id) => void onCancelRequest(id)}
             onDisconnect={onDisconnect}
             onBlock={onBlock}
             onSkillClick={onSkillClick}

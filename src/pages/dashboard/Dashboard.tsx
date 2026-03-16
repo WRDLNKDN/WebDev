@@ -1,11 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
   Button,
-  Collapse,
   Container,
   Dialog,
   DialogActions,
@@ -37,175 +34,18 @@ import { DashboardLinksSection } from './dashboardLinksSection';
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
+import { IndustryGroupBlock } from '../../components/profile/identity/IndustryGroupBlock';
+import { SkillsInterestsPills } from '../../components/profile/identity/SkillsInterestsPills';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
-import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
-import type { IndustryGroup, NerdCreds, SocialLink } from '../../types/profile';
+import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
-
-const sectionLabelSx = {
-  color: 'text.secondary',
-  textTransform: 'uppercase',
-  letterSpacing: 1,
-  fontWeight: 700,
-} as const;
-
-const skillPillSx = {
-  display: 'inline-flex',
-  width: 'fit-content',
-  maxWidth: '100%',
-  whiteSpace: 'nowrap',
-  px: 1.25,
-  py: 0.5,
-  borderRadius: 999,
-  bgcolor: 'rgba(236,64,122,0.15)',
-  border: '1px solid rgba(236,64,122,0.35)',
-  fontSize: '0.78rem',
-} as const;
-
-const nichePillSx = {
-  display: 'inline-flex',
-  width: 'fit-content',
-  maxWidth: '100%',
-  whiteSpace: 'nowrap',
-  px: 1.25,
-  py: 0.5,
-  borderRadius: 999,
-  bgcolor: 'rgba(66,165,245,0.1)',
-  border: '1px solid rgba(66,165,245,0.25)',
-  fontSize: '0.78rem',
-} as const;
-
-const DashboardIndustriesBlock = ({
-  groups,
-  nicheField,
-}: {
-  groups: IndustryGroup[];
-  nicheField?: string;
-}) => {
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    () =>
-      Object.fromEntries(
-        groups.map((group) => [group.industry.toLowerCase(), true]),
-      ),
-  );
-
-  const otherValues = parseNicheValues(nicheField);
-  if (groups.length === 0 && otherValues.length === 0) return null;
-
-  return (
-    <Stack spacing={1.25} sx={{ width: '100%' }}>
-      <Typography variant="caption" sx={sectionLabelSx}>
-        Industries
-      </Typography>
-      <Stack spacing={1}>
-        {groups.map((group) => {
-          const groupKey = group.industry.toLowerCase();
-          const isExpanded = expandedGroups[groupKey] ?? true;
-
-          return (
-            <Box
-              key={group.industry}
-              data-testid={`dashboard-industry-group-${group.industry}`}
-              sx={{
-                border: '1px solid rgba(156,187,217,0.18)',
-                borderRadius: 2,
-                bgcolor: 'rgba(56,132,210,0.06)',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                component="button"
-                type="button"
-                onClick={() =>
-                  setExpandedGroups((prev) => ({
-                    ...prev,
-                    [groupKey]: !isExpanded,
-                  }))
-                }
-                aria-expanded={isExpanded}
-                aria-controls={`dashboard-industry-sublist-${groupKey}`}
-                sx={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  p: 1.25,
-                  border: 'none',
-                  bgcolor: 'transparent',
-                  color: 'inherit',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {group.industry}
-                </Typography>
-                {isExpanded ? (
-                  <ExpandLessIcon
-                    sx={{ fontSize: 18, color: 'text.secondary' }}
-                  />
-                ) : (
-                  <ExpandMoreIcon
-                    sx={{ fontSize: 18, color: 'text.secondary' }}
-                  />
-                )}
-              </Box>
-              <Collapse in={isExpanded}>
-                <Stack
-                  id={`dashboard-industry-sublist-${groupKey}`}
-                  spacing={0.75}
-                  sx={{
-                    px: 1.25,
-                    pb: 1.25,
-                  }}
-                >
-                  {group.sub_industries.length > 0 ? (
-                    group.sub_industries.map((subIndustry) => (
-                      <Typography
-                        key={`${group.industry}-${subIndustry}`}
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ lineHeight: 1.5 }}
-                      >
-                        {subIndustry}
-                      </Typography>
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No subindustries listed
-                    </Typography>
-                  )}
-                </Stack>
-              </Collapse>
-            </Box>
-          );
-        })}
-        {otherValues.length > 0 ? (
-          <Stack spacing={0.75} sx={{ pt: groups.length > 0 ? 0.5 : 0 }}>
-            <Typography variant="caption" sx={sectionLabelSx}>
-              Other
-            </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={1}>
-              {otherValues.map((value) => (
-                <Box key={value} data-testid="dashboard-pill" sx={nichePillSx}>
-                  Other: {value}
-                </Box>
-              ))}
-            </Stack>
-          </Stack>
-        ) : null}
-      </Stack>
-    </Stack>
-  );
-};
 
 export const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -392,6 +232,18 @@ export const Dashboard = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
+  const selectedInterests: string[] =
+    Array.isArray(safeNerdCreds.interests) &&
+    safeNerdCreds.interests.every((i) => typeof i === 'string')
+      ? (safeNerdCreds.interests as string[])
+          .map((i) => String(i).trim())
+          .filter(Boolean)
+      : typeof safeNerdCreds.interests === 'string'
+        ? (safeNerdCreds.interests as string)
+            .split(',')
+            .map((i) => i.trim())
+            .filter(Boolean)
+        : [];
   const industryGroups = normalizeIndustryGroups(profile);
   const nicheField = (
     profile as unknown as { niche_field?: string }
@@ -471,6 +323,7 @@ export const Dashboard = () => {
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <IdentityHeader
+          layoutVariant="three-column"
           displayName={displayName}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
@@ -484,56 +337,7 @@ export const Dashboard = () => {
           }
           avatarUrl={avatarUrl}
           slotUnderAvatarLabel={undefined}
-          slotUnderAvatar={null}
-          badges={
-            selectedSkills.length > 0 ||
-            industryGroups.length > 0 ||
-            Boolean(nicheField) ? (
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                {industryGroups.map((group) => (
-                  <Box
-                    key={`industry-${group.industry}`}
-                    data-testid="dashboard-pill"
-                    sx={{
-                      ...nichePillSx,
-                      bgcolor: 'rgba(66,165,245,0.15)',
-                      border: '1px solid rgba(66,165,245,0.35)',
-                    }}
-                  >
-                    {group.industry}
-                  </Box>
-                ))}
-                {parseNicheValues(nicheField).map((value) => (
-                  <Box
-                    key={value}
-                    data-testid="dashboard-pill"
-                    sx={nichePillSx}
-                  >
-                    Other: {value}
-                  </Box>
-                ))}
-                {selectedSkills.map((skill) => (
-                  <Box
-                    key={`skill-${skill}`}
-                    data-testid="dashboard-pill"
-                    sx={skillPillSx}
-                  >
-                    {skill}
-                  </Box>
-                ))}
-              </Stack>
-            ) : undefined
-          }
-          slotBetweenContentAndActionsLabel={
-            industryGroups.length > 0 || nicheField ? 'Industries' : undefined
-          }
-          slotBetweenContentAndActions={
-            <DashboardIndustriesBlock
-              groups={industryGroups}
-              nicheField={nicheField}
-            />
-          }
-          actions={
+          slotUnderAvatar={
             <>
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
@@ -637,6 +441,21 @@ export const Dashboard = () => {
               </Menu>
             </>
           }
+          badges={
+            <SkillsInterestsPills
+              skills={selectedSkills}
+              interests={selectedInterests}
+            />
+          }
+          rightColumn={
+            industryGroups.length > 0 || nicheField ? (
+              <IndustryGroupBlock
+                groups={industryGroups}
+                nicheField={nicheField}
+              />
+            ) : undefined
+          }
+          actions={undefined}
         />
 
         <DashboardLinksSection

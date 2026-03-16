@@ -2,7 +2,6 @@
 import {
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
   Grid,
@@ -19,14 +18,14 @@ import type { User } from '@supabase/supabase-js';
 
 // MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
+import { IndustryGroupBlock } from '../../components/profile/identity/IndustryGroupBlock';
 import { PortfolioFrame } from '../../components/portfolio/layout/PortfolioFrame';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
 import { ProjectCard } from '../../components/portfolio/cards/ProjectCard';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
-
-// --- NEW WIDGET SECTOR ---
+import { SkillsInterestsPills } from '../../components/profile/identity/SkillsInterestsPills';
 import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 
 // --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
@@ -42,8 +41,7 @@ import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
-import { parseNicheValues } from '../../lib/profile/nicheValues';
-import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
+import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import {
   buildPortfolioCategorySections,
   portfolioCategoryToSectionTestId,
@@ -261,16 +259,23 @@ export const LandingPage = () => {
             .map((skill) => skill.trim())
             .filter(Boolean)
         : [];
+  const selectedInterests: string[] =
+    Array.isArray(creds.interests) &&
+    creds.interests.every((i) => typeof i === 'string')
+      ? (creds.interests as string[])
+          .map((i) => String(i).trim())
+          .filter(Boolean)
+      : typeof creds.interests === 'string'
+        ? (creds.interests as string)
+            .split(',')
+            .map((i) => i.trim())
+            .filter(Boolean)
+        : [];
   const nicheField = safeStr(
     (profile as unknown as { niche_field?: string }).niche_field,
   );
-  const industryChips = getIndustryDisplayLabels(profile)
-    .filter(Boolean)
-    .map((label) => ({ label: `Industry: ${label}`, key: label }));
-  for (const value of parseNicheValues(nicheField)) {
-    industryChips.push({ label: `Other: ${value}`, key: `niche-${value}` });
-  }
-  const showLinksInIdentity = hasVisibleSocialLinks(profile.socials);
+  const industryGroups = normalizeIndustryGroups(profile);
+  const hasLinks = hasVisibleSocialLinks(profile.socials);
   const portfolioSections = buildPortfolioCategorySections(projects);
   const resumePreviewProject = buildResumePreviewItem({
     url: profile.resume_url,
@@ -358,8 +363,9 @@ export const LandingPage = () => {
         }}
       >
         <Container maxWidth="lg" disableGutters>
-          {/* 1. IDENTITY HEADER (Full Width) */}
+          {/* 1. IDENTITY SECTION (canonical three-column: Avatar | Bio + Skills | Industries) */}
           <IdentityHeader
+            layoutVariant="three-column"
             displayName={safeStr(profile.display_name)}
             tagline={profile.tagline ?? undefined}
             bio={
@@ -374,44 +380,18 @@ export const LandingPage = () => {
             }
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
-            slotLeftOfAvatar={
-              showLinksInIdentity ? (
-                <ProfileLinksWidget
-                  socials={profile.socials || []}
-                  grouped
-                  collapsible
-                  defaultExpanded={true}
-                />
-              ) : undefined
-            }
             badges={
-              selectedSkills.length > 0 || industryChips.length > 0 ? (
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {industryChips.map(({ label, key }) => (
-                    <Chip
-                      key={key}
-                      size="small"
-                      label={label}
-                      sx={{
-                        bgcolor: 'rgba(66,165,245,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(66,165,245,0.35)',
-                      }}
-                    />
-                  ))}
-                  {selectedSkills.map((skill) => (
-                    <Chip
-                      key={`skill-${skill}`}
-                      size="small"
-                      label={`Skill: ${skill}`}
-                      sx={{
-                        bgcolor: 'rgba(236,64,122,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(236,64,122,0.35)',
-                      }}
-                    />
-                  ))}
-                </Stack>
+              <SkillsInterestsPills
+                skills={selectedSkills}
+                interests={selectedInterests}
+              />
+            }
+            rightColumn={
+              industryGroups.length > 0 || nicheField ? (
+                <IndustryGroupBlock
+                  groups={industryGroups}
+                  nicheField={nicheField}
+                />
               ) : undefined
             }
             actions={
@@ -422,7 +402,19 @@ export const LandingPage = () => {
             }
           />
 
-          {/* 2. PORTFOLIO SECTION */}
+          {/* 2. LINKS SECTION (full width below Identity) */}
+          {hasLinks && (
+            <Box sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
+              <ProfileLinksWidget
+                socials={profile.socials || []}
+                grouped
+                collapsible
+                defaultExpanded={true}
+              />
+            </Box>
+          )}
+
+          {/* 3. PORTFOLIO SHOWCASE */}
           <Grid
             container
             spacing={{ xs: 2, sm: 3, md: 4 }}

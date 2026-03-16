@@ -81,7 +81,8 @@ export const MessageList = ({
       prev.lastId !== null &&
       nextFirst !== prev.firstId &&
       nextLast === prev.lastId;
-    if (!prependedOlder) {
+    const appendedNew = nextLast !== prev.lastId;
+    if (appendedNew && !prependedOlder) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     previousBoundaryRef.current = { firstId: nextFirst, lastId: nextLast };
@@ -470,6 +471,7 @@ export const MessageList = ({
                     }
                     onToggleReaction={(emoji) => onReaction?.(msg.id, emoji)}
                     buttonLabel="React"
+                    selectedShowsLabel={false}
                     sx={{ pt: 0, pb: 0, px: 0 }}
                     buttonSx={{ minHeight: 28, py: 0.15, px: 0.5 }}
                     traySx={{ left: 0, bottom: 'calc(100% + 8px)' }}

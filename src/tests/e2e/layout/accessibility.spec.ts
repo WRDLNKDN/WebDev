@@ -102,7 +102,7 @@ async function stubSettingsSurface(
  * Project route sweep accessibility (WCAG 2a/2aa/21aa).
  * Referenced in docs/accessibility/AAA_BACKLOG.md and AGENTIC_PROTOCOL.
  */
-/** Routes outside Layout (e.g. /join) use a different main container testid. */
+/** Join uses its own scroll container testid for a11y scope. */
 const PUBLIC_MAIN_SELECTOR: Record<string, string> = {
   '/join': 'join-scroll-container',
 };

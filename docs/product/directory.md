@@ -88,6 +88,15 @@ Decline a pending connection request. Body: `{ "targetId": "uuid" }`.
 Marks the request declined and sends an in-app notification to the original
 requester.
 
+### POST /api/directory/cancel
+
+Cancel a connection request that you sent (requester only). Body:
+`{ "targetId": "uuid" }`.
+
+Deletes the pending request. The recipient no longer sees the request; the
+sender’s card returns to the default non-connected state. **404** if no pending
+request from you to that target exists.
+
 ### POST /api/directory/disconnect
 
 Remove mutual connection. Body: `{ "targetId": "uuid" }`.
@@ -98,8 +107,8 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 
 1. **Not connected** → User A clicks Connect → `connection_requests` row created
    (pending).
-2. **Pending** (A's view: "Awaiting approval") / **Pending received** (B's view:
-   "Needs your approval") → B can Accept or Decline.
+2. **Pending** (A's view: "Pending approval") / **Pending received** (B's view:
+   "Needs your approval") → A can Cancel request; B can Accept or Decline.
 3. **Auto-accept path:** If B already sent A a pending request, A clicking
    Connect auto-accepts the relationship immediately.
 4. **Connected** → Either can open Chat or use Manage (Disconnect or Block).
@@ -109,7 +118,8 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 ## Frontend
 
 - **API client:** `src/lib/directoryApi.ts` — `fetchDirectory`,
-  `connectRequest`, `acceptRequest`, `declineRequest`, `disconnect`.
+  `connectRequest`, `acceptRequest`, `declineRequest`, `cancelRequest`,
+  `disconnect`.
 - **Page:** `src/pages/community/Directory.tsx` — list view, search, filters
   (URL-persisted), sort, pagination, connection actions.
 - **Row:** `src/components/directory/DirectoryRow.tsx` — displays member and

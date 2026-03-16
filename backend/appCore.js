@@ -2393,6 +2393,30 @@ app.post('/api/directory/decline', async (req, res) => {
   });
   return res.json({ ok: true });
 });
+app.post('/api/directory/cancel', async (req, res) => {
+  const userId = req.userId;
+  const targetId =
+    typeof req.body.targetId === 'string' ? req.body.targetId.trim() : null;
+  if (!userId || !targetId) return sendApiError(res, 400, 'Missing targetId');
+  const { data, error } = await adminSupabase
+    .from('connection_requests')
+    .delete()
+    .eq('requester_id', userId)
+    .eq('recipient_id', targetId)
+    .eq('status', 'pending')
+    .select('id');
+  if (error) {
+    logDirectoryError({
+      method: 'POST',
+      path: '/api/directory/cancel',
+      userId: userId ?? void 0,
+      error: error.message,
+    });
+    return sendApiError(res, 500, 'Server error');
+  }
+  if (!data?.length) return sendApiError(res, 404, 'No pending request found');
+  return res.json({ ok: true });
+});
 app.post('/api/directory/disconnect', async (req, res) => {
   const userId = req.userId;
   const targetId =

@@ -64,7 +64,7 @@ export const Home = () => {
 
     const timer = window.setTimeout(() => {
       setShowHeroContent(true);
-    }, 9000);
+    }, 600);
 
     return () => window.clearTimeout(timer);
   }, [showHeroContent]);

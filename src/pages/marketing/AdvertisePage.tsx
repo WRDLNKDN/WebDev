@@ -248,25 +248,25 @@ export const AdvertisePage = () => {
           id="advertise-dialog-title"
           sx={{
             position: 'relative',
-            pr: 6,
+            width: '100%',
+            boxSizing: 'border-box',
+            pt: 2.5,
+            pr: 6.5,
             pb: 1.25,
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 2,
+            pl: 2.5,
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, pr: 1 }}>
             Advertise with us
           </Typography>
           <IconButton
-            onClick={requestClose}
+            onClick={() => !submitting && requestClose()}
             disabled={submitting}
             aria-label="Close advertise modal"
             sx={{
               position: 'absolute',
-              right: 8,
-              top: 8,
+              right: 12,
+              top: 12,
               flexShrink: 0,
             }}
           >
@@ -383,8 +383,7 @@ export const AdvertisePage = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="advertise-unsaved-description">
-            Are you sure you want to exit this form? Your entered data will be
-            lost unless you send the request.
+            You have unsaved changes. Are you sure you want to exit this form?
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, pb: 2 }}>
@@ -407,7 +406,7 @@ export const AdvertisePage = () => {
             Save and send
           </Button>
           <Button onClick={closeModal} color="error" variant="outlined">
-            Discard and exit
+            Discard changes and exit
           </Button>
         </DialogActions>
       </Dialog>

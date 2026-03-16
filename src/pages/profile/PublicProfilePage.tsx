@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
-import { getIndustryDisplayLabels } from '../../lib/profile/industryGroups';
-import { parseNicheValues } from '../../lib/profile/nicheValues';
 import { buildPortfolioCategorySections } from '../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { NerdCreds } from '../../types/profile';
@@ -107,8 +106,9 @@ export const PublicProfilePage = () => {
       : {}
   ) as NerdCreds;
   const socials = normalizePublicSocials(profile.socials);
-  const showLinksInIdentity =
-    socials.length > 0 || hasVisibleSocialLinks(profile.socials);
+  const hasLinks = socials.length > 0 || hasVisibleSocialLinks(profile.socials);
+  const industryGroups = normalizeIndustryGroups(profile);
+  const nicheField = profile.niche_field ?? null;
   const resumeThumbnailUrl =
     typeof creds.resume_thumbnail_url === 'string'
       ? creds.resume_thumbnail_url
@@ -129,16 +129,18 @@ export const PublicProfilePage = () => {
           .map((skill) => skill.trim())
           .filter(Boolean)
       : [];
-  const industryChips = getIndustryDisplayLabels(profile)
-    .filter(Boolean)
-    .map((label) => ({ label: `Industry: ${label}`, key: label }));
-
-  for (const value of parseNicheValues(profile.niche_field)) {
-    industryChips.push({
-      label: `Other: ${value}`,
-      key: `niche-${value}`,
-    });
-  }
+  const selectedInterests =
+    Array.isArray(creds.interests) &&
+    creds.interests.every((i) => typeof i === 'string')
+      ? (creds.interests as string[])
+          .map((i) => String(i).trim())
+          .filter(Boolean)
+      : typeof creds.interests === 'string'
+        ? (creds.interests as string)
+            .split(',')
+            .map((i) => i.trim())
+            .filter(Boolean)
+        : [];
 
   const projects: PortfolioItem[] = (portfolio ?? []).map((item) => ({
     id: item.id,
@@ -165,9 +167,11 @@ export const PublicProfilePage = () => {
       profile={profile}
       creds={creds}
       socials={socials}
-      showLinksInIdentity={showLinksInIdentity}
+      hasLinks={hasLinks}
       selectedSkills={selectedSkills}
-      industryChips={industryChips}
+      selectedInterests={selectedInterests}
+      industryGroups={industryGroups}
+      nicheField={nicheField}
       projects={projects}
       portfolioSections={portfolioSections}
       resumeFileName={resumeFileName}

@@ -661,8 +661,16 @@ create policy connection_requests_recipient_update
   using ((select auth.uid()) = recipient_id)
   with check ((select auth.uid()) = recipient_id);
 
+create policy connection_requests_requester_delete_pending
+  on public.connection_requests for delete
+  to authenticated
+  using (
+    (select auth.uid()) = requester_id
+    and status = 'pending'
+  );
+
 revoke all on table public.connection_requests from anon;
-grant select, insert, update on table public.connection_requests to authenticated;
+grant select, insert, update, delete on table public.connection_requests to authenticated;
 
 -- -----------------------------
 -- feed_items: RLS

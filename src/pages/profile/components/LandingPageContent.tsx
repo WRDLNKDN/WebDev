@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Chip,
   Container,
   Grid,
   Snackbar,
@@ -20,11 +19,13 @@ import { PortfolioPreviewModal } from '../../../components/portfolio/dialogs/Por
 import { ProjectCard } from '../../../components/portfolio/cards/ProjectCard';
 import { ResumeCard } from '../../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../../components/profile/identity/IdentityHeader';
+import { IndustryGroupBlock } from '../../../components/profile/identity/IndustryGroupBlock';
 import { ProfileLinksWidget } from '../../../components/profile/links/ProfileLinksWidget';
+import { SkillsInterestsPills } from '../../../components/profile/identity/SkillsInterestsPills';
 import { buildResumePreviewItem } from '../../../lib/portfolio/resumePreviewItem';
 import { portfolioCategoryToSectionTestId } from '../../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../../types/portfolio';
-import type { DashboardProfile } from '../../../types/profile';
+import type { DashboardProfile, IndustryGroup } from '../../../types/profile';
 import { safeStr } from '../../../utils/stringUtils';
 
 type LandingPageContentProps = {
@@ -34,8 +35,10 @@ type LandingPageContentProps = {
   resolvedAvatarUrl: string | null;
   creds: Record<string, unknown>;
   selectedSkills: string[];
-  industryChips: Array<{ label: string; key: string }>;
-  showLinksInIdentity: boolean;
+  selectedInterests?: string[];
+  industryGroups: IndustryGroup[];
+  nicheField: string | null;
+  hasLinks: boolean;
   projects: PortfolioItem[];
   portfolioSections: Array<{ category: string; projects: PortfolioItem[] }>;
   previewProject: PortfolioItem | null;
@@ -60,8 +63,10 @@ export const LandingPageContent = ({
   resolvedAvatarUrl,
   creds,
   selectedSkills,
-  industryChips,
-  showLinksInIdentity,
+  selectedInterests = [],
+  industryGroups,
+  nicheField,
+  hasLinks,
   projects,
   portfolioSections,
   previewProject,
@@ -164,6 +169,7 @@ export const LandingPageContent = ({
       >
         <Container maxWidth="lg" disableGutters>
           <IdentityHeader
+            layoutVariant="three-column"
             displayName={safeStr(profile.display_name)}
             tagline={profile.tagline ?? undefined}
             bio={
@@ -178,44 +184,18 @@ export const LandingPageContent = ({
             }
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
-            slotLeftOfAvatar={
-              showLinksInIdentity ? (
-                <ProfileLinksWidget
-                  socials={profile.socials || []}
-                  grouped
-                  collapsible
-                  defaultExpanded={true}
-                />
-              ) : undefined
-            }
             badges={
-              selectedSkills.length > 0 || industryChips.length > 0 ? (
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {industryChips.map(({ label, key }) => (
-                    <Chip
-                      key={key}
-                      size="small"
-                      label={label}
-                      sx={{
-                        bgcolor: 'rgba(66,165,245,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(66,165,245,0.35)',
-                      }}
-                    />
-                  ))}
-                  {selectedSkills.map((skill) => (
-                    <Chip
-                      key={`skill-${skill}`}
-                      size="small"
-                      label={`Skill: ${skill}`}
-                      sx={{
-                        bgcolor: 'rgba(236,64,122,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(236,64,122,0.35)',
-                      }}
-                    />
-                  ))}
-                </Stack>
+              <SkillsInterestsPills
+                skills={selectedSkills}
+                interests={selectedInterests}
+              />
+            }
+            rightColumn={
+              industryGroups.length > 0 || nicheField ? (
+                <IndustryGroupBlock
+                  groups={industryGroups}
+                  nicheField={nicheField}
+                />
               ) : undefined
             }
             actions={
@@ -225,6 +205,17 @@ export const LandingPageContent = ({
               </>
             }
           />
+
+          {hasLinks && (
+            <Box sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
+              <ProfileLinksWidget
+                socials={profile.socials || []}
+                grouped
+                collapsible
+                defaultExpanded
+              />
+            </Box>
+          )}
 
           <Grid
             container

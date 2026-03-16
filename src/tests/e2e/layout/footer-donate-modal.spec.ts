@@ -35,10 +35,9 @@ test.describe('Footer donate link', () => {
     const payLink = dialog.getByRole('link', {
       name: /pay online/i,
     });
-    await expect(payLink).toHaveAttribute(
-      'href',
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
+    const donateUrl =
+      'https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878';
+    await expect(payLink).toHaveAttribute('href', donateUrl);
     await expect(payLink).toHaveAttribute('target', '_blank');
 
     const [popup] = await Promise.all([
@@ -46,9 +45,7 @@ test.describe('Footer donate link', () => {
       payLink.click(),
     ]);
     await popup.waitForLoadState('domcontentloaded');
-    await expect(popup).toHaveURL(
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
-    );
+    await expect(popup).toHaveURL(donateUrl);
     await popup.close();
   });
 

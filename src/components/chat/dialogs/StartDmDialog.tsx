@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   Button,
@@ -5,10 +6,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   InputAdornment,
   List,
   ListItemButton,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -175,7 +178,25 @@ export const StartDmDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Start a chat</DialogTitle>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pr: 1,
+        }}
+      >
+        Start a chat
+        <Tooltip title="Close">
+          <IconButton
+            aria-label="Close"
+            onClick={onClose}
+            sx={{ color: 'rgba(255,255,255,0.75)' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Only your connections can receive 1:1 messages.

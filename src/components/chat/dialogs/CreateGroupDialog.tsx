@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
@@ -6,11 +7,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -135,7 +138,25 @@ export const CreateGroupDialog = ({
           void handleCreate();
         }}
       >
-        <DialogTitle>Create group</DialogTitle>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Create group
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={onClose}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Add members now (you can invite more later via the ⋮ menu).

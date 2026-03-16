@@ -1,9 +1,12 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
+  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Button,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -38,7 +41,25 @@ export const WeirdlingDeleteConfirmDialog = ({
       },
     }}
   >
-    <DialogTitle>Delete Weirdling?</DialogTitle>
+    <DialogTitle
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        pr: 1,
+      }}
+    >
+      Delete Weirdling?
+      <Tooltip title="Close">
+        <IconButton
+          aria-label="Close"
+          onClick={onClose}
+          sx={{ color: 'rgba(255,255,255,0.75)' }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </DialogTitle>
     <DialogContent>
       <Typography variant="body2" color="text.secondary">
         This will remove {weirdlingName} from your profile. Your avatar will

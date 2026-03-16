@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -9,10 +10,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   Menu,
   MenuItem,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -782,8 +785,25 @@ export const Dashboard = () => {
         aria-labelledby="regenerate-share-link-title"
         aria-describedby="regenerate-share-link-description"
       >
-        <DialogTitle id="regenerate-share-link-title">
+        <DialogTitle
+          id="regenerate-share-link-title"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
           Regenerate share link?
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={() => !regenerating && setRegenerateConfirmOpen(false)}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="regenerate-share-link-description">

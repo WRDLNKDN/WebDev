@@ -246,7 +246,7 @@ export const ChatRoomHeader = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 0.25,
+          gap: 0.75,
           flexShrink: 0,
           ml: 'auto',
           order: { xs: 1, sm: 0 },

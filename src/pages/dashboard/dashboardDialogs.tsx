@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Button,
   Dialog,
@@ -5,6 +6,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
 import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
@@ -107,8 +110,25 @@ export const DashboardDialogs = ({
       aria-labelledby="regenerate-share-link-title"
       aria-describedby="regenerate-share-link-description"
     >
-      <DialogTitle id="regenerate-share-link-title">
+      <DialogTitle
+        id="regenerate-share-link-title"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pr: 1,
+        }}
+      >
         Regenerate share link?
+        <Tooltip title="Close">
+          <IconButton
+            aria-label="Close"
+            onClick={() => !regenerating && onCloseRegenerateConfirm()}
+            sx={{ color: 'rgba(255,255,255,0.75)' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="regenerate-share-link-description">

@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
@@ -6,10 +7,12 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -87,7 +90,25 @@ export const ReportDialog = ({
           void handleSubmit();
         }}
       >
-        <DialogTitle>Report</DialogTitle>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Report
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={onClose}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           {error && (
             <Typography color="error" variant="body2" sx={{ mb: 1 }}>

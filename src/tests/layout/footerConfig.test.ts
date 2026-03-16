@@ -29,12 +29,15 @@ describe('footerConfig', () => {
 
   it('keeps the donate call-to-action pointed at the production payment URL', () => {
     expect(FOOTER_DONATE_URL).toBe(
-      'https://pay.wrdlnkdn.com/d6e9f6fd-1d56-4a47-8e35-f4f',
+      'https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878',
     );
   });
 
-  it('points the donate modal QR image at a static app asset', () => {
-    expect(FOOTER_DONATE_QR_ASSET).toBe('/assets/donate-qr.png');
+  it('points the donate modal QR image at a URL that encodes the donate link', () => {
+    expect(FOOTER_DONATE_QR_ASSET).toContain('create-qr-code');
+    expect(FOOTER_DONATE_QR_ASSET).toContain(
+      encodeURIComponent(FOOTER_DONATE_URL),
+    );
   });
 
   it('keeps github as the rightmost social link', () => {

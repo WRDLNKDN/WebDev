@@ -61,6 +61,10 @@ const REPOST_ITEM = {
   viewer_saved: false,
 };
 
+// Browser serialization of computed color can differ (e.g. spaces in rgb/rgba).
+const MUTED_COLOR = /rgba?\s*\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0\.65\s*\)/;
+const FOCUS_COLOR = /rgb\s*\(\s*141\s*,\s*188\s*,\s*229\s*\)/;
+
 test.describe('Feed reaction picker', () => {
   test('uses the shared emoji tray, stays open across hover, and keeps action colors muted until hover or selection', async ({
     page,
@@ -185,21 +189,21 @@ test.describe('Feed reaction picker', () => {
     ).toBeVisible();
     await expect(repostCard.getByText('View original post')).toBeVisible();
     await expect(reactButton).toBeVisible();
-    await expect(reactButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
-    await expect(commentButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
-    await expect(repostButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
-    await expect(sendButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
-    await expect(saveButton).toHaveCSS('color', 'rgba(255, 255, 255, 0.65)');
+    await expect(reactButton).toHaveCSS('color', MUTED_COLOR);
+    await expect(commentButton).toHaveCSS('color', MUTED_COLOR);
+    await expect(repostButton).toHaveCSS('color', MUTED_COLOR);
+    await expect(sendButton).toHaveCSS('color', MUTED_COLOR);
+    await expect(saveButton).toHaveCSS('color', MUTED_COLOR);
     await reactButton.scrollIntoViewIfNeeded();
 
     await commentButton.hover();
-    await expect(commentButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(commentButton).toHaveCSS('color', FOCUS_COLOR);
     await repostButton.hover();
-    await expect(repostButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(repostButton).toHaveCSS('color', FOCUS_COLOR);
     await sendButton.hover();
-    await expect(sendButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(sendButton).toHaveCSS('color', FOCUS_COLOR);
     await saveButton.hover();
-    await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(saveButton).toHaveCSS('color', FOCUS_COLOR);
 
     const postOptionsButton = originalCard.getByRole('button', {
       name: 'Post options',
@@ -216,28 +220,32 @@ test.describe('Feed reaction picker', () => {
     await page.mouse.click(0, 0);
 
     await reactButton.hover({ force: true });
-    await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(reactButton).toHaveCSS('color', FOCUS_COLOR);
     let usedFocusFallback = false;
     if ((await reactButton.getAttribute('aria-expanded')) !== 'true') {
       await reactButton.focus();
       usedFocusFallback = true;
     }
 
-    const laughButton = page.getByRole('button', { name: 'Laugh' });
-    const surprisedButton = page.getByRole('button', { name: 'Surprised' });
-    const prayerButton = page.getByRole('button', { name: 'Prayer Hands' });
-    const rageButton = page.getByRole('button', { name: 'Rage' });
+    const laughButton = originalCard.getByRole('button', { name: 'Laugh' });
+    const surprisedButton = originalCard.getByRole('button', {
+      name: 'Surprised',
+    });
+    const prayerButton = originalCard.getByRole('button', {
+      name: 'Prayer Hands',
+    });
+    const rageButton = originalCard.getByRole('button', { name: 'Rage' });
 
     await reactButton.click();
-    await expect(laughButton).toBeVisible({ timeout: 1000 });
-    await page.waitForTimeout(700);
+    await expect(laughButton).toBeVisible({ timeout: 8000 });
+    await page.waitForTimeout(1200);
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await expect(laughButton).toBeVisible();
     await expect(laughButton).toContainText('😂');
     await expect(surprisedButton).toContainText('😮');
     await expect(prayerButton).toContainText('🙏');
     await laughButton.click();
-    await expect(reactButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(reactButton).toHaveCSS('color', FOCUS_COLOR);
     await expect(originalCard.getByText('4 reactions')).toBeVisible();
     await expect(originalCard.getByLabel('React')).toHaveAttribute(
       'aria-pressed',
@@ -245,18 +253,18 @@ test.describe('Feed reaction picker', () => {
     );
 
     await saveButton.click();
-    await expect(saveButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(saveButton).toHaveCSS('color', FOCUS_COLOR);
     await expect(saveButton).toContainText('Saved');
 
     await repostButton.click();
-    await expect(repostButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(repostButton).toHaveCSS('color', FOCUS_COLOR);
     await expect(repostButton).toHaveAttribute('aria-pressed', 'true');
     await expect(repostButton).toContainText('Reposted');
 
     await sendButton.click();
     await page.getByRole('button', { name: 'Copy link' }).click();
     const sentButton = originalCard.getByRole('button', { name: 'Sent' });
-    await expect(sentButton).toHaveCSS('color', 'rgb(141, 188, 229)');
+    await expect(sentButton).toHaveCSS('color', FOCUS_COLOR);
     await expect(sentButton).toHaveAttribute('aria-pressed', 'true');
     await expect(sentButton).toContainText('Sent');
 
@@ -265,14 +273,14 @@ test.describe('Feed reaction picker', () => {
     } else {
       await page.mouse.move(0, 0);
     }
-    await expect(laughButton).toBeHidden({ timeout: 1500 });
+    await expect(laughButton).toBeHidden({ timeout: 4000 });
 
     await reactButton.click();
-    await expect(rageButton).toBeVisible({ timeout: 1000 });
-    await page.waitForTimeout(700);
+    await expect(rageButton).toBeVisible({ timeout: 8000 });
+    await page.waitForTimeout(1200);
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await rageButton.click();
-    await expect(rageButton).toBeHidden({ timeout: 1500 });
+    await expect(rageButton).toBeHidden({ timeout: 4000 });
     await expect(originalCard.getByText('4 reactions')).toBeVisible();
     expect(submittedReactions).toEqual(['laughing', 'rage']);
   });

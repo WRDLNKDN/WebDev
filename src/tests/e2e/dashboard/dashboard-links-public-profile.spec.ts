@@ -14,9 +14,11 @@ test.describe('Issue #609 - Public Profile grouped links', () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
-  test('links render inside Identity section on Profile', async ({ page }) => {
-    const identitySection = page.getByTestId('identity-header');
-    await expect(identitySection.getByRole('link').first()).toBeVisible();
+  test('links render in Links section on Profile (below Identity)', async ({
+    page,
+  }) => {
+    const linksSection = page.getByTestId('profile-links-section');
+    await expect(linksSection.getByRole('link').first()).toBeVisible();
   });
 
   test('links do not render inside Portfolio section on Profile', async ({
@@ -28,24 +30,24 @@ test.describe('Issue #609 - Public Profile grouped links', () => {
     ).not.toBeAttached();
   });
 
-  test('LINKS collapsible header is present in Identity', async ({ page }) => {
-    const identitySection = page.getByTestId('identity-header');
+  test('LINKS section header is present on Profile', async ({ page }) => {
+    const linksSection = page.getByTestId('profile-links-section');
     await expect(
-      identitySection.getByText('LINKS', { exact: true }),
+      linksSection.getByText('LINKS', { exact: true }),
     ).toBeVisible();
   });
 
   test('links are grouped by category on Profile', async ({ page }) => {
-    const identitySection = page.getByTestId('identity-header');
-    await expect(identitySection.getByText('Professional')).toBeVisible();
-    await expect(identitySection.getByText('Social')).toBeVisible();
+    const linksSection = page.getByTestId('profile-links-section');
+    await expect(linksSection.getByText('Professional')).toBeVisible();
+    await expect(linksSection.getByText('Social')).toBeVisible();
   });
 
   test('links within each category are alphabetized on Profile', async ({
     page,
   }) => {
-    const identitySection = page.getByTestId('identity-header');
-    const profGroup = identitySection.getByTestId('link-group-Professional');
+    const linksSection = page.getByTestId('profile-links-section');
+    const profGroup = linksSection.getByTestId('link-group-Professional');
     const linkTexts = await profGroup.getByRole('link').allTextContents();
 
     const sorted = [...linkTexts].sort((a, b) =>
@@ -57,8 +59,8 @@ test.describe('Issue #609 - Public Profile grouped links', () => {
   test('links keep platform indicators/icons and remain clickable', async ({
     page,
   }) => {
-    const identitySection = page.getByTestId('identity-header');
-    const profGroup = identitySection.getByTestId('link-group-Professional');
+    const linksSection = page.getByTestId('profile-links-section');
+    const profGroup = linksSection.getByTestId('link-group-Professional');
     const firstLink = profGroup.getByRole('link').first();
 
     await expect(firstLink).toHaveAttribute('href', /^https?:\/\//);
@@ -69,9 +71,9 @@ test.describe('Issue #609 - Public Profile grouped links', () => {
   test('link groups are expanded by default and can be collapsed', async ({
     page,
   }) => {
-    const identitySection = page.getByTestId('identity-header');
-    await expect(identitySection.getByRole('link').first()).toBeVisible();
-    const professionalGroup = identitySection.getByTestId(
+    const linksSection = page.getByTestId('profile-links-section');
+    await expect(linksSection.getByRole('link').first()).toBeVisible();
+    const professionalGroup = linksSection.getByTestId(
       'link-group-Professional',
     );
     await expect(

@@ -5,7 +5,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 type BlockConfirmDialogProps = {
   open: boolean;
@@ -27,7 +30,25 @@ export const BlockConfirmDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Block {displayName}</DialogTitle>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pr: 1,
+        }}
+      >
+        Block {displayName}
+        <Tooltip title="Close">
+          <IconButton
+            aria-label="Close"
+            onClick={onClose}
+            sx={{ color: 'rgba(255,255,255,0.75)' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </DialogTitle>
       <DialogContent>
         <DialogContentText>
           Blocking will remove your connection with {displayName} and prevent

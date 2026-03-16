@@ -10,6 +10,7 @@ import {
   DialogTitle,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
@@ -378,8 +379,25 @@ export const AdvertisePage = () => {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle id="advertise-unsaved-title">
+        <DialogTitle
+          id="advertise-unsaved-title"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
           You have unsaved changes
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={() => setConfirmCloseOpen(false)}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="advertise-unsaved-description">

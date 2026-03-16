@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -14,6 +15,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
@@ -21,6 +23,7 @@ import {
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
 } from '@mui/material';
@@ -1375,7 +1378,25 @@ export const Directory = () => {
         open={Boolean(disconnectTarget)}
         onClose={() => setDisconnectTarget(null)}
       >
-        <DialogTitle>Disconnect from {disconnectTarget?.name}</DialogTitle>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pr: 1,
+          }}
+        >
+          Disconnect from {disconnectTarget?.name}
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={() => setDisconnectTarget(null)}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </DialogTitle>
         <DialogContent>
           <Typography>
             This will remove your connection. You can reconnect later.

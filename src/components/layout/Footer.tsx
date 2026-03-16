@@ -13,6 +13,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -601,8 +602,25 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     },
                   }}
                 >
-                  <DialogTitle id="donate-dialog-title">
+                  <DialogTitle
+                    id="donate-dialog-title"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      pr: 1,
+                    }}
+                  >
                     Donate to WRDLNKDN
+                    <Tooltip title="Close">
+                      <IconButton
+                        aria-label="Close"
+                        onClick={() => setDonateDialogOpen(false)}
+                        sx={{ color: 'rgba(255,255,255,0.75)' }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </DialogTitle>
                   <DialogContent id="donate-dialog-description">
                     <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>

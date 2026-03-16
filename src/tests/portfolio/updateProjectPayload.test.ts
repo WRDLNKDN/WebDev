@@ -54,6 +54,14 @@ const { state, supabaseMock } = vi.hoisted(() => {
         },
         error: null,
       })),
+      maybeSingle: vi.fn(async () => ({
+        data: {
+          id: 'project-1',
+          owner_id: 'user-1',
+          ...(state.capturedUpdatePayload ?? {}),
+        },
+        error: null,
+      })),
     };
     return builder;
   };
@@ -132,7 +140,7 @@ describe('useProfile.updateProject payload mapping', () => {
       title: 'Updated Artifact',
       description: 'Updated details',
       project_url: 'https://docs.google.com/document/d/abc123/edit#top',
-      image_url: '',
+      image_url: null,
       tech_stack: ['Data'],
       is_highlighted: true,
       normalized_url: 'https://docs.google.com/document/d/abc123/preview#top',

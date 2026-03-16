@@ -15,6 +15,7 @@ interface DirectoryRowProps {
   onConnect: (id: string) => void;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
+  onCancelRequest: (id: string) => void;
   onDisconnect: (member: DirectoryMember) => void;
   onBlock: (member: DirectoryMember) => void;
   onSkillClick: (skill: string) => void;
@@ -26,6 +27,7 @@ export const DirectoryRow = ({
   onConnect,
   onAccept,
   onDecline,
+  onCancelRequest,
   onDisconnect,
   onBlock,
   onSkillClick,
@@ -176,6 +178,7 @@ export const DirectoryRow = ({
           onConnect={onConnect}
           onAccept={onAccept}
           onDecline={onDecline}
+          onCancelRequest={onCancelRequest}
           onDisconnect={onDisconnect}
           onBlock={onBlock}
         />

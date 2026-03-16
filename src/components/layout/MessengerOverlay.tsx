@@ -10,6 +10,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreateGroupDialog } from '../chat/dialogs/CreateGroupDialog';
 import { StartDmDialog } from '../chat/dialogs/StartDmDialog';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
@@ -29,6 +30,7 @@ const DRAWER_WIDTH = 360;
 
 export const MessengerOverlay = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
@@ -205,9 +207,33 @@ export const MessengerOverlay = () => {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{ paper: { sx: { minWidth: 200 } } }}
       >
-        <MenuItem disabled>Manage conversations</MenuItem>
-        <MenuItem disabled>Messaging settings</MenuItem>
-        <MenuItem disabled>Set away message</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            messenger?.closeOverlay();
+            navigate('/chat');
+          }}
+        >
+          Manage conversations
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            messenger?.closeOverlay();
+            navigate('/chat');
+          }}
+        >
+          Messaging settings
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            messenger?.closeOverlay();
+            navigate('/chat');
+          }}
+        >
+          Set away message
+        </MenuItem>
       </Menu>
 
       <StartDmDialog

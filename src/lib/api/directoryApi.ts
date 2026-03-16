@@ -178,6 +178,37 @@ export async function declineRequest(
   }
 }
 
+export async function cancelRequest(
+  supabase: SupabaseClient,
+  targetId: string,
+): Promise<void> {
+  const res = await authedFetch(
+    '/api/directory/cancel',
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase },
+  );
+  let data: Record<string, unknown>;
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
+  if (!res.ok) {
+    const msg = typeof data?.error === 'string' ? data.error : undefined;
+    const bodyMsg =
+      typeof data?.message === 'string' ? data.message : undefined;
+    const retryAfter =
+      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
+    if (res.status === 429 && retryAfter != null) {
+      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
+    }
+    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
+  }
+}
+
 export async function disconnect(
   supabase: SupabaseClient,
   targetId: string,

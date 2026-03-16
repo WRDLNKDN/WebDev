@@ -31,6 +31,7 @@ type DirectoryRowActionsProps = {
   onConnect: (id: string) => void;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
+  onCancelRequest: (id: string) => void;
   onDisconnect: (member: DirectoryMember) => void;
   onBlock: (member: DirectoryMember) => void;
 };
@@ -44,6 +45,7 @@ export const DirectoryRowActions = ({
   onConnect,
   onAccept,
   onDecline,
+  onCancelRequest,
   onDisconnect,
   onBlock,
 }: DirectoryRowActionsProps) => {
@@ -92,20 +94,32 @@ export const DirectoryRowActions = ({
         </Button>
       )}
       {member.connection_state === 'pending' && (
-        <Chip
-          icon={<HourglassTopIcon fontSize="small" />}
-          label="Pending approval"
-          variant="outlined"
-          sx={{
-            height: { xs: 38, sm: 34 },
-            color: 'warning.main',
-            borderColor: 'warning.main',
-            fontWeight: 700,
-            textDecoration: 'underline',
-            textUnderlineOffset: '4px',
-            '& .MuiChip-icon': { color: 'inherit' },
-          }}
-        />
+        <>
+          <Chip
+            icon={<HourglassTopIcon fontSize="small" />}
+            label="Pending approval"
+            variant="outlined"
+            sx={{
+              height: { xs: 38, sm: 34 },
+              color: 'warning.main',
+              borderColor: 'warning.main',
+              fontWeight: 700,
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
+              '& .MuiChip-icon': { color: 'inherit' },
+            }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onCancelRequest(member.id)}
+            disabled={busy}
+            aria-label="Cancel request"
+            sx={actionButtonSx}
+          >
+            Cancel request
+          </Button>
+        </>
       )}
       {member.connection_state === 'pending_received' && (
         <>

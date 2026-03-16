@@ -80,7 +80,6 @@ export const AppRouteTree = ({
     />
 
     <Route path="/signin" element={<SignIn />} />
-    <Route path="/join" element={<Join />} />
     <Route path="/auth/callback" element={<AuthCallback />} />
 
     <Route element={<Layout />}>
@@ -89,6 +88,7 @@ export const AppRouteTree = ({
         element={<Navigate to="/admin" replace />}
       />
       <Route path="/" element={<Home />} />
+      <Route path="/join" element={<Join />} />
       <Route path="/profile/:handle" element={<LandingPage />} />
       <Route path="/p/:shareToken" element={<PublicProfilePage />} />
       <Route path="/projects/:id" element={<ProjectPage />} />

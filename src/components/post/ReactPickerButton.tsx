@@ -21,6 +21,8 @@ export type ReactPickerButtonProps<T extends string = string> = {
   onToggleReaction: (value: T) => void;
   buttonLabel?: string;
   buttonTestId?: string;
+  /** When false, selected state shows only the emoji (no text label). Use in chat to avoid duplicating the reaction pill. Default true. */
+  selectedShowsLabel?: boolean;
   sx?: object;
   buttonSx?: object;
   traySx?: object;
@@ -33,6 +35,7 @@ export const ReactPickerButton = <T extends string = string>({
   onToggleReaction,
   buttonLabel = 'React',
   buttonTestId,
+  selectedShowsLabel = true,
   sx,
   buttonSx,
   traySx,
@@ -171,17 +174,19 @@ export const ReactPickerButton = <T extends string = string>({
           ) : (
             <EmojiEmotionsOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
           )}
-          <Typography
-            component="span"
-            variant="caption"
-            sx={{
-              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-              fontWeight: selected ? 700 : 600,
-              color: 'inherit',
-            }}
-          >
-            {displayLabel}
-          </Typography>
+          {(selectedShowsLabel || !selected) && (
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                fontWeight: selected ? 700 : 600,
+                color: 'inherit',
+              }}
+            >
+              {displayLabel}
+            </Typography>
+          )}
         </Button>
         {open ? (
           <Box

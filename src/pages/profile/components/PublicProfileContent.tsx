@@ -1,4 +1,4 @@
-import { Box, Chip, Container, Grid, Stack, Typography } from '@mui/material';
+import { Box, Container, Grid, Typography } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink } from 'react-router-dom';
 import { PortfolioFrame } from '../../../components/portfolio/layout/PortfolioFrame';
@@ -7,11 +7,13 @@ import { PortfolioPreviewModal } from '../../../components/portfolio/dialogs/Por
 import { ProjectCard } from '../../../components/portfolio/cards/ProjectCard';
 import { ResumeCard } from '../../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../../components/profile/identity/IdentityHeader';
+import { IndustryGroupBlock } from '../../../components/profile/identity/IndustryGroupBlock';
+import { SkillsInterestsPills } from '../../../components/profile/identity/SkillsInterestsPills';
 import { ProfileLinksWidget } from '../../../components/profile/links/ProfileLinksWidget';
 import { buildResumePreviewItem } from '../../../lib/portfolio/resumePreviewItem';
 import { portfolioCategoryToSectionTestId } from '../../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../../types/portfolio';
-import type { NerdCreds } from '../../../types/profile';
+import type { IndustryGroup, NerdCreds } from '../../../types/profile';
 import { safeStr } from '../../../utils/stringUtils';
 import type { PublicProfilePayload } from '../publicProfileData';
 
@@ -19,9 +21,11 @@ type PublicProfileContentProps = {
   profile: PublicProfilePayload['profile'];
   creds: NerdCreds;
   socials: Parameters<typeof ProfileLinksWidget>[0]['socials'];
-  showLinksInIdentity: boolean;
+  hasLinks: boolean;
   selectedSkills: string[];
-  industryChips: Array<{ label: string; key: string }>;
+  selectedInterests?: string[];
+  industryGroups: IndustryGroup[];
+  nicheField: string | null;
   projects: PortfolioItem[];
   portfolioSections: Array<{ category: string; projects: PortfolioItem[] }>;
   resumeFileName: string | null;
@@ -35,9 +39,11 @@ export const PublicProfileContent = ({
   profile,
   creds,
   socials,
-  showLinksInIdentity,
+  hasLinks,
   selectedSkills,
-  industryChips,
+  selectedInterests = [],
+  industryGroups,
+  nicheField,
   projects,
   portfolioSections,
   resumeFileName,
@@ -82,6 +88,7 @@ export const PublicProfileContent = ({
           </Box>
 
           <IdentityHeader
+            layoutVariant="three-column"
             displayName={safeStr(profile.display_name)}
             tagline={profile.tagline ?? undefined}
             bio={safeStr(creds.bio)}
@@ -89,47 +96,32 @@ export const PublicProfileContent = ({
             avatarUrl={profile.avatar ?? undefined}
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
-            slotLeftOfAvatar={
-              showLinksInIdentity ? (
-                <ProfileLinksWidget
-                  socials={socials}
-                  grouped
-                  collapsible
-                  defaultExpanded
+            badges={
+              <SkillsInterestsPills
+                skills={selectedSkills}
+                interests={selectedInterests}
+              />
+            }
+            rightColumn={
+              industryGroups.length > 0 || nicheField ? (
+                <IndustryGroupBlock
+                  groups={industryGroups}
+                  nicheField={nicheField}
                 />
               ) : undefined
             }
-            badges={
-              selectedSkills.length > 0 || industryChips.length > 0 ? (
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {industryChips.map(({ label, key }) => (
-                    <Chip
-                      key={key}
-                      size="small"
-                      label={label}
-                      sx={{
-                        bgcolor: 'rgba(66,165,245,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(66,165,245,0.35)',
-                      }}
-                    />
-                  ))}
-                  {selectedSkills.map((skill) => (
-                    <Chip
-                      key={`skill-${skill}`}
-                      size="small"
-                      label={`Skill: ${skill}`}
-                      sx={{
-                        bgcolor: 'rgba(236,64,122,0.15)',
-                        color: 'text.primary',
-                        border: '1px solid rgba(236,64,122,0.35)',
-                      }}
-                    />
-                  ))}
-                </Stack>
-              ) : undefined
-            }
           />
+
+          {hasLinks && (
+            <Box sx={{ mb: 3 }}>
+              <ProfileLinksWidget
+                socials={socials}
+                grouped
+                collapsible
+                defaultExpanded
+              />
+            </Box>
+          )}
 
           {hasPortfolioArtifacts && (
             <Grid

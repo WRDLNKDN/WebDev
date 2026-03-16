@@ -113,7 +113,7 @@ export const PublicProfileContent = ({
           />
 
           {hasLinks && (
-            <Box sx={{ mb: 3 }}>
+            <Box data-testid="profile-links-section" sx={{ mb: 3 }}>
               <ProfileLinksWidget
                 socials={socials}
                 grouped

@@ -17,7 +17,7 @@ describe('DirectoryEmptyState', () => {
 
     expect(markup).toContain('No members found');
     expect(markup).toContain(
-      'No members match your search or filters. Try adjusting your search terms or clear one or more filters.',
+      'No members match your filters right now. Try broadening your search or clearing one of the filters.',
     );
     expect(markup).toContain('Clear filters');
     expect(markup).not.toContain('Join the Community');
@@ -31,7 +31,7 @@ describe('DirectoryEmptyState', () => {
 
     expect(markup).toContain('No members found');
     expect(markup).toContain(
-      'No members match your filters. Try adjusting or clearing a filter.',
+      'No members match your filters right now. Try widening your search or removing a filter.',
     );
     expect(markup).toContain('Clear filters');
     expect(markup).not.toContain('Join the Community');
@@ -42,8 +42,10 @@ describe('DirectoryEmptyState', () => {
       <DirectoryEmptyState hasActiveFilters={false} />,
     );
 
-    expect(markup).toContain('No results');
-    expect(markup).toContain('The directory is empty.');
+    expect(markup).toContain('No members yet');
+    expect(markup).toContain(
+      'Try searching by name, skills, industry, or location, or check back later as more members join the directory.',
+    );
     expect(markup).not.toContain('Clear filters');
     expect(markup).not.toContain('Join the Community');
   });

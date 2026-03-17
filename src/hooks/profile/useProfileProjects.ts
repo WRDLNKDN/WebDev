@@ -49,22 +49,13 @@ export const addProjectItem = async ({
       'User',
   );
 
-  const sourceFile = files?.sourceFile;
   const thumbnailFile = files?.thumbnailFile;
 
-  let projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
-  if (sourceFile) {
-    projectUrlTrimmed = await uploadPublicProjectAsset({
-      userId: session.user.id,
-      file: sourceFile,
-      bucket: 'project-sources',
-      prefix: 'project-source',
-    });
-  }
+  const projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
   if (!projectUrlTrimmed) {
-    throw new Error('Choose a project source file or enter a Project URL.');
+    throw new Error('Add a project URL.');
   }
-  if (!sourceFile && !isExternalProjectUrl(projectUrlTrimmed)) {
+  if (!isExternalProjectUrl(projectUrlTrimmed)) {
     throw new Error('Project URL must be an external URL (e.g. https://...).');
   }
 
@@ -79,10 +70,8 @@ export const addProjectItem = async ({
     });
   }
 
-  if (!sourceFile) {
-    const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
-    if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
-  }
+  const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
+  if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
 
   const linkType = getLinkType(projectUrlTrimmed);
   const normalizedUrl =

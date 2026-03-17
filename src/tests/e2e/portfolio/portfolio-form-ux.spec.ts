@@ -118,6 +118,22 @@ test.describe('Add Project dialog UX', () => {
     return dialog;
   };
 
+  test('uses URL-only source (no upload file or URL toggle)', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await expect(
+      dialog.getByRole('textbox', { name: 'Project URL' }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: /upload file/i }),
+    ).toHaveCount(0);
+    await expect(
+      dialog.getByRole('button', { name: /enter project url/i }),
+    ).toHaveCount(0);
+  });
+
   test('shows tooltip text when hovering form fields', async ({ page }) => {
     const dialog = await openAddProjectDialog(page);
 

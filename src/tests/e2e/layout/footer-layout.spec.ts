@@ -30,6 +30,10 @@ test.describe('Footer layout', () => {
     await expect(footer.getByText(/^notifications$/i)).toHaveCount(0);
     await expect(footer.getByText(/^directory$/i)).toHaveCount(0);
 
+    await expect(
+      footer.getByRole('img', { name: 'WRDLNKDN wordmark' }),
+    ).toBeVisible();
+
     const donate = footer.getByTestId('footer-donate-link');
     await expect(donate).toHaveAttribute('aria-label', 'Donate to WRDLNKDN');
 
@@ -86,6 +90,10 @@ test.describe('Footer layout', () => {
     const footer = await goToFooter(page);
     const donate = footer.getByTestId('footer-donate-link');
     await expect(donate).toBeVisible();
+
+    await expect(
+      footer.getByRole('img', { name: 'WRDLNKDN wordmark' }),
+    ).toBeVisible();
 
     const footerMetrics = await footer.evaluate((node) => ({
       clientWidth: node.clientWidth,

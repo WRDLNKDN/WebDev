@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -44,6 +45,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
+import { signOut } from '../../lib/auth/signOut';
 import { toMessage } from '../../lib/utils/errors';
 import {
   getProfanityOverrides,
@@ -459,14 +461,6 @@ export const Dashboard = () => {
                   },
                 }}
               >
-                <MenuItem
-                  onClick={() => {
-                    openEditProfileDialog();
-                  }}
-                  sx={{ py: 1.25 }}
-                >
-                  Edit Profile
-                </MenuItem>
                 {profile?.handle && (
                   <MenuItem
                     component="a"
@@ -481,12 +475,40 @@ export const Dashboard = () => {
                 )}
                 <MenuItem
                   onClick={() => {
+                    openEditProfileDialog();
+                  }}
+                  sx={{ py: 1.25 }}
+                >
+                  Edit Profile
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setProfileMenuAnchor(null);
+                    navigate('/dashboard/settings');
+                  }}
+                  sx={{ py: 1.25 }}
+                >
+                  Settings
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
                     setProfileMenuAnchor(null);
                     setIsShareDialogOpen(true);
                   }}
                   sx={{ py: 1.25 }}
                 >
                   Share My Profile
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem
+                  onClick={async () => {
+                    setProfileMenuAnchor(null);
+                    await signOut({ redirectTo: '/' });
+                    navigate('/', { replace: true });
+                  }}
+                  sx={{ py: 1.25, color: 'error.main' }}
+                >
+                  Sign Out
                 </MenuItem>
               </Menu>
             </>

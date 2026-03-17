@@ -14,7 +14,6 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -457,15 +456,6 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <EmojiEventsIcon
-                    sx={{
-                      display: { xs: 'none', sm: 'inline-flex' },
-                      fontSize: { xs: 20, sm: 22, md: 24 },
-                      color: 'primary.main',
-                      opacity: 0.95,
-                    }}
-                    aria-hidden
-                  />
                   <Box
                     component="img"
                     src="/assets/wrdlnkdn_logo.png"

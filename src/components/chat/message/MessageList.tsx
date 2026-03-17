@@ -1,6 +1,15 @@
-import { Box, Button, Typography } from '@mui/material';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import {
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import React, { useRef, useEffect, useState } from 'react';
-import { PostCard, ReactPickerButton } from '../../post';
+import { PostCard } from '../../post';
 import { CHAT_REACTION_OPTIONS } from '../../post/sharedReactions';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import {
@@ -67,6 +76,10 @@ export const MessageList = ({
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [reactionMenuAnchor, setReactionMenuAnchor] = useState<{
+    el: HTMLElement;
+    messageId: string;
+  } | null>(null);
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
@@ -462,27 +475,72 @@ export const MessageList = ({
                   </Box>
                 )}
                 {canAct && (
-                  <ReactPickerButton
-                    options={CHAT_REACTION_OPTIONS}
-                    selectedValue={
-                      msg.reactions?.find(
-                        (reaction) => reaction.user_id === currentUserId,
-                      )?.emoji ?? null
-                    }
-                    onToggleReaction={(emoji) => onReaction?.(msg.id, emoji)}
-                    buttonLabel="React"
-                    selectedShowsLabel={false}
-                    sx={{ pt: 0, pb: 0, px: 0 }}
-                    buttonSx={{ minHeight: 28, py: 0.15, px: 0.5 }}
-                    traySx={{ left: 0, bottom: 'calc(100% + 8px)' }}
-                    emojiSize="1.25rem"
-                  />
+                  <Tooltip title="Add reaction">
+                    <IconButton
+                      size="small"
+                      onClick={(e) =>
+                        setReactionMenuAnchor({
+                          el: e.currentTarget,
+                          messageId: msg.id,
+                        })
+                      }
+                      aria-label="Add reaction"
+                      aria-haspopup="true"
+                      aria-expanded={reactionMenuAnchor?.messageId === msg.id}
+                      sx={{
+                        p: 0.25,
+                        color: 'rgba(255,255,255,0.65)',
+                        '&:hover': {
+                          color: 'rgba(255,255,255,0.9)',
+                          bgcolor: 'rgba(56,132,210,0.12)',
+                        },
+                      }}
+                    >
+                      <EmojiEmotionsOutlinedIcon sx={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  </Tooltip>
                 )}
               </Box>
             </PostCard>
           </Box>
         );
       })}
+
+      <Menu
+        anchorEl={reactionMenuAnchor?.el ?? null}
+        open={Boolean(reactionMenuAnchor)}
+        onClose={() => setReactionMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              minWidth: 160,
+              bgcolor: 'rgba(20,22,27,0.98)',
+              border: '1px solid rgba(156,187,217,0.2)',
+              borderRadius: 2,
+            },
+          },
+        }}
+      >
+        {CHAT_REACTION_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.value}
+            onClick={() => {
+              if (reactionMenuAnchor) {
+                onReaction?.(reactionMenuAnchor.messageId, option.value);
+                setReactionMenuAnchor(null);
+              }
+            }}
+            sx={{ gap: 1, py: 0.75 }}
+          >
+            <span aria-hidden="true" style={{ fontSize: '1.25rem' }}>
+              {option.emoji}
+            </span>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
 
       {showTyping && typingAvatarUrl && (
         <Box

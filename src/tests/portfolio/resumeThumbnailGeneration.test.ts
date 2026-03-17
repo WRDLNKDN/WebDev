@@ -29,4 +29,16 @@ describe('generateResumeThumbnailPng', () => {
     expect(output.byteLength).toBeGreaterThan(0);
     expect(output.subarray(0, 8).toString('hex')).toBe(PNG_HEADER_HEX);
   });
+
+  it('generates a placeholder thumbnail for .pdf', async () => {
+    const pdfBuffer = Buffer.from('%PDF-1.4 dummy content', 'utf8');
+
+    const output = await generateResumeThumbnailPng(
+      pdfBuffer,
+      'user-123/resume.pdf',
+    );
+
+    expect(output.byteLength).toBeGreaterThan(0);
+    expect(output.subarray(0, 8).toString('hex')).toBe(PNG_HEADER_HEX);
+  });
 });

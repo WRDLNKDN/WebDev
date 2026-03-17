@@ -22,7 +22,7 @@ type FeedReactionCountSource = Pick<
   | 'rage_count'
 >;
 
-export type FeedReactionSummaryItem = SharedReactionOption<ReactionType> & {
+type FeedReactionSummaryItem = SharedReactionOption<ReactionType> & {
   count: number;
 };
 
@@ -85,7 +85,7 @@ export function getFeedReactionCount(
   }
 }
 
-export function getFeedDisplayedReactionCount(
+function getFeedDisplayedReactionCount(
   source: FeedReactionCountSource,
   type: ReactionType,
   viewerReaction?: ReactionType | null,

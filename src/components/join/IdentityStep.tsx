@@ -230,8 +230,11 @@ export const IdentityStep = () => {
           sx={{ ...signupPaper, bgcolor: 'transparent', border: 'none' }}
         >
           <Box sx={identityStepChecking}>
-            <CircularProgress size={24} />
-            <Typography>Checking authentication...</Typography>
+            <CircularProgress
+              size={24}
+              aria-label="Authorization in progress"
+            />
+            <Typography>Authorization in Progress</Typography>
           </Box>
         </Paper>
       </Box>

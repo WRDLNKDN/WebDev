@@ -19,6 +19,7 @@ import {
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { POLICY_VERSION } from '../../types/join';
+import { JoinInterestsSelector } from './profile/JoinInterestsSelector';
 import { ProfileStepHero } from './profile/ProfileStepHero';
 import { ProfileStepMarketingOptIn } from './profile/ProfileStepMarketingOptIn';
 import { ProfileStepPreviewCard } from './profile/ProfileStepPreviewCard';
@@ -42,6 +43,10 @@ const ProfileStep = () => {
   const [marketingOptIn, setMarketingOptIn] = useState(
     state.profile?.marketingOptIn ?? false,
   );
+  const [interests, setInterests] = useState<string[]>(
+    state.profile?.interests ?? [],
+  );
+  const [interestsError, setInterestsError] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const combinedError = localError ?? submitError;
@@ -63,7 +68,11 @@ const ProfileStep = () => {
       return;
     }
 
-    const profileData = { displayName: displayName.trim(), marketingOptIn };
+    const profileData = {
+      displayName: displayName.trim(),
+      marketingOptIn,
+      interests: interests.slice(0, 8),
+    };
     setProfile(profileData);
 
     try {
@@ -92,7 +101,11 @@ const ProfileStep = () => {
   };
 
   const handleBack = () => {
-    setProfile({ displayName: displayName.trim(), marketingOptIn });
+    setProfile({
+      displayName: displayName.trim(),
+      marketingOptIn,
+      interests: interests.slice(0, 8),
+    });
     goToStep('values');
   };
 
@@ -162,6 +175,20 @@ const ProfileStep = () => {
                 : 'Visible across the community'
             }
             sx={FORM_OUTLINED_FIELD_SX}
+          />
+        </Box>
+
+        {/* Interests */}
+        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
+          <JoinInterestsSelector
+            value={interests}
+            onChange={(next) => {
+              setInterestsError(null);
+              setInterests(next);
+            }}
+            disabled={submitting}
+            error={interestsError ?? undefined}
+            onValidationError={(msg) => setInterestsError(msg || null)}
           />
         </Box>
 

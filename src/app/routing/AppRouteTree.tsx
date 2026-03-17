@@ -190,8 +190,10 @@ export const AppRouteTree = ({
       <Route
         path="/games"
         element={
-          <RequireFeatureFlag flagKey="games">
-            <DivergencePage />
+          <RequireFeatureFlag flagKey="games" fallbackTo="/">
+            <RequireOnboarded>
+              <Navigate to="/dashboard/games" replace />
+            </RequireOnboarded>
           </RequireFeatureFlag>
         }
       />

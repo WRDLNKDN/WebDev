@@ -23,6 +23,11 @@ import {
   parseNicheValues,
   serializeNicheValues,
 } from '../../lib/profile/nicheValues';
+import {
+  getProfanityOverrides,
+  getProfanityAllowlist,
+  validateProfanity,
+} from '../../lib/validation/profanity';
 import { toMessage } from '../../lib/utils/errors';
 import type {
   DashboardProfile,
@@ -253,6 +258,14 @@ export const EditProfileDialog = ({
 
     try {
       setBusy(true);
+      const [blocklist, allowlist] = await Promise.all([
+        getProfanityOverrides(),
+        getProfanityAllowlist(),
+      ]);
+      validateProfanity(formData.bio, blocklist, allowlist);
+      for (const value of parseNicheValues(formData.niche_field)) {
+        validateProfanity(value, blocklist, allowlist);
+      }
       const skillsArr = formData.skills
         .split(',')
         .map((s) => s.trim())

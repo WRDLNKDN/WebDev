@@ -51,6 +51,11 @@ import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
 } from '../../constants/industryTaxonomy';
+import {
+  expandInterestFilterValues,
+  INTEREST_CATEGORIES,
+  INTEREST_OPTIONS_FLAT,
+} from '../../constants/interestTaxonomy';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { filterSelectMenuProps } from '../../theme/filterControls';
@@ -149,6 +154,7 @@ export const Directory = () => {
   const secondaryIndustry = searchParams.get('secondary_industry') ?? '';
   const location = searchParams.get('location') ?? '';
   const skillsParam = searchParams.get('skills') ?? '';
+  const interestsParam = searchParams.get('interests') ?? '';
   const connectionStatus = searchParams.get('connection_status') ?? '';
   const sort = searchParams.get('sort') ?? 'recently_active';
   const normalizedConnectionStatus = DIRECTORY_CONNECTION_FILTERS.includes(
@@ -178,8 +184,35 @@ export const Directory = () => {
   const hasInitialDataRef = useRef(false);
 
   const skills = useMemo(
-    () => (skillsParam ? skillsParam.split(',').filter(Boolean) : []),
+    () =>
+      skillsParam
+        ? skillsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
     [skillsParam],
+  );
+  const interests = useMemo(
+    () =>
+      interestsParam
+        ? interestsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+    [interestsParam],
+  );
+  const interestsExpanded = useMemo(
+    () => expandInterestFilterValues(interests),
+    [interests],
+  );
+  const interestFilterOptions = useMemo(
+    () => [
+      ...INTEREST_CATEGORIES.filter((c) => c !== 'Other'),
+      ...INTEREST_OPTIONS_FLAT.map((o) => o.label),
+    ],
+    [],
   );
 
   const queryCacheKey = useMemo(
@@ -190,6 +223,7 @@ export const Directory = () => {
         secondaryIndustry,
         location,
         skills,
+        interests,
         connectionStatus: normalizedConnectionStatus,
         sort,
       }),
@@ -199,6 +233,7 @@ export const Directory = () => {
       secondaryIndustry,
       location,
       skills,
+      interests,
       normalizedConnectionStatus,
       sort,
     ],
@@ -246,6 +281,8 @@ export const Directory = () => {
           secondary_industry: secondaryIndustry || undefined,
           location: location || undefined,
           skills: skills.length ? skills : undefined,
+          interests:
+            interestsExpanded.length > 0 ? interestsExpanded : undefined,
           connection_status: normalizedConnectionStatus || undefined,
           sort: (sort || 'recently_active') as DirectorySort,
           offset,
@@ -281,6 +318,7 @@ export const Directory = () => {
       secondaryIndustry,
       location,
       skills,
+      interestsExpanded,
       normalizedConnectionStatus,
       sort,
     ],
@@ -358,6 +396,7 @@ export const Directory = () => {
         location: '',
         connection_status: '',
         skills: '',
+        interests: '',
       });
       setLocationInput('');
       if (isMobileFilters) {
@@ -502,7 +541,8 @@ export const Directory = () => {
     secondaryIndustry ||
     location ||
     normalizedConnectionStatus ||
-    skills.length
+    skills.length ||
+    interests.length
   );
   useEffect(() => {
     if (!isMobileFilters) {
@@ -521,6 +561,7 @@ export const Directory = () => {
     location,
     normalizedConnectionStatus,
     ...skills,
+    ...interests,
   ].filter(Boolean).length;
 
   const mobileControlsToggleLabel = mobileControlsOpen
@@ -634,8 +675,8 @@ export const Directory = () => {
                   lineHeight: 1.55,
                 }}
               >
-                Search by name, skills, industry, or location to find the right
-                members faster.
+                Search by name, skills, interests, industry, or location to find
+                the right members faster.
               </Typography>
             </Box>
 
@@ -649,7 +690,7 @@ export const Directory = () => {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Search by name, tagline, industry, location, skills..."
+                placeholder="Search by name, tagline, industry, location, skills, interests..."
                 value={q}
                 onChange={(e) =>
                   updateUrl({
@@ -987,6 +1028,54 @@ export const Directory = () => {
                       <MenuItem value="not_connected">Not connected</MenuItem>
                       <MenuItem value="connected">Connected</MenuItem>
                     </Select>
+
+                    {/* Interest multi-select: category or individual interest */}
+                    <Select
+                      multiple
+                      displayEmpty
+                      value={interests}
+                      inputProps={{ 'aria-label': 'Interest' }}
+                      renderValue={(selected) =>
+                        selected.length > 0 ? selected.join(', ') : 'Interest'
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const next =
+                          typeof value === 'string' ? value.split(',') : value;
+                        updateUrl({
+                          interests: next.length > 0 ? next.join(',') : '',
+                        });
+                      }}
+                      MenuProps={{
+                        ...filterSelectMenuProps,
+                        autoFocus: false,
+                      }}
+                      IconComponent={KeyboardArrowDownIcon}
+                      sx={{
+                        ...chipSelectSx,
+                        minWidth: 120,
+                        '& .MuiSelect-select': {
+                          ...chipSelectSx['& .MuiSelect-select'],
+                          fontWeight: interests.length ? 600 : 500,
+                          color: interests.length
+                            ? '#fff'
+                            : 'rgba(255,255,255,0.7)',
+                        },
+                        ...(interests.length
+                          ? {
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#3b82f6 !important',
+                              },
+                            }
+                          : {}),
+                      }}
+                    >
+                      {interestFilterOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
                   </Box>
 
                   {/* Location — kept inside the same filter toolbar */}
@@ -1144,6 +1233,27 @@ export const Directory = () => {
                         onDelete={() =>
                           updateUrl({
                             skills: skills.filter((x) => x !== s).join(','),
+                          })
+                        }
+                        sx={{
+                          bgcolor: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          color: 'rgba(255,255,255,0.75)',
+                          height: 28,
+                        }}
+                      />
+                    ))}
+                    {interests.map((i) => (
+                      <Chip
+                        key={i}
+                        data-testid={`directory-active-filter-interest-${i}`}
+                        size="small"
+                        label={i}
+                        onDelete={() =>
+                          updateUrl({
+                            interests: interests
+                              .filter((x) => x !== i)
+                              .join(','),
                           })
                         }
                         sx={{

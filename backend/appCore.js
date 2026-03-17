@@ -1569,6 +1569,16 @@ app.get('/api/directory', async (req, res) => {
       : Array.isArray(skillsRaw)
         ? skillsRaw.map((s) => String(s).trim()).filter(Boolean)
         : [];
+  const interestsRaw = req.query.interests;
+  const interestsArr =
+    typeof interestsRaw === 'string'
+      ? interestsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : Array.isArray(interestsRaw)
+        ? interestsRaw.map((s) => String(s).trim()).filter(Boolean)
+        : [];
   const { data: rows, error } = await adminSupabase.rpc('get_directory_page', {
     p_viewer_id: userId,
     p_search: search,
@@ -1576,6 +1586,7 @@ app.get('/api/directory', async (req, res) => {
     p_secondary_industry: secondaryIndustry,
     p_location: location,
     p_skills: skillsArr.length > 0 ? skillsArr : null,
+    p_interests: interestsArr.length > 0 ? interestsArr : null,
     p_connection_status: connectionStatus,
     p_sort: sort,
     p_offset: offset,

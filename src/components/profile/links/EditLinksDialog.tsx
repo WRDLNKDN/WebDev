@@ -37,6 +37,7 @@ import {
   dialogSelectSx,
   dialogTextFieldSx,
   filterSelectMenuProps,
+  PLATFORM_DROPDOWN_MAX_HEIGHT,
 } from '../../../theme/filterControls';
 import {
   shouldCloseDialogFromReason,
@@ -537,6 +538,9 @@ export const EditLinksDialog = ({
                             bgcolor: 'rgba(20,20,20,0.98)',
                             border: '1px solid rgba(156,187,217,0.26)',
                             boxShadow: '0 20px 40px rgba(0,0,0,0.55)',
+                            maxHeight: PLATFORM_DROPDOWN_MAX_HEIGHT,
+                            overflowY: 'auto',
+                            scrollBehavior: 'smooth',
                           },
                         },
                         popper: {

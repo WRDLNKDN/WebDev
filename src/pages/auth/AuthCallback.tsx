@@ -1,4 +1,10 @@
-import { Box, Container } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Container,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
@@ -305,7 +311,39 @@ export const AuthCallback = () => {
   }, [error, postAuthCallbackLog]);
 
   if (!error) {
-    return null;
+    return (
+      <Box
+        sx={{
+          ...SIGNUP_BG,
+          minHeight: '100dvh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 2,
+        }}
+      >
+        <Container maxWidth="sm">
+          <Stack
+            spacing={2}
+            alignItems="center"
+            sx={{ color: '#FFFFFF', textAlign: 'center' }}
+          >
+            <CircularProgress
+              size={40}
+              thickness={4}
+              sx={{ color: 'primary.main' }}
+              aria-label="Authorization in progress"
+            />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Authorization in Progress
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85 }}>
+              Connecting your account. Please wait.
+            </Typography>
+          </Stack>
+        </Container>
+      </Box>
+    );
   }
 
   return (

@@ -38,6 +38,7 @@ export interface DirectoryParams {
   secondary_industry?: string;
   location?: string;
   skills?: string[];
+  interests?: string[];
   connection_status?: ConnectionState;
   sort?: DirectorySort;
   offset?: number;

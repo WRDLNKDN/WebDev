@@ -2,6 +2,10 @@ import {
   Autocomplete,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   FormHelperText,
   MenuItem,
@@ -34,6 +38,15 @@ import {
 } from '../../../lib/profile/nicheValues';
 import type { EditProfileFormData } from './types';
 
+/** Message for clear-all confirmation on multi-select fields (Industries and others). */
+export const CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE =
+  'Warning - you are about to remove all entries. Continue?';
+
+type ClearConfirmTarget =
+  | { type: 'sub-industries'; idx: number }
+  | { type: 'other' }
+  | null;
+
 type Props = {
   busy: boolean;
   formData: EditProfileFormData;
@@ -54,6 +67,8 @@ export const EditProfileIndustrySection = ({
   );
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [otherInputValue, setOtherInputValue] = useState('');
+  const [clearConfirmTarget, setClearConfirmTarget] =
+    useState<ClearConfirmTarget>(null);
 
   const setInputValue = (idx: number, value: string) => {
     setStatusMessages((prev) => ({ ...prev, [idx]: '' }));
@@ -98,11 +113,11 @@ export const EditProfileIndustrySection = ({
   };
 
   const commitOtherValue = () => {
-    const nextValue = otherInputValue.trim();
-    if (!nextValue) return false;
+    const parsedFromInput = parseNicheValues(otherInputValue);
+    if (parsedFromInput.length === 0) return false;
 
     const nextValues = parseNicheValues(
-      serializeNicheValues([...otherValues, nextValue]),
+      serializeNicheValues([...otherValues, ...parsedFromInput]),
     );
     onChange((prev) => ({
       ...prev,
@@ -302,6 +317,15 @@ export const EditProfileIndustrySection = ({
                     border: `1px solid ${BORDER_COLOR}`,
                   },
                 },
+                clearIndicator: {
+                  onClick: (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (group.sub_industries.length > 0) {
+                      setClearConfirmTarget({ type: 'sub-industries', idx });
+                    }
+                  },
+                },
               }}
               sx={{ mb: 0.5 }}
             />
@@ -396,12 +420,23 @@ export const EditProfileIndustrySection = ({
               niche_field: serializeNicheValues(values),
             }));
           }}
+          slotProps={{
+            clearIndicator: {
+              onClick: (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (otherValues.length > 0) {
+                  setClearConfirmTarget({ type: 'other' });
+                }
+              },
+            },
+          }}
           renderInput={(params) => (
             <TextField
               {...params}
               variant="filled"
-              placeholder="Add other specialties"
-              helperText="Press comma or Enter to add each value separately."
+              placeholder="Add other specialties (e.g. FinTech, DevSecOps)"
+              helperText="Type or paste comma-separated values; press Enter to add all."
               inputProps={{
                 ...params.inputProps,
                 'aria-label': 'Other industries',
@@ -431,6 +466,65 @@ export const EditProfileIndustrySection = ({
           )}
         />
       </Box>
+
+      <Dialog
+        open={clearConfirmTarget !== null}
+        onClose={() => setClearConfirmTarget(null)}
+        maxWidth="xs"
+        fullWidth
+        aria-labelledby="clear-all-entries-title"
+        aria-describedby="clear-all-entries-description"
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(156,187,217,0.22)',
+          },
+        }}
+      >
+        <DialogTitle id="clear-all-entries-title">Warning</DialogTitle>
+        <DialogContent>
+          <Typography id="clear-all-entries-description" variant="body2">
+            {CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setClearConfirmTarget(null)}
+            sx={{ textTransform: 'none' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (clearConfirmTarget === null) return;
+              if (clearConfirmTarget.type === 'sub-industries') {
+                const idx = clearConfirmTarget.idx;
+                clearInputValue(idx);
+                setStatusMessages((prev) => ({ ...prev, [idx]: '' }));
+                setOpenIndex((current) => (current === idx ? null : current));
+                onChange((prev) => ({
+                  ...prev,
+                  industries: prev.industries.map((item, i) =>
+                    i === idx ? { ...item, sub_industries: [] } : item,
+                  ),
+                }));
+              } else {
+                setOtherInputValue('');
+                onChange((prev) => ({
+                  ...prev,
+                  niche_field: '',
+                }));
+              }
+              setClearConfirmTarget(null);
+            }}
+            sx={{ textTransform: 'none' }}
+          >
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

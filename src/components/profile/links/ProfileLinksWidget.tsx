@@ -152,7 +152,19 @@ export const ProfileLinksWidget = ({
   };
 
   const content = grouped ? (
-    <Stack spacing={1.5} sx={{ width: '100%' }}>
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 1.25,
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, minmax(240px, 1fr))',
+          lg: 'repeat(3, minmax(0, 1fr))',
+        },
+        alignItems: 'start',
+        width: '100%',
+      }}
+    >
       {visibleGroups.map((group) => {
         const isExpanded = collapsible
           ? (expandedGroups[group.category] ?? defaultExpanded)
@@ -163,6 +175,7 @@ export const ProfileLinksWidget = ({
             key={group.category}
             data-testid={`link-group-${group.category}`}
             sx={{
+              minWidth: 0,
               border: '1px solid rgba(156,187,217,0.18)',
               borderRadius: 2,
               bgcolor: 'rgba(56,132,210,0.06)',
@@ -228,7 +241,7 @@ export const ProfileLinksWidget = ({
           </Box>
         );
       })}
-    </Stack>
+    </Box>
   ) : (
     <Stack spacing={1}>{visibleLinks.map((link) => renderLink(link))}</Stack>
   );

@@ -2,10 +2,7 @@ import {
   AddPhotoAlternate as AddPhotoIcon,
   Close as CloseIcon,
   InfoOutlined as InfoOutlinedIcon,
-  InsertDriveFileOutlined as InsertDriveFileOutlinedIcon,
-  Link as LinkIcon,
   Save as SaveIcon,
-  UploadFile as UploadFileIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -29,8 +26,6 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  getProjectFileReductionGuidance,
-  getProjectSourceFileError,
   getProjectThumbnailFileError,
   isProjectSourceStorageUrl,
 } from '../../../lib/portfolio/projectMedia';
@@ -121,7 +116,6 @@ export const AddProjectDialog = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const sourceFileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<NewProject>(emptyForm);
 
@@ -129,14 +123,10 @@ export const AddProjectDialog = ({
   const [selectedThumbnailFile, setSelectedThumbnailFile] = useState<
     File | undefined
   >(undefined);
-  const [selectedSourceFile, setSelectedSourceFile] = useState<
-    File | undefined
-  >(undefined);
   const [previewLoadFailed, setPreviewLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [urlTouched, setUrlTouched] = useState(false);
-  const [sourceMode, setSourceMode] = useState<'upload' | 'url'>('url');
   const [selectedCategory, setSelectedCategory] = useState<
     | (typeof PORTFOLIO_CATEGORY_OPTIONS)[number]
     | typeof PORTFOLIO_OTHER_CATEGORY_OPTION
@@ -145,15 +135,6 @@ export const AddProjectDialog = ({
   const [customCategory, setCustomCategory] = useState('');
 
   const isEdit = Boolean(initialProject && projectId);
-
-  const extractFileName = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return decodeURIComponent(parsed.pathname.split('/').pop() ?? '').trim();
-    } catch {
-      return decodeURIComponent(url.split('/').pop() ?? '').trim();
-    }
-  };
 
   const FieldLabel = ({
     text,
@@ -189,9 +170,6 @@ export const AddProjectDialog = ({
   useEffect(() => {
     if (open && isEdit && initialProject) {
       const initialProjectUrl = initialProject.project_url ?? '';
-      const initialSourceMode = isProjectSourceStorageUrl(initialProjectUrl)
-        ? 'upload'
-        : 'url';
       const categorySelection = getProjectCategorySelection(
         initialProject.tech_stack ?? [],
       );
@@ -199,15 +177,13 @@ export const AddProjectDialog = ({
         title: initialProject.title,
         description: initialProject.description ?? '',
         image_url: initialProject.image_url ?? '',
-        project_url:
-          initialSourceMode === 'url' ? initialProjectUrl : initialProjectUrl,
+        project_url: initialProjectUrl,
         tech_stack: normalizeProjectCategories(
           initialProject.tech_stack ?? [],
           1,
         ),
         is_highlighted: Boolean(initialProject.is_highlighted),
       });
-      setSourceMode(initialSourceMode);
       setSelectedCategory(categorySelection.pickerValue);
       setCustomCategory(categorySelection.customCategory);
       setPreviewUrl(
@@ -218,16 +194,13 @@ export const AddProjectDialog = ({
       );
       setPreviewLoadFailed(false);
       setSelectedThumbnailFile(undefined);
-      setSelectedSourceFile(undefined);
     } else if (open) {
       setFormData(emptyForm);
-      setSourceMode('url');
       setSelectedCategory(null);
       setCustomCategory('');
       setPreviewUrl(null);
       setPreviewLoadFailed(false);
       setSelectedThumbnailFile(undefined);
-      setSelectedSourceFile(undefined);
     }
     if (open) setUrlTouched(false);
   }, [open, initialProject, isEdit]);
@@ -255,25 +228,6 @@ export const AddProjectDialog = ({
     e.target.value = '';
   };
 
-  const handleSourceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const error = getProjectSourceFileError(file);
-      if (error) {
-        setSubmitError(error);
-        setSelectedSourceFile(undefined);
-        e.target.value = '';
-        return;
-      }
-      setSubmitError(null);
-      setSourceMode('upload');
-      setSelectedSourceFile(file);
-      setUrlTouched(false);
-      setFormData((prev) => ({ ...prev, project_url: '' }));
-    }
-    e.target.value = '';
-  };
-
   const removeThumbnailOverride = () => {
     setSelectedThumbnailFile(undefined);
     setPreviewUrl(null);
@@ -296,12 +250,12 @@ export const AddProjectDialog = ({
     ? normalizeProjectCategories([selectedCategoryValue], 1)
     : [];
   const sourceUrl = sanitizePortfolioUrlInput(formData.project_url);
-  const hasStoredUploadedSource = isProjectSourceStorageUrl(sourceUrl);
-  const hasSourceFile = Boolean(selectedSourceFile) || hasStoredUploadedSource;
   const hasExternalUrl =
-    sourceMode === 'url' &&
-    Boolean(sourceUrl) &&
-    !isProjectSourceStorageUrl(sourceUrl);
+    Boolean(sourceUrl) && !isProjectSourceStorageUrl(sourceUrl);
+  const hasExistingStorageUrl =
+    isEdit && Boolean(sourceUrl) && isProjectSourceStorageUrl(sourceUrl);
+  const hasValidProjectUrl =
+    (hasExternalUrl && isExternalUrl(sourceUrl)) || hasExistingStorageUrl;
   const hasValidProtocol = !hasExternalUrl || isExternalUrl(sourceUrl);
   const hasTitle = Boolean(formData.title.trim());
   const hasCategories = normalizedCategories.length > 0;
@@ -344,39 +298,38 @@ export const AddProjectDialog = ({
     normalizedFormUrl && normalizedLinkUrls.has(normalizedFormUrl),
   );
   const urlErrorMessage =
-    sourceMode !== 'url' || !hasExternalUrl || (!urlTouched && !submitError)
+    !hasExternalUrl && !hasExistingStorageUrl
       ? ''
-      : isDuplicateLinkUrl
-        ? 'This URL is already in your links. Use a different URL or add it as a link instead.'
-        : isDuplicateProjectUrl
-          ? 'This URL is already used by another project.'
-          : !hasValidProtocol
-            ? 'Use a full URL starting with https:// or http://.'
-            : urlSafetyError
-              ? urlSafetyError
-              : '';
+      : hasExistingStorageUrl
+        ? ''
+        : !urlTouched && !submitError
+          ? ''
+          : isDuplicateLinkUrl
+            ? 'This URL is already in your links. Use a different URL or add it as a link instead.'
+            : isDuplicateProjectUrl
+              ? 'This URL is already used by another project.'
+              : !hasValidProtocol
+                ? 'Use a full URL starting with https:// or http://.'
+                : urlSafetyError
+                  ? urlSafetyError
+                  : '';
   const blockers: string[] = [];
   if (!hasTitle) blockers.push('add a project name');
   if (!hasCategories) blockers.push('select at least one category');
   if (customCategoryError) blockers.push('fix the custom category');
-  if (!hasSourceFile && !hasExternalUrl)
-    blockers.push('choose a project file or enter a project URL');
-  if (sourceMode === 'url' && hasExternalUrl && !hasValidProtocol)
+  if (!hasValidProjectUrl) blockers.push('add a project URL');
+  if (hasExternalUrl && !hasValidProtocol)
     blockers.push('fix URL format (http/https)');
   if (urlSafetyError) blockers.push('use a professional project URL');
   if (isDuplicateProjectUrl || isDuplicateLinkUrl)
     blockers.push('use a different project URL');
-  if (sourceMode === 'url' && hasSourceFile)
-    blockers.push('remove the uploaded file before using a URL');
   const isSubmitDisabled = busy || blockers.length > 0;
   const readinessItems = [
     { label: 'Project name', ready: hasTitle },
     { label: 'Category', ready: hasCategories && !customCategoryError },
     {
-      label: 'Project source',
-      ready:
-        hasSourceFile ||
-        (hasExternalUrl && hasValidProtocol && !urlErrorMessage),
+      label: 'Project URL',
+      ready: hasValidProjectUrl && !urlErrorMessage,
     },
     { label: 'Description', ready: true, optional: true },
   ];
@@ -386,21 +339,17 @@ export const AddProjectDialog = ({
     const projectSourceUrl = sanitizePortfolioUrlInput(
       formData.project_url ?? '',
     );
-    const hasUploadedSource =
-      sourceMode === 'upload' &&
-      (Boolean(selectedSourceFile) ||
-        isProjectSourceStorageUrl(projectSourceUrl));
-    const hasLinkedSource =
-      sourceMode === 'url' &&
+    const submittingWithExternalUrl =
+      Boolean(projectSourceUrl) && !isProjectSourceStorageUrl(projectSourceUrl);
+    const submittingWithExistingStorageUrl =
+      isEdit &&
       Boolean(projectSourceUrl) &&
-      !isProjectSourceStorageUrl(projectSourceUrl);
-    if (!hasUploadedSource && !hasLinkedSource) {
-      setSubmitError(
-        'Choose exactly one project source: upload a file or enter a Project URL.',
-      );
+      isProjectSourceStorageUrl(projectSourceUrl);
+    if (!submittingWithExternalUrl && !submittingWithExistingStorageUrl) {
+      setSubmitError('Add a project URL before saving.');
       return;
     }
-    if (hasLinkedSource) {
+    if (submittingWithExternalUrl) {
       const validation = await validatePortfolioUrl(projectSourceUrl, {
         checkAccessible: true,
       });
@@ -466,17 +415,13 @@ export const AddProjectDialog = ({
           project_url: projectSourceUrl,
           tech_stack: normalizedCategories,
         },
-        {
-          sourceFile: selectedSourceFile,
-          thumbnailFile: selectedThumbnailFile,
-        },
+        { thumbnailFile: selectedThumbnailFile },
         projectId,
       );
       if (!isEdit) {
         setFormData(emptyForm);
         setPreviewUrl(null);
         setSelectedThumbnailFile(undefined);
-        setSelectedSourceFile(undefined);
       }
       onClose();
     } catch (error) {
@@ -586,8 +531,8 @@ export const AddProjectDialog = ({
               sx={{ maxWidth: 760 }}
             >
               Add a polished portfolio artifact with one canonical category and
-              exactly one source: upload a file or enter a public URL. Optional
-              thumbnail uploads override the generated preview.
+              a project URL (required). Optional thumbnail upload overrides the
+              generated preview.
             </Typography>
           </Stack>
           <Grid
@@ -934,159 +879,24 @@ export const AddProjectDialog = ({
 
                     <Box>
                       <FieldLabel
-                        text="Project Source"
-                        required
-                        tooltip="Choose one source for this artifact: upload a file or enter a public Project URL."
-                      />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 1.25 }}
-                      >
-                        Choose exactly one source. Upload a file or enter a
-                        public link for this artifact.
-                      </Typography>
-                      <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={1}
-                        sx={{ mb: 1.5 }}
-                      >
-                        <Button
-                          type="button"
-                          variant={
-                            sourceMode === 'upload' ? 'contained' : 'outlined'
-                          }
-                          startIcon={<UploadFileIcon />}
-                          onClick={() => {
-                            setSourceMode('upload');
-                            setUrlTouched(false);
-                            if (
-                              !isProjectSourceStorageUrl(formData.project_url)
-                            ) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                project_url: '',
-                              }));
-                            }
-                          }}
-                          sx={{ flex: 1, textTransform: 'none' }}
-                        >
-                          Upload file
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={
-                            sourceMode === 'url' ? 'contained' : 'outlined'
-                          }
-                          startIcon={<LinkIcon />}
-                          onClick={() => {
-                            setSourceMode('url');
-                            setSelectedSourceFile(undefined);
-                            setFormData((prev) => ({
-                              ...prev,
-                              project_url: isProjectSourceStorageUrl(
-                                prev.project_url,
-                              )
-                                ? ''
-                                : prev.project_url || 'https://',
-                            }));
-                          }}
-                          sx={{ flex: 1, textTransform: 'none' }}
-                        >
-                          Enter Project URL
-                        </Button>
-                      </Stack>
-                      {sourceMode === 'upload' ? (
-                        <Box
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 1.25,
-                            border: '1px dashed rgba(156,187,217,0.3)',
-                            bgcolor: 'rgba(56,132,210,0.06)',
-                          }}
-                        >
-                          <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={1.25}
-                            justifyContent="space-between"
-                            alignItems={{ xs: 'stretch', sm: 'center' }}
-                          >
-                            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 600 }}
-                              >
-                                {selectedSourceFile
-                                  ? selectedSourceFile.name
-                                  : hasStoredUploadedSource
-                                    ? extractFileName(sourceUrl)
-                                    : 'No file selected yet'}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Upload a project file up to about 2 MB.
-                                Supported files include images, PDFs, Office
-                                docs, text files, and common video formats.
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {getProjectFileReductionGuidance()}
-                              </Typography>
-                            </Stack>
-                            <Button
-                              type="button"
-                              variant="outlined"
-                              startIcon={<InsertDriveFileOutlinedIcon />}
-                              onClick={() =>
-                                sourceFileInputRef.current?.click()
-                              }
-                              sx={{ textTransform: 'none', flexShrink: 0 }}
-                            >
-                              {selectedSourceFile || hasStoredUploadedSource
-                                ? 'Replace file'
-                                : 'Choose file'}
-                            </Button>
-                          </Stack>
-                          <input
-                            type="file"
-                            hidden
-                            ref={sourceFileInputRef}
-                            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.mp4,.webm,.mov"
-                            onChange={handleSourceFileSelect}
-                          />
-                        </Box>
-                      ) : null}
-                    </Box>
-
-                    <Box>
-                      <FieldLabel
                         text="Project URL"
                         required
-                        tooltip="Public link to your artifact. Must start with http:// or https://."
+                        tooltip="Public link to your artifact (e.g. PDF, Google Doc, Figma). Must be http:// or https://."
                       />
                       <TextField
                         fullWidth
-                        required
                         placeholder="https://example.com/file.pdf or Google Docs/Sheets/Slides link"
                         value={formData.project_url}
                         onChange={(e) => {
-                          if (sourceMode !== 'url') {
-                            setSourceMode('url');
-                            setSelectedSourceFile(undefined);
-                          }
                           if (!urlTouched) setUrlTouched(true);
                           handleChange('project_url')(e);
                         }}
                         onBlur={() => setUrlTouched(true)}
                         variant="outlined"
                         size="small"
-                        disabled={sourceMode !== 'url'}
                         inputProps={{
                           'aria-label': 'Project URL',
+                          'aria-required': true,
                           title:
                             'Public link to your artifact. Must start with http:// or https://.',
                           'data-field-tooltip':
@@ -1099,10 +909,8 @@ export const AddProjectDialog = ({
                           '& .MuiFormHelperText-root': { mx: 0 },
                         }}
                         helperText={
-                          sourceMode !== 'url'
-                            ? 'URL entry is disabled while file upload is selected.'
-                            : urlErrorMessage ||
-                              'Use any public URL (https:// or http://). We verify accessibility when saving.'
+                          urlErrorMessage ||
+                          'Use any public URL (https:// or http://). We verify accessibility when saving.'
                         }
                       />
                     </Box>

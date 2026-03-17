@@ -376,7 +376,7 @@ const decodeResumeStoragePath = (resumeUrl) => {
 const generateAndPersistResumeThumbnail = async (userId, storagePath) => {
   const extension = getResumeExtension(storagePath);
   if (!isSupportedResumeThumbnailExtension(extension)) {
-    throw new Error('Only .doc and .docx are supported');
+    throw new Error('Only .doc, .docx, and .pdf are supported');
   }
   await updateResumeThumbnailState(userId, {
     resume_thumbnail_status: 'pending',
@@ -1772,7 +1772,7 @@ app.post('/api/resumes/generate-thumbnail', requireAuth, async (req, res) => {
   }
   const extension = getResumeExtension(storagePath);
   if (!isSupportedResumeThumbnailExtension(extension)) {
-    return sendApiError(res, 400, 'Only .doc and .docx are supported');
+    return sendApiError(res, 400, 'Only .doc, .docx, and .pdf are supported');
   }
   try {
     const { thumbnailUrl, durationMs } =

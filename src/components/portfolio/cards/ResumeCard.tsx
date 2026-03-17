@@ -1,5 +1,7 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
   Box,
   Button,
@@ -57,6 +59,9 @@ export const ResumeCard = ({
   const hasResume = Boolean(url);
   const hasThumbnail = Boolean(thumbnailUrl);
   const resumeTitle = getResumeDisplayName({ fileName, url });
+  const isPdf =
+    (fileName?.toLowerCase().endsWith('.pdf') ?? false) ||
+    (url?.toLowerCase().includes('.pdf') ?? false);
   const errorSuggestsUnsupported =
     typeof thumbnailError === 'string' &&
     (thumbnailError.toLowerCase().includes('not supported') ||
@@ -135,14 +140,41 @@ export const ResumeCard = ({
                 maxHeight: { xs: 88, md: 100 },
                 flexShrink: 0,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: 0.75,
                 bgcolor: 'rgba(0,0,0,0.2)',
                 borderBottom: '1px solid rgba(156,187,217,0.18)',
+                px: 1,
               }}
+              aria-hidden="true"
             >
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                No image
+              {isPdf ? (
+                <PictureAsPdfIcon
+                  sx={{ fontSize: 40, color: 'rgba(255,255,255,0.7)' }}
+                  aria-hidden
+                />
+              ) : (
+                <DescriptionIcon
+                  sx={{ fontSize: 40, color: 'rgba(255,255,255,0.7)' }}
+                  aria-hidden
+                />
+              )}
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  maxWidth: '100%',
+                }}
+              >
+                {resumeTitle}
               </Typography>
             </Box>
           )}

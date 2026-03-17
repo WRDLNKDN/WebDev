@@ -62,6 +62,15 @@ export const uploadResumeAsset = async ({
     );
   }
 
+  /** Max resume size (align with SPIKE: no auto-compress for documents; enforce limit). */
+  const RESUME_MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+  if (file.size > RESUME_MAX_FILE_BYTES) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    throw new Error(
+      `Resume is too large (${sizeMb} MB). Maximum size is 10 MB. Try compressing the file or using a smaller document.`,
+    );
+  }
+
   const normalizedExt = ext.slice(1);
   const fileName = `${session.user.id}/resume.${normalizedExt}`;
   const originalResumeFileName = file.name?.trim()
@@ -91,13 +100,13 @@ export const uploadResumeAsset = async ({
       resume_thumbnail_error: null,
       resume_thumbnail_updated_at: undefined,
       resume_thumbnail_source_extension: undefined,
-      ...(ext === '.doc' || ext === '.docx'
+      ...(ext === '.doc' || ext === '.docx' || ext === '.pdf'
         ? { resume_thumbnail_status: 'pending' }
         : { resume_thumbnail_status: undefined }),
     },
   } as Partial<DashboardProfile>);
 
-  if (ext === '.doc' || ext === '.docx') {
+  if (ext === '.doc' || ext === '.docx' || ext === '.pdf') {
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),

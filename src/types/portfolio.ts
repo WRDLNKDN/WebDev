@@ -39,6 +39,5 @@ export type NewProject = {
 };
 
 export type ProjectUploadFiles = {
-  sourceFile?: File;
   thumbnailFile?: File;
 };

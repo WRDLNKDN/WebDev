@@ -131,6 +131,60 @@ export const NavbarMobileDrawerExplore = ({
           primaryTypographyProps={{ variant: 'body2' }}
         />
       </ListItemButton>
+      {gamesEnabled && (
+        <>
+          <ListSubheader
+            component="div"
+            sx={{
+              bgcolor: 'transparent',
+              color: 'text.secondary',
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              py: 0.5,
+              px: 2,
+              pt: 1.5,
+            }}
+          >
+            Games
+          </ListSubheader>
+          <ListItemButton
+            component={RouterLink}
+            to="/dashboard/games"
+            onClick={onNavigate}
+            sx={{ minHeight: 40, py: 0.5 }}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <SportsEsportsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="All games"
+              primaryTypographyProps={{ variant: 'body2' }}
+            />
+          </ListItemButton>
+          {[
+            { to: '/dashboard/games', label: 'Phuzzle' },
+            { to: '/dashboard/games/hangman', label: 'Hangman' },
+            { to: '/dashboard/games/snake', label: 'Snake' },
+            { to: '/dashboard/games/slots', label: 'Slots' },
+            { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
+            { to: '/dashboard/games', label: 'Connect 4' },
+            { to: '/dashboard/games', label: 'Checkers' },
+          ].map(({ to, label }) => (
+            <ListItemButton
+              key={label}
+              component={RouterLink}
+              to={to}
+              onClick={onNavigate}
+              sx={{ minHeight: 36, py: 0.5, pl: 4 }}
+            >
+              <ListItemText
+                primary={label}
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItemButton>
+          ))}
+        </>
+      )}
       <ListSubheader
         component="div"
         sx={{
@@ -160,24 +214,6 @@ export const NavbarMobileDrawerExplore = ({
           primaryTypographyProps={{ variant: 'body2' }}
         />
       </ListItemButton>
-      {gamesEnabled && (
-        <ListItemButton
-          component="a"
-          href="https://phuzzle.vercel.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onNavigate}
-          sx={{ minHeight: 40, py: 0.5 }}
-        >
-          <ListItemIcon sx={{ minWidth: 36 }}>
-            <SportsEsportsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText
-            primary="Games"
-            primaryTypographyProps={{ variant: 'body2' }}
-          />
-        </ListItemButton>
-      )}
       <ListSubheader
         component="div"
         sx={{

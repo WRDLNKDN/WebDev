@@ -26,8 +26,13 @@ interface IdentityHeaderProps {
   slotBetweenContentAndActions?: React.ReactNode;
   /** Edit Profile / Settings buttons */
   actions?: React.ReactNode;
-  /** Optional right-side column content used by dashboard's three-column layout. */
+  /**
+   * Right column content. When layoutVariant is 'three-column', use for
+   * Industries only (e.g. IndustryGroupBlock). Do not put Links here.
+   * See docs/PROFILE_LAYOUT.md.
+   */
   rightColumn?: React.ReactNode;
+  /** 'three-column': left=avatar+slotUnderAvatar, center=bio+badges+actions, right=rightColumn (Industries only). */
   layoutVariant?: 'default' | 'three-column';
   /** When set and bio is empty, show "Add bio" button that calls this (Dashboard only). */
   onAddBio?: () => void;

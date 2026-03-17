@@ -207,28 +207,86 @@ export const ExploreSidebar = () => {
           </ListItemButton>
         </ListItem>
         {gamesEnabled && (
-          <ListItem disablePadding>
-            <ListItemButton
-              component="a"
-              href="https://phuzzle.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
+          <>
+            <ListSubheader
+              disableSticky
               sx={{
-                minHeight: 40,
-                py: 0.5,
-                borderRadius: 0,
-                '&:hover': { bgcolor: 'action.hover' },
+                px: 2,
+                pt: 1.5,
+                pb: 0.5,
+                bgcolor: 'transparent',
+                color: 'text.secondary',
+                typography: 'caption',
+                lineHeight: 1.66,
               }}
             >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <SportsEsportsIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Games"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-          </ListItem>
+              Games
+            </ListSubheader>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/dashboard/games"
+                sx={{
+                  minHeight: 40,
+                  py: 0.5,
+                  borderRadius: 0,
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <SportsEsportsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="All games"
+                  primaryTypographyProps={{ variant: 'body2' }}
+                />
+              </ListItemButton>
+            </ListItem>
+            {[
+              { to: '/dashboard/games', label: 'Phuzzle' },
+              { to: '/dashboard/games/hangman', label: 'Hangman' },
+              { to: '/dashboard/games/snake', label: 'Snake' },
+              { to: '/dashboard/games/slots', label: 'Slots' },
+              { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
+              { to: '/dashboard/games', label: 'Connect 4' },
+              { to: '/dashboard/games', label: 'Checkers' },
+              { to: '/dashboard/games/trivia', label: 'Trivia' },
+              { to: '/dashboard/games/2048', label: '2048' },
+              { to: '/dashboard/games', label: 'Two Truths and a Lie' },
+              { to: '/dashboard/games', label: 'Would You Rather' },
+              { to: '/dashboard/games/darts', label: 'Darts' },
+              { to: '/dashboard/games/word-search', label: 'Word Search' },
+              { to: '/dashboard/games', label: 'Battleship' },
+              { to: '/dashboard/games', label: 'Reversi' },
+              { to: '/dashboard/games/breakout', label: 'Breakout' },
+              { to: '/dashboard/games', label: 'Scrabble' },
+              { to: '/dashboard/games', label: 'Tetris' },
+              { to: '/dashboard/games', label: 'Maze Chase' },
+              { to: '/dashboard/games', label: 'Chess' },
+              { to: '/dashboard/games', label: 'Blackjack' },
+              { to: '/dashboard/games', label: 'Daily Word' },
+              { to: '/dashboard/games', label: 'Caption Game' },
+            ].map(({ to, label }) => (
+              <ListItem key={label} disablePadding>
+                <ListItemButton
+                  component={RouterLink}
+                  to={to}
+                  sx={{
+                    minHeight: 36,
+                    py: 0.5,
+                    pl: 4,
+                    borderRadius: 0,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <ListItemText
+                    primary={label}
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </>
         )}
         <ListSubheader
           disableSticky

@@ -64,6 +64,18 @@ export const getNotificationLabel = (row: NotificationRow): string => {
       return `${actor} declined your connection request`;
     case 'event_rsvp':
       return `${actor} RSVP'd to your event`;
+    case 'game_invite':
+      return `${actor} invited you to a game`;
+    case 'game_invite_accepted':
+      return `${actor} accepted your game invitation`;
+    case 'game_invite_declined':
+      return `${actor} declined your game invitation`;
+    case 'game_invite_canceled':
+      return `${actor} canceled the game invitation`;
+    case 'game_your_turn':
+      return `Your turn in a game`;
+    case 'game_completed':
+      return `Game completed`;
     default:
       return `${actor} did something`;
   }

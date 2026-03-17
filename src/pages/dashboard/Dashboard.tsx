@@ -325,6 +325,7 @@ export const Dashboard = () => {
       }}
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        {/* Canonical Identity: left=Avatar+CTAs, center=Bio+Skills+Interests, right=Industries. See docs/PROFILE_LAYOUT.md. */}
         <IdentityHeader
           layoutVariant="three-column"
           displayName={displayName}

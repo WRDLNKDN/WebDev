@@ -2826,3 +2826,3646 @@ begin
     alter publication supabase_realtime add table public.notifications;
   end if;
 end $$;
+
+-- -----------------------------
+-- Game Session Framework (shared infrastructure for Phuzzle, Hangman, Tic-Tac-Toe, etc.)
+-- -----------------------------
+create table if not exists public.game_definitions (
+  id uuid primary key default gen_random_uuid(),
+  game_type text not null unique,
+  name text not null,
+  min_players int not null default 1,
+  max_players int not null default 1,
+  is_solo_capable boolean not null default true,
+  is_multiplayer_capable boolean not null default false,
+  status text not null default 'active' check (status in ('active', 'deprecated')),
+  capabilities jsonb default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.game_definitions is
+  'Registry of game types: player counts, solo/multiplayer, capabilities.';
+
+create table if not exists public.game_sessions (
+  id uuid primary key default gen_random_uuid(),
+  game_definition_id uuid not null references public.game_definitions(id) on delete restrict,
+  created_by uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'draft' check (status in (
+    'draft', 'pending_invitation', 'active', 'waiting_players',
+    'waiting_your_move', 'waiting_opponent_move', 'completed', 'declined', 'canceled', 'expired'
+  )),
+  state_payload jsonb default '{}',
+  result text check (result is null or result in ('winner', 'loser', 'draw', 'solved', 'failed', 'abandoned')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_game_sessions_created_by on public.game_sessions(created_by);
+create index if not exists idx_game_sessions_status on public.game_sessions(status);
+create index if not exists idx_game_sessions_game_definition on public.game_sessions(game_definition_id);
+create index if not exists idx_game_sessions_updated_at on public.game_sessions(updated_at desc);
+
+comment on table public.game_sessions is
+  'One record per active or completed match; state_payload holds game-specific state.';
+
+drop trigger if exists trg_game_sessions_updated_at on public.game_sessions;
+create trigger trg_game_sessions_updated_at
+  before update on public.game_sessions
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.game_session_participants (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.game_sessions(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'player' check (role in ('creator', 'invitee', 'player')),
+  acceptance_state text not null default 'pending' check (acceptance_state in ('pending', 'accepted', 'declined')),
+  turn_order_position int,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (session_id, user_id)
+);
+
+create index if not exists idx_game_session_participants_session on public.game_session_participants(session_id);
+create index if not exists idx_game_session_participants_user on public.game_session_participants(user_id);
+
+comment on table public.game_session_participants is
+  'Players in a session; turn_order_position for turn-based games.';
+
+drop trigger if exists trg_game_session_participants_updated_at on public.game_session_participants;
+create trigger trg_game_session_participants_updated_at
+  before update on public.game_session_participants
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.game_invitations (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.game_sessions(id) on delete cascade,
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'canceled', 'expired')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (session_id, recipient_id),
+  check (sender_id != recipient_id)
+);
+
+create index if not exists idx_game_invitations_recipient on public.game_invitations(recipient_id);
+create index if not exists idx_game_invitations_sender on public.game_invitations(sender_id);
+create index if not exists idx_game_invitations_session on public.game_invitations(session_id);
+create index if not exists idx_game_invitations_pending on public.game_invitations(recipient_id, status)
+  where status = 'pending';
+
+comment on table public.game_invitations is
+  'Invites for multiplayer games; recipient can accept or decline, sender can cancel.';
+
+drop trigger if exists trg_game_invitations_updated_at on public.game_invitations;
+create trigger trg_game_invitations_updated_at
+  before update on public.game_invitations
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.game_events (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.game_sessions(id) on delete cascade,
+  event_type text not null check (event_type in ('move', 'turn_advance', 'completion', 'system')),
+  actor_id uuid references auth.users(id) on delete set null,
+  payload jsonb default '{}',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_game_events_session on public.game_events(session_id);
+create index if not exists idx_game_events_created_at on public.game_events(session_id, created_at desc);
+
+comment on table public.game_events is
+  'Optional audit trail: moves, turn advances, completion, system events.';
+
+-- Extend notifications to support game-related types (idempotent: drop existing type check, add new)
+do $$
+declare
+  conname text;
+begin
+  select c.conname into conname
+  from pg_constraint c
+  join pg_class t on t.oid = c.conrelid
+  where t.relname = 'notifications' and c.contype = 'c'
+    and pg_get_constraintdef(c.oid) like '%type%'
+  limit 1;
+  if conname is not null then
+    execute format('alter table public.notifications drop constraint if exists %I', conname);
+  end if;
+end $$;
+alter table public.notifications add constraint notifications_type_check check (type in (
+  'reaction', 'comment', 'mention', 'chat_message', 'connection_request', 'event_rsvp',
+  'game_invite', 'game_invite_accepted', 'game_invite_declined', 'game_invite_canceled',
+  'game_your_turn', 'game_completed'
+));
+
+-- Seed default game definitions (idempotent)
+insert into public.game_definitions (game_type, name, min_players, max_players, is_solo_capable, is_multiplayer_capable)
+values
+  ('phuzzle', 'Phuzzle', 1, 1, true, false),
+  ('hangman', 'Hangman', 1, 2, true, true),
+  ('tic_tac_toe', 'Tic-Tac-Toe', 2, 2, false, true),
+  ('connect_four', 'Connect 4', 2, 2, false, true),
+  ('snake', 'Snake', 1, 1, true, false),
+  ('slots', 'Slots', 1, 1, true, false),
+  ('checkers', 'Checkers', 2, 2, false, true),
+  ('trivia', 'Trivia', 1, 10, true, true),
+  ('2048', '2048', 1, 1, true, false),
+  ('two_truths_lie', 'Two Truths and a Lie', 2, 10, false, true),
+  ('would_you_rather', 'Would You Rather', 2, 10, false, true),
+  ('darts', 'Darts', 1, 10, true, true),
+  ('caption_game', 'Caption Game', 2, 10, false, true),
+  ('word_search', 'Word Search', 1, 1, true, false),
+  ('battleship', 'Battleship', 2, 2, false, true),
+  ('reversi', 'Reversi', 2, 2, false, true),
+  ('breakout', 'Breakout', 1, 1, true, false),
+  ('scrabble', 'Scrabble', 2, 4, false, true),
+  ('tetris', 'Tetris', 1, 1, true, false),
+  ('maze_chase', 'Maze Chase', 1, 1, true, false),
+  ('chess', 'Chess', 2, 2, false, true),
+  ('blackjack', 'Blackjack', 1, 1, true, false),
+  ('daily_word', 'Daily Word', 1, 1, true, false)
+on conflict (game_type) do nothing;
+
+-- Daily Word (Wordle-style): one puzzle per calendar day for all players; 5-letter word, 6 attempts; hints: correct/present/absent.
+create table if not exists public.daily_puzzle_words (
+  id serial primary key,
+  word text not null unique check (char_length(word) = 5 and word ~ '^[a-zA-Z]+$')
+);
+create index if not exists idx_daily_puzzle_words_word_lower on public.daily_puzzle_words(lower(word));
+comment on table public.daily_puzzle_words is 'Word list for daily word puzzle; one word per day selected by date seed.';
+
+insert into public.daily_puzzle_words (word) values
+  ('about'),('above'),('abuse'),('actor'),('acute'),('admit'),('adopt'),('adult'),('after'),('again'),
+  ('agent'),('agree'),('ahead'),('alarm'),('album'),('alert'),('alien'),('align'),('alike'),('alive'),
+  ('allow'),('alone'),('along'),('alter'),('among'),('angel'),('anger'),('angle'),('angry'),('apart'),
+  ('apple'),('apply'),('arena'),('argue'),('arise'),('array'),('aside'),('asset'),('avoid'),('await'),
+  ('bacon'),('badly'),('baker'),('bases'),('basic'),('basis'),('batch'),('beach'),('began'),('begin'),
+  ('being'),('below'),('bench'),('billy'),('birth'),('black'),('blade'),('blame'),('blank'),('blast'),
+  ('blend'),('bless'),('blind'),('block'),('blood'),('board'),('boost'),('booth'),('bound'),('brain'),
+  ('brand'),('brass'),('brave'),('bread'),('break'),('breed'),('brick'),('brief'),('bring'),('broad'),
+  ('broke'),('build'),('built'),('burst'),('buyer'),('cabin'),('cable'),('calif'),('carry'),('catch'),
+  ('cause'),('chain'),('chair'),('chart'),('chase'),('cheap'),('check'),('chest'),('chief'),('child'),
+  ('china'),('chose'),('civil'),('claim'),('class'),('clean'),('clear'),('click'),('climb'),('clock'),
+  ('close'),('cloth'),('cloud'),('coach'),('coast'),('count'),('court'),('cover'),('crack'),('craft'),
+  ('crash'),('crazy'),('cream'),('crime'),('cross'),('crowd'),('crown'),('curve'),('cycle'),('daily'),
+  ('dance'),('dated'),('dealt'),('death'),('delay'),('delta'),('dense'),('depth'),('dirty'),('doubt'),
+  ('dozen'),('draft'),('drama'),('drawn'),('dream'),('dress'),('drill'),('drink'),('drive'),('drove'),
+  ('eager'),('early'),('earth'),('eight'),('elite'),('empty'),('enemy'),('enjoy'),('enter'),('entry'),
+  ('equal'),('error'),('event'),('every'),('exact'),('exist'),('extra'),('faith'),('false'),('fault'),
+  ('favor'),('feast'),('field'),('fifth'),('fifty'),('fight'),('final'),('first'),('fixed'),('flash'),
+  ('fleet'),('floor'),('fluid'),('focus'),('force'),('forth'),('forty'),('forum'),('found'),('frame'),
+  ('frank'),('fresh'),('front'),('fruit'),('fully'),('giant'),('given'),('glass'),('globe'),('grace'),
+  ('grade'),('grain'),('grand'),('grant'),('grass'),('great'),('green'),('gross'),('group'),('grown'),
+  ('guard'),('guess'),('guest'),('guide'),('habit'),('happy'),('heart'),('heavy'),('hello'),('hence'),
+  ('horse'),('hotel'),('house'),('human'),('ideal'),('image'),('index'),('inner'),('input'),('issue'),
+  ('joint'),('jones'),('judge'),('juice'),('known'),('label'),('large'),('laser'),('later'),('laugh'),
+  ('layer'),('learn'),('least'),('leave'),('legal'),('level'),('light'),('limit'),('local'),('logic'),
+  ('loose'),('lower'),('lucky'),('lunch'),('lying'),('magic'),('major'),('maker'),('march'),('match'),
+  ('maybe'),('mayor'),('meant'),('media'),('metal'),('meter'),('midst'),('might'),('minor'),('minus'),
+  ('mixed'),('model'),('money'),('month'),('moral'),('motor'),('mount'),('mouse'),('mouth'),('movie'),
+  ('music'),('nasty'),('never'),('night'),('noble'),('noise'),('north'),('novel'),('nurse'),('occur'),
+  ('ocean'),('offer'),('often'),('order'),('other'),('ought'),('ounce'),('outer'),('owner'),('panel'),
+  ('paper'),('party'),('peace'),('phase'),('phone'),('photo'),('piece'),('pilot'),('pitch'),('place'),
+  ('plain'),('plane'),('plant'),('plate'),('point'),('pound'),('power'),('press'),('price'),('pride'),
+  ('prime'),('print'),('prior'),('prize'),('proof'),('proud'),('prove'),('queen'),('quick'),('quiet'),
+  ('quite'),('quote'),('radio'),('raise'),('range'),('rapid'),('ratio'),('reach'),('ready'),('refer'),
+  ('right'),('rival'),('river'),('round'),('route'),('royal'),('rural'),('scale'),('scene'),('scope'),
+  ('score'),('sense'),('serve'),('seven'),('shall'),('shape'),('share'),('sharp'),('sheet'),('shelf'),
+  ('shell'),('shift'),('shine'),('shirt'),('shock'),('shoot'),('short'),('shown'),('sight'),('since'),
+  ('skill'),('sleep'),('slide'),('small'),('smart'),('smile'),('smith'),('smoke'),('solid'),('solve'),
+  ('sorry'),('sound'),('south'),('space'),('spare'),('speak'),('speed'),('spend'),('spite'),('split'),
+  ('spoke'),('sport'),('staff'),('stage'),('stake'),('stand'),('start'),('state'),('steam'),('steel'),
+  ('stick'),('still'),('stock'),('stone'),('stood'),('store'),('storm'),('story'),('strip'),('stuck'),
+  ('study'),('stuff'),('style'),('sugar'),('suite'),('super'),('sweet'),('table'),('taken'),('taste'),
+  ('teach'),('teeth'),('thank'),('theme'),('there'),('these'),('thick'),('thing'),('think'),('third'),
+  ('those'),('three'),('throw'),('tight'),('times'),('title'),('today'),('total'),('touch'),('tough'),
+  ('tower'),('track'),('trade'),('train'),('treat'),('trend'),('trial'),('tribe'),('trick'),('tried'),
+  ('truck'),('truly'),('trust'),('truth'),('twice'),('under'),('union'),('unity'),('until'),('upper'),
+  ('urban'),('usual'),('valid'),('value'),('video'),('virus'),('visit'),('vital'),('voice'),('waste'),
+  ('watch'),('water'),('wheel'),('where'),('which'),('while'),('white'),('whole'),('whose'),('woman'),
+  ('world'),('worry'),('worse'),('worst'),('worth'),('would'),('wound'),('write'),('wrong'),('wrote'),
+  ('yield'),('young'),('youth')
+on conflict (word) do nothing;
+
+create or replace function public.get_daily_puzzle_word(p_date date)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_count int;
+  v_idx int;
+  v_word text;
+begin
+  select count(*) into v_count from public.daily_puzzle_words;
+  if v_count = 0 then return null; end if;
+  v_idx := mod(abs(hashtext(to_char(p_date, 'YYYY-MM-DD'))), v_count);
+  select word into v_word from public.daily_puzzle_words order by id limit 1 offset v_idx;
+  return lower(v_word);
+end;
+$$;
+
+create or replace function public.submit_daily_word_guess(p_session_id uuid, p_guess text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_puzzle_date date;
+  v_word text;
+  v_guess text;
+  v_guesses jsonb;
+  v_hints text[];
+  v_i int;
+  v_c char;
+  v_letter_count jsonb;
+  v_used jsonb;
+  v_win boolean;
+  v_game_over boolean;
+  v_result text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  v_guess := lower(trim(p_guess));
+  if length(v_guess) <> 5 or v_guess !~ '^[a-z]+$' then
+    raise exception 'Guess must be exactly 5 letters';
+  end if;
+  if not exists (select 1 from public.daily_puzzle_words where lower(word) = v_guess) then
+    raise exception 'Invalid word';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'daily_word' then
+    raise exception 'Session not found or not Daily Word';
+  end if;
+  if v_session.status = 'completed' then
+    raise exception 'Puzzle already completed';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  v_puzzle_date := (v_state->>'puzzleDate')::date;
+  if v_puzzle_date is null then v_puzzle_date := current_date; end if;
+  v_word := public.get_daily_puzzle_word(v_puzzle_date);
+  if v_word is null then raise exception 'No puzzle word for this date'; end if;
+
+  v_guesses := coalesce(v_state->'guesses', '[]'::jsonb);
+  if jsonb_array_length(v_guesses) >= 6 then
+    raise exception 'No attempts remaining';
+  end if;
+
+  v_hints := array_fill('absent'::text, array[5]);
+  for v_i in 1..5 loop
+    v_c := substr(v_word, v_i, 1);
+    if substr(v_guess, v_i, 1) = v_c then
+      v_hints[v_i] := 'correct';
+    end if;
+  end loop;
+  v_letter_count := '{}'::jsonb;
+  for v_i in 1..5 loop
+    v_c := substr(v_word, v_i, 1);
+    if v_hints[v_i] <> 'correct' then
+      v_letter_count := jsonb_set(v_letter_count, array[v_c], to_jsonb(coalesce((v_letter_count->>v_c)::int, 0) + 1));
+    end if;
+  end loop;
+  v_used := '{}'::jsonb;
+  for v_i in 1..5 loop
+    if v_hints[v_i] = 'correct' then continue; end if;
+    v_c := substr(v_guess, v_i, 1);
+    if (v_letter_count->>v_c)::int > coalesce((v_used->>v_c)::int, 0) then
+      v_hints[v_i] := 'present';
+      v_used := jsonb_set(v_used, array[v_c], to_jsonb(coalesce((v_used->>v_c)::int, 0) + 1));
+    end if;
+  end loop;
+
+  v_guesses := v_guesses || jsonb_build_array(
+    jsonb_build_object('word', v_guess, 'hints', to_jsonb(v_hints))
+  );
+  v_win := (v_guess = v_word);
+  v_game_over := v_win or jsonb_array_length(v_guesses) >= 6;
+  if v_game_over then
+    v_result := case when v_win then 'win' else 'loss' end;
+    update public.game_sessions
+    set state_payload = jsonb_set(jsonb_set(v_state, array['guesses'], v_guesses), array['puzzleDate'], to_jsonb(v_puzzle_date::text)),
+        status = 'completed',
+        result = v_result,
+        updated_at = now()
+    where id = p_session_id;
+  else
+    update public.game_sessions
+    set state_payload = jsonb_set(jsonb_set(v_state, array['guesses'], v_guesses), array['puzzleDate'], to_jsonb(v_puzzle_date::text)),
+        updated_at = now()
+    where id = p_session_id;
+  end if;
+
+  return jsonb_build_object(
+    'hints', to_jsonb(v_hints),
+    'win', v_win,
+    'gameOver', v_game_over,
+    'attemptsUsed', jsonb_array_length(v_guesses)
+  );
+end;
+$$;
+
+create or replace function public.get_or_create_daily_word_session()
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_def_id uuid;
+  v_session_id uuid;
+  v_today text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  v_today := to_char(current_date, 'YYYY-MM-DD');
+  select id into v_def_id from public.game_definitions where game_type = 'daily_word';
+  if v_def_id is null then raise exception 'Daily Word game not found'; end if;
+
+  select gs.id into v_session_id
+  from public.game_sessions gs
+  where gs.game_definition_id = v_def_id
+    and gs.created_by = v_uid
+    and coalesce(gs.state_payload->>'puzzleDate', '') = v_today
+  order by gs.created_at desc
+  limit 1;
+  if v_session_id is not null then return v_session_id; end if;
+
+  insert into public.game_sessions (game_definition_id, created_by, status, state_payload)
+  values (v_def_id, v_uid, 'active', jsonb_build_object('puzzleDate', v_today, 'guesses', '[]'::jsonb))
+  returning id into v_session_id;
+  return v_session_id;
+end;
+$$;
+
+revoke all on function public.get_daily_puzzle_word(date) from public;
+grant execute on function public.get_daily_puzzle_word(date) to authenticated;
+revoke all on function public.submit_daily_word_guess(uuid, text) from public;
+grant execute on function public.submit_daily_word_guess(uuid, text) to authenticated;
+revoke all on function public.get_or_create_daily_word_session() from public;
+grant execute on function public.get_or_create_daily_word_session() to authenticated;
+
+-- Trivia: questions with correct answer and optional choices (multiple choice)
+create table if not exists public.trivia_questions (
+  id uuid primary key default gen_random_uuid(),
+  question_text text not null,
+  correct_answer text not null,
+  choices jsonb default '[]'::jsonb,
+  category text,
+  difficulty text check (difficulty is null or difficulty in ('easy', 'medium', 'hard')),
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_trivia_questions_category on public.trivia_questions(category);
+create index if not exists idx_trivia_questions_difficulty on public.trivia_questions(difficulty);
+comment on table public.trivia_questions is 'Question bank for Trivia; choices is optional array of strings for multiple choice.';
+
+insert into public.trivia_questions (question_text, correct_answer, choices, category, difficulty)
+select * from (values
+  ('What is 2 + 2?', '4', '["3", "4", "5", "6"]'::jsonb, 'math', 'easy'),
+  ('Capital of France?', 'Paris', '["London", "Paris", "Berlin", "Madrid"]'::jsonb, 'geography', 'easy'),
+  ('Largest planet in our solar system?', 'Jupiter', '["Saturn", "Jupiter", "Neptune", "Mars"]'::jsonb, 'science', 'easy'),
+  ('How many continents are there?', '7', '["5", "6", "7", "8"]'::jsonb, 'geography', 'easy'),
+  ('What year did World War II end?', '1945', '["1943", "1944", "1945", "1946"]'::jsonb, 'history', 'medium'),
+  ('Speed of light in vacuum (approx) in m/s?', '299792458', '[]'::jsonb, 'science', 'hard'),
+  ('Who wrote "Romeo and Juliet"?', 'William Shakespeare', '["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"]'::jsonb, 'literature', 'easy'),
+  ('Smallest prime number?', '2', '["0", "1", "2", "3"]'::jsonb, 'math', 'easy'),
+  ('Chemical symbol for gold?', 'Au', '["Ag", "Au", "Fe", "Cu"]'::jsonb, 'science', 'medium'),
+  ('How many sides does a hexagon have?', '6', '["5", "6", "7", "8"]'::jsonb, 'math', 'easy'),
+  ('Which planet is known as the Red Planet?', 'Mars', '["Venus", "Mars", "Jupiter", "Saturn"]'::jsonb, 'science', 'easy'),
+  ('In what country is the Great Wall located?', 'China', '["Japan", "China", "India", "Mongolia"]'::jsonb, 'geography', 'easy'),
+  ('What is the largest ocean on Earth?', 'Pacific', '["Atlantic", "Indian", "Pacific", "Arctic"]'::jsonb, 'geography', 'easy'),
+  ('How many strings does a standard guitar have?', '6', '["4", "5", "6", "7"]'::jsonb, 'music', 'easy'),
+  ('What is the boiling point of water in Celsius?', '100', '["90", "100", "110", "120"]'::jsonb, 'science', 'easy')
+) v(question_text, correct_answer, choices, category, difficulty)
+where not exists (select 1 from public.trivia_questions limit 1);
+
+create or replace function public.get_trivia_questions(
+  p_count int default 5,
+  p_category text default null,
+  p_difficulty text default null
+)
+returns setof public.trivia_questions
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  return query
+  select * from public.trivia_questions t
+  where (p_category is null or t.category = p_category)
+    and (p_difficulty is null or t.difficulty = p_difficulty)
+  order by random()
+  limit greatest(1, least(p_count, 50));
+end;
+$$;
+revoke all on function public.get_trivia_questions(int, text, text) from public;
+grant execute on function public.get_trivia_questions(int, text, text) to authenticated;
+
+-- submit_trivia_answer: validate answer, update score, record answer, advance or complete.
+-- state_payload: questionIds (uuid[]), currentQuestionIndex (int), totalQuestions (int), scores (jsonb {userId: number}), answers (jsonb array of {q, user_id, answer, correct})
+create or replace function public.submit_trivia_answer(
+  p_session_id uuid,
+  p_question_index int,
+  p_answer text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_session record;
+  v_uid uuid;
+  v_state jsonb;
+  v_question_ids jsonb;
+  v_question_id uuid;
+  v_question record;
+  v_correct boolean;
+  v_scores jsonb;
+  v_answers jsonb;
+  v_participants uuid[];
+  v_answered_count int;
+  v_next_index int;
+  v_total int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'trivia' then
+    raise exception 'Invalid session or not a Trivia game';
+  end if;
+  if v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  v_question_ids := v_state->'questionIds';
+  if v_question_ids is null or jsonb_array_length(v_question_ids) = 0 then
+    raise exception 'No questions in session';
+  end if;
+
+  if p_question_index < 0 or p_question_index >= jsonb_array_length(v_question_ids) then
+    raise exception 'Invalid question index';
+  end if;
+
+  v_question_id := (v_question_ids->>p_question_index)::uuid;
+  select id, correct_answer into v_question from public.trivia_questions where id = v_question_id;
+  if v_question.id is null then
+    raise exception 'Question not found';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(coalesce(v_state->'answers', '[]'::jsonb)) a
+    where (a->>'user_id')::uuid = v_uid and (a->>'q')::int = p_question_index
+  ) then
+    return;
+  end if;
+
+  v_correct := trim(lower(coalesce(p_answer, ''))) = trim(lower(v_question.correct_answer));
+
+  v_scores := coalesce(v_state->'scores', '{}'::jsonb);
+  v_scores := jsonb_set(v_scores, array[v_uid::text], to_jsonb((coalesce((v_scores->>v_uid::text)::int, 0)) + case when v_correct then 1 else 0 end));
+
+  v_answers := coalesce(v_state->'answers', '[]'::jsonb);
+  v_answers := v_answers || jsonb_build_array(
+    jsonb_build_object('q', p_question_index, 'user_id', v_uid, 'answer', coalesce(p_answer, ''), 'correct', v_correct)
+  );
+
+  v_state := jsonb_set(jsonb_set(v_state, array['scores'], v_scores), array['answers'], v_answers);
+
+  select array_agg(p.user_id order by p.turn_order_position nulls last)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+
+  select count(distinct (a->>'user_id'))
+  into v_answered_count
+  from jsonb_array_elements(v_answers) a
+  where (a->>'q')::int = p_question_index;
+
+  v_total := jsonb_array_length(v_question_ids);
+  if v_answered_count >= coalesce(array_length(v_participants, 1), 1) then
+    v_next_index := p_question_index + 1;
+    v_state := jsonb_set(v_state, array['currentQuestionIndex'], to_jsonb(v_next_index));
+    if v_next_index >= v_total then
+      update public.game_sessions
+      set status = 'completed', result = 'winner', state_payload = v_state, updated_at = now()
+      where id = p_session_id;
+      return;
+    end if;
+  end if;
+
+  update public.game_sessions
+  set state_payload = v_state, updated_at = now()
+  where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_trivia_answer(uuid, int, text) from public;
+grant execute on function public.submit_trivia_answer(uuid, int, text) to authenticated;
+
+-- Two Truths and a Lie: state has roundIndex, submitterUserId, statements (3 strings), lieIndex (0|1|2), votes {userId: index}, revealed, scores {userId: number}
+create or replace function public.submit_two_truths_lie_statements(
+  p_session_id uuid,
+  p_statements jsonb,
+  p_lie_index int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_submitter uuid;
+  v_stmt text;
+  v_i int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'two_truths_lie' then
+    raise exception 'Invalid session or not Two Truths and a Lie';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'statements') is not null and (v_state->'statements') != 'null'::jsonb then
+    raise exception 'Statements already submitted for this round';
+  end if;
+
+  if p_lie_index is null or p_lie_index < 0 or p_lie_index > 2 then
+    raise exception 'lie_index must be 0, 1, or 2';
+  end if;
+  if jsonb_array_length(p_statements) <> 3 then
+    raise exception 'Exactly 3 statements required';
+  end if;
+  for v_i in 0..2 loop
+    v_stmt := nullif(trim((p_statements->>v_i)::text), '');
+    if v_stmt is null then raise exception 'All statements must be non-empty'; end if;
+  end loop;
+
+  select array_agg(p.user_id order by p.turn_order_position nulls last)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  if not (v_uid = any(v_participants)) then
+    raise exception 'You are not a participant';
+  end if;
+
+  v_submitter := (v_state->>'submitterUserId')::uuid;
+  if v_submitter is null and array_length(v_participants, 1) > 0 then
+    v_submitter := v_participants[1];
+  end if;
+  if v_uid <> v_submitter then
+    raise exception 'Only the submitter for this round may submit statements';
+  end if;
+
+  v_state := jsonb_set(jsonb_set(v_state, array['statements'], p_statements), array['lieIndex'], to_jsonb(p_lie_index));
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_two_truths_lie_statements(uuid, jsonb, int) from public;
+grant execute on function public.submit_two_truths_lie_statements(uuid, jsonb, int) to authenticated;
+
+create or replace function public.submit_two_truths_lie_vote(
+  p_session_id uuid,
+  p_statement_index int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_submitter uuid;
+  v_votes jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'two_truths_lie' then
+    raise exception 'Invalid session or not Two Truths and a Lie';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'statements') is null or (v_state->'statements') = 'null'::jsonb then
+    raise exception 'No statements to vote on yet';
+  end if;
+  if (v_state->'revealed')::text = 'true' then
+    raise exception 'Round already revealed';
+  end if;
+
+  if p_statement_index is null or p_statement_index < 0 or p_statement_index > 2 then
+    raise exception 'statement_index must be 0, 1, or 2';
+  end if;
+
+  select array_agg(p.user_id order by p.turn_order_position nulls last)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  if not (v_uid = any(v_participants)) then
+    raise exception 'You are not a participant';
+  end if;
+
+  v_submitter := (v_state->>'submitterUserId')::uuid;
+  if v_uid = v_submitter then
+    raise exception 'Submitter cannot vote';
+  end if;
+
+  v_votes := coalesce(v_state->'votes', '{}'::jsonb);
+  if (v_votes ? v_uid::text) then
+    raise exception 'You have already voted this round';
+  end if;
+
+  v_votes := jsonb_set(v_votes, array[v_uid::text], to_jsonb(p_statement_index));
+  v_state := jsonb_set(v_state, array['votes'], v_votes);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_two_truths_lie_vote(uuid, int) from public;
+grant execute on function public.submit_two_truths_lie_vote(uuid, int) to authenticated;
+
+create or replace function public.reveal_two_truths_lie(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_scores jsonb;
+  v_lie_index int;
+  v_votes jsonb;
+  v_voter text;
+  v_vote int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'two_truths_lie' then
+    raise exception 'Invalid session or not Two Truths and a Lie';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'revealed')::text = 'true' then
+    return;
+  end if;
+
+  v_lie_index := (v_state->>'lieIndex')::int;
+  v_scores := coalesce(v_state->'scores', '{}'::jsonb);
+  v_votes := coalesce(v_state->'votes', '{}'::jsonb);
+
+  for v_voter in select * from jsonb_object_keys(v_votes) loop
+    v_vote := (v_votes->>v_voter)::int;
+    if v_vote = v_lie_index then
+      v_scores := jsonb_set(v_scores, array[v_voter], to_jsonb((coalesce((v_scores->>v_voter)::int, 0)) + 1));
+    end if;
+  end loop;
+
+  v_state := jsonb_set(jsonb_set(v_state, array['scores'], v_scores), array['revealed'], 'true'::jsonb);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.reveal_two_truths_lie(uuid) from public;
+grant execute on function public.reveal_two_truths_lie(uuid) to authenticated;
+
+create or replace function public.advance_round_two_truths_lie(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_next_index int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'two_truths_lie' then
+    raise exception 'Invalid session or not Two Truths and a Lie';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'revealed')::text <> 'true' then
+    raise exception 'Reveal the round before advancing';
+  end if;
+
+  select array_agg(p.user_id order by p.turn_order_position nulls last)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+
+  v_next_index := coalesce((v_state->>'roundIndex')::int, 0) + 1;
+  v_state := jsonb_build_object(
+    'roundIndex', v_next_index,
+    'submitterUserId', v_participants[1 + (v_next_index % nullif(array_length(v_participants, 1), 0))],
+    'statements', null,
+    'lieIndex', null,
+    'votes', '{}'::jsonb,
+    'revealed', false,
+    'scores', coalesce(v_state->'scores', '{}'::jsonb)
+  );
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.advance_round_two_truths_lie(uuid) from public;
+grant execute on function public.advance_round_two_truths_lie(uuid) to authenticated;
+
+-- Would You Rather: two-option prompts; players vote A or B; results show percentages; prompts rotate
+create table if not exists public.would_you_rather_prompts (
+  id uuid primary key default gen_random_uuid(),
+  text_a text not null,
+  text_b text not null,
+  created_at timestamptz not null default now()
+);
+comment on table public.would_you_rather_prompts is 'Prompt bank for Would You Rather; each row is one A vs B choice.';
+
+insert into public.would_you_rather_prompts (text_a, text_b)
+select * from (values
+  ('Have unlimited coffee for life', 'Have unlimited tea for life'),
+  ('Always be 10 minutes early', 'Always be 10 minutes late'),
+  ('Live without music', 'Live without movies'),
+  ('Have a rewind button in life', 'Have a pause button in life'),
+  ('Be able to speak all languages', 'Be able to talk to animals'),
+  ('Have summer year-round', 'Have winter year-round'),
+  ('Only eat breakfast foods', 'Only eat dinner foods'),
+  ('Give up social media', 'Give up streaming'),
+  ('Travel 100 years back in time', 'Travel 100 years into the future'),
+  ('Have a tiny elephant as a pet', 'Have a full-sized giraffe as a pet')
+) v(text_a, text_b)
+where not exists (select 1 from public.would_you_rather_prompts limit 1);
+
+create or replace function public.get_would_you_rather_prompts(p_count int default 5)
+returns setof public.would_you_rather_prompts
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  return query
+  select * from public.would_you_rather_prompts
+  order by random()
+  limit greatest(1, least(p_count, 20));
+end;
+$$;
+revoke all on function public.get_would_you_rather_prompts(int) from public;
+grant execute on function public.get_would_you_rather_prompts(int) to authenticated;
+
+-- state: promptIds (uuid[]), promptIndex (int), votes (userId -> 'A'|'B'), revealed (bool)
+create or replace function public.submit_would_you_rather_vote(
+  p_session_id uuid,
+  p_choice text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_votes jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_choice is null or p_choice not in ('A', 'B') then
+    raise exception 'Choice must be A or B';
+  end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'would_you_rather' then
+    raise exception 'Invalid session or not Would You Rather';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'revealed')::text = 'true' then
+    raise exception 'Prompt already revealed';
+  end if;
+  if (v_state->'promptIds') is null or jsonb_array_length(v_state->'promptIds') = 0 then
+    raise exception 'No prompts in session';
+  end if;
+
+  select array_agg(p.user_id)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  if not (v_uid = any(v_participants)) then
+    raise exception 'You are not a participant';
+  end if;
+
+  v_votes := coalesce(v_state->'votes', '{}'::jsonb);
+  if (v_votes ? v_uid::text) then
+    raise exception 'You have already voted for this prompt';
+  end if;
+
+  v_votes := jsonb_set(v_votes, array[v_uid::text], to_jsonb(p_choice));
+  v_state := jsonb_set(v_state, array['votes'], v_votes);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_would_you_rather_vote(uuid, text) from public;
+grant execute on function public.submit_would_you_rather_vote(uuid, text) to authenticated;
+
+create or replace function public.reveal_would_you_rather(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_session record;
+  v_state jsonb;
+begin
+  if auth.uid() is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'would_you_rather' then
+    raise exception 'Invalid session or not Would You Rather';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'revealed')::text = 'true' then return; end if;
+
+  v_state := jsonb_set(v_state, array['revealed'], 'true'::jsonb);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.reveal_would_you_rather(uuid) from public;
+grant execute on function public.reveal_would_you_rather(uuid) to authenticated;
+
+create or replace function public.advance_prompt_would_you_rather(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_prompt_ids jsonb;
+  v_next_index int;
+  v_len int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'would_you_rather' then
+    raise exception 'Invalid session or not Would You Rather';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->'revealed')::text <> 'true' then
+    raise exception 'Reveal results before advancing';
+  end if;
+
+  v_prompt_ids := v_state->'promptIds';
+  v_len := jsonb_array_length(v_prompt_ids);
+  v_next_index := coalesce((v_state->>'promptIndex')::int, 0) + 1;
+  if v_next_index >= v_len then
+    v_next_index := 0;
+  end if;
+
+  v_state := jsonb_set(
+    jsonb_set(
+      jsonb_set(v_state, array['promptIndex'], to_jsonb(v_next_index)),
+      array['votes'], '{}'::jsonb
+    ),
+    array['revealed'], 'false'::jsonb
+  );
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.advance_prompt_would_you_rather(uuid) from public;
+grant execute on function public.advance_prompt_would_you_rather(uuid) to authenticated;
+
+-- Darts: state has startingScore (301|501), playerOrder (uuid[]), scores {userId: number}, currentPlayerIndex, currentTurnThrows (int[]), throwHistory, winnerId
+-- Valid throw points: 0-60 (segments), 25 (outer bull), 50 (inner bull). 3 throws per turn. Bust: score < 0 or = 1. Win: score = 0.
+create or replace function public.submit_darts_throw(
+  p_session_id uuid,
+  p_points int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_player_order jsonb;
+  v_current_idx int;
+  v_current_player uuid;
+  v_scores jsonb;
+  v_throws jsonb;
+  v_turn_total int;
+  v_new_score int;
+  v_next_idx int;
+  v_history jsonb;
+  v_starting int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  if p_points is null or p_points < 0 or (p_points > 60 and p_points not in (25, 50)) then
+    raise exception 'Invalid points: must be 0-60, 25, or 50';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'darts' then
+    raise exception 'Invalid session or not Darts';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  v_player_order := v_state->'playerOrder';
+  if v_player_order is null or jsonb_array_length(v_player_order) = 0 then
+    raise exception 'No player order';
+  end if;
+
+  v_current_idx := coalesce((v_state->>'currentPlayerIndex')::int, 0);
+  v_current_player := (v_player_order->>v_current_idx)::uuid;
+  if v_uid <> v_current_player then
+    raise exception 'Not your turn';
+  end if;
+
+  v_throws := coalesce(v_state->'currentTurnThrows', '[]'::jsonb);
+  if jsonb_array_length(v_throws) >= 3 then
+    raise exception 'Turn already has 3 throws';
+  end if;
+
+  v_throws := v_throws || to_jsonb(p_points);
+  v_state := jsonb_set(v_state, array['currentTurnThrows'], v_throws);
+
+  if jsonb_array_length(v_throws) < 3 then
+    update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+    return;
+  end if;
+
+  v_turn_total := (v_throws->>0)::int + (v_throws->>1)::int + (v_throws->>2)::int;
+  v_scores := coalesce(v_state->'scores', '{}'::jsonb);
+  v_new_score := (v_scores->>v_current_player::text)::int - v_turn_total;
+  v_starting := coalesce((v_state->>'startingScore')::int, 501);
+
+  if v_new_score < 0 or v_new_score = 1 then
+    v_new_score := (v_scores->>v_current_player::text)::int;
+  end if;
+
+  v_scores := jsonb_set(v_scores, array[v_current_player::text], to_jsonb(v_new_score));
+  v_history := coalesce(v_state->'throwHistory', '[]'::jsonb);
+  v_history := v_history || jsonb_build_array(
+    jsonb_build_object('playerId', v_current_player, 'throws', v_throws, 'turnTotal', v_turn_total)
+  );
+
+  v_state := jsonb_set(jsonb_set(v_state, array['scores'], v_scores), array['throwHistory'], v_history);
+  v_state := jsonb_set(v_state, array['currentTurnThrows'], '[]'::jsonb);
+
+  if v_new_score = 0 then
+    v_state := jsonb_set(v_state, array['winnerId'], to_jsonb(v_current_player::text));
+    update public.game_sessions
+    set state_payload = v_state, status = 'completed', result = 'winner', updated_at = now()
+    where id = p_session_id;
+    return;
+  end if;
+
+  v_next_idx := (v_current_idx + 1) % jsonb_array_length(v_player_order);
+  v_state := jsonb_set(v_state, array['currentPlayerIndex'], to_jsonb(v_next_idx));
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_darts_throw(uuid, int) from public;
+grant execute on function public.submit_darts_throw(uuid, int) to authenticated;
+
+-- Caption Game: prompt image per round; players submit captions, then vote; top captions recorded
+create table if not exists public.caption_game_images (
+  id uuid primary key default gen_random_uuid(),
+  image_url text not null,
+  alt_text text,
+  created_at timestamptz not null default now()
+);
+comment on table public.caption_game_images is 'Prompt images for Caption Game rounds.';
+
+insert into public.caption_game_images (image_url, alt_text)
+select * from (values
+  ('https://picsum.photos/seed/cap1/400/300', 'Abstract scene'),
+  ('https://picsum.photos/seed/cap2/400/300', 'Nature'),
+  ('https://picsum.photos/seed/cap3/400/300', 'Urban'),
+  ('https://picsum.photos/seed/cap4/400/300', 'Portrait'),
+  ('https://picsum.photos/seed/cap5/400/300', 'Landscape')
+) v(image_url, alt_text)
+where not exists (select 1 from public.caption_game_images limit 1);
+
+create or replace function public.get_caption_game_images(p_count int default 5)
+returns setof public.caption_game_images
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  return query
+  select * from public.caption_game_images
+  order by random()
+  limit greatest(1, least(p_count, 20));
+end;
+$$;
+revoke all on function public.get_caption_game_images(int) from public;
+grant execute on function public.get_caption_game_images(int) to authenticated;
+
+-- state: imageIds[], roundIndex, phase ('submitting'|'voting'|'revealed'), captions [{playerId, text}], votes {userId: index}, roundHistory []
+create or replace function public.submit_caption_game_caption(
+  p_session_id uuid,
+  p_caption_text text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_captions jsonb;
+  v_caption_text text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  v_caption_text := nullif(trim(p_caption_text), '');
+  if v_caption_text is null or length(v_caption_text) > 500 then
+    raise exception 'Caption must be 1-500 characters';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'caption_game' then
+    raise exception 'Invalid session or not Caption Game';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->>'phase') <> 'submitting' then
+    raise exception 'Not in submitting phase';
+  end if;
+
+  select array_agg(p.user_id)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  if not (v_uid = any(v_participants)) then
+    raise exception 'You are not a participant';
+  end if;
+
+  v_captions := coalesce(v_state->'captions', '[]'::jsonb);
+  if exists (
+    select 1 from jsonb_array_elements(v_captions) c
+    where (c->>'playerId')::uuid = v_uid
+  ) then
+    raise exception 'You already submitted a caption this round';
+  end if;
+
+  v_captions := v_captions || jsonb_build_array(jsonb_build_object('playerId', v_uid, 'text', v_caption_text));
+  v_state := jsonb_set(v_state, array['captions'], v_captions);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_caption_game_caption(uuid, text) from public;
+grant execute on function public.submit_caption_game_caption(uuid, text) to authenticated;
+
+create or replace function public.start_caption_game_voting(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_captions jsonb;
+  v_count int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'caption_game' then
+    raise exception 'Invalid session or not Caption Game';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->>'phase') <> 'submitting' then return; end if;
+
+  select array_agg(p.user_id)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  v_captions := coalesce(v_state->'captions', '[]'::jsonb);
+  v_count := jsonb_array_length(v_captions);
+  if v_count < array_length(v_participants, 1) then
+    raise exception 'Not everyone has submitted a caption yet';
+  end if;
+
+  v_state := jsonb_set(v_state, array['phase'], '"voting"'::jsonb);
+  v_state := jsonb_set(v_state, array['votes'], '{}'::jsonb);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.start_caption_game_voting(uuid) from public;
+grant execute on function public.start_caption_game_voting(uuid) to authenticated;
+
+create or replace function public.submit_caption_game_vote(
+  p_session_id uuid,
+  p_caption_index int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_captions jsonb;
+  v_votes jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'caption_game' then
+    raise exception 'Invalid session or not Caption Game';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->>'phase') <> 'voting' then
+    raise exception 'Not in voting phase';
+  end if;
+
+  v_captions := v_state->'captions';
+  if p_caption_index is null or p_caption_index < 0 or p_caption_index >= jsonb_array_length(v_captions) then
+    raise exception 'Invalid caption index';
+  end if;
+
+  v_votes := coalesce(v_state->'votes', '{}'::jsonb);
+  if (v_votes ? v_uid::text) then
+    raise exception 'You already voted';
+  end if;
+
+  v_votes := jsonb_set(v_votes, array[v_uid::text], to_jsonb(p_caption_index));
+  v_state := jsonb_set(v_state, array['votes'], v_votes);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_caption_game_vote(uuid, int) from public;
+grant execute on function public.submit_caption_game_vote(uuid, int) to authenticated;
+
+create or replace function public.reveal_caption_game_round(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_session record;
+  v_state jsonb;
+  v_participants uuid[];
+  v_votes jsonb;
+begin
+  if auth.uid() is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'caption_game' then
+    raise exception 'Invalid session or not Caption Game';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->>'phase') <> 'voting' then return; end if;
+
+  select array_agg(p.user_id)
+  into v_participants
+  from public.game_session_participants p
+  where p.session_id = p_session_id and p.acceptance_state = 'accepted';
+  v_votes := v_state->'votes';
+  if (select count(*) from jsonb_each(v_votes)) < array_length(v_participants, 1) then
+    raise exception 'Not everyone has voted yet';
+  end if;
+
+  v_state := jsonb_set(v_state, array['phase'], '"revealed"'::jsonb);
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.reveal_caption_game_round(uuid) from public;
+grant execute on function public.reveal_caption_game_round(uuid) to authenticated;
+
+create or replace function public.advance_caption_game_round(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_image_ids jsonb;
+  v_round int;
+  v_next_round int;
+  v_history jsonb;
+  v_votes jsonb;
+  v_captions jsonb;
+  v_vote_counts jsonb;
+  v_i int;
+  v_idx int;
+  v_top jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'caption_game' then
+    raise exception 'Invalid session or not Caption Game';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if (v_state->>'phase') <> 'revealed' then
+    raise exception 'Reveal results before advancing';
+  end if;
+
+  v_image_ids := v_state->'imageIds';
+  v_round := coalesce((v_state->>'roundIndex')::int, 0);
+  v_next_round := v_round + 1;
+
+  v_captions := v_state->'captions';
+  v_votes := v_state->'votes';
+  v_vote_counts := '{}'::jsonb;
+  for v_i in 0..jsonb_array_length(v_captions)-1 loop
+    v_vote_counts := jsonb_set(v_vote_counts, array[v_i::text],
+      to_jsonb((select count(*) from jsonb_each_text(v_votes) where value::int = v_i)));
+  end loop;
+  v_history := coalesce(v_state->'roundHistory', '[]'::jsonb);
+  v_top := (
+    select coalesce(jsonb_agg(idx), '[]'::jsonb)
+    from (
+      select idx::int as idx
+      from generate_series(0, jsonb_array_length(v_captions)-1) idx
+      order by (v_vote_counts->>idx::text)::int desc nulls last
+      limit 3
+    ) t
+  );
+  v_history := v_history || jsonb_build_array(
+    jsonb_build_object(
+      'roundIndex', v_round,
+      'imageId', v_state->'currentImageId',
+      'captions', v_captions,
+      'voteCounts', v_vote_counts,
+      'topCaptionIndices', coalesce(v_top, '[]'::jsonb)
+    )
+  );
+
+  if v_next_round >= jsonb_array_length(v_image_ids) then
+    update public.game_sessions
+    set state_payload = jsonb_set(v_state, array['roundHistory'], v_history),
+        status = 'completed', result = 'winner', updated_at = now()
+    where id = p_session_id;
+    return;
+  end if;
+
+  v_state := jsonb_build_object(
+    'imageIds', v_image_ids,
+    'roundIndex', v_next_round,
+    'currentImageId', v_image_ids->v_next_round,
+    'phase', 'submitting',
+    'captions', '[]'::jsonb,
+    'votes', '{}'::jsonb,
+    'roundHistory', v_history
+  );
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.advance_caption_game_round(uuid) from public;
+grant execute on function public.advance_caption_game_round(uuid) to authenticated;
+
+-- Word Search: timed solo; grid of letters; form words by adjacent path; score by word length; dictionary = hangman_words
+create or replace function public.submit_word_search_word(
+  p_session_id uuid,
+  p_word text,
+  p_path jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_grid jsonb;
+  v_start_time timestamptz;
+  v_duration int;
+  v_found jsonb;
+  v_score int;
+  v_word text;
+  v_path_len int;
+  v_i int;
+  v_j int;
+  v_r int;
+  v_c int;
+  v_r2 int;
+  v_c2 int;
+  v_letter text;
+  v_word_from_path text;
+  v_exists boolean;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  v_word := lower(trim(p_word));
+  if length(v_word) < 2 then
+    raise exception 'Word must be at least 2 characters';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'word_search' then
+    raise exception 'Invalid session or not Word Search';
+  end if;
+  if v_session.status = 'completed' then
+    raise exception 'Game has ended';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  v_start_time := (v_state->>'startTime')::timestamptz;
+  v_duration := coalesce((v_state->>'durationSeconds')::int, 60);
+  if v_start_time is null or (now() - v_start_time) > (v_duration || ' seconds')::interval then
+    update public.game_sessions set status = 'completed', result = 'failed', updated_at = now() where id = p_session_id;
+    raise exception 'Time is up';
+  end if;
+
+  select exists (select 1 from public.hangman_words where lower(word) = v_word) into v_exists;
+  if not v_exists then
+    raise exception 'Word not in dictionary';
+  end if;
+
+  v_path_len := jsonb_array_length(p_path);
+  if v_path_len <> length(v_word) then
+    raise exception 'Path length does not match word length';
+  end if;
+
+  v_grid := v_state->'grid';
+  if v_grid is null or jsonb_array_length(v_grid) = 0 then
+    raise exception 'Invalid grid';
+  end if;
+
+  v_word_from_path := '';
+  for v_i in 0..v_path_len-1 loop
+    v_r := (p_path->v_i->>0)::int;
+    v_c := (p_path->v_i->>1)::int;
+    if v_r is null or v_c is null then
+      raise exception 'Invalid path cell';
+    end if;
+    if v_i > 0 then
+      v_r2 := (p_path->(v_i-1)->>0)::int;
+      v_c2 := (p_path->(v_i-1)->>1)::int;
+      if abs(v_r - v_r2) > 1 or abs(v_c - v_c2) > 1 then
+        raise exception 'Path cells must be adjacent';
+      end if;
+    end if;
+    for v_j in 0..v_i-1 loop
+      if (p_path->v_j->>0)::int = v_r and (p_path->v_j->>1)::int = v_c then
+        raise exception 'Path cannot repeat a cell';
+      end if;
+    end loop;
+    v_letter := (v_grid->v_r->>v_c);
+    if v_letter is null then
+      raise exception 'Invalid path position';
+    end if;
+    v_word_from_path := v_word_from_path || lower(v_letter);
+  end loop;
+
+  if v_word_from_path <> v_word then
+    raise exception 'Path does not spell the word';
+  end if;
+
+  v_found := coalesce(v_state->'foundWords', '[]'::jsonb);
+  if exists (
+    select 1 from jsonb_array_elements_text(v_found) e where e = v_word
+  ) then
+    raise exception 'Word already found';
+  end if;
+
+  v_found := v_found || to_jsonb(v_word);
+
+  v_score := coalesce((v_state->>'score')::int, 0) + length(v_word);
+  v_state := jsonb_set(jsonb_set(v_state, array['foundWords'], v_found), array['score'], to_jsonb(v_score));
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+end;
+$$;
+revoke all on function public.submit_word_search_word(uuid, text, jsonb) from public;
+grant execute on function public.submit_word_search_word(uuid, text, jsonb) to authenticated;
+
+-- Battleship: 2-player, 10x10. Ships: 5,4,3,3,2 cells. state_payload: phase (placing|playing|completed),
+-- creatorShips, inviteeShips (array of {id, positions: [[r,c],...]}), creatorShots, inviteeShots ({r,c,hit}),
+-- currentTurnPosition (0=creator, 1=invitee), winnerPosition when completed.
+create or replace function public.place_battleship_ships(p_session_id uuid, p_ships jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_ship jsonb;
+  v_positions jsonb;
+  v_len int;
+  v_i int;
+  v_j int;
+  v_r int;
+  v_c int;
+  v_r0 int;
+  v_c0 int;
+  v_cells text[];
+  v_expected_len int[] := array[2, 3, 3, 4, 5];
+  v_lengths int[] := array[]::int[];
+  v_prev_r int;
+  v_prev_c int;
+  v_ship_count int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_ships is null or jsonb_typeof(p_ships) <> 'array' or jsonb_array_length(p_ships) <> 5 then
+    raise exception 'Exactly 5 ships required';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'battleship' then
+    raise exception 'Session not found or not Battleship';
+  end if;
+  if v_session.status not in ('active', 'waiting_your_move', 'waiting_opponent_move') then
+    raise exception 'Game not in play';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', 'placing') <> 'placing' then
+    raise exception 'Placement phase is over';
+  end if;
+
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+  if v_creator_id is null or v_invitee_id is null then
+    raise exception 'Session must have two players';
+  end if;
+
+  v_cells := array[]::text[];
+
+  for v_i in 0..4 loop
+    v_ship := p_ships->v_i;
+    if v_ship is null or v_ship->'positions' is null then
+      raise exception 'Ship % must have positions', v_i;
+    end if;
+    v_positions := v_ship->'positions';
+    v_len := jsonb_array_length(v_positions);
+    if v_len < 2 or v_len > 5 then
+      raise exception 'Ship % has invalid length', v_i;
+    end if;
+    v_lengths := v_lengths || v_len;
+
+    v_r0 := (v_positions->0->>0)::int;
+    v_c0 := (v_positions->0->>1)::int;
+    if v_r0 is null or v_c0 is null or v_r0 < 0 or v_r0 > 9 or v_c0 < 0 or v_c0 > 9 then
+      raise exception 'Ship % position out of bounds', v_i;
+    end if;
+    if (v_r0::text || ',' || v_c0::text) = any(v_cells) then
+      raise exception 'Ships cannot overlap';
+    end if;
+    v_cells := v_cells || (v_r0::text || ',' || v_c0::text);
+    v_prev_r := v_r0;
+    v_prev_c := v_c0;
+    for v_j in 1..v_len-1 loop
+      v_r := (v_positions->v_j->>0)::int;
+      v_c := (v_positions->v_j->>1)::int;
+      if v_r is null or v_c is null or v_r < 0 or v_r > 9 or v_c < 0 or v_c > 9 then
+        raise exception 'Ship % position out of bounds', v_i;
+      end if;
+      if abs(v_r - v_prev_r) + abs(v_c - v_prev_c) <> 1 then
+        raise exception 'Ship % cells must be consecutive (horizontal or vertical)', v_i;
+      end if;
+      if (v_r::text || ',' || v_c::text) = any(v_cells) then
+        raise exception 'Ships cannot overlap';
+      end if;
+      v_cells := v_cells || (v_r::text || ',' || v_c::text);
+      v_prev_r := v_r;
+      v_prev_c := v_c;
+    end loop;
+  end loop;
+  if (select array_agg(l order by l) from unnest(v_lengths) as l) <> v_expected_len then
+    raise exception 'Ship lengths must be exactly 5, 4, 3, 3, 2 (one each: 5,4,3,3,2)';
+  end if;
+
+  if v_uid = v_creator_id then
+    v_state := jsonb_set(v_state, array['creatorShips'], p_ships);
+  elsif v_uid = v_invitee_id then
+    v_state := jsonb_set(v_state, array['inviteeShips'], p_ships);
+  else
+    raise exception 'You are not a participant';
+  end if;
+
+  v_ship_count := 0;
+  if jsonb_array_length(coalesce(v_state->'creatorShips', '[]'::jsonb)) = 5 then
+    v_ship_count := v_ship_count + 1;
+  end if;
+  if jsonb_array_length(coalesce(v_state->'inviteeShips', '[]'::jsonb)) = 5 then
+    v_ship_count := v_ship_count + 1;
+  end if;
+  if v_ship_count = 2 then
+    v_state := jsonb_set(jsonb_set(v_state, array['phase'], to_jsonb('playing'::text)), array['currentTurnPosition'], to_jsonb(0));
+  end if;
+
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+  if v_ship_count = 2 then
+    perform public.notify_game_event(v_creator_id, 'game_your_turn', p_session_id, v_uid);
+    perform public.notify_game_event(v_invitee_id, 'game_started', p_session_id, v_uid);
+  end if;
+end;
+$$;
+
+create or replace function public.fire_battleship(p_session_id uuid, p_row int, p_col int)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_opponent_ships jsonb;
+  v_my_shots jsonb;
+  v_ship jsonb;
+  v_positions jsonb;
+  v_i int;
+  v_j int;
+  v_r int;
+  v_c int;
+  v_hit boolean := false;
+  v_sunk boolean;
+  v_all_sunk boolean := true;
+  v_shot jsonb;
+  v_winner_position int;
+  v_other_id uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_row is null or p_col is null or p_row < 0 or p_row > 9 or p_col < 0 or p_col > 9 then
+    raise exception 'Invalid coordinates (0-9)';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'battleship' then
+    raise exception 'Session not found or not Battleship';
+  end if;
+  if v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', '') <> 'playing' then
+    raise exception 'Game not in firing phase';
+  end if;
+
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+
+  if (coalesce((v_state->>'currentTurnPosition')::int, 0) = 0 and v_uid <> v_creator_id)
+     or (coalesce((v_state->>'currentTurnPosition')::int, 0) = 1 and v_uid <> v_invitee_id) then
+    raise exception 'Not your turn';
+  end if;
+
+  if v_uid = v_creator_id then
+    v_opponent_ships := coalesce(v_state->'inviteeShips', '[]'::jsonb);
+    v_my_shots := coalesce(v_state->'creatorShots', '[]'::jsonb);
+  else
+    v_opponent_ships := coalesce(v_state->'creatorShips', '[]'::jsonb);
+    v_my_shots := coalesce(v_state->'inviteeShots', '[]'::jsonb);
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(v_my_shots) s
+    where (s->>'r')::int = p_row and (s->>'c')::int = p_col
+  ) then
+    raise exception 'Already shot at this cell';
+  end if;
+
+  for v_j in 0..jsonb_array_length(v_opponent_ships)-1 loop
+    v_ship := v_opponent_ships->v_j;
+    v_positions := v_ship->'positions';
+    if v_positions is not null then
+      if exists (
+        select 1 from jsonb_array_elements(v_positions) pos
+        where (pos->>0)::int = p_row and (pos->>1)::int = p_col
+      ) then
+        v_hit := true;
+        exit;
+      end if;
+    end if;
+  end loop;
+
+  v_shot := jsonb_build_object('r', p_row, 'c', p_col, 'hit', v_hit);
+  if v_uid = v_creator_id then
+    v_state := jsonb_set(v_state, array['creatorShots'], coalesce(v_state->'creatorShots', '[]'::jsonb) || v_shot);
+  else
+    v_state := jsonb_set(v_state, array['inviteeShots'], coalesce(v_state->'inviteeShots', '[]'::jsonb) || v_shot);
+  end if;
+
+  v_all_sunk := true;
+  for v_j in 0..jsonb_array_length(v_opponent_ships)-1 loop
+    v_ship := v_opponent_ships->v_j;
+    v_positions := v_ship->'positions';
+    v_sunk := true;
+    if v_positions is not null then
+      for v_i in 0..jsonb_array_length(v_positions)-1 loop
+        v_r := (v_positions->v_i->>0)::int;
+        v_c := (v_positions->v_i->>1)::int;
+        if not exists (
+          select 1 from jsonb_array_elements(
+            case when v_uid = v_creator_id then v_state->'creatorShots' else v_state->'inviteeShots' end
+          ) sh where (sh->>'r')::int = v_r and (sh->>'c')::int = v_c
+        ) then
+          v_sunk := false;
+          exit;
+        end if;
+      end loop;
+    end if;
+    if not v_sunk then
+      v_all_sunk := false;
+      exit;
+    end if;
+  end loop;
+
+  if v_all_sunk then
+    v_winner_position := case when v_uid = v_creator_id then 0 else 1 end;
+    v_other_id := case when v_uid = v_creator_id then v_invitee_id else v_creator_id end;
+    v_state := jsonb_set(v_state, array['winnerPosition'], to_jsonb(v_winner_position));
+    update public.game_sessions
+    set status = 'completed', result = 'winner',
+        state_payload = jsonb_set(v_state, array['phase'], to_jsonb('completed'::text)),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('row', p_row, 'col', p_col, 'hit', v_hit, 'winnerPosition', v_winner_position));
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+
+  v_state := jsonb_set(v_state, array['currentTurnPosition'], to_jsonb(1 - (coalesce((v_state->>'currentTurnPosition')::int, 0))));
+  v_other_id := case when (v_state->>'currentTurnPosition')::int = 0 then v_creator_id else v_invitee_id end;
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload)
+  values (p_session_id, 'move', v_uid, jsonb_build_object('row', p_row, 'col', p_col, 'hit', v_hit));
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+revoke all on function public.place_battleship_ships(uuid, jsonb) from public;
+grant execute on function public.place_battleship_ships(uuid, jsonb) to authenticated;
+revoke all on function public.fire_battleship(uuid, int, int) from public;
+grant execute on function public.fire_battleship(uuid, int, int) to authenticated;
+
+-- Reversi (Othello): 8x8, X=creator (black, first), O=invitee (white). Place to capture lines; no moves = pass; both no moves = game over; most pieces wins.
+create or replace function public.make_reversi_move(p_session_id uuid, p_row int, p_col int)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_board jsonb;
+  v_current int;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_my_marker text;
+  v_opp_marker text;
+  v_dirs int[] := array[-1,0,1];
+  v_dr int;
+  v_dc int;
+  v_r int;
+  v_c int;
+  v_cell text;
+  v_valid boolean := false;
+  v_flip_r int[];
+  v_flip_c int[];
+  v_nr int;
+  v_nc int;
+  v_i int;
+  v_opp_moves int := 0;
+  v_my_moves int := 0;
+  v_count_x int := 0;
+  v_count_o int := 0;
+  v_winner_position int;
+  v_other_id uuid;
+  v_j int;
+  v_has_line boolean;
+  v_tr int[];
+  v_tc int[];
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_row is null or p_col is null or p_row < 0 or p_row > 7 or p_col < 0 or p_col > 7 then
+    raise exception 'Invalid coordinates (0-7)';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'reversi' then
+    raise exception 'Session not found or not Reversi';
+  end if;
+  if v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+
+  v_board := coalesce(v_session.state_payload->'board', null);
+  if v_board is null or jsonb_array_length(v_board) <> 8 then
+    v_board := '[
+      ["","","","","","","",""],
+      ["","","","","","","",""],
+      ["","","","","","","",""],
+      ["","","","X","O","","",""],
+      ["","","","O","X","","",""],
+      ["","","","","","","",""],
+      ["","","","","","","",""],
+      ["","","","","","","",""]
+    ]'::jsonb;
+  end if;
+
+  v_current := coalesce((v_session.state_payload->>'currentTurnPosition')::int, 0);
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+  if (v_current = 0 and v_uid <> v_creator_id) or (v_current = 1 and v_uid <> v_invitee_id) then
+    raise exception 'Not your turn';
+  end if;
+
+  v_my_marker := case when v_current = 0 then 'X' else 'O' end;
+  v_opp_marker := case when v_current = 0 then 'O' else 'X' end;
+
+  v_cell := v_board->p_row->>p_col;
+  if v_cell is not null and trim(coalesce(v_cell, '')) <> '' then
+    raise exception 'Cell already occupied';
+  end if;
+
+  v_flip_r := array[]::int[];
+  v_flip_c := array[]::int[];
+
+  for v_dr in select unnest(v_dirs) loop
+    for v_dc in select unnest(v_dirs) loop
+      if v_dr = 0 and v_dc = 0 then continue; end if;
+      v_tr := array[]::int[];
+      v_tc := array[]::int[];
+      v_r := p_row + v_dr;
+      v_c := p_col + v_dc;
+      v_has_line := false;
+      while v_r >= 0 and v_r <= 7 and v_c >= 0 and v_c <= 7 loop
+        v_cell := v_board->v_r->>v_c;
+        if trim(coalesce(v_cell, '')) = v_opp_marker then
+          v_tr := array_append(v_tr, v_r);
+          v_tc := array_append(v_tc, v_c);
+          v_r := v_r + v_dr;
+          v_c := v_c + v_dc;
+        elsif trim(coalesce(v_cell, '')) = v_my_marker then
+          v_has_line := true;
+          exit;
+        else
+          exit;
+        end if;
+      end loop;
+      if v_has_line and array_length(v_tr, 1) > 0 then
+        v_valid := true;
+        v_flip_r := v_flip_r || v_tr;
+        v_flip_c := v_flip_c || v_tc;
+      end if;
+    end loop;
+  end loop;
+
+  if not v_valid then
+    raise exception 'Invalid move: must capture at least one opponent piece';
+  end if;
+
+  v_board := jsonb_set(v_board, array[p_row::text, p_col::text], to_jsonb(v_my_marker));
+  for v_i in 1..coalesce(array_length(v_flip_r, 1), 0) loop
+    v_nr := v_flip_r[v_i];
+    v_nc := v_flip_c[v_i];
+    v_board := jsonb_set(v_board, array[v_nr::text, v_nc::text], to_jsonb(v_my_marker));
+  end loop;
+
+  for v_r in 0..7 loop
+    for v_c in 0..7 loop
+      v_cell := v_board->v_r->>v_c;
+      if trim(coalesce(v_cell, '')) = 'X' then v_count_x := v_count_x + 1;
+      elsif trim(coalesce(v_cell, '')) = 'O' then v_count_o := v_count_o + 1;
+      end if;
+    end loop;
+  end loop;
+
+  v_opp_moves := 0;
+  v_my_moves := 0;
+  for v_r in 0..7 loop
+    for v_c in 0..7 loop
+      v_cell := v_board->v_r->>v_c;
+      if v_cell is null or trim(coalesce(v_cell, '')) = '' then
+        for v_dr in select unnest(v_dirs) loop
+          for v_dc in select unnest(v_dirs) loop
+            if v_dr = 0 and v_dc = 0 then continue; end if;
+            v_nr := v_r + v_dr;
+            v_nc := v_c + v_dc;
+            if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 and trim(coalesce(v_board->v_nr->>v_nc, '')) = v_my_marker then
+              v_nr := v_nr + v_dr;
+              v_nc := v_nc + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                v_cell := v_board->v_nr->>v_nc;
+                if trim(coalesce(v_cell, '')) = v_my_marker then
+                  v_nr := v_nr + v_dr;
+                  v_nc := v_nc + v_dc;
+                elsif trim(coalesce(v_cell, '')) = v_opp_marker then
+                  v_opp_moves := v_opp_moves + 1;
+                  exit;
+                else exit;
+                end if;
+              end loop;
+              exit;
+            end if;
+          end loop;
+          if v_opp_moves > 0 then exit; end if;
+        end loop;
+      end if;
+      if v_opp_moves > 0 then exit; end if;
+    end loop;
+    if v_opp_moves > 0 then exit; end if;
+  end loop;
+
+  for v_r in 0..7 loop
+    for v_c in 0..7 loop
+      v_cell := v_board->v_r->>v_c;
+      if v_cell is null or trim(coalesce(v_cell, '')) = '' then
+        for v_dr in select unnest(v_dirs) loop
+          for v_dc in select unnest(v_dirs) loop
+            if v_dr = 0 and v_dc = 0 then continue; end if;
+            v_nr := v_r + v_dr;
+            v_nc := v_c + v_dc;
+            if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 and trim(coalesce(v_board->v_nr->>v_nc, '')) = v_opp_marker then
+              v_nr := v_nr + v_dr;
+              v_nc := v_nc + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                v_cell := v_board->v_nr->>v_nc;
+                if trim(coalesce(v_cell, '')) = v_opp_marker then
+                  v_nr := v_nr + v_dr;
+                  v_nc := v_nc + v_dc;
+                elsif trim(coalesce(v_cell, '')) = v_my_marker then
+                  v_my_moves := v_my_moves + 1;
+                  exit;
+                else exit;
+                end if;
+              end loop;
+              exit;
+            end if;
+          end loop;
+          if v_my_moves > 0 then exit; end if;
+        end loop;
+      end if;
+      if v_my_moves > 0 then exit; end if;
+    end loop;
+    if v_my_moves > 0 then exit; end if;
+  end loop;
+
+  if v_opp_moves = 0 and v_my_moves = 0 then
+    if v_count_x > v_count_o then
+      v_winner_position := 0;
+    elsif v_count_o > v_count_x then
+      v_winner_position := 1;
+    else
+      v_winner_position := -1;
+    end if;
+    v_other_id := case when v_uid = v_creator_id then v_invitee_id else v_creator_id end;
+    update public.game_sessions
+    set status = 'completed',
+        result = case when v_winner_position < 0 then 'draw' else 'winner' end,
+        state_payload = jsonb_build_object(
+          'board', v_board,
+          'currentTurnPosition', v_current,
+          'winnerPosition', v_winner_position,
+          'countX', v_count_x,
+          'countO', v_count_o
+        ),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('row', p_row, 'col', p_col, 'winnerPosition', v_winner_position));
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+
+  if v_opp_moves > 0 then
+    v_current := 1 - v_current;
+  end if;
+  v_other_id := case when v_current = 0 then v_creator_id else v_invitee_id end;
+  update public.game_sessions
+  set state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current),
+      updated_at = now()
+  where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload)
+  values (p_session_id, 'move', v_uid, jsonb_build_object('row', p_row, 'col', p_col));
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+revoke all on function public.make_reversi_move(uuid, int, int) from public;
+grant execute on function public.make_reversi_move(uuid, int, int) to authenticated;
+
+-- Chess: 2-player, invite one connection. state: phase (waiting_players|playing|completed),
+-- board 8x8 (row 0 = rank 8 black, row 7 = rank 1 white), turn 'white'|'black', moveHistory, captured, castling, enPassantTarget, halfMoveClock, fullMoveNumber, gameOver, winner.
+create or replace function public.start_chess_game(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_count int;
+  v_board jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  select gs.id, gs.state_payload, gd.game_type into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'chess' then
+    raise exception 'Session not found or not Chess';
+  end if;
+  if coalesce(v_session.state_payload->>'phase', '') = 'playing' then
+    raise exception 'Game already started';
+  end if;
+  v_count := (select count(*) from public.game_session_participants where session_id = p_session_id and acceptance_state = 'accepted');
+  if v_count <> 2 then
+    raise exception 'Need exactly 2 accepted players, got %', v_count;
+  end if;
+  v_board := '[
+    ["r","n","b","q","k","b","n","r"],
+    ["p","p","p","p","p","p","p","p"],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["","","","","","","",""],
+    ["P","P","P","P","P","P","P","P"],
+    ["R","N","B","Q","K","B","N","R"]
+  ]'::jsonb;
+  update public.game_sessions
+  set state_payload = jsonb_build_object(
+    'phase', 'playing',
+    'board', v_board,
+    'turn', 'white',
+    'moveHistory', '[]'::jsonb,
+    'captured', jsonb_build_object('white', '[]'::jsonb, 'black', '[]'::jsonb),
+    'castling', jsonb_build_object('whiteKingside', true, 'whiteQueenside', true, 'blackKingside', true, 'blackQueenside', true),
+    'enPassantTarget', null,
+    'halfMoveClock', 0,
+    'fullMoveNumber', 1,
+    'gameOver', null,
+    'winner', null,
+    'inCheck', false
+  ),
+  status = 'active',
+  updated_at = now()
+  where id = p_session_id;
+end;
+$$;
+
+-- Parse square 'e4' to (row, col). Row 0 = rank 8, row 7 = rank 1. Col 0 = a, 7 = h.
+create or replace function public.chess_parse_square(p_sq text)
+returns int[] language plpgsql immutable as $$
+declare
+  v_file int;
+  v_rank int;
+begin
+  if p_sq is null or length(p_sq) <> 2 then return null; end if;
+  v_file := ascii(lower(substr(p_sq, 1, 1))) - ascii('a');
+  v_rank := (substr(p_sq, 2, 1))::int;
+  if v_file < 0 or v_file > 7 or v_rank < 1 or v_rank > 8 then return null; end if;
+  return array[8 - v_rank, v_file];
+end;
+$$;
+
+-- Return new board with piece at (r,c) set to p_piece. Empty = ''.
+create or replace function public.chess_set_cell(p_board jsonb, p_r int, p_c int, p_piece text)
+returns jsonb language sql immutable as $$
+  select jsonb_set(p_board, array[p_r::text, p_c::text], to_jsonb(coalesce(p_piece, '')));
+$$;
+
+-- Get piece at (r,c). Empty returns ''.
+create or replace function public.chess_get_cell(p_board jsonb, p_r int, p_c int)
+returns text language sql immutable as $$
+  select coalesce(nullif(trim(p_board->p_r->>p_c), ''), '');
+$$;
+
+-- Is (p_r, p_c) attacked by side p_white (true = white pieces attack)?
+create or replace function public.chess_square_attacked(p_board jsonb, p_r int, p_c int, p_white boolean)
+returns boolean language plpgsql as $$
+declare
+  v_row int;
+  v_col int;
+  v_piece text;
+  v_dr int; v_dc int; v_nr int; v_nc int;
+  v_fr int; v_fc int;
+begin
+  for v_row in 0..7 loop
+    for v_col in 0..7 loop
+      v_piece := chess_get_cell(p_board, v_row, v_col);
+      if v_piece = '' then continue; end if;
+      if (p_white and v_piece ~ '[A-Z]') or (not p_white and v_piece ~ '[a-z]') then
+        case upper(v_piece)
+          when 'P' then
+            if p_white then if p_r = v_row - 1 and abs(p_c - v_col) = 1 then return true; end if;
+            else if p_r = v_row + 1 and abs(p_c - v_col) = 1 then return true; end if; end if;
+          when 'N' then
+            if abs(v_row - p_r) in (1,2) and abs(v_col - p_c) in (1,2) and abs(v_row - p_r) + abs(v_col - p_c) = 3 then return true; end if;
+          when 'K' then
+            if abs(v_row - p_r) <= 1 and abs(v_col - p_c) <= 1 then return true; end if;
+          when 'R' then
+            if v_row = p_r or v_col = p_c then
+              v_dr := sign(p_r - v_row); v_dc := sign(p_c - v_col);
+              v_nr := v_row + v_dr; v_nc := v_col + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                if v_nr = p_r and v_nc = p_c then return true; end if;
+                if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+                v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+              end loop;
+            end if;
+          when 'B' then
+            if abs(v_row - p_r) = abs(v_col - p_c) then
+              v_dr := sign(p_r - v_row); v_dc := sign(p_c - v_col);
+              v_nr := v_row + v_dr; v_nc := v_col + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                if v_nr = p_r and v_nc = p_c then return true; end if;
+                if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+                v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+              end loop;
+            end if;
+          when 'Q' then
+            if v_row = p_r or v_col = p_c then
+              v_dr := sign(p_r - v_row); v_dc := sign(p_c - v_col);
+              v_nr := v_row + v_dr; v_nc := v_col + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                if v_nr = p_r and v_nc = p_c then return true; end if;
+                if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+                v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+              end loop;
+            end if;
+            if abs(v_row - p_r) = abs(v_col - p_c) then
+              v_dr := sign(p_r - v_row); v_dc := sign(p_c - v_col);
+              v_nr := v_row + v_dr; v_nc := v_col + v_dc;
+              while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+                if v_nr = p_r and v_nc = p_c then return true; end if;
+                if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+                v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+              end loop;
+            end if;
+          else null;
+        end case;
+      end if;
+    end loop;
+  end loop;
+  return false;
+end;
+$$;
+
+-- Make one move on a copy of the board; return new board and captured piece (if any).
+create or replace function public.chess_apply_move(p_board jsonb, p_fr int, p_fc int, p_tr int, p_tc int)
+returns jsonb language plpgsql as $$
+declare
+  v_piece text;
+  v_new jsonb;
+begin
+  v_piece := chess_get_cell(p_board, p_fr, p_fc);
+  v_new := chess_set_cell(p_board, p_fr, p_fc, '');
+  v_new := chess_set_cell(v_new, p_tr, p_tc, v_piece);
+  return v_new;
+end;
+$$;
+
+-- Get all legal (to_r, to_c) for piece at (from_r, from_c). Turn: true = white.
+create or replace function public.chess_legal_targets(
+  p_board jsonb, p_fr int, p_fc int, p_white boolean,
+  p_castling jsonb, p_en_passant text
+)
+returns table(to_r int, to_c int) language plpgsql as $$
+declare
+  v_piece text;
+  v_tr int; v_tc int;
+  v_dr int; v_dc int; v_nr int; v_nc int;
+  v_tmp jsonb;
+  v_king_r int; v_king_c int;
+  v_r int; v_c int;
+  v_pawn_start_row int;
+  v_opp_white boolean;
+begin
+  v_piece := chess_get_cell(p_board, p_fr, p_fc);
+  if v_piece = '' then return; end if;
+  v_opp_white := not p_white;
+  case upper(v_piece)
+    when 'P' then
+      v_pawn_start_row := case when p_white then 6 else 1 end;
+      if p_white then
+        if p_fr > 0 and chess_get_cell(p_board, p_fr - 1, p_fc) = '' then
+          v_tmp := chess_apply_move(p_board, p_fr, p_fc, p_fr - 1, p_fc);
+          v_king_r := 7; v_king_c := 4;
+          for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'K' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+          if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := p_fr - 1; to_c := p_fc; return next; end if;
+        end if;
+        if p_fr = 6 and chess_get_cell(p_board, 5, p_fc) = '' and chess_get_cell(p_board, 4, p_fc) = '' then
+          v_tmp := chess_apply_move(p_board, p_fr, p_fc, 4, p_fc);
+          v_king_r := 7; v_king_c := 4;
+          for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'K' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+          if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := 4; to_c := p_fc; return next; end if;
+        end if;
+        for v_dc in -1, 1 loop
+          v_tc := p_fc + v_dc;
+          if v_tc >= 0 and v_tc <= 7 and p_fr >= 1 then
+            if (chess_get_cell(p_board, p_fr - 1, v_tc) <> '' and chess_get_cell(p_board, p_fr - 1, v_tc) ~ '[a-z]') or (p_en_passant is not null and (p_fr - 1)::text || ',' || v_tc::text = replace(p_en_passant, ' ', '')) then
+              v_tmp := chess_apply_move(p_board, p_fr, p_fc, p_fr - 1, v_tc);
+              v_king_r := 7; v_king_c := 4;
+              for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'K' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+              if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := p_fr - 1; to_c := v_tc; return next; end if;
+            end if;
+          end if;
+        end loop;
+      else
+        if p_fr < 7 and chess_get_cell(p_board, p_fr + 1, p_fc) = '' then
+          v_tmp := chess_apply_move(p_board, p_fr, p_fc, p_fr + 1, p_fc);
+          v_king_r := 0; v_king_c := 4;
+          for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'k' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+          if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := p_fr + 1; to_c := p_fc; return next; end if;
+        end if;
+        if p_fr = 1 and chess_get_cell(p_board, 2, p_fc) = '' and chess_get_cell(p_board, 3, p_fc) = '' then
+          v_tmp := chess_apply_move(p_board, p_fr, p_fc, 3, p_fc);
+          v_king_r := 0; v_king_c := 4;
+          for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'k' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+          if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := 3; to_c := p_fc; return next; end if;
+        end if;
+        for v_dc in -1, 1 loop
+          v_tc := p_fc + v_dc;
+          if v_tc >= 0 and v_tc <= 7 and p_fr <= 6 then
+            if chess_get_cell(p_board, p_fr + 1, v_tc) ~ '[A-Z]' or (p_en_passant is not null) then
+              v_tmp := chess_apply_move(p_board, p_fr, p_fc, p_fr + 1, v_tc);
+              v_king_r := 0; v_king_c := 4;
+              for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'k' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
+              if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := p_fr + 1; to_c := v_tc; return next; end if;
+            end if;
+          end if;
+        end loop;
+      end if;
+    when 'R' then
+      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+        if v_dr = 0 and v_dc = 0 then continue; end if;
+        if v_dr <> 0 and v_dc <> 0 then continue; end if;
+        v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
+        while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+          if (p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[a-z]') or (not p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[A-Z]') or chess_get_cell(p_board, v_nr, v_nc) = '' then
+            v_tmp := chess_apply_move(p_board, p_fr, p_fc, v_nr, v_nc);
+            v_king_r := 0; v_king_c := 4;
+            for v_r in 0..7 loop for v_c in 0..7 loop
+              if (p_white and chess_get_cell(v_tmp, v_r, v_c) = 'K') or (not p_white and chess_get_cell(v_tmp, v_r, v_c) = 'k') then v_king_r := v_r; v_king_c := v_c; end if;
+            end loop; end loop;
+            if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := v_nr; to_c := v_nc; return next; end if;
+          end if;
+          if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+          v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+        end loop;
+      end loop; end loop;
+    when 'B' then
+      for v_dr in -1, 1 loop for v_dc in -1, 1 loop
+        v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
+        while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+          if (p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[a-z]') or (not p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[A-Z]') or chess_get_cell(p_board, v_nr, v_nc) = '' then
+            v_tmp := chess_apply_move(p_board, p_fr, p_fc, v_nr, v_nc);
+            for v_r in 0..7 loop for v_c in 0..7 loop
+              if (p_white and chess_get_cell(v_tmp, v_r, v_c) = 'K') or (not p_white and chess_get_cell(v_tmp, v_r, v_c) = 'k') then v_king_r := v_r; v_king_c := v_c; end if;
+            end loop; end loop;
+            if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := v_nr; to_c := v_nc; return next; end if;
+          end if;
+          if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+          v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+        end loop;
+      end loop; end loop;
+    when 'Q' then
+      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+        if v_dr = 0 and v_dc = 0 then continue; end if;
+        v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
+        while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
+          if (p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[a-z]') or (not p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[A-Z]') or chess_get_cell(p_board, v_nr, v_nc) = '' then
+            v_tmp := chess_apply_move(p_board, p_fr, p_fc, v_nr, v_nc);
+            for v_r in 0..7 loop for v_c in 0..7 loop
+              if (p_white and chess_get_cell(v_tmp, v_r, v_c) = 'K') or (not p_white and chess_get_cell(v_tmp, v_r, v_c) = 'k') then v_king_r := v_r; v_king_c := v_c; end if;
+            end loop; end loop;
+            if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := v_nr; to_c := v_nc; return next; end if;
+          end if;
+          if chess_get_cell(p_board, v_nr, v_nc) <> '' then exit; end if;
+          v_nr := v_nr + v_dr; v_nc := v_nc + v_dc;
+        end loop;
+      end loop; end loop;
+    when 'N' then
+      for v_dr in -2, -1, 1, 2 loop for v_dc in -2, -1, 1, 2 loop
+        if abs(v_dr) + abs(v_dc) <> 3 then continue; end if;
+        v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
+        if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 then
+          v_tmp := chess_get_cell(p_board, v_nr, v_nc);
+          if v_tmp = '' or (p_white and v_tmp ~ '[a-z]') or (not p_white and v_tmp ~ '[A-Z]') then
+            v_tmp := chess_apply_move(p_board, p_fr, p_fc, v_nr, v_nc);
+            for v_r in 0..7 loop for v_c in 0..7 loop
+              if (p_white and chess_get_cell(v_tmp, v_r, v_c) = 'K') or (not p_white and chess_get_cell(v_tmp, v_r, v_c) = 'k') then v_king_r := v_r; v_king_c := v_c; end if;
+            end loop; end loop;
+            if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := v_nr; to_c := v_nc; return next; end if;
+          end if;
+        end if;
+      end loop; end loop;
+    when 'K' then
+      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+        if v_dr = 0 and v_dc = 0 then continue; end if;
+        v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
+        if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 then
+          v_tmp := chess_get_cell(p_board, v_nr, v_nc);
+          if v_tmp = '' or (p_white and v_tmp ~ '[a-z]') or (not p_white and v_tmp ~ '[A-Z]') then
+            v_tmp := chess_apply_move(p_board, p_fr, p_fc, v_nr, v_nc);
+            if not chess_square_attacked(v_tmp, v_nr, v_nc, v_opp_white) then to_r := v_nr; to_c := v_nc; return next; end if;
+          end if;
+        end if;
+      end loop; end loop;
+    else null;
+  end case;
+end;
+$$;
+
+create or replace function public.make_chess_move(p_session_id uuid, p_from_square text, p_to_square text)
+returns void language plpgsql security definer set search_path = public, pg_catalog as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_board jsonb;
+  v_turn text;
+  v_fr int; v_fc int; v_tr int; v_tc int;
+  v_rc int[];
+  v_piece text;
+  v_legal boolean := false;
+  v_creator_id uuid; v_invitee_id uuid;
+  v_other_id uuid;
+  v_new_board jsonb;
+  v_captured text;
+  v_move_history jsonb;
+  v_captured_white jsonb; v_captured_black jsonb;
+  v_castling jsonb;
+  v_en_passant text;
+  v_half int; v_full int;
+  v_opp_white boolean;
+  v_king_r int; v_king_c int;
+  v_has_legal boolean;
+  v_tmp jsonb;
+  v_r int; v_c int;
+  v_next_turn text;
+  v_in_check boolean;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_from_square is null or p_to_square is null or length(p_from_square) <> 2 or length(p_to_square) <> 2 then
+    raise exception 'Invalid squares; use e.g. e2, e4';
+  end if;
+  select gs.id, gs.status, gs.state_payload, gd.game_type into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'chess' then
+    raise exception 'Session not found or not Chess';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game already completed'; end if;
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', '') <> 'playing' then
+    raise exception 'Game not in play';
+  end if;
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+  v_turn := coalesce(v_state->>'turn', 'white');
+  if (v_turn = 'white' and v_uid <> v_creator_id) or (v_turn = 'black' and v_uid <> v_invitee_id) then
+    raise exception 'Not your turn';
+  end if;
+  v_rc := chess_parse_square(p_from_square);
+  if v_rc is null then raise exception 'Invalid from square %', p_from_square; end if;
+  v_fr := v_rc[1]; v_fc := v_rc[2];
+  v_rc := chess_parse_square(p_to_square);
+  if v_rc is null then raise exception 'Invalid to square %', p_to_square; end if;
+  v_tr := v_rc[1]; v_tc := v_rc[2];
+  v_board := v_state->'board';
+  v_piece := chess_get_cell(v_board, v_fr, v_fc);
+  if v_piece = '' then raise exception 'No piece at %', p_from_square; end if;
+  if (v_turn = 'white' and v_piece !~ '[A-Z]') or (v_turn = 'black' and v_piece !~ '[a-z]') then
+    raise exception 'Not your piece';
+  end if;
+  select exists (select 1 from chess_legal_targets(v_board, v_fr, v_fc, v_turn = 'white', coalesce(v_state->'castling', '{}'), v_state->>'enPassantTarget') lt where lt.to_r = v_tr and lt.to_c = v_tc) into v_legal;
+  if not v_legal then raise exception 'Illegal move: % to %', p_from_square, p_to_square; end if;
+  v_captured := chess_get_cell(v_board, v_tr, v_tc);
+  v_new_board := chess_apply_move(v_board, v_fr, v_fc, v_tr, v_tc);
+  v_move_history := coalesce(v_state->'moveHistory', '[]'::jsonb) || jsonb_build_object('from', p_from_square, 'to', p_to_square, 'piece', v_piece, 'captured', case when v_captured = '' then null else v_captured end);
+  v_captured_white := coalesce(v_state->'captured'->'white', '[]'::jsonb);
+  v_captured_black := coalesce(v_state->'captured'->'black', '[]'::jsonb);
+  if v_captured <> '' then
+    if v_turn = 'white' then v_captured_white := v_captured_white || to_jsonb(v_captured); else v_captured_black := v_captured_black || to_jsonb(v_captured); end if;
+  end if;
+  v_castling := coalesce(v_state->'castling', '{}'::jsonb);
+  v_en_passant := null;
+  v_half := coalesce((v_state->>'halfMoveClock')::int, 0);
+  v_full := coalesce((v_state->>'fullMoveNumber')::int, 1);
+  if v_captured <> '' or upper(v_piece) = 'P' then v_half := 0; else v_half := v_half + 1; end if;
+  if v_turn = 'black' then v_full := v_full + 1; end if;
+  if upper(v_piece) = 'P' and abs(v_fr - v_tr) = 2 then v_en_passant := (v_fr + (v_tr - v_fr)/2)::text || ',' || v_fc::text; end if;
+  v_next_turn := case when v_turn = 'white' then 'black' else 'white' end;
+  v_opp_white := (v_next_turn = 'white');
+  v_king_r := 0; v_king_c := 4;
+  for v_r in 0..7 loop for v_c in 0..7 loop
+    if (v_opp_white and chess_get_cell(v_new_board, v_r, v_c) = 'K') or (not v_opp_white and chess_get_cell(v_new_board, v_r, v_c) = 'k') then v_king_r := v_r; v_king_c := v_c; end if;
+  end loop; end loop;
+  v_in_check := chess_square_attacked(v_new_board, v_king_r, v_king_c, not v_opp_white);
+  v_has_legal := false;
+  for v_r in 0..7 loop
+    for v_c in 0..7 loop
+      if (v_opp_white and chess_get_cell(v_new_board, v_r, v_c) ~ '[A-Z]') or (not v_opp_white and chess_get_cell(v_new_board, v_r, v_c) ~ '[a-z]') then
+        if exists (select 1 from chess_legal_targets(v_new_board, v_r, v_c, v_opp_white, v_castling, v_en_passant) limit 1) then
+          v_has_legal := true;
+          exit;
+        end if;
+      end if;
+    end loop;
+    if v_has_legal then exit; end if;
+  end loop;
+  if not v_has_legal then
+    if v_in_check then
+      update public.game_sessions set status = 'completed', result = 'winner',
+        state_payload = jsonb_build_object('phase', 'completed', 'board', v_new_board, 'turn', v_next_turn, 'moveHistory', v_move_history, 'captured', jsonb_build_object('white', v_captured_white, 'black', v_captured_black), 'castling', v_castling, 'enPassantTarget', null, 'halfMoveClock', v_half, 'fullMoveNumber', v_full, 'gameOver', 'checkmate', 'winner', v_turn, 'inCheck', true), updated_at = now()
+      where id = p_session_id;
+      v_other_id := case when v_uid = v_creator_id then v_invitee_id else v_creator_id end;
+      perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    else
+      update public.game_sessions set status = 'completed', result = 'draw',
+        state_payload = jsonb_build_object('phase', 'completed', 'board', v_new_board, 'turn', v_next_turn, 'moveHistory', v_move_history, 'captured', jsonb_build_object('white', v_captured_white, 'black', v_captured_black), 'castling', v_castling, 'enPassantTarget', null, 'halfMoveClock', v_half, 'fullMoveNumber', v_full, 'gameOver', 'stalemate', 'winner', null, 'inCheck', false), updated_at = now()
+      where id = p_session_id;
+      v_other_id := case when v_uid = v_creator_id then v_invitee_id else v_creator_id end;
+      perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    end if;
+    insert into public.game_events (session_id, event_type, actor_id, payload) values (p_session_id, 'move', v_uid, jsonb_build_object('from', p_from_square, 'to', p_to_square));
+    return;
+  end if;
+  if v_half >= 100 then
+    update public.game_sessions set status = 'completed', result = 'draw',
+      state_payload = jsonb_build_object('phase', 'completed', 'board', v_new_board, 'turn', v_next_turn, 'moveHistory', v_move_history, 'captured', jsonb_build_object('white', v_captured_white, 'black', v_captured_black), 'castling', v_castling, 'enPassantTarget', null, 'halfMoveClock', v_half, 'fullMoveNumber', v_full, 'gameOver', 'draw_50', 'winner', null, 'inCheck', false), updated_at = now()
+    where id = p_session_id;
+    v_other_id := case when v_uid = v_creator_id then v_invitee_id else v_creator_id end;
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    insert into public.game_events (session_id, event_type, actor_id, payload) values (p_session_id, 'move', v_uid, jsonb_build_object('from', p_from_square, 'to', p_to_square));
+    return;
+  end if;
+  update public.game_sessions set state_payload = jsonb_build_object('phase', 'playing', 'board', v_new_board, 'turn', v_next_turn, 'moveHistory', v_move_history, 'captured', jsonb_build_object('white', v_captured_white, 'black', v_captured_black), 'castling', v_castling, 'enPassantTarget', v_en_passant, 'halfMoveClock', v_half, 'fullMoveNumber', v_full, 'gameOver', null, 'winner', null, 'inCheck', v_in_check), updated_at = now() where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload) values (p_session_id, 'move', v_uid, jsonb_build_object('from', p_from_square, 'to', p_to_square));
+  v_other_id := case when v_next_turn = 'white' then v_creator_id else v_invitee_id end;
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+-- Convert (row, col) to square 'e4'. Row 0 = rank 8.
+create or replace function public.chess_rc_to_square(p_r int, p_c int)
+returns text language sql immutable as $$
+  select chr(ascii('a') + p_c) || (8 - p_r)::text;
+$$;
+
+-- Return array of to-squares (e.g. ['e4','e5']) for piece at from_square.
+create or replace function public.get_chess_legal_moves(p_session_id uuid, p_from_square text)
+returns text[] language plpgsql security definer set search_path = public, pg_catalog as $$
+declare
+  v_state jsonb;
+  v_board jsonb;
+  v_rc int[];
+  v_fr int; v_fc int;
+  v_turn text;
+  v_white boolean;
+  v_result text[];
+begin
+  select state_payload into v_state from public.game_sessions gs join public.game_definitions gd on gd.id = gs.game_definition_id where gs.id = p_session_id and gd.game_type = 'chess';
+  if v_state is null or coalesce(v_state->>'phase', '') <> 'playing' then return array[]::text[]; end if;
+  v_board := v_state->'board';
+  v_rc := chess_parse_square(p_from_square);
+  if v_rc is null then return array[]::text[]; end if;
+  v_fr := v_rc[1]; v_fc := v_rc[2];
+  v_turn := coalesce(v_state->>'turn', 'white');
+  v_white := (v_turn = 'white');
+  select array_agg(chess_rc_to_square(lt.to_r, lt.to_c))
+  into v_result
+  from chess_legal_targets(v_board, v_fr, v_fc, v_white, coalesce(v_state->'castling', '{}'), v_state->>'enPassantTarget') lt;
+  return coalesce(v_result, array[]::text[]);
+end;
+$$;
+
+revoke all on function public.start_chess_game(uuid) from public;
+grant execute on function public.start_chess_game(uuid) to authenticated;
+revoke all on function public.make_chess_move(uuid, text, text) from public;
+grant execute on function public.make_chess_move(uuid, text, text) to authenticated;
+revoke all on function public.get_chess_legal_moves(uuid, text) from public;
+grant execute on function public.get_chess_legal_moves(uuid, text) to authenticated;
+
+-- Scrabble-style: 2-4 players, invite connections. state: phase (waiting_players|playing|completed),
+-- board 15x15, tileBag, racks by position, currentTurnPosition, scores, passCount.
+-- Dictionary: hangman_words. Letter values standard; center (7,7) required on first move.
+create or replace function public.start_scrabble_game(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_count int;
+  v_bag text[];
+  v_shuffled text[];
+  v_remaining jsonb;
+  v_racks jsonb := '{}'::jsonb;
+  v_i int;
+  v_board jsonb;
+  v_scores jsonb := '{}'::jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'scrabble' then
+    raise exception 'Session not found or not Scrabble';
+  end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', 'waiting_players') <> 'waiting_players' then
+    raise exception 'Game already started';
+  end if;
+
+  v_count := (select count(*) from public.game_session_participants where session_id = p_session_id and acceptance_state = 'accepted');
+  if v_count < 2 or v_count > 4 then
+    raise exception 'Need 2 to 4 accepted players, got %', v_count;
+  end if;
+
+  v_bag := array_cat(
+    array_fill('A'::text, array[9]), array_fill('B'::text, array[2]), array_fill('C'::text, array[2]),
+    array_fill('D'::text, array[4]), array_fill('E'::text, array[12]), array_fill('F'::text, array[2]),
+    array_fill('G'::text, array[3]), array_fill('H'::text, array[2]), array_fill('I'::text, array[9]),
+    array_fill('J'::text, array[1]), array_fill('K'::text, array[1]), array_fill('L'::text, array[4]),
+    array_fill('M'::text, array[2]), array_fill('N'::text, array[6]), array_fill('O'::text, array[8]),
+    array_fill('P'::text, array[2]), array_fill('Q'::text, array[1]), array_fill('R'::text, array[6]),
+    array_fill('S'::text, array[4]), array_fill('T'::text, array[6]), array_fill('U'::text, array[4]),
+    array_fill('V'::text, array[2]), array_fill('W'::text, array[2]), array_fill('X'::text, array[1]),
+    array_fill('Y'::text, array[2]), array_fill('Z'::text, array[1])
+  );
+  select array_agg(t order by random()) into v_shuffled from unnest(v_bag) as t;
+
+  for v_i in 0..v_count-1 loop
+    v_racks := v_racks || jsonb_build_object(v_i::text, (
+      select coalesce(jsonb_agg(v_shuffled[n]), '[]'::jsonb) from generate_series(v_i*7+1, least((v_i+1)*7, array_length(v_shuffled, 1))) as n
+    ));
+    v_scores := v_scores || jsonb_build_object(v_i::text, 0);
+  end loop;
+
+  v_remaining := (select coalesce(jsonb_agg(to_jsonb(v_shuffled[n]) order by n), '[]'::jsonb) from generate_series(v_count*7+1, array_length(v_shuffled, 1)) as n);
+  if v_remaining is null then v_remaining := '[]'::jsonb; end if;
+
+  v_board := (select jsonb_agg(row order by ord) from (
+    select jsonb_build_array('','','','','','','','','','','','','','','') as row, g as ord from generate_series(0,14) g
+  ) t);
+
+  v_state := jsonb_build_object(
+    'phase', 'playing',
+    'board', v_board,
+    'tileBag', v_remaining,
+    'racks', v_racks,
+    'currentTurnPosition', 0,
+    'scores', v_scores,
+    'passCount', 0
+  );
+
+  update public.game_sessions set state_payload = v_state, status = 'active', updated_at = now() where id = p_session_id;
+end;
+$$;
+
+create or replace function public.play_scrabble_word(p_session_id uuid, p_placements jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_board jsonb;
+  v_racks jsonb;
+  v_bag jsonb;
+  v_current int;
+  v_my_pos int;
+  v_participants uuid[];
+  v_placement jsonb;
+  v_r int;
+  v_c int;
+  v_letter text;
+  v_rack text[];
+  v_i int;
+  v_word text;
+  v_val int;
+  v_score int := 0;
+  v_letter_vals jsonb := '{"A":1,"B":3,"C":3,"D":2,"E":1,"F":4,"G":2,"H":4,"I":1,"J":8,"K":5,"L":1,"M":3,"N":1,"O":1,"P":3,"Q":10,"R":1,"S":1,"T":1,"U":1,"V":4,"W":4,"X":8,"Y":4,"Z":10}'::jsonb;
+  v_new_letters jsonb;
+  v_exists boolean;
+  v_next_pos int;
+  v_other_id uuid;
+  v_first_move boolean;
+  v_covers_center boolean;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_placements is null or jsonb_typeof(p_placements) <> 'array' then
+    raise exception 'Placements must be a non-empty array of {r, c, letter}';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'scrabble' then
+    raise exception 'Session not found or not Scrabble';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game already completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', '') <> 'playing' then
+    raise exception 'Game not in play';
+  end if;
+
+  select array_agg(user_id order by turn_order_position)
+  into v_participants
+  from public.game_session_participants
+  where session_id = p_session_id and acceptance_state = 'accepted';
+  v_current := (coalesce((v_state->>'currentTurnPosition')::int, 0));
+  v_my_pos := -1;
+  for v_i in 1..array_length(v_participants, 1) loop
+    if v_participants[v_i] = v_uid then v_my_pos := v_i - 1; exit; end if;
+  end loop;
+  if v_my_pos < 0 then raise exception 'You are not a participant'; end if;
+  if v_my_pos <> v_current then raise exception 'Not your turn'; end if;
+
+  v_board := v_state->'board';
+  v_racks := v_state->'racks';
+  v_bag := coalesce(v_state->'tileBag', '[]'::jsonb);
+
+  v_first_move := true;
+  for v_r in 0..14 loop
+    for v_c in 0..14 loop
+      if coalesce(v_board->v_r->>v_c, '') <> '' then v_first_move := false; exit; end if;
+    end loop;
+    if not v_first_move then exit; end if;
+  end loop;
+
+  v_rack := (select array_agg(elem) from jsonb_array_elements_text(coalesce(v_racks->v_my_pos::text, '[]'::jsonb)) as elem);
+  v_new_letters := '[]'::jsonb;
+
+  for v_i in 0..jsonb_array_length(p_placements)-1 loop
+    v_placement := p_placements->v_i;
+    v_r := (v_placement->>'r')::int;
+    v_c := (v_placement->>'c')::int;
+    v_letter := upper(trim(v_placement->>>'letter'));
+    if v_r is null or v_c is null or v_letter is null or v_r < 0 or v_r > 14 or v_c < 0 or v_c > 14 or length(v_letter) <> 1 then
+      raise exception 'Invalid placement at index %', v_i;
+    end if;
+    if coalesce(v_board->v_r->>v_c, '') <> '' then
+      raise exception 'Cell (%, %) already has a letter', v_r, v_c;
+    end if;
+    if not (v_letter = any(v_rack)) then
+      raise exception 'Letter % not in your rack', v_letter;
+    end if;
+    v_rack := array_remove(v_rack, v_letter);
+    v_new_letters := v_new_letters || to_jsonb(jsonb_build_object('r', v_r, 'c', v_c, 'letter', v_letter));
+  end loop;
+
+  if jsonb_array_length(v_new_letters) = 0 then
+    raise exception 'At least one placement required';
+  end if;
+  if v_first_move and jsonb_array_length(v_new_letters) < 2 then
+    raise exception 'First move must place at least two letters';
+  end if;
+
+  v_covers_center := false;
+  for v_i in 0..jsonb_array_length(v_new_letters)-1 loop
+    if (v_new_letters->v_i->>'r')::int = 7 and (v_new_letters->v_i->>'c')::int = 7 then
+      v_covers_center := true;
+      exit;
+    end if;
+  end loop;
+  if v_first_move and not v_covers_center then
+    raise exception 'First move must cover the center square (7,7)';
+  end if;
+
+  for v_i in 0..jsonb_array_length(v_new_letters)-1 loop
+    v_r := (v_new_letters->v_i->>'r')::int;
+    v_c := (v_new_letters->v_i->>'c')::int;
+    v_letter := v_new_letters->v_i->>>'letter';
+    v_board := jsonb_set(v_board, array[v_r::text, v_c::text], to_jsonb(v_letter));
+  end loop;
+
+  declare
+    v_r0 int := (v_new_letters->0->>'r')::int;
+    v_c0 int := (v_new_letters->0->>'c')::int;
+    v_min_c int;
+    v_max_c int;
+    v_min_r int;
+    v_max_r int;
+    v_col int;
+    v_row int;
+  begin
+    if (select count(distinct (e->>'r')::int) from jsonb_array_elements(v_new_letters) as e) > 1
+       and (select count(distinct (e->>'c')::int) from jsonb_array_elements(v_new_letters) as e) > 1 then
+      raise exception 'Placements must be in one row or one column';
+    end if;
+    select min(c), max(c) into v_min_c, v_max_c from generate_series(0,14) c
+    where (v_board->v_r0->>c) is not null and trim(coalesce(v_board->v_r0->>c, '')) <> '';
+    if v_min_c is not null and v_max_c - v_min_c >= 1 then
+      v_word := (select string_agg(v_board->v_r0->>(c::text), '' order by c) from generate_series(v_min_c, v_max_c) c);
+      select exists (select 1 from public.hangman_words where lower(word) = lower(v_word)) into v_exists;
+      if not v_exists then raise exception 'Invalid word: %', v_word; end if;
+      for v_i in 1..length(v_word) loop
+        v_score := v_score + coalesce((v_letter_vals->>upper(substr(v_word, v_i, 1)))::int, 0);
+      end loop;
+    end if;
+    select min(r), max(r) into v_min_r, v_max_r from generate_series(0,14) r
+    where (v_board->r->>v_c0) is not null and trim(coalesce(v_board->r->>v_c0, '')) <> '';
+    if v_min_r is not null and v_max_r - v_min_r >= 1 then
+      v_word := (select string_agg(v_board->r->>(v_c0::text), '' order by r) from generate_series(v_min_r, v_max_r) r);
+      select exists (select 1 from public.hangman_words where lower(word) = lower(v_word)) into v_exists;
+      if not v_exists then raise exception 'Invalid word: %', v_word; end if;
+      for v_i in 1..length(v_word) loop
+        v_score := v_score + coalesce((v_letter_vals->>upper(substr(v_word, v_i, 1)))::int, 0);
+      end loop;
+    end if;
+  end;
+
+  v_racks := jsonb_set(v_racks, array[v_my_pos::text], (select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from unnest(v_rack) as t));
+  while (select jsonb_array_length(v_racks->v_my_pos::text)) < 7 and (select jsonb_array_length(v_bag)) > 0 loop
+    v_racks := jsonb_set(v_racks, array[v_my_pos::text], (v_racks->v_my_pos::text) || (v_bag->0));
+    v_bag := (select coalesce(jsonb_agg(elem), '[]'::jsonb) from jsonb_array_elements(v_bag) with ordinality as t(elem, n) where n > 1);
+  end loop;
+
+  v_state := jsonb_set(v_state, array['scores'], jsonb_set(v_state->'scores', array[v_my_pos::text], to_jsonb((coalesce((v_state->'scores'->v_my_pos::text)::int, 0)) + v_score)));
+  v_state := jsonb_set(jsonb_set(jsonb_set(v_state, array['board'], v_board), array['racks'], v_racks), array['tileBag'], v_bag);
+  v_next_pos := (v_current + 1) % array_length(v_participants, 1);
+  v_state := jsonb_set(jsonb_set(v_state, array['currentTurnPosition'], to_jsonb(v_next_pos)), array['passCount'], to_jsonb(0));
+  v_other_id := v_participants[v_next_pos+1];
+
+  if (select jsonb_array_length(v_bag)) = 0 and (select jsonb_array_length(v_racks->v_my_pos::text)) = 0 then
+    v_state := jsonb_set(v_state, array['phase'], to_jsonb('completed'::text));
+    v_state := jsonb_set(v_state, array['winnerPosition'], to_jsonb(v_my_pos));
+    update public.game_sessions set state_payload = v_state, status = 'completed', result = 'winner', updated_at = now() where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'move', v_uid, jsonb_build_object('placements', p_placements, 'score', v_score));
+    for v_i in 1..array_length(v_participants, 1) loop
+      perform public.notify_game_event(v_participants[v_i], 'game_completed', p_session_id, v_uid);
+    end loop;
+    return;
+  end if;
+
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload)
+  values (p_session_id, 'move', v_uid, jsonb_build_object('placements', p_placements, 'score', v_score));
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+create or replace function public.pass_scrabble_turn(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_state jsonb;
+  v_current int;
+  v_my_pos int;
+  v_participants uuid[];
+  v_i int;
+  v_pass_count int;
+  v_next_pos int;
+  v_other_id uuid;
+  v_max_score int;
+  v_winner_pos int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'scrabble' then
+    raise exception 'Session not found or not Scrabble';
+  end if;
+  if v_session.status = 'completed' then raise exception 'Game already completed'; end if;
+
+  v_state := coalesce(v_session.state_payload, '{}'::jsonb);
+  if coalesce(v_state->>'phase', '') <> 'playing' then
+    raise exception 'Game not in play';
+  end if;
+
+  select array_agg(user_id order by turn_order_position)
+  into v_participants
+  from public.game_session_participants
+  where session_id = p_session_id and acceptance_state = 'accepted';
+  v_current := (coalesce((v_state->>'currentTurnPosition')::int, 0));
+  v_my_pos := -1;
+  for v_i in 1..array_length(v_participants, 1) loop
+    if v_participants[v_i] = v_uid then v_my_pos := v_i - 1; exit; end if;
+  end loop;
+  if v_my_pos < 0 then raise exception 'You are not a participant'; end if;
+  if v_my_pos <> v_current then raise exception 'Not your turn'; end if;
+
+  v_pass_count := coalesce((v_state->>'passCount')::int, 0) + 1;
+  v_state := jsonb_set(v_state, array['passCount'], to_jsonb(v_pass_count));
+
+  if v_pass_count >= array_length(v_participants, 1) then
+    v_state := jsonb_set(v_state, array['phase'], to_jsonb('completed'::text));
+    select max((v_state->'scores'->pos::text)::int) into v_max_score from generate_series(0, array_length(v_participants, 1) - 1) as pos;
+    select min(pos) into v_winner_pos from generate_series(0, array_length(v_participants, 1) - 1) as pos
+    where (v_state->'scores'->pos::text)::int = v_max_score;
+    v_state := jsonb_set(v_state, array['winnerPosition'], to_jsonb(v_winner_pos));
+    update public.game_sessions set state_payload = v_state, status = 'completed', result = 'winner', updated_at = now() where id = p_session_id;
+    for v_i in 1..array_length(v_participants, 1) loop
+      perform public.notify_game_event(v_participants[v_i], 'game_completed', p_session_id, v_uid);
+    end loop;
+    return;
+  end if;
+
+  v_next_pos := (v_current + 1) % array_length(v_participants, 1);
+  v_state := jsonb_set(v_state, array['currentTurnPosition'], to_jsonb(v_next_pos));
+  v_other_id := v_participants[v_next_pos+1];
+  update public.game_sessions set state_payload = v_state, updated_at = now() where id = p_session_id;
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+revoke all on function public.start_scrabble_game(uuid) from public;
+grant execute on function public.start_scrabble_game(uuid) to authenticated;
+revoke all on function public.play_scrabble_word(uuid, jsonb) from public;
+grant execute on function public.play_scrabble_word(uuid, jsonb) to authenticated;
+revoke all on function public.pass_scrabble_turn(uuid) from public;
+grant execute on function public.pass_scrabble_turn(uuid) to authenticated;
+
+-- Hangman: approved internal word list (solo game)
+create table if not exists public.hangman_words (
+  id uuid primary key default gen_random_uuid(),
+  word text not null unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_hangman_words_word_lower on public.hangman_words(lower(word));
+comment on table public.hangman_words is 'Approved word list for solo Hangman games.';
+
+insert into public.hangman_words (word) values
+  ('algorithm'), ('buffer'), ('cache'), ('database'), ('export'), ('filter'), ('gateway'), ('handler'),
+  ('integer'), ('javascript'), ('keyboard'), ('lambda'), ('module'), ('network'), ('object'), ('parser'),
+  ('query'), ('runtime'), ('schema'), ('token'), ('unicode'), ('vector'), ('widget'), ('yield'),
+  ('anchor'), ('bridge'), ('cloud'), ('domain'), ('engine'), ('format'), ('graph'), ('header'),
+  ('index'), ('join'), ('kernel'), ('layout'), ('matrix'), ('node'), ('offset'), ('packet'),
+  ('queue'), ('router'), ('stream'), ('thread'), ('upload'), ('vertex'), ('window'), ('zoom'),
+  ('array'), ('binary'), ('cursor'), ('digest'), ('encode'), ('float'), ('global'), ('hash'),
+  ('import'), ('journal'), ('lambda'), ('merge'), ('null'), ('output'), ('proxy'), ('random'),
+  ('string'), ('tuple'), ('union'), ('value'), ('worker'), ('branch'), ('commit'), ('deploy')
+on conflict (word) do nothing;
+
+create or replace function public.get_random_hangman_word()
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_word text;
+begin
+  select word into v_word from public.hangman_words order by random() limit 1;
+  return v_word;
+end;
+$$;
+revoke all on function public.get_random_hangman_word() from public;
+grant execute on function public.get_random_hangman_word() to authenticated;
+
+-- Notifications for game invitations (invite → recipient; accept/decline/cancel → sender)
+create or replace function public.notifications_on_game_invitation()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  if tg_op = 'INSERT' and new.status = 'pending' then
+    insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+    values (
+      new.recipient_id,
+      new.sender_id,
+      'game_invite',
+      new.session_id,
+      'game_session',
+      jsonb_build_object('session_id', new.session_id, 'invitation_id', new.id)
+    );
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and old.status = 'pending' and new.status != old.status then
+    if new.status in ('accepted', 'declined') then
+      insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+      values (
+        new.sender_id,
+        new.recipient_id,
+        case new.status when 'accepted' then 'game_invite_accepted' else 'game_invite_declined' end,
+        new.session_id,
+        'game_session',
+        jsonb_build_object('session_id', new.session_id, 'invitation_id', new.id)
+      );
+    end if;
+    if new.status = 'canceled' then
+      insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+      values (
+        new.recipient_id,
+        new.sender_id,
+        'game_invite_canceled',
+        new.session_id,
+        'game_session',
+        jsonb_build_object('session_id', new.session_id, 'invitation_id', new.id)
+      );
+    end if;
+    return new;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notifications_on_game_invitation on public.game_invitations;
+create trigger trg_notifications_on_game_invitation
+  after insert or update on public.game_invitations
+  for each row execute function public.notifications_on_game_invitation();
+
+-- RPC: insert a game notification (your turn, game completed). Call from app after state/turn/completion changes.
+create or replace function public.notify_game_event(
+  p_recipient_id uuid,
+  p_type text,
+  p_session_id uuid,
+  p_actor_id uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+begin
+  if p_type not in ('game_your_turn', 'game_completed') then
+    raise exception 'Invalid type for notify_game_event';
+  end if;
+  insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+  values (
+    p_recipient_id,
+    p_actor_id,
+    p_type,
+    p_session_id,
+    'game_session',
+    jsonb_build_object('session_id', p_session_id)
+  );
+end;
+$$;
+
+revoke all on function public.notify_game_event(uuid, text, uuid, uuid) from public;
+grant execute on function public.notify_game_event(uuid, text, uuid, uuid) to authenticated;
+
+-- Game invitations: only allow inviting connections for tic_tac_toe (and other multiplayer connection-only games)
+create or replace function public.game_invitations_connection_check()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_game_type text;
+begin
+  select gd.game_type into v_game_type
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = new.session_id;
+  if v_game_type in ('tic_tac_toe', 'connect_four', 'checkers', 'trivia', 'two_truths_lie', 'would_you_rather', 'darts', 'caption_game', 'battleship', 'reversi', 'scrabble', 'chess') and not public.are_chat_connections(new.sender_id, new.recipient_id) then
+    raise exception 'You can only invite Connections to this game.';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_game_invitations_connection_check on public.game_invitations;
+create trigger trg_game_invitations_connection_check
+  before insert on public.game_invitations
+  for each row execute function public.game_invitations_connection_check();
+
+-- Tic-Tac-Toe: apply move, detect win/draw, advance turn, notify. state_payload: board (jsonb array 0..8), currentTurnPosition (0=X=creator, 1=O=invitee)
+create or replace function public.make_tic_tac_toe_move(p_session_id uuid, p_cell_index int)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_board jsonb;
+  v_current int;
+  v_marker text;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_winner_position int;
+  v_draw boolean;
+  v_next_position int;
+  v_other_id uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_cell_index is null or p_cell_index < 0 or p_cell_index > 8 then
+    raise exception 'Invalid cell index';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gs.result, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'tic_tac_toe' then
+    raise exception 'Session not found or not Tic-Tac-Toe';
+  end if;
+  if v_session.result is not null or v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+  if v_session.status not in ('active', 'waiting_your_move', 'waiting_opponent_move') then
+    raise exception 'Game not in play';
+  end if;
+
+  v_board := coalesce(v_session.state_payload->'board', '[]'::jsonb);
+  if jsonb_array_length(v_board) <> 9 then
+    v_board := '["","","","","","","","",""]'::jsonb;
+  end if;
+  if v_board->p_cell_index is not null and (v_board->>p_cell_index) is not null and trim(v_board->>p_cell_index) <> '' then
+    raise exception 'Cell already taken';
+  end if;
+
+  v_current := (coalesce((v_session.state_payload->>'currentTurnPosition')::int, 0));
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+  if v_current = 0 then
+    if v_uid <> v_creator_id then raise exception 'Not your turn'; end if;
+    v_marker := 'X';
+  else
+    if v_uid <> v_invitee_id then raise exception 'Not your turn'; end if;
+    v_marker := 'O';
+  end if;
+
+  v_board := jsonb_set(v_board, array[p_cell_index::text], to_jsonb(v_marker));
+
+  -- Win check: rows 012, 345, 678; cols 036, 147, 258; diag 048, 246
+  v_winner_position := -1;
+  if (v_board->>0 = v_marker and v_board->>1 = v_marker and v_board->>2 = v_marker) or
+     (v_board->>3 = v_marker and v_board->>4 = v_marker and v_board->>5 = v_marker) or
+     (v_board->>6 = v_marker and v_board->>7 = v_marker and v_board->>8 = v_marker) or
+     (v_board->>0 = v_marker and v_board->>3 = v_marker and v_board->>6 = v_marker) or
+     (v_board->>1 = v_marker and v_board->>4 = v_marker and v_board->>7 = v_marker) or
+     (v_board->>2 = v_marker and v_board->>5 = v_marker and v_board->>8 = v_marker) or
+     (v_board->>0 = v_marker and v_board->>4 = v_marker and v_board->>8 = v_marker) or
+     (v_board->>2 = v_marker and v_board->>4 = v_marker and v_board->>6 = v_marker) then
+    v_winner_position := v_current;
+  end if;
+
+  v_draw := (v_winner_position < 0) and (
+    (v_board->>0) <> '' and (v_board->>1) <> '' and (v_board->>2) <> '' and
+    (v_board->>3) <> '' and (v_board->>4) <> '' and (v_board->>5) <> '' and
+    (v_board->>6) <> '' and (v_board->>7) <> '' and (v_board->>8) <> ''
+  );
+
+  if v_winner_position >= 0 then
+    v_other_id := case when v_current = 0 then v_invitee_id else v_creator_id end;
+    update public.game_sessions
+    set status = 'completed', result = 'winner',
+        state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current, 'winnerTurnPosition', v_winner_position),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('cell', p_cell_index, 'marker', v_marker, 'winner_position', v_winner_position));
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+  if v_draw then
+    update public.game_sessions
+    set status = 'completed', result = 'draw', state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('cell', p_cell_index, 'marker', v_marker, 'draw', true));
+    perform public.notify_game_event(v_creator_id, 'game_completed', p_session_id, v_uid);
+    perform public.notify_game_event(v_invitee_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+
+  v_next_position := 1 - v_current;
+  v_other_id := case when v_next_position = 0 then v_creator_id else v_invitee_id end;
+  update public.game_sessions
+  set status = 'waiting_opponent_move',
+      state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_next_position),
+      updated_at = now()
+  where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload)
+  values (p_session_id, 'move', v_uid, jsonb_build_object('cell', p_cell_index, 'marker', v_marker));
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+revoke all on function public.make_tic_tac_toe_move(uuid, int) from public;
+grant execute on function public.make_tic_tac_toe_move(uuid, int) to authenticated;
+
+-- Connect 4: 6 rows x 7 columns; board[row][col] row 0 = top. state_payload: board (6 arrays of 7), currentTurnPosition, winningLine (optional)
+create or replace function public.make_connect_four_move(p_session_id uuid, p_column int)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_board jsonb;
+  v_row int;
+  v_r int;
+  v_c int;
+  v_current int;
+  v_marker text;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_other_id uuid;
+  v_next_position int;
+  v_cell_val text;
+  v_win boolean := false;
+  v_win_line jsonb := '[]'::jsonb;
+  v_draw boolean := false;
+  v_filled int;
+  v_i int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_column is null or p_column < 0 or p_column > 6 then
+    raise exception 'Invalid column (0-6)';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gs.result, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'connect_four' then
+    raise exception 'Session not found or not Connect 4';
+  end if;
+  if v_session.result is not null or v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+  if v_session.status not in ('active', 'waiting_your_move', 'waiting_opponent_move') then
+    raise exception 'Game not in play';
+  end if;
+
+  v_board := coalesce(v_session.state_payload->'board', null);
+  if v_board is null or jsonb_array_length(v_board) <> 6 then
+    v_board := '[[ "","","","","","","" ],
+      [ "","","","","","","" ],
+      [ "","","","","","","" ],
+      [ "","","","","","","" ],
+      [ "","","","","","","" ],
+      [ "","","","","","","" ]]'::jsonb;
+  end if;
+
+  -- Find lowest empty row in column p_column (row 5 = bottom)
+  v_row := -1;
+  v_r := 5;
+  while v_r >= 0 loop
+    v_cell_val := v_board->v_r->>p_column;
+    if v_cell_val is null or trim(coalesce(v_cell_val, '')) = '' then
+      v_row := v_r;
+      exit;
+    end if;
+    v_r := v_r - 1;
+  end loop;
+  if v_row < 0 then
+    raise exception 'Column is full';
+  end if;
+
+  v_current := (coalesce((v_session.state_payload->>'currentTurnPosition')::int, 0));
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+  if v_current = 0 then
+    if v_uid <> v_creator_id then raise exception 'Not your turn'; end if;
+    v_marker := 'X';
+  else
+    if v_uid <> v_invitee_id then raise exception 'Not your turn'; end if;
+    v_marker := 'O';
+  end if;
+
+  v_board := jsonb_set(v_board, array[v_row::text, p_column::text], to_jsonb(v_marker));
+
+  -- Win check: horizontal, vertical, two diagonals (4 in a row)
+  for v_r in 0..5 loop
+    for v_c in 0..3 loop
+      if (v_board->v_r->>v_c) = v_marker and (v_board->v_r->>(v_c+1)) = v_marker
+         and (v_board->v_r->>(v_c+2)) = v_marker and (v_board->v_r->>(v_c+3)) = v_marker then
+        v_win := true;
+        v_win_line := jsonb_build_array(
+          jsonb_build_array(v_r, v_c), jsonb_build_array(v_r, v_c+1),
+          jsonb_build_array(v_r, v_c+2), jsonb_build_array(v_r, v_c+3));
+        exit;
+      end if;
+    end loop;
+    if v_win then exit; end if;
+  end loop;
+  if not v_win then
+    for v_r in 0..2 loop
+      for v_c in 0..6 loop
+        if (v_board->v_r->>v_c) = v_marker and (v_board->(v_r+1)->>v_c) = v_marker
+           and (v_board->(v_r+2)->>v_c) = v_marker and (v_board->(v_r+3)->>v_c) = v_marker then
+          v_win := true;
+          v_win_line := jsonb_build_array(
+            jsonb_build_array(v_r, v_c), jsonb_build_array(v_r+1, v_c),
+            jsonb_build_array(v_r+2, v_c), jsonb_build_array(v_r+3, v_c));
+          exit;
+        end if;
+      end loop;
+      if v_win then exit; end if;
+    end loop;
+  end if;
+  if not v_win then
+    for v_r in 0..2 loop
+      for v_c in 0..3 loop
+        if (v_board->v_r->>v_c) = v_marker and (v_board->(v_r+1)->>(v_c+1)) = v_marker
+           and (v_board->(v_r+2)->>(v_c+2)) = v_marker and (v_board->(v_r+3)->>(v_c+3)) = v_marker then
+          v_win := true;
+          v_win_line := jsonb_build_array(
+            jsonb_build_array(v_r, v_c), jsonb_build_array(v_r+1, v_c+1),
+            jsonb_build_array(v_r+2, v_c+2), jsonb_build_array(v_r+3, v_c+3));
+          exit;
+        end if;
+      end loop;
+      if v_win then exit; end if;
+    end loop;
+  end if;
+  if not v_win then
+    for v_r in 0..2 loop
+      for v_c in 3..6 loop
+        if (v_board->v_r->>v_c) = v_marker and (v_board->(v_r+1)->>(v_c-1)) = v_marker
+           and (v_board->(v_r+2)->>(v_c-2)) = v_marker and (v_board->(v_r+3)->>(v_c-3)) = v_marker then
+          v_win := true;
+          v_win_line := jsonb_build_array(
+            jsonb_build_array(v_r, v_c), jsonb_build_array(v_r+1, v_c-1),
+            jsonb_build_array(v_r+2, v_c-2), jsonb_build_array(v_r+3, v_c-3));
+          exit;
+        end if;
+      end loop;
+      if v_win then exit; end if;
+    end loop;
+  end if;
+
+  v_filled := 0;
+  for v_r in 0..5 loop
+    for v_c in 0..6 loop
+      v_cell_val := v_board->v_r->>v_c;
+      if v_cell_val is not null and trim(v_cell_val) <> '' then v_filled := v_filled + 1; end if;
+    end loop;
+  end loop;
+  v_draw := (not v_win) and (v_filled >= 42);
+
+  if v_win then
+    v_other_id := case when v_current = 0 then v_invitee_id else v_creator_id end;
+    update public.game_sessions
+    set status = 'completed', result = 'winner',
+        state_payload = jsonb_build_object(
+          'board', v_board, 'currentTurnPosition', v_current,
+          'winnerTurnPosition', v_current, 'winningLine', v_win_line),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('column', p_column, 'row', v_row, 'marker', v_marker, 'winningLine', v_win_line));
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+  if v_draw then
+    update public.game_sessions
+    set status = 'completed', result = 'draw',
+        state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('column', p_column, 'row', v_row, 'marker', v_marker, 'draw', true));
+    perform public.notify_game_event(v_creator_id, 'game_completed', p_session_id, v_uid);
+    perform public.notify_game_event(v_invitee_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+
+  v_next_position := 1 - v_current;
+  v_other_id := case when v_next_position = 0 then v_creator_id else v_invitee_id end;
+  update public.game_sessions
+  set status = 'waiting_opponent_move',
+      state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_next_position),
+      updated_at = now()
+  where id = p_session_id;
+  insert into public.game_events (session_id, event_type, actor_id, payload)
+  values (p_session_id, 'move', v_uid, jsonb_build_object('column', p_column, 'row', v_row, 'marker', v_marker));
+  perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+end;
+$$;
+
+revoke all on function public.make_connect_four_move(uuid, int) from public;
+grant execute on function public.make_connect_four_move(uuid, int) to authenticated;
+
+-- Checkers: 8x8, dark squares (r+c) odd. x/X = creator (bottom, moves up), o/O = invitee (top, moves down). King row: 0 for x, 7 for o.
+create or replace function public.make_checkers_move(
+  p_session_id uuid,
+  p_from_r int,
+  p_from_c int,
+  p_to_r int,
+  p_to_c int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_session record;
+  v_board jsonb;
+  v_current int;
+  v_creator_id uuid;
+  v_invitee_id uuid;
+  v_other_id uuid;
+  v_piece text;
+  v_dr int;
+  v_dc int;
+  v_mid_r int;
+  v_mid_c int;
+  v_mid_piece text;
+  v_opponent text;
+  v_my_pieces text[];
+  v_is_king boolean;
+  v_king_row int;
+  v_can_capture_again boolean := false;
+  v_any_capture boolean := false;
+  v_r int;
+  v_c int;
+  v_nr int;
+  v_nc int;
+  v_cont_from jsonb;
+  v_opp_count int := 0;
+  v_i int;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then raise exception 'Not authenticated'; end if;
+  if p_from_r is null or p_from_r < 0 or p_from_r > 7 or p_from_c < 0 or p_from_c > 7
+     or p_to_r < 0 or p_to_r > 7 or p_to_c < 0 or p_to_c > 7 then
+    raise exception 'Invalid coordinates';
+  end if;
+  if (p_to_r + p_to_c) % 2 <> 1 then
+    raise exception 'Target must be a dark square';
+  end if;
+
+  select gs.id, gs.status, gs.state_payload, gd.game_type
+  into v_session
+  from public.game_sessions gs
+  join public.game_definitions gd on gd.id = gs.game_definition_id
+  where gs.id = p_session_id;
+  if v_session.id is null or v_session.game_type <> 'checkers' then
+    raise exception 'Session not found or not Checkers';
+  end if;
+  if v_session.result is not null or v_session.status = 'completed' then
+    raise exception 'Game already completed';
+  end if;
+  if v_session.status not in ('active', 'waiting_your_move', 'waiting_opponent_move') then
+    raise exception 'Game not in play';
+  end if;
+
+  v_board := v_session.state_payload->'board';
+  if v_board is null or jsonb_array_length(v_board) <> 8 then
+    v_board := '[
+      ["","o","","o","","o","","o"],
+      ["o","","o","","o","","o",""],
+      ["","o","","o","","o","","o"],
+      ["","","","","","","",""],
+      ["","","","","","","",""],
+      ["x","","x","","x","","x",""],
+      ["","x","","x","","x","","x"],
+      ["x","","x","","x","","x",""]
+    ]'::jsonb;
+  end if;
+
+  v_current := coalesce((v_session.state_payload->>'currentTurnPosition')::int, 0);
+  v_cont_from := v_session.state_payload->'mustContinueFrom';
+  if v_cont_from is not null and jsonb_array_length(v_cont_from) = 2 then
+    if (p_from_r <> (v_cont_from->>0)::int or p_from_c <> (v_cont_from->>1)::int) then
+      raise exception 'You must continue capturing with the piece that just jumped';
+    end if;
+  end if;
+
+  select p1.user_id, p2.user_id into v_creator_id, v_invitee_id
+  from public.game_session_participants p1
+  join public.game_session_participants p2 on p2.session_id = p1.session_id and p2.user_id <> p1.user_id
+  where p1.session_id = p_session_id and p1.role = 'creator' and p2.role = 'invitee';
+
+  if v_current = 0 then
+    if v_uid <> v_creator_id then raise exception 'Not your turn'; end if;
+    v_my_pieces := array['x', 'X'];
+    v_opponent := 'o';
+    v_king_row := 0;
+  else
+    if v_uid <> v_invitee_id then raise exception 'Not your turn'; end if;
+    v_my_pieces := array['o', 'O'];
+    v_opponent := 'x';
+    v_king_row := 7;
+  end if;
+
+  v_piece := trim(coalesce(v_board->p_from_r->>p_from_c, ''));
+  if v_piece is null or v_piece = '' or not (v_piece = any(v_my_pieces)) then
+    raise exception 'No piece of yours at that position';
+  end if;
+  if trim(coalesce(v_board->p_to_r->>p_to_c, '')) <> '' then
+    raise exception 'Target square is not empty';
+  end if;
+
+  v_dr := p_to_r - p_from_r;
+  v_dc := p_to_c - p_from_c;
+  if abs(v_dr) <> abs(v_dc) or abs(v_dr) not in (1, 2) then
+    raise exception 'Invalid move: must be diagonal, one or two steps';
+  end if;
+
+  v_is_king := (v_piece = 'X' or v_piece = 'O');
+  if not v_is_king then
+    if v_current = 0 and v_dr >= 0 then raise exception 'Regular pieces move upward only'; end if;
+    if v_current = 1 and v_dr <= 0 then raise exception 'Regular pieces move downward only'; end if;
+  end if;
+
+  if abs(v_dr) = 2 then
+    v_mid_r := p_from_r + v_dr / 2;
+    v_mid_c := p_from_c + v_dc / 2;
+    v_mid_piece := trim(coalesce(v_board->v_mid_r->>v_mid_c, ''));
+    if v_mid_piece is null or v_mid_piece = '' or v_mid_piece not in ('x','X','o','O') then
+      raise exception 'Jump requires an opponent piece to capture';
+    end if;
+    if (v_current = 0 and v_mid_piece not in ('o','O')) or (v_current = 1 and v_mid_piece not in ('x','X')) then
+      raise exception 'Can only capture opponent pieces';
+    end if;
+    v_board := jsonb_set(v_board, array[v_mid_r::text, v_mid_c::text], to_jsonb(''));
+  else
+    for v_r in 0..7 loop
+      for v_c in 0..7 loop
+        v_piece := trim(coalesce(v_board->v_r->>v_c, ''));
+        if v_piece = any(v_my_pieces) then
+          for v_nr in v_r-2..v_r+2 loop
+            for v_nc in v_c-2..v_c+2 loop
+              if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 and abs(v_nr-v_r)=2 and abs(v_nc-v_c)=2 then
+                if (v_nr+v_nc)%2=1 and trim(coalesce(v_board->v_nr->>v_nc,'')) = '' then
+                  v_mid_piece := trim(coalesce(v_board->(v_r+(v_nr-v_r)/2)->>(v_c+(v_nc-v_c)/2), ''));
+                  if v_mid_piece in ('x','X','o','O') and (
+                    (v_current=0 and v_mid_piece in ('o','O')) or (v_current=1 and v_mid_piece in ('x','X'))
+                  ) then
+                    v_any_capture := true;
+                    exit;
+                  end if;
+                end if;
+              end if;
+            end loop;
+            if v_any_capture then exit; end if;
+          end loop;
+        end if;
+        if v_any_capture then exit; end if;
+      end loop;
+      if v_any_capture then exit; end if;
+    end loop;
+    if v_any_capture then
+      raise exception 'You must capture when a jump is available';
+    end if;
+  end if;
+
+  v_board := jsonb_set(v_board, array[p_from_r::text, p_from_c::text], to_jsonb(''));
+  if p_to_r = v_king_row then
+    v_board := jsonb_set(v_board, array[p_to_r::text, p_to_c::text], to_jsonb(case v_current when 0 then 'X' else 'O' end));
+  else
+    v_board := jsonb_set(v_board, array[p_to_r::text, p_to_c::text], to_jsonb(case v_current when 0 then 'x' else 'o' end));
+  end if;
+
+  if abs(v_dr) = 2 then
+    for v_nr in p_to_r-2..p_to_r+2 loop
+      for v_nc in p_to_c-2..p_to_c+2 loop
+        if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 and abs(v_nr-p_to_r)=2 and abs(v_nc-p_to_c)=2 then
+          if (v_nr+v_nc)%2=1 and trim(coalesce(v_board->v_nr->>v_nc,'')) = '' then
+            v_mid_piece := trim(coalesce(v_board->(p_to_r+(v_nr-p_to_r)/2)->>(p_to_c+(v_nc-p_to_c)/2), ''));
+            if v_mid_piece in ('x','X','o','O') and (
+              (v_current=0 and v_mid_piece in ('o','O')) or (v_current=1 and v_mid_piece in ('x','X'))
+            ) then
+              v_can_capture_again := true;
+              exit;
+            end if;
+          end if;
+        end if;
+      end loop;
+      if v_can_capture_again then exit; end if;
+    end loop;
+  end if;
+
+  for v_r in 0..7 loop
+    for v_c in 0..7 loop
+      v_piece := trim(coalesce(v_board->v_r->>v_c, ''));
+      if (v_current=0 and v_piece in ('o','O')) or (v_current=1 and v_piece in ('x','X')) then
+        v_opp_count := v_opp_count + 1;
+      end if;
+    end loop;
+  end loop;
+
+  if v_opp_count = 0 then
+    update public.game_sessions
+    set status = 'completed', result = 'winner',
+        state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current, 'winnerTurnPosition', v_current),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'completion', v_uid, jsonb_build_object('from', array[p_from_r, p_from_c], 'to', array[p_to_r, p_to_c]));
+    v_other_id := case when v_current = 0 then v_invitee_id else v_creator_id end;
+    perform public.notify_game_event(v_other_id, 'game_completed', p_session_id, v_uid);
+    return;
+  end if;
+
+  if v_can_capture_again then
+    update public.game_sessions
+    set state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', v_current, 'mustContinueFrom', jsonb_build_array(p_to_r, p_to_c)),
+        updated_at = now()
+    where id = p_session_id;
+  else
+    v_other_id := case when (1 - v_current) = 0 then v_creator_id else v_invitee_id end;
+    update public.game_sessions
+    set status = 'waiting_opponent_move',
+        state_payload = jsonb_build_object('board', v_board, 'currentTurnPosition', 1 - v_current),
+        updated_at = now()
+    where id = p_session_id;
+    insert into public.game_events (session_id, event_type, actor_id, payload)
+    values (p_session_id, 'move', v_uid, jsonb_build_object('from', array[p_from_r, p_from_c], 'to', array[p_to_r, p_to_c]));
+    perform public.notify_game_event(v_other_id, 'game_your_turn', p_session_id, v_uid);
+  end if;
+end;
+$$;
+
+revoke all on function public.make_checkers_move(uuid, int, int, int, int) from public;
+grant execute on function public.make_checkers_move(uuid, int, int, int, int) to authenticated;

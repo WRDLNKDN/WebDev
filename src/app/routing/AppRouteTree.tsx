@@ -34,6 +34,7 @@ import {
   EventDetailPage,
   EventsPage,
   Feed,
+  GamesPage,
   GroupsPage,
   Guidelines,
   HelpPage,
@@ -42,7 +43,30 @@ import {
   LandingPage,
   NotFoundPage,
   NotificationsPage,
+  PhuzzlePlayPage,
   Platform,
+  TicTacToePlayPage,
+  HangmanPlayPage,
+  ConnectFourPlayPage,
+  SnakePlayPage,
+  SlotsPlayPage,
+  CheckersPlayPage,
+  TriviaPlayPage,
+  Game2048PlayPage,
+  TwoTruthsLiePlayPage,
+  WouldYouRatherPlayPage,
+  DartsPlayPage,
+  CaptionGamePlayPage,
+  WordSearchPlayPage,
+  BattleshipPlayPage,
+  ReversiPlayPage,
+  BreakoutPlayPage,
+  ScrabblePlayPage,
+  TetrisPlayPage,
+  MazeChasePlayPage,
+  ChessPlayPage,
+  BlackjackPlayPage,
+  DailyWordPlayPage,
   PlaylistDetailPage,
   PlaylistsPage,
   Privacy,
@@ -202,6 +226,366 @@ export const AppRouteTree = ({
           <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
             <RequireOnboarded>
               <NotificationsPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/phuzzle/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <PhuzzlePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/tic-tac-toe/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TicTacToePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/slots/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <SlotsPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/slots"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <SlotsPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/snake/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <SnakePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/snake"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <SnakePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/connect-four/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <ConnectFourPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/hangman/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <HangmanPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/hangman"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <HangmanPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/checkers/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <CheckersPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/trivia/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TriviaPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/trivia"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TriviaPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/2048/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <Game2048PlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/2048"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <Game2048PlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/two-truths-lie/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TwoTruthsLiePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/would-you-rather/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <WouldYouRatherPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/darts/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <DartsPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/darts"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <DartsPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/caption-game/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <CaptionGamePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/word-search/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <WordSearchPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/word-search"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <WordSearchPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/battleship/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <BattleshipPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/reversi/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <ReversiPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/breakout/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <BreakoutPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/breakout"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <BreakoutPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/scrabble/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <ScrabblePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/tetris/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TetrisPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/tetris"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <TetrisPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/maze-chase/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <MazeChasePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/maze-chase"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <MazeChasePlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/chess/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <ChessPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/blackjack/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <BlackjackPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/blackjack"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <BlackjackPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/daily-word/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <DailyWordPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/daily-word"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <DailyWordPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <GamesPage />
             </RequireOnboarded>
           </RequireFeatureFlag>
         }

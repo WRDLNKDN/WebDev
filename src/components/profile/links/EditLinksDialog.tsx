@@ -208,7 +208,12 @@ export const EditLinksDialog = ({
     () =>
       newCategory
         ? [
-            ...PLATFORM_OPTIONS.filter((p) => p.category === newCategory),
+            ...PLATFORM_OPTIONS.filter((p) => p.category === newCategory).sort(
+              (a, b) =>
+                a.label.localeCompare(b.label, undefined, {
+                  sensitivity: 'base',
+                }),
+            ),
             { label: 'Other', value: OTHER_PLATFORM, category: newCategory },
           ].map((platform) => ({
             ...platform,

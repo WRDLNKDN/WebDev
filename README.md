@@ -90,6 +90,8 @@ workflows**, independent of specific implementation details.
   [docs/architecture/weirdling-architecture-guide.md](./docs/architecture/weirdling-architecture-guide.md)
 - **Theme preferences (appearance settings and implementation):**
   [docs/product/theme-preferences.md](./docs/product/theme-preferences.md)
+- **Games:** [docs/games/README.md](./docs/games/README.md) — Daily Word and
+  other game docs.
 
 ---
 

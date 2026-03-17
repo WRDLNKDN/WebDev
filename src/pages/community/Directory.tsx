@@ -35,6 +35,7 @@ import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDi
 import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import { useAppToast } from '../../context/AppToastContext';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import type {
   ConnectionState,
   DirectoryMember,
@@ -189,6 +190,9 @@ export const Directory = () => {
   const [locationInput, setLocationInput] = useState(location);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
+  const connectionsCsvExportEnabled = useFeatureFlag(
+    'directory_connections_csv_export',
+  );
 
   const skills = useMemo(
     () =>
@@ -519,10 +523,11 @@ export const Directory = () => {
     if (!blockTarget || !session?.user?.id) return;
     setBusy(true);
     try {
-      await supabase.from('chat_blocks').insert({
+      const { error: blockError } = await supabase.from('chat_blocks').insert({
         blocker_id: session.user.id,
         blocked_user_id: blockTarget.id,
       });
+      if (blockError) throw blockError;
       await disconnect(supabase, blockTarget.id);
       setRows((prev) => prev.filter((r) => r.id !== blockTarget.id));
       setBlockTarget(null);
@@ -1365,34 +1370,35 @@ export const Directory = () => {
               </Typography>
             </Box>
 
-            {normalizedConnectionStatus === 'connected' && (
-              <Tooltip title="Download your connections as a CSV file">
-                <span>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={
-                      exportingConnections ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <FileDownloadIcon />
-                      )
-                    }
-                    onClick={() => void handleExportConnectionsCsv()}
-                    disabled={exportingConnections}
-                    data-testid="directory-export-connections-csv"
-                    aria-label="Export connections to CSV"
-                    sx={{
-                      ...filterChipSx,
-                      minWidth: 0,
-                      px: 1.5,
-                    }}
-                  >
-                    Export CSV
-                  </Button>
-                </span>
-              </Tooltip>
-            )}
+            {normalizedConnectionStatus === 'connected' &&
+              connectionsCsvExportEnabled && (
+                <Tooltip title="Download your connections as a CSV file">
+                  <span>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={
+                        exportingConnections ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <FileDownloadIcon />
+                        )
+                      }
+                      onClick={() => void handleExportConnectionsCsv()}
+                      disabled={exportingConnections}
+                      data-testid="directory-export-connections-csv"
+                      aria-label="Export connections to CSV"
+                      sx={{
+                        ...filterChipSx,
+                        minWidth: 0,
+                        px: 1.5,
+                      }}
+                    >
+                      Export CSV
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
             {isMobileFilters ? (
               <Button
                 variant="outlined"

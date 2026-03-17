@@ -20,14 +20,21 @@ const POPOVER_HEIGHT = 740;
 type ChatPopoverProps = {
   roomId: string;
   onClose: () => void;
+  /** When provided (e.g. from Layout), avoids returning null while session loads. */
+  session?: Session | null;
 };
 
 /**
  * Floating chat popover on the current page (not a new window).
  * Renders in a fixed bottom-right panel.
  */
-export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
-  const [session, setSession] = useState<Session | null>(null);
+export const ChatPopover = ({
+  roomId,
+  onClose,
+  session: sessionProp,
+}: ChatPopoverProps) => {
+  const [sessionState, setSessionState] = useState<Session | null>(null);
+  const session = sessionProp ?? sessionState;
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<
@@ -76,20 +83,21 @@ export const ChatPopover = ({ roomId, onClose }: ChatPopoverProps) => {
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
   useEffect(() => {
+    if (sessionProp != null) return;
     let cancelled = false;
     const init = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
+      if (!cancelled) setSessionState(data.session ?? null);
     };
     void init();
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
+      if (!cancelled) setSessionState(s ?? null);
     });
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [sessionProp]);
 
   useEffect(() => {
     if (!session) return;

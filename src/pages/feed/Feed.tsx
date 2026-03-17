@@ -44,6 +44,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Menu,
   MenuItem,
   Paper,
   Select,
@@ -51,6 +52,7 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -439,7 +441,7 @@ type FeedCardActions = {
     commentId: string,
     previousType?: ReactionType | null,
   ) => void;
-  onRepost: (item: FeedItem) => void;
+  onRepost: (item: FeedItem, event?: React.MouseEvent) => void;
   onSend: (item: FeedItem) => void;
   onSave: (postId: string) => void;
   onUnsave: (postId: string) => void;
@@ -1471,24 +1473,38 @@ const FeedCard = ({
               Comment
             </Typography>
           </Button>
-          <Button
-            size="small"
-            onClick={() => actions.onRepost(item)}
-            sx={{
-              ...FEED_ACTION_BUTTON_SX,
-              ...getActiveActionSx(viewerReposted),
-            }}
-            aria-pressed={viewerReposted}
+          <Tooltip
+            title={viewerReposted ? "You've already reposted this" : ''}
+            disableHoverListener={!viewerReposted}
           >
-            <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
-            <Typography
-              component="span"
-              variant="caption"
-              sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
-            >
-              {viewerReposted ? 'Reposted' : 'Repost'}
-            </Typography>
-          </Button>
+            <span>
+              <Button
+                size="small"
+                onClick={(e) => {
+                  if (viewerReposted) return;
+                  actions.onRepost(item, e);
+                }}
+                disabled={viewerReposted}
+                sx={{
+                  ...FEED_ACTION_BUTTON_SX,
+                  ...getActiveActionSx(viewerReposted),
+                }}
+                aria-pressed={viewerReposted}
+                aria-label={
+                  viewerReposted ? "You've already reposted this" : 'Repost'
+                }
+              >
+                <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                >
+                  {viewerReposted ? 'Reposted' : 'Repost'}
+                </Typography>
+              </Button>
+            </span>
+          </Tooltip>
           <Button
             size="small"
             onClick={() => actions.onSend(item)}
@@ -1939,6 +1955,17 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   );
   const [sentPostIds, setSentPostIds] = useState<Set<string>>(() => new Set());
   const [composerOpen, setComposerOpen] = useState(false);
+  const [repostMenuAnchor, setRepostMenuAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [repostMenuTarget, setRepostMenuTarget] = useState<FeedItem | null>(
+    null,
+  );
+  const [repostWithCommentTarget, setRepostWithCommentTarget] =
+    useState<FeedItem | null>(null);
+  const [repostCommentDraft, setRepostCommentDraft] = useState('');
+  const [repostCommentDialogOpen, setRepostCommentDialogOpen] = useState(false);
+  const [repostCommentSubmitting, setRepostCommentSubmitting] = useState(false);
   const [dismissedLinkPreviewIds, setDismissedLinkPreviewIds] = useState<
     Set<string>
   >(new Set());
@@ -2446,22 +2473,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     [handleAuthError, loadPage, session?.access_token],
   );
 
-  const handleRepost = useCallback(
-    async (item: FeedItem) => {
+  const performRepost = useCallback(
+    async (originalId: string, commentary?: string) => {
       if (!session?.access_token) return;
-      const originalId =
-        (item.kind === 'repost' && (item.payload?.original_id as string)) ||
-        item.id;
-      if (repostedOriginalIds.has(originalId)) {
-        showToast({
-          message: "You've already reposted this post.",
-          severity: 'info',
-        });
-        return;
-      }
       try {
         await repostPost({
           originalId,
+          commentary: commentary?.trim() || undefined,
           accessToken: session.access_token,
         });
         setRepostedOriginalIds((prev) => {
@@ -2484,14 +2502,86 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         }
       }
     },
-    [
-      handleAuthError,
-      loadPage,
-      repostedOriginalIds,
-      session?.access_token,
-      showToast,
-    ],
+    [handleAuthError, loadPage, session?.access_token, showToast],
   );
+
+  const handleRepost = useCallback(
+    (item: FeedItem, event?: React.MouseEvent) => {
+      if (!event) return;
+      setRepostMenuTarget(item);
+      setRepostMenuAnchor(event.currentTarget as HTMLElement);
+    },
+    [],
+  );
+
+  const handleSimpleRepost = useCallback(async () => {
+    const item = repostMenuTarget;
+    setRepostMenuTarget(null);
+    setRepostMenuAnchor(null);
+    if (!item || !session?.access_token) return;
+    const originalId =
+      (item.kind === 'repost' && (item.payload?.original_id as string)) ||
+      item.id;
+    if (repostedOriginalIds.has(originalId)) {
+      showToast({
+        message: "You've already reposted this post.",
+        severity: 'info',
+      });
+      return;
+    }
+    await performRepost(originalId);
+  }, [
+    performRepost,
+    repostMenuTarget,
+    repostedOriginalIds,
+    session?.access_token,
+    showToast,
+  ]);
+
+  const handleOpenRepostWithComment = useCallback(() => {
+    const target = repostMenuTarget;
+    setRepostMenuTarget(null);
+    setRepostMenuAnchor(null);
+    if (target) {
+      setRepostWithCommentTarget(target);
+      setRepostCommentDraft('');
+      setRepostCommentDialogOpen(true);
+    }
+  }, [repostMenuTarget]);
+
+  const handleRepostWithCommentSubmit = useCallback(async () => {
+    const item = repostWithCommentTarget;
+    if (!item || !session?.access_token) return;
+    const originalId =
+      (item.kind === 'repost' && (item.payload?.original_id as string)) ||
+      item.id;
+    if (repostedOriginalIds.has(originalId)) {
+      showToast({
+        message: "You've already reposted this post.",
+        severity: 'info',
+      });
+      setRepostCommentDialogOpen(false);
+      setRepostWithCommentTarget(null);
+      setRepostCommentDraft('');
+      return;
+    }
+    setRepostCommentSubmitting(true);
+    try {
+      await performRepost(originalId, repostCommentDraft);
+      setRepostCommentDialogOpen(false);
+      setRepostWithCommentTarget(null);
+      setRepostCommentDraft('');
+    } finally {
+      setRepostCommentSubmitting(false);
+    }
+  }, [
+    performRepost,
+    repostCommentDraft,
+    repostWithCommentTarget,
+    repostedOriginalIds,
+    session?.access_token,
+    showToast,
+  ]);
 
   const handleSend = useCallback((item: FeedItem) => {
     setShareModalItem(item);
@@ -2734,12 +2824,26 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       if (!confirm('Delete this post? This cannot be undone.')) return;
       try {
         await deleteFeedPost({ postId, accessToken: session?.access_token });
-        setItems((prev) => prev.filter((i) => i.id !== postId));
+        setItems((prev) => {
+          const item = prev.find((i) => i.id === postId);
+          if (
+            item?.kind === 'repost' &&
+            item.user_id === session?.user?.id &&
+            typeof item.payload?.original_id === 'string'
+          ) {
+            setRepostedOriginalIds((prevIds) => {
+              const next = new Set(prevIds);
+              next.delete(item.payload.original_id as string);
+              return next;
+            });
+          }
+          return prev.filter((i) => i.id !== postId);
+        });
       } catch (e) {
         await handleAuthError(e, 'Could not delete post');
       }
     },
-    [session?.access_token, handleAuthError],
+    [session?.access_token, session?.user?.id, handleAuthError],
   );
 
   const feedCardActions: FeedCardActions = {
@@ -3848,6 +3952,88 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             sx={{ textTransform: 'none' }}
           >
             Next
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Menu
+        anchorEl={repostMenuAnchor}
+        open={Boolean(repostMenuAnchor)}
+        onClose={() => {
+          setRepostMenuAnchor(null);
+          setRepostMenuTarget(null);
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { minWidth: 200 } } }}
+      >
+        <MenuItem onClick={() => void handleSimpleRepost()} sx={{ gap: 1 }}>
+          <RepeatOutlinedIcon fontSize="small" />
+          Repost
+        </MenuItem>
+        <MenuItem onClick={handleOpenRepostWithComment} sx={{ gap: 1 }}>
+          <ChatBubbleOutlineOutlinedIcon fontSize="small" />
+          Repost with comment
+        </MenuItem>
+      </Menu>
+
+      <Dialog
+        open={repostCommentDialogOpen}
+        onClose={() => {
+          if (!repostCommentSubmitting) {
+            setRepostCommentDialogOpen(false);
+            setRepostWithCommentTarget(null);
+            setRepostCommentDraft('');
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(156,187,217,0.22)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+          Repost with comment
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            maxRows={8}
+            placeholder="Add your comment..."
+            value={repostCommentDraft}
+            onChange={(e) => setRepostCommentDraft(e.target.value)}
+            disabled={repostCommentSubmitting}
+            inputProps={{ 'aria-label': 'Comment for repost' }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setRepostCommentDialogOpen(false);
+              setRepostWithCommentTarget(null);
+              setRepostCommentDraft('');
+            }}
+            disabled={repostCommentSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void handleRepostWithCommentSubmit()}
+            disabled={repostCommentSubmitting}
+            startIcon={
+              repostCommentSubmitting ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : null
+            }
+          >
+            {repostCommentSubmitting ? 'Reposting…' : 'Repost'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -257,6 +257,8 @@ test.describe('Feed reaction picker', () => {
     await expect(saveButton).toContainText('Saved');
 
     await repostButton.click();
+    await expect(page.getByRole('menuitem', { name: 'Repost' })).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Repost' }).click();
     await expect(repostButton).toHaveCSS('color', FOCUS_COLOR);
     await expect(repostButton).toHaveAttribute('aria-pressed', 'true');
     await expect(repostButton).toContainText('Reposted');

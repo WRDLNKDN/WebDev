@@ -1184,10 +1184,22 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
       actor_display_name: author?.display_name ?? null,
       actor_avatar: avatar,
     };
+    const commentaryRaw =
+      typeof body.body === 'string'
+        ? body.body
+        : typeof body.text === 'string'
+          ? body.text
+          : '';
+    const commentary = commentaryRaw.trim();
+    const repostPayload = {
+      original_id: originalId,
+      snapshot,
+      ...(commentary ? { body: commentary } : {}),
+    };
     const { error: error2 } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
       kind: 'repost',
-      payload: { original_id: originalId, snapshot },
+      payload: repostPayload,
     });
     if (error2) return sendApiError(res, 500, 'Server error');
     return res.status(201).json({ ok: true });

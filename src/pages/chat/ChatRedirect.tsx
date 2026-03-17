@@ -1,10 +1,12 @@
 import { useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useAppToast } from '../../context/AppToastContext';
 import { useMessenger } from '../../context/MessengerContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { findCanonicalDmRoom } from '../../lib/chat/findCanonicalDmRoom';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { toMessage } from '../../lib/utils/errors';
 
 /**
  * Redirects /chat and /chat/:roomId:
@@ -19,6 +21,7 @@ export const ChatRedirect = () => {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const messenger = useMessenger();
+  const { showToast } = useAppToast();
   const { rooms, createDm, loading } = useChatRooms();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const withUserId = searchParams.get('with');
@@ -82,8 +85,14 @@ export const ChatRedirect = () => {
             navigate(id ? `/chat-full/${id}` : '/chat-full', {
               replace: true,
             });
-          } catch {
-            if (!cancelled) navigate('/chat-full', { replace: true });
+          } catch (e) {
+            if (!cancelled) {
+              showToast({
+                message: toMessage(e) || 'Could not start conversation.',
+                severity: 'error',
+              });
+              navigate('/chat-full', { replace: true });
+            }
           }
           return;
         }
@@ -106,17 +115,22 @@ export const ChatRedirect = () => {
 
         if (existing) {
           messenger.openPopOut(existing.id);
-          messenger.openOverlay();
+          // Do not open overlay: show only the conversation popover so the message input is visible.
         } else {
           try {
             const id = await createDm(withUserId);
             if (cancelled) return;
             if (id) {
               messenger.openPopOut(id);
-              messenger.openOverlay();
+              // Do not open overlay: show only the conversation popover so the message input is visible.
             }
-          } catch {
-            // Fall through to feed if DM creation fails.
+          } catch (e) {
+            if (!cancelled) {
+              showToast({
+                message: toMessage(e) || 'Could not start conversation.',
+                severity: 'error',
+              });
+            }
           }
         }
 
@@ -146,6 +160,7 @@ export const ChatRedirect = () => {
     redirectTargetKey,
     roomId,
     rooms,
+    showToast,
     withUserId,
   ]);
 

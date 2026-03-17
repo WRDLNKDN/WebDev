@@ -404,7 +404,8 @@ values
   ('community_partners', true),
   ('saved', true),
   ('help', true),
-  ('settings_privacy_marketing_consent', true)
+  ('settings_privacy_marketing_consent', true),
+  ('directory_connections_csv_export', true)
 on conflict (key) do nothing;
 
 -- -----------------------------

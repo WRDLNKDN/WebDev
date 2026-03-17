@@ -68,14 +68,18 @@ export async function unlikePost(params: {
 
 export async function repostPost(params: {
   originalId: string;
+  commentary?: string;
   accessToken?: string | null;
 }): Promise<void> {
   if (!params.originalId.trim())
     throw new Error('Original post id is required');
-  await postFeed(
-    { kind: 'repost', original_id: params.originalId },
-    params.accessToken ?? null,
-  );
+  const body: Record<string, unknown> = {
+    kind: 'repost',
+    original_id: params.originalId,
+  };
+  const commentary = params.commentary?.trim();
+  if (commentary) body.body = commentary;
+  await postFeed(body, params.accessToken ?? null);
 }
 
 export async function saveFeedPost(params: {

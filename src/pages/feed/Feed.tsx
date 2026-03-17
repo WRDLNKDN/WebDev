@@ -1970,6 +1970,21 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   }, [items]);
 
   useEffect(() => {
+    if (!session?.user?.id) return;
+    const reposted = new Set<string>();
+    for (const item of items) {
+      if (
+        item.kind === 'repost' &&
+        item.user_id === session.user.id &&
+        typeof item.payload?.original_id === 'string'
+      ) {
+        reposted.add(item.payload.original_id);
+      }
+    }
+    setRepostedOriginalIds(reposted);
+  }, [items, session?.user?.id]);
+
+  useEffect(() => {
     const joinComplete = searchParams.get('join') === 'complete';
     const legacySignupComplete = searchParams.get('signup') === 'complete';
     if (!joinComplete && !legacySignupComplete) return;
@@ -2437,6 +2452,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       const originalId =
         (item.kind === 'repost' && (item.payload?.original_id as string)) ||
         item.id;
+      if (repostedOriginalIds.has(originalId)) {
+        showToast({
+          message: "You've already reposted this post.",
+          severity: 'info',
+        });
+        return;
+      }
       try {
         await repostPost({
           originalId,
@@ -2450,10 +2472,25 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         showToast({ message: 'Reposted', severity: 'success' });
         await loadPage();
       } catch (e) {
-        await handleAuthError(e, 'Failed to repost');
+        const msg = toMessage(e);
+        if (msg.toLowerCase().includes('already reposted')) {
+          setRepostedOriginalIds((prev) => new Set(prev).add(originalId));
+          showToast({
+            message: "You've already reposted this post.",
+            severity: 'info',
+          });
+        } else {
+          await handleAuthError(e, 'Failed to repost');
+        }
       }
     },
-    [handleAuthError, loadPage, session?.access_token, showToast],
+    [
+      handleAuthError,
+      loadPage,
+      repostedOriginalIds,
+      session?.access_token,
+      showToast,
+    ],
   );
 
   const handleSend = useCallback((item: FeedItem) => {

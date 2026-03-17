@@ -1,4 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -45,8 +46,13 @@ import {
   connectRequest,
   declineRequest,
   disconnect,
+  fetchAllConnectedMembers,
   fetchDirectory,
 } from '../../lib/api/directoryApi';
+import {
+  buildConnectionsCsv,
+  downloadCsv,
+} from '../../lib/directory/connectionsExportCsv';
 import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
@@ -178,6 +184,7 @@ export const Directory = () => {
     id: string;
     name: string;
   } | null>(null);
+  const [exportingConnections, setExportingConnections] = useState(false);
   // Location filter inline edit state
   const [locationInput, setLocationInput] = useState(location);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
@@ -534,6 +541,24 @@ export const Directory = () => {
     const next = skills.includes(skill) ? skills : [...skills, skill];
     updateUrl({ skills: next.join(',') });
   };
+
+  const handleExportConnectionsCsv = useCallback(async () => {
+    setExportingConnections(true);
+    try {
+      const members = await fetchAllConnectedMembers(supabase);
+      const csv = buildConnectionsCsv(members, window.location.origin);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadCsv(csv, `connections-${date}.csv`);
+      showToast({
+        message: `Exported ${members.length} connection${members.length !== 1 ? 's' : ''}.`,
+        severity: 'success',
+      });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+    } finally {
+      setExportingConnections(false);
+    }
+  }, [showToast]);
 
   const hasActiveFilters = !!(
     q.trim() ||
@@ -1340,6 +1365,34 @@ export const Directory = () => {
               </Typography>
             </Box>
 
+            {normalizedConnectionStatus === 'connected' && (
+              <Tooltip title="Download your connections as a CSV file">
+                <span>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={
+                      exportingConnections ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <FileDownloadIcon />
+                      )
+                    }
+                    onClick={() => void handleExportConnectionsCsv()}
+                    disabled={exportingConnections}
+                    data-testid="directory-export-connections-csv"
+                    aria-label="Export connections to CSV"
+                    sx={{
+                      ...filterChipSx,
+                      minWidth: 0,
+                      px: 1.5,
+                    }}
+                  >
+                    Export CSV
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
             {isMobileFilters ? (
               <Button
                 variant="outlined"

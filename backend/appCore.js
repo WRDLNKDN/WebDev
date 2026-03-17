@@ -1144,6 +1144,16 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
     if (!originalId) {
       return sendApiError(res, 400, 'original_id required for repost');
     }
+    const { data: existingRepost } = await adminSupabase
+      .from('feed_items')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('kind', 'repost')
+      .eq('payload->>original_id', originalId)
+      .maybeSingle();
+    if (existingRepost) {
+      return sendApiError(res, 409, 'You have already reposted this post.');
+    }
     const { data: original, error: fetchErr } = await adminSupabase
       .from('feed_items')
       .select('id, payload, created_at, user_id')

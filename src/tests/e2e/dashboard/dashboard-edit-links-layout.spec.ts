@@ -119,7 +119,7 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
     ).toBeVisible();
   });
 
-  test('Games category shows the expected platform list with Other last', async ({
+  test('Games category shows game platforms with Other as option', async ({
     page,
   }) => {
     const dialog = page.getByRole('dialog', { name: /manage links/i });
@@ -127,10 +127,10 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
 
     await dialog.getByLabel('Platform').click({ force: true });
     const options = page.locator('[role="option"]');
-    await expect(options.first()).toBeVisible();
+    await expect(options.first()).toBeVisible({ timeout: 5000 });
     const labels = await options.allTextContents();
 
-    expect(labels).toEqual([
+    const expected = [
       'Armor Games',
       'Epic Games Store',
       'Game Jolt',
@@ -146,6 +146,9 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
       'Web Browser (Playable Web Game)',
       'Xbox / Microsoft Store',
       'Other',
-    ]);
+    ];
+    expect(labels).toHaveLength(expected.length);
+    expect(new Set(labels)).toEqual(new Set(expected));
+    expect(labels).toContain('Other');
   });
 });

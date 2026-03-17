@@ -53,7 +53,7 @@ export const AuthCallbackStatusCard = ({
               color: 'white',
             }}
           >
-            {error ? 'Sign-in problem' : 'Signing you in...'}
+            {error ? 'Sign-in problem' : 'Authorization in Progress'}
           </Typography>
 
           {error ? (
@@ -92,7 +92,7 @@ export const AuthCallbackStatusCard = ({
               variant="body1"
               sx={{ opacity: 0.7, maxWidth: 300, mx: 'auto' }}
             >
-              Finishing sign-in and loading your account.
+              Connecting your account. Please wait.
             </Typography>
           )}
         </Box>

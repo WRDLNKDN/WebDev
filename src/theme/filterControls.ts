@@ -54,6 +54,29 @@ export const filterSelectMenuProps: SelectProps['MenuProps'] = {
   },
 };
 
+/** Max visible platform options before scrolling in Manage Links (Platform dropdown). */
+export const PLATFORM_DROPDOWN_MAX_VISIBLE = 10;
+/** Approximate height for 10 list items (~48px each) so dropdown stays inside modal. */
+export const PLATFORM_DROPDOWN_MAX_HEIGHT = PLATFORM_DROPDOWN_MAX_VISIBLE * 48;
+
+/**
+ * Menu props for Platform Select in Manage Links: same as filterSelectMenuProps
+ * but with max height and vertical scroll so the dropdown shows at most 10 options
+ * at a time and stays contained within the modal.
+ */
+export const platformSelectMenuProps: SelectProps['MenuProps'] = {
+  ...filterSelectMenuProps,
+  PaperProps: {
+    ...filterSelectMenuProps.PaperProps,
+    sx: {
+      ...filterSelectMenuProps.PaperProps?.sx,
+      maxHeight: PLATFORM_DROPDOWN_MAX_HEIGHT,
+      overflowY: 'auto',
+      scrollBehavior: 'smooth',
+    },
+  },
+};
+
 /** Spread this into FormControl sx to fix Select text overlap/ellipsis at any width. */
 export const filterSelectInputSx = {
   '& .MuiSelect-select': selectInputInnerSx,

@@ -125,6 +125,10 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 - **Row:** `src/components/directory/DirectoryRow.tsx` — displays member and
   actions per connection state (Connect, Accept/Decline, or Chat + Manage with
   Disconnect/Block for connected).
+- **Connections CSV export:** When the connection filter is “Connected”, an
+  “Export CSV” button is shown; it is gated by the
+  `directory_connections_csv_export` feature flag (Admin → Feature Flags). When
+  the flag is off, the button is hidden.
 
 ## Database
 

@@ -1,4 +1,5 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 const sectionLabelSx = {
   color: 'text.secondary',
@@ -20,8 +21,11 @@ const skillPillSx = {
   fontSize: '0.78rem',
 } as const;
 
-/** Same pill styling as Skills for parity (spec: "Interests render as pills using the same component styling as Skills"). */
+/** Same pill styling as Skills for parity. */
 const interestPillSx = { ...skillPillSx };
+
+/** Single-line height for interests collapse (one line of chips). */
+const INTERESTS_COLLAPSED_MAX_HEIGHT = 40;
 
 export type SkillsInterestsPillsProps = {
   skills: string[];
@@ -30,12 +34,33 @@ export type SkillsInterestsPillsProps = {
 
 /**
  * Canonical center-column pills: Skills then Interests.
- * Used by Dashboard and Profile for layout parity. No prefixes (e.g. no "Skill:" or "Industry:").
+ * Interests wrap by width; when they overflow one line, an Expand control reveals the rest.
  */
 export const SkillsInterestsPills = ({
   skills,
   interests = [],
 }: SkillsInterestsPillsProps) => {
+  const interestsRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useLayoutEffect(() => {
+    if (interests.length === 0 || expanded) {
+      setHasOverflow(false);
+      return;
+    }
+    const el = interestsRef.current;
+    if (!el) return;
+
+    const check = () => {
+      setHasOverflow(el.scrollHeight > el.clientHeight);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [interests.length, expanded]);
+
   if (skills.length === 0 && interests.length === 0) return null;
 
   return (
@@ -63,17 +88,48 @@ export const SkillsInterestsPills = ({
           <Typography variant="caption" sx={sectionLabelSx}>
             Interests
           </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {interests.map((interest) => (
-              <Box
-                key={`interest-${interest}`}
-                data-testid="dashboard-pill"
-                sx={interestPillSx}
+          <Box sx={{ minWidth: 0 }}>
+            <Stack
+              ref={interestsRef}
+              direction="row"
+              flexWrap="wrap"
+              gap={1}
+              sx={{
+                maxHeight: expanded ? 'none' : INTERESTS_COLLAPSED_MAX_HEIGHT,
+                overflow: 'hidden',
+                transition: 'max-height 0.2s ease-out',
+              }}
+            >
+              {interests.map((interest) => (
+                <Box
+                  key={`interest-${interest}`}
+                  data-testid="dashboard-pill"
+                  sx={interestPillSx}
+                >
+                  {interest}
+                </Box>
+              ))}
+            </Stack>
+            {hasOverflow && !expanded && (
+              <Button
+                size="small"
+                onClick={() => setExpanded(true)}
+                sx={{
+                  mt: 0.75,
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  color: 'primary.main',
+                  minHeight: 0,
+                  py: 0.25,
+                  px: 0,
+                }}
+                aria-expanded={false}
+                data-testid="profile-interests-expand"
               >
-                {interest}
-              </Box>
-            ))}
-          </Stack>
+                Expand
+              </Button>
+            )}
+          </Box>
         </>
       ) : null}
     </Stack>

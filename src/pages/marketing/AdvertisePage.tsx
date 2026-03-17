@@ -9,6 +9,7 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  Link,
   Stack,
   Tooltip,
   Typography,
@@ -28,6 +29,11 @@ import { AdvertiseIconField } from './AdvertiseIconField';
 import { AdvertiseRequestFields } from './AdvertiseRequestFields';
 
 const ICON_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Shown when backend returns 503 because RESEND_API_KEY is not set (e.g. UAT). */
+const EMAIL_NOT_CONFIGURED_MESSAGE =
+  'Email service is not configured. Please try again later or contact us directly.';
+const ADVERTISE_CONTACT_EMAIL = 'info@wrdlnkdn.com';
 
 function hasAnyAdvertiseFormData(data: {
   name: string;
@@ -195,9 +201,7 @@ export const AdvertisePage = () => {
       }
 
       if (res.status === 503) {
-        setError(
-          'Email service is not configured. Please try again later or contact us directly.',
-        );
+        setError(EMAIL_NOT_CONFIGURED_MESSAGE);
         return;
       }
 
@@ -295,6 +299,20 @@ export const AdvertisePage = () => {
           {error ? (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}
+              {error === EMAIL_NOT_CONFIGURED_MESSAGE ? (
+                <Typography component="span" sx={{ display: 'block', mt: 1 }}>
+                  You can still reach us at{' '}
+                  <Link
+                    href={`mailto:${ADVERTISE_CONTACT_EMAIL}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {ADVERTISE_CONTACT_EMAIL}
+                  </Link>
+                  .
+                </Typography>
+              ) : null}
             </Alert>
           ) : null}
 

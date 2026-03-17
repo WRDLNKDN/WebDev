@@ -1,4 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -34,6 +35,7 @@ import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDi
 import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
 import { DirectoryRow } from '../../components/directory/DirectoryRow';
 import { useAppToast } from '../../context/AppToastContext';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import type {
   ConnectionState,
   DirectoryMember,
@@ -45,12 +47,22 @@ import {
   connectRequest,
   declineRequest,
   disconnect,
+  fetchAllConnectedMembers,
   fetchDirectory,
 } from '../../lib/api/directoryApi';
+import {
+  buildConnectionsCsv,
+  downloadCsv,
+} from '../../lib/directory/connectionsExportCsv';
 import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
 } from '../../constants/industryTaxonomy';
+import {
+  expandInterestFilterValues,
+  INTEREST_CATEGORIES,
+  INTEREST_OPTIONS_FLAT,
+} from '../../constants/interestTaxonomy';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { filterSelectMenuProps } from '../../theme/filterControls';
@@ -149,6 +161,7 @@ export const Directory = () => {
   const secondaryIndustry = searchParams.get('secondary_industry') ?? '';
   const location = searchParams.get('location') ?? '';
   const skillsParam = searchParams.get('skills') ?? '';
+  const interestsParam = searchParams.get('interests') ?? '';
   const connectionStatus = searchParams.get('connection_status') ?? '';
   const sort = searchParams.get('sort') ?? 'recently_active';
   const normalizedConnectionStatus = DIRECTORY_CONNECTION_FILTERS.includes(
@@ -172,14 +185,45 @@ export const Directory = () => {
     id: string;
     name: string;
   } | null>(null);
+  const [exportingConnections, setExportingConnections] = useState(false);
   // Location filter inline edit state
   const [locationInput, setLocationInput] = useState(location);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
+  const connectionsCsvExportEnabled = useFeatureFlag(
+    'directory_connections_csv_export',
+  );
 
   const skills = useMemo(
-    () => (skillsParam ? skillsParam.split(',').filter(Boolean) : []),
+    () =>
+      skillsParam
+        ? skillsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
     [skillsParam],
+  );
+  const interests = useMemo(
+    () =>
+      interestsParam
+        ? interestsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+    [interestsParam],
+  );
+  const interestsExpanded = useMemo(
+    () => expandInterestFilterValues(interests),
+    [interests],
+  );
+  const interestFilterOptions = useMemo(
+    () => [
+      ...INTEREST_CATEGORIES.filter((c) => c !== 'Other'),
+      ...INTEREST_OPTIONS_FLAT.map((o) => o.label),
+    ],
+    [],
   );
 
   const queryCacheKey = useMemo(
@@ -190,6 +234,7 @@ export const Directory = () => {
         secondaryIndustry,
         location,
         skills,
+        interests,
         connectionStatus: normalizedConnectionStatus,
         sort,
       }),
@@ -199,6 +244,7 @@ export const Directory = () => {
       secondaryIndustry,
       location,
       skills,
+      interests,
       normalizedConnectionStatus,
       sort,
     ],
@@ -246,6 +292,8 @@ export const Directory = () => {
           secondary_industry: secondaryIndustry || undefined,
           location: location || undefined,
           skills: skills.length ? skills : undefined,
+          interests:
+            interestsExpanded.length > 0 ? interestsExpanded : undefined,
           connection_status: normalizedConnectionStatus || undefined,
           sort: (sort || 'recently_active') as DirectorySort,
           offset,
@@ -281,6 +329,7 @@ export const Directory = () => {
       secondaryIndustry,
       location,
       skills,
+      interestsExpanded,
       normalizedConnectionStatus,
       sort,
     ],
@@ -358,6 +407,7 @@ export const Directory = () => {
         location: '',
         connection_status: '',
         skills: '',
+        interests: '',
       });
       setLocationInput('');
       if (isMobileFilters) {
@@ -473,10 +523,11 @@ export const Directory = () => {
     if (!blockTarget || !session?.user?.id) return;
     setBusy(true);
     try {
-      await supabase.from('chat_blocks').insert({
+      const { error: blockError } = await supabase.from('chat_blocks').insert({
         blocker_id: session.user.id,
         blocked_user_id: blockTarget.id,
       });
+      if (blockError) throw blockError;
       await disconnect(supabase, blockTarget.id);
       setRows((prev) => prev.filter((r) => r.id !== blockTarget.id));
       setBlockTarget(null);
@@ -496,13 +547,32 @@ export const Directory = () => {
     updateUrl({ skills: next.join(',') });
   };
 
+  const handleExportConnectionsCsv = useCallback(async () => {
+    setExportingConnections(true);
+    try {
+      const members = await fetchAllConnectedMembers(supabase);
+      const csv = buildConnectionsCsv(members, window.location.origin);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadCsv(csv, `connections-${date}.csv`);
+      showToast({
+        message: `Exported ${members.length} connection${members.length !== 1 ? 's' : ''}.`,
+        severity: 'success',
+      });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+    } finally {
+      setExportingConnections(false);
+    }
+  }, [showToast]);
+
   const hasActiveFilters = !!(
     q.trim() ||
     primaryIndustry ||
     secondaryIndustry ||
     location ||
     normalizedConnectionStatus ||
-    skills.length
+    skills.length ||
+    interests.length
   );
   useEffect(() => {
     if (!isMobileFilters) {
@@ -521,6 +591,7 @@ export const Directory = () => {
     location,
     normalizedConnectionStatus,
     ...skills,
+    ...interests,
   ].filter(Boolean).length;
 
   const mobileControlsToggleLabel = mobileControlsOpen
@@ -634,8 +705,8 @@ export const Directory = () => {
                   lineHeight: 1.55,
                 }}
               >
-                Search by name, skills, industry, or location to find the right
-                members faster.
+                Search by name, skills, interests, industry, or location to find
+                the right members faster.
               </Typography>
             </Box>
 
@@ -649,7 +720,7 @@ export const Directory = () => {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Search by name, tagline, industry, location, skills..."
+                placeholder="Search by name, tagline, industry, location, skills, interests..."
                 value={q}
                 onChange={(e) =>
                   updateUrl({
@@ -987,6 +1058,54 @@ export const Directory = () => {
                       <MenuItem value="not_connected">Not connected</MenuItem>
                       <MenuItem value="connected">Connected</MenuItem>
                     </Select>
+
+                    {/* Interest multi-select: category or individual interest */}
+                    <Select
+                      multiple
+                      displayEmpty
+                      value={interests}
+                      inputProps={{ 'aria-label': 'Interest' }}
+                      renderValue={(selected) =>
+                        selected.length > 0 ? selected.join(', ') : 'Interest'
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const next =
+                          typeof value === 'string' ? value.split(',') : value;
+                        updateUrl({
+                          interests: next.length > 0 ? next.join(',') : '',
+                        });
+                      }}
+                      MenuProps={{
+                        ...filterSelectMenuProps,
+                        autoFocus: false,
+                      }}
+                      IconComponent={KeyboardArrowDownIcon}
+                      sx={{
+                        ...chipSelectSx,
+                        minWidth: 120,
+                        '& .MuiSelect-select': {
+                          ...chipSelectSx['& .MuiSelect-select'],
+                          fontWeight: interests.length ? 600 : 500,
+                          color: interests.length
+                            ? '#fff'
+                            : 'rgba(255,255,255,0.7)',
+                        },
+                        ...(interests.length
+                          ? {
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#3b82f6 !important',
+                              },
+                            }
+                          : {}),
+                      }}
+                    >
+                      {interestFilterOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
                   </Box>
 
                   {/* Location — kept inside the same filter toolbar */}
@@ -1154,6 +1273,27 @@ export const Directory = () => {
                         }}
                       />
                     ))}
+                    {interests.map((i) => (
+                      <Chip
+                        key={i}
+                        data-testid={`directory-active-filter-interest-${i}`}
+                        size="small"
+                        label={i}
+                        onDelete={() =>
+                          updateUrl({
+                            interests: interests
+                              .filter((x) => x !== i)
+                              .join(','),
+                          })
+                        }
+                        sx={{
+                          bgcolor: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          color: 'rgba(255,255,255,0.75)',
+                          height: 28,
+                        }}
+                      />
+                    ))}
                   </Stack>
                 )}
               </Box>
@@ -1230,6 +1370,35 @@ export const Directory = () => {
               </Typography>
             </Box>
 
+            {normalizedConnectionStatus === 'connected' &&
+              connectionsCsvExportEnabled && (
+                <Tooltip title="Download your connections as a CSV file">
+                  <span>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={
+                        exportingConnections ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <FileDownloadIcon />
+                        )
+                      }
+                      onClick={() => void handleExportConnectionsCsv()}
+                      disabled={exportingConnections}
+                      data-testid="directory-export-connections-csv"
+                      aria-label="Export connections to CSV"
+                      sx={{
+                        ...filterChipSx,
+                        minWidth: 0,
+                        px: 1.5,
+                      }}
+                    >
+                      Export CSV
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
             {isMobileFilters ? (
               <Button
                 variant="outlined"

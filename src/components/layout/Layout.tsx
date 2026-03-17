@@ -146,6 +146,7 @@ const LayoutContent = () => {
           <ChatPopover
             roomId={messenger.popoverRoomId}
             onClose={messenger.closePopover}
+            session={session}
           />
         </Suspense>
       )}

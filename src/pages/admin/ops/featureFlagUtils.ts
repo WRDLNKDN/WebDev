@@ -9,6 +9,7 @@ export const FLAG_LABELS: Record<string, string> = {
   groups: 'Groups',
   games: 'Games',
   settings_privacy_marketing_consent: 'Privacy Settings',
+  directory_connections_csv_export: 'Directory connections CSV export',
 };
 
 /** Hover descriptions shown for each toggle. */
@@ -24,6 +25,8 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   games: 'Controls Games navigation links and the /games route.',
   settings_privacy_marketing_consent:
     'Controls the Privacy settings page for marketing email/push consent.',
+  directory_connections_csv_export:
+    'When off, hides the Export CSV button for connections in the Directory.',
 };
 
 export const humanizeFlagKey = (key: string): string =>

@@ -18,7 +18,7 @@ export type FeedCardActions = {
     commentId: string,
     previousType?: ReactionType | null,
   ) => void;
-  onRepost: (item: FeedItem) => void;
+  onRepost: (item: FeedItem, event?: React.MouseEvent) => void;
   onSend: (item: FeedItem) => void;
   onSave: (postId: string) => void;
   onUnsave: (postId: string) => void;

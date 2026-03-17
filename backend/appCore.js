@@ -1144,6 +1144,16 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
     if (!originalId) {
       return sendApiError(res, 400, 'original_id required for repost');
     }
+    const { data: existingRepost } = await adminSupabase
+      .from('feed_items')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('kind', 'repost')
+      .eq('payload->>original_id', originalId)
+      .maybeSingle();
+    if (existingRepost) {
+      return sendApiError(res, 409, 'You have already reposted this post.');
+    }
     const { data: original, error: fetchErr } = await adminSupabase
       .from('feed_items')
       .select('id, payload, created_at, user_id')
@@ -1174,10 +1184,22 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
       actor_display_name: author?.display_name ?? null,
       actor_avatar: avatar,
     };
+    const commentaryRaw =
+      typeof body.body === 'string'
+        ? body.body
+        : typeof body.text === 'string'
+          ? body.text
+          : '';
+    const commentary = commentaryRaw.trim();
+    const repostPayload = {
+      original_id: originalId,
+      snapshot,
+      ...(commentary ? { body: commentary } : {}),
+    };
     const { error: error2 } = await adminSupabase.from('feed_items').insert({
       user_id: userId,
       kind: 'repost',
-      payload: { original_id: originalId, snapshot },
+      payload: repostPayload,
     });
     if (error2) return sendApiError(res, 500, 'Server error');
     return res.status(201).json({ ok: true });
@@ -1569,6 +1591,16 @@ app.get('/api/directory', async (req, res) => {
       : Array.isArray(skillsRaw)
         ? skillsRaw.map((s) => String(s).trim()).filter(Boolean)
         : [];
+  const interestsRaw = req.query.interests;
+  const interestsArr =
+    typeof interestsRaw === 'string'
+      ? interestsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : Array.isArray(interestsRaw)
+        ? interestsRaw.map((s) => String(s).trim()).filter(Boolean)
+        : [];
   const { data: rows, error } = await adminSupabase.rpc('get_directory_page', {
     p_viewer_id: userId,
     p_search: search,
@@ -1576,6 +1608,7 @@ app.get('/api/directory', async (req, res) => {
     p_secondary_industry: secondaryIndustry,
     p_location: location,
     p_skills: skillsArr.length > 0 ? skillsArr : null,
+    p_interests: interestsArr.length > 0 ? interestsArr : null,
     p_connection_status: connectionStatus,
     p_sort: sort,
     p_offset: offset,

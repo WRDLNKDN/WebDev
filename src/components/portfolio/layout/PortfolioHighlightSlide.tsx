@@ -1,6 +1,6 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import {
@@ -110,16 +110,26 @@ export const PortfolioHighlightSlide = ({
           {categories.length > 0 ? (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
               {categories.map((category) => (
-                <Chip
+                <Box
+                  component="span"
                   key={`${project.id}-highlight-${category}`}
-                  size="small"
-                  label={category}
                   sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 1,
                     bgcolor: 'rgba(156,187,217,0.18)',
                     color: 'text.secondary',
                     border: '1px solid rgba(156,187,217,0.32)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    cursor: 'default',
+                    userSelect: 'none',
                   }}
-                />
+                >
+                  {category}
+                </Box>
               ))}
             </Box>
           ) : null}

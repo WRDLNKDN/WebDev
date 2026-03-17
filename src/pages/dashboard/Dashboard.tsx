@@ -30,6 +30,7 @@ import { PortfolioSortableList } from '../../components/portfolio/layout/Portfol
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
+import { InterestsDropdown } from '../../components/profile/identity/InterestsDropdown';
 import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
 import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
 import { DashboardLinksSection } from './dashboardLinksSection';
@@ -44,6 +45,12 @@ import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  getProfanityOverrides,
+  getProfanityAllowlist,
+  validateProfanity,
+  PROFANITY_ERROR_MESSAGE_INTEREST,
+} from '../../lib/validation/profanity';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
@@ -343,57 +350,96 @@ export const Dashboard = () => {
           slotUnderAvatarLabel={undefined}
           slotUnderAvatar={
             <>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                sx={{ flexWrap: 'wrap' }}
-              >
-                <Button
-                  ref={profileMenuButtonRef}
-                  variant="outlined"
-                  size="small"
-                  onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
-                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                  disabled={loading}
-                  aria-label="Profile menu"
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(profileMenuAnchor)}
-                  sx={{
-                    borderColor: 'rgba(45, 212, 191, 0.6)',
-                    color: '#2dd4bf',
-                    minHeight: 38,
-                    fontSize: '0.875rem',
-                    py: 0.6,
-                    px: 1.5,
-                    '&:hover': {
-                      borderColor: '#2dd4bf',
-                      bgcolor: 'rgba(45, 212, 191, 0.12)',
-                    },
+              <Stack spacing={1.5} sx={{ width: '100%' }}>
+                <InterestsDropdown
+                  value={selectedInterests}
+                  onSave={async (interests) => {
+                    try {
+                      const [blocklist, allowlist] = await Promise.all([
+                        getProfanityOverrides(),
+                        getProfanityAllowlist(),
+                      ]);
+                      for (const value of interests) {
+                        validateProfanity(
+                          value,
+                          blocklist,
+                          allowlist,
+                          PROFANITY_ERROR_MESSAGE_INTEREST,
+                        );
+                      }
+                      const creds = {
+                        ...safeNerdCreds,
+                        interests,
+                      };
+                      await updateProfile({ nerd_creds: creds });
+                      await refresh();
+                      showToast({
+                        message: 'Interests updated.',
+                        severity: 'success',
+                      });
+                    } catch (e) {
+                      showToast({
+                        message: toMessage(e),
+                        severity: 'error',
+                      });
+                      throw e;
+                    }
                   }}
-                >
-                  Profile
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigate('/dashboard/settings')}
                   disabled={loading}
-                  aria-label="Settings"
-                  sx={{
-                    borderColor: 'rgba(45, 212, 191, 0.6)',
-                    color: '#2dd4bf',
-                    minHeight: 38,
-                    fontSize: '0.875rem',
-                    py: 0.6,
-                    px: 1.5,
-                    '&:hover': {
-                      borderColor: '#2dd4bf',
-                      bgcolor: 'rgba(45, 212, 191, 0.12)',
-                    },
-                  }}
+                  aria-label="Interests"
+                />
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  sx={{ flexWrap: 'wrap' }}
                 >
-                  Settings
-                </Button>
+                  <Button
+                    ref={profileMenuButtonRef}
+                    variant="outlined"
+                    size="small"
+                    onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                    disabled={loading}
+                    aria-label="Profile menu"
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(profileMenuAnchor)}
+                    sx={{
+                      borderColor: 'rgba(45, 212, 191, 0.6)',
+                      color: '#2dd4bf',
+                      minHeight: 38,
+                      fontSize: '0.875rem',
+                      py: 0.6,
+                      px: 1.5,
+                      '&:hover': {
+                        borderColor: '#2dd4bf',
+                        bgcolor: 'rgba(45, 212, 191, 0.12)',
+                      },
+                    }}
+                  >
+                    Profile
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => navigate('/dashboard/settings')}
+                    disabled={loading}
+                    aria-label="Settings"
+                    sx={{
+                      borderColor: 'rgba(45, 212, 191, 0.6)',
+                      color: '#2dd4bf',
+                      minHeight: 38,
+                      fontSize: '0.875rem',
+                      py: 0.6,
+                      px: 1.5,
+                      '&:hover': {
+                        borderColor: '#2dd4bf',
+                        bgcolor: 'rgba(45, 212, 191, 0.12)',
+                      },
+                    }}
+                  >
+                    Settings
+                  </Button>
+                </Stack>
               </Stack>
               <Menu
                 anchorEl={profileMenuAnchor}

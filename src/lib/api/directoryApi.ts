@@ -38,6 +38,7 @@ export interface DirectoryParams {
   secondary_industry?: string;
   location?: string;
   skills?: string[];
+  interests?: string[];
   connection_status?: ConnectionState;
   sort?: DirectorySort;
   offset?: number;
@@ -83,6 +84,32 @@ export async function fetchDirectory(
     data: (data.data as DirectoryMember[]) ?? [],
     hasMore: Boolean(data.hasMore),
   };
+}
+
+const CONNECTIONS_EXPORT_PAGE_SIZE = 100;
+
+/**
+ * Fetches all members that are connected to the current user (for CSV export).
+ * Paginates until no more results.
+ */
+export async function fetchAllConnectedMembers(
+  supabase: SupabaseClient,
+): Promise<DirectoryMember[]> {
+  const all: DirectoryMember[] = [];
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data, hasMore: more } = await fetchDirectory(supabase, {
+      connection_status: 'connected',
+      sort: 'alphabetical',
+      offset,
+      limit: CONNECTIONS_EXPORT_PAGE_SIZE,
+    });
+    all.push(...data);
+    hasMore = more && data.length === CONNECTIONS_EXPORT_PAGE_SIZE;
+    offset += data.length;
+  }
+  return all;
 }
 
 export async function connectRequest(

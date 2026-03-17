@@ -13,10 +13,9 @@ import {
   Menu,
   MenuItem,
   Stack,
-  Typography,
   useMediaQuery,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import type { DirectoryMember } from '../../../lib/api/directoryApi';
 import { connectionStateLabel } from '../../../lib/directory/connectionState';
@@ -51,13 +50,47 @@ export const DirectoryRowActions = ({
 }: DirectoryRowActionsProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const actionButtonSx = {
-    borderColor: 'rgba(141,188,229,0.50)',
-    color: 'white',
-    minHeight: { xs: 38, sm: 34 },
-    px: { xs: 1.25, sm: 1.4 },
-    borderRadius: 1.5,
+
+  const pillHeight = { xs: 38, sm: 34 };
+  const pillPadding = { xs: 1.25, sm: 1.4 };
+  const pillBorderRadius = 1.5;
+
+  const secondaryButtonSx = {
+    border: '1px solid rgba(156,187,217,0.4)',
+    color: theme.palette.text.primary,
+    backgroundColor: 'transparent',
+    minHeight: pillHeight,
+    px: pillPadding,
+    borderRadius: pillBorderRadius,
+    cursor: 'pointer',
     '& .MuiButton-startIcon, & .MuiButton-endIcon': { mx: 0 },
+    '&:hover': {
+      backgroundColor: 'rgba(156,187,217,0.08)',
+      borderColor: 'rgba(156,187,217,0.55)',
+    },
+    '&.Mui-disabled': {
+      borderColor: 'rgba(156,187,217,0.25)',
+      color: 'rgba(255,255,255,0.5)',
+    },
+  } as const;
+
+  const primaryButtonSx = {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    minHeight: pillHeight,
+    px: pillPadding,
+    borderRadius: pillBorderRadius,
+    boxShadow: 'none',
+    cursor: 'pointer',
+    '& .MuiButton-startIcon, & .MuiButton-endIcon': { mx: 0 },
+    '&:hover': {
+      backgroundColor: theme.palette.primary.dark,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    },
+    '&.Mui-disabled': {
+      backgroundColor: 'rgba(156,187,217,0.35)',
+      color: 'rgba(255,255,255,0.7)',
+    },
   } as const;
 
   return (
@@ -69,17 +102,19 @@ export const DirectoryRowActions = ({
       sx={{ width: { xs: '100%', sm: 'auto' } }}
     >
       {member.connection_state === 'pending_received' && (
-        <Typography
-          variant="caption"
+        <Chip
+          icon={<HourglassTopIcon fontSize="small" />}
+          label={connectionStateLabel[member.connection_state]}
           sx={{
-            color: 'warning.main',
-            fontWeight: 700,
-            textDecoration: 'underline',
-            textUnderlineOffset: '4px',
+            height: pillHeight,
+            fontWeight: 600,
+            cursor: 'default',
+            backgroundColor: alpha(theme.palette.warning.main, 0.12),
+            color: theme.palette.warning.main,
+            border: 'none',
+            '& .MuiChip-icon': { color: 'inherit' },
           }}
-        >
-          {connectionStateLabel[member.connection_state]}
-        </Typography>
+        />
       )}
       {member.connection_state === 'not_connected' && (
         <Button
@@ -88,7 +123,16 @@ export const DirectoryRowActions = ({
           startIcon={<PersonAddIcon />}
           onClick={() => onConnect(member.id)}
           disabled={busy}
-          sx={actionButtonSx}
+          sx={{
+            ...secondaryButtonSx,
+            borderColor: 'rgba(141,188,229,0.5)',
+            color: 'white',
+            '&:hover': {
+              ...secondaryButtonSx['&:hover'],
+              borderColor: 'rgba(141,188,229,0.7)',
+              backgroundColor: 'rgba(141,188,229,0.1)',
+            },
+          }}
         >
           Connect
         </Button>
@@ -98,14 +142,13 @@ export const DirectoryRowActions = ({
           <Chip
             icon={<HourglassTopIcon fontSize="small" />}
             label={connectionStateLabel[member.connection_state]}
-            variant="outlined"
             sx={{
-              height: { xs: 38, sm: 34 },
-              color: 'warning.main',
-              borderColor: 'warning.main',
-              fontWeight: 700,
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
+              height: pillHeight,
+              fontWeight: 600,
+              cursor: 'default',
+              backgroundColor: alpha(theme.palette.warning.main, 0.12),
+              color: theme.palette.warning.main,
+              border: 'none',
               '& .MuiChip-icon': { color: 'inherit' },
             }}
           />
@@ -115,7 +158,7 @@ export const DirectoryRowActions = ({
             onClick={() => onCancelRequest(member.id)}
             disabled={busy}
             aria-label="Cancel request"
-            sx={actionButtonSx}
+            sx={secondaryButtonSx}
           >
             Cancel request
           </Button>
@@ -129,7 +172,7 @@ export const DirectoryRowActions = ({
             startIcon={<CheckCircleOutlineIcon />}
             onClick={() => onAccept(member.id)}
             disabled={busy}
-            sx={{ minHeight: { xs: 38, sm: 34 }, borderRadius: 1.5 }}
+            sx={primaryButtonSx}
           >
             Accept
           </Button>
@@ -139,7 +182,7 @@ export const DirectoryRowActions = ({
             startIcon={<BlockIcon />}
             onClick={() => onDecline(member.id)}
             disabled={busy}
-            sx={actionButtonSx}
+            sx={secondaryButtonSx}
           >
             Decline
           </Button>
@@ -150,24 +193,23 @@ export const DirectoryRowActions = ({
           <Chip
             icon={<CheckCircleOutlineIcon fontSize="small" />}
             label="Connected"
-            variant="outlined"
             sx={{
-              height: { xs: 38, sm: 34 },
-              color: 'success.main',
-              borderColor: 'success.main',
-              fontWeight: 700,
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
+              height: pillHeight,
+              fontWeight: 600,
+              cursor: 'default',
+              backgroundColor: alpha(theme.palette.success.main, 0.12),
+              color: theme.palette.success.main,
+              border: 'none',
               '& .MuiChip-icon': { color: 'inherit' },
             }}
           />
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
             component={RouterLink}
             to={`/chat?with=${member.id}`}
             startIcon={<ChatIcon />}
-            sx={actionButtonSx}
+            sx={primaryButtonSx}
           >
             Chat
           </Button>
@@ -180,11 +222,15 @@ export const DirectoryRowActions = ({
               aria-pressed={Boolean(manageAnchor)}
               aria-label="Manage connection"
               sx={{
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: 1.5,
-                color: 'white',
+                border: '1px solid rgba(156,187,217,0.4)',
+                borderRadius: pillBorderRadius,
+                color: theme.palette.text.primary,
                 minHeight: 38,
                 minWidth: 38,
+                '&:hover': {
+                  backgroundColor: 'rgba(156,187,217,0.08)',
+                  borderColor: 'rgba(156,187,217,0.55)',
+                },
               }}
             >
               <MoreHorizIcon fontSize="small" />
@@ -200,7 +246,7 @@ export const DirectoryRowActions = ({
               aria-expanded={Boolean(manageAnchor)}
               aria-pressed={Boolean(manageAnchor)}
               aria-label="Manage connection"
-              sx={actionButtonSx}
+              sx={secondaryButtonSx}
             >
               Manage
             </Button>

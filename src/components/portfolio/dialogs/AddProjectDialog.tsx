@@ -58,6 +58,11 @@ import {
 } from '../../../lib/ui/formSurface';
 import { containsProfanity } from '../../../lib/utils/profanityFilter';
 import { normalizeUrlForDedup } from '../../../lib/utils/linkPlatform';
+import {
+  getProfanityOverrides,
+  getProfanityAllowlist,
+  validateProfanity,
+} from '../../../lib/validation/profanity';
 import { toMessage } from '../../../lib/utils/errors';
 import type {
   NewProject,
@@ -435,6 +440,21 @@ export const AddProjectDialog = ({
     if (customCategoryError) {
       setSubmitError(customCategoryError);
       return;
+    }
+    if (
+      selectedCategory === PORTFOLIO_OTHER_CATEGORY_OPTION &&
+      normalizedCustomCategory
+    ) {
+      try {
+        const [blocklist, allowlist] = await Promise.all([
+          getProfanityOverrides(),
+          getProfanityAllowlist(),
+        ]);
+        validateProfanity(normalizedCustomCategory, blocklist, allowlist);
+      } catch (e) {
+        setSubmitError(toMessage(e));
+        return;
+      }
     }
     try {
       setBusy(true);

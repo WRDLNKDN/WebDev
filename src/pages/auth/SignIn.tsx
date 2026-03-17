@@ -116,12 +116,22 @@ export const SignIn = () => {
           ...AUTH_SCREEN_BG,
           minHeight: '100dvh',
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
+          gap: 2,
           px: 2,
         }}
       >
-        <CircularProgress aria-label="Checking sign-in status" />
+        <CircularProgress
+          size={40}
+          thickness={4}
+          sx={{ color: 'primary.main' }}
+          aria-label="Authorization in progress"
+        />
+        <Typography variant="h6" sx={{ fontWeight: 600, color: '#FFFFFF' }}>
+          Authorization in Progress
+        </Typography>
       </Box>
     );
   }

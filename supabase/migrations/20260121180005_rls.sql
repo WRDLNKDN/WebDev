@@ -304,6 +304,8 @@ declare
   managed_tables constant text[] := array[
     'admin_allowlist',
     'feature_flags',
+    'profanity_allowlist',
+    'profanity_overrides',
     'profiles',
     'portfolio_items',
     'generation_jobs',
@@ -377,6 +379,50 @@ revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
 
 -- -----------------------------
+-- profanity_overrides: read by all (for client-side validation), write by admin
+-- -----------------------------
+alter table public.profanity_overrides enable row level security;
+
+drop policy if exists profanity_overrides_select on public.profanity_overrides;
+create policy profanity_overrides_select
+  on public.profanity_overrides for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists profanity_overrides_admin_all on public.profanity_overrides;
+create policy profanity_overrides_admin_all
+  on public.profanity_overrides for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+revoke all on table public.profanity_overrides from anon, authenticated;
+grant select on table public.profanity_overrides to anon, authenticated;
+grant insert, update, delete on table public.profanity_overrides to authenticated;
+
+-- -----------------------------
+-- profanity_allowlist: read by all (for client-side validation), write by admin
+-- -----------------------------
+alter table public.profanity_allowlist enable row level security;
+
+drop policy if exists profanity_allowlist_select on public.profanity_allowlist;
+create policy profanity_allowlist_select
+  on public.profanity_allowlist for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists profanity_allowlist_admin_all on public.profanity_allowlist;
+create policy profanity_allowlist_admin_all
+  on public.profanity_allowlist for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+revoke all on table public.profanity_allowlist from anon, authenticated;
+grant select on table public.profanity_allowlist to anon, authenticated;
+grant insert, update, delete on table public.profanity_allowlist to authenticated;
+
+-- -----------------------------
 -- feature_flags: read by all, write by admin only
 -- -----------------------------
 alter table public.feature_flags enable row level security;
@@ -417,14 +463,14 @@ revoke all on function public.get_feed_page(uuid, timestamptz, uuid, int, text) 
 grant execute on function public.get_feed_page(uuid, timestamptz, uuid, int, text) to authenticated, service_role;
 
 -- -----------------------------
--- get_directory_page(): execute grant (single 10-arg overload; old 9-arg dropped in tables.sql)
+-- get_directory_page(): execute grant (11-arg: + p_interests text[])
 -- -----------------------------
 do $$
 begin
   revoke all on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) from public;
 exception when undefined_function then null;
 end $$;
-grant execute on function public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int) to authenticated, service_role;
+grant execute on function public.get_directory_page(uuid, text, text, text, text, text[], text[], text, text, int, int) to authenticated, service_role;
 
 -- -----------------------------
 -- profiles: RLS
@@ -1581,6 +1627,8 @@ declare
   managed_tables constant text[] := array[
     'admin_allowlist',
     'feature_flags',
+    'profanity_allowlist',
+    'profanity_overrides',
     'profiles',
     'portfolio_items',
     'generation_jobs',

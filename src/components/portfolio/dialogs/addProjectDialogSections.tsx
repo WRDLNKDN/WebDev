@@ -3,12 +3,17 @@ import {
   InfoOutlined as InfoOutlinedIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
+import { useState } from 'react';
+import type { RefObject } from 'react';
 import {
   Alert,
   Autocomplete,
   Box,
   Button,
+  Dialog,
+  DialogActions,
   DialogContent,
+  DialogTitle,
   FormControlLabel,
   Grid,
   Stack,
@@ -17,7 +22,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type { RefObject } from 'react';
+import { CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE } from '../../profile/editProfileDialog/EditProfileIndustrySection';
 import {
   PORTFOLIO_CATEGORY_OPTIONS,
   normalizeProjectCategories,
@@ -104,300 +109,368 @@ export const AddProjectDialogSections = ({
   isEdit,
   onClose,
   onSubmit,
-}: AddProjectDialogSectionsProps) => (
-  <DialogContent sx={{ p: { xs: 2.5, md: 3 } }}>
-    <Grid
-      container
-      spacing={{ xs: 2.5, md: 3.5 }}
-      sx={{ mt: { xs: 1, md: 1.5 } }}
-    >
-      <Grid size={{ xs: 12, md: 5 }}>
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: { xs: '100%', md: 360 },
-            aspectRatio: PROJECT_IMAGE_RATIO,
-            border: '2px dashed rgba(141,188,229,0.38)',
-            borderRadius: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            cursor: 'pointer',
-            bgcolor: 'rgba(0,0,0,0.2)',
-            overflow: 'hidden',
-            position: 'relative',
-            '&:hover': { borderColor: '#00C4CC' },
-          }}
-          onClick={() => fileInputRef.current?.click()}
+}: AddProjectDialogSectionsProps) => {
+  const [clearCategoriesConfirmOpen, setClearCategoriesConfirmOpen] =
+    useState(false);
+
+  return (
+    <>
+      <DialogContent sx={{ p: { xs: 2.5, md: 3 } }}>
+        <Grid
+          container
+          spacing={{ xs: 2.5, md: 3.5 }}
+          sx={{ mt: { xs: 1, md: 1.5 } }}
         >
-          {previewUrl && !previewLoadFailed ? (
+          <Grid size={{ xs: 12, md: 5 }}>
             <Box
-              component="img"
-              src={previewUrl}
-              alt="Project preview"
-              onError={() => setPreviewLoadFailed(true)}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <>
-              <AddPhotoIcon
-                sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                Upload image
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Drag or click
-              </Typography>
-            </>
-          )}
-          <input
-            type="file"
-            hidden
-            ref={fileInputRef}
-            accept="image/*"
-            onChange={handleFileSelect}
-          />
-        </Box>
-        <Stack
-          direction="row"
-          spacing={0.5}
-          alignItems="center"
-          sx={{ mt: 1, color: 'text.secondary' }}
-        >
-          <Typography variant="caption">Best ratio: 16:9</Typography>
-          <Tooltip title="Best size: 1600 x 900 pixels (or any 16:9 image).">
-            <InfoOutlinedIcon sx={{ fontSize: 14 }} />
-          </Tooltip>
-        </Stack>
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 7 }}>
-        <Stack spacing={{ xs: 2.5, md: 2.25 }}>
-          <Box>
-            <FieldLabel
-              text="Project Name"
-              required
-              tooltip="Internal title shown on your profile card."
-            />
-            <TextField
-              fullWidth
-              required
-              value={formData.title}
-              onChange={handleChange('title')}
-              placeholder="Enter project name"
-              variant="outlined"
-              size="small"
-              inputProps={{
-                'aria-label': 'Project Name',
-                title: 'Internal title shown on your profile card.',
-                'data-field-tooltip':
-                  'Internal title shown on your profile card.',
-              }}
               sx={{
-                '& .MuiOutlinedInput-root': { borderRadius: 1 },
-                '& .MuiInputBase-input': { py: 1.35 },
+                width: '100%',
+                maxWidth: { xs: '100%', md: 360 },
+                aspectRatio: PROJECT_IMAGE_RATIO,
+                border: '2px dashed rgba(141,188,229,0.38)',
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                cursor: 'pointer',
+                bgcolor: 'rgba(0,0,0,0.2)',
+                overflow: 'hidden',
+                position: 'relative',
+                '&:hover': { borderColor: '#00C4CC' },
               }}
-            />
-          </Box>
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {previewUrl && !previewLoadFailed ? (
+                <Box
+                  component="img"
+                  src={previewUrl}
+                  alt="Project preview"
+                  onError={() => setPreviewLoadFailed(true)}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <>
+                  <AddPhotoIcon
+                    sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Upload image
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Drag or click
+                  </Typography>
+                </>
+              )}
+              <input
+                type="file"
+                hidden
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileSelect}
+              />
+            </Box>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+              sx={{ mt: 1, color: 'text.secondary' }}
+            >
+              <Typography variant="caption">Best ratio: 16:9</Typography>
+              <Tooltip title="Best size: 1600 x 900 pixels (or any 16:9 image).">
+                <InfoOutlinedIcon sx={{ fontSize: 14 }} />
+              </Tooltip>
+            </Stack>
+          </Grid>
 
-          <Box>
-            <FieldLabel
-              text="Categories"
-              required
-              tooltip="Choose one or more categories to organize this artifact."
-            />
-            <Autocomplete
-              multiple
-              disableCloseOnSelect
-              options={normalizeProjectCategories([
-                ...PORTFOLIO_CATEGORY_OPTIONS,
-                ...(formData.tech_stack ?? []),
-              ])}
-              value={normalizeProjectCategories(formData.tech_stack)}
-              onChange={(_, next) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  tech_stack: normalizeProjectCategories(next),
-                }))
-              }
-              renderInput={(params) => (
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Stack spacing={{ xs: 2.5, md: 2.25 }}>
+              <Box>
+                <FieldLabel
+                  text="Project Name"
+                  required
+                  tooltip="Internal title shown on your profile card."
+                />
                 <TextField
-                  {...params}
                   fullWidth
                   required
-                  label="Categories"
-                  placeholder={
-                    (formData.tech_stack?.length ?? 0) > 0
-                      ? ''
-                      : 'Select one or more categories'
-                  }
-                  helperText="Used to organize Portfolio Showcase sections."
+                  value={formData.title}
+                  onChange={handleChange('title')}
+                  placeholder="Enter project name"
                   variant="outlined"
                   size="small"
+                  inputProps={{
+                    'aria-label': 'Project Name',
+                    title: 'Internal title shown on your profile card.',
+                    'data-field-tooltip':
+                      'Internal title shown on your profile card.',
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': { borderRadius: 1 },
+                    '& .MuiInputBase-input': { py: 1.35 },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <FieldLabel
+                  text="Categories"
+                  required
+                  tooltip="Choose one or more categories to organize this artifact."
+                />
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  options={normalizeProjectCategories([
+                    ...PORTFOLIO_CATEGORY_OPTIONS,
+                    ...(formData.tech_stack ?? []),
+                  ])}
+                  value={normalizeProjectCategories(formData.tech_stack)}
+                  onChange={(_, next) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      tech_stack: normalizeProjectCategories(next),
+                    }))
+                  }
                   slotProps={{
-                    htmlInput: {
-                      ...params.inputProps,
-                      'data-field-tooltip':
-                        'Choose one or more categories to organize this artifact.',
+                    clearIndicator: {
+                      onClick: (e: React.MouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if ((formData.tech_stack ?? []).length > 0) {
+                          setClearCategoriesConfirmOpen(true);
+                        }
+                      },
                     },
                   }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      fullWidth
+                      required
+                      label="Categories"
+                      placeholder={
+                        (formData.tech_stack?.length ?? 0) > 0
+                          ? ''
+                          : 'Select one or more categories'
+                      }
+                      helperText="Used to organize Portfolio Showcase sections."
+                      variant="outlined"
+                      size="small"
+                      slotProps={{
+                        htmlInput: {
+                          ...params.inputProps,
+                          'data-field-tooltip':
+                            'Choose one or more categories to organize this artifact.',
+                        },
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': { borderRadius: 1 },
+                        '& .MuiInputBase-input': { py: 1.35 },
+                        '& .MuiFormHelperText-root': { mx: 0 },
+                      }}
+                    />
+                  )}
+                />
+              </Box>
+
+              <Box>
+                <FieldLabel
+                  text="Project URL"
+                  required
+                  tooltip="Public link to your artifact. Must start with http:// or https://."
+                />
+                <TextField
+                  fullWidth
+                  required
+                  placeholder="https://example.com/file.pdf or Google Docs/Sheets/Slides link"
+                  value={formData.project_url}
+                  onChange={(e) => {
+                    if (!urlTouched) setUrlTouched(true);
+                    handleChange('project_url')(e);
+                  }}
+                  onBlur={() => setUrlTouched(true)}
+                  variant="outlined"
+                  size="small"
+                  inputProps={{
+                    'aria-label': 'Project URL',
+                    title:
+                      'Public link to your artifact. Must start with http:// or https://.',
+                    'data-field-tooltip':
+                      'Public link to your artifact. Must start with http:// or https://.',
+                  }}
+                  error={Boolean(urlErrorMessage)}
                   sx={{
                     '& .MuiOutlinedInput-root': { borderRadius: 1 },
                     '& .MuiInputBase-input': { py: 1.35 },
                     '& .MuiFormHelperText-root': { mx: 0 },
                   }}
+                  helperText={
+                    urlErrorMessage ||
+                    'Use any public URL (https:// or http://). We verify accessibility when saving.'
+                  }
                 />
-              )}
-            />
-          </Box>
+              </Box>
 
-          <Box>
-            <FieldLabel
-              text="Project URL"
-              required
-              tooltip="Public link to your artifact. Must start with http:// or https://."
-            />
-            <TextField
-              fullWidth
-              required
-              placeholder="https://example.com/file.pdf or Google Docs/Sheets/Slides link"
-              value={formData.project_url}
-              onChange={(e) => {
-                if (!urlTouched) setUrlTouched(true);
-                handleChange('project_url')(e);
-              }}
-              onBlur={() => setUrlTouched(true)}
-              variant="outlined"
-              size="small"
-              inputProps={{
-                'aria-label': 'Project URL',
-                title:
-                  'Public link to your artifact. Must start with http:// or https://.',
-                'data-field-tooltip':
-                  'Public link to your artifact. Must start with http:// or https://.',
-              }}
-              error={Boolean(urlErrorMessage)}
-              sx={{
-                '& .MuiOutlinedInput-root': { borderRadius: 1 },
-                '& .MuiInputBase-input': { py: 1.35 },
-                '& .MuiFormHelperText-root': { mx: 0 },
-              }}
-              helperText={
-                urlErrorMessage ||
-                'Use any public URL (https:// or http://). We verify accessibility when saving.'
-              }
-            />
-          </Box>
+              <Box>
+                <FieldLabel
+                  text="Description"
+                  required
+                  tooltip="Short summary shown in the project card and preview."
+                />
+                <TextField
+                  fullWidth
+                  required
+                  multiline
+                  rows={2}
+                  value={formData.description}
+                  onChange={handleChange('description')}
+                  placeholder="Describe the project outcome, your role, and impact."
+                  variant="outlined"
+                  size="small"
+                  inputProps={{
+                    'aria-label': 'Description',
+                    'data-field-tooltip':
+                      'Short summary shown in the project card and preview.',
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': { borderRadius: 1 },
+                    '& .MuiInputBase-inputMultiline': { py: 1.25 },
+                  }}
+                />
+              </Box>
+            </Stack>
+          </Grid>
+        </Grid>
 
-          <Box>
-            <FieldLabel
-              text="Description"
-              required
-              tooltip="Short summary shown in the project card and preview."
-            />
-            <TextField
-              fullWidth
-              required
-              multiline
-              rows={2}
-              value={formData.description}
-              onChange={handleChange('description')}
-              placeholder="Describe the project outcome, your role, and impact."
-              variant="outlined"
-              size="small"
-              inputProps={{
-                'aria-label': 'Description',
-                'data-field-tooltip':
-                  'Short summary shown in the project card and preview.',
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': { borderRadius: 1 },
-                '& .MuiInputBase-inputMultiline': { py: 1.25 },
-              }}
-            />
-          </Box>
-        </Stack>
-      </Grid>
-    </Grid>
-
-    <Box
-      sx={{
-        mt: { xs: 2, md: 2.5 },
-        p: { xs: 1.5, md: 1.75 },
-        border: '1px solid rgba(255,255,255,0.22)',
-        borderRadius: 1,
-        bgcolor: 'rgba(56,132,210,0.06)',
-      }}
-    >
-      <Stack spacing={0.5}>
-        <FieldLabel
-          text="Highlight in Portfolio Showcase"
-          tooltip="Promotes this artifact into the highlighted carousel section."
-        />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={formData.is_highlighted}
-              onChange={(_, checked) =>
-                setFormData((prev) => ({ ...prev, is_highlighted: checked }))
-              }
-              inputProps={{ 'aria-label': 'Highlight in Portfolio Showcase' }}
-              color="secondary"
-            />
-          }
-          sx={{ m: 0 }}
-          label=""
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ pl: 0.5, display: 'block' }}
+        <Box
+          sx={{
+            mt: { xs: 2, md: 2.5 },
+            p: { xs: 1.5, md: 1.75 },
+            border: '1px solid rgba(255,255,255,0.22)',
+            borderRadius: 1,
+            bgcolor: 'rgba(56,132,210,0.06)',
+          }}
         >
-          Highlighted artifacts appear in the carousel above category sections
-          on your profile.
-        </Typography>
-      </Stack>
-    </Box>
+          <Stack spacing={0.5}>
+            <FieldLabel
+              text="Highlight in Portfolio Showcase"
+              tooltip="Promotes this artifact into the highlighted carousel section."
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.is_highlighted}
+                  onChange={(_, checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      is_highlighted: checked,
+                    }))
+                  }
+                  inputProps={{
+                    'aria-label': 'Highlight in Portfolio Showcase',
+                  }}
+                  color="secondary"
+                />
+              }
+              sx={{ m: 0 }}
+              label=""
+            />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ pl: 0.5, display: 'block' }}
+            >
+              Highlighted artifacts appear in the carousel above category
+              sections on your profile.
+            </Typography>
+          </Stack>
+        </Box>
 
-    {submitError && (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        {submitError}
-      </Alert>
-    )}
-    {!submitError && blockers.length > 0 && (
-      <Alert severity="info" sx={{ mt: 2 }}>
-        To continue, {blockers.join(', ')}.
-      </Alert>
-    )}
+        {submitError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {submitError}
+          </Alert>
+        )}
+        {!submitError && blockers.length > 0 && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            To continue, {blockers.join(', ')}.
+          </Alert>
+        )}
 
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      spacing={2}
-      sx={{ mt: 2.5, pt: 1.75, borderTop: '1px solid rgba(156,187,217,0.30)' }}
-    >
-      <Button
-        onClick={onClose}
-        disabled={busy}
-        sx={{ color: 'white', borderColor: 'rgba(141,188,229,0.50)' }}
-        variant="outlined"
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          spacing={2}
+          sx={{
+            mt: 2.5,
+            pt: 1.75,
+            borderTop: '1px solid rgba(156,187,217,0.30)',
+          }}
+        >
+          <Button
+            onClick={onClose}
+            disabled={busy}
+            sx={{ color: 'white', borderColor: 'rgba(141,188,229,0.50)' }}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={onSubmit}
+            disabled={busy || blockers.length > 0}
+            startIcon={<SaveIcon />}
+            sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
+          >
+            {isEdit ? 'Save changes' : 'Add to Portfolio'}
+          </Button>
+        </Stack>
+      </DialogContent>
+
+      <Dialog
+        open={clearCategoriesConfirmOpen}
+        onClose={() => setClearCategoriesConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        aria-labelledby="clear-categories-title"
+        aria-describedby="clear-categories-description"
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            border: '1px solid rgba(156,187,217,0.22)',
+          },
+        }}
       >
-        Cancel
-      </Button>
-      <Button
-        variant="contained"
-        onClick={onSubmit}
-        disabled={busy || blockers.length > 0}
-        startIcon={<SaveIcon />}
-        sx={{ bgcolor: '#7D2AE8', '&:hover': { bgcolor: '#FF22C9' } }}
-      >
-        {isEdit ? 'Save changes' : 'Add to Portfolio'}
-      </Button>
-    </Stack>
-  </DialogContent>
-);
+        <DialogTitle id="clear-categories-title">Warning</DialogTitle>
+        <DialogContent>
+          <Typography id="clear-categories-description" variant="body2">
+            {CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setClearCategoriesConfirmOpen(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setFormData((prev) => ({ ...prev, tech_stack: [] }));
+              setClearCategoriesConfirmOpen(false);
+            }}
+            sx={{ textTransform: 'none' }}
+          >
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
 
 export const SOLO_GRADIENT_STYLE = SOLO_GRADIENT;
 export const GLASS_MODAL_STYLE = {

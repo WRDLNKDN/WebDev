@@ -251,11 +251,16 @@ export const MessageInput = ({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+
     if (files.length === 0) return;
+
+    // Clear any previous attachment error as soon as the user makes a new selection,
+    // so that choosing a valid file after an invalid one clears the message immediately.
+    setError(null);
 
     if (files.length > 1) {
       setError('Only one file per message.');
-      e.target.value = '';
       return;
     }
 
@@ -264,14 +269,11 @@ export const MessageInput = ({
     if (rejectionReason) {
       setError(rejectionReason);
       setProcessingMessage(null);
-      e.target.value = '';
       return;
     }
     const plan = getChatAttachmentProcessingPlan(f);
-    setError(null);
     setProcessingMessage(plan.accepted ? plan.helperText : null);
     setPendingFiles([f]);
-    e.target.value = '';
   };
 
   return (

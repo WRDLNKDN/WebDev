@@ -188,9 +188,13 @@ export const Join = () => {
       >
         <Container maxWidth="sm" sx={{ ...CARD_SX, p: 4, zIndex: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <CircularProgress size={20} thickness={5} aria-label="Loading" />
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Loading…
+            <CircularProgress
+              size={24}
+              thickness={5}
+              aria-label="Authorization in progress"
+            />
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Authorization in Progress
             </Typography>
           </Stack>
         </Container>

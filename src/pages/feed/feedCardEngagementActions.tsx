@@ -3,7 +3,7 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button, Tooltip, Typography } from '@mui/material';
 import { FeedReactionBar } from '../../components/post';
 import {
   buildFeedReactionSummary,
@@ -261,25 +261,39 @@ export const FeedCardEngagementActions = ({
             Comment
           </Typography>
         </Button>
-        <Button
-          size="small"
-          onClick={() => actions.onRepost(item)}
-          data-testid={`feed-action-repost-${item.id}`}
-          sx={{
-            ...FEED_ACTION_BUTTON_SX,
-            ...getActiveActionSx(viewerReposted),
-          }}
-          aria-pressed={viewerReposted}
+        <Tooltip
+          title={viewerReposted ? "You've already reposted this" : ''}
+          disableHoverListener={!viewerReposted}
         >
-          <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
-          <Typography
-            component="span"
-            variant="caption"
-            sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
-          >
-            {viewerReposted ? 'Reposted' : 'Repost'}
-          </Typography>
-        </Button>
+          <span>
+            <Button
+              size="small"
+              onClick={(e) => {
+                if (viewerReposted) return;
+                actions.onRepost(item, e);
+              }}
+              data-testid={`feed-action-repost-${item.id}`}
+              disabled={viewerReposted}
+              sx={{
+                ...FEED_ACTION_BUTTON_SX,
+                ...getActiveActionSx(viewerReposted),
+              }}
+              aria-pressed={viewerReposted}
+              aria-label={
+                viewerReposted ? "You've already reposted this" : 'Repost'
+              }
+            >
+              <RepeatOutlinedIcon sx={{ fontSize: { xs: 22, sm: 20 } }} />
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+              >
+                {viewerReposted ? 'Reposted' : 'Repost'}
+              </Typography>
+            </Button>
+          </span>
+        </Tooltip>
         <Button
           size="small"
           onClick={() => actions.onSend(item)}

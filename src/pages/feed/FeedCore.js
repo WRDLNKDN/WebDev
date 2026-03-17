@@ -711,7 +711,12 @@ const Feed = ({ savedMode = false }) => {
         setSnack('Reposted');
         await loadPage();
       } catch (e) {
-        await handleAuthError(e, 'Failed to repost');
+        const msg = toMessage(e);
+        if (msg.toLowerCase().includes('already reposted')) {
+          setSnack("You've already reposted this post.");
+        } else {
+          await handleAuthError(e, 'Failed to repost');
+        }
       }
     },
     [handleAuthError, loadPage, session?.access_token],

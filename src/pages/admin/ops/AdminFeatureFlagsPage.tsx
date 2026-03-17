@@ -29,7 +29,7 @@ const FLAG_CATEGORIES: FlagCategory[] = [
     id: 'community',
     title: 'Community',
     description: 'Discovery surfaces currently wired to feature flags.',
-    keys: ['events', 'directory'],
+    keys: ['events', 'directory', 'directory_connections_csv_export'],
   },
   {
     id: 'engagement',

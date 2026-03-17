@@ -180,6 +180,38 @@ create table if not exists public.admin_allowlist (
 );
 
 -- -----------------------------
+-- Profanity overrides (admin-configurable; RLS in rls.sql)
+-- Used with OSS profanity filter to block additional terms in freeform text.
+-- -----------------------------
+create table if not exists public.profanity_overrides (
+  id uuid primary key default gen_random_uuid(),
+  word text not null,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists idx_profanity_overrides_word_lower
+  on public.profanity_overrides (lower(trim(word)));
+
+comment on table public.profanity_overrides is
+  'Admin-managed list of additional terms to block in freeform text (bio, interests Other, industries Other, etc.).';
+
+-- -----------------------------
+-- Profanity allowlist (admin-configurable; RLS in rls.sql)
+-- Terms allowed even if they match the OSS profanity dictionary (e.g. false positives).
+-- -----------------------------
+create table if not exists public.profanity_allowlist (
+  id uuid primary key default gen_random_uuid(),
+  word text not null,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists idx_profanity_allowlist_word_lower
+  on public.profanity_allowlist (lower(trim(word)));
+
+comment on table public.profanity_allowlist is
+  'Admin-managed list of terms to allow even when matched by OSS profanity filter (allowlist).';
+
+-- -----------------------------
 -- is_admin() helper (grants in rls.sql)
 -- -----------------------------
 create or replace function public.is_admin()
@@ -372,7 +404,8 @@ values
   ('community_partners', true),
   ('saved', true),
   ('help', true),
-  ('settings_privacy_marketing_consent', true)
+  ('settings_privacy_marketing_consent', true),
+  ('directory_connections_csv_export', true)
 on conflict (key) do nothing;
 
 -- -----------------------------
@@ -1206,6 +1239,7 @@ where (industry is not null and trim(industry) <> '')
 -- Drop all overloads so only one signature exists (avoids "function name is not unique").
 drop function if exists public.get_directory_page(uuid, text, text, text, text[], text, text, int, int);
 drop function if exists public.get_directory_page(uuid, text, text, text, text, text[], text, text, int, int);
+drop function if exists public.get_directory_page(uuid, text, text, text, text, text[], text, text[], text, int, int);
 
 create or replace function public.get_directory_page(
   p_viewer_id uuid,
@@ -1214,6 +1248,7 @@ create or replace function public.get_directory_page(
   p_secondary_industry text default null,
   p_location text default null,
   p_skills text[] default null,
+  p_interests text[] default null,
   p_connection_status text default null,
   p_sort text default 'recently_active',
   p_offset int default 0,
@@ -1250,7 +1285,11 @@ as $$
       coalesce(
         (select array_agg(lower(trim(s))) from unnest(coalesce(p_skills, '{}')) s where trim(s) <> ''),
         '{}'
-      ) as skills_q
+      ) as skills_q,
+      coalesce(
+        (select array_agg(lower(trim(i))) from unnest(coalesce(p_interests, '{}')) i where trim(i) <> ''),
+        '{}'
+      ) as interests_q
   ),
   viewer_outgoing as (
     select fc.connected_user_id as profile_id
@@ -1338,6 +1377,10 @@ as $$
           select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
           where lower(s) like '%' || pr.search_q || '%'
         )
+        or exists (
+          select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'interests', '[]'::jsonb)) i
+          where lower(i) like '%' || pr.search_q || '%'
+        )
       )
       and (
         (pr.primary_industry_q is null or p.industry = pr.primary_industry_q or p.secondary_industry = pr.primary_industry_q
@@ -1362,6 +1405,14 @@ as $$
         or exists (
           select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'skills', '[]'::jsonb)) s
           where lower(s) = any(pr.skills_q)
+        )
+      )
+      and (
+        array_length(pr.interests_q, 1) is null
+        or array_length(pr.interests_q, 1) = 0
+        or exists (
+          select 1 from jsonb_array_elements_text(coalesce(p.nerd_creds->'interests', '[]'::jsonb)) i
+          where lower(trim(i)) = any(pr.interests_q)
         )
       )
   ),

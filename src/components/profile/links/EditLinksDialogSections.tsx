@@ -22,6 +22,7 @@ import {
   dialogSelectSx,
   dialogTextFieldSx,
   filterSelectMenuProps,
+  platformSelectMenuProps,
 } from '../../../theme/filterControls';
 import {
   detectPlatformFromUrl,
@@ -179,7 +180,7 @@ export const AddNewLinkSection = ({
             value={newPlatform}
             displayEmpty
             renderValue={(v) => v || 'Select platform'}
-            MenuProps={filterSelectMenuProps}
+            MenuProps={platformSelectMenuProps}
             sx={dialogSelectSx}
             inputProps={{ 'aria-label': 'Platform' }}
             onChange={(e) => setNewPlatform(String(e.target.value))}

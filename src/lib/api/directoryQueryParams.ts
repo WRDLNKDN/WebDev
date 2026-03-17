@@ -9,6 +9,8 @@ export interface DirectoryQueryParams {
   secondary_industry?: string;
   location?: string;
   skills?: string[];
+  /** Interest filter: match profiles that have any of these (individual interests or category-expanded). */
+  interests?: string[];
   connection_status?: string;
   sort?: string;
   offset?: number;
@@ -26,6 +28,7 @@ export function buildDirectoryQueryString(
     sp.set('secondary_industry', params.secondary_industry);
   if (params.location) sp.set('location', params.location);
   if (params.skills?.length) sp.set('skills', params.skills.join(','));
+  if (params.interests?.length) sp.set('interests', params.interests.join(','));
   if (params.connection_status)
     sp.set('connection_status', params.connection_status);
   if (params.sort) sp.set('sort', params.sort);

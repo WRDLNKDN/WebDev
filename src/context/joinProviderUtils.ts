@@ -1,4 +1,5 @@
 import { supabase } from '../lib/auth/supabaseClient';
+import { validateProfanityAsync } from '../lib/validation/profanity';
 import {
   POLICY_VERSION,
   type IdentityData,
@@ -217,13 +218,21 @@ export const submitJoinRegistration = async ({
     if (!profile.displayName?.trim())
       throw new Error('Display name is required.');
 
+    await validateProfanityAsync(state.values.additionalContext?.trim() ?? '');
+
     const { data: existing } = await supabase
       .from('profiles')
-      .select('id, handle')
+      .select('id, handle, nerd_creds')
       .eq('id', state.identity.userId)
       .maybeSingle();
 
+    const interests = (profile.interests ?? []).slice(0, 8);
+
     if (existing) {
+      const currentCreds =
+        existing.nerd_creds && typeof existing.nerd_creds === 'object'
+          ? (existing.nerd_creds as Record<string, unknown>)
+          : {};
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -240,6 +249,7 @@ export const submitJoinRegistration = async ({
           marketing_source: profile.marketingOptIn ? 'signup' : null,
           policy_version: state.identity.policyVersion || null,
           status: 'approved',
+          nerd_creds: { ...currentCreds, interests },
         } as never)
         .eq('id', state.identity.userId);
 
@@ -276,6 +286,7 @@ export const submitJoinRegistration = async ({
         additional_context: state.values.additionalContext?.trim() || null,
         status: 'approved',
         policy_version: state.identity.policyVersion || null,
+        nerd_creds: { interests },
       } as never);
 
       if (!insertError) {

@@ -329,6 +329,11 @@ declare
     'notifications',
     'events',
     'event_rsvps',
+    'game_definitions',
+    'game_sessions',
+    'game_session_participants',
+    'game_invitations',
+    'game_events',
     'content_submissions',
     'playlists',
     'playlist_items',
@@ -1319,6 +1324,138 @@ revoke all on table public.event_rsvps from anon, authenticated;
 grant select, insert, update, delete on table public.event_rsvps to authenticated;
 
 -- -----------------------------
+-- hangman_words: read-only for authenticated (word list for Hangman)
+-- -----------------------------
+alter table public.hangman_words enable row level security;
+create policy hangman_words_select on public.hangman_words for select to authenticated using (true);
+revoke all on table public.hangman_words from anon, authenticated;
+grant select on table public.hangman_words to authenticated;
+
+-- -----------------------------
+-- daily_puzzle_words: read-only for authenticated (word list for Daily Word puzzle)
+-- -----------------------------
+alter table public.daily_puzzle_words enable row level security;
+create policy daily_puzzle_words_select on public.daily_puzzle_words for select to authenticated using (true);
+revoke all on table public.daily_puzzle_words from anon, authenticated;
+grant select on table public.daily_puzzle_words to authenticated;
+
+-- -----------------------------
+-- trivia_questions: read-only for authenticated (question bank for Trivia)
+-- -----------------------------
+alter table public.trivia_questions enable row level security;
+create policy trivia_questions_select on public.trivia_questions for select to authenticated using (true);
+revoke all on table public.trivia_questions from anon, authenticated;
+grant select on table public.trivia_questions to authenticated;
+
+-- -----------------------------
+-- would_you_rather_prompts: read-only for authenticated (prompt bank for Would You Rather)
+-- -----------------------------
+alter table public.would_you_rather_prompts enable row level security;
+create policy would_you_rather_prompts_select on public.would_you_rather_prompts for select to authenticated using (true);
+revoke all on table public.would_you_rather_prompts from anon, authenticated;
+grant select on table public.would_you_rather_prompts to authenticated;
+
+-- -----------------------------
+-- caption_game_images: read-only for authenticated (prompt images for Caption Game)
+-- -----------------------------
+alter table public.caption_game_images enable row level security;
+create policy caption_game_images_select on public.caption_game_images for select to authenticated using (true);
+revoke all on table public.caption_game_images from anon, authenticated;
+grant select on table public.caption_game_images to authenticated;
+
+-- -----------------------------
+-- Game Session Framework: RLS for game_definitions, game_sessions, participants, invitations, events
+-- -----------------------------
+alter table public.game_definitions enable row level security;
+alter table public.game_sessions enable row level security;
+alter table public.game_session_participants enable row level security;
+alter table public.game_invitations enable row level security;
+alter table public.game_events enable row level security;
+
+create policy game_definitions_select
+  on public.game_definitions for select to authenticated using (true);
+
+create policy game_sessions_select
+  on public.game_sessions for select to authenticated
+  using (
+    (select auth.uid()) = created_by
+    or exists (
+      select 1 from public.game_session_participants p
+      where p.session_id = id and p.user_id = (select auth.uid())
+    )
+    or exists (
+      select 1 from public.game_invitations i
+      where i.session_id = id and (i.recipient_id = (select auth.uid()) or i.sender_id = (select auth.uid()))
+    )
+  );
+
+create policy game_sessions_insert
+  on public.game_sessions for insert to authenticated
+  with check ((select auth.uid()) = created_by);
+
+create policy game_sessions_update
+  on public.game_sessions for update to authenticated
+  using (
+    (select auth.uid()) = created_by
+    or exists (select 1 from public.game_session_participants p where p.session_id = id and p.user_id = (select auth.uid()))
+  );
+
+create policy game_session_participants_select
+  on public.game_session_participants for select to authenticated
+  using (
+    (select auth.uid()) = user_id
+    or exists (select 1 from public.game_sessions s where s.id = session_id and s.created_by = (select auth.uid()))
+    or exists (select 1 from public.game_invitations i where i.session_id = session_id and (i.recipient_id = (select auth.uid()) or i.sender_id = (select auth.uid())))
+  );
+
+create policy game_session_participants_insert
+  on public.game_session_participants for insert to authenticated
+  with check (
+    exists (select 1 from public.game_sessions s where s.id = session_id and s.created_by = (select auth.uid()))
+    or (select auth.uid()) = user_id
+  );
+
+create policy game_session_participants_update
+  on public.game_session_participants for update to authenticated
+  using ((select auth.uid()) = user_id or exists (select 1 from public.game_sessions s where s.id = session_id and s.created_by = (select auth.uid())));
+
+create policy game_invitations_select
+  on public.game_invitations for select to authenticated
+  using (recipient_id = (select auth.uid()) or sender_id = (select auth.uid()));
+
+create policy game_invitations_insert
+  on public.game_invitations for insert to authenticated
+  with check (sender_id = (select auth.uid()));
+
+create policy game_invitations_update
+  on public.game_invitations for update to authenticated
+  using (recipient_id = (select auth.uid()) or sender_id = (select auth.uid()));
+
+create policy game_events_select
+  on public.game_events for select to authenticated
+  using (
+    exists (select 1 from public.game_sessions s where s.id = session_id and s.created_by = (select auth.uid()))
+    or exists (select 1 from public.game_session_participants p where p.session_id = session_id and p.user_id = (select auth.uid()))
+  );
+
+create policy game_events_insert
+  on public.game_events for insert to authenticated
+  with check (
+    exists (select 1 from public.game_session_participants p where p.session_id = session_id and p.user_id = (select auth.uid()))
+  );
+
+revoke all on table public.game_definitions from anon, authenticated;
+grant select on table public.game_definitions to authenticated;
+revoke all on table public.game_sessions from anon, authenticated;
+grant select, insert, update on table public.game_sessions to authenticated;
+revoke all on table public.game_session_participants from anon, authenticated;
+grant select, insert, update on table public.game_session_participants to authenticated;
+revoke all on table public.game_invitations from anon, authenticated;
+grant select, insert, update on table public.game_invitations to authenticated;
+revoke all on table public.game_events from anon, authenticated;
+grant select, insert on table public.game_events to authenticated;
+
+-- -----------------------------
 -- content_submissions, playlists, playlist_items, audit_log
 -- -----------------------------
 alter table public.content_submissions enable row level security;
@@ -1469,6 +1606,11 @@ declare
     'notifications',
     'events',
     'event_rsvps',
+    'game_definitions',
+    'game_sessions',
+    'game_session_participants',
+    'game_invitations',
+    'game_events',
     'content_submissions',
     'playlists',
     'playlist_items',

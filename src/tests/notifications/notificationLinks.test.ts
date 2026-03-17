@@ -112,6 +112,40 @@ describe('getNotificationLink', () => {
     ).toBe('/events');
   });
 
+  it('returns /dashboard/games?session=session-id for game_invite with reference_id', () => {
+    expect(
+      getNotificationLink(
+        row({
+          type: 'game_invite',
+          reference_id: 'session-id',
+        }),
+      ),
+    ).toBe('/dashboard/games?session=session-id');
+  });
+
+  it('returns /dashboard/games for game_your_turn when reference_exists is false', () => {
+    expect(
+      getNotificationLink(
+        row({
+          type: 'game_your_turn',
+          reference_id: 'session-id',
+          reference_exists: false,
+        }),
+      ),
+    ).toBe('/dashboard/games');
+  });
+
+  it('returns /dashboard/games for game_completed with payload session_id', () => {
+    expect(
+      getNotificationLink(
+        row({
+          type: 'game_completed',
+          payload: { session_id: 'sess-789' },
+        }),
+      ),
+    ).toBe('/dashboard/games?session=sess-789');
+  });
+
   it('returns /feed for unknown type', () => {
     expect(getNotificationLink(row({ type: 'unknown' }))).toBe('/feed');
   });

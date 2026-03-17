@@ -1,3 +1,8 @@
+/**
+ * Legacy Dashboard identity section. Not used; Dashboard.tsx renders IdentityHeader
+ * directly with layoutVariant="three-column", IndustryGroupBlock in rightColumn, and
+ * DashboardLinksSection below. See docs/PROFILE_LAYOUT.md. Do not use for new layout.
+ */
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { Box, Button, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';

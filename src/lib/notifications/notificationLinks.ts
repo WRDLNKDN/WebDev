@@ -4,7 +4,8 @@ export type NotificationPayload =
   | { parent_id?: string; reaction_type?: string; reaction_id?: string }
   | { handle?: string }
   | { request_id?: string }
-  | { event_id?: string; status?: string };
+  | { event_id?: string; status?: string }
+  | { session_id?: string; invitation_id?: string };
 
 export type NotificationRowForLink = {
   type: string;
@@ -46,6 +47,24 @@ export function getNotificationLink(row: NotificationRowForLink): string {
     return `/events/${row.reference_id}`;
   }
   if (row.type === 'event_rsvp' && safe) return '/events';
+
+  if (
+    row.type === 'game_invite' ||
+    row.type === 'game_invite_accepted' ||
+    row.type === 'game_invite_declined' ||
+    row.type === 'game_invite_canceled' ||
+    row.type === 'game_your_turn' ||
+    row.type === 'game_completed'
+  ) {
+    const sessionId =
+      row.reference_id ??
+      (row.payload && 'session_id' in row.payload
+        ? row.payload.session_id
+        : null);
+    if (sessionId && !safe)
+      return `/dashboard/games?session=${encodeURIComponent(String(sessionId))}`;
+    return '/dashboard/games';
+  }
 
   return '/feed';
 }

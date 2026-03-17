@@ -97,7 +97,7 @@ export const DirectoryRowActions = ({
         <>
           <Chip
             icon={<HourglassTopIcon fontSize="small" />}
-            label="Pending approval"
+            label={connectionStateLabel[member.connection_state]}
             variant="outlined"
             sx={{
               height: { xs: 38, sm: 34 },

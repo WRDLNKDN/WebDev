@@ -107,8 +107,8 @@ Deletes both `feed_connections` rows. Confirmation recommended in UI.
 
 1. **Not connected** → User A clicks Connect → `connection_requests` row created
    (pending).
-2. **Pending** (A's view: "Pending approval") / **Pending received** (B's view:
-   "Needs your approval") → A can Cancel request; B can Accept or Decline.
+2. **Pending** (A's view: "Pending") / **Pending received** (B's view:
+   "Connection request") → A can Cancel request; B can Accept or Decline.
 3. **Auto-accept path:** If B already sent A a pending request, A clicking
    Connect auto-accepts the relationship immediately.
 4. **Connected** → Either can open Chat or use Manage (Disconnect or Block).

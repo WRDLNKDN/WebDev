@@ -41,7 +41,14 @@ const FLAG_CATEGORIES: FlagCategory[] = [
     id: 'growth',
     title: 'Growth',
     description: 'Monetization and expansion surfaces.',
-    keys: ['store', 'games'],
+    keys: ['store'],
+  },
+  {
+    id: 'games',
+    title: 'Games',
+    description:
+      'Games surface: nav link and routes (Daily Word, Chess, Scrabble, etc.).',
+    keys: ['games'],
   },
 ];
 

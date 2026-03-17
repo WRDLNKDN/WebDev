@@ -143,6 +143,126 @@ export const NotificationsPage = lazy(async () => {
   return { default: m.NotificationsPage };
 });
 
+export const GamesPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/GamesPage');
+  return { default: m.GamesPage };
+});
+
+export const PhuzzlePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/PhuzzlePlayPage');
+  return { default: m.PhuzzlePlayPage };
+});
+
+export const TicTacToePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/TicTacToePlayPage');
+  return { default: m.TicTacToePlayPage };
+});
+
+export const HangmanPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/HangmanPlayPage');
+  return { default: m.HangmanPlayPage };
+});
+
+export const ConnectFourPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/ConnectFourPlayPage');
+  return { default: m.ConnectFourPlayPage };
+});
+
+export const SnakePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/SnakePlayPage');
+  return { default: m.SnakePlayPage };
+});
+
+export const SlotsPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/SlotsPlayPage');
+  return { default: m.SlotsPlayPage };
+});
+
+export const CheckersPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/CheckersPlayPage');
+  return { default: m.CheckersPlayPage };
+});
+
+export const TriviaPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/TriviaPlayPage');
+  return { default: m.TriviaPlayPage };
+});
+
+export const Game2048PlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/Game2048PlayPage');
+  return { default: m.Game2048PlayPage };
+});
+
+export const TwoTruthsLiePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/TwoTruthsLiePlayPage');
+  return { default: m.TwoTruthsLiePlayPage };
+});
+
+export const WouldYouRatherPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/WouldYouRatherPlayPage');
+  return { default: m.WouldYouRatherPlayPage };
+});
+
+export const DartsPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/DartsPlayPage');
+  return { default: m.DartsPlayPage };
+});
+
+export const CaptionGamePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/CaptionGamePlayPage');
+  return { default: m.CaptionGamePlayPage };
+});
+
+export const WordSearchPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/WordSearchPlayPage');
+  return { default: m.WordSearchPlayPage };
+});
+
+export const BattleshipPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/BattleshipPlayPage');
+  return { default: m.BattleshipPlayPage };
+});
+
+export const ReversiPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/ReversiPlayPage');
+  return { default: m.ReversiPlayPage };
+});
+
+export const BreakoutPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/BreakoutPlayPage');
+  return { default: m.BreakoutPlayPage };
+});
+
+export const ScrabblePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/ScrabblePlayPage');
+  return { default: m.ScrabblePlayPage };
+});
+
+export const TetrisPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/TetrisPlayPage');
+  return { default: m.TetrisPlayPage };
+});
+
+export const MazeChasePlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/MazeChasePlayPage');
+  return { default: m.MazeChasePlayPage };
+});
+
+export const ChessPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/ChessPlayPage');
+  return { default: m.ChessPlayPage };
+});
+
+export const BlackjackPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/BlackjackPlayPage');
+  return { default: m.BlackjackPlayPage };
+});
+
+export const DailyWordPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/DailyWordPlayPage');
+  return { default: m.DailyWordPlayPage };
+});
+
 export const SettingsLayout = lazy(async () => {
   const m = await import('../../pages/dashboard/SettingsLayout');
   return { default: m.SettingsLayout };

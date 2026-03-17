@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
+  CATEGORY_ORDER,
   PLATFORM_OPTIONS,
   getCategoryForPlatform,
 } from '../../../constants/platforms';
@@ -171,6 +172,9 @@ export const EditLinksDialog = ({
           }
           return 'Publishing';
         case 'Games':
+          if (platformValue === OTHER_PLATFORM) {
+            return 'Other';
+          }
           if (
             [
               'Epic Games Store',
@@ -480,13 +484,7 @@ export const EditLinksDialog = ({
                       }}
                     >
                       <MenuItem value="">Choose Category</MenuItem>
-                      {[
-                        'Professional',
-                        'Social',
-                        'Content',
-                        'Games',
-                        'Custom',
-                      ].map((c) => (
+                      {CATEGORY_ORDER.map((c) => (
                         <MenuItem key={c} value={c}>
                           {c}
                         </MenuItem>

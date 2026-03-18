@@ -79,12 +79,13 @@ export const toFriendlyMessage = (err: {
   const raw = (err.message ?? '').trim();
   if (
     raw.length > 0 &&
-    raw.length < 200 &&
+    raw.length < 280 &&
     (raw.startsWith('You already have') ||
       raw.startsWith('That display name') ||
       raw.startsWith('Required profile') ||
       raw.startsWith('Your session') ||
-      raw.startsWith('You must be signed in'))
+      raw.startsWith('You must be signed in') ||
+      raw.startsWith('Complete “What brings you here'))
   ) {
     return raw;
   }
@@ -101,6 +102,7 @@ export const toFriendlyMessageFromUnknown = (e: unknown): string => {
       msg.startsWith('Required profile') ||
       msg.startsWith('Your session') ||
       msg.startsWith('You must be signed in') ||
+      msg.startsWith('Complete “What brings you here') ||
       msg.includes(SUPPORT_EMAIL)
     ) {
       return msg;
@@ -203,7 +205,11 @@ export const submitJoinRegistration = async ({
 }: SubmitJoinRegistrationParams) => {
   try {
     if (!state.identity) throw new Error('Missing identity step data.');
-    if (!state.values) throw new Error('Missing values step data.');
+    if (!state.values) {
+      throw new Error(
+        'Complete “What brings you here?” and “How will you participate?” on the previous step, then try again.',
+      );
+    }
     if (!state.values.joinReason?.length)
       throw new Error(
         'What brings you here? is required. Please select at least one.',

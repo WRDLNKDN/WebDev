@@ -87,8 +87,6 @@ export const Home = () => {
 
   const [videoFailed, setVideoFailed] = useState(false);
 
-  const [showContent, setShowContent] = useState(prefersReducedMotion);
-
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
@@ -293,19 +291,14 @@ export const Home = () => {
 
   const handleVideoEnded = () => {
     if (!prefersReducedMotion) setHeroPhase('dimmed');
-    setShowContent(true);
   };
 
+  /** Tap video/backdrop to end hero motion early (CTA stays visible throughout). */
   const handleHeroSkip = useCallback(() => {
-    if (showContent) return;
-    if (!prefersReducedMotion) {
-      setHeroPhase('dimmed');
-    }
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
-    setShowContent(true);
-  }, [prefersReducedMotion, showContent]);
+    if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
+    setHeroPhase('dimmed');
+    videoRef.current?.pause();
+  }, [prefersReducedMotion, videoFailed, heroPhase]);
 
   // 1.5x playback improves pacing; respect prefers-reduced-motion
   const setPlaybackRate = useCallback(() => {
@@ -326,43 +319,51 @@ export const Home = () => {
 
   return (
     <main className="home-landing" data-testid="signed-out-landing">
-      <section className="home-landing__hero" onPointerDown={handleHeroSkip}>
-        {!prefersReducedMotion && !videoFailed ? (
-          <video
-            ref={videoRef}
-            className={`home-landing__video${heroPhase === 'dimmed' ? ' home-landing__video--dimmed' : ''}`}
-            autoPlay
-            muted
-            loop={false}
-            playsInline
-            preload="metadata"
-            poster="/assets/video/hero-bg-poster.jpg"
-            onLoadedMetadata={setPlaybackRate}
-            onCanPlay={setPlaybackRate}
-            onLoadedData={ensureVideoPlayback}
-            onEnded={handleVideoEnded}
-            onError={() => {
-              setVideoFailed(true);
-              setHeroPhase('dimmed');
-              setShowContent(true);
-            }}
-            aria-hidden="true"
-          >
-            <source
-              media="(max-width: 767px)"
-              src="/assets/video/hero-bg-mobile.mp4"
-              type="video/mp4"
-            />
-            <source src="/assets/video/hero-bg-desktop.mp4" type="video/mp4" />
-          </video>
-        ) : null}
+      <section className="home-landing__hero">
+        <div
+          className="home-landing__hero-backdrop"
+          onPointerDown={handleHeroSkip}
+          aria-hidden="true"
+        >
+          {!prefersReducedMotion && !videoFailed ? (
+            <video
+              ref={videoRef}
+              className={`home-landing__video${heroPhase === 'dimmed' ? ' home-landing__video--dimmed' : ''}`}
+              autoPlay
+              muted
+              loop={false}
+              playsInline
+              preload="metadata"
+              poster="/assets/video/hero-bg-poster.jpg"
+              onLoadedMetadata={setPlaybackRate}
+              onCanPlay={setPlaybackRate}
+              onLoadedData={ensureVideoPlayback}
+              onEnded={handleVideoEnded}
+              onError={() => {
+                setVideoFailed(true);
+                setHeroPhase('dimmed');
+              }}
+              aria-hidden="true"
+            >
+              <source
+                media="(max-width: 767px)"
+                src="/assets/video/hero-bg-mobile.mp4"
+                type="video/mp4"
+              />
+              <source
+                src="/assets/video/hero-bg-desktop.mp4"
+                type="video/mp4"
+              />
+            </video>
+          ) : null}
+
+          <div
+            className={`home-landing__video-overlay${heroPhase === 'dimmed' ? ' home-landing__video-overlay--dimmed' : ''}`}
+          />
+        </div>
 
         <div
-          className={`home-landing__video-overlay${heroPhase === 'dimmed' ? ' home-landing__video-overlay--dimmed' : ''}`}
-        />
-
-        <div
-          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
+          className="home-landing__content home-landing__content--visible"
           data-testid="app-main"
         >
           <div className="home-landing__hero-grid">

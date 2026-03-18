@@ -23,6 +23,8 @@ import { WelcomeStep } from '../../components/join/WelcomeStep';
 import { CompleteStep } from '../../components/signup/CompleteStep';
 
 import { toMessage } from '../../lib/utils/errors';
+import { showExistingProfileFeedToast } from '../../lib/auth/existingProfileRedirectToast';
+import { useAppToast } from '../../context/AppToastContext';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import {
   APP_GLASS_BACKDROP,
@@ -66,12 +68,8 @@ const CARD_SX = {
 
 export const Join = () => {
   const navigate = useNavigate();
-  const {
-    state,
-    resetSignup,
-    reconcileWithExistingProfile,
-    reconcileSessionNoProfile,
-  } = useJoin();
+  const { showToast } = useAppToast();
+  const { state, resetSignup, reconcileSessionNoProfile } = useJoin();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,28 +123,18 @@ export const Join = () => {
           if (profileErr) throw profileErr;
 
           if (profile) {
-            const hasPolicyVersion = Boolean(profile.policy_version);
-            const hasValues =
-              (profile.join_reason?.length ?? 0) > 0 &&
-              (profile.participation_style?.length ?? 0) > 0;
-            const hasDisplayName = Boolean(profile.display_name?.trim());
-
-            if (hasPolicyVersion && hasValues && hasDisplayName) {
-              resetSignup();
-              // Cache validated profile so RequireOnboarded doesn't re-fetch (avoids race/loop)
-              setProfileValidated(session.user.id, profile);
-              navigate('/feed', {
-                replace: true,
-                state: { profileValidated: profile },
-              });
-              return;
-            }
-
-            reconcileWithExistingProfile(session, profile);
-          } else {
-            // Session exists but no profile. Set identity; preserve values/profile/currentStep if returning from re-auth.
-            reconcileSessionNoProfile(session);
+            // Any existing profiles row → Feed (no Join wizard / no error).
+            resetSignup();
+            setProfileValidated(session.user.id, profile);
+            showExistingProfileFeedToast(showToast);
+            navigate('/feed', {
+              replace: true,
+              state: { profileValidated: profile },
+            });
+            return;
           }
+          // Session exists but no profile row yet.
+          reconcileSessionNoProfile(session);
         }
       } catch (e: unknown) {
         if (!cancelled) setError(toMessage(e));
@@ -159,12 +147,7 @@ export const Join = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    navigate,
-    resetSignup,
-    reconcileWithExistingProfile,
-    reconcileSessionNoProfile,
-  ]);
+  }, [navigate, resetSignup, reconcileSessionNoProfile, showToast]);
 
   const renderStep = () => {
     const steps: Record<string, React.ReactElement> = {

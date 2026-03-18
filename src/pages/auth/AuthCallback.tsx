@@ -12,7 +12,11 @@ import {
   getErrorMessage,
   MICROSOFT_SIGNIN_NOT_CONFIGURED,
 } from '../../lib/utils/errors';
-import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import {
+  showExistingProfileFeedToast,
+  showExistingProfileWelcomeToast,
+} from '../../lib/auth/existingProfileRedirectToast';
+import { useAppToast } from '../../context/AppToastContext';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { POLICY_VERSION } from '../../types/join';
@@ -33,6 +37,7 @@ import { useAuthCallbackFallbackRedirect } from './useAuthCallbackFallbackRedire
 export const AuthCallback = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { showToast } = useAppToast();
   const { setIdentity, goToStep } = useJoin();
   const [error, setError] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -178,8 +183,9 @@ export const AuthCallback = () => {
               }
             }
 
-            if (profile && isProfileOnboarded(profile)) {
+            if (profile) {
               setProfileValidated(user.id, profile);
+              showExistingProfileFeedToast(showToast);
               navigate('/feed', {
                 replace: true,
                 state: { profileValidated: profile },
@@ -241,47 +247,31 @@ export const AuthCallback = () => {
               if (cancelled) return;
 
               if (profile) {
-                devLog(
-                  '🔵 AuthCallback: profile fetched',
-                  !!profile.display_name,
-                  !!profile.join_reason?.length,
-                  !!profile.participation_style?.length,
-                );
-              } else {
-                devWarn(
-                  '🔵 AuthCallback: profile fetch returned null after retries → sending to /join',
-                );
+                devLog('🔵 AuthCallback: profile row exists → next', next);
+                setProfileValidated(user.id, profile);
+                if (next === '/feed') {
+                  showExistingProfileFeedToast(showToast);
+                } else {
+                  showExistingProfileWelcomeToast(showToast);
+                }
+                navigate(next, {
+                  replace: true,
+                  state: { profileValidated: profile },
+                });
+                return;
               }
 
-              if (!profile && profileError) {
+              if (profileError) {
                 devWarn(
-                  '🔵 AuthCallback: profile read error; continuing to protected route',
+                  '🔵 AuthCallback: profile read error; continuing to route',
                   profileError,
                 );
-                navigate(next, { replace: true });
-                return;
+              } else {
+                devLog(
+                  '🔵 AuthCallback: no profile row → next (Join if guard requires)',
+                );
               }
-
-              if (!profile || !isProfileOnboarded(profile)) {
-                const provider = mapSupabaseProvider(user);
-                setIdentity({
-                  provider,
-                  userId: user.id,
-                  email: user.email || '',
-                  termsAccepted: true,
-                  guidelinesAccepted: true,
-                  policyVersion: POLICY_VERSION,
-                  timestamp: new Date().toISOString(),
-                });
-                goToStep('values');
-                navigate('/join', { replace: true });
-                return;
-              }
-              setProfileValidated(user.id, profile);
-              navigate(next, {
-                replace: true,
-                state: { profileValidated: profile },
-              });
+              navigate(next, { replace: true });
               return;
             }
             navigate(next, { replace: true });
@@ -301,7 +291,15 @@ export const AuthCallback = () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [authCode, callbackTimeoutMs, navigate, next, setIdentity, goToStep]);
+  }, [
+    authCode,
+    callbackTimeoutMs,
+    navigate,
+    next,
+    setIdentity,
+    goToStep,
+    showToast,
+  ]);
 
   useAuthCallbackFallbackRedirect(next);
 

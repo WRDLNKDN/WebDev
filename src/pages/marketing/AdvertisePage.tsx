@@ -10,7 +10,6 @@ import {
   DialogTitle,
   IconButton,
   Link,
-  Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -252,35 +251,42 @@ export const AdvertisePage = () => {
         <DialogTitle
           id="advertise-dialog-title"
           sx={{
-            position: 'relative',
-            width: '100%',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 2,
+            flexShrink: 0,
             boxSizing: 'border-box',
             pt: 2.5,
-            pr: 6.5,
-            pb: 1.25,
+            pr: 2,
+            pb: 2,
             pl: 2.5,
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700, pr: 1 }}>
+          <Typography
+            variant="h4"
+            component="span"
+            sx={{
+              fontWeight: 700,
+              flex: 1,
+              minWidth: 0,
+              lineHeight: 1.25,
+              pr: 1,
+            }}
+          >
             Advertise with us
           </Typography>
           <IconButton
             onClick={() => !submitting && requestClose()}
             disabled={submitting}
             aria-label="Close advertise modal"
-            sx={{
-              position: 'absolute',
-              right: 12,
-              top: 12,
-              flexShrink: 0,
-            }}
+            sx={{ flexShrink: 0, mt: -0.5, mr: -0.75 }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent
           id="advertise-dialog-description"
-          dividers
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -290,6 +296,33 @@ export const AdvertisePage = () => {
             overflowY: 'auto',
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
+            px: 2.5,
+            pt: 1,
+            pb: 2,
+            borderTop: 1,
+            borderColor: 'divider',
+            // Subtle track so the scrollbar isn’t a harsh white strip on dark UI.
+            scrollbarGutter: 'stable',
+            scrollbarWidth: 'thin',
+            scrollbarColor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.28) rgba(255,255,255,0.06)'
+                : `${theme.palette.action.selected} ${theme.palette.divider}`,
+            '&::-webkit-scrollbar': { width: 8 },
+            '&::-webkit-scrollbar-track': {
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.06)'
+                  : theme.palette.action.hover,
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.28)'
+                  : theme.palette.action.selected,
+              borderRadius: 4,
+            },
           }}
         >
           <Typography variant="body1" color="text.secondary">
@@ -354,39 +387,46 @@ export const AdvertisePage = () => {
             onFileChange={handleIconChange}
             onClear={clearIcon}
           />
-
-          <Stack
-            direction={{ xs: 'column-reverse', sm: 'row' }}
-            spacing={1.5}
-            justifyContent="flex-end"
-          >
-            <Button
-              onClick={requestClose}
-              disabled={submitting}
-              color="inherit"
-              variant="outlined"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={
-                submitting ||
-                !isValidAdvertiserDestinationUrl(destinationUrl.trim())
-              }
-            >
-              {submitting ? (
-                <>
-                  <CircularProgress size={18} sx={{ mr: 1.25 }} />
-                  Sending...
-                </>
-              ) : (
-                'Send request'
-              )}
-            </Button>
-          </Stack>
         </DialogContent>
+        <DialogActions
+          sx={{
+            flexShrink: 0,
+            px: 2.5,
+            py: 2.5,
+            pt: 2,
+            gap: 1.5,
+            borderTop: 1,
+            borderColor: 'divider',
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Button
+            onClick={requestClose}
+            disabled={submitting}
+            color="inherit"
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={
+              submitting ||
+              !isValidAdvertiserDestinationUrl(destinationUrl.trim())
+            }
+          >
+            {submitting ? (
+              <>
+                <CircularProgress size={18} sx={{ mr: 1.25 }} />
+                Sending...
+              </>
+            ) : (
+              'Send request'
+            )}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Dialog

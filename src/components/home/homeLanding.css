@@ -7,11 +7,19 @@
 
 .home-landing__hero {
   position: relative;
-  min-height: 100vh;
+  /* Compact hero: keep “below the fold” sections higher without losing presence */
+  min-height: clamp(380px, 72svh, 640px);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+}
+
+.home-landing__hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  cursor: pointer;
 }
 
 .home-landing__video,
@@ -35,7 +43,8 @@
 .home-landing__video-overlay {
   z-index: 1;
   pointer-events: none;
-  background: rgba(5, 7, 15, 0.6);
+  /* Slightly stronger while video plays so headline + CTAs stay readable */
+  background: rgba(5, 7, 15, 0.68);
   transition: background-color 1s ease-out;
 }
 
@@ -48,21 +57,18 @@
   z-index: 2;
   width: min(1100px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 1.25rem 0;
-  opacity: 0;
-  transform: translateY(16px);
+  padding: 1rem 0 1.5rem;
+  opacity: 1;
+  transform: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 0;
+  pointer-events: none;
 }
 
 .home-landing__content--visible {
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    opacity 400ms ease-out,
-    transform 400ms ease-out;
+  pointer-events: auto;
 }
 
 .home-landing__hero-grid {

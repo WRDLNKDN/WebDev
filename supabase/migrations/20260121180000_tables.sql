@@ -21,124 +21,6 @@ begin
   end if;
 end $$;
 
--- -----------------------------
--- Consolidated follow-up migrations
--- -----------------------------
-
--- Enforce the single-category portfolio model for future writes without
--- rewriting any existing portfolio_items rows.
-alter table public.portfolio_items
-  drop constraint if exists portfolio_items_single_category_check;
-
-alter table public.portfolio_items
-  add constraint portfolio_items_single_category_check
-  check (cardinality(coalesce(tech_stack, '{}'::text[])) <= 1)
-  not valid;
-
-create or replace function public.chat_create_dm(p_other_user_id uuid)
-returns uuid
-language plpgsql
-security definer
-set search_path = public, pg_catalog
-as $$
-declare
-  v_uid uuid;
-  v_room_id uuid;
-begin
-  v_uid := auth.uid();
-  if v_uid is null then
-    raise exception 'Not authenticated';
-  end if;
-  if p_other_user_id is null or p_other_user_id = v_uid then
-    raise exception 'Invalid other user for DM';
-  end if;
-  if not public.are_chat_connections(v_uid, p_other_user_id) then
-    raise exception 'You can only start 1:1 chats with Connections.';
-  end if;
-  if public.chat_blocked(v_uid, p_other_user_id) then
-    raise exception 'You cannot message this member.';
-  end if;
-
-  select r.id
-    into v_room_id
-  from public.chat_rooms r
-  join public.chat_room_members mine
-    on mine.room_id = r.id
-   and mine.user_id = v_uid
-  join public.chat_room_members other_member
-    on other_member.room_id = r.id
-   and other_member.user_id = p_other_user_id
-  where r.room_type = 'dm'
-  order by coalesce(
-             (
-               select max(m.created_at)
-               from public.chat_messages m
-               where m.room_id = r.id
-             ),
-             r.updated_at,
-             r.created_at
-           ) desc,
-           r.created_at asc,
-           r.id asc
-  limit 1;
-
-  if v_room_id is not null then
-    insert into public.chat_room_members (room_id, user_id, role, left_at)
-    values
-      (v_room_id, v_uid, 'admin', null),
-      (v_room_id, p_other_user_id, 'member', null)
-    on conflict (room_id, user_id)
-    do update
-      set role = excluded.role,
-          left_at = null;
-
-    return v_room_id;
-  end if;
-
-  insert into public.chat_rooms (room_type, name, created_by)
-  values ('dm', null, v_uid)
-  returning id into v_room_id;
-
-  if v_room_id is null then
-    raise exception 'Could not create room';
-  end if;
-
-  insert into public.chat_room_members (room_id, user_id, role)
-  values (v_room_id, v_uid, 'admin'), (v_room_id, p_other_user_id, 'member');
-
-  return v_room_id;
-end;
-$$;
-
-revoke all on function public.chat_create_dm(uuid) from public;
-grant execute on function public.chat_create_dm(uuid) to authenticated;
-
-create table if not exists public.chat_room_preferences (
-  room_id uuid not null references public.chat_rooms(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  is_favorite boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key (room_id, user_id)
-);
-
-create index if not exists idx_chat_room_preferences_user_id
-  on public.chat_room_preferences(user_id);
-
-create index if not exists idx_chat_room_preferences_user_favorite
-  on public.chat_room_preferences(user_id, is_favorite)
-  where is_favorite = true;
-
-comment on table public.chat_room_preferences is
-  'User-specific chat room preferences, such as favorites.';
-
-drop trigger if exists trg_chat_room_preferences_updated_at
-  on public.chat_room_preferences;
-create trigger trg_chat_room_preferences_updated_at
-before update on public.chat_room_preferences
-for each row
-execute function public.set_updated_at();
-
 -- project-sources: uploaded portfolio artifacts (file-backed project source URLs)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -313,16 +195,6 @@ end $$;
 comment on column public.profiles.avatar_type is
   'How the active avatar was set: photo (upload), preset (Weirdling preset), ai (generated Weirdling).';
 
--- Backfill: existing rows using Weirdling avatar become avatar_type = ai and get avatar URL from weirdlings.
-update public.profiles p
-set
-  avatar_type = 'ai',
-  avatar = coalesce(
-    nullif(trim(p.avatar), ''),
-    (select w.avatar_url from public.weirdlings w where w.user_id = p.id and w.is_active = true limit 1)
-  )
-where p.use_weirdling_avatar = true;
-
 comment on column public.profiles.use_weirdling_avatar is
   'When true, show saved Weirdling avatar as profile picture instead of uploaded avatar.';
 
@@ -488,7 +360,130 @@ as $$
     and p.id = auth.uid();
 $$;
 
--- Public share: return read-only profile + portfolio for valid token. Returns single row or empty.
+-- Return current user's share token; create one if missing.
+create or replace function public.get_or_create_profile_share_token()
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_token text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  select profile_share_token into v_token
+  from public.profiles
+  where id = v_uid;
+  if v_token is not null then
+    return v_token;
+  end if;
+  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
+  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
+  update public.profiles
+  set profile_share_token = v_token,
+      profile_share_token_created_at = now()
+  where id = v_uid;
+  return v_token;
+end;
+$$;
+
+-- Regenerate share token; previous token is invalidated immediately.
+create or replace function public.regenerate_profile_share_token()
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_token text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
+  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
+  update public.profiles
+  set profile_share_token = v_token,
+      profile_share_token_created_at = now()
+  where id = v_uid;
+  return v_token;
+end;
+$$;
+
+revoke all on function public.get_own_profile_by_handle(text) from public;
+grant execute on function public.get_own_profile_by_handle(text) to authenticated;
+revoke all on function public.get_or_create_profile_share_token() from public;
+grant execute on function public.get_or_create_profile_share_token() to authenticated;
+revoke all on function public.regenerate_profile_share_token() from public;
+grant execute on function public.regenerate_profile_share_token() to authenticated;
+
+-- -----------------------------
+-- portfolio_items (dashboard projects)
+-- -----------------------------
+create table if not exists public.portfolio_items (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  description text,
+  project_url text,
+  image_url text,
+  tech_stack text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
+alter table if exists public.portfolio_items
+  add column if not exists sort_order integer not null default 0;
+create index if not exists idx_portfolio_items_owner_sort on public.portfolio_items(owner_id, sort_order);
+
+-- URL classification and thumbnail (Step 1 + Step 6). Additive only: ADD COLUMN IF NOT EXISTS.
+-- Existing rows keep all current data; new columns are null. No DROP, DELETE, or TRUNCATE.
+alter table public.portfolio_items
+  add column if not exists is_highlighted boolean not null default false,
+  add column if not exists normalized_url text,
+  add column if not exists embed_url text,
+  add column if not exists resolved_type text,
+  add column if not exists thumbnail_url text,
+  add column if not exists thumbnail_status text check (thumbnail_status is null or thumbnail_status in ('pending', 'generated', 'failed'));
+
+comment on table public.portfolio_items is
+  'User portfolio projects (dashboard).';
+comment on column public.portfolio_items.sort_order is
+  'Explicit order for display; lower first. Used for drag-and-drop reorder.';
+comment on column public.portfolio_items.is_highlighted is
+  'When true, item appears in the Portfolio Showcase highlights carousel.';
+comment on column public.portfolio_items.normalized_url is
+  'Canonical URL after provider normalization (e.g. Google /preview).';
+comment on column public.portfolio_items.embed_url is
+  'URL used for iframe embed when different from project_url.';
+comment on column public.portfolio_items.resolved_type is
+  'Detected link type: image, pdf, document, presentation, spreadsheet, text, google_doc, google_sheet, google_slides.';
+comment on column public.portfolio_items.thumbnail_url is
+  'Server-generated thumbnail URL in platform storage; null when manual image or pending/failed.';
+comment on column public.portfolio_items.thumbnail_status is
+  'pending = generation queued; generated = thumbnail_url set; failed = fallback only. Thumbnail failure does not block saving.';
+
+drop trigger if exists trg_portfolio_items_updated_at on public.portfolio_items;
+create trigger trg_portfolio_items_updated_at
+before update on public.portfolio_items
+for each row
+execute function public.set_updated_at();
+
+alter table public.portfolio_items
+  drop constraint if exists portfolio_items_single_category_check;
+alter table public.portfolio_items
+  add constraint portfolio_items_single_category_check
+  check (cardinality(coalesce(tech_stack, '{}'::text[])) <= 1)
+  not valid;
+
+-- Public share: needs portfolio_items (defined above).
 create or replace function public.get_public_profile_by_share_token(p_token text)
 returns jsonb
 language plpgsql
@@ -553,123 +548,8 @@ begin
 end;
 $$;
 
--- Return current user's share token; create one if missing.
-create or replace function public.get_or_create_profile_share_token()
-returns text
-language plpgsql
-security definer
-set search_path = public, extensions, pg_catalog
-as $$
-declare
-  v_uid uuid;
-  v_token text;
-begin
-  v_uid := auth.uid();
-  if v_uid is null then
-    raise exception 'Not authenticated';
-  end if;
-  select profile_share_token into v_token
-  from public.profiles
-  where id = v_uid;
-  if v_token is not null then
-    return v_token;
-  end if;
-  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
-  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
-  update public.profiles
-  set profile_share_token = v_token,
-      profile_share_token_created_at = now()
-  where id = v_uid;
-  return v_token;
-end;
-$$;
-
--- Regenerate share token; previous token is invalidated immediately.
-create or replace function public.regenerate_profile_share_token()
-returns text
-language plpgsql
-security definer
-set search_path = public, extensions, pg_catalog
-as $$
-declare
-  v_uid uuid;
-  v_token text;
-begin
-  v_uid := auth.uid();
-  if v_uid is null then
-    raise exception 'Not authenticated';
-  end if;
-  -- base64url: PostgreSQL encode() only supports base64; convert to URL-safe form
-  v_token := replace(replace(replace(encode(gen_random_bytes(24), 'base64'), '+', '-'), '/', '_'), '=', '');
-  update public.profiles
-  set profile_share_token = v_token,
-      profile_share_token_created_at = now()
-  where id = v_uid;
-  return v_token;
-end;
-$$;
-
-revoke all on function public.get_own_profile_by_handle(text) from public;
-grant execute on function public.get_own_profile_by_handle(text) to authenticated;
 revoke all on function public.get_public_profile_by_share_token(text) from public;
 grant execute on function public.get_public_profile_by_share_token(text) to anon, authenticated;
-revoke all on function public.get_or_create_profile_share_token() from public;
-grant execute on function public.get_or_create_profile_share_token() to authenticated;
-revoke all on function public.regenerate_profile_share_token() from public;
-grant execute on function public.regenerate_profile_share_token() to authenticated;
-
--- -----------------------------
--- portfolio_items (dashboard projects)
--- -----------------------------
-create table if not exists public.portfolio_items (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references public.profiles(id) on delete cascade,
-  title text not null,
-  description text,
-  project_url text,
-  image_url text,
-  tech_stack text[] not null default '{}',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists idx_portfolio_items_owner_id on public.portfolio_items(owner_id);
-alter table if exists public.portfolio_items
-  add column if not exists sort_order integer not null default 0;
-create index if not exists idx_portfolio_items_owner_sort on public.portfolio_items(owner_id, sort_order);
-
--- URL classification and thumbnail (Step 1 + Step 6). Additive only: ADD COLUMN IF NOT EXISTS.
--- Existing rows keep all current data; new columns are null. No DROP, DELETE, or TRUNCATE.
-alter table public.portfolio_items
-  add column if not exists is_highlighted boolean not null default false,
-  add column if not exists normalized_url text,
-  add column if not exists embed_url text,
-  add column if not exists resolved_type text,
-  add column if not exists thumbnail_url text,
-  add column if not exists thumbnail_status text check (thumbnail_status is null or thumbnail_status in ('pending', 'generated', 'failed'));
-
-comment on table public.portfolio_items is
-  'User portfolio projects (dashboard).';
-comment on column public.portfolio_items.sort_order is
-  'Explicit order for display; lower first. Used for drag-and-drop reorder.';
-comment on column public.portfolio_items.is_highlighted is
-  'When true, item appears in the Portfolio Showcase highlights carousel.';
-comment on column public.portfolio_items.normalized_url is
-  'Canonical URL after provider normalization (e.g. Google /preview).';
-comment on column public.portfolio_items.embed_url is
-  'URL used for iframe embed when different from project_url.';
-comment on column public.portfolio_items.resolved_type is
-  'Detected link type: image, pdf, document, presentation, spreadsheet, text, google_doc, google_sheet, google_slides.';
-comment on column public.portfolio_items.thumbnail_url is
-  'Server-generated thumbnail URL in platform storage; null when manual image or pending/failed.';
-comment on column public.portfolio_items.thumbnail_status is
-  'pending = generation queued; generated = thumbnail_url set; failed = fallback only. Thumbnail failure does not block saving.';
-
-drop trigger if exists trg_portfolio_items_updated_at on public.portfolio_items;
-create trigger trg_portfolio_items_updated_at
-before update on public.portfolio_items
-for each row
-execute function public.set_updated_at();
 
 -- -----------------------------
 -- generation_jobs (Weirdling audit + idempotency)
@@ -745,6 +625,19 @@ drop trigger if exists trg_weirdlings_updated_at on public.weirdlings;
 create trigger trg_weirdlings_updated_at
   before update on public.weirdlings
   for each row execute function public.set_updated_at();
+
+create index if not exists idx_weirdlings_user_id_active
+  on public.weirdlings(user_id)
+  where is_active = true;
+
+update public.profiles p
+set
+  avatar_type = 'ai',
+  avatar = coalesce(
+    nullif(trim(p.avatar), ''),
+    (select w.avatar_url from public.weirdlings w where w.user_id = p.id and w.is_active = true limit 1)
+  )
+where p.use_weirdling_avatar = true;
 
 -- -----------------------------
 -- Feed: connections (who follows whom) and activity stream
@@ -948,6 +841,28 @@ create unique index if not exists idx_feed_items_reaction_user_post
   where kind = 'reaction'
     and payload->>'type' in ('like', 'love', 'inspiration', 'care');
 
+-- get_feed_page / get_saved_feed_page: root rows, cursor order matches index
+create index if not exists idx_feed_items_root_timeline
+  on public.feed_items (
+    (coalesce(scheduled_at, created_at)) desc,
+    id desc
+  )
+  where parent_id is null;
+
+-- Connections-mode feed: filter fi.user_id = any(connection set) + same ordering
+create index if not exists idx_feed_items_user_root_timeline
+  on public.feed_items (
+    user_id,
+    (coalesce(scheduled_at, created_at)) desc,
+    id desc
+  )
+  where parent_id is null;
+
+-- Viewer reaction subquery (laughing/rage etc.): parent_id + user_id + kind
+create index if not exists idx_feed_items_reaction_parent_user_kind
+  on public.feed_items(parent_id, user_id)
+  where kind = 'reaction' and parent_id is not null;
+
 comment on table public.feed_items is
   'Unified activity stream: WRDLNKDN-native posts, profile updates, user-submitted external links (opaque), reposts, reactions.';
 comment on column public.feed_items.payload is
@@ -992,6 +907,10 @@ create table if not exists public.saved_feed_items (
 );
 create index if not exists idx_saved_feed_items_user_created
   on public.saved_feed_items(user_id, created_at desc);
+
+create index if not exists idx_saved_feed_items_feed_item_id
+  on public.saved_feed_items(feed_item_id);
+
 comment on table public.saved_feed_items is
   'Member bookmarks for feed items; powers Saved page and Save action on Feed.';
 
@@ -1536,6 +1455,32 @@ create index if not exists idx_chat_rooms_room_type on public.chat_rooms(room_ty
 
 comment on table public.chat_rooms is 'Chat rooms: 1:1 (dm) or invite-only group (max 100 members).';
 
+create table if not exists public.chat_room_preferences (
+  room_id uuid not null references public.chat_rooms(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  is_favorite boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (room_id, user_id)
+);
+
+create index if not exists idx_chat_room_preferences_user_id
+  on public.chat_room_preferences(user_id);
+
+create index if not exists idx_chat_room_preferences_user_favorite
+  on public.chat_room_preferences(user_id, is_favorite)
+  where is_favorite = true;
+
+comment on table public.chat_room_preferences is
+  'User-specific chat room preferences, such as favorites.';
+
+drop trigger if exists trg_chat_room_preferences_updated_at
+  on public.chat_room_preferences;
+create trigger trg_chat_room_preferences_updated_at
+before update on public.chat_room_preferences
+for each row
+execute function public.set_updated_at();
+
 create table if not exists public.chat_room_members (
   room_id uuid not null references public.chat_rooms(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -1547,6 +1492,10 @@ create table if not exists public.chat_room_members (
 
 create index if not exists idx_chat_room_members_user_id on public.chat_room_members(user_id);
 create index if not exists idx_chat_room_members_room_id on public.chat_room_members(room_id);
+
+create index if not exists idx_chat_room_members_room_active
+  on public.chat_room_members(room_id)
+  where left_at is null;
 
 comment on table public.chat_room_members is 'Membership: admin (creator for groups), member. left_at set when user leaves.';
 
@@ -1695,6 +1644,84 @@ $$;
 revoke all on function public.chat_blocked(uuid, uuid) from public;
 grant execute on function public.chat_blocked(uuid, uuid) to authenticated, service_role;
 
+create or replace function public.chat_create_dm(p_other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_room_id uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_other_user_id is null or p_other_user_id = v_uid then
+    raise exception 'Invalid other user for DM';
+  end if;
+  if not public.are_chat_connections(v_uid, p_other_user_id) then
+    raise exception 'You can only start 1:1 chats with Connections.';
+  end if;
+  if public.chat_blocked(v_uid, p_other_user_id) then
+    raise exception 'You cannot message this member.';
+  end if;
+
+  select r.id
+    into v_room_id
+  from public.chat_rooms r
+  join public.chat_room_members mine
+    on mine.room_id = r.id
+   and mine.user_id = v_uid
+  join public.chat_room_members other_member
+    on other_member.room_id = r.id
+   and other_member.user_id = p_other_user_id
+  where r.room_type = 'dm'
+  order by coalesce(
+             (
+               select max(m.created_at)
+               from public.chat_messages m
+               where m.room_id = r.id
+             ),
+             r.updated_at,
+             r.created_at
+           ) desc,
+           r.created_at asc,
+           r.id asc
+  limit 1;
+
+  if v_room_id is not null then
+    insert into public.chat_room_members (room_id, user_id, role, left_at)
+    values
+      (v_room_id, v_uid, 'admin', null),
+      (v_room_id, p_other_user_id, 'member', null)
+    on conflict (room_id, user_id)
+    do update
+      set role = excluded.role,
+          left_at = null;
+
+    return v_room_id;
+  end if;
+
+  insert into public.chat_rooms (room_type, name, created_by)
+  values ('dm', null, v_uid)
+  returning id into v_room_id;
+
+  if v_room_id is null then
+    raise exception 'Could not create room';
+  end if;
+
+  insert into public.chat_room_members (room_id, user_id, role)
+  values (v_room_id, v_uid, 'admin'), (v_room_id, p_other_user_id, 'member');
+
+  return v_room_id;
+end;
+$$;
+
+revoke all on function public.chat_create_dm(uuid) from public;
+grant execute on function public.chat_create_dm(uuid) to authenticated;
+
 -- chat_can_message_in_room: for DM requires mutual connection + no block; for group requires membership
 create or replace function public.chat_can_message_in_room(p_room_id uuid, p_sender_id uuid)
 returns boolean
@@ -1821,49 +1848,6 @@ $$;
 
 revoke all on function public.chat_create_group(text, uuid[]) from public;
 grant execute on function public.chat_create_group(text, uuid[]) to authenticated;
-
--- chat_create_dm: Create 1:1 room + both members (SECURITY DEFINER so RLS doesn't block insert)
-create or replace function public.chat_create_dm(p_other_user_id uuid)
-returns uuid
-language plpgsql
-security definer
-set search_path = public, pg_catalog
-as $$
-declare
-  v_uid uuid;
-  v_room_id uuid;
-begin
-  v_uid := auth.uid();
-  if v_uid is null then
-    raise exception 'Not authenticated';
-  end if;
-  if p_other_user_id is null or p_other_user_id = v_uid then
-    raise exception 'Invalid other user for DM';
-  end if;
-  if not public.are_chat_connections(v_uid, p_other_user_id) then
-    raise exception 'You can only start 1:1 chats with Connections.';
-  end if;
-  if public.chat_blocked(v_uid, p_other_user_id) then
-    raise exception 'You cannot message this member.';
-  end if;
-
-  insert into public.chat_rooms (room_type, name, created_by)
-  values ('dm', null, v_uid)
-  returning id into v_room_id;
-
-  if v_room_id is null then
-    raise exception 'Could not create room';
-  end if;
-
-  insert into public.chat_room_members (room_id, user_id, role)
-  values (v_room_id, v_uid, 'admin'), (v_room_id, p_other_user_id, 'member');
-
-  return v_room_id;
-end;
-$$;
-
-revoke all on function public.chat_create_dm(uuid) from public;
-grant execute on function public.chat_create_dm(uuid) to authenticated;
 
 -- Set original_admin_id on group create
 create or replace function public.chat_set_original_admin()

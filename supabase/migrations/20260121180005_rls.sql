@@ -680,18 +680,18 @@ create policy "Users can manage own weirdlings"
 -- -----------------------------
 alter table public.feed_connections enable row level security;
 
+-- Single permissive SELECT (avoids evaluating two policies per row; same semantics as OR of the old pair)
 drop policy if exists "Users can read own connections" on public.feed_connections;
-create policy "Users can read own connections"
-  on public.feed_connections for select
-  to authenticated
-  using ((select auth.uid()) = feed_connections.user_id);
-
--- Allow reading rows where current user is connected_user_id (so Start a chat can see mutual connections)
 drop policy if exists "Users can read connections where they are connected_user" on public.feed_connections;
-create policy "Users can read connections where they are connected_user"
+drop policy if exists "Members can read feed_connections they participate in"
+  on public.feed_connections;
+create policy "Members can read feed_connections they participate in"
   on public.feed_connections for select
   to authenticated
-  using ((select auth.uid()) = feed_connections.connected_user_id);
+  using (
+    (select auth.uid()) = feed_connections.user_id
+    or (select auth.uid()) = feed_connections.connected_user_id
+  );
 
 drop policy if exists "Users can insert own connections" on public.feed_connections;
 create policy "Users can insert own connections"

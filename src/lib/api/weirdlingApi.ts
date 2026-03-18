@@ -10,7 +10,10 @@ import type {
   Weirdling,
 } from '../../types/weirdling';
 
-const API_BASE = '/api/weirdling';
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
+  '';
+const WEIRDLING_API = `${API_BASE}/api/weirdling`;
 
 export type GenerateResult = {
   ok: boolean;
@@ -34,12 +37,15 @@ export async function generateWeirdling(
   if (idempotencyKey) body.idempotency_key = idempotencyKey;
 
   const res = await authedFetch(
-    `${API_BASE}/generate`,
+    `${WEIRDLING_API}/generate`,
     {
       method: 'POST',
       body: JSON.stringify(body),
     },
-    { includeJsonContentType: true, credentials: 'include' },
+    {
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
   );
 
   let data: Record<string, unknown>;
@@ -57,14 +63,44 @@ export async function generateWeirdling(
   return data as GenerateResult;
 }
 
+/** Remaining AI Weirdling preview generations for today (daily limit 5). */
+export async function getPreviewRemaining(): Promise<{
+  remaining: number;
+  limit: number;
+}> {
+  const res = await authedFetch(
+    `${WEIRDLING_API}/preview-remaining`,
+    { method: 'GET' },
+    {
+      includeJsonContentType: false,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
+  const data = (await res.json()) as {
+    ok?: boolean;
+    data?: { remaining?: number; limit?: number };
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(messageFromApiResponse(res.status, data?.error, undefined));
+  }
+  return {
+    remaining: data?.data?.remaining ?? 0,
+    limit: data?.data?.limit ?? 5,
+  };
+}
+
 export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE}/save`,
+    `${WEIRDLING_API}/save`,
     {
       method: 'POST',
       body: JSON.stringify({ jobId }),
     },
-    { includeJsonContentType: true, credentials: 'include' },
+    {
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
   );
   let data: Record<string, unknown>;
   try {
@@ -84,12 +120,15 @@ export async function saveWeirdlingPreview(
   preview: WeirdlingPreview,
 ): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE}/save`,
+    `${WEIRDLING_API}/save`,
     {
       method: 'POST',
       body: JSON.stringify(preview),
     },
-    { includeJsonContentType: true, credentials: 'include' },
+    {
+      includeJsonContentType: true,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
   );
   let data: Record<string, unknown>;
   try {
@@ -109,9 +148,12 @@ export async function saveWeirdlingPreview(
 export async function getMyWeirdlings(): Promise<Weirdling[]> {
   try {
     const res = await authedFetch(
-      `${API_BASE}/me`,
+      `${WEIRDLING_API}/me`,
       { method: 'GET' },
-      { includeJsonContentType: true, credentials: 'include' },
+      {
+        includeJsonContentType: true,
+        credentials: API_BASE ? 'omit' : 'include',
+      },
     );
     let data: Record<string, unknown>;
     try {
@@ -140,7 +182,7 @@ export async function getMyWeirdling(): Promise<Weirdling | null> {
 
 export async function deleteWeirdling(id: string): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE}/me/${encodeURIComponent(id)}`,
+    `${WEIRDLING_API}/me/${encodeURIComponent(id)}`,
     {
       method: 'DELETE',
     },

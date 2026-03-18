@@ -172,7 +172,7 @@ export const AppRouteTree = ({
       <Route
         path="/groups"
         element={
-          <RequireFeatureFlag flagKey={GROUPS_FLAG}>
+          <RequireFeatureFlag flagKey={GROUPS_FLAG} fallbackTo="/feed">
             <GroupsPage />
           </RequireFeatureFlag>
         }
@@ -180,7 +180,7 @@ export const AppRouteTree = ({
       <Route
         path="/forums"
         element={
-          <RequireFeatureFlag flagKey={GROUPS_FLAG}>
+          <RequireFeatureFlag flagKey={GROUPS_FLAG} fallbackTo="/feed">
             <Navigate to="/groups" replace />
           </RequireFeatureFlag>
         }

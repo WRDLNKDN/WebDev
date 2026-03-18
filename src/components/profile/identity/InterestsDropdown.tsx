@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import React, { useId, useState } from 'react';
 import {
+  INTEREST_CUSTOM_OTHER_MAX_LENGTH,
   INTEREST_OPTIONS_FLAT,
   INTERESTS_MAX,
   type InterestCategory,
@@ -157,7 +158,10 @@ export const InterestsDropdown = ({
               typeof option === 'string' ? option : option
             }
             filterOptions={(options, state) => {
-              const raw = state.inputValue?.trim() ?? '';
+              const raw = (state.inputValue?.trim() ?? '').slice(
+                0,
+                INTEREST_CUSTOM_OTHER_MAX_LENGTH,
+              );
               const inputLower = raw.toLowerCase();
               if (!inputLower) return options;
               const filtered = options.filter((opt) =>
@@ -181,6 +185,7 @@ export const InterestsDropdown = ({
                 inputProps={{
                   ...params.inputProps,
                   'aria-label': 'Search or add interest',
+                  maxLength: INTEREST_CUSTOM_OTHER_MAX_LENGTH,
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {

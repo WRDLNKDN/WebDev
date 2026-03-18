@@ -1,16 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {
-  Box,
-  Button,
-  Collapse,
-  Link,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Collapse, Paper, Stack, Typography } from '@mui/material';
+import { DestinationLink } from '../../components/common/DestinationLink';
 import { useState } from 'react';
 import {
   CATEGORY_ORDER,
@@ -157,12 +149,10 @@ const DashboardLinkCategory = ({ group }: { group: DashboardLinkGroup }) => {
               link.label?.trim() || platform || getShortLinkLabel(link.url);
 
             return (
-              <Link
+              <DestinationLink
                 key={link.id}
                 href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                underline="none"
+                ariaLabelPrefix={label}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -201,8 +191,7 @@ const DashboardLinkCategory = ({ group }: { group: DashboardLinkGroup }) => {
                     {label}
                   </Typography>
                 </Stack>
-                <OpenInNewIcon sx={{ fontSize: 16, flexShrink: 0 }} />
-              </Link>
+              </DestinationLink>
             );
           })}
         </Stack>

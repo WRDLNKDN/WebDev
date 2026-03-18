@@ -73,15 +73,17 @@ export const SettingsAppearancePage = () => {
               type="button"
               onClick={() => void handleThemeChange(option.id)}
               aria-pressed={active}
-              sx={{
+              sx={(theme) => ({
                 minHeight: 220,
                 p: 0,
                 textAlign: 'left',
                 borderRadius: 3,
-                border: active
-                  ? '2px solid'
-                  : '1px solid rgba(255,255,255,0.08)',
-                borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.08)',
+                border: active ? '2px solid' : '1px solid',
+                borderColor: active
+                  ? 'primary.main'
+                  : theme.palette.mode === 'light'
+                    ? theme.palette.divider
+                    : 'rgba(255,255,255,0.08)',
                 overflow: 'hidden',
                 bgcolor: 'background.paper',
                 color: 'text.primary',
@@ -103,7 +105,7 @@ export const SettingsAppearancePage = () => {
                     transform: 'none',
                   },
                 },
-              }}
+              })}
             >
               <Box
                 sx={{

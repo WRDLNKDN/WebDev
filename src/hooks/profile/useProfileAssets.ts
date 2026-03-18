@@ -36,7 +36,11 @@ export const uploadAvatarAsset = async ({
     data: { publicUrl },
   } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
-  await updateProfile({ avatar: publicUrl });
+  await updateProfile({
+    avatar: publicUrl,
+    avatar_type: 'photo',
+    use_weirdling_avatar: false,
+  } as Partial<DashboardProfile>);
   return publicUrl;
 };
 

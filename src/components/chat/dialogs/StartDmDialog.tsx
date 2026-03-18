@@ -22,6 +22,7 @@ type ConnectionProfile = {
   handle: string;
   display_name: string | null;
   avatar: string | null;
+  email?: string | null;
 };
 
 type StartDmDialogProps = {
@@ -51,7 +52,8 @@ export const StartDmDialog = ({
     return connections.filter(
       (c) =>
         (c.display_name ?? '').toLowerCase().includes(q) ||
-        (c.handle ?? '').toLowerCase().includes(q),
+        (c.handle ?? '').toLowerCase().includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q),
     );
   }, [connections, searchQuery]);
 
@@ -125,7 +127,7 @@ export const StartDmDialog = ({
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('id, handle, display_name, avatar')
+          .select('id, handle, display_name, avatar, email')
           .in('id', allowedIds);
 
         if (cancelled) return;
@@ -211,7 +213,7 @@ export const StartDmDialog = ({
             fullWidth
             size="small"
             inputRef={searchInputRef}
-            placeholder="Search connections by name or handle…"
+            placeholder="Search connections by name, handle, or email…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(event) => {

@@ -7,8 +7,8 @@ import {
   type AppThemeId,
 } from './themeConstants';
 
-export function createAppTheme(themeId: AppThemeId = 'ocean') {
-  const preset = THEME_PRESETS[themeId] ?? THEME_PRESETS.ocean;
+export function createAppTheme(themeId: AppThemeId = 'dark') {
+  const preset = THEME_PRESETS[themeId] ?? THEME_PRESETS.dark;
   const PALETTE = preset.palette ?? DEFAULT_PALETTE;
   const isLight = PALETTE.mode === 'light';
   const surfaceBorder = alpha(
@@ -459,7 +459,9 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           root: {
             '& .MuiBackdrop-root': {
-              backgroundColor: alpha('#040A19', 0.6),
+              backgroundColor: isLight
+                ? alpha('#0F172A', 0.4)
+                : alpha('#040A19', 0.6),
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
             },
@@ -467,10 +469,18 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
           paper: {
             borderRadius: 16,
             border: `1px solid ${surfaceBorder}`,
-            backgroundImage:
-              'linear-gradient(180deg, rgba(10,18,32,0.98), rgba(7,15,28,0.98))',
-            boxShadow:
-              '0 28px 64px rgba(1, 6, 18, 0.48), inset 0 1px 0 rgba(255,255,255,0.05)',
+            ...(isLight
+              ? {
+                  backgroundColor: PALETTE.background.paper,
+                  boxShadow:
+                    '0 28px 64px rgba(15, 23, 42, 0.2), inset 0 1px 0 rgba(255,255,255,0.8)',
+                }
+              : {
+                  backgroundImage:
+                    'linear-gradient(180deg, rgba(10,18,32,0.98), rgba(7,15,28,0.98))',
+                  boxShadow:
+                    '0 28px 64px rgba(1, 6, 18, 0.48), inset 0 1px 0 rgba(255,255,255,0.05)',
+                }),
             maxHeight: 'min(880px, calc(100dvh - 32px))',
           },
         },
@@ -560,9 +570,16 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
             },
             '&.MuiChip-deletable': {
               paddingRight: 4,
-              borderColor: 'rgba(173,203,255,0.2)',
-              boxShadow:
-                '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+              ...(isLight
+                ? {
+                    borderColor: alpha(PALETTE.text.primary, 0.2),
+                    boxShadow: `0 2px 8px ${alpha(PALETTE.text.primary, 0.08)}`,
+                  }
+                : {
+                    borderColor: 'rgba(173,203,255,0.2)',
+                    boxShadow:
+                      '0 8px 18px rgba(4,10,25,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+                  }),
             },
             '@media (prefers-reduced-motion: reduce)': {
               transition: 'none',
@@ -575,26 +592,42 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
           deleteIcon: {
             marginRight: 4,
             marginLeft: 8,
-            color: '#f5f9ff',
             fontSize: '1rem',
             borderRadius: 12,
             padding: 4,
-            background:
-              'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%)',
-            border: '1px solid rgba(173,203,255,0.22)',
-            boxShadow:
-              '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
             transition:
               'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease',
-            '&:hover': {
-              color: '#ffffff',
-              background:
-                'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%)',
-              borderColor: 'rgba(191,219,254,0.4)',
-              boxShadow:
-                '0 12px 24px rgba(4,10,25,0.3), 0 0 12px rgba(96,208,255,0.16)',
-              transform: 'scale(1.04)',
-            },
+            ...(isLight
+              ? {
+                  color: PALETTE.text.secondary,
+                  background: alpha(PALETTE.primary.main, 0.08),
+                  border: `1px solid ${alpha(PALETTE.primary.main, 0.2)}`,
+                  boxShadow: `0 2px 6px ${alpha(PALETTE.text.primary, 0.06)}`,
+                  '&:hover': {
+                    color: PALETTE.primary.dark,
+                    background: alpha(PALETTE.primary.main, 0.14),
+                    borderColor: alpha(PALETTE.primary.main, 0.35),
+                    boxShadow: `0 4px 12px ${alpha(PALETTE.primary.main, 0.15)}`,
+                    transform: 'scale(1.04)',
+                  },
+                }
+              : {
+                  color: '#f5f9ff',
+                  background:
+                    'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%)',
+                  border: '1px solid rgba(173,203,255,0.22)',
+                  boxShadow:
+                    '0 10px 18px rgba(4,10,25,0.26), inset 0 1px 0 rgba(255,255,255,0.12)',
+                  '&:hover': {
+                    color: '#ffffff',
+                    background:
+                      'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%)',
+                    borderColor: 'rgba(191,219,254,0.4)',
+                    boxShadow:
+                      '0 12px 24px rgba(4,10,25,0.3), 0 0 12px rgba(96,208,255,0.16)',
+                    transform: 'scale(1.04)',
+                  },
+                }),
           },
         },
       },
@@ -668,26 +701,33 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
         styleOverrides: {
           tooltip: {
             fontFamily: FONT_FAMILY,
-            backgroundColor: '#424242',
-            color: '#ffffff',
             fontSize: '0.875rem',
-            border: '1px solid rgba(255,255,255,0.1)',
+            ...(isLight
+              ? {
+                  backgroundColor: PALETTE.text.primary,
+                  color: PALETTE.background.paper,
+                  border: `1px solid ${alpha(PALETTE.text.primary, 0.2)}`,
+                }
+              : {
+                  backgroundColor: '#424242',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }),
           },
         },
       },
 
       // 6. MERGE: Nick's Stepper Logic (Updated to use OUR Palette)
-      // Signup stepper readability on dark background
       MuiStepLabel: {
         styleOverrides: {
           label: {
-            color: 'rgba(255,255,255,0.92)', // AAA 7:1 on dark (was 0.70)
+            color: isLight ? PALETTE.text.secondary : 'rgba(255,255,255,0.92)',
             '&.Mui-active': {
-              color: '#ffffff',
+              color: isLight ? PALETTE.text.primary : '#ffffff',
               fontWeight: 700,
             },
             '&.Mui-completed': {
-              color: 'rgba(255,255,255,0.97)',
+              color: isLight ? PALETTE.text.primary : 'rgba(255,255,255,0.97)',
               fontWeight: 600,
             },
           },
@@ -696,16 +736,18 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
       MuiStepIcon: {
         styleOverrides: {
           root: {
-            color: 'rgba(255,255,255,0.55)', // AAA: slightly stronger inactive icon (was 0.35)
+            color: isLight
+              ? alpha(PALETTE.text.primary, 0.5)
+              : 'rgba(255,255,255,0.55)',
             '&.Mui-active': {
-              color: PALETTE.primary.main, // Mapped to our Blue
+              color: PALETTE.primary.main,
             },
             '&.Mui-completed': {
-              color: PALETTE.success.main, // Mapped to our Green
+              color: PALETTE.success.main,
             },
           },
           text: {
-            fill: '#121212', // Matches our Background Dark
+            fill: isLight ? PALETTE.background.paper : '#121212',
             fontWeight: 800,
           },
         },
@@ -713,7 +755,9 @@ export function createAppTheme(themeId: AppThemeId = 'ocean') {
       MuiStepConnector: {
         styleOverrides: {
           line: {
-            borderColor: 'rgba(255,255,255,0.18)',
+            borderColor: isLight
+              ? alpha(PALETTE.text.primary, 0.2)
+              : 'rgba(255,255,255,0.18)',
           },
         },
       },

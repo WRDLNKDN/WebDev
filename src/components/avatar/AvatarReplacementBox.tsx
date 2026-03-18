@@ -1,6 +1,6 @@
 /**
- * Avatar Replacement Box — preset-only Weirdling picker.
- * Any selection replaces current avatar (photo or AI Weirdling).
+ * Avatar Replacement Box — AI Weirdling form + 6 preset Weirdling picker.
+ * Any selection replaces current avatar (photo, preset, or AI Weirdling).
  */
 import {
   Box,
@@ -12,7 +12,11 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { AVATAR_PRESETS, type AvatarPreset } from '../../config/avatarPresets';
+import {
+  AVATAR_PRESETS_MVP,
+  type AvatarPreset,
+} from '../../config/avatarPresets';
+import { AiWeirdlingForm } from './AiWeirdlingForm';
 
 const BORDER_COLOR = 'rgba(156,187,217,0.18)';
 const PURPLE_ACCENT = '#B366FF';
@@ -24,6 +28,8 @@ export interface AvatarReplacementBoxProps {
   selectedPresetUrl: string | null;
   /** Called when user confirms preset selection. */
   onSelectPreset: (preset: AvatarPreset) => void;
+  /** Called after AI Accept so parent can refresh avatar. */
+  onAvatarChanged?: () => void;
   disabled?: boolean;
 }
 
@@ -31,12 +37,13 @@ export const AvatarReplacementBox = ({
   currentAvatarUrl,
   selectedPresetUrl,
   onSelectPreset,
+  onAvatarChanged,
   disabled = false,
 }: AvatarReplacementBoxProps) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<AvatarPreset | null>(null);
 
-  const presetUrls = AVATAR_PRESETS.map((p) => p.image_url);
+  const presetUrls = AVATAR_PRESETS_MVP.map((p) => p.image_url);
   const hasExistingAvatar = !!(
     currentAvatarUrl &&
     currentAvatarUrl.trim() !== '' &&
@@ -88,7 +95,9 @@ export const AvatarReplacementBox = ({
         Any selection here will replace your current avatar.
       </Typography>
 
-      {/* Preset grid */}
+      <AiWeirdlingForm disabled={disabled} onAvatarChanged={onAvatarChanged} />
+
+      {/* Preset grid (6 presets for MVP) */}
       <Box
         sx={{
           display: 'grid',
@@ -99,7 +108,7 @@ export const AvatarReplacementBox = ({
           gap: 1.5,
         }}
       >
-        {AVATAR_PRESETS.map((preset, index) => {
+        {AVATAR_PRESETS_MVP.map((preset, index) => {
           const selected = isPresetActive(preset.image_url);
           return (
             <Box

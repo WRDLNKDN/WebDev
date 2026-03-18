@@ -37,6 +37,7 @@ type Props = {
     image_url: string;
     description?: string;
   }) => void;
+  onAvatarChanged?: () => void;
 };
 
 export const EditProfileBasicSection = ({
@@ -55,6 +56,7 @@ export const EditProfileBasicSection = ({
   onPronounsChange,
   onFileChange,
   onPresetSelect,
+  onAvatarChanged,
 }: Props) => (
   <>
     <Box>
@@ -121,6 +123,7 @@ export const EditProfileBasicSection = ({
       }
       selectedPresetUrl={selectedPresetUrl}
       onSelectPreset={onPresetSelect}
+      onAvatarChanged={onAvatarChanged}
       disabled={busy}
     />
 

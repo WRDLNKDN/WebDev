@@ -35,6 +35,14 @@ If you still see \"Bucket not found\" after running migrations, create the
 bucket manually in **Supabase Dashboard** → **Storage** → **New bucket**
 (`avatars`, public).
 
+## Edge: `generate-weirdling`
+
+Optional secret **`REPLICATE_API_TOKEN`**: when set, the function calls
+Replicate (Stable Diffusion) and polls until the image is ready; when unset, it
+returns a mock 512×512 placeholder. Optional **`WEIRDLING_PROMPT_GITHUB_BASE`**
+overrides where prompt files are fetched from. See
+**[docs/AVATAR_SYSTEM.md](../docs/AVATAR_SYSTEM.md)**.
+
 ## Running
 
 ### Local CLI (`supabase start`)

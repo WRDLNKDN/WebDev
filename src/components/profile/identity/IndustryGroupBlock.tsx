@@ -33,10 +33,11 @@ export const IndustryGroupBlock = ({
       : null;
   const allGroups = otherGroup ? [...groups, otherGroup] : groups;
 
+  // Collapsed by default; one section open at a time (accordion).
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     () =>
       Object.fromEntries(
-        allGroups.map((g) => [g.industry.toLowerCase(), true]),
+        allGroups.map((g) => [g.industry.toLowerCase(), false]),
       ),
   );
 
@@ -50,7 +51,7 @@ export const IndustryGroupBlock = ({
       <Stack spacing={1}>
         {allGroups.map((group) => {
           const groupKey = group.industry.toLowerCase();
-          const isExpanded = expandedGroups[groupKey] ?? true;
+          const isExpanded = expandedGroups[groupKey] ?? false;
 
           return (
             <Box
@@ -67,10 +68,19 @@ export const IndustryGroupBlock = ({
                 component="button"
                 type="button"
                 onClick={() =>
-                  setExpandedGroups((prev) => ({
-                    ...prev,
-                    [groupKey]: !isExpanded,
-                  }))
+                  setExpandedGroups((prev) => {
+                    const next = { ...prev };
+                    if (isExpanded) {
+                      next[groupKey] = false;
+                    } else {
+                      // Accordion: close others, open this one
+                      allGroups.forEach((g) => {
+                        next[g.industry.toLowerCase()] = false;
+                      });
+                      next[groupKey] = true;
+                    }
+                    return next;
+                  })
                 }
                 aria-expanded={isExpanded}
                 aria-controls={`dashboard-industry-sublist-${groupKey}`}

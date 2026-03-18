@@ -28,8 +28,10 @@ export interface NerdCreds {
   status_message?: string;
   status_emoji?: string;
   theme_song_url?: string;
-  app_theme?: 'light' | 'ocean' | 'forest' | 'space';
+  app_theme?: 'light' | 'dark';
   bio?: string;
+  /** Up to 8 interests (two-tier taxonomy + custom Other). Used for profile display and directory search. */
+  interests?: string[];
   portfolio?: PortfolioItem[];
   resume_file_name?: string | null;
   resume_thumbnail_url?: string;
@@ -46,12 +48,15 @@ export interface IndustryGroup {
   sub_industries: string[];
 }
 
+export type AvatarType = 'photo' | 'preset' | 'ai';
+
 export interface DashboardProfile {
   id: string;
   email?: string | null;
   handle: string;
   display_name?: string | null;
   avatar?: string | null;
+  avatar_type?: AvatarType | null;
   tagline?: string | null;
   pronouns?: string | null;
   status?: string | null;

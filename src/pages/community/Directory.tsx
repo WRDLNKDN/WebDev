@@ -600,11 +600,13 @@ export const Directory = () => {
   const resultsSummaryLabel =
     loading && rows.length === 0
       ? 'Loading members...'
-      : rows.length === 0
-        ? hasActiveFilters
-          ? 'No matches for the current search and filters'
-          : 'No members to show yet'
-        : `${rows.length} ${rows.length === 1 ? 'member' : 'members'} ready to explore`;
+      : error && rows.length === 0
+        ? 'Load failed — try again below'
+        : rows.length === 0
+          ? hasActiveFilters
+            ? 'No matches for the current search and filters'
+            : 'No members to show yet'
+          : `${rows.length} ${rows.length === 1 ? 'member' : 'members'} ready to explore`;
 
   if (!session && !loading) {
     return (
@@ -1306,6 +1308,19 @@ export const Directory = () => {
             severity="error"
             sx={{ mb: 1.5 }}
             onClose={() => setError(null)}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  setError(null);
+                  void load(false);
+                }}
+                sx={{ fontWeight: 700, textTransform: 'none' }}
+              >
+                Try again
+              </Button>
+            }
           >
             {error}
           </Alert>
@@ -1474,6 +1489,51 @@ export const Directory = () => {
             {loading && rows.length === 0 ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                 <CircularProgress size={40} />
+              </Box>
+            ) : error && rows.length === 0 ? (
+              <Box
+                data-testid="directory-load-error-state"
+                sx={{
+                  px: { xs: 2, sm: 3 },
+                  py: 6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 280,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    mb: 1.5,
+                    maxWidth: 420,
+                  }}
+                >
+                  The directory could not be loaded. This is usually temporary.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  onClick={() => {
+                    setError(null);
+                    void load(false);
+                  }}
+                  sx={{
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderColor: 'rgba(141,188,229,0.5)',
+                    color: 'rgba(255,255,255,0.9)',
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      bgcolor: 'rgba(56,132,210,0.12)',
+                    },
+                  }}
+                >
+                  Try again
+                </Button>
               </Box>
             ) : rows.length === 0 ? (
               <Box

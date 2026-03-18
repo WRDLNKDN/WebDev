@@ -14,16 +14,28 @@ import { createAppTheme } from '../theme/theme';
 import { THEME_PRESETS, type AppThemeId } from '../theme/themeConstants';
 
 const STORAGE_KEY = 'wrdlnkdn:app-theme';
-const DEFAULT_THEME_ID: AppThemeId = 'ocean';
+const DEFAULT_THEME_ID: AppThemeId = 'dark';
+
+const LEGACY_THEME_IDS = ['ocean', 'forest', 'space'] as const;
 
 function isAppThemeId(value: unknown): value is AppThemeId {
   return typeof value === 'string' && value in THEME_PRESETS;
 }
 
+function normalizeThemeId(value: unknown): AppThemeId {
+  if (isAppThemeId(value)) return value;
+  if (
+    typeof value === 'string' &&
+    (LEGACY_THEME_IDS as readonly string[]).includes(value)
+  )
+    return 'dark';
+  return DEFAULT_THEME_ID;
+}
+
 function readStoredThemeId(): AppThemeId {
   if (typeof window === 'undefined') return DEFAULT_THEME_ID;
   const value = window.localStorage.getItem(STORAGE_KEY);
-  return isAppThemeId(value) ? value : DEFAULT_THEME_ID;
+  return normalizeThemeId(value);
 }
 
 function writeStoredThemeId(themeId: AppThemeId) {
@@ -59,8 +71,9 @@ async function fetchProfileThemePreference(): Promise<AppThemeId | null> {
     data?.nerd_creds && typeof data.nerd_creds === 'object'
       ? (data.nerd_creds as Record<string, unknown>)
       : {};
-  const themeId = nerdCreds.app_theme;
-  return isAppThemeId(themeId) ? themeId : null;
+  const raw = nerdCreds.app_theme;
+  if (raw == null || raw === '') return null;
+  return normalizeThemeId(raw);
 }
 
 async function persistThemePreference(themeId: AppThemeId) {

@@ -35,6 +35,13 @@ export const AVATAR_PRESETS: AvatarPreset[] = Array.from(
   }),
 );
 
+/** MVP: 6 presets in Edit Profile avatar replacement (epic). */
+export const MVP_AVATAR_PRESET_COUNT = 6;
+export const AVATAR_PRESETS_MVP: AvatarPreset[] = AVATAR_PRESETS.slice(
+  0,
+  MVP_AVATAR_PRESET_COUNT,
+);
+
 export const DEFAULT_AVATAR_PRESET_ID = 'preset-1';
 export const DEFAULT_AVATAR_URL =
   AVATAR_PRESETS.find((preset) => preset.preset_id === DEFAULT_AVATAR_PRESET_ID)

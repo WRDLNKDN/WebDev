@@ -27,6 +27,7 @@ import {
   getProfanityOverrides,
   getProfanityAllowlist,
   validateProfanity,
+  PROFANITY_ERROR_MESSAGE_INTEREST,
 } from '../../lib/validation/profanity';
 import { toMessage } from '../../lib/utils/errors';
 import type {
@@ -47,6 +48,7 @@ import {
 import { EditProfileDetailsSection } from './editProfileDialog/EditProfileDetailsSection';
 import { EditProfileIndustrySection } from './editProfileDialog/EditProfileIndustrySection';
 import type { EditProfileFormData } from './editProfileDialog/types';
+import { JoinInterestsSelector } from '../join/profile/JoinInterestsSelector';
 
 type EditProfileDialogProps = {
   open: boolean;
@@ -73,6 +75,7 @@ function buildProfileDraftSnapshot(params: {
     pronouns: params.formData.pronouns.trim(),
     bio: params.formData.bio,
     skills: params.formData.skills,
+    interests: params.formData.interests.slice(0, 8),
     industries: params.formData.industries.map((group) => ({
       industry: group.industry.trim(),
       sub_industries: group.sub_industries.map((value) => value.trim()),
@@ -113,6 +116,7 @@ export const EditProfileDialog = ({
     pronouns: '',
     bio: '',
     skills: '',
+    interests: [],
     industries: [{ industry: '', sub_industries: [] }] as IndustryGroup[],
     niche_field: '',
     location: '',
@@ -173,6 +177,20 @@ export const EditProfileDialog = ({
             },
           ];
 
+    const rawInterests = creds.interests;
+    const interests =
+      Array.isArray(rawInterests) &&
+      rawInterests.every((i) => typeof i === 'string')
+        ? (rawInterests as string[])
+            .map((i) => String(i).trim())
+            .filter(Boolean)
+        : typeof rawInterests === 'string'
+          ? (rawInterests as string)
+              .split(',')
+              .map((i) => i.trim())
+              .filter(Boolean)
+          : [];
+
     const nextFormData: EditProfileFormData = {
       handle,
       pronouns: safeStr(profile.pronouns),
@@ -184,6 +202,7 @@ export const EditProfileDialog = ({
             ? creds.skills
             : '',
       ),
+      interests: interests.slice(0, 8),
       industries,
       niche_field: serializeNicheValues(
         parseNicheValues(safeStr(prof.niche_field)),
@@ -266,6 +285,15 @@ export const EditProfileDialog = ({
       for (const value of parseNicheValues(formData.niche_field)) {
         validateProfanity(value, blocklist, allowlist);
       }
+      const interestsToSave = formData.interests.slice(0, 8);
+      for (const value of interestsToSave) {
+        validateProfanity(
+          value,
+          blocklist,
+          allowlist,
+          PROFANITY_ERROR_MESSAGE_INTEREST,
+        );
+      }
       const skillsArr = formData.skills
         .split(',')
         .map((s) => s.trim())
@@ -283,6 +311,7 @@ export const EditProfileDialog = ({
         nerd_creds: {
           bio: formData.bio,
           skills: skillsArr.length ? skillsArr : undefined,
+          interests: interestsToSave.length ? interestsToSave : undefined,
         },
       });
       showToast({
@@ -354,6 +383,7 @@ export const EditProfileDialog = ({
       setBusy(true);
       await onUpdate({
         avatar: preset.image_url,
+        avatar_type: 'preset',
         use_weirdling_avatar: false,
       } as Partial<DashboardProfile>);
       setUploadedAvatarUrl(preset.image_url);
@@ -477,6 +507,7 @@ export const EditProfileDialog = ({
                   selectedPresetUrl={selectedPresetUrl}
                   onFileChange={(e) => void handleFileChange(e)}
                   onPresetSelect={(preset) => void handlePresetSelect(preset)}
+                  onAvatarChanged={onAvatarChanged}
                   onHandleChange={(value) => {
                     const normalized = value
                       .toLowerCase()
@@ -502,6 +533,22 @@ export const EditProfileDialog = ({
                   busy={busy}
                   formData={formData}
                   onChange={(updater) => setFormData((prev) => updater(prev))}
+                />
+              </Box>
+
+              <Box
+                sx={SECTION_PANEL_SX}
+                data-testid="edit-profile-interests-section"
+              >
+                <JoinInterestsSelector
+                  value={formData.interests}
+                  onChange={(next) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      interests: next.slice(0, 8),
+                    }))
+                  }
+                  disabled={busy}
                 />
               </Box>
 

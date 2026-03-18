@@ -62,29 +62,10 @@ const getStoredSessionTokens = async (): Promise<{
   }
 };
 
-const resolvePostAuthPath = async (): Promise<'/' | '/dashboard' | '/feed'> => {
-  try {
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('feature_flags')
-      .select('key, enabled')
-      .in('key', ['feed', 'dashboard']);
-    if (error) return '/feed';
-
-    const flags = new Map(
-      (data ?? []).map((row) => [row.key, row.enabled === true]),
-    );
-    if (flags.get('feed') !== false) return '/feed';
-    if (flags.get('dashboard') !== false) return '/dashboard';
-    return '/';
-  } catch {
-    return '/feed';
-  }
-};
-
 /**
- * Home: narrative landing (Hero, What Makes Different, How It Works, Social Proof).
- * Always render as the canonical "/" destination.
+ * Home: public brand landing at /. MVP = intro video, Join Us CTA, persistent header.
+ * No authenticated data rendered. No OAuth on /; auth entry is /join only.
+ * If user is already authenticated and onboarded, redirect to /dashboard.
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -94,11 +75,8 @@ export const Home = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);
-  /** When session exists, we only redirect to /feed if onboarded; otherwise stay on home. */
+  /** When session exists and onboarded, redirect to /dashboard (no auth data on Home). */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
-  const [postAuthPath, setPostAuthPath] = useState<
-    '/' | '/dashboard' | '/feed'
-  >('/feed');
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -174,9 +152,6 @@ export const Home = () => {
           return;
         }
 
-        setPostAuthPath(await resolvePostAuthPath());
-        if (!mounted) return;
-
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name, join_reason, participation_style')
@@ -207,7 +182,6 @@ export const Home = () => {
               setOnboarded(null);
               return;
             }
-            setPostAuthPath(await resolvePostAuthPath());
             const { data: profile } = await supabase
               .from('profiles')
               .select('display_name, join_reason, participation_style')
@@ -345,9 +319,9 @@ export const Home = () => {
     ensureVideoPlayback();
   }, [ensureVideoPlayback]);
 
-  // Signed-in and onboarded users go to the primary enabled surface.
+  // Authenticated and onboarded: redirect to /dashboard (Home is public only).
   if (session && onboarded === true) {
-    return <Navigate to={postAuthPath} replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

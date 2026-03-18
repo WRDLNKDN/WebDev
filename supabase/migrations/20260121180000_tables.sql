@@ -298,6 +298,31 @@ alter table if exists public.profiles
   add column if not exists profile_share_token text,
   add column if not exists profile_share_token_created_at timestamptz;
 
+-- MVP Avatar System: single active avatar source (photo | preset | ai).
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'avatar_type'
+  ) then
+    alter table public.profiles
+      add column avatar_type text not null default 'photo'
+      check (avatar_type in ('photo', 'preset', 'ai'));
+  end if;
+end $$;
+comment on column public.profiles.avatar_type is
+  'How the active avatar was set: photo (upload), preset (Weirdling preset), ai (generated Weirdling).';
+
+-- Backfill: existing rows using Weirdling avatar become avatar_type = ai and get avatar URL from weirdlings.
+update public.profiles p
+set
+  avatar_type = 'ai',
+  avatar = coalesce(
+    nullif(trim(p.avatar), ''),
+    (select w.avatar_url from public.weirdlings w where w.user_id = p.id and w.is_active = true limit 1)
+  )
+where p.use_weirdling_avatar = true;
+
 comment on column public.profiles.use_weirdling_avatar is
   'When true, show saved Weirdling avatar as profile picture instead of uploaded avatar.';
 

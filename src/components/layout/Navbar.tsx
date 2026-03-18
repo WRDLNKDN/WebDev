@@ -45,6 +45,7 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
 import { NAVBAR_GLASS } from '../../theme/candyStyles';
@@ -84,6 +85,7 @@ export const Navbar = () => {
   const directoryEnabled = useFeatureFlag('directory');
   const storeEnabled = useFeatureFlag('store');
   const chatEnabled = useFeatureFlag('chat');
+  const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
@@ -693,23 +695,9 @@ export const Navbar = () => {
               )}
           </Stack>
 
-          {/* Desktop nav links: alpha order Admin, Dashboard, Directory, Events, Feed, Store */}
+          {/* Desktop nav links: Dashboard, Directory, Events, Feed, Store (Admin is in avatar menu) */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
-              {isAdmin && (
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  sx={{
-                    color: 'warning.main',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    px: isCompactDesktop ? 1 : 1.5,
-                  }}
-                >
-                  Admin
-                </Button>
-              )}
               {showAuthedHeader && (
                 <>
                   {dashboardEnabled && (
@@ -986,6 +974,19 @@ export const Navbar = () => {
                         Settings
                       </MenuItem>
                     )}
+                    {isAdmin && (
+                      <MenuItem
+                        component={RouterLink}
+                        to="/admin"
+                        onClick={() => {
+                          setAvatarMenuAnchor(null);
+                          setDrawerOpen(false);
+                        }}
+                        sx={{ py: 1.25, color: 'warning.main' }}
+                      >
+                        Admin
+                      </MenuItem>
+                    )}
                     {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
                     <MenuItem
                       onClick={() => {
@@ -1054,7 +1055,7 @@ export const Navbar = () => {
                   )}
                   <Button
                     component={RouterLink}
-                    to="/signin"
+                    to="/join"
                     onClick={() => setDrawerOpen(false)}
                     aria-label="Sign in"
                     size="small"
@@ -1179,21 +1180,6 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {isAdmin && (
-              <Button
-                component={RouterLink}
-                to="/admin"
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  color: 'warning.main',
-                  textTransform: 'none',
-                  py: 1.5,
-                }}
-              >
-                Admin
-              </Button>
-            )}
             {!showAuthedHeader && (
               <>
                 {!isJoinActive && (
@@ -1215,7 +1201,7 @@ export const Navbar = () => {
                 )}
                 <Button
                   component={RouterLink}
-                  to="/signin"
+                  to="/join"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
@@ -1413,27 +1399,29 @@ export const Navbar = () => {
                   />
                 </ListItemButton>
               )}
-              <ListItemButton
-                component={RouterLink}
-                to="/groups"
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  minHeight: 40,
-                  py: 0.5,
-                  ...(isGroupsActive && {
-                    bgcolor: 'rgba(156,187,217,0.26)',
-                    '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                  }),
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <ForumIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Groups"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
+              {groupsEnabled && (
+                <ListItemButton
+                  component={RouterLink}
+                  to="/groups"
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    minHeight: 40,
+                    py: 0.5,
+                    ...(isGroupsActive && {
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+                    }),
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ForumIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Groups"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              )}
               <ListSubheader
                 component="div"
                 sx={{

@@ -86,7 +86,7 @@ export const JoinInterestsSelector = ({
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%' }} data-testid="join-interests-selector">
       <Typography
         variant="caption"
         sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
@@ -172,6 +172,7 @@ export const JoinInterestsSelector = ({
                     inputProps={{
                       'aria-label': 'Custom interest',
                       maxLength: INTEREST_CUSTOM_OTHER_MAX_LENGTH,
+                      'data-testid': 'join-interests-custom-other-input',
                     }}
                     helperText={`${customOtherInput.length}/${INTEREST_CUSTOM_OTHER_MAX_LENGTH}`}
                     onKeyDown={(e) => {
@@ -195,6 +196,7 @@ export const JoinInterestsSelector = ({
                     variant="outlined"
                     sx={{ flexShrink: 0 }}
                     aria-label="Add custom interest"
+                    data-testid="join-interests-add-custom"
                   />
                 </Stack>
               )}

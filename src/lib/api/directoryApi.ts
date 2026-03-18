@@ -7,6 +7,15 @@ import { messageFromApiResponse } from '../utils/errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { authedFetch } from './authFetch';
 
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+  '';
+
+function directoryUrl(path: string, qs?: string): string {
+  const base = `${API_BASE}/api/directory${path}`;
+  return qs ? `${base}?${qs}` : base;
+}
+
 export type DirectorySort = 'recently_active' | 'alphabetical' | 'newest';
 export type ConnectionState =
   | 'not_connected'
@@ -61,8 +70,15 @@ export async function fetchDirectory(
   params: DirectoryParams,
 ): Promise<DirectoryResponse> {
   const qs = buildDirectoryQueryString(params);
-  const url = `/api/directory${qs ? `?${qs}` : ''}`;
-  const res = await authedFetch(url, { method: 'GET' }, { client: supabase });
+  const url = directoryUrl('', qs);
+  const res = await authedFetch(
+    url,
+    { method: 'GET' },
+    {
+      client: supabase,
+      credentials: API_BASE ? 'omit' : 'include',
+    },
+  );
   let data: Record<string, unknown>;
   try {
     data = (await res.json()) as Record<string, unknown>;
@@ -117,12 +133,12 @@ export async function connectRequest(
   targetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    '/api/directory/connect',
+    directoryUrl('/connect'),
     {
       method: 'POST',
       body: JSON.stringify({ targetId }),
     },
-    { client: supabase },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
   let data: Record<string, unknown>;
   try {
@@ -148,12 +164,12 @@ export async function acceptRequest(
   targetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    '/api/directory/accept',
+    directoryUrl('/accept'),
     {
       method: 'POST',
       body: JSON.stringify({ targetId }),
     },
-    { client: supabase },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
   let data: Record<string, unknown>;
   try {
@@ -179,12 +195,12 @@ export async function declineRequest(
   targetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    '/api/directory/decline',
+    directoryUrl('/decline'),
     {
       method: 'POST',
       body: JSON.stringify({ targetId }),
     },
-    { client: supabase },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
   let data: Record<string, unknown>;
   try {
@@ -210,12 +226,12 @@ export async function cancelRequest(
   targetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    '/api/directory/cancel',
+    directoryUrl('/cancel'),
     {
       method: 'POST',
       body: JSON.stringify({ targetId }),
     },
-    { client: supabase },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
   let data: Record<string, unknown>;
   try {
@@ -241,12 +257,12 @@ export async function disconnect(
   targetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    '/api/directory/disconnect',
+    directoryUrl('/disconnect'),
     {
       method: 'POST',
       body: JSON.stringify({ targetId }),
     },
-    { client: supabase },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
   let data: Record<string, unknown>;
   try {

@@ -518,6 +518,7 @@ grant update (
   handle,
   display_name,
   avatar,
+  avatar_type,
   tagline,
   geek_creds,
   nerd_creds,

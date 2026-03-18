@@ -7,8 +7,9 @@
 
 .home-landing__hero {
   position: relative;
-  /* Compact hero: keep “below the fold” sections higher without losing presence */
-  min-height: clamp(380px, 72svh, 640px);
+  /* Full viewport so hero video isn’t cropped short */
+  min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;

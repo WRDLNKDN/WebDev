@@ -190,6 +190,8 @@ export const Directory = () => {
   const [locationInput, setLocationInput] = useState(location);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
+  /** When true, skip persisting directory rows (avoids caching empty after a failed fetch). */
+  const lastDirectoryFetchFailedRef = useRef(false);
   const connectionsCsvExportEnabled = useFeatureFlag(
     'directory_connections_csv_export',
   );
@@ -285,29 +287,61 @@ export const Directory = () => {
       if (!append && showInitialLoader) setLoading(true);
       else setLoadingMore(true);
       setError(null);
-      try {
-        const { data, hasMore: more } = await fetchDirectory(supabase, {
-          q: q.trim() || undefined,
-          primary_industry: primaryIndustry || undefined,
-          secondary_industry: secondaryIndustry || undefined,
-          location: location || undefined,
-          skills: skills.length ? skills : undefined,
-          interests:
-            interestsExpanded.length > 0 ? interestsExpanded : undefined,
-          connection_status: normalizedConnectionStatus || undefined,
-          sort: (sort || 'recently_active') as DirectorySort,
-          offset,
-          limit: PAGE_SIZE,
-        });
-        if (append) {
-          setRows((prev) => [...prev, ...data]);
-        } else {
-          setRows(data);
-          hasInitialDataRef.current = true;
+      if (!append) lastDirectoryFetchFailedRef.current = false;
+
+      const params = {
+        q: q.trim() || undefined,
+        primary_industry: primaryIndustry || undefined,
+        secondary_industry: secondaryIndustry || undefined,
+        location: location || undefined,
+        skills: skills.length ? skills : undefined,
+        interests: interestsExpanded.length > 0 ? interestsExpanded : undefined,
+        connection_status: normalizedConnectionStatus || undefined,
+        sort: (sort || 'recently_active') as DirectorySort,
+        offset,
+        limit: PAGE_SIZE,
+      };
+
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { data, hasMore: more } = await fetchDirectory(
+            supabase,
+            params,
+          );
+          if (append) {
+            setRows((prev) => [...prev, ...data]);
+          } else {
+            setRows(data);
+            hasInitialDataRef.current = true;
+          }
+          setHasMore(more);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 0) {
+            await new Promise((r) => setTimeout(r, 650));
+          }
         }
-        setHasMore(more);
-      } catch (e: unknown) {
-        const msg = toMessage(e);
+      }
+
+      if (lastErr != null) {
+        if (!append) {
+          if (showInitialLoader) {
+            lastDirectoryFetchFailedRef.current = true;
+            hasInitialDataRef.current = false;
+            if (directoryCacheKey) {
+              try {
+                sessionStorage.removeItem(directoryCacheKey);
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+          /* Background refresh failure: keep existing rows + cache; banner + Try again. */
+        }
+        const msg = toMessage(lastErr);
         const isSearchContext = q.trim().length > 0;
         const isGenericError =
           msg.includes('Something went wrong') ||
@@ -317,10 +351,9 @@ export const Directory = () => {
             ? 'No member found with that name. Please try a different search or try again.'
             : msg,
         );
-      } finally {
-        if (showInitialLoader) setLoading(false);
-        setLoadingMore(false);
       }
+      if (showInitialLoader) setLoading(false);
+      setLoadingMore(false);
     },
     [
       session?.user?.id,
@@ -332,6 +365,7 @@ export const Directory = () => {
       interestsExpanded,
       normalizedConnectionStatus,
       sort,
+      directoryCacheKey,
     ],
   );
 
@@ -369,7 +403,8 @@ export const Directory = () => {
       queueMicrotask(() => {
         setRows(parsed.rows);
         setHasMore(parsed.hasMore);
-        hasInitialDataRef.current = true;
+        // Empty cache must not skip the loading state (otherwise errors look like "empty directory").
+        hasInitialDataRef.current = parsed.rows.length > 0;
         setLoading(false);
       });
     } catch {
@@ -378,7 +413,13 @@ export const Directory = () => {
   }, [directoryCacheKey]);
 
   useEffect(() => {
-    if (!directoryCacheKey) return;
+    if (
+      !directoryCacheKey ||
+      !hasInitialDataRef.current ||
+      lastDirectoryFetchFailedRef.current
+    ) {
+      return;
+    }
     try {
       sessionStorage.setItem(
         directoryCacheKey,

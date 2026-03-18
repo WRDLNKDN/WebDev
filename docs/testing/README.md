@@ -28,6 +28,16 @@ All e2e specs live under `src/tests/e2e/`. By default they run on **Chromium**
 and **Firefox** (see `playwright.config.ts` `projects`). Use
 `--project=chromium` or `--project=firefox` to run a single browser.
 
+**Backend + Vite:** Playwright loads `.env` then `.env.local` from the repo root
+(same pattern as the API). If both `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` are set (see [`.env.example`](../../.env.example)),
+it starts the Express API and Vite together. If either is missing, only Vite
+runs and most specs rely on network stubs—still valid for CI.
+
+**Frontend-only even with a full `.env`:**
+`PLAYWRIGHT_FRONTEND_ONLY=1 npm run test:e2e` (or unset the two `SUPABASE_*`
+vars for that shell).
+
 | Spec                              | Purpose                                                            | Documented / notes                                                                                                     |
 | --------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `advertise-modal.spec.ts`         | Footer/company CTA opens Advertise modal; validates required URL   | Covers modal scroll, validation, and submission payload                                                                |

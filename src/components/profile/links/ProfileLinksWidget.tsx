@@ -98,6 +98,7 @@ export const ProfileLinksWidget = ({
       >
         <DestinationLink
           href={link.url}
+          openInNewTab={!isOwner}
           ariaLabelPrefix={linkTitle}
           sx={{
             display: 'flex',

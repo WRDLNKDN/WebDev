@@ -58,7 +58,10 @@ test.describe('Dashboard keyboard smoke', () => {
 
     const technologyGroup = page.getByRole('button', { name: 'Technology' });
     await expect(technologyGroup).toBeVisible({ timeout: 25_000 });
+    await expect(technologyGroup).toHaveAttribute('aria-expanded', 'false');
     await technologyGroup.focus();
+    await page.keyboard.press('Enter');
+    await expect(technologyGroup).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('Enter');
     await expect(technologyGroup).toHaveAttribute('aria-expanded', 'false');
     await page.keyboard.press('Enter');

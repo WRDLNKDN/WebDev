@@ -50,5 +50,5 @@ Themes apply across desktop and mobile.
 - Playwright coverage lives in
   `src/tests/e2e/settings/settings-appearance.spec.ts`
 - Accessibility route coverage includes the appearance settings page in
-  `src/tests/e2e/layout/accessibility.spec.ts`
+  `src/tests/e2e/accessibility.spec.ts`
 - Theme contrast guardrails live in `src/tests/theme/themeAccessibility.test.ts`

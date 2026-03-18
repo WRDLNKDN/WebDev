@@ -59,25 +59,46 @@ async function stubChatFromDirectoryFlow(
   });
 
   await page.route('**/rest/v1/chat_room_members*', async (route) => {
+    const url = decodeURIComponent(route.request().url());
+    const bothMembers = [
+      {
+        room_id: DM_ROOM_ID,
+        user_id: USER_ID,
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        left_at: null,
+      },
+      {
+        room_id: DM_ROOM_ID,
+        user_id: WITH_USER_ID,
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        left_at: null,
+      },
+    ];
+    const userEq = url.match(/user_id=eq\.([^&)]+)/);
+    const roomEq = url.match(/room_id=eq\.([^&)]+)/);
+    const isMembershipProbe =
+      userEq &&
+      (url.includes('select=room_id') ||
+        url.split('select=')[1]?.startsWith('room_id'));
+    if (isMembershipProbe && userEq && roomEq) {
+      const uid = userEq[1];
+      const rid = roomEq[1];
+      const inRoom = bothMembers.some(
+        (m) => m.user_id === uid && m.room_id === rid,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(inRoom ? [{ room_id: rid, user_id: uid }] : []),
+      });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          room_id: DM_ROOM_ID,
-          user_id: USER_ID,
-          role: 'member',
-          joined_at: new Date().toISOString(),
-          left_at: null,
-        },
-        {
-          room_id: DM_ROOM_ID,
-          user_id: WITH_USER_ID,
-          role: 'member',
-          joined_at: new Date().toISOString(),
-          left_at: null,
-        },
-      ]),
+      body: JSON.stringify(bothMembers),
     });
   });
 

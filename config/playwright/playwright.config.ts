@@ -1,4 +1,16 @@
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+// npm does not load .env for Playwright; mirror backend/Vitest so SUPABASE_* from
+// repo root enable the API webServer when present.
+const repoRoot = process.cwd();
+dotenv.config({ path: path.join(repoRoot, '.env'), quiet: true });
+dotenv.config({
+  path: path.join(repoRoot, '.env.local'),
+  override: true,
+  quiet: true,
+});
 
 const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -8,20 +20,19 @@ const hasBackendEnv = Boolean(
   process.env.SUPABASE_URL?.trim() &&
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
 );
+const frontendOnlyE2e =
+  process.env.PLAYWRIGHT_FRONTEND_ONLY === '1' ||
+  process.env.PLAYWRIGHT_FRONTEND_ONLY === 'true';
+/** API webServer when Supabase backend env is set (after loading .env); opt out with PLAYWRIGHT_FRONTEND_ONLY=1. */
 const useBackendServer =
-  process.env.PLAYWRIGHT_USE_BACKEND === 'true' || hasBackendEnv;
+  !frontendOnlyE2e &&
+  (process.env.PLAYWRIGHT_USE_BACKEND === 'true' || hasBackendEnv);
 const frontendCommand = useBackendServer
   ? 'npm run e2e:serve:frontend'
   : 'PLAYWRIGHT_FRONTEND_ONLY=true npm run e2e:serve:frontend';
 const canReuseFrontendServer = !isCI && useBackendServer;
 const LOCAL_WORKERS = 2;
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
-
-if (!useBackendServer) {
-  console.warn(
-    '[playwright] Skipping backend webServer: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are unset.',
-  );
-}
 
 export default defineConfig({
   testDir: '../../src/tests/e2e',

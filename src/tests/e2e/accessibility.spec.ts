@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { expect, test } from '../fixtures';
-import { seedSignedInSession } from '../utils/auth';
-import { stubAppSurface } from '../utils/stubAppSurface';
+import { expect, test } from './fixtures';
+import { seedSignedInSession } from './utils/auth';
+import { stubAppSurface } from './utils/stubAppSurface';
 
 async function analyzeRouteAccessibility(page: Page, selector: string) {
   const target = page.locator(selector);

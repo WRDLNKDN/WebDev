@@ -7,6 +7,19 @@ content, events, community partners
 
 ---
 
+## Lookup / feed performance indexes (DDL in `20260121180000_tables.sql`)
+
+| Index                                      | Purpose                                                                                       |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `idx_feed_items_root_timeline`             | `get_feed_page` “anyone” stream: root rows, sort key `coalesce(scheduled_at, created_at), id` |
+| `idx_feed_items_user_root_timeline`        | Connections feed: same ordering scoped by `user_id`                                           |
+| `idx_feed_items_reaction_parent_user_kind` | Correlated “viewer’s reaction” lookup on parent posts                                         |
+| `idx_saved_feed_items_feed_item_id`        | `EXISTS` for saved bookmark on each feed row                                                  |
+| `idx_chat_room_members_room_active`        | Active members per room (`left_at is null`)                                                   |
+| `idx_weirdlings_user_id_active`            | Feed join to active Weirdling avatar                                                          |
+
+---
+
 ## Table-by-Table RLS Status
 
 | Table                      | RLS Enabled | Policies                                                             | Notes                                                                        |
@@ -16,7 +29,7 @@ content, events, community partners
 | `portfolio_items`          | ✅          | Own CRUD + public read for approved profiles                         |                                                                              |
 | `generation_jobs`          | ✅          | Own CRUD                                                             |                                                                              |
 | `weirdlings`               | ✅          | Own CRUD                                                             |                                                                              |
-| `feed_connections`         | ✅          | Read/insert/delete own                                               |                                                                              |
+| `feed_connections`         | ✅          | One SELECT (user_id or connected_user_id), insert/delete as owner    | Single permissive SELECT for performance                                     |
 | `connection_requests`      | ✅          | Requester CRUD, recipient select/update                              |                                                                              |
 | `feed_items`               | ✅          | Select from self or followees, insert own, delete own                | **Gap:** No update policy (posts are immutable; comments/reactions = insert) |
 | `feed_advertisers`         | ✅          | Public read active, admin all                                        | Anon has no select; authenticated can select                                 |

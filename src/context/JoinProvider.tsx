@@ -137,10 +137,14 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       const identity = buildJoinIdentityFromSession(session);
 
       setState((s) => {
-        const wasMidFlow =
-          (s.currentStep === 'values' || s.currentStep === 'profile') &&
-          (s.values != null || s.profile != null);
-        if (wasMidFlow) {
+        const hasValues =
+          (s.values?.joinReason?.length ?? 0) > 0 &&
+          (s.values?.participationStyle?.length ?? 0) > 0;
+        // Profile step only counts as "mid-flow" if Values was completed (otherwise submit fails).
+        const wasMidFlowOnValues =
+          s.currentStep === 'values' && (s.values != null || s.profile != null);
+        const wasMidFlowOnProfile = s.currentStep === 'profile' && hasValues;
+        if (wasMidFlowOnValues || wasMidFlowOnProfile) {
           return {
             ...s,
             identity,
@@ -155,17 +159,12 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
                 ],
           };
         }
-        const minimalProfile: ProfileData = {
-          displayName: undefined,
-          tagline: undefined,
-          marketingOptIn: false,
-        };
         return {
-          currentStep: 'profile',
+          currentStep: 'values',
           completedSteps: ['welcome', 'identity'],
           identity,
           values: null,
-          profile: minimalProfile,
+          profile: null,
         };
       });
     },

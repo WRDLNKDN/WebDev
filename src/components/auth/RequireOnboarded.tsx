@@ -205,14 +205,10 @@ export const RequireOnboarded = ({
         return;
       }
 
-      if (!isProfileOnboarded(profile)) {
-        devLog('🔴 RequireOnboarded: Profile not onboarded');
-        redirectToRef.current = '/join';
-        setState('redirect');
-        return;
-      }
-
-      devLog('✅ RequireOnboarded: Profile valid, allowing through');
+      // Any profiles row → app shell (finish fields in settings if needed).
+      devLog('✅ RequireOnboarded: Profile row found, allowing through', {
+        isOnboarded: isProfileOnboarded(profile),
+      });
       setProfileValidated(userId, profile);
       hasEverAllowedRef.current = true;
       setState('allowed');

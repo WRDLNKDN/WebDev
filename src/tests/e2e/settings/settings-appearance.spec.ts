@@ -14,7 +14,7 @@ async function stubAppearanceSettingsSurface(page: Page) {
     participation_style: ['builder'],
     policy_version: '1.0',
     nerd_creds: {
-      app_theme: 'ocean',
+      app_theme: 'dark',
     },
   };
 
@@ -115,21 +115,27 @@ test.describe('Settings Appearance', () => {
       page.getByRole('heading', { name: /appearance/i }),
     ).toBeVisible();
 
-    const forestButton = page.getByRole('button', { name: /forest/i });
-    await forestButton.click();
+    // Only Light and Dark are available; Ocean and Forest removed
+    await expect(page.getByRole('button', { name: /^light$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^dark$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /ocean/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /forest/i })).toHaveCount(0);
+
+    const lightButton = page.getByRole('button', { name: /^light$/i });
+    await lightButton.click();
 
     await expect.poll(() => themeUpdates.length).toBe(1);
     expect(
       (themeUpdates[0].nerd_creds as Record<string, unknown>).app_theme,
-    ).toBe('forest');
+    ).toBe('light');
 
-    await expect(forestButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(lightButton).toHaveAttribute('aria-pressed', 'true');
 
     await expect
       .poll(() =>
         page.evaluate(() => window.localStorage.getItem('wrdlnkdn:app-theme')),
       )
-      .toBe('forest');
+      .toBe('light');
   });
 
   test('respects reduced motion on theme cards', async ({ page, context }) => {
@@ -146,10 +152,10 @@ test.describe('Settings Appearance', () => {
       timeout: 45_000,
     });
 
-    const oceanButton = page.getByRole('button', { name: /ocean/i });
-    await oceanButton.hover();
+    const darkButton = page.getByRole('button', { name: /^dark$/i });
+    await darkButton.hover();
 
-    const motionState = await oceanButton.evaluate((element) => {
+    const motionState = await darkButton.evaluate((element) => {
       const parseCssTimeToMs = (value: string) =>
         value
           .split(',')

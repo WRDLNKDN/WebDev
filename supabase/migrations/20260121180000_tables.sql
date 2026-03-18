@@ -298,6 +298,31 @@ alter table if exists public.profiles
   add column if not exists profile_share_token text,
   add column if not exists profile_share_token_created_at timestamptz;
 
+-- MVP Avatar System: single active avatar source (photo | preset | ai).
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'avatar_type'
+  ) then
+    alter table public.profiles
+      add column avatar_type text not null default 'photo'
+      check (avatar_type in ('photo', 'preset', 'ai'));
+  end if;
+end $$;
+comment on column public.profiles.avatar_type is
+  'How the active avatar was set: photo (upload), preset (Weirdling preset), ai (generated Weirdling).';
+
+-- Backfill: existing rows using Weirdling avatar become avatar_type = ai and get avatar URL from weirdlings.
+update public.profiles p
+set
+  avatar_type = 'ai',
+  avatar = coalesce(
+    nullif(trim(p.avatar), ''),
+    (select w.avatar_url from public.weirdlings w where w.user_id = p.id and w.is_active = true limit 1)
+  )
+where p.use_weirdling_avatar = true;
+
 comment on column public.profiles.use_weirdling_avatar is
   'When true, show saved Weirdling avatar as profile picture instead of uploaded avatar.';
 
@@ -5164,7 +5189,7 @@ begin
           for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'K' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
           if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := 4; to_c := p_fc; return next; end if;
         end if;
-        for v_dc in -1, 1 loop
+        for v_dc in select unnest(array[-1, 1]::int[]) loop
           v_tc := p_fc + v_dc;
           if v_tc >= 0 and v_tc <= 7 and p_fr >= 1 then
             if (chess_get_cell(p_board, p_fr - 1, v_tc) <> '' and chess_get_cell(p_board, p_fr - 1, v_tc) ~ '[a-z]') or (p_en_passant is not null and (p_fr - 1)::text || ',' || v_tc::text = replace(p_en_passant, ' ', '')) then
@@ -5188,7 +5213,7 @@ begin
           for v_r in 0..7 loop for v_c in 0..7 loop if chess_get_cell(v_tmp, v_r, v_c) = 'k' then v_king_r := v_r; v_king_c := v_c; end if; end loop; end loop;
           if not chess_square_attacked(v_tmp, v_king_r, v_king_c, v_opp_white) then to_r := 3; to_c := p_fc; return next; end if;
         end if;
-        for v_dc in -1, 1 loop
+        for v_dc in select unnest(array[-1, 1]::int[]) loop
           v_tc := p_fc + v_dc;
           if v_tc >= 0 and v_tc <= 7 and p_fr <= 6 then
             if chess_get_cell(p_board, p_fr + 1, v_tc) ~ '[A-Z]' or (p_en_passant is not null) then
@@ -5201,7 +5226,7 @@ begin
         end loop;
       end if;
     when 'R' then
-      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+      for v_dr in select unnest(array[-1, 0, 1]::int[]) loop for v_dc in select unnest(array[-1, 0, 1]::int[]) loop
         if v_dr = 0 and v_dc = 0 then continue; end if;
         if v_dr <> 0 and v_dc <> 0 then continue; end if;
         v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
@@ -5219,7 +5244,7 @@ begin
         end loop;
       end loop; end loop;
     when 'B' then
-      for v_dr in -1, 1 loop for v_dc in -1, 1 loop
+      for v_dr in select unnest(array[-1, 1]::int[]) loop for v_dc in select unnest(array[-1, 1]::int[]) loop
         v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
         while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
           if (p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[a-z]') or (not p_white and chess_get_cell(p_board, v_nr, v_nc) ~ '[A-Z]') or chess_get_cell(p_board, v_nr, v_nc) = '' then
@@ -5234,7 +5259,7 @@ begin
         end loop;
       end loop; end loop;
     when 'Q' then
-      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+      for v_dr in select unnest(array[-1, 0, 1]::int[]) loop for v_dc in select unnest(array[-1, 0, 1]::int[]) loop
         if v_dr = 0 and v_dc = 0 then continue; end if;
         v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
         while v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 loop
@@ -5250,7 +5275,7 @@ begin
         end loop;
       end loop; end loop;
     when 'N' then
-      for v_dr in -2, -1, 1, 2 loop for v_dc in -2, -1, 1, 2 loop
+      for v_dr in select unnest(array[-2, -1, 1, 2]::int[]) loop for v_dc in select unnest(array[-2, -1, 1, 2]::int[]) loop
         if abs(v_dr) + abs(v_dc) <> 3 then continue; end if;
         v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
         if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 then
@@ -5265,7 +5290,7 @@ begin
         end if;
       end loop; end loop;
     when 'K' then
-      for v_dr in -1, 0, 1 loop for v_dc in -1, 0, 1 loop
+      for v_dr in select unnest(array[-1, 0, 1]::int[]) loop for v_dc in select unnest(array[-1, 0, 1]::int[]) loop
         if v_dr = 0 and v_dc = 0 then continue; end if;
         v_nr := p_fr + v_dr; v_nc := p_fc + v_dc;
         if v_nr >= 0 and v_nr <= 7 and v_nc >= 0 and v_nc <= 7 then

@@ -1,6 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
   Button,
@@ -232,6 +231,10 @@ export const LinkPreviewCard = ({
   </Box>
 );
 
+/**
+ * Share dialog for Feed posts — internal options only: Copy link, Share to Connection, Share to Group.
+ * Feed.tsx uses its own ShareDialog with chat sub-dialogs; this export is for legacy/alternate entry points.
+ */
 export const ShareDialog = ({
   item,
   open,
@@ -266,20 +269,6 @@ export const ShareDialog = ({
             }}
           >
             Copy link
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<OpenInNewIcon />}
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            component="a"
-            onClick={() => {
-              onComplete?.();
-            }}
-          >
-            Share to LinkedIn
           </Button>
         </Stack>
       </DialogContent>

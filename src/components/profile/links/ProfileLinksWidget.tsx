@@ -5,11 +5,11 @@ import {
   Box,
   Collapse,
   IconButton,
-  Link,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
+import { DestinationLink } from '../../common/DestinationLink';
 import { useEffect, useMemo, useState } from 'react';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import {
@@ -96,11 +96,9 @@ export const ProfileLinksWidget = ({
           '&:hover': isOwner ? { borderColor: 'rgba(141,188,229,0.42)' } : {},
         }}
       >
-        <Link
+        <DestinationLink
           href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          underline="none"
+          ariaLabelPrefix={linkTitle}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -127,7 +125,7 @@ export const ProfileLinksWidget = ({
           >
             {linkTitle}
           </Typography>
-        </Link>
+        </DestinationLink>
         {isOwner && onRemove ? (
           <Tooltip title={`Remove ${linkTitle}`}>
             <IconButton

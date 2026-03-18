@@ -55,6 +55,8 @@ Central index for WRDLNKDN WebDev documentation.
 - [Portfolio Showcase](./architecture/portfolio-showcase.md) — Dashboard
   artifact management, highlights carousel, categorized profile rendering, and
   verification points.
+- [MVP Avatar System (env, limits, deploy)](./AVATAR_SYSTEM.md) — Upload,
+  presets, AI Weirdling; Replicate, preview TTL, daily limit, `VITE_API_URL`.
 - [Directory API](./directory.md) — Member discovery, search, filters,
   connection actions (authenticated only).
 - [Feeds API](./feeds-api.md) — Activity stream, posts, external links, RLS.

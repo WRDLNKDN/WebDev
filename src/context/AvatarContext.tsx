@@ -43,7 +43,11 @@ const syncGoogleAvatarToProfile = async (userId: string, avatar: string) => {
   try {
     await supabase
       .from('profiles')
-      .update({ avatar, use_weirdling_avatar: false })
+      .update({
+        avatar,
+        avatar_type: 'photo',
+        use_weirdling_avatar: false,
+      })
       .eq('id', userId)
       .is('avatar', null);
   } catch {

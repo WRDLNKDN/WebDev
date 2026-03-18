@@ -45,7 +45,7 @@ export const TEXT_COLORS = {
   linkHover: BRAND_COLORS.blue,
 } as const;
 
-export type AppThemeId = 'light' | 'ocean' | 'forest' | 'space';
+export type AppThemeId = 'light' | 'dark';
 
 type ThemePalette = {
   mode: 'light' | 'dark';
@@ -163,7 +163,8 @@ export const THEME_PRESETS: Record<
   light: {
     id: 'light',
     label: 'Light',
-    description: 'Bright panels, softer contrast, and clean daylight surfaces.',
+    description:
+      'Bright panels, high contrast, and accessible daylight surfaces.',
     palette: {
       mode: 'light',
       primary: {
@@ -183,7 +184,7 @@ export const THEME_PRESETS: Record<
         paper: '#FFFFFF',
       },
       text: {
-        primary: '#111827',
+        primary: '#0F172A',
         secondary: '#334155',
         disabled: '#64748B',
       },
@@ -195,12 +196,12 @@ export const THEME_PRESETS: Record<
       warning: {
         main: '#D97706',
         dark: '#92400E',
-        contrastText: '#111827',
+        contrastText: '#0F172A',
       },
       success: {
-        main: '#059669',
-        dark: '#047857',
-        contrastText: '#111827',
+        main: '#047857',
+        dark: '#065f46',
+        contrastText: '#ffffff',
       },
       info: {
         main: '#075985',
@@ -211,112 +212,11 @@ export const THEME_PRESETS: Record<
     focus: '#2563EB',
     gradient: 'linear-gradient(135deg, #f8fbff 0%, #d8e8ff 100%)',
   },
-  ocean: {
-    id: 'ocean',
-    label: 'Ocean',
-    description: 'Deep blue glass, neon surf accents, and cooler contrast.',
-    palette: {
-      mode: 'dark',
-      primary: {
-        main: '#38BDF8',
-        light: '#7DD3FC',
-        dark: '#0284C7',
-        contrastText: '#03131D',
-      },
-      secondary: {
-        main: '#2DD4BF',
-        light: '#5EEAD4',
-        dark: '#0F766E',
-        contrastText: '#03131D',
-      },
-      background: {
-        default: '#06141F',
-        paper: '#0C2433',
-      },
-      text: {
-        primary: '#F3FBFF',
-        secondary: '#C8E6F0',
-        disabled: '#6B93A6',
-      },
-      error: {
-        main: '#FB7185',
-        dark: '#BE123C',
-        contrastText: '#03131D',
-      },
-      warning: {
-        main: '#FBBF24',
-        dark: '#B45309',
-        contrastText: '#03131D',
-      },
-      success: {
-        main: '#34D399',
-        dark: '#047857',
-        contrastText: '#03131D',
-      },
-      info: {
-        main: '#38BDF8',
-        dark: '#0369A1',
-        contrastText: '#03131D',
-      },
-    },
-    focus: '#38BDF8',
-    gradient: 'linear-gradient(135deg, #071b29 0%, #0f4c75 100%)',
-  },
-  forest: {
-    id: 'forest',
-    label: 'Forest',
-    description: 'Mossy dark surfaces, emerald actions, and calmer contrast.',
-    palette: {
-      mode: 'dark',
-      primary: {
-        main: '#34D399',
-        light: '#6EE7B7',
-        dark: '#059669',
-        contrastText: '#03110A',
-      },
-      secondary: {
-        main: '#84CC16',
-        light: '#A3E635',
-        dark: '#4D7C0F',
-        contrastText: '#03110A',
-      },
-      background: {
-        default: '#0A130D',
-        paper: '#16261A',
-      },
-      text: {
-        primary: '#F3FFF6',
-        secondary: '#D0E7D6',
-        disabled: '#7F9B86',
-      },
-      error: {
-        main: '#F87171',
-        dark: '#B91C1C',
-        contrastText: '#03110A',
-      },
-      warning: {
-        main: '#FACC15',
-        dark: '#A16207',
-        contrastText: '#03110A',
-      },
-      success: {
-        main: '#34D399',
-        dark: '#047857',
-        contrastText: '#03110A',
-      },
-      info: {
-        main: '#22C55E',
-        dark: '#166534',
-        contrastText: '#03110A',
-      },
-    },
-    focus: '#34D399',
-    gradient: 'linear-gradient(135deg, #0b170f 0%, #214d33 100%)',
-  },
-  space: {
-    id: 'space',
-    label: 'Space',
-    description: 'High-contrast midnight chrome with cosmic violet accents.',
+  dark: {
+    id: 'dark',
+    label: 'Dark',
+    description:
+      'High-contrast midnight with clear surfaces and readable text.',
     palette: {
       mode: 'dark',
       primary: {

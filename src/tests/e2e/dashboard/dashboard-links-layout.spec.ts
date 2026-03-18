@@ -66,7 +66,7 @@ test.describe('Dashboard links and profile layout regressions', () => {
       expect(pillMetrics.width).toBeLessThan(pillMetrics.parentWidth * 0.99);
     }
 
-    // ---- INDUSTRY GROUP CHECK ----
+    // ---- INDUSTRY GROUP CHECK (collapsed by default; expand/collapse on click) ----
 
     const technologyGroup = page.getByTestId(
       'dashboard-industry-group-Technology',
@@ -76,6 +76,12 @@ test.describe('Dashboard links and profile layout regressions', () => {
     const technologyToggle = technologyGroup.getByRole('button', {
       name: /technology/i,
     });
+    await expect(technologyToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      technologyGroup.getByText('Cloud Computing'),
+    ).not.toBeVisible();
+
+    await technologyToggle.click();
     await expect(technologyToggle).toHaveAttribute('aria-expanded', 'true');
     await expect(technologyGroup.getByText('Cloud Computing')).toBeVisible();
     await expect(technologyGroup.getByText('Cybersecurity')).toBeVisible();

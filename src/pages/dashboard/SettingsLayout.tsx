@@ -104,17 +104,32 @@ export const SettingsLayout = () => {
           <Chip
             label="Esc closes dialogs"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+            sx={(theme) => ({
+              bgcolor:
+                theme.palette.mode === 'light'
+                  ? theme.palette.action.hover
+                  : 'rgba(255,255,255,0.08)',
+            })}
           />
           <Chip
             label="Changes save in place"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+            sx={(theme) => ({
+              bgcolor:
+                theme.palette.mode === 'light'
+                  ? theme.palette.action.hover
+                  : 'rgba(255,255,255,0.08)',
+            })}
           />
           <Chip
             label="Mobile-safe layout"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}
+            sx={(theme) => ({
+              bgcolor:
+                theme.palette.mode === 'light'
+                  ? theme.palette.action.hover
+                  : 'rgba(255,255,255,0.08)',
+            })}
           />
         </Box>
 

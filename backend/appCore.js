@@ -1,4 +1,3 @@
-/* global Buffer, URL, URLSearchParams, console, process */
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import os from 'os';
@@ -14,6 +13,8 @@ import {
   getPromptVersion,
   getModelVersion,
 } from './weirdling/adapter.js';
+import { createReplicateAdapter } from './weirdling/replicateAdapter.js';
+import { validateAiAvatarImageUrl } from './weirdling/validateAiAvatarImage.js';
 import { validateWeirdlingResponse } from './weirdling/validate.js';
 import { checkRateLimit } from './weirdling/rateLimit.js';
 import { getFirstUrl, fetchLinkPreview } from './linkPreview.js';
@@ -522,6 +523,14 @@ const requireAuth = async (req, res, next) => {
 };
 const PROMPT_VERSION = getPromptVersion();
 const MODEL_VERSION = getModelVersion();
+const AI_PREVIEW_DAILY_LIMIT = 5;
+const PREVIEW_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN?.trim() || '';
+const weirdlingAdapter = REPLICATE_TOKEN
+  ? createReplicateAdapter(REPLICATE_TOKEN)
+  : mockWeirdlingAdapter;
+
 const handleWeirdlingGenerate = async (req, res) => {
   const userId = req.userId;
   if (!userId) return sendApiError(res, 401, 'Unauthorized');
@@ -533,6 +542,26 @@ const handleWeirdlingGenerate = async (req, res) => {
       'Too many generations. Please try again later.',
       void 0,
       rl.retryAfter ? { retryAfter: rl.retryAfter } : void 0,
+    );
+  }
+  const now = new Date();
+  const startOfDayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const { count: todayCount, error: countErr } = await adminSupabase
+    .from('generation_jobs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfDayUtc.toISOString());
+  if (
+    !countErr &&
+    todayCount !== null &&
+    todayCount >= AI_PREVIEW_DAILY_LIMIT
+  ) {
+    return sendApiError(
+      res,
+      429,
+      `Daily limit reached. You can generate up to ${AI_PREVIEW_DAILY_LIMIT} AI Weirdling previews per day. Try again tomorrow.`,
     );
   }
   const body = req.body;
@@ -570,11 +599,19 @@ const handleWeirdlingGenerate = async (req, res) => {
   if (idempotencyKey) {
     const { data: existing } = await adminSupabase
       .from('generation_jobs')
-      .select('id, status, raw_response')
+      .select('id, status, raw_response, created_at')
       .eq('user_id', userId)
       .eq('idempotency_key', idempotencyKey)
       .maybeSingle();
-    if (existing?.status === 'complete' && existing.raw_response) {
+    const createdAt = existing?.created_at
+      ? new Date(existing.created_at).getTime()
+      : 0;
+    const notExpired = createdAt && Date.now() - createdAt <= PREVIEW_TTL_MS;
+    if (
+      existing?.status === 'complete' &&
+      existing.raw_response &&
+      notExpired
+    ) {
       try {
         const validated = validateWeirdlingResponse(existing.raw_response);
         return res.json({
@@ -615,7 +652,7 @@ const handleWeirdlingGenerate = async (req, res) => {
   }
   jobId = job.id;
   try {
-    const result = await mockWeirdlingAdapter.generate({
+    const result = await weirdlingAdapter.generate({
       displayNameOrHandle,
       roleVibe,
       industryOrInterests,
@@ -668,6 +705,27 @@ const handleWeirdlingGenerate = async (req, res) => {
     return sendApiError(res, 422, msg);
   }
 };
+app.get('/api/weirdling/preview-remaining', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+  const now = new Date();
+  const startOfDayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const { count: todayCount, error: countErr } = await adminSupabase
+    .from('generation_jobs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfDayUtc.toISOString());
+  const used = countErr ? 0 : Math.min(todayCount ?? 0, AI_PREVIEW_DAILY_LIMIT);
+  const remaining = Math.max(0, AI_PREVIEW_DAILY_LIMIT - used);
+  return res.json({
+    ok: true,
+    data: { remaining, limit: AI_PREVIEW_DAILY_LIMIT },
+    error: null,
+    meta: {},
+  });
+});
 app.post('/api/weirdling/generate', requireAuth, handleWeirdlingGenerate);
 app.post('/api/weirdling/regenerate', requireAuth, handleWeirdlingGenerate);
 app.post('/api/weirdling/save', requireAuth, async (req, res) => {
@@ -678,7 +736,7 @@ app.post('/api/weirdling/save', requireAuth, async (req, res) => {
     const jobId = body.jobId.trim();
     const { data: job, error: jobError } = await adminSupabase
       .from('generation_jobs')
-      .select('raw_response')
+      .select('raw_response, created_at')
       .eq('id', jobId)
       .eq('user_id', userId)
       .eq('status', 'complete')
@@ -686,11 +744,22 @@ app.post('/api/weirdling/save', requireAuth, async (req, res) => {
     if (jobError || !job?.raw_response) {
       return sendApiError(res, 400, 'Job not found or not complete');
     }
+    const jobCreatedAt = job.created_at
+      ? new Date(job.created_at).getTime()
+      : 0;
+    if (!jobCreatedAt || Date.now() - jobCreatedAt > PREVIEW_TTL_MS) {
+      return sendApiError(res, 400, 'Preview expired. Generate a new one.');
+    }
     let validated;
     try {
       validated = validateWeirdlingResponse(job.raw_response);
     } catch (e) {
       return sendApiError(res, 400, errorMessage(e, 'Invalid job response'));
+    }
+    const avatarUrl = validated.avatarUrl ?? null;
+    const imageCheck = await validateAiAvatarImageUrl(avatarUrl);
+    if (!imageCheck.ok) {
+      return sendApiError(res, 400, imageCheck.error);
     }
     const { error: insertErr2 } = await adminSupabase
       .from('weirdlings')
@@ -704,7 +773,7 @@ app.post('/api/weirdling/save', requireAuth, async (req, res) => {
         tagline: validated.tagline,
         boundaries: validated.boundaries,
         bio: validated.bio ?? null,
-        avatar_url: validated.avatarUrl ?? null,
+        avatar_url: avatarUrl,
         raw_ai_response: validated.rawResponse,
         prompt_version: validated.promptVersion,
         model_version: validated.modelVersion,
@@ -712,6 +781,18 @@ app.post('/api/weirdling/save', requireAuth, async (req, res) => {
       });
     if (insertErr2) {
       return sendApiError(res, 500, 'Failed to save weirdling');
+    }
+    const { error: profileErr } = await adminSupabase
+      .from('profiles')
+      .update({
+        avatar: avatarUrl,
+        avatar_type: 'ai',
+        use_weirdling_avatar: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+    if (profileErr) {
+      return sendApiError(res, 500, 'Failed to set active avatar');
     }
     return res.json({ ok: true });
   }
@@ -1615,13 +1696,18 @@ app.get('/api/directory', async (req, res) => {
     p_limit: limit + 1,
   });
   if (error) {
+    const errMsg = error.message || String(error);
+    const errCode = error && typeof error.code === 'string' ? error.code : '';
     logDirectoryError({
       method: 'GET',
       path: '/api/directory',
       userId: userId ?? void 0,
-      error: error.message,
+      error: errCode ? `${errCode}: ${errMsg}` : errMsg,
     });
-    return sendApiError(res, 500, 'Server error');
+    const status = 503;
+    const bodyMessage =
+      'Directory is temporarily unavailable. Please try again in a moment.';
+    return sendApiError(res, status, bodyMessage);
   }
   const list = Array.isArray(rows) ? rows : [];
   const hasMore = list.length > limit;
@@ -2486,7 +2572,9 @@ app.get('/api/me/avatar', requireAuth, async (req, res) => {
     .maybeSingle();
   let avatarUrl = null;
   const p = profile;
-  if (p?.use_weirdling_avatar) {
+  if (p?.avatar && p.avatar.trim() !== '') {
+    avatarUrl = p.avatar.trim();
+  } else if (p?.use_weirdling_avatar) {
     const { data: w } = await adminSupabase
       .from('weirdlings')
       .select('avatar_url')
@@ -2496,7 +2584,6 @@ app.get('/api/me/avatar', requireAuth, async (req, res) => {
       .maybeSingle();
     avatarUrl = w?.avatar_url ?? null;
   }
-  if (!avatarUrl && p?.avatar) avatarUrl = p.avatar;
   return res.json({
     ok: true,
     data: { avatarUrl: avatarUrl ?? null },

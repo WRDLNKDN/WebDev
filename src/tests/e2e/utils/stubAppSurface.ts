@@ -154,6 +154,7 @@ export async function stubAppSurface(page: Page) {
         { key: 'events', enabled: true },
         { key: 'store', enabled: false },
         { key: 'chat', enabled: false },
+        { key: 'groups', enabled: true },
       ]),
     });
   });

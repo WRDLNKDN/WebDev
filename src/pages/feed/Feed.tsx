@@ -91,8 +91,12 @@ import {
 } from '../../lib/api/feedsApi';
 import { consumeSignOutRedirect, signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { ShareToConnectionDialog } from '../../components/feed/ShareToConnectionDialog';
+import { ShareToGroupDialog } from '../../components/feed/ShareToGroupDialog';
 import { useAppToast } from '../../context/AppToastContext';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
+import { useChatRooms } from '../../hooks/useChatRooms';
 import {
   getOrCreateSessionAdSeed,
   interleaveWithAds,
@@ -511,6 +515,9 @@ const ShareDialog = ({
   onCopyLink,
   onComplete,
   mobile,
+  onOpenShareToConnection,
+  onOpenShareToGroup,
+  chatEnabled,
 }: {
   item: FeedItem | null;
   open: boolean;
@@ -518,6 +525,9 @@ const ShareDialog = ({
   onCopyLink: (url: string) => void;
   onComplete?: () => void;
   mobile: boolean;
+  onOpenShareToConnection: () => void;
+  onOpenShareToGroup: () => void;
+  chatEnabled: boolean;
 }) => {
   if (!item) return null;
   const postUrl =
@@ -559,20 +569,30 @@ const ShareDialog = ({
           >
             Copy link
           </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<OpenInNewIcon />}
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            component="a"
-            onClick={() => {
-              onComplete?.();
-            }}
-          >
-            Share to LinkedIn
-          </Button>
+          {chatEnabled && (
+            <>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<MessageIcon />}
+                onClick={() => {
+                  onOpenShareToConnection();
+                }}
+              >
+                Share to Connection
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<ForumIcon />}
+                onClick={() => {
+                  onOpenShareToGroup();
+                }}
+              >
+                Share to Group
+              </Button>
+            </>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -1750,6 +1770,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const postParam = searchParams.get('post');
   const eventsEnabled = useFeatureFlag('events');
   const chatEnabled = useFeatureFlag('chat');
+  const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
   const gamesEnabled = useFeatureFlag('games');
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
@@ -1950,6 +1971,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     string | null
   >(null);
   const [shareModalItem, setShareModalItem] = useState<FeedItem | null>(null);
+  const [shareSubDialog, setShareSubDialog] = useState<
+    null | 'connection' | 'group'
+  >(null);
+  const { rooms: chatRooms, createDm } = useChatRooms();
   const [repostedOriginalIds, setRepostedOriginalIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -2792,8 +2817,16 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
   const handleCopyLink = useCallback(
     async (url: string) => {
-      await navigator.clipboard.writeText(url);
-      showToast({ message: 'Link copied', severity: 'success' });
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast({ message: 'Link copied', severity: 'success' });
+      } catch {
+        showToast({
+          message:
+            'Could not copy link. Try again or copy from the address bar.',
+          severity: 'error',
+        });
+      }
     },
     [showToast],
   );
@@ -3052,26 +3085,28 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     </ListItemButton>
                   </ListItem>
                 )}
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/groups"
-                    sx={{
-                      minHeight: 40,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <ForumIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Groups"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                {groupsEnabled && (
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      component={RouterLink}
+                      to="/groups"
+                      sx={{
+                        minHeight: 40,
+                        py: 0.5,
+                        borderRadius: 0,
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <ForumIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Groups"
+                        primaryTypographyProps={{ variant: 'body2' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )}
                 <ListSubheader
                   disableSticky
                   sx={{
@@ -4040,14 +4075,46 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
 
       <ShareDialog
         item={shareModalItem}
-        open={Boolean(shareModalItem)}
-        onClose={() => setShareModalItem(null)}
+        open={Boolean(shareModalItem) && shareSubDialog === null}
+        onClose={() => {
+          setShareModalItem(null);
+          setShareSubDialog(null);
+        }}
         onCopyLink={handleCopyLink}
         onComplete={() => {
           if (shareModalItem) handleSendComplete(shareModalItem.id);
         }}
         mobile={isSmallScreen}
+        onOpenShareToConnection={() => setShareSubDialog('connection')}
+        onOpenShareToGroup={() => setShareSubDialog('group')}
+        chatEnabled={chatEnabled}
       />
+      {shareModalItem && (
+        <>
+          <ShareToConnectionDialog
+            open={shareSubDialog === 'connection'}
+            onClose={() => setShareSubDialog(null)}
+            postUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/feed?post=${encodeURIComponent(shareModalItem.id)}`}
+            createDm={createDm}
+            onSent={() => {
+              handleSendComplete(shareModalItem.id);
+              setShareSubDialog(null);
+            }}
+            onError={(msg) => showToast({ message: msg, severity: 'error' })}
+          />
+          <ShareToGroupDialog
+            open={shareSubDialog === 'group'}
+            onClose={() => setShareSubDialog(null)}
+            postUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/feed?post=${encodeURIComponent(shareModalItem.id)}`}
+            groupRooms={chatRooms.filter((r) => r.room_type === 'group')}
+            onSent={() => {
+              handleSendComplete(shareModalItem.id);
+              setShareSubDialog(null);
+            }}
+            onError={(msg) => showToast({ message: msg, severity: 'error' })}
+          />
+        </>
+      )}
     </Box>
   );
 };

@@ -113,9 +113,9 @@ const WeirdlingGenerator = ({
       const avatarUrl = result.prediction.output[0];
 
       const updates = {
-        id: session.user.id,
-        avatar_url: avatarUrl,
+        avatar: avatarUrl,
         avatar_type: 'ai',
+        use_weirdling_avatar: true,
         updated_at: new Date().toISOString(),
       };
 

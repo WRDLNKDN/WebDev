@@ -1,16 +1,12 @@
-/* eslint-disable */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 // ----------------------------------------------------------------------------
 // 🧬 CONFIGURATION: THE DNA VAULT (BRANCH SWAPPING)
 // ----------------------------------------------------------------------------
 
-// [PRODUCTION] - The Main Branch
-// const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/WRDLNKDN/WebDev/main/src/components/avatar';
-
-// [DEVELOPMENT] - The MVP Feature Branch
 const GITHUB_RAW_BASE =
-  'https://raw.githubusercontent.com/WRDLNKDN/WebDev/feat/MVPAvatarSystem/src/components/avatar';
+  Deno.env.get('WEIRDLING_PROMPT_GITHUB_BASE') ||
+  'https://raw.githubusercontent.com/WRDLNKDN/WebDev/main/src/components/avatar';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -165,39 +161,67 @@ serve(async (req: Request) => {
 
     const names = [slot1, `Osgood`, `[FERAL] ${cleanPersona}`];
 
-    // 3. THE AI GATEWAY (Mocking active)
-    const USE_MOCK = true; // false = replicate, true = mock
+    // 3. AI gateway: Replicate when REPLICATE_API_TOKEN is set; else mock (512×512 placeholder)
+    const replicateToken = Deno.env.get('REPLICATE_API_TOKEN')?.trim() || '';
     let prediction;
 
-    if (USE_MOCK) {
+    if (!replicateToken) {
       await new Promise((r) => setTimeout(r, 1500));
       prediction = {
         output: [
           'https://placehold.co/512x512/333333/00ff00/png?text=Weirdling+Loading...',
         ],
         status: 'succeeded',
-        id: 'mock-12345',
+        id: 'mock-edge',
       };
     } else {
-      // @ts-ignore - Runtime global in Deno
-      const replicateToken = Deno.env.get('REPLICATE_API_TOKEN');
-      if (!replicateToken) throw new Error('SYSTEM HALT: Missing Token.');
-
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Token ${replicateToken}`,
-          'Content-Type': 'application/json',
+      const createRes = await fetch(
+        'https://api.replicate.com/v1/predictions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Token ${replicateToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            version:
+              '39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
+            input: { prompt: finalPrompt, num_outputs: 1 },
+          }),
         },
-        body: JSON.stringify({
-          version:
-            '39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
-          input: { prompt: finalPrompt, num_outputs: 1 },
-        }),
-      });
-
-      if (!response.ok) throw new Error('Replicate API Error');
-      prediction = await response.json();
+      );
+      if (!createRes.ok) {
+        const t = await createRes.text();
+        throw new Error(
+          `Replicate API Error: ${createRes.status} ${t.slice(0, 120)}`,
+        );
+      }
+      const created = (await createRes.json()) as {
+        id: string;
+        urls?: { get?: string };
+      };
+      const pollUrl =
+        created.urls?.get ||
+        `https://api.replicate.com/v1/predictions/${created.id}`;
+      const deadline = Date.now() + 120_000;
+      prediction = created;
+      while (Date.now() < deadline) {
+        const pollRes = await fetch(pollUrl, {
+          headers: { Authorization: `Token ${replicateToken}` },
+        });
+        if (!pollRes.ok) throw new Error('Replicate poll failed');
+        prediction = await pollRes.json();
+        const st = (prediction as { status?: string }).status;
+        if (st === 'succeeded' || st === 'failed' || st === 'canceled') break;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      const finalSt = (prediction as { status?: string }).status;
+      if (finalSt !== 'succeeded') {
+        throw new Error(
+          (prediction as { error?: string }).error ||
+            'Image generation did not complete.',
+        );
+      }
     }
 
     return new Response(

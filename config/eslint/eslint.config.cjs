@@ -24,7 +24,6 @@ module.exports = [
   // 1. GLOBAL IGNORES (Environment Optimization)
   {
     ignores: [
-      'supabase/functions/**',
       'src/types/supabase.ts', // Ignore machine-generated code
       '**/dist/**',
       '**/node_modules/**',
@@ -41,6 +40,14 @@ module.exports = [
   // 2. BASE RULES
   js.configs.recommended,
   ...tseslint.configs.recommended,
+
+  // 2b. Node API (plain .js): fetch, Buffer, timers
+  {
+    files: ['backend/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 
   // 3. REACT & HOOKS Configuration
   {
@@ -153,6 +160,24 @@ module.exports = [
     },
   },
 
-  // 6. PRETTIER (The Final Firewall)
+  // 6. Supabase Edge Functions (Deno; not React)
+  {
+    files: ['supabase/functions/**/*.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        Deno: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off',
+    },
+  },
+
+  // 7. PRETTIER (The Final Firewall)
   prettierConfig,
 ];

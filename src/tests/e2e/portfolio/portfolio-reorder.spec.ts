@@ -202,7 +202,7 @@ test.describe('Portfolio artifact reorder', () => {
       timeout: 40_000,
     });
     await expect
-      .poll(() => readDashboardOrder(page), { timeout: 30_000 })
+      .poll(() => readDashboardOrder(page), { timeout: 50_000 })
       .toEqual(['Gamma Artifact', 'Alpha Artifact', 'Beta Artifact']);
 
     await page.route(

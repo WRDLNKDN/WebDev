@@ -72,6 +72,7 @@ export const SettingsAppearancePage = () => {
               component="button"
               type="button"
               onClick={() => void handleThemeChange(option.id)}
+              aria-label={option.label}
               aria-pressed={active}
               sx={(theme) => ({
                 minHeight: 220,

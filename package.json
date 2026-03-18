@@ -28,6 +28,7 @@
     "test:unit": "vitest run -c config/vitest/vitest.unit.config.ts",
     "test:rls": "vitest run -c config/vitest/vitest.rls.config.ts",
     "test:e2e": "playwright test -c config/playwright/playwright.config.ts",
+    "test:e2e:a11y": "playwright test -c config/playwright/playwright.config.ts src/tests/e2e/accessibility.spec.ts",
     "test:e2e:ui": "playwright test -c config/playwright/playwright.config.ts --ui",
     "e2e:serve": "concurrently -k -n VITE,API \"vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort\" \"tsx backend/server.ts\"",
     "e2e:serve:ci": "vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort",

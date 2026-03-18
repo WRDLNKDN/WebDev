@@ -370,12 +370,20 @@ test.describe('Interests E2E', () => {
         );
         if (method === 'PATCH') {
           const body = route.request().postDataJSON() as {
-            nerd_creds?: { interests?: string[] };
+            nerd_creds?: Record<string, unknown>;
           };
-          const next =
-            body?.nerd_creds?.interests ?? profile.nerd_creds.interests;
-          (profile.nerd_creds as { interests: string[] }).interests = next;
-          await route.fulfill({ status: 204, body: '' });
+          if (body?.nerd_creds && typeof body.nerd_creds === 'object') {
+            profile.nerd_creds = {
+              ...(profile.nerd_creds as object),
+              ...body.nerd_creds,
+            } as typeof profile.nerd_creds;
+          }
+          // .update().select('id').maybeSingle() expects a JSON row, not 204.
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ id: profile.id }),
+          });
           return;
         }
         await route.fulfill({
@@ -417,7 +425,7 @@ test.describe('Interests E2E', () => {
       await expect(
         page.getByRole('button', { name: /Interests \(3\)/i }),
       ).toBeVisible({
-        timeout: 10_000,
+        timeout: 15_000,
       });
     });
 

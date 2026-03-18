@@ -41,8 +41,11 @@ export const InterestsDropdown = ({
   value,
   onSave,
   disabled = false,
-  'aria-label': ariaLabel = 'Interests',
+  'aria-label': ariaLabelProp,
 }: InterestsDropdownProps) => {
+  const triggerAriaLabel =
+    ariaLabelProp ??
+    (value.length === 0 ? 'Interests' : `Interests (${value.length})`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [selected, setSelected] = useState<string[]>(value);
   const [saving, setSaving] = useState(false);
@@ -86,7 +89,7 @@ export const InterestsDropdown = ({
         onClick={openDropdown}
         disabled={disabled}
         endIcon={<ExpandMoreIcon sx={{ fontSize: 18 }} />}
-        aria-label={ariaLabel}
+        aria-label={triggerAriaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}

@@ -388,7 +388,6 @@ export const Dashboard = () => {
                     }
                   }}
                   disabled={loading}
-                  aria-label="Interests"
                 />
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}

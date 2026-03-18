@@ -379,6 +379,25 @@ revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
 
 -- -----------------------------
+-- Profanity tables (idempotent; mirrors tables.sql for partial / legacy DBs)
+-- -----------------------------
+create table if not exists public.profanity_overrides (
+  id uuid primary key default gen_random_uuid(),
+  word text not null,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists idx_profanity_overrides_word_lower
+  on public.profanity_overrides (lower(trim(word)));
+
+create table if not exists public.profanity_allowlist (
+  id uuid primary key default gen_random_uuid(),
+  word text not null,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists idx_profanity_allowlist_word_lower
+  on public.profanity_allowlist (lower(trim(word)));
+
+-- -----------------------------
 -- profanity_overrides: read by all (for client-side validation), write by admin
 -- -----------------------------
 alter table public.profanity_overrides enable row level security;

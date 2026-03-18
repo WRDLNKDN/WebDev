@@ -118,7 +118,7 @@ async function stubChatFromDirectoryFlow(
     });
   });
 
-  await page.route('**/api/feeds*', async (route) => {
+  const fulfillFeeds = async (route: import('@playwright/test').Route) => {
     if (route.request().method() !== 'GET') {
       await route.fulfill({ status: 204, body: '' });
       return;
@@ -128,7 +128,10 @@ async function stubChatFromDirectoryFlow(
       contentType: 'application/json',
       body: JSON.stringify({ data: [], nextCursor: null }),
     });
-  });
+  };
+  // Globs: `/api/feeds?limit=…` does not match `**/api/feeds*` in Playwright (see feed-reaction-picker).
+  await page.route('**/api/feeds', fulfillFeeds);
+  await page.route('**/api/feeds?**', fulfillFeeds);
 }
 
 test.describe('Chat redirect', () => {

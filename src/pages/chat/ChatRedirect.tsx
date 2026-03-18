@@ -25,7 +25,8 @@ export const ChatRedirect = () => {
   const { rooms, createDm, loading } = useChatRooms();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const withUserId = searchParams.get('with');
-  const handledTargetRef = useRef<string | null>(null);
+  /** Bumps on each effect run so Strict Mode / stale async work does not apply after a newer run. */
+  const redirectRunGenRef = useRef(0);
   const redirectTargetKey = `${mobile ? 'mobile' : 'desktop'}|${roomId ?? ''}|${withUserId ?? ''}`;
 
   // Safety valve: never leave the user stranded on /chat if room loading stalls.
@@ -55,13 +56,15 @@ export const ChatRedirect = () => {
 
   useEffect(() => {
     if (loading) return;
-    if (handledTargetRef.current === redirectTargetKey) return;
+    // ?with= needs session id for canonical room lookup; avoid async createDm-only path until then
+    // (Strict Mode + null currentUserId otherwise skips popout and still navigates to /feed).
+    if (withUserId && !currentUserId) return;
 
+    const myGen = ++redirectRunGenRef.current;
     let cancelled = false;
+    const stillValid = () => !cancelled && myGen === redirectRunGenRef.current;
 
     const run = async () => {
-      handledTargetRef.current = redirectTargetKey;
-
       if (mobile) {
         if (roomId) {
           if (!cancelled) navigate(`/chat-full/${roomId}`, { replace: true });
@@ -69,11 +72,13 @@ export const ChatRedirect = () => {
         }
 
         if (withUserId) {
-          const canonicalExisting = currentUserId
-            ? findCanonicalDmRoom(rooms, currentUserId, withUserId)
-            : null;
+          const canonicalExisting = findCanonicalDmRoom(
+            rooms,
+            currentUserId!,
+            withUserId,
+          );
           if (canonicalExisting) {
-            if (!cancelled) {
+            if (stillValid()) {
               navigate(`/chat-full/${canonicalExisting.id}`, { replace: true });
             }
             return;
@@ -81,12 +86,12 @@ export const ChatRedirect = () => {
 
           try {
             const id = await createDm(withUserId);
-            if (cancelled) return;
+            if (!stillValid()) return;
             navigate(id ? `/chat-full/${id}` : '/chat-full', {
               replace: true,
             });
           } catch (e) {
-            if (!cancelled) {
+            if (stillValid()) {
               showToast({
                 message: toMessage(e) || 'Could not start conversation.',
                 severity: 'error',
@@ -97,35 +102,32 @@ export const ChatRedirect = () => {
           return;
         }
 
-        if (!cancelled) navigate('/chat-full', { replace: true });
+        if (stillValid()) navigate('/chat-full', { replace: true });
         return;
       }
 
       if (roomId && messenger) {
         messenger.openWithRoom(roomId);
         messenger.openOverlay();
-        if (!cancelled) navigate('/feed', { replace: true });
+        if (stillValid()) navigate('/feed', { replace: true });
         return;
       }
 
       if (withUserId && messenger) {
-        const existing = currentUserId
-          ? findCanonicalDmRoom(rooms, currentUserId, withUserId)
-          : null;
+        const existing = findCanonicalDmRoom(rooms, currentUserId!, withUserId);
 
         if (existing) {
+          if (!stillValid()) return;
           messenger.openPopOut(existing.id);
-          // Do not open overlay: show only the conversation popover so the message input is visible.
         } else {
           try {
             const id = await createDm(withUserId);
-            if (cancelled) return;
+            if (!stillValid()) return;
             if (id) {
               messenger.openPopOut(id);
-              // Do not open overlay: show only the conversation popover so the message input is visible.
             }
           } catch (e) {
-            if (!cancelled) {
+            if (stillValid()) {
               showToast({
                 message: toMessage(e) || 'Could not start conversation.',
                 severity: 'error',
@@ -134,7 +136,7 @@ export const ChatRedirect = () => {
           }
         }
 
-        if (!cancelled) navigate('/feed', { replace: true });
+        if (stillValid()) navigate('/feed', { replace: true });
         return;
       }
 
@@ -142,7 +144,7 @@ export const ChatRedirect = () => {
         messenger.openOverlay();
       }
 
-      if (!cancelled) navigate('/feed', { replace: true });
+      if (stillValid()) navigate('/feed', { replace: true });
     };
 
     void run();

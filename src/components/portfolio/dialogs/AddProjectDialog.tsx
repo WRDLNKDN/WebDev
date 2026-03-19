@@ -211,21 +211,36 @@ export const AddProjectDialog = ({
       setFormData((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const error = getProjectThumbnailFileError(file);
-      if (error) {
-        setSubmitError(error);
-        e.target.value = '';
-        return;
-      }
-      setSubmitError(null);
-      setSelectedThumbnailFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setPreviewLoadFailed(false);
+  const processThumbnailFile = (file: File) => {
+    const error = getProjectThumbnailFileError(file);
+    if (error) {
+      setSubmitError(error);
+      return;
     }
+    setSubmitError(null);
+    setSelectedThumbnailFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewLoadFailed(false);
+  };
+
+  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processThumbnailFile(file);
     e.target.value = '';
+  };
+
+  const handleThumbnailDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleThumbnailDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) processThumbnailFile(file);
+    if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
   };
 
   const removeThumbnailOverride = () => {
@@ -584,6 +599,14 @@ export const AddProjectDialog = ({
                     },
                   }}
                   onClick={() => thumbnailInputRef.current?.click()}
+                  onDragOver={handleThumbnailDragOver}
+                  onDrop={handleThumbnailDrop}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      thumbnailInputRef.current?.click();
+                    }
+                  }}
                 >
                   {previewUrl && !previewLoadFailed ? (
                     <Box

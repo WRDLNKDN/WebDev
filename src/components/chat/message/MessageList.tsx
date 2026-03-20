@@ -20,6 +20,7 @@ import {
 import type { MessageWithExtras } from '../../../hooks/useChat';
 import type { ChatRoomType } from '../../../types/chat';
 import { GLASS_CARD } from '../../../theme/candyStyles';
+import { MessageContent } from './MessageContent';
 
 const CHAT_PANEL_BG = '#282C34';
 
@@ -41,6 +42,8 @@ type MessageListProps = {
   /** When true, show typing/presence avatar at bottom right (chat panel style) */
   typingAvatarUrl?: string | null;
   showTyping?: boolean;
+  /** Message ID to scroll to when loaded (from URL query param) */
+  scrollToMessageId?: string | null;
 };
 
 function formatMessageTime(iso: string): string {
@@ -65,8 +68,10 @@ export const MessageList = ({
   compact = false,
   typingAvatarUrl,
   showTyping = false,
+  scrollToMessageId,
 }: MessageListProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const previousBoundaryRef = useRef<{
     firstId: string | null;
     lastId: string | null;
@@ -84,6 +89,7 @@ export const MessageList = ({
     Record<string, ChatLinkPreview | null>
   >({});
   const fetchedPreviewIds = useRef<Set<string>>(new Set());
+  const hasScrolledToMessage = useRef<string | null>(null);
 
   useEffect(() => {
     const nextFirst = messages[0]?.id ?? null;
@@ -95,11 +101,58 @@ export const MessageList = ({
       nextFirst !== prev.firstId &&
       nextLast === prev.lastId;
     const appendedNew = nextLast !== prev.lastId;
-    if (appendedNew && !prependedOlder) {
+
+    // Handle scrolling to specific message from notification link
+    if (scrollToMessageId) {
+      // Reset scroll state if message ID changed
+      if (hasScrolledToMessage.current !== scrollToMessageId) {
+        hasScrolledToMessage.current = scrollToMessageId;
+      }
+
+      const targetMessage = messages.find((m) => m.id === scrollToMessageId);
+      if (targetMessage) {
+        // Use requestAnimationFrame to ensure DOM is updated
+        requestAnimationFrame(() => {
+          const messageEl = messageRefs.current.get(scrollToMessageId);
+          if (messageEl) {
+            messageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight the message briefly
+            messageEl.style.transition = 'background-color 0.3s ease';
+            messageEl.style.backgroundColor = 'rgba(45, 212, 191, 0.2)';
+            setTimeout(() => {
+              messageEl.style.backgroundColor = '';
+              setTimeout(() => {
+                messageEl.style.transition = '';
+              }, 300);
+            }, 2000);
+          }
+        });
+        return;
+      } else if (
+        hasOlderMessages &&
+        !loadingOlder &&
+        hasScrolledToMessage.current === scrollToMessageId
+      ) {
+        // Message not found in current view, try loading older messages
+        // Only try once per message ID to avoid infinite loops
+        onLoadOlder?.();
+      }
+    } else {
+      // Reset scroll state when no message ID
+      hasScrolledToMessage.current = null;
+    }
+
+    if (appendedNew && !prependedOlder && !scrollToMessageId) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     previousBoundaryRef.current = { firstId: nextFirst, lastId: nextLast };
-  }, [messages]);
+  }, [
+    messages,
+    scrollToMessageId,
+    hasOlderMessages,
+    loadingOlder,
+    onLoadOlder,
+  ]);
 
   useEffect(() => {
     if (roomType === 'dm' && onMessagesViewed && messages.length > 0) {
@@ -221,6 +274,13 @@ export const MessageList = ({
         return (
           <Box
             key={msg.id}
+            ref={(el: HTMLDivElement | null) => {
+              if (el) {
+                messageRefs.current.set(msg.id, el);
+              } else {
+                messageRefs.current.delete(msg.id);
+              }
+            }}
             sx={{
               display: 'flex',
               flexDirection: 'column',
@@ -332,12 +392,7 @@ export const MessageList = ({
                   </Box>
                 </Box>
               ) : (
-                <Typography
-                  variant="body2"
-                  sx={{ whiteSpace: 'pre-wrap', display: 'block' }}
-                >
-                  {msg.content || ''}
-                </Typography>
+                <MessageContent content={msg.content || ''} />
               )}
               {roomType === 'dm' &&
                 isOwn &&

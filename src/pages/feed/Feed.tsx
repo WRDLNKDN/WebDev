@@ -97,6 +97,8 @@ import { useAppToast } from '../../context/AppToastContext';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { useChatRooms } from '../../hooks/useChatRooms';
+import { disconnect } from '../../lib/api/directoryApi';
+import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import {
   getOrCreateSessionAdSeed,
   interleaveWithAds,
@@ -450,6 +452,9 @@ type FeedCardActions = {
   onSave: (postId: string) => void;
   onUnsave: (postId: string) => void;
   onCopyLink: (url: string) => void;
+  onUnfollow: (userId: string) => void;
+  onNotInterested: (postId: string) => void;
+  onReport: (postId: string, userId?: string) => void;
   onMenuInfo: (message: string) => void;
   onCommentToggle: (postId: string) => void;
   onDelete: (postId: string) => void;
@@ -1165,15 +1170,12 @@ const FeedCard = ({
               icon: <CodeIcon fontSize="small" />,
               onClick: () => actions.onCopyLink(embedSnippet),
             },
-            ...(!isOwner && handle
+            ...(!isOwner && handle && item.user_id
               ? [
                   {
                     label: `Unfollow ${displayName}`,
                     icon: <PersonOffOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo(
-                        `Unfollow for @${handle} is coming soon.`,
-                      ),
+                    onClick: () => actions.onUnfollow(item.user_id),
                   },
                 ]
               : []),
@@ -1182,14 +1184,13 @@ const FeedCard = ({
                   {
                     label: 'Not interested',
                     icon: <ThumbDownOffAltOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo('We will show fewer posts like this.'),
+                    onClick: () => actions.onNotInterested(item.id),
                   },
                   {
                     label: 'Report post',
                     icon: <FlagOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo('Report flow is coming soon.'),
+                    onClick: () => actions.onReport(item.id, item.user_id),
+                    danger: true,
                   },
                 ]
               : []),
@@ -1822,6 +1823,19 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const [adImpressionCounts, setAdImpressionCounts] = useState<
     Record<string, number>
   >({});
+  const [hiddenPostIds, setHiddenPostIds] = useState<Set<string>>(() => {
+    try {
+      const s = localStorage.getItem('feed_hidden_post_ids');
+      return s ? new Set(JSON.parse(s) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{
+    postId: string;
+    userId?: string;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -1842,14 +1856,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     }
   }, [adImpressionStorageKey]);
   const sortedItems = useMemo(() => {
-    let list = items;
+    let list = items.filter((item) => !hiddenPostIds.has(item.id));
     if (sortBy === 'oldest')
-      list = [...items].sort(
+      list = [...list].sort(
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
     return list;
-  }, [items, sortBy]);
+  }, [items, sortBy, hiddenPostIds]);
   const visibleAdvertisers = useMemo(
     () =>
       advertisers.filter((a) => {
@@ -2831,6 +2845,91 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     [showToast],
   );
 
+  const handleUnfollow = useCallback(
+    async (userId: string) => {
+      if (!session?.user) return;
+      try {
+        await disconnect(supabase, userId);
+        showToast({
+          message: 'You have unfollowed this Member.',
+          severity: 'success',
+        });
+        // Remove posts from this user from feed
+        setItems((prev) => prev.filter((item) => item.user_id !== userId));
+      } catch (e) {
+        await handleAuthError(e, 'Failed to unfollow');
+      }
+    },
+    [session?.user, handleAuthError],
+  );
+
+  const handleNotInterested = useCallback(
+    (postId: string) => {
+      setHiddenPostIds((prev) => {
+        const next = new Set(prev).add(postId);
+        try {
+          localStorage.setItem(
+            'feed_hidden_post_ids',
+            JSON.stringify([...next]),
+          );
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+      showToast({
+        message: 'We will show fewer posts like this.',
+        severity: 'info',
+      });
+    },
+    [showToast],
+  );
+
+  const handleReport = useCallback((postId: string, userId?: string) => {
+    setReportTarget({ postId, userId });
+    setReportDialogOpen(true);
+  }, []);
+
+  const handleReportSubmit = useCallback(
+    async (
+      postId: string | null,
+      userId: string | null,
+      category: string,
+      freeText?: string,
+    ) => {
+      if (!session?.user || (!postId && !userId)) return;
+      try {
+        // Use chat_reports table for now (same structure)
+        const { error } = await supabase.from('chat_reports').insert({
+          reporter_id: session.user.id,
+          reported_message_id: postId,
+          reported_user_id: userId,
+          category: category as
+            | 'harassment'
+            | 'spam'
+            | 'inappropriate_content'
+            | 'other',
+          free_text: freeText || null,
+          status: 'open',
+        });
+        if (error) throw error;
+        showToast({
+          message: 'Thank you for your report. We will review it.',
+          severity: 'success',
+        });
+        setReportDialogOpen(false);
+        setReportTarget(null);
+      } catch (e) {
+        showToast({
+          message: 'Failed to submit report. Please try again.',
+          severity: 'error',
+        });
+        throw e;
+      }
+    },
+    [session?.user, showToast],
+  );
+
   const handleFeedViewChange = useCallback(
     async (
       _ev: React.MouseEvent<HTMLElement>,
@@ -2893,6 +2992,9 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     onSave: (postId) => void handleSave(postId),
     onUnsave: (postId) => void handleUnsave(postId),
     onCopyLink: (url) => void handleCopyLink(url),
+    onUnfollow: (userId) => void handleUnfollow(userId),
+    onNotInterested: (postId) => void handleNotInterested(postId),
+    onReport: (postId, userId) => void handleReport(postId, userId),
     onMenuInfo: (message) => showToast({ message }),
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
@@ -4088,6 +4190,18 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         onOpenShareToConnection={() => setShareSubDialog('connection')}
         onOpenShareToGroup={() => setShareSubDialog('group')}
         chatEnabled={chatEnabled}
+      />
+      <ReportDialog
+        open={reportDialogOpen}
+        onClose={() => {
+          setReportDialogOpen(false);
+          setReportTarget(null);
+        }}
+        onSubmit={async (postId, userId, category, freeText) => {
+          await handleReportSubmit(postId, userId, category, freeText);
+        }}
+        reportedMessageId={reportTarget?.postId ?? null}
+        reportedUserId={reportTarget?.userId ?? null}
       />
       {shareModalItem && (
         <>

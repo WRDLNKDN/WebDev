@@ -256,6 +256,20 @@ export const ChatPopover = ({
               onStopTyping={stopTyping}
               disabled={false}
               sending={sending}
+              roomType={room?.room_type ?? 'dm'}
+              groupMembers={
+                room?.room_type === 'group' && room.members
+                  ? room.members
+                      .filter((m) => m.profile)
+                      .map((m) => ({
+                        user_id: m.user_id,
+                        handle: m.profile!.handle,
+                        display_name: m.profile!.display_name,
+                        avatar: m.profile!.avatar,
+                      }))
+                  : undefined
+              }
+              currentUserId={session?.user?.id}
             />
           </Box>
         )}

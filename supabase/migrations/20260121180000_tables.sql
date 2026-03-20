@@ -2675,6 +2675,105 @@ create trigger trg_notifications_on_chat_message
   execute function public.notifications_on_chat_message();
 
 -- -----------------------------
+-- notifications_on_chat_mention: parse @handle in chat message content and notify mentioned users
+-- -----------------------------
+create or replace function public.notifications_on_chat_mention()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_content text;
+  v_matched text;
+  v_mentioned_id uuid;
+  v_room_type text;
+  v_is_group boolean;
+begin
+  if new.sender_id is null or new.is_system_message or new.is_deleted then
+    return new;
+  end if;
+
+  v_content := new.content;
+  if v_content is null or trim(v_content) = '' then
+    return new;
+  end if;
+
+  -- Only process mentions in group chats
+  select cr.room_type into v_room_type
+  from public.chat_rooms cr
+  where cr.id = new.room_id;
+
+  if v_room_type != 'group' then
+    return new;
+  end if;
+
+  -- Parse @mentions from content
+  for v_matched in
+    select distinct lower(match[1])
+    from regexp_matches(v_content, '@([a-zA-Z0-9_]+)', 'g') as match
+  loop
+    -- Find mentioned user by handle (must be a member of the group)
+    select p.id into v_mentioned_id
+    from public.profiles p
+    inner join public.chat_room_members crm on crm.user_id = p.id
+    where lower(p.handle) = v_matched
+      and crm.room_id = new.room_id
+      and crm.left_at is null
+      and p.id != new.sender_id
+      and p.status = 'approved'
+    limit 1;
+
+    if v_mentioned_id is not null then
+      -- Respect blocking rules
+      if exists (
+        select 1 from public.chat_blocks cb
+        where (cb.blocker_id = v_mentioned_id and cb.blocked_user_id = new.sender_id)
+           or (cb.blocker_id = new.sender_id and cb.blocked_user_id = v_mentioned_id)
+      ) then
+        continue;
+      end if;
+
+      -- No duplicate: one per (recipient, actor, type, reference) within 1 minute
+      if exists (
+        select 1 from public.notifications n
+        where n.recipient_id = v_mentioned_id
+          and n.actor_id = new.sender_id
+          and n.type = 'mention'
+          and n.reference_id = new.id
+          and n.reference_type = 'chat_message'
+          and n.created_at > now() - interval '1 minute'
+      ) then
+        continue;
+      end if;
+
+      insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
+      values (
+        v_mentioned_id,
+        new.sender_id,
+        'mention',
+        new.id,
+        'chat_message',
+        jsonb_build_object(
+          'room_id', new.room_id,
+          'message_id', new.id,
+          'handle', v_matched
+        )
+      );
+    end if;
+  end loop;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notifications_on_chat_mention on public.chat_messages;
+create trigger trg_notifications_on_chat_mention
+  after insert on public.chat_messages
+  for each row
+  execute function public.notifications_on_chat_mention();
+
+-- -----------------------------
 -- notifications_on_event_rsvp: notify event host when someone RSVPs
 -- -----------------------------
 create or replace function public.notifications_on_event_rsvp()

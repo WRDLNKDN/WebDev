@@ -1,7 +1,7 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
 import { MessageInput } from '../../components/chat/message/MessageInput';
 import { MessageList } from '../../components/chat/message/MessageList';
@@ -22,6 +22,7 @@ import {
  */
 export const ChatPopupPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -69,6 +70,20 @@ export const ChatPopupPage = () => {
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
+
+  // Clear message query param after scrolling (clean URL)
+  useEffect(() => {
+    const messageId = searchParams.get('message');
+    if (messageId && messages.some((m) => m.id === messageId)) {
+      // Message is loaded, remove query param after a delay to allow scroll
+      const timer = setTimeout(() => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('message');
+        setSearchParams(newParams, { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, searchParams, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,6 +248,7 @@ export const ChatPopupPage = () => {
             onMessagesViewed={markAsRead}
             isAdmin={isAdmin}
             compact
+            scrollToMessageId={searchParams.get('message')}
           />
         )}
 
@@ -243,6 +259,20 @@ export const ChatPopupPage = () => {
             onStopTyping={stopTyping}
             disabled={loading}
             sending={sending}
+            roomType={room?.room_type ?? 'dm'}
+            groupMembers={
+              room?.room_type === 'group' && room.members
+                ? room.members
+                    .filter((m) => m.profile)
+                    .map((m) => ({
+                      user_id: m.user_id,
+                      handle: m.profile!.handle,
+                      display_name: m.profile!.display_name,
+                      avatar: m.profile!.avatar,
+                    }))
+                : undefined
+            }
+            currentUserId={uid}
           />
         )}
       </Box>

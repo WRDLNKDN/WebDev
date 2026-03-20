@@ -128,7 +128,7 @@ describe('useProfile.updateProject payload mapping', () => {
       description: 'Updated details',
       image_url: '',
       project_url: ' https://docs.google.com/document/d/abc123/edit#top ',
-      tech_stack: ['Data'],
+      tech_stack: ['Web App'],
       is_highlighted: true,
     });
 
@@ -141,7 +141,7 @@ describe('useProfile.updateProject payload mapping', () => {
       description: 'Updated details',
       project_url: 'https://docs.google.com/document/d/abc123/edit#top',
       image_url: null,
-      tech_stack: ['Data'],
+      tech_stack: ['Web App'],
       is_highlighted: true,
       normalized_url: 'https://docs.google.com/document/d/abc123/preview#top',
       embed_url: 'https://docs.google.com/document/d/abc123/preview#top',
@@ -159,14 +159,14 @@ describe('useProfile.updateProject payload mapping', () => {
       description: '   ',
       image_url: '',
       project_url: 'https://example.com/artifact.pdf',
-      tech_stack: ['Data', 'AI/ML'],
+      tech_stack: ['Web App', 'Product / Engineering'],
       is_highlighted: false,
     });
 
     expect(state.capturedUpdatePayload).toMatchObject({
       title: 'Updated Artifact',
       description: null,
-      tech_stack: ['Data'],
+      tech_stack: ['Web App'],
     });
   });
 
@@ -225,7 +225,7 @@ describe('useProfile.updateProject payload mapping', () => {
         description: 'Updated details',
         image_url: '',
         project_url: 'https://example.com/artifact.pdf',
-        tech_stack: ['Data'],
+        tech_stack: ['Web App'],
         is_highlighted: false,
       },
       { thumbnailFile: imageFile },
@@ -236,7 +236,7 @@ describe('useProfile.updateProject payload mapping', () => {
     expect(state.capturedUpdatePayload).toMatchObject({
       image_url:
         'https://cdn.example.com/project-images/user-1/project-123.png',
-      tech_stack: ['Data'],
+      tech_stack: ['Web App'],
       thumbnail_status: null,
       thumbnail_url: null,
     });

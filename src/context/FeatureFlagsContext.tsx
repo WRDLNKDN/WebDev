@@ -92,9 +92,16 @@ export function useFeatureFlags(): FeatureFlagsContextValue {
 
 /**
  * Returns true if the feature is enabled. While loading or if key is missing, returns true (safe default).
+ * Exception: coming_soon defaults to true (enabled) when not in database.
  */
 export function useFeatureFlag(key: string): boolean {
   const { flags, loading } = useFeatureFlags();
-  if (loading) return true;
+  if (loading) {
+    // Default coming_soon to true (enabled) while loading
+    if (key === 'coming_soon') return true;
+    return true;
+  }
+  // coming_soon defaults to true if not in database
+  if (key === 'coming_soon' && flags[key] === undefined) return true;
   return flags[key] !== false;
 }

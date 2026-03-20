@@ -63,7 +63,17 @@ const App = () => {
   }, [location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    registerAnalyticsSinks();
+    // Defer analytics registration until after initial paint to avoid blocking critical rendering
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        registerAnalyticsSinks();
+      });
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(() => {
+        registerAnalyticsSinks();
+      }, 0);
+    }
   }, []);
 
   useEffect(() => {

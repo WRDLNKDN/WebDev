@@ -448,6 +448,8 @@ export const MessageList = ({
                       component="img"
                       src={linkPreviews[msg.id]?.image}
                       alt={linkPreviews[msg.id]?.title || 'Link preview'}
+                      width={400}
+                      height={140}
                       sx={{
                         width: '100%',
                         height: 140,
@@ -610,6 +612,8 @@ export const MessageList = ({
             component="img"
             src={typingAvatarUrl}
             alt=""
+            width={24}
+            height={24}
             sx={{
               width: 24,
               height: 24,
@@ -670,6 +674,8 @@ const AttachmentPreview = ({
           component="img"
           src={signedUrl}
           alt="Attachment"
+          width={220}
+          height={220}
           sx={{
             width: '100%',
             height: 'auto',

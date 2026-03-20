@@ -1284,6 +1284,8 @@ const FeedCard = ({
                   src={gifUrl}
                   alt=""
                   loading="lazy"
+                  width={320}
+                  height={320}
                   onClick={() => openImageLightbox(gifUrl, 'body_gif')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -1324,6 +1326,8 @@ const FeedCard = ({
                 component="img"
                 src={imgUrl}
                 alt=""
+                width={280}
+                height={280}
                 onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -3085,7 +3089,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           }}
         >
           <Typography
-            component="h1"
+            component="h2"
             variant="h4"
             sx={{
               fontWeight: 600,
@@ -3389,7 +3393,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                   alignItems={{ xs: 'stretch', sm: 'center' }}
                   spacing={{ xs: 1.25, sm: 2 }}
                 >
-                  <Typography variant="h6" fontWeight={600}>
+                  <Typography component="h2" variant="h6" fontWeight={600}>
                     Feed
                   </Typography>
                   <ToggleButtonGroup
@@ -3980,7 +3984,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             pb: 2,
           }}
         >
-          <Typography variant="h6" fontWeight={600}>
+          <Typography component="h2" variant="h6" fontWeight={600}>
             Schedule post
           </Typography>
           <IconButton

@@ -105,6 +105,8 @@ const FeedAdCardComponent = (props: Props) => {
               component="img"
               src={advertiser.logo_url}
               alt=""
+              width={48}
+              height={48}
               sx={{
                 width: 48,
                 height: 48,
@@ -223,6 +225,8 @@ const FeedAdCardComponent = (props: Props) => {
                 component="img"
                 src={heroImageUrl}
                 alt={`${advertiser.company_name} – ${advertiser.title}`}
+                width={92}
+                height={92}
                 loading="eager"
                 referrerPolicy="no-referrer"
                 sx={{

@@ -168,7 +168,16 @@ export const Home = () => {
     const startAuth = () => {
       if (authStartedRef.current) return;
       authStartedRef.current = true;
-      void loadAuthState();
+      // Defer auth check until after initial paint to avoid blocking LCP
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          void loadAuthState();
+        });
+      } else {
+        setTimeout(() => {
+          void loadAuthState();
+        }, 0);
+      }
       void (async () => {
         const supabase = await getSupabase();
         if (!mounted) return;
@@ -333,7 +342,7 @@ export const Home = () => {
               muted
               loop={false}
               playsInline
-              preload="none"
+              preload="metadata"
               poster="/assets/video/hero-bg-poster.jpg"
               onLoadedMetadata={setPlaybackRate}
               onCanPlay={setPlaybackRate}

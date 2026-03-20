@@ -489,6 +489,8 @@ export const Navbar = () => {
                 component="img"
                 src="/assets/wrdlnkdn_logo.png"
                 alt=""
+                width={120}
+                height={30}
                 sx={{
                   height: { xs: 22, sm: 26, md: 30 },
                   width: 'auto',

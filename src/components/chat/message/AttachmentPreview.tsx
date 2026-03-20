@@ -46,6 +46,8 @@ export const AttachmentPreview = ({
           component="img"
           src={signedUrl}
           alt="Attachment"
+          width={220}
+          height={220}
           sx={{
             width: '100%',
             height: 'auto',

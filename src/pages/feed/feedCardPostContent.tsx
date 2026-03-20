@@ -101,6 +101,8 @@ export const FeedCardPostContent = ({
               src={gifUrl}
               alt=""
               loading="lazy"
+              width={320}
+              height={320}
               onClick={() => openImageLightbox(gifUrl, 'body_gif')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -138,6 +140,8 @@ export const FeedCardPostContent = ({
             component="img"
             src={imgUrl}
             alt=""
+            width={280}
+            height={280}
             onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {

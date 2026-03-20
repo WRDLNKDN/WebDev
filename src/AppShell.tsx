@@ -27,7 +27,16 @@ const AuthBoot = () => {
   const lastVisibilityRefreshAtRef = useRef(0);
 
   useEffect(() => {
-    void supabase.auth.getSession();
+    // Defer auth session check until after initial paint to avoid blocking LCP
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        void supabase.auth.getSession();
+      });
+    } else {
+      setTimeout(() => {
+        void supabase.auth.getSession();
+      }, 0);
+    }
   }, []);
 
   useEffect(() => {

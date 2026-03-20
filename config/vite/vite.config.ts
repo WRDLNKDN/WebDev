@@ -101,16 +101,22 @@ export default defineConfig({
     sourcemap: false,
     minify: 'esbuild', // Faster than terser, good compression
     chunkSizeWarningLimit: 600,
+    cssCodeSplit: true,
+    reportCompressedSize: false, // Faster builds
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          // Heavy dependencies that are lazy-loaded should be in separate chunks
           if (id.includes('emoji-picker-react')) return 'emoji-picker';
           if (id.includes('@dicebear')) return 'dicebear';
           if (id.includes('/uuid/') || id.includes('\\uuid\\')) return 'uuid';
+          // MUI and Emotion are large but used everywhere - keep together
           if (id.includes('@mui')) return 'mui';
           if (id.includes('@emotion')) return 'emotion';
+          // Supabase is used everywhere but can be code-split if needed
           if (id.includes('@supabase')) return 'supabase';
+          // React core libraries
           if (
             id.includes('react-dom') ||
             id.includes('/react/') ||

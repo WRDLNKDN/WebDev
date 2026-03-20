@@ -93,6 +93,7 @@ export const Home = () => {
   );
 
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
 
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
@@ -306,7 +307,15 @@ export const Home = () => {
   }, []);
 
   const handleVideoEnded = () => {
-    if (!prefersReducedMotion) setHeroPhase('dimmed');
+    if (!prefersReducedMotion) {
+      setHeroPhase('dimmed');
+      // After video fades out, collapse the hero area
+      setTimeout(() => {
+        setVideoEnded(true);
+      }, 1000); // Wait for fade transition to complete
+    } else {
+      setVideoEnded(true);
+    }
   };
 
   /** Tap video/backdrop to end hero motion early (CTA stays visible throughout). */
@@ -314,6 +323,10 @@ export const Home = () => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
     setHeroPhase('dimmed');
     videoRef.current?.pause();
+    // Collapse after fade transition
+    setTimeout(() => {
+      setVideoEnded(true);
+    }, 1000);
   }, [prefersReducedMotion, videoFailed, heroPhase]);
 
   // 1.5x playback improves pacing; respect prefers-reduced-motion
@@ -335,7 +348,9 @@ export const Home = () => {
 
   return (
     <main className="home-landing" data-testid="signed-out-landing">
-      <section className="home-landing__hero">
+      <section
+        className={`home-landing__hero${videoEnded ? ' home-landing__hero--collapsed' : ''}`}
+      >
         <div
           className="home-landing__hero-backdrop"
           onPointerDown={handleHeroSkip}
@@ -358,6 +373,7 @@ export const Home = () => {
               onError={() => {
                 setVideoFailed(true);
                 setHeroPhase('dimmed');
+                setVideoEnded(true);
               }}
               aria-hidden="true"
             >

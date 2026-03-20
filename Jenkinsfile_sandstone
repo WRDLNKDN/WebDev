@@ -1,0 +1,615 @@
+properties([
+  parameters([
+    [
+      $class: 'GitParameterDefinition',
+      name: 'BRANCH_NAME',
+      description: 'Branch to build',
+      type: 'PT_BRANCH',
+      defaultValue: 'develop',
+      selectedValue: 'DEFAULT',
+      branchFilter: 'origin/(.*)',
+      sortMode: 'DESCENDING_SMART',
+      quickFilterEnabled: true
+    ],
+    choice(
+      name: 'PRODUCT',
+      choices: [
+        'Premium',
+        'K2500-secure',
+        'K2500-hybrid',
+        'K3500',
+        'K3500_ns_mp',
+        'K3500_sec_mp'
+      ],
+      description: 'Target product to build'
+    ),
+    choice(
+      name: 'BUILD_MODE',
+      choices: ['CI', 'RELEASE'],
+      description: 'Build behavior'
+    ),
+    booleanParam(
+      name: 'RUN_BUILDROOT',
+      defaultValue: true,
+      description: 'Run Buildroot setup/build'
+    ),
+    booleanParam(
+      name: 'PUBLISH_TO_NEXUS',
+      defaultValue: true,
+      description: 'Upload artifacts to Nexus'
+    ),
+    booleanParam(
+      name: 'CREATE_TAG',
+      defaultValue: false,
+      description: 'Create and push tag in RELEASE mode'
+    ),
+    booleanParam(
+      name: 'GENERATE_RELEASE_NOTES',
+      defaultValue: false,
+      description: 'Generate release notes file'
+    ),
+    string(
+      name: 'VERSION_OVERRIDE',
+      defaultValue: '',
+      description: 'Optional version override'
+    ),
+    string(
+      name: 'ArenalURL_K2500',
+      defaultValue: '',
+      description: 'Optional Arenal URL for K2500'
+    ),
+    string(
+      name: 'ArenalURL_K3500',
+      defaultValue: '',
+      description: 'Optional Arenal URL for K3500'
+    ),
+    string(
+      name: 'ArenalURL_PREMIUM',
+      defaultValue: '',
+      description: 'Optional Arenal URL for Premium'
+    ),
+    string(
+      name: 'MonolithicURL_K2500',
+      defaultValue: '',
+      description: 'Optional monolithic URL for K2500'
+    )
+  ])
+])
+
+def productConfigMap() {
+  return [
+    'Premium': [
+      productGrep     : 'Premium',
+      partitionTarget : 'pwm',
+      useK2500Urls    : false,
+      buildrootCode   : 'pwm_pp',
+      buildrootRev    : 'revC'
+    ],
+    'K2500-secure': [
+      productGrep     : 'K2500|K2500Bit|Fvt',
+      partitionTarget : 'k2500',
+      useK2500Urls    : true,
+      buildrootCode   : 'k2500_pp',
+      buildrootRev    : 'revC'
+    ],
+    'K2500-hybrid': [
+      productGrep     : 'K2500|K2500Bit|Fvt',
+      partitionTarget : 'k2500',
+      useK2500Urls    : true,
+      buildrootCode   : 'k2500_helios_pp',
+      buildrootRev    : 'revC'
+    ],
+    'K3500': [
+      productGrep     : 'K3500',
+      partitionTarget : 'k3500',
+      useK2500Urls    : false,
+      buildrootCode   : 'k3500_mp',
+      buildrootRev    : 'revB'
+    ],
+    'K3500_ns_mp': [
+      productGrep     : 'K3500',
+      partitionTarget : 'k3500',
+      useK2500Urls    : false,
+      buildrootCode   : 'k3500_ns_mp',
+      buildrootRev    : 'revB'
+    ],
+    'K3500_sec_mp': [
+      productGrep     : 'K3500',
+      partitionTarget : 'k3500',
+      useK2500Urls    : false,
+      buildrootCode   : 'k3500_sec_mp',
+      buildrootRev    : 'revB'
+    ]
+  ]
+}
+
+def normalizeBranchName(String raw) {
+  if (!raw?.trim()) {
+    return 'develop'
+  }
+
+  def branch = raw.trim()
+  branch = branch.replaceFirst(/^refs\/heads\//, '')
+  branch = branch.replaceFirst(/^remotes\/origin\//, '')
+  branch = branch.replaceFirst(/^origin\//, '')
+  return branch
+}
+
+def isReleaseMode() {
+  return params.BUILD_MODE == 'RELEASE'
+}
+
+pipeline {
+  agent {
+    node {
+      label 'linux'
+    }
+  }
+
+  options {
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(
+      daysToKeepStr: '30',
+      numToKeepStr: '30',
+      artifactDaysToKeepStr: '30'
+    ))
+    timestamps()
+    timeout(time: 4, unit: 'HOURS')
+    skipDefaultCheckout(true)
+  }
+
+  environment {
+    ROOT_PATH      = "${WORKSPACE}"
+    DEVTOOLS_PATH  = "${WORKSPACE}/devtools"
+    SANDSTONE_PATH = "${WORKSPACE}/sandstone"
+    NEXUS_BASE     = 'https://nexus.abu-dev.keurig.com/repository/brewerReleases'
+  }
+
+  stages {
+    stage('Resolve Config') {
+      steps {
+        script {
+          if (!params.BRANCH_NAME?.trim()) {
+            error('BRANCH_NAME is required. Configure it with the Git Parameter plugin and default it to develop.')
+          }
+
+          def cfg = productConfigMap()[params.PRODUCT]
+          if (!cfg) {
+            error("Unsupported PRODUCT: ${params.PRODUCT}")
+          }
+
+          env.EFFECTIVE_BRANCH      = normalizeBranchName(params.BRANCH_NAME)
+          env.PRODUCT_GREP          = cfg.productGrep
+          env.PARTITION_TARGET      = cfg.partitionTarget
+          env.USE_K2500_URLS        = cfg.useK2500Urls.toString()
+          env.BUILDROOT_CODE        = cfg.buildrootCode
+          env.BUILDROOT_REV         = cfg.buildrootRev
+
+          env.MAIN_REPO_URL         = scm.userRemoteConfigs[0].url
+          env.MAIN_REPO_CREDENTIALS = scm.userRemoteConfigs[0].credentialsId ?: 'jenkins-bitbucket.org-rbrunault'
+
+          echo "BRANCH_NAME(raw)=${params.BRANCH_NAME}"
+          echo "BRANCH_NAME(normalized)=${env.EFFECTIVE_BRANCH}"
+          echo "PRODUCT=${params.PRODUCT}"
+          echo "BUILD_MODE=${params.BUILD_MODE}"
+          echo "BUILDROOT_CODE=${env.BUILDROOT_CODE}"
+          echo "BUILDROOT_REV=${env.BUILDROOT_REV}"
+          echo "PARTITION_TARGET=${env.PARTITION_TARGET}"
+          echo "MAIN_REPO_URL=${env.MAIN_REPO_URL}"
+        }
+      }
+    }
+
+    stage('Checkout Target Branch') {
+      steps {
+        deleteDir()
+
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "*/${env.EFFECTIVE_BRANCH}"]],
+          doGenerateSubmoduleConfigurations: false,
+          extensions: [
+            [$class: 'CleanBeforeCheckout'],
+            [$class: 'LocalBranch', localBranch: env.EFFECTIVE_BRANCH]
+          ],
+          gitTool: 'Default',
+          submoduleCfg: [],
+          userRemoteConfigs: [[
+            credentialsId: env.MAIN_REPO_CREDENTIALS,
+            url: env.MAIN_REPO_URL
+          ]]
+        ])
+      }
+    }
+
+    stage('Checkout Devtools') {
+      steps {
+        dir('devtools') {
+          checkout([
+            $class: 'GitSCM',
+            branches: [[name: '*/develop']],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [[$class: 'CleanBeforeCheckout']],
+            gitTool: 'Default',
+            submoduleCfg: [],
+            userRemoteConfigs: [[
+              credentialsId: 'jenkins-bitbucket.org-rbrunault',
+              url: 'git@bitbucket.org:kdrp/devtools.git'
+            ]]
+          ])
+        }
+      }
+    }
+
+    stage('Prepare Workspace') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          mkdir -p out
+          mkdir -p out/packages
+          mkdir -p out/configs
+          mkdir -p out/release_notes
+
+          echo "Branches Used*" > BuildEnv.txt
+          if [ -f "${WORKSPACE}/devtools/configs/branches.cfg" ]; then
+            cat "${WORKSPACE}/devtools/configs/branches.cfg" >> BuildEnv.txt
+          fi
+          echo "*********************************************************" >> BuildEnv.txt
+          echo "BRANCH_NAME=${EFFECTIVE_BRANCH}" >> BuildEnv.txt
+          echo "PRODUCT=${PRODUCT}" >> BuildEnv.txt
+          echo "BUILD_MODE=${BUILD_MODE}" >> BuildEnv.txt
+          echo "BUILD_NUMBER=${BUILD_NUMBER}" >> BuildEnv.txt
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> BuildEnv.txt
+          uname -a >> BuildEnv.txt || true
+          make --version | head -1 >> BuildEnv.txt || true
+        '''
+      }
+    }
+
+    stage('Inject Signing Keys') {
+      steps {
+        withCredentials([
+          file(credentialsId: 'my_key.key',  variable: 'KERNEL_KEY_FILE'),
+          file(credentialsId: 'my_key.crt',  variable: 'KERNEL_CERT_FILE'),
+          file(credentialsId: 'private.pem', variable: 'SECPART_PRIV_FILE'),
+          file(credentialsId: 'public.pem',  variable: 'SECPART_PUB_FILE'),
+          file(credentialsId: 'key.h',       variable: 'SECPART_KEYH_FILE')
+        ]) {
+          sh '''#!/usr/bin/env bash
+            set -e
+
+            mkdir -p "${DEVTOOLS_PATH}/tools/bsp_setup/kernel-signing"
+            mkdir -p "${DEVTOOLS_PATH}/configs/keys"
+
+            cp "${KERNEL_KEY_FILE}"   "${DEVTOOLS_PATH}/tools/bsp_setup/kernel-signing/"
+            cp "${KERNEL_CERT_FILE}"  "${DEVTOOLS_PATH}/tools/bsp_setup/kernel-signing/"
+            cp "${SECPART_PRIV_FILE}" "${DEVTOOLS_PATH}/configs/keys/"
+            cp "${SECPART_PUB_FILE}"  "${DEVTOOLS_PATH}/configs/keys/"
+            cp "${SECPART_KEYH_FILE}" "${DEVTOOLS_PATH}/configs/keys/"
+          '''
+        }
+      }
+    }
+
+    stage('Buildroot') {
+      when {
+        expression { params.RUN_BUILDROOT }
+      }
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+          set -o pipefail
+
+          cd "${DEVTOOLS_PATH}"
+
+          echo "Running Buildroot for ${PRODUCT}"
+
+          SPLASH_SCREEN=""
+          case "${PRODUCT}" in
+            Premium)
+              SPLASH_SCREEN=$(find "${DEVTOOLS_PATH}" -name "Premium*.jpg" | head -1)
+              ;;
+            K2500-secure|K2500-hybrid)
+              SPLASH_SCREEN=$(find "${DEVTOOLS_PATH}" -name "K2500*.jpg" | head -1)
+              ;;
+            K3500|K3500_ns_mp|K3500_sec_mp)
+              SPLASH_SCREEN=$(find "${DEVTOOLS_PATH}" -name "temporary_splash_screen.jpg" | head -1)
+              ;;
+            *)
+              echo "Unsupported PRODUCT ${PRODUCT}"
+              exit 1
+              ;;
+          esac
+
+          echo "Using splash: ${SPLASH_SCREEN}"
+
+          CMD=(
+            ./tools/bsp_setup/sandstone_environment_setup.sh
+            -p "${BUILDROOT_CODE}"
+            -v "${BUILDROOT_REV}"
+            -s "${SPLASH_SCREEN}"
+            -sk
+          )
+
+          if [[ "${PRODUCT}" == "Premium" ]]; then
+            CMD+=(-ov 1.3.x)
+          fi
+
+          if [[ "${PRODUCT}" == "K2500-secure" ]]; then
+            CMD+=(-sb -sp -nd)
+          fi
+
+          if [[ "${PRODUCT}" == "K2500-hybrid" ]]; then
+            CMD+=(-nd)
+          fi
+
+          printf 'Running command: '
+          printf '%q ' "${CMD[@]}"
+          printf '\\n'
+
+          "${CMD[@]}"
+
+          sudo chown -R jenkins "${WORKSPACE}"/* || true
+
+          cd "${WORKSPACE}"
+
+          TAR_FILE="${PRODUCT}_buildroot_${BUILD_NUMBER}.tar.gz"
+
+          tar czf "${TAR_FILE}" \
+            sandstoneEnv.sh \
+            devtools \
+            BuildEnv.txt \
+            renesas \
+            renesas-stream-it \
+            rza1_qspi_flash \
+            opencv \
+            libcorrect \
+            crank \
+            spdlog \
+            makeself \
+            libexif \
+            2>/dev/null || true
+
+          cp "${TAR_FILE}" out/packages/ || true
+        '''
+      }
+    }
+
+    stage('Pull Optional Legacy Inputs') {
+      when {
+        expression { env.USE_K2500_URLS == 'true' }
+      }
+      steps {
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'Nexus_Admin',
+            usernameVariable: 'USERNAME',
+            passwordVariable: 'PASSWORD'
+          )
+        ]) {
+          sh '''#!/usr/bin/env bash
+            set -e
+
+            if [ -n "${ArenalURL_K2500}" ]; then
+              BINFILE="${ArenalURL_K2500}"
+              CRC32FILE="${ArenalURL_K2500}.crc32"
+              curl -u "${USERNAME}:${PASSWORD}" -X GET "${BINFILE}" -O || true
+              curl -u "${USERNAME}:${PASSWORD}" -X GET "${CRC32FILE}" -O || true
+            fi
+
+            if [ -n "${MonolithicURL_K2500}" ]; then
+              curl -u "${USERNAME}:${PASSWORD}" -X GET "${MonolithicURL_K2500}" -O || true
+            fi
+          '''
+        }
+      }
+    }
+
+    stage('Repo Setup') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          cd "${WORKSPACE}"
+
+          if [ -f sandstoneEnv.sh ]; then
+            . sandstoneEnv.sh
+          fi
+
+          rm -rf sandstone
+          "${WORKSPACE}/devtools/tools/sandstoneRepoSetup.sh" -p "${WORKSPACE}/sandstone"
+          export PATH=$PATH:/usr/local/bin/Eclipse
+        '''
+      }
+    }
+
+    stage('Build Product') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          cd "${WORKSPACE}/sandstone/products"
+
+          for apps in $(find . -name .cproject | grep -E "${PRODUCT_GREP}"); do
+            appdir=$(dirname "$apps")
+            proj=$(basename "$appdir" | sed 's/Application//')
+            cd "${WORKSPACE}/sandstone"
+            echo "Building project ${proj}"
+            make -j8 config=EmbeddedDebug "$proj"
+            cd "${WORKSPACE}/sandstone/products"
+          done
+        '''
+      }
+    }
+
+    stage('Create Partitions / Packages') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          cd "${WORKSPACE}/devtools/tools/applicationPartitionTools"
+          ./mkApplicationPartition.sh -t e -p "${PARTITION_TARGET}" || true
+
+          cd "${WORKSPACE}"
+          VERSION="${VERSION_OVERRIDE:-$(basename ${EFFECTIVE_BRANCH})}"
+
+          if [ "${PRODUCT}" = "Premium" ] && [ -n "${ArenalURL_PREMIUM}" ]; then
+            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_PREMIUM}"
+          elif [ "${PRODUCT}" = "K3500" ] && [ -n "${ArenalURL_K3500}" ]; then
+            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K3500}"
+          elif [[ "${PRODUCT}" == K2500* ]] && [ -n "${ArenalURL_K2500}" ]; then
+            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K2500}"
+          else
+            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" || true
+          fi
+
+          mkdir -p "${WORKSPACE}/tmp/etc"
+          if [ -f "${WORKSPACE}/softwareUpdate/release/metadata.json" ]; then
+            cp "${WORKSPACE}/softwareUpdate/release/metadata.json" "${WORKSPACE}/tmp/etc/."
+            cd "${WORKSPACE}/devtools/tools/applicationPartitionTools"
+            ./mkApplicationPartition.sh -t e -p "${PARTITION_TARGET}" -o "${WORKSPACE}/tmp" || true
+            cd "${WORKSPACE}"
+            devtools/tools/programmingPackageTools/mkProgrammingPackage.sh || true
+          fi
+
+          zipfile=$(ls -t *.zip 2>/dev/null | head -1 || true)
+          if [ -n "$zipfile" ]; then
+            filenozip=${zipfile%.zip}
+            relzipfile="${filenozip}-${VERSION}-build${BUILD_NUMBER}.zip"
+            mv "$zipfile" "out/packages/${relzipfile}"
+          fi
+
+          supkgfile=$(ls -t softwareUpdate/release/*run 2>/dev/null | head -1 || true)
+          if [ -n "$supkgfile" ]; then
+            cp "$supkgfile" out/packages/
+          fi
+        '''
+      }
+    }
+
+    stage('Generate Release Notes') {
+      when {
+        expression { params.GENERATE_RELEASE_NOTES }
+      }
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          cat > out/release_notes/RELEASE_NOTES.txt <<EOF
+Product: ${PRODUCT}
+Build mode: ${BUILD_MODE}
+Branch: ${EFFECTIVE_BRANCH}
+Build number: ${BUILD_NUMBER}
+Commit: ${GIT_COMMIT}
+EOF
+        '''
+      }
+    }
+
+    stage('Create Release Tag') {
+      when {
+        expression { params.CREATE_TAG && isReleaseMode() }
+      }
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          git config user.name "jenkins"
+          git config user.email "dldevopsteam@kdrp.com"
+
+          VERSION="${VERSION_OVERRIDE:-$(basename ${EFFECTIVE_BRANCH})}"
+          TAGNAME="${PRODUCT}-${VERSION}-build${BUILD_NUMBER}"
+
+          git tag -fa "${TAGNAME}" -m "${TAGNAME}"
+          git push origin "${TAGNAME}" || true
+        '''
+      }
+    }
+
+    stage('Collect Archive Files') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -e
+
+          cp BuildEnv.txt out/ 2>/dev/null || true
+          cp sandstoneEnv.sh out/ 2>/dev/null || true
+
+          cp devtools/configs/products/*.cfg out/configs/ 2>/dev/null || true
+          cp devtools/configs/*.cfg out/configs/ 2>/dev/null || true
+
+          cp *.tar out/ 2>/dev/null || true
+          cp *.tar.gz out/ 2>/dev/null || true
+          cp *.txt out/ 2>/dev/null || true
+          cp *.cfg out/ 2>/dev/null || true
+          cp *.sh out/ 2>/dev/null || true
+        '''
+      }
+    }
+
+    stage('Publish to Nexus') {
+      when {
+        expression { params.PUBLISH_TO_NEXUS }
+      }
+      steps {
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'Nexus_Admin',
+            usernameVariable: 'USERNAME',
+            passwordVariable: 'PASSWORD'
+          )
+        ]) {
+          sh '''#!/usr/bin/env bash
+            set -e
+
+            for f in out/packages/*; do
+              [ -f "$f" ] || continue
+              echo "Uploading $f"
+              curl -u "${USERNAME}:${PASSWORD}" --upload-file "$f" "${NEXUS_BASE}/SandStone/" || true
+            done
+
+            if [ -f "${WORKSPACE}/devtools/configs/products/${PRODUCT}.cfg" ]; then
+              curl -u "${USERNAME}:${PASSWORD}" --upload-file "${WORKSPACE}/devtools/configs/products/${PRODUCT}.cfg" "${NEXUS_BASE}/SandStone/" || true
+            fi
+
+            if [ -f "${WORKSPACE}/sandstoneEnv.sh" ]; then
+              curl -u "${USERNAME}:${PASSWORD}" --upload-file "${WORKSPACE}/sandstoneEnv.sh" "${NEXUS_BASE}/SandStone/" || true
+            fi
+
+            if [ -f "${WORKSPACE}/BuildEnv.txt" ]; then
+              curl -u "${USERNAME}:${PASSWORD}" --upload-file "${WORKSPACE}/BuildEnv.txt" "${NEXUS_BASE}/SandStone/" || true
+            fi
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts(
+        artifacts: 'out/**/*, *.tar, *.tar.gz, *.txt, *.cfg, *.sh',
+        allowEmptyArchive: true
+      )
+    }
+
+    success {
+      echo 'Sandstone build succeeded'
+    }
+
+    failure {
+      echo 'Sandstone build failed'
+    }
+
+    cleanup {
+      cleanWs(
+        cleanWhenAborted: true,
+        cleanWhenFailure: true,
+        cleanWhenNotBuilt: true,
+        cleanWhenUnstable: true,
+        cleanWhenSuccess: true,
+        deleteDirs: true
+      )
+    }
+  }
+}

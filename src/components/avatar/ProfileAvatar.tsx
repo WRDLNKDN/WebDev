@@ -55,6 +55,9 @@ export const ProfileAvatar = ({
       }}
       slotProps={{
         img: {
+          loading: size === 'header' ? 'eager' : 'lazy',
+          fetchPriority: size === 'header' ? 'high' : 'auto',
+          decoding: 'async',
           onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
             (e.target as HTMLImageElement).style.display = 'none';
           },

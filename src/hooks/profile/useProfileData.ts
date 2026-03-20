@@ -45,11 +45,27 @@ export const fetchProfileData = async ({
       return;
     }
 
-    const { data, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle();
+    // Parallelize profile and projects fetch for mobile performance
+    const [profileResult, projectsResult] = await Promise.allSettled([
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle(),
+      supabase
+        .from('portfolio_items')
+        .select('*')
+        .eq('owner_id', session.user.id)
+        .order('sort_order', { ascending: true })
+        .order('id', { ascending: true }),
+    ]);
+
+    const profileResponse =
+      profileResult.status === 'fulfilled' ? profileResult.value : null;
+    const { data, error: profileError } = profileResponse || {
+      data: null,
+      error: profileResult.status === 'rejected' ? profileResult.reason : null,
+    };
     if (profileError) throw profileError;
 
     let profileData = data as DashboardProfile | null;
@@ -128,16 +144,12 @@ export const fetchProfileData = async ({
       socials: normalizeSocials(profileData.socials),
     } as DashboardProfile);
 
-    try {
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('portfolio_items')
-        .select('*')
-        .eq('owner_id', session.user.id)
-        .order('sort_order', { ascending: true })
-        .order('id', { ascending: true });
+    // Handle projects result from parallel fetch
+    if (projectsResult.status === 'fulfilled') {
+      const { data: projectsData, error: projectsError } = projectsResult.value;
       if (!projectsError) setProjects((projectsData || []) as PortfolioItem[]);
       else setProjects([]);
-    } catch {
+    } else {
       setProjects([]);
     }
   } catch (cause) {

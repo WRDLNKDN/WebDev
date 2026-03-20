@@ -20,20 +20,60 @@ import {
   Typography,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
-import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
-import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
-import { EditProfileDialog } from '../../components/profile/EditProfileDialog';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { InterestsDropdown } from '../../components/profile/identity/InterestsDropdown';
-import { EditLinksDialog } from '../../components/profile/links/EditLinksDialog';
-import { ShareProfileDialog } from '../../components/profile/links/ShareProfileDialog';
+
+// Lazy load heavy dialogs for mobile performance
+const AddProjectDialog = lazy(
+  async () =>
+    await import('../../components/portfolio/dialogs/AddProjectDialog').then(
+      (m) => ({ default: m.AddProjectDialog }),
+    ),
+);
+const PortfolioPreviewModal = lazy(
+  async () =>
+    await import(
+      '../../components/portfolio/dialogs/PortfolioPreviewModal'
+    ).then((m) => ({ default: m.PortfolioPreviewModal })),
+);
+const EditProfileDialog = lazy(
+  async () =>
+    await import('../../components/profile/EditProfileDialog').then((m) => ({
+      default: m.EditProfileDialog,
+    })),
+);
+const EditLinksDialog = lazy(
+  async () =>
+    await import('../../components/profile/links/EditLinksDialog').then(
+      (m) => ({
+        default: m.EditLinksDialog,
+      }),
+    ),
+);
+const ShareProfileDialog = lazy(
+  async () =>
+    await import('../../components/profile/links/ShareProfileDialog').then(
+      (m) => ({
+        default: m.ShareProfileDialog,
+      }),
+    ),
+);
 import { DashboardLinksSection } from './dashboardLinksSection';
 
 // LOGIC & TYPES
@@ -109,17 +149,15 @@ export const Dashboard = () => {
     }
   }, [state?.openEditDialog, navigate, location.pathname]);
 
-  // Load or create profile share token for "Share my profile"
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
+  // Load share token lazily - only when share dialog opens (mobile performance)
+  const loadShareToken = useCallback(async () => {
+    if (shareToken || shareTokenLoading) return;
     setShareTokenError(null);
-    const load = async () => {
-      setShareTokenLoading(true);
+    setShareTokenLoading(true);
+    try {
       const { data, error } = await supabase.rpc(
         'get_or_create_profile_share_token',
       );
-      if (cancelled) return;
       if (error) {
         setShareToken(null);
         const err = error as { code?: string; message?: string };
@@ -136,13 +174,10 @@ export const Dashboard = () => {
         setShareToken(typeof data === 'string' ? data : null);
         setShareTokenError(null);
       }
+    } finally {
       setShareTokenLoading(false);
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+    }
+  }, [shareToken, shareTokenLoading]);
 
   const {
     profile,
@@ -198,6 +233,122 @@ export const Dashboard = () => {
     return lastLinksRef.current.length > 0 ? lastLinksRef.current : [];
   }, [savedLinksOverride, profile?.socials]);
 
+  // Derived from profile only (must be before useMemos that depend on them)
+  const safeNerdCreds: NerdCreds =
+    profile?.nerd_creds && typeof profile.nerd_creds === 'object'
+      ? (profile.nerd_creds as unknown as NerdCreds)
+      : ({} as NerdCreds);
+
+  const resumeThumbnailUrl: string | null =
+    typeof safeNerdCreds.resume_thumbnail_url === 'string'
+      ? safeNerdCreds.resume_thumbnail_url
+      : null;
+
+  const resumeFileName: string | null =
+    typeof safeNerdCreds.resume_file_name === 'string'
+      ? safeNerdCreds.resume_file_name
+      : null;
+
+  const resumeThumbnailStatus: 'pending' | 'complete' | 'failed' | null =
+    safeNerdCreds.resume_thumbnail_status === 'pending' ||
+    safeNerdCreds.resume_thumbnail_status === 'complete' ||
+    safeNerdCreds.resume_thumbnail_status === 'failed'
+      ? safeNerdCreds.resume_thumbnail_status
+      : null;
+
+  const descriptionFromJoin = safeStr(profile?.additional_context).trim();
+  const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
+  const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
+  const bio = hasDescription ? descriptionFromJoin || descriptionFromBio : '';
+  const bioIsPlaceholder = !hasDescription;
+  const nicheField = (
+    profile as unknown as { niche_field?: string }
+  )?.niche_field?.trim();
+
+  // Memoize expensive computations for mobile performance (must be before early return)
+  const selectedSkills = useMemo(() => {
+    if (
+      Array.isArray(safeNerdCreds.skills) &&
+      safeNerdCreds.skills.every((skill) => typeof skill === 'string')
+    ) {
+      return (safeNerdCreds.skills as string[])
+        .map((skill) => skill.trim())
+        .filter(Boolean);
+    }
+    if (typeof safeNerdCreds.skills === 'string') {
+      return safeNerdCreds.skills
+        .split(',')
+        .map((skill) => skill.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }, [safeNerdCreds.skills]);
+
+  const selectedInterests = useMemo(() => {
+    if (
+      Array.isArray(safeNerdCreds.interests) &&
+      safeNerdCreds.interests.every((i) => typeof i === 'string')
+    ) {
+      return (safeNerdCreds.interests as string[])
+        .map((i) => String(i).trim())
+        .filter(Boolean);
+    }
+    if (typeof safeNerdCreds.interests === 'string') {
+      return (safeNerdCreds.interests as string)
+        .split(',')
+        .map((i) => i.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }, [safeNerdCreds.interests]);
+
+  const industryGroups = useMemo(
+    () => normalizeIndustryGroups(profile),
+    [profile],
+  );
+
+  const resumePreviewProject = useMemo(
+    () =>
+      buildResumePreviewItem({
+        url: profile?.resume_url,
+        fileName: resumeFileName,
+        thumbnailUrl: resumeThumbnailUrl,
+        thumbnailStatus: resumeThumbnailStatus,
+      }),
+    [
+      profile?.resume_url,
+      resumeFileName,
+      resumeThumbnailUrl,
+      resumeThumbnailStatus,
+    ],
+  );
+
+  // Memoize array operations for mobile performance
+  const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
+  const projectUrls = useMemo(
+    () => projects.map((p) => p.project_url).filter(Boolean),
+    [projects],
+  );
+  const socialUrls = useMemo(
+    () => socialsArray.map((s) => s.url).filter(Boolean),
+    [socialsArray],
+  );
+
+  // Memoize orderedIds for PortfolioSortableList (must be before early return)
+  const orderedIds = useMemo(() => {
+    if (!profile?.resume_url) return projectIds;
+    const resumeIndex = Math.min(
+      Math.max(0, safeNerdCreds.resume_display_index ?? 0),
+      projectIds.length,
+    );
+    return [
+      ...projectIds.slice(0, resumeIndex),
+      RESUME_ITEM_ID,
+      ...projectIds.slice(resumeIndex),
+    ];
+  }, [projectIds, profile?.resume_url, safeNerdCreds.resume_display_index]);
+
+  // Early return after all hooks
   if (!session) return null;
 
   const rawName =
@@ -207,59 +358,6 @@ export const Dashboard = () => {
     profile?.avatar || session.user.user_metadata?.avatar_url;
   const avatarUrl = ctxAvatarUrl ?? safeStr(resolvedAvatarUrl);
 
-  const safeNerdCreds =
-    profile?.nerd_creds && typeof profile.nerd_creds === 'object'
-      ? (profile.nerd_creds as unknown as NerdCreds)
-      : ({} as NerdCreds);
-  const resumeThumbnailUrl =
-    typeof safeNerdCreds.resume_thumbnail_url === 'string'
-      ? safeNerdCreds.resume_thumbnail_url
-      : null;
-  const resumeFileName =
-    typeof safeNerdCreds.resume_file_name === 'string'
-      ? safeNerdCreds.resume_file_name
-      : null;
-  const resumeThumbnailStatus =
-    safeNerdCreds.resume_thumbnail_status === 'pending' ||
-    safeNerdCreds.resume_thumbnail_status === 'complete' ||
-    safeNerdCreds.resume_thumbnail_status === 'failed'
-      ? safeNerdCreds.resume_thumbnail_status
-      : null;
-
-  // Bio: Join wizard About (additional_context) first, then Edit Profile bio
-  const descriptionFromJoin = safeStr(profile?.additional_context).trim();
-  const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
-  const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
-  const bio = hasDescription ? descriptionFromJoin || descriptionFromBio : '';
-  const bioIsPlaceholder = !hasDescription;
-  const selectedSkills =
-    Array.isArray(safeNerdCreds.skills) &&
-    safeNerdCreds.skills.every((skill) => typeof skill === 'string')
-      ? (safeNerdCreds.skills as string[])
-          .map((skill) => skill.trim())
-          .filter(Boolean)
-      : typeof safeNerdCreds.skills === 'string'
-        ? safeNerdCreds.skills
-            .split(',')
-            .map((skill) => skill.trim())
-            .filter(Boolean)
-        : [];
-  const selectedInterests: string[] =
-    Array.isArray(safeNerdCreds.interests) &&
-    safeNerdCreds.interests.every((i) => typeof i === 'string')
-      ? (safeNerdCreds.interests as string[])
-          .map((i) => String(i).trim())
-          .filter(Boolean)
-      : typeof safeNerdCreds.interests === 'string'
-        ? (safeNerdCreds.interests as string)
-            .split(',')
-            .map((i) => i.trim())
-            .filter(Boolean)
-        : [];
-  const industryGroups = normalizeIndustryGroups(profile);
-  const nicheField = (
-    profile as unknown as { niche_field?: string }
-  )?.niche_field?.trim();
   const handleResumeUpload = async (file: File) => {
     try {
       await uploadResume(file);
@@ -313,17 +411,12 @@ export const Dashboard = () => {
     setEditFocusBio(false);
     const returnFocusTarget =
       editDialogReturnFocusRef.current ?? profileMenuButtonRef.current;
-    setTimeout(() => {
+    // Use requestAnimationFrame for better mobile performance (was setTimeout)
+    requestAnimationFrame(() => {
       returnFocusTarget?.focus();
       editDialogReturnFocusRef.current = null;
-    }, 0);
+    });
   };
-  const resumePreviewProject = buildResumePreviewItem({
-    url: profile?.resume_url,
-    fileName: resumeFileName,
-    thumbnailUrl: resumeThumbnailUrl,
-    thumbnailStatus: resumeThumbnailStatus,
-  });
 
   return (
     <Box
@@ -396,9 +489,17 @@ export const Dashboard = () => {
                 >
                   <Button
                     ref={profileMenuButtonRef}
+                    id="profile-menu-button"
                     variant="outlined"
                     size="small"
-                    onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setProfileMenuAnchor(e.currentTarget);
+                    }}
+                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setProfileMenuAnchor(e.currentTarget);
+                    }}
                     endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                     disabled={loading}
                     aria-label="Profile menu"
@@ -407,13 +508,18 @@ export const Dashboard = () => {
                     sx={{
                       borderColor: 'rgba(45, 212, 191, 0.6)',
                       color: '#2dd4bf',
-                      minHeight: 38,
+                      minHeight: { xs: 44, sm: 38 },
                       fontSize: '0.875rem',
-                      py: 0.6,
+                      py: { xs: 1, sm: 0.6 },
                       px: 1.5,
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
                       '&:hover': {
                         borderColor: '#2dd4bf',
                         bgcolor: 'rgba(45, 212, 191, 0.12)',
+                      },
+                      '&:active': {
+                        bgcolor: 'rgba(45, 212, 191, 0.2)',
                       },
                     }}
                   >
@@ -423,18 +529,26 @@ export const Dashboard = () => {
                     variant="outlined"
                     size="small"
                     onClick={() => navigate('/dashboard/settings')}
+                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                    }}
                     disabled={loading}
                     aria-label="Settings"
                     sx={{
                       borderColor: 'rgba(45, 212, 191, 0.6)',
                       color: '#2dd4bf',
-                      minHeight: 38,
+                      minHeight: { xs: 44, sm: 38 },
                       fontSize: '0.875rem',
-                      py: 0.6,
+                      py: { xs: 1, sm: 0.6 },
                       px: 1.5,
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
                       '&:hover': {
                         borderColor: '#2dd4bf',
                         bgcolor: 'rgba(45, 212, 191, 0.12)',
+                      },
+                      '&:active': {
+                        bgcolor: 'rgba(45, 212, 191, 0.2)',
                       },
                     }}
                   >
@@ -446,17 +560,36 @@ export const Dashboard = () => {
                 anchorEl={profileMenuAnchor}
                 open={Boolean(profileMenuAnchor)}
                 onClose={() => setProfileMenuAnchor(null)}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                disableScrollLock={false}
+                disablePortal={false}
+                MenuListProps={{
+                  'aria-labelledby': 'profile-menu-button',
+                  onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                  sx: {
+                    py: 0.5,
+                  },
+                }}
                 slotProps={{
                   paper: {
+                    onClick: (e: React.MouseEvent) => e.stopPropagation(),
                     sx: {
                       mt: 1.5,
                       minWidth: 200,
                       borderRadius: 2,
                       bgcolor: 'rgba(30,30,30,0.98)',
                       border: '1px solid rgba(156,187,217,0.26)',
+                      zIndex: 1300,
+                      maxHeight: 'calc(100vh - 100px)',
+                      overflow: 'auto',
+                      boxShadow:
+                        '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
                     },
+                  },
+                  root: {
+                    onClick: (e: React.MouseEvent) => e.stopPropagation(),
                   },
                 }}
               >
@@ -467,16 +600,36 @@ export const Dashboard = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setProfileMenuAnchor(null)}
-                    sx={{ py: 1.25 }}
+                    onTouchStart={(e: React.TouchEvent) => {
+                      e.preventDefault();
+                      setProfileMenuAnchor(null);
+                    }}
+                    sx={{
+                      py: 1.5,
+                      minHeight: 48,
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
                   >
                     View Profile
                   </MenuItem>
                 )}
                 <MenuItem
                   onClick={() => {
+                    setProfileMenuAnchor(null);
                     openEditProfileDialog();
                   }}
-                  sx={{ py: 1.25 }}
+                  onTouchStart={(e: React.TouchEvent) => {
+                    e.preventDefault();
+                    setProfileMenuAnchor(null);
+                    openEditProfileDialog();
+                  }}
+                  sx={{
+                    py: 1.5,
+                    minHeight: 48,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
                   Edit Profile
                 </MenuItem>
@@ -485,16 +638,38 @@ export const Dashboard = () => {
                     setProfileMenuAnchor(null);
                     navigate('/dashboard/settings');
                   }}
-                  sx={{ py: 1.25 }}
+                  onTouchStart={(e: React.TouchEvent) => {
+                    e.preventDefault();
+                    setProfileMenuAnchor(null);
+                    navigate('/dashboard/settings');
+                  }}
+                  sx={{
+                    py: 1.5,
+                    minHeight: 48,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
                   Settings
                 </MenuItem>
                 <MenuItem
-                  onClick={() => {
+                  onClick={async () => {
                     setProfileMenuAnchor(null);
+                    await loadShareToken();
                     setIsShareDialogOpen(true);
                   }}
-                  sx={{ py: 1.25 }}
+                  onTouchStart={async (e: React.TouchEvent) => {
+                    e.preventDefault();
+                    setProfileMenuAnchor(null);
+                    await loadShareToken();
+                    setIsShareDialogOpen(true);
+                  }}
+                  sx={{
+                    py: 1.5,
+                    minHeight: 48,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
                 >
                   Share My Profile
                 </MenuItem>
@@ -505,7 +680,19 @@ export const Dashboard = () => {
                     await signOut({ redirectTo: '/' });
                     navigate('/', { replace: true });
                   }}
-                  sx={{ py: 1.25, color: 'error.main' }}
+                  onTouchStart={async (e: React.TouchEvent) => {
+                    e.preventDefault();
+                    setProfileMenuAnchor(null);
+                    await signOut({ redirectTo: '/' });
+                    navigate('/', { replace: true });
+                  }}
+                  sx={{
+                    py: 1.5,
+                    minHeight: 48,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                    color: 'error.main',
+                  }}
                 >
                   Sign Out
                 </MenuItem>
@@ -595,7 +782,14 @@ export const Dashboard = () => {
                     size="small"
                     startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setAddMenuAnchor(e.currentTarget);
+                    }}
+                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setAddMenuAnchor(e.currentTarget);
+                    }}
                     disabled={loading}
                     aria-label="Add resume or project"
                     aria-haspopup="true"
@@ -607,13 +801,19 @@ export const Dashboard = () => {
                       background:
                         'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
                       border: 'none',
-                      minHeight: 34,
-                      py: 0.5,
+                      minHeight: { xs: 44, sm: 34 },
+                      py: { xs: 1, sm: 0.5 },
                       px: 1.5,
                       fontSize: '0.8125rem',
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
                       '&:hover': {
                         background:
                           'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                      },
+                      '&:active': {
+                        background:
+                          'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
                       },
                     }}
                   >
@@ -623,17 +823,35 @@ export const Dashboard = () => {
                     anchorEl={addMenuAnchor}
                     open={Boolean(addMenuAnchor)}
                     onClose={() => setAddMenuAnchor(null)}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                     transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    disableScrollLock={false}
+                    disablePortal={false}
+                    MenuListProps={{
+                      onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                      sx: {
+                        py: 0.5,
+                      },
+                    }}
                     slotProps={{
                       paper: {
+                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
                         sx: {
                           mt: 1.5,
                           minWidth: 200,
                           borderRadius: 2,
                           bgcolor: 'rgba(30,30,30,0.98)',
                           border: '1px solid rgba(156,187,217,0.26)',
+                          zIndex: 1300,
+                          maxHeight: 'calc(100vh - 100px)',
+                          overflow: 'auto',
+                          boxShadow:
+                            '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
                         },
+                      },
+                      root: {
+                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
                       },
                     }}
                   >
@@ -642,7 +860,17 @@ export const Dashboard = () => {
                         setAddMenuAnchor(null);
                         openResumePicker();
                       }}
-                      sx={{ py: 1.25 }}
+                      onTouchStart={(e: React.TouchEvent) => {
+                        e.preventDefault();
+                        setAddMenuAnchor(null);
+                        openResumePicker();
+                      }}
+                      sx={{
+                        py: 1.5,
+                        minHeight: 48,
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
                     >
                       + Add Resume
                     </MenuItem>
@@ -651,7 +879,17 @@ export const Dashboard = () => {
                         setAddMenuAnchor(null);
                         openNewProjectDialog();
                       }}
-                      sx={{ py: 1.25 }}
+                      onTouchStart={(e: React.TouchEvent) => {
+                        e.preventDefault();
+                        setAddMenuAnchor(null);
+                        openNewProjectDialog();
+                      }}
+                      sx={{
+                        py: 1.5,
+                        minHeight: 48,
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
                     >
                       + Add Project
                     </MenuItem>
@@ -671,7 +909,14 @@ export const Dashboard = () => {
                     size="small"
                     startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setAddMenuAnchor(e.currentTarget);
+                    }}
+                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      setAddMenuAnchor(e.currentTarget);
+                    }}
                     disabled={loading}
                     aria-label="Add resume or project"
                     aria-haspopup="true"
@@ -683,13 +928,19 @@ export const Dashboard = () => {
                       background:
                         'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
                       border: 'none',
-                      minHeight: 34,
-                      py: 0.5,
+                      minHeight: { xs: 44, sm: 34 },
+                      py: { xs: 1, sm: 0.5 },
                       px: 1.5,
                       fontSize: '0.8125rem',
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
                       '&:hover': {
                         background:
                           'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                      },
+                      '&:active': {
+                        background:
+                          'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
                       },
                     }}
                   >
@@ -699,17 +950,35 @@ export const Dashboard = () => {
                     anchorEl={addMenuAnchor}
                     open={Boolean(addMenuAnchor)}
                     onClose={() => setAddMenuAnchor(null)}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                     transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    disableScrollLock={false}
+                    disablePortal={false}
+                    MenuListProps={{
+                      onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                      sx: {
+                        py: 0.5,
+                      },
+                    }}
                     slotProps={{
                       paper: {
+                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
                         sx: {
                           mt: 1.5,
                           minWidth: 200,
                           borderRadius: 2,
                           bgcolor: 'rgba(30,30,30,0.98)',
                           border: '1px solid rgba(156,187,217,0.26)',
+                          zIndex: 1300,
+                          maxHeight: 'calc(100vh - 100px)',
+                          overflow: 'auto',
+                          boxShadow:
+                            '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
                         },
+                      },
+                      root: {
+                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
                       },
                     }}
                   >
@@ -719,7 +988,17 @@ export const Dashboard = () => {
                           setAddMenuAnchor(null);
                           openResumePicker();
                         }}
-                        sx={{ py: 1.25 }}
+                        onTouchStart={(e: React.TouchEvent) => {
+                          e.preventDefault();
+                          setAddMenuAnchor(null);
+                          openResumePicker();
+                        }}
+                        sx={{
+                          py: 1.5,
+                          minHeight: 48,
+                          touchAction: 'manipulation',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
                       >
                         + Add Resume
                       </MenuItem>
@@ -729,7 +1008,17 @@ export const Dashboard = () => {
                         setAddMenuAnchor(null);
                         openNewProjectDialog();
                       }}
-                      sx={{ py: 1.25 }}
+                      onTouchStart={(e: React.TouchEvent) => {
+                        e.preventDefault();
+                        setAddMenuAnchor(null);
+                        openNewProjectDialog();
+                      }}
+                      sx={{
+                        py: 1.5,
+                        minHeight: 48,
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
                     >
                       + Add Project
                     </MenuItem>
@@ -755,19 +1044,7 @@ export const Dashboard = () => {
                   }}
                 >
                   <PortfolioSortableList
-                    orderedIds={(() => {
-                      const projectIds = projects.map((p) => p.id);
-                      if (!profile?.resume_url) return projectIds;
-                      const resumeIndex = Math.min(
-                        Math.max(0, safeNerdCreds.resume_display_index ?? 0),
-                        projectIds.length,
-                      );
-                      return [
-                        ...projectIds.slice(0, resumeIndex),
-                        RESUME_ITEM_ID,
-                        ...projectIds.slice(resumeIndex),
-                      ];
-                    })()}
+                    orderedIds={orderedIds}
                     projects={projects}
                     renderResumeCard={
                       profile?.resume_url
@@ -920,85 +1197,88 @@ export const Dashboard = () => {
         </DialogActions>
       </Dialog>
 
-      <EditProfileDialog
-        open={isEditOpen}
-        onClose={closeEditProfileDialog}
-        profile={profile}
-        focusBioOnOpen={editFocusBio}
-        avatarFallback={
-          session?.user?.user_metadata?.avatar_url as string | undefined
-        }
-        currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
-        onUpdate={updateProfile}
-        onUpload={uploadAvatar}
-        onManageLinks={() => {
-          setEditFocusBio(false);
-          setIsEditOpen(false);
-          setIsLinksOpen(true);
-        }}
-        onAvatarChanged={() => {
-          void refresh();
-          void refreshAvatar();
-        }}
-      />
-      <EditLinksDialog
-        open={isLinksOpen}
-        onClose={() => setIsLinksOpen(false)}
-        currentLinks={socialsArray}
-        existingProjectUrls={projects.map((p) => p.project_url)}
-        onUpdate={async (updates) => {
-          if (Array.isArray(updates.socials)) {
-            lastLinksRef.current = updates.socials;
-            setSavedLinksOverride(updates.socials);
+      <Suspense fallback={null}>
+        <EditProfileDialog
+          open={isEditOpen}
+          onClose={closeEditProfileDialog}
+          profile={profile}
+          focusBioOnOpen={editFocusBio}
+          avatarFallback={
+            session?.user?.user_metadata?.avatar_url as string | undefined
           }
-          await updateProfile(updates);
-          // Refetch after a short delay so profile.socials is in sync with DB
-          await new Promise((r) => setTimeout(r, 350));
-          await refresh();
-        }}
-      />
-      <AddProjectDialog
-        open={isProjectDialogOpen}
-        onClose={closeProjectDialog}
-        existingProjects={projects}
-        existingLinkUrls={socialsArray.map((s) => s.url)}
-        onSubmit={async (project, files, projectId) => {
-          if (projectId) {
-            await updateProject(projectId, project, files);
-            return;
-          }
-          await addProject(project, files);
-        }}
-        initialProject={editingProject}
-        projectId={editingProject?.id}
-      />
-      <PortfolioPreviewModal
-        project={previewProject}
-        open={Boolean(previewProject)}
-        onClose={() => setPreviewProject(null)}
-      />
-      <ShareProfileDialog
-        open={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-        shareUrl={shareToken ? buildShareProfileUrl(shareToken) : null}
-        shareTokenLoading={shareTokenLoading}
-        shareTokenError={shareTokenError}
-        onCopy={async () => {
-          if (!shareToken) return;
-          const url = buildShareProfileUrl(shareToken);
-          try {
-            await navigator.clipboard.writeText(url);
-            showToast({
-              message: 'Link copied to clipboard.',
-              severity: 'success',
-            });
-          } catch {
-            showToast({ message: 'Could not copy link.', severity: 'error' });
-          }
-        }}
-        onRegenerate={() => setRegenerateConfirmOpen(true)}
-        regenerateBusy={regenerating}
-      />
+          currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
+          onUpdate={updateProfile}
+          onUpload={uploadAvatar}
+          onManageLinks={() => {
+            setEditFocusBio(false);
+            setIsEditOpen(false);
+            setIsLinksOpen(true);
+          }}
+          onAvatarChanged={() => {
+            void refresh();
+            void refreshAvatar();
+          }}
+        />
+        <EditLinksDialog
+          open={isLinksOpen}
+          onClose={() => setIsLinksOpen(false)}
+          currentLinks={socialsArray}
+          existingProjectUrls={projectUrls}
+          onUpdate={async (updates) => {
+            if (Array.isArray(updates.socials)) {
+              lastLinksRef.current = updates.socials;
+              setSavedLinksOverride(updates.socials);
+            }
+            await updateProfile(updates);
+            // Refetch after a short delay so profile.socials is in sync with DB
+            // Reduced delay for mobile performance (was 350ms)
+            await new Promise((r) => setTimeout(r, 200));
+            await refresh();
+          }}
+        />
+        <AddProjectDialog
+          open={isProjectDialogOpen}
+          onClose={closeProjectDialog}
+          existingProjects={projects}
+          existingLinkUrls={socialUrls}
+          onSubmit={async (project, files, projectId) => {
+            if (projectId) {
+              await updateProject(projectId, project, files);
+              return;
+            }
+            await addProject(project, files);
+          }}
+          initialProject={editingProject}
+          projectId={editingProject?.id}
+        />
+        <PortfolioPreviewModal
+          project={previewProject}
+          open={Boolean(previewProject)}
+          onClose={() => setPreviewProject(null)}
+        />
+        <ShareProfileDialog
+          open={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          shareUrl={shareToken ? buildShareProfileUrl(shareToken) : null}
+          shareTokenLoading={shareTokenLoading}
+          shareTokenError={shareTokenError}
+          onCopy={async () => {
+            if (!shareToken) return;
+            const url = buildShareProfileUrl(shareToken);
+            try {
+              await navigator.clipboard.writeText(url);
+              showToast({
+                message: 'Link copied to clipboard.',
+                severity: 'success',
+              });
+            } catch {
+              showToast({ message: 'Could not copy link.', severity: 'error' });
+            }
+          }}
+          onRegenerate={() => setRegenerateConfirmOpen(true)}
+          regenerateBusy={regenerating}
+        />
+      </Suspense>
     </Box>
   );
 };

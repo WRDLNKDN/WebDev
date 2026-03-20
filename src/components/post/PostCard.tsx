@@ -5,6 +5,7 @@
  */
 import { Box, Card, CardContent } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import { memo } from 'react';
 import { PostActionMenu } from './PostActionMenu';
 import type { PostActionMenuItem } from './PostActionMenu';
 import { PostAuthor } from './PostAuthor';
@@ -27,7 +28,7 @@ export type PostCardProps = {
   contentSx?: SxProps<Theme>;
 };
 
-export const PostCard = ({
+const PostCardComponent = ({
   author,
   actionMenu,
   children,
@@ -83,3 +84,5 @@ export const PostCard = ({
     </CardContent>
   </Card>
 );
+
+export const PostCard = memo(PostCardComponent);

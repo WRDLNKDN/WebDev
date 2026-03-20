@@ -149,8 +149,13 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
       }
     };
     document.addEventListener('keydown', handleKeydown);
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
+    // Use passive listeners for better scroll performance on mobile
+    document.addEventListener('mousedown', handlePointerDown, {
+      passive: true,
+    });
+    document.addEventListener('touchstart', handlePointerDown, {
+      passive: true,
+    });
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       document.removeEventListener('mousedown', handlePointerDown);

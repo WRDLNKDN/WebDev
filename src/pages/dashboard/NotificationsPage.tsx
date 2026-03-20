@@ -1,6 +1,6 @@
 import { Box, CircularProgress } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { acceptRequest, declineRequest } from '../../lib/api/directoryApi';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { toMessage } from '../../lib/utils/errors';
@@ -104,9 +104,30 @@ export const NotificationsPage = () => {
     [],
   );
 
+  // Memoize unreadCount before return (must be before early return)
+  const unreadCount = useMemo(
+    () => rows.filter((row) => !row.read_at).length,
+    [rows],
+  );
+
   if (!session) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress aria-label="Loading" />
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '200px',
+        }}
+      >
         <CircularProgress aria-label="Loading" />
       </Box>
     );
@@ -118,7 +139,7 @@ export const NotificationsPage = () => {
       clearError={() => setError(null)}
       rows={rows}
       loading={loading}
-      unreadCount={rows.filter((row) => !row.read_at).length}
+      unreadCount={unreadCount}
       markingRead={markingRead}
       dismissingId={dismissingId}
       markAllAsRead={() => void markAllAsRead()}

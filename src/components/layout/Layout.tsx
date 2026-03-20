@@ -108,6 +108,9 @@ const LayoutContent = () => {
           overflowY: 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
+          // Mobile performance optimizations
+          willChange: 'scroll-position',
+          contain: 'layout style paint',
         }}
       >
         <UatBanner />

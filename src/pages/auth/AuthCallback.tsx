@@ -144,7 +144,8 @@ export const AuthCallback = () => {
             break;
           }
           if (attempt < 2) {
-            await sleep(120);
+            // Reduced delay for mobile performance (was 120ms)
+            await sleep(50);
           }
         }
         if (!session) {
@@ -178,7 +179,8 @@ export const AuthCallback = () => {
               profileError = result.error;
               if (profile || profileError) break;
               if (attempt < 1) {
-                await sleep(120);
+                // Reduced delay for mobile performance (was 120ms)
+                await sleep(50);
                 if (cancelled) return;
               }
             }
@@ -240,7 +242,8 @@ export const AuthCallback = () => {
                 profileError = result.error;
                 if (profile || profileError) break;
                 if (attempt < 1) {
-                  await sleep(120);
+                  // Reduced delay for mobile performance (was 120ms)
+                  await sleep(50);
                   if (cancelled) return;
                 }
               }

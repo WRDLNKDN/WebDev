@@ -333,7 +333,7 @@ export const Home = () => {
               muted
               loop={false}
               playsInline
-              preload="metadata"
+              preload="none"
               poster="/assets/video/hero-bg-poster.jpg"
               onLoadedMetadata={setPlaybackRate}
               onCanPlay={setPlaybackRate}

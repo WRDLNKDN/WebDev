@@ -69,6 +69,11 @@ const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 const SEARCH_MAX_QUERY_CHARS = 500;
 
+/** When true, hide auth buttons (e.g. wrdlnkdn.vercel.app coming soon preview). */
+const isComingSoonHost = (): boolean =>
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'wrdlnkdn.vercel.app';
+
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();

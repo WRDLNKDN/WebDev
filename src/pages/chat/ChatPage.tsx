@@ -1,7 +1,7 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
 import { ChatRoomList } from '../../components/chat/room/ChatRoomList';
@@ -23,6 +23,7 @@ import { GLASS_CARD } from '../../theme/candyStyles';
 export const ChatPage = () => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [startDmOpen, setStartDmOpen] = useState(false);
@@ -93,6 +94,20 @@ export const ChatPage = () => {
       mounted = false;
     };
   }, [navigate]);
+
+  // Clear message query param after scrolling (clean URL)
+  useEffect(() => {
+    const messageId = searchParams.get('message');
+    if (messageId && messages.some((m) => m.id === messageId)) {
+      // Message is loaded, remove query param after a delay to allow scroll
+      const timer = setTimeout(() => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('message');
+        setSearchParams(newParams, { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!session) return;
@@ -332,6 +347,7 @@ export const ChatPage = () => {
                   onReport={(msgId) => handleReport(msgId)}
                   onMessagesViewed={markAsRead}
                   isAdmin={isAdmin}
+                  scrollToMessageId={searchParams.get('message')}
                   typingAvatarUrl={
                     room?.room_type === 'dm'
                       ? (otherMember?.profile?.avatar ?? null)
@@ -353,6 +369,20 @@ export const ChatPage = () => {
                 onStopTyping={stopTyping}
                 disabled={chatLoading}
                 sending={sending}
+                roomType={room?.room_type ?? 'dm'}
+                groupMembers={
+                  room?.room_type === 'group' && room.members
+                    ? room.members
+                        .filter((m) => m.profile)
+                        .map((m) => ({
+                          user_id: m.user_id,
+                          handle: m.profile!.handle,
+                          display_name: m.profile!.display_name,
+                          avatar: m.profile!.avatar,
+                        }))
+                    : undefined
+                }
+                currentUserId={uid}
               />
             </>
           ) : (

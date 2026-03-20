@@ -51,6 +51,10 @@ export const getNotificationLabel = (row: NotificationRow): string => {
     case 'comment':
       return `${actor} commented on your post`;
     case 'mention':
+      // Check if it's a chat mention vs feed mention
+      if (row.reference_type === 'chat_message') {
+        return `${actor} mentioned you in a group chat`;
+      }
       return `${actor} mentioned you`;
     case 'repost':
       return `${actor} shared your post`;
@@ -310,6 +314,7 @@ type NotificationsViewProps = {
   markingRead: boolean;
   dismissingId: string | null;
   markAllAsRead: () => void;
+  clearAll: () => void;
   actingRequestId: string | null;
   handleConnectionDecision: (
     row: NotificationRow,
@@ -328,6 +333,7 @@ export const NotificationsView = ({
   markingRead,
   dismissingId,
   markAllAsRead,
+  clearAll,
   actingRequestId,
   handleConnectionDecision,
   markAsRead,
@@ -347,17 +353,31 @@ export const NotificationsView = ({
         <Typography component="h1" variant="h5" fontWeight={600}>
           Notifications
         </Typography>
-        {unreadCount > 0 && (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={markAllAsRead}
-            disabled={markingRead}
-            sx={{ textTransform: 'none' }}
-          >
-            Mark all as read
-          </Button>
-        )}
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          {unreadCount > 0 && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={markAllAsRead}
+              disabled={markingRead}
+              sx={{ textTransform: 'none' }}
+            >
+              Mark all as read
+            </Button>
+          )}
+          {rows.length > 0 && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={clearAll}
+              disabled={loading || markingRead}
+              sx={{ textTransform: 'none' }}
+            >
+              Clear All
+            </Button>
+          )}
+        </Stack>
       </Box>
       {error && (
         <Alert severity="error" onClose={clearError}>

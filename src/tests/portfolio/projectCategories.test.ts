@@ -11,15 +11,17 @@ import {
 
 describe('portfolio category parsing', () => {
   it('parses comma/newline input and trims whitespace', () => {
-    expect(parseProjectCategories(' DevOps,  UX Design \nCase Study ')).toEqual(
-      ['DevOps', 'UX Design', 'Case Study'],
-    );
+    expect(
+      parseProjectCategories(' Product / Engineering,  Design \nCase Study '),
+    ).toEqual(['Product / Engineering', 'Design', 'Case Study']);
   });
 
   it('deduplicates case-insensitively', () => {
     expect(
-      parseProjectCategories('DevOps, devops, DEVOPS, Case Study, case study'),
-    ).toEqual(['DevOps', 'Case Study']);
+      parseProjectCategories(
+        'Product / Engineering, product / engineering, PRODUCT / ENGINEERING, Case Study, case study',
+      ),
+    ).toEqual(['Product / Engineering', 'Case Study']);
   });
 
   it('caps categories to configured maximum', () => {
@@ -31,28 +33,34 @@ describe('portfolio category parsing', () => {
   });
 
   it('formats stored categories for input display', () => {
-    expect(formatProjectCategories(['DevOps', ' Case Study '])).toBe(
-      'DevOps, Case Study',
-    );
+    expect(
+      formatProjectCategories(['Product / Engineering', ' Case Study ']),
+    ).toBe('Product / Engineering, Case Study');
     expect(formatProjectCategories(null)).toBe('');
   });
 
   it('normalizes category arrays for multi-select persistence', () => {
     expect(
-      normalizeProjectCategories([' DevOps ', 'devops', '', '  ', 'UI/UX']),
-    ).toEqual(['DevOps', 'UI/UX']);
+      normalizeProjectCategories([
+        ' Product / Engineering ',
+        'product / engineering',
+        '',
+        '  ',
+        'Design',
+      ]),
+    ).toEqual(['Product / Engineering', 'Design']);
     expect(normalizeProjectCategories(null)).toEqual([]);
   });
 
   it('detects predefined taxonomy values exactly', () => {
-    expect(isPredefinedProjectCategory('Data')).toBe(true);
-    expect(isPredefinedProjectCategory('data')).toBe(false);
+    expect(isPredefinedProjectCategory('Web App')).toBe(true);
+    expect(isPredefinedProjectCategory('web app')).toBe(false);
     expect(isPredefinedProjectCategory('Custom Category')).toBe(false);
   });
 
   it('derives picker state for predefined and custom categories', () => {
-    expect(getProjectCategorySelection(['Data'])).toEqual({
-      pickerValue: 'Data',
+    expect(getProjectCategorySelection(['Web App'])).toEqual({
+      pickerValue: 'Web App',
       customCategory: '',
     });
     expect(getProjectCategorySelection(['My Custom Category'])).toEqual({

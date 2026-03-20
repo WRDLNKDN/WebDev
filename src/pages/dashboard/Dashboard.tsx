@@ -482,79 +482,44 @@ export const Dashboard = () => {
                   }}
                   disabled={loading}
                 />
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1}
-                  sx={{ flexWrap: 'wrap' }}
+                <Button
+                  ref={profileMenuButtonRef}
+                  id="profile-menu-button"
+                  variant="outlined"
+                  size="small"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    setProfileMenuAnchor(e.currentTarget);
+                  }}
+                  onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    setProfileMenuAnchor(e.currentTarget);
+                  }}
+                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                  disabled={loading}
+                  aria-label="Profile menu"
+                  aria-haspopup="true"
+                  aria-expanded={Boolean(profileMenuAnchor)}
+                  sx={{
+                    borderColor: 'rgba(45, 212, 191, 0.6)',
+                    color: '#2dd4bf',
+                    minHeight: { xs: 44, sm: 38 },
+                    fontSize: '0.875rem',
+                    py: { xs: 1, sm: 0.6 },
+                    px: 1.5,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:hover': {
+                      borderColor: '#2dd4bf',
+                      bgcolor: 'rgba(45, 212, 191, 0.12)',
+                    },
+                    '&:active': {
+                      bgcolor: 'rgba(45, 212, 191, 0.2)',
+                    },
+                  }}
                 >
-                  <Button
-                    ref={profileMenuButtonRef}
-                    id="profile-menu-button"
-                    variant="outlined"
-                    size="small"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setProfileMenuAnchor(e.currentTarget);
-                    }}
-                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setProfileMenuAnchor(e.currentTarget);
-                    }}
-                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                    disabled={loading}
-                    aria-label="Profile menu"
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(profileMenuAnchor)}
-                    sx={{
-                      borderColor: 'rgba(45, 212, 191, 0.6)',
-                      color: '#2dd4bf',
-                      minHeight: { xs: 44, sm: 38 },
-                      fontSize: '0.875rem',
-                      py: { xs: 1, sm: 0.6 },
-                      px: 1.5,
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                      '&:hover': {
-                        borderColor: '#2dd4bf',
-                        bgcolor: 'rgba(45, 212, 191, 0.12)',
-                      },
-                      '&:active': {
-                        bgcolor: 'rgba(45, 212, 191, 0.2)',
-                      },
-                    }}
-                  >
-                    Profile
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => navigate('/dashboard/settings')}
-                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                    }}
-                    disabled={loading}
-                    aria-label="Settings"
-                    sx={{
-                      borderColor: 'rgba(45, 212, 191, 0.6)',
-                      color: '#2dd4bf',
-                      minHeight: { xs: 44, sm: 38 },
-                      fontSize: '0.875rem',
-                      py: { xs: 1, sm: 0.6 },
-                      px: 1.5,
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                      '&:hover': {
-                        borderColor: '#2dd4bf',
-                        bgcolor: 'rgba(45, 212, 191, 0.12)',
-                      },
-                      '&:active': {
-                        bgcolor: 'rgba(45, 212, 191, 0.2)',
-                      },
-                    }}
-                  >
-                    Settings
-                  </Button>
-                </Stack>
+                  Profile
+                </Button>
               </Stack>
               <Menu
                 anchorEl={profileMenuAnchor}

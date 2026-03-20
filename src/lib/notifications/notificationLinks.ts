@@ -35,10 +35,21 @@ export function getNotificationLink(row: NotificationRowForLink): string {
   }
   if (row.reference_type === 'feed_item' && safe) return '/feed';
 
-  if (row.type === 'chat_message') {
+  if (
+    row.type === 'chat_message' ||
+    (row.type === 'mention' && row.reference_type === 'chat_message')
+  ) {
     if (row.payload && 'room_id' in row.payload) {
       const roomId = row.payload.room_id;
-      if (roomId && !safe) return `/chat-full/${roomId}`;
+      if (roomId && !safe) {
+        // For mentions, we can add a message_id query param to scroll to the message
+        const messageId =
+          'message_id' in row.payload ? row.payload.message_id : undefined;
+        if (messageId) {
+          return `/chat-full/${roomId}?message=${encodeURIComponent(messageId)}`;
+        }
+        return `/chat-full/${roomId}`;
+      }
     }
     return '/chat-full';
   }

@@ -30,6 +30,10 @@ import {
   CHAT_ALLOWED_ACCEPT,
 } from '../../../types/chat';
 import { toMessage } from '../../../lib/utils/errors';
+import {
+  MentionAutocomplete,
+  type MentionableUser,
+} from './MentionAutocomplete';
 
 const EXIF_STRIP_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const INPUT_SEPARATOR_GREEN = '#1DB954';
@@ -95,6 +99,12 @@ type MessageInputProps = {
   onStopTyping?: () => void;
   disabled?: boolean;
   sending?: boolean;
+  /** Group members for @mention autocomplete (only used in group chats) */
+  groupMembers?: MentionableUser[];
+  /** Current user ID to exclude from mention suggestions */
+  currentUserId?: string;
+  /** Room type to determine if mentions are enabled */
+  roomType?: 'dm' | 'group';
 };
 
 export const MessageInput = ({
@@ -103,6 +113,9 @@ export const MessageInput = ({
   onStopTyping,
   disabled,
   sending = false,
+  groupMembers = [],
+  currentUserId,
+  roomType = 'dm',
 }: MessageInputProps) => {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -118,6 +131,17 @@ export const MessageInput = ({
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [mentionState, setMentionState] = useState<{
+    open: boolean;
+    query: string;
+    anchorEl: HTMLElement | null;
+    startPos: number;
+  }>({
+    open: false,
+    query: '',
+    anchorEl: null,
+    startPos: 0,
+  });
   const submitBlocked =
     disabled ||
     sending ||
@@ -343,11 +367,47 @@ export const MessageInput = ({
           maxRows={expanded ? 6 : 2}
           value={text}
           onChange={(e) => {
-            setText(e.target.value);
+            const newValue = e.target.value;
+            setText(newValue);
             onTyping?.();
+
+            // Handle @mention detection (only in group chats)
+            if (roomType === 'group' && groupMembers.length > 0) {
+              const cursorPos = e.target.selectionStart ?? newValue.length;
+              const textBeforeCursor = newValue.slice(0, cursorPos);
+              const lastAt = textBeforeCursor.lastIndexOf('@');
+
+              if (
+                lastAt >= 0 &&
+                (lastAt === 0 ||
+                  /\s/.test(textBeforeCursor[lastAt - 1]) ||
+                  textBeforeCursor[lastAt - 1] === '\n')
+              ) {
+                const query = textBeforeCursor.slice(lastAt + 1);
+                // Check if we're still in a mention (no space or newline after @)
+                if (!query.includes(' ') && !query.includes('\n')) {
+                  const inputEl = e.target;
+                  setMentionState({
+                    open: true,
+                    query,
+                    anchorEl: inputEl,
+                    startPos: lastAt,
+                  });
+                  return;
+                }
+              }
+            }
+            setMentionState((prev) => ({ ...prev, open: false }));
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // Close mention autocomplete on Escape
+            if (e.key === 'Escape' && mentionState.open) {
+              e.preventDefault();
+              setMentionState((prev) => ({ ...prev, open: false }));
+              return;
+            }
+
+            if (e.key === 'Enter' && !e.shiftKey && !mentionState.open) {
               e.preventDefault();
               const form = e.currentTarget.closest('form');
               if (form) {
@@ -361,7 +421,15 @@ export const MessageInput = ({
               }
             }
           }}
-          onBlur={() => onStopTyping?.()}
+          onBlur={(e) => {
+            // Delay closing to allow click on autocomplete
+            setTimeout(() => {
+              if (!e.currentTarget.contains(document.activeElement)) {
+                setMentionState((prev) => ({ ...prev, open: false }));
+                onStopTyping?.();
+              }
+            }, 200);
+          }}
           placeholder="Write a message…"
           disabled={disabled || uploading}
           size="small"
@@ -530,6 +598,42 @@ export const MessageInput = ({
         onClose={() => setGifPickerOpen(false)}
         onPick={(url, title) => void handlePickGif(url, title)}
       />
+      {roomType === 'group' && groupMembers.length > 0 && (
+        <MentionAutocomplete
+          open={mentionState.open}
+          query={mentionState.query}
+          users={groupMembers}
+          currentUserId={currentUserId}
+          anchorEl={mentionState.anchorEl}
+          onSelect={(user) => {
+            const input = messageInputRef.current;
+            if (!input) return;
+
+            const beforeMention = text.slice(0, mentionState.startPos);
+            const afterCursor = text.slice(
+              mentionState.startPos + 1 + mentionState.query.length,
+            );
+            const mentionText = `@${user.handle}`;
+            const newText = `${beforeMention}${mentionText} ${afterCursor}`;
+
+            setText(newText);
+            setMentionState((prev) => ({ ...prev, open: false }));
+
+            // Set cursor after the mention
+            requestAnimationFrame(() => {
+              if (
+                input instanceof HTMLInputElement ||
+                input instanceof HTMLTextAreaElement
+              ) {
+                const newPos = beforeMention.length + mentionText.length + 1;
+                input.setSelectionRange(newPos, newPos);
+                input.focus();
+              }
+            });
+          }}
+          onClose={() => setMentionState((prev) => ({ ...prev, open: false }))}
+        />
+      )}
       <Popover
         anchorEl={emojiAnchor}
         open={Boolean(emojiAnchor)}

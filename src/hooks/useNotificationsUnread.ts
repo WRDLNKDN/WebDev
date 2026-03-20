@@ -38,7 +38,10 @@ export function useNotificationsUnread(): number {
             filter: `recipient_id=eq.${session.user.id}`,
           },
           () => {
-            void refresh();
+            // Debounce refresh slightly to batch rapid updates
+            setTimeout(() => {
+              void refresh();
+            }, 100);
           },
         );
         ch.subscribe();

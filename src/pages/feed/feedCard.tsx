@@ -236,15 +236,12 @@ export const FeedCard = ({
               icon: <CodeIcon fontSize="small" />,
               onClick: () => actions.onCopyLink(embedSnippet),
             },
-            ...(!isOwner && handle
+            ...(!isOwner && handle && item.user_id
               ? [
                   {
                     label: `Unfollow ${displayName}`,
                     icon: <PersonOffOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo(
-                        `Unfollow for @${handle} is coming soon.`,
-                      ),
+                    onClick: () => actions.onUnfollow(item.user_id),
                   },
                 ]
               : []),
@@ -253,14 +250,13 @@ export const FeedCard = ({
                   {
                     label: 'Not interested',
                     icon: <ThumbDownOffAltOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo('We will show fewer posts like this.'),
+                    onClick: () => actions.onNotInterested(item.id),
                   },
                   {
                     label: 'Report post',
                     icon: <FlagOutlinedIcon fontSize="small" />,
-                    onClick: () =>
-                      actions.onMenuInfo('Report flow is coming soon.'),
+                    onClick: () => actions.onReport(item.id, item.user_id),
+                    danger: true,
                   },
                 ]
               : []),

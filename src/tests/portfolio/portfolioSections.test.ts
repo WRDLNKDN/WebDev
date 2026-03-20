@@ -25,50 +25,53 @@ describe('buildPortfolioCategorySections', () => {
   it('groups projects into category sections and keeps project order', () => {
     const projects = [
       makeProject('p1', ['Case Study']),
-      makeProject('p2', ['DevOps']),
-      makeProject('p3', ['UI/UX']),
+      makeProject('p2', ['Product / Engineering']),
+      makeProject('p3', ['Design']),
     ];
 
     const sections = buildPortfolioCategorySections(projects);
 
     expect(sections.map((s) => s.category)).toEqual([
       'Case Study',
-      'DevOps',
-      'UI/UX',
+      'Product / Engineering',
+      'Design',
     ]);
     expect(sections[1]?.projects.map((p) => p.id)).toEqual(['p2']);
   });
 
   it('orders sections by first artifact appearance', () => {
     const sections = buildPortfolioCategorySections([
-      makeProject('p1', ['Data']),
+      makeProject('p1', ['Web App']),
       makeProject('p2', ['Case Study']),
       makeProject('p3', ['Case Study']),
     ]);
 
-    expect(sections.map((s) => s.category)).toEqual(['Data', 'Case Study']);
+    expect(sections.map((s) => s.category)).toEqual(['Web App', 'Case Study']);
     expect(sections[1]?.projects.map((p) => p.id)).toEqual(['p2', 'p3']);
   });
 
   it('falls back to the first normalized legacy category only', () => {
     const sections = buildPortfolioCategorySections([
-      makeProject('p1', ['  Case Study ', 'DevOps', 'UI/UX']),
-      makeProject('p2', ['DevOps']),
+      makeProject('p1', ['  Case Study ', 'Product / Engineering', 'Design']),
+      makeProject('p2', ['Product / Engineering']),
     ]);
 
-    expect(sections.map((s) => s.category)).toEqual(['Case Study', 'DevOps']);
+    expect(sections.map((s) => s.category)).toEqual([
+      'Case Study',
+      'Product / Engineering',
+    ]);
     expect(sections[0]?.projects.map((p) => p.id)).toEqual(['p1']);
   });
 
   it('creates an Uncategorized section for projects without categories', () => {
     const sections = buildPortfolioCategorySections([
       makeProject('p1', []),
-      makeProject('p2', ['Data']),
+      makeProject('p2', ['Web App']),
     ]);
 
     expect(sections.map((s) => s.category)).toEqual([
       UNCATEGORIZED_PORTFOLIO_SECTION,
-      'Data',
+      'Web App',
     ]);
     expect(sections[0]?.projects.map((p) => p.id)).toEqual(['p1']);
   });
@@ -77,8 +80,8 @@ describe('buildPortfolioCategorySections', () => {
     expect(portfolioCategoryToSectionTestId('Case Study')).toBe(
       'portfolio-section-case-study',
     );
-    expect(portfolioCategoryToSectionTestId('AI/ML')).toBe(
-      'portfolio-section-ai-ml',
+    expect(portfolioCategoryToSectionTestId('Product / Engineering')).toBe(
+      'portfolio-section-product-engineering',
     );
   });
 });

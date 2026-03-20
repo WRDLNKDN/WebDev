@@ -35,17 +35,18 @@ export const NotificationsPage = () => {
 
   const markAsRead = useCallback(async (id: string) => {
     const now = new Date().toISOString();
-    setMarkingRead(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from('notifications')
         .update({ read_at: now })
         .eq('id', id);
-      setRows((prev) =>
-        prev.map((row) => (row.id === id ? { ...row, read_at: now } : row)),
-      );
-    } finally {
-      setMarkingRead(false);
+      if (!error) {
+        setRows((prev) =>
+          prev.map((row) => (row.id === id ? { ...row, read_at: now } : row)),
+        );
+      }
+    } catch (err) {
+      setError(toMessage(err));
     }
   }, []);
 
@@ -53,11 +54,15 @@ export const NotificationsPage = () => {
     const now = new Date().toISOString();
     setDismissingId(id);
     try {
-      await supabase
+      const { error } = await supabase
         .from('notifications')
         .update({ read_at: now })
         .eq('id', id);
-      setRows((prev) => prev.filter((row) => row.id !== id));
+      if (!error) {
+        setRows((prev) => prev.filter((row) => row.id !== id));
+      }
+    } catch (err) {
+      setError(toMessage(err));
     } finally {
       setDismissingId(null);
     }
@@ -69,18 +74,46 @@ export const NotificationsPage = () => {
     const now = new Date().toISOString();
     setMarkingRead(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from('notifications')
         .update({ read_at: now })
         .eq('recipient_id', session.user.id)
         .is('read_at', null);
-      setRows((prev) =>
-        prev.map((row) => ({ ...row, read_at: row.read_at ?? now })),
-      );
+      if (!error) {
+        setRows((prev) =>
+          prev.map((row) => ({ ...row, read_at: row.read_at ?? now })),
+        );
+      }
     } finally {
       setMarkingRead(false);
     }
   }, [session?.user?.id]);
+
+  const clearAll = useCallback(async () => {
+    if (!session?.user?.id) return;
+    if (rows.length === 0) return;
+
+    // Lightweight confirmation
+    if (
+      !window.confirm(
+        `Are you sure you want to remove all ${rows.length} notification${rows.length === 1 ? '' : 's'}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('recipient_id', session.user.id);
+      if (!error) {
+        setRows([]);
+      }
+    } catch (err) {
+      setError(toMessage(err));
+    }
+  }, [session?.user?.id, rows.length]);
 
   const handleConnectionDecision = useCallback(
     async (row: NotificationRow, decision: 'accept' | 'decline') => {
@@ -149,6 +182,7 @@ export const NotificationsPage = () => {
       }
       markAsRead={(id) => void markAsRead(id)}
       dismissRow={(id) => void dismissRow(id)}
+      clearAll={() => void clearAll()}
     />
   );
 };

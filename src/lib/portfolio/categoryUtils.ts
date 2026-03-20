@@ -5,13 +5,19 @@
 
 export const MAX_PROJECT_CATEGORIES = 8;
 export const PORTFOLIO_CATEGORY_OPTIONS = [
+  'Awards',
   'Case Study',
+  'Certificates & Licenses',
+  'Community Contribution',
+  'Design',
+  'Education / Coursework',
+  'Event / Speaking',
+  'Presentation',
+  'Product / Engineering',
+  'Program / Project Management',
+  'Research',
+  'Video / Media',
   'Web App',
-  'Mobile App',
-  'UI/UX',
-  'DevOps',
-  'Data',
-  'AI/ML',
   'Writing',
 ] as const;
 export const PORTFOLIO_OTHER_CATEGORY_OPTION = 'Other' as const;

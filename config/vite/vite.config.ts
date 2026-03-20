@@ -99,6 +99,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: 'esbuild', // Faster than terser, good compression
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {

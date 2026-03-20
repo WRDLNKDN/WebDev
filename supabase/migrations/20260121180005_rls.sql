@@ -1,6 +1,7 @@
 -- supabase/migrations/20260121180005_rls.sql
 -- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
 -- Additive/safe only: no TRUNCATE, no DELETE without WHERE, no DROP TABLE; table data never cleared.
+-- This file contains ONLY RLS policies, grants, and security settings - no table modifications.
 --
 -- If you see "duplicate key" or migration repair needed for 20260214140000, 20260214160000, 20260214170000:
 --   supabase migration repair <id> --status reverted

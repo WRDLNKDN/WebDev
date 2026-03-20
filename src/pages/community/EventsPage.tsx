@@ -88,27 +88,48 @@ export const EventsPage = () => {
       blockedHostIds,
     );
     const now = new Date();
+
+    // Batch fetch profiles and RSVP counts for mobile performance (was N+1 queries)
+    const hostIds = [
+      ...new Set(filteredRows.map((r) => r.host_id).filter(Boolean)),
+    ];
+    const eventIds = filteredRows.map((r) => r.id);
+
+    const [profilesRes, rsvpsRes] = await Promise.all([
+      hostIds.length > 0
+        ? supabase
+            .from('profiles')
+            .select('id, handle, display_name, avatar')
+            .in('id', hostIds)
+        : Promise.resolve({ data: [], error: null }),
+      eventIds.length > 0
+        ? supabase
+            .from('event_rsvps')
+            .select('event_id, status')
+            .in('event_id', eventIds)
+            .eq('status', 'yes')
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    const profilesMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
+    const rsvpCountsMap = new Map<string, number>();
+    (rsvpsRes.data ?? []).forEach((r) => {
+      rsvpCountsMap.set(r.event_id, (rsvpCountsMap.get(r.event_id) ?? 0) + 1);
+    });
+
     const upcomingList: EventRow[] = [];
     const pastList: EventRow[] = [];
 
     for (const r of filteredRows) {
       const ev = r as EventRow;
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, handle, display_name, avatar')
-        .eq('id', ev.host_id)
-        .maybeSingle();
-      const { count } = await supabase
-        .from('event_rsvps')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_id', ev.id)
-        .eq('status', 'yes');
+      const profile = profilesMap.get(ev.host_id);
+      const yesCount = rsvpCountsMap.get(ev.id) ?? 0;
       const enriched: EventRow = {
         ...ev,
-        host_handle: profiles?.handle ?? null,
-        host_display_name: profiles?.display_name ?? null,
-        host_avatar: profiles?.avatar ?? null,
-        yes_count: count ?? 0,
+        host_handle: profile?.handle ?? null,
+        host_display_name: profile?.display_name ?? null,
+        host_avatar: profile?.avatar ?? null,
+        yes_count: yesCount,
       };
       if (new Date(ev.start_at) >= now) upcomingList.push(enriched);
       else pastList.push(enriched);

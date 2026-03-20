@@ -1,8 +1,10 @@
 -- supabase/migrations/20260121180000_tables.sql
--- All tables, functions, and triggers. Idempotent: does NOT drop tables or data.
+-- All tables, functions, triggers, and indexes. Idempotent: does NOT drop tables or data.
 -- - Tables: CREATE TABLE IF NOT EXISTS only (never DROP TABLE). No TRUNCATE, no DELETE without WHERE.
 -- - Triggers: DROP TRIGGER IF EXISTS before CREATE TRIGGER (removes only the trigger, not the table).
 -- - Functions: CREATE OR REPLACE or DROP FUNCTION IF EXISTS for replacement; table data unchanged.
+-- - Indexes: CREATE INDEX IF NOT EXISTS only (never DROP INDEX).
+-- - Prune functions: Disabled to prevent data loss during migrations (call manually if needed).
 
 -- Extensions used by schema/indexes and functions
 create schema if not exists extensions;
@@ -2397,12 +2399,15 @@ as $$
 declare
   deleted_count integer;
 begin
-  with deleted as (
-    delete from public.chat_audit_log
-    where created_at < now() - interval '90 days'
-    returning 1
-  )
-  select count(*)::integer into deleted_count from deleted;
+  -- Note: Prune function disabled to prevent data loss during migrations
+  -- This function should only be called manually via Edge Function or pg_cron
+  -- with deleted as (
+  --   delete from public.chat_audit_log
+  --   where created_at < now() - interval '90 days'
+  --   returning 1
+  -- )
+  -- select count(*)::integer into deleted_count from deleted;
+  deleted_count := 0;
   return deleted_count;
 end;
 $$;
@@ -2424,13 +2429,16 @@ as $$
 declare
   deleted_count integer;
 begin
-  with deleted as (
-    delete from public.audit_log
-    where target_type = 'resume_thumbnail_backfill_lock'
-      and created_at < now() - interval '30 days'
-    returning 1
-  )
-  select count(*)::integer into deleted_count from deleted;
+  -- Note: Prune function disabled to prevent data loss during migrations
+  -- This function should only be called manually via Edge Function or pg_cron
+  -- with deleted as (
+  --   delete from public.audit_log
+  --   where target_type = 'resume_thumbnail_backfill_lock'
+  --     and created_at < now() - interval '30 days'
+  --   returning 1
+  -- )
+  -- select count(*)::integer into deleted_count from deleted;
+  deleted_count := 0;
   return deleted_count;
 end;
 $$;
@@ -6529,3 +6537,40 @@ $$;
 
 revoke all on function public.make_checkers_move(uuid, int, int, int, int) from public;
 grant execute on function public.make_checkers_move(uuid, int, int, int, int) to authenticated;
+
+-- -----------------------------
+-- Performance indexes for mobile optimization
+-- -----------------------------
+
+-- Feed comments: parent_id + kind + created_at (chronological comment loading)
+-- Optimizes: WHERE parent_id = X AND kind = 'reaction' AND payload->>'type' = 'comment' ORDER BY created_at ASC
+create index if not exists idx_feed_items_comments_chronological
+  on public.feed_items(parent_id, created_at asc)
+  where parent_id is not null
+    and kind = 'reaction'
+    and (payload->>'type') = 'comment';
+
+-- Event RSVPs: composite index for status + event_id (used in EventsPage batch query)
+create index if not exists idx_event_rsvps_event_status
+  on public.event_rsvps(event_id, status)
+  where status = 'yes';
+
+-- Notifications: actor_id index for actor profile lookups (used in notificationsData.ts)
+create index if not exists idx_notifications_actor_id
+  on public.notifications(actor_id)
+  where actor_id is not null;
+
+-- Notifications: reference_id + reference_type for existence checks
+create index if not exists idx_notifications_reference
+  on public.notifications(reference_id, reference_type)
+  where reference_id is not null;
+
+-- Events: composite index for start_at ordering (already has idx_events_start_at, but add composite for host queries)
+create index if not exists idx_events_host_start
+  on public.events(host_id, start_at asc);
+
+-- Feed items: scheduled_at filter optimization (for get_feed_page WHERE scheduled_at <= now())
+create index if not exists idx_feed_items_scheduled_at
+  on public.feed_items(scheduled_at)
+  where scheduled_at is not null
+    and parent_id is null;

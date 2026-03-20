@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { FeedAdCardMenu } from './ad/FeedAdCardMenu';
 import { parseFeedAdvertiserLinks } from './ad/feedAdTypes';
@@ -17,12 +17,8 @@ type Props = {
   onImpression?: () => void;
 };
 
-export const FeedAdCard = ({
-  advertiser,
-  onDismiss,
-  onAdClick,
-  onImpression,
-}: Props) => {
+const FeedAdCardComponent = (props: Props) => {
+  const { advertiser, onDismiss, onAdClick, onImpression } = props;
   const links = parseFeedAdvertiserLinks(advertiser.links);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
@@ -244,3 +240,5 @@ export const FeedAdCard = ({
     </Card>
   );
 };
+
+export const FeedAdCard = memo(FeedAdCardComponent);

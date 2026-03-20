@@ -69,6 +69,11 @@ const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 const SEARCH_MAX_QUERY_CHARS = 500;
 
+/** When true, hide auth buttons (e.g. wrdlnkdn.vercel.app coming soon preview). */
+const isComingSoonHost = (): boolean =>
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'wrdlnkdn.vercel.app';
+
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +81,7 @@ export const Navbar = () => {
   const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
+  const [comingSoon] = useState(() => isComingSoonHost());
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
   const eventsEnabled = useFeatureFlag('events');
@@ -803,7 +809,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader ? (
+              ) : !showAuthedHeader && !comingSoon ? (
                 <>
                   {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
                   {!isJoinActive && (
@@ -1023,7 +1029,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader ? (
+              ) : !showAuthedHeader && !comingSoon ? (
                 <>
                   {!isJoinActive && (
                     <Button
@@ -1177,7 +1183,7 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!showAuthedHeader && (
+            {!showAuthedHeader && !comingSoon && (
               <>
                 {!isJoinActive && (
                   <Button

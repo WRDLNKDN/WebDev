@@ -455,7 +455,6 @@ type FeedCardActions = {
   onUnfollow: (userId: string) => void;
   onNotInterested: (postId: string) => void;
   onReport: (postId: string, userId?: string) => void;
-  onMenuInfo: (message: string) => void;
   onCommentToggle: (postId: string) => void;
   onDelete: (postId: string) => void;
   onEditPost: (postId: string, body: string) => Promise<void>;
@@ -2860,7 +2859,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         await handleAuthError(e, 'Failed to unfollow');
       }
     },
-    [session?.user, handleAuthError],
+    [session?.user, handleAuthError, showToast],
   );
 
   const handleNotInterested = useCallback(
@@ -2994,7 +2993,6 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     onUnfollow: (userId) => void handleUnfollow(userId),
     onNotInterested: (postId) => void handleNotInterested(postId),
     onReport: (postId, userId) => void handleReport(postId, userId),
-    onMenuInfo: (message) => showToast({ message }),
     onCommentToggle: (postId) => void handleCommentToggle(postId),
     onDelete: (postId) => void handleDelete(postId),
     onEditPost: handleEditPost,

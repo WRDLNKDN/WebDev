@@ -1,10 +1,19 @@
 name: 🚀 Vercel Deploy UAT then PROD
 
+# Redeploy from main: Actions → "🚀 Vercel Deploy UAT then PROD" → "Run workflow" → leave branch as main → Run.
+# Re-run a completed run: open the run → "Re-run all jobs" (uses same ref as that run, e.g. main).
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
+      ref:
+        description:
+          'Branch to deploy (default main — redeploy latest main to UAT)'
+        required: true
+        type: string
+        default: 'main'
       deploy_prod:
         description: 'Also deploy production'
         required: false
@@ -37,6 +46,10 @@ jobs:
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v5
+        with:
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref != '' &&
+            inputs.ref || github.ref }}
 
       - name: 🧰 Setup Node
         uses: actions/setup-node@v5
@@ -113,6 +126,10 @@ jobs:
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v5
+        with:
+          ref:
+            ${{ github.event_name == 'workflow_dispatch' && inputs.ref != '' &&
+            inputs.ref || github.ref }}
 
       - name: 🧰 Setup Node
         uses: actions/setup-node@v5

@@ -1,6 +1,6 @@
 /**
  * AI Weirdling form for MVP Avatar System — Generate → Preview → Accept or Refine.
- * Maps Primary Color, Held Object, Hair Style, Hair Color, Animal/Persona to backend generate API.
+ * Maps Primary Color, Held Object, Hair Style, Hair Color, Animal/Persona to Edge Function API.
  */
 import {
   Box,
@@ -9,14 +9,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  generateWeirdling,
-  getPreviewRemaining,
-  saveWeirdlingByJobId,
-} from '../../lib/api/weirdlingApi';
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../../lib/auth/supabaseClient';
+import { getPreviewRemaining } from '../../lib/api/weirdlingApi';
 import { toMessage } from '../../lib/utils/errors';
-import type { WeirdlingWizardInputs } from '../../types/weirdling';
+import type { WeirdlingResponse } from './weirdlingTypes';
 
 const BORDER_COLOR = 'rgba(156,187,217,0.18)';
 
@@ -41,8 +38,8 @@ export const AiWeirdlingForm = ({
 }: AiWeirdlingFormProps) => {
   const [form, setForm] = useState(INITIAL_FORM);
   const [preview, setPreview] = useState<{
-    jobId: string;
     avatarUrl: string | null;
+    response: WeirdlingResponse;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,34 +62,65 @@ export const AiWeirdlingForm = ({
     void fetchRemaining();
   }, [fetchRemaining]);
 
-  const wizardInputs = useMemo<WeirdlingWizardInputs>(
-    () => ({
-      displayNameOrHandle: form.persona.trim() || 'Member',
-      roleVibe: form.primaryColor.trim() || 'Creative',
-      industryOrInterests: [form.heldObject, form.hairStyle, form.hairColor]
-        .map((s) => s.trim())
-        .filter(Boolean),
-      tone: 0.5,
-      boundaries: '',
-      includeImage: true,
-    }),
-    [
-      form.primaryColor,
-      form.heldObject,
-      form.hairStyle,
-      form.hairColor,
-      form.persona,
-    ],
-  );
+  const generateWeirdlingImage = useCallback(async () => {
+    if (!form.persona.trim()) {
+      throw new Error('Animal / Persona is required.');
+    }
+
+    // Note: interests field doesn't exist in this form, but we can add it later if needed
+    const interestsArray: string[] = [];
+
+    const requestBody = {
+      primaryColor: form.primaryColor.trim() || undefined,
+      heldObject: form.heldObject.trim() || undefined,
+      hairStyle: form.hairStyle.trim() || undefined,
+      hairColor: form.hairColor.trim() || undefined,
+      persona: form.persona.trim(),
+      interests: interestsArray.length > 0 ? interestsArray : undefined,
+      userName: undefined, // Optional, can be added later if needed
+    };
+
+    // Debug logging to help diagnose issues
+    console.log(
+      '[AiWeirdlingForm] Sending request to Edge Function:',
+      requestBody,
+    );
+
+    const { data, error: invokeError } = await supabase.functions.invoke(
+      'generate-weirdling',
+      {
+        body: requestBody,
+      },
+    );
+
+    // Debug logging
+    if (data) {
+      console.log('[AiWeirdlingForm] Received response:', {
+        status: data.status,
+        active_recipe: data.active_recipe,
+        debug_prompt_snippet: data.debug_prompt_snippet,
+        hasOutput: Boolean(data.prediction?.output?.[0]),
+      });
+    }
+
+    if (invokeError) throw invokeError;
+    if (!data || data.status !== 'success') {
+      throw new Error(data?.error || 'Generation failed');
+    }
+
+    return data as WeirdlingResponse;
+  }, [form]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
-      const result = await generateWeirdling(wizardInputs);
+      const response = await generateWeirdlingImage();
+      const avatarUrl = response.prediction?.output?.[0] || null;
+
       setPreview({
-        jobId: result.jobId,
-        avatarUrl: result.preview?.avatarUrl ?? null,
+        avatarUrl,
+        response,
       });
       await fetchRemaining();
     } catch (err) {
@@ -101,16 +129,18 @@ export const AiWeirdlingForm = ({
     } finally {
       setLoading(false);
     }
-  }, [wizardInputs, fetchRemaining]);
+  }, [generateWeirdlingImage, fetchRemaining]);
 
   const handleRefine = useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
-      const result = await generateWeirdling(wizardInputs);
+      const response = await generateWeirdlingImage();
+      const avatarUrl = response.prediction?.output?.[0] || null;
+
       setPreview({
-        jobId: result.jobId,
-        avatarUrl: result.preview?.avatarUrl ?? null,
+        avatarUrl,
+        response,
       });
       await fetchRemaining();
     } catch (err) {
@@ -118,14 +148,32 @@ export const AiWeirdlingForm = ({
     } finally {
       setLoading(false);
     }
-  }, [wizardInputs, fetchRemaining]);
+  }, [generateWeirdlingImage, fetchRemaining]);
 
   const handleAccept = useCallback(async () => {
-    if (!preview?.jobId) return;
+    if (!preview?.avatarUrl) return;
     setError(null);
     setSaving(true);
     try {
-      await saveWeirdlingByJobId(preview.jobId);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        throw new Error('You need to sign in to save your avatar.');
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          avatar: preview.avatarUrl,
+          avatar_type: 'ai',
+          use_weirdling_avatar: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.user.id);
+
+      if (updateError) throw updateError;
+
       setPreview(null);
       onAccept?.();
       onAvatarChanged?.();
@@ -135,7 +183,7 @@ export const AiWeirdlingForm = ({
     } finally {
       setSaving(false);
     }
-  }, [preview?.jobId, onAccept, onAvatarChanged, fetchRemaining]);
+  }, [preview?.avatarUrl, onAccept, onAvatarChanged, fetchRemaining]);
 
   const canGenerate =
     !disabled && !loading && (remaining === null || remaining.remaining > 0);

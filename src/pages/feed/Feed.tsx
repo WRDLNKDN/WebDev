@@ -115,6 +115,7 @@ import {
 } from '../../lib/feed/imagePreviewState';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import { toMessage } from '../../lib/utils/errors';
+import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import {
@@ -1776,6 +1777,11 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const chatEnabled = useFeatureFlag('chat');
   const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
   const gamesEnabled = useFeatureFlag('games');
+  const bannerOffset = useUatBannerOffset();
+  // Navbar height on desktop (md+): 56px (minHeight: { xs: 48, sm: 56 })
+  // Sidebar is only visible on md+ breakpoint, so always use 56px for navbar
+  // Add 16px (1rem) padding for spacing below navbar
+  const sidebarTopOffset = 56 + bannerOffset + 16;
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<FeedItem[]>([]);
   const itemsRef = useRef<FeedItem[]>([]);
@@ -3133,10 +3139,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 borderRadius: 2,
                 overflow: 'hidden',
                 position: { xs: 'static', md: 'sticky' },
-                top: 88,
+                top: { md: `${sidebarTopOffset}px` },
                 width: '100%',
                 maxWidth: { md: 190, lg: 190 },
                 minWidth: { md: 145, lg: 145 },
+                alignSelf: 'flex-start',
+                maxHeight: { md: `calc(100dvh - ${sidebarTopOffset}px)` },
+                overflowY: 'auto',
               }}
             >
               <Box

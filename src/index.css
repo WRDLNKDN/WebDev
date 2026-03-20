@@ -1,6 +1,9 @@
 /* src/index.css */
 
+/* CSS variables are now set dynamically via MUI theme CssBaseline */
+/* Legacy variables kept for backwards compatibility but should use theme tokens */
 :root {
+  /* These will be overridden by MUI theme, but kept as fallback */
   --color-bg-default: #05070f;
   --color-bg-paper: #111827;
   --color-bg-raised: #0b1220;
@@ -29,7 +32,7 @@ html,
 body,
 #root {
   margin: 0;
-  background-color: var(--color-bg-default);
+  /* Background colors now set via MUI theme CssBaseline */
 }
 
 html,
@@ -48,8 +51,7 @@ html {
 
 body {
   font-family: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--color-bg-default);
-  color: var(--color-text-primary);
+  /* Background and text colors now set via MUI theme CssBaseline */
   line-height: 1.5;
   overflow-x: hidden;
   overflow-y: hidden;

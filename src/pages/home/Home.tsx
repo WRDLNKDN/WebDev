@@ -62,10 +62,16 @@ const getStoredSessionTokens = async (): Promise<{
   }
 };
 
+/** When true, show only video + "Coming soon" (e.g. wrdlnkdn.vercel.app preview). */
+const isComingSoonHost = (): boolean =>
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'wrdlnkdn.vercel.app';
+
 /**
  * Home: public brand landing at /. MVP = intro video, Join Us CTA, persistent header.
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
  * If user is already authenticated and onboarded, redirect to /dashboard.
+ * On wrdlnkdn.vercel.app, only video + "Coming soon" is shown (no login widget).
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -77,6 +83,7 @@ export const Home = () => {
   const [session, setSession] = useState<{ id: string } | null>(null);
   /** When session exists and onboarded, redirect to /dashboard (no auth data on Home). */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [comingSoon] = useState(() => isComingSoonHost());
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -86,6 +93,7 @@ export const Home = () => {
   );
 
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
 
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
@@ -299,7 +307,15 @@ export const Home = () => {
   }, []);
 
   const handleVideoEnded = () => {
-    if (!prefersReducedMotion) setHeroPhase('dimmed');
+    if (!prefersReducedMotion) {
+      setHeroPhase('dimmed');
+      // After video fades out, collapse the hero area
+      setTimeout(() => {
+        setVideoEnded(true);
+      }, 1000); // Wait for fade transition to complete
+    } else {
+      setVideoEnded(true);
+    }
   };
 
   /** Tap video/backdrop to end hero motion early (CTA stays visible throughout). */
@@ -307,6 +323,10 @@ export const Home = () => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
     setHeroPhase('dimmed');
     videoRef.current?.pause();
+    // Collapse after fade transition
+    setTimeout(() => {
+      setVideoEnded(true);
+    }, 1000);
   }, [prefersReducedMotion, videoFailed, heroPhase]);
 
   // 1.5x playback improves pacing; respect prefers-reduced-motion
@@ -328,7 +348,9 @@ export const Home = () => {
 
   return (
     <main className="home-landing" data-testid="signed-out-landing">
-      <section className="home-landing__hero">
+      <section
+        className={`home-landing__hero${videoEnded ? ' home-landing__hero--collapsed' : ''}`}
+      >
         <div
           className="home-landing__hero-backdrop"
           onPointerDown={handleHeroSkip}
@@ -351,6 +373,7 @@ export const Home = () => {
               onError={() => {
                 setVideoFailed(true);
                 setHeroPhase('dimmed');
+                setVideoEnded(true);
               }}
               aria-hidden="true"
             >
@@ -377,7 +400,7 @@ export const Home = () => {
         >
           <div className="home-landing__hero-grid">
             <div className="home-landing__headline">
-              {error ? (
+              {error && !comingSoon ? (
                 <div className="home-landing__error" role="alert">
                   {error}
                 </div>
@@ -394,16 +417,22 @@ export const Home = () => {
               </div>
             </div>
             <div className="home-landing__cta">
-              <GuestView buttonsOnly />
+              {comingSoon ? (
+                <p className="home-landing__coming-soon">Coming soon</p>
+              ) : (
+                <GuestView buttonsOnly />
+              )}
             </div>
           </div>
         </div>
       </section>
-      <Suspense fallback={null}>
-        <WhatMakesDifferent />
-        <HowItWorks />
-        <SocialProof />
-      </Suspense>
+      {!comingSoon && (
+        <Suspense fallback={null}>
+          <WhatMakesDifferent />
+          <HowItWorks />
+          <SocialProof />
+        </Suspense>
+      )}
     </main>
   );
 };

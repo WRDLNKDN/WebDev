@@ -102,33 +102,63 @@ function buildPrompt(
     visualDNA = `Base DNA Sequence: ${dnaSequence}. `;
   }
 
-  // 2. Construct the Core Prompt
-  let prompt = `Create a 3D voxel character. `;
-  if (visualDNA) prompt += `STRICTLY FOLLOW THIS DNA: ${visualDNA} `;
+  // 2. Construct the Core Prompt with explicit structure
+  let prompt = `Create a 3D voxel character with the following REQUIRED features. These features MUST be clearly visible and accurately represented:\n\n`;
 
-  prompt += `Primary color: ${inputs.primaryColor || 'green'}. `;
-
-  if (inputs.heldObject && inputs.heldObject.toLowerCase() !== 'none') {
-    prompt += `Holding: ${inputs.heldObject}. `;
-  }
-  if (inputs.hairStyle && inputs.hairStyle.toLowerCase() !== 'none') {
-    prompt += `Hair: ${inputs.hairStyle} (${inputs.hairColor}). `;
+  if (visualDNA) {
+    prompt += `BASE DNA: ${visualDNA}\n`;
   }
 
-  const persona = inputs.persona || 'box';
-  prompt += `Character Base: ${persona}. `;
+  // Primary color - make it dominant and explicit
+  const primaryColor = inputs.primaryColor?.trim() || 'green';
+  // Enhance color names to be more vibrant (unless already enhanced with "neon" or "bright")
+  const lowerColor = primaryColor.toLowerCase();
+  const enhancedColor =
+    lowerColor.includes('neon') ||
+    lowerColor.includes('bright') ||
+    lowerColor.includes('vibrant')
+      ? primaryColor
+      : `Bright ${primaryColor} Plastic`;
+  prompt += `PRIMARY COLOR (MANDATORY - must be the dominant color covering most of the character's body): ${enhancedColor}. The entire character should be primarily ${primaryColor} colored.\n`;
 
-  if (inputs.interests?.length) {
-    prompt += `Visual traits reflecting: ${inputs.interests.join(', ')}. `;
+  // Persona/Base - this is critical
+  const persona = inputs.persona?.trim() || 'box';
+  prompt += `CHARACTER BASE/SHAPE (MANDATORY - the core form and structure): ${persona}. The character must have the shape and features of a ${persona}.\n`;
+
+  // Held object - explicit
+  if (inputs.heldObject && inputs.heldObject.toLowerCase().trim() !== 'none') {
+    const heldObject = inputs.heldObject.trim();
+    prompt += `HELD OBJECT (MANDATORY - must be clearly visible in the character's hands or attached to the character): ${heldObject}. The character must be holding or displaying a ${heldObject}.\n`;
+  }
+
+  // Hair style and color - explicit
+  if (inputs.hairStyle && inputs.hairStyle.toLowerCase().trim() !== 'none') {
+    const hairStyle = inputs.hairStyle.trim();
+    const hairColor = inputs.hairColor?.trim() || 'default';
+    // Enhance hair color if not already enhanced
+    const lowerHairColor = hairColor.toLowerCase();
+    const enhancedHairColor =
+      lowerHairColor.includes('neon') ||
+      lowerHairColor.includes('bright') ||
+      lowerHairColor.includes('vibrant') ||
+      lowerHairColor === 'default'
+        ? hairColor
+        : `Bright ${hairColor}`;
+    prompt += `HAIR STYLE (MANDATORY - must be clearly visible on top of the character): ${hairStyle} hairstyle in ${enhancedHairColor} color. The hair must be styled as a ${hairStyle} and colored ${hairColor}.\n`;
+  }
+
+  // Interests as visual traits
+  if (inputs.interests?.length && inputs.interests.length > 0) {
+    prompt += `VISUAL TRAITS (inspired by): ${inputs.interests.join(', ')}.\n`;
   }
 
   // 3. Inject the External Intelligence
-  prompt += `\n\nSTYLE GUIDE (STRICT ADHERENCE): \n${instructions}`;
+  prompt += `\n\nSTYLE GUIDE (STRICT ADHERENCE):\n${instructions}`;
 
   const systemPrompt =
-    'Positive Tags: 3D voxel art, pixel art, isometric view. Negative Constraints: NO photorealism, NO human skin texture.';
+    '\n\nCRITICAL REQUIREMENTS: 3D voxel art style, pixel art aesthetic, isometric view. DO NOT use photorealism, human skin texture, or blurring. The character MUST clearly show ALL specified features: the primary color must dominate the character, the base shape must match the persona, the held object must be visible, and the hair style and color must be accurately represented. Every specified attribute must be clearly visible in the final image.';
 
-  return `${prompt} ${systemPrompt}`;
+  return `${prompt}${systemPrompt}`;
 }
 
 serve(async (req: Request) => {
@@ -140,10 +170,32 @@ serve(async (req: Request) => {
     const payload: WeirdlingInputs & { recipeId?: string } = await req.json();
     const { persona, userName, recipeId } = payload;
 
+    // Debug logging: Log received inputs
+    console.log('[generate-weirdling] Received inputs:', {
+      primaryColor: payload.primaryColor,
+      heldObject: payload.heldObject,
+      hairStyle: payload.hairStyle,
+      hairColor: payload.hairColor,
+      persona: payload.persona,
+      interests: payload.interests,
+      userName: payload.userName,
+      recipeId: payload.recipeId,
+    });
+
     // 1. SELECT RECIPE & AWAIT EXECUTION
     const id =
       recipeId && WEIRDLING_RECIPES[recipeId] ? recipeId : 'voxel_simple';
     const finalPrompt = await WEIRDLING_RECIPES[id](payload);
+
+    // Debug logging: Log generated prompt
+    console.log(
+      '[generate-weirdling] Generated prompt length:',
+      finalPrompt.length,
+    );
+    console.log(
+      '[generate-weirdling] Prompt preview:',
+      finalPrompt.substring(0, 300),
+    );
 
     // 2. THE NAMING ENGINE
     const baseName = userName ? userName.trim() : 'Osgood';

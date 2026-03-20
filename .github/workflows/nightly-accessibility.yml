@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      # Opt into Node.js 24 for JavaScript actions (actions/checkout, actions/setup-node)
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       VITE_SUPABASE_URL: 'https://example.supabase.co'
       VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
       E2E_PORT: '5173'

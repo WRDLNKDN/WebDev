@@ -14,6 +14,20 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  transition: min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state after video ends - compact hero with just sign-in content */
+.home-landing__hero--collapsed {
+  min-height: auto;
+  padding: 3rem 0 4rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 768px) {
+  .home-landing__hero--collapsed {
+    padding: 4rem 0 5rem;
+  }
 }
 
 .home-landing__hero-backdrop {
@@ -53,6 +67,12 @@
   background: rgba(5, 7, 15, 0.92);
 }
 
+/* When hero is collapsed, fade overlay to transparent to reveal background grid */
+.home-landing__hero--collapsed .home-landing__video-overlay {
+  opacity: 0;
+  transition: opacity 0.6s ease-out 0.2s;
+}
+
 .home-landing__content {
   position: relative;
   z-index: 2;
@@ -66,10 +86,13 @@
   justify-content: center;
   min-height: 0;
   pointer-events: none;
+  /* Ensure content is always visible from initial load, not waiting for video */
+  visibility: visible;
 }
 
 .home-landing__content--visible {
   pointer-events: auto;
+  visibility: visible;
 }
 
 .home-landing__hero-grid {
@@ -144,6 +167,15 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+}
+
+.home-landing__coming-soon {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .home-landing__section {

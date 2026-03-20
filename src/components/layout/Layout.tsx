@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -11,7 +11,6 @@ import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { ErrorBoundary } from './ErrorBoundary';
 import { UatBanner } from './UatBanner';
-import { PAGE_BACKGROUND } from '../../theme/candyStyles';
 
 const Navbar = lazy(async () => ({
   default: (await import('./Navbar')).Navbar,
@@ -26,22 +25,19 @@ const ChatPopover = lazy(async () => ({
   default: (await import('../chat/overlay/ChatPopover')).ChatPopover,
 }));
 
-const PAGE_BG = {
-  ...PAGE_BACKGROUND,
-  backgroundAttachment: { xs: 'scroll', md: 'fixed' },
-};
-
 const NavbarFallback = () => (
   <Box sx={{ minHeight: { xs: 56, md: 64 }, flexShrink: 0 }} />
 );
 
 const LayoutContent = () => {
+  const theme = useTheme();
   const { pathname } = useLocation();
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
   const chatEnabled = useFeatureFlag('chat');
+  const isLight = theme.palette.mode === 'light';
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +89,35 @@ const LayoutContent = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        ...PAGE_BG,
+        bgcolor: 'background.default',
+        ...(isLight
+          ? {
+              // Light theme: use solid background color
+              backgroundImage: 'none',
+            }
+          : {
+              // Dark theme: use background images with overlay
+              backgroundImage: {
+                xs: 'url("/assets/background-mobile.png")',
+                md: 'url("/assets/background-desktop.png")',
+              },
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundAttachment: { xs: 'scroll', md: 'fixed' },
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: `
+                  linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
+                `,
+                backgroundSize: '24px 24px',
+                pointerEvents: 'none',
+                zIndex: 0,
+              },
+            }),
       }}
     >
       <Suspense fallback={<NavbarFallback />}>

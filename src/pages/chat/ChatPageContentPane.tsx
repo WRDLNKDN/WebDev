@@ -170,6 +170,7 @@ export const ChatPageContentPane = ({
           onStopTyping={onStopTyping}
           disabled={chatLoading}
           sending={sending}
+          roomId={roomId ?? null}
         />
       </>
     ) : (

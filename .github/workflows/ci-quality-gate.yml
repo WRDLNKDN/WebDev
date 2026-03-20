@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Opt into Node.js 24 for JavaScript actions (actions/checkout, actions/setup-node)
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       # Safe dummy values for build/test where needed
       VITE_SUPABASE_URL: 'https://example.supabase.co'
       VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'

@@ -465,6 +465,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     component="img"
                     src="/assets/wrdlnkdn_logo.png"
                     alt="WRDLNKDN wordmark"
+                    width={120}
+                    height={30}
                     sx={{
                       display: 'block',
                       width: { xs: 114, sm: 138, md: 156 },
@@ -623,6 +625,8 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         component="img"
                         src={FOOTER_DONATE_QR_ASSET}
                         alt="Donate QR code"
+                        width={200}
+                        height={200}
                         sx={{
                           width: 200,
                           height: 200,

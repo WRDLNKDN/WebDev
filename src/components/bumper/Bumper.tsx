@@ -276,12 +276,15 @@ export const Bumper = ({
           src={BUMPER_WEIRDLING_IMAGE}
           alt=""
           aria-hidden
+          width={200}
+          height={200}
           sx={{
             maxHeight: { xs: 140, md: 200 },
             maxWidth: '80%',
             width: 'auto',
             height: 'auto',
             objectFit: 'contain',
+            willChange: 'transform',
             filter: 'drop-shadow(0 0 24px rgba(0,200,140,0.4))',
             animation: 'bumperWeirdlingFloat 3s ease-in-out infinite alternate',
           }}

@@ -24,6 +24,7 @@ export const HomeVisual = () => {
             'radial-gradient(circle, rgba(66,165,245,0.15) 0%, rgba(0,0,0,0) 70%)',
           filter: 'blur(40px)',
           zIndex: 0,
+          willChange: 'transform, opacity',
           animation: 'pulse 4s infinite ease-in-out',
           '@keyframes pulse': {
             '0%': { transform: 'scale(1)', opacity: 0.5 },
@@ -38,6 +39,8 @@ export const HomeVisual = () => {
         component="img"
         src="/assets/og_weirdlings/weirdling_2.png"
         alt="Community Illustration"
+        width={600}
+        height={600}
         sx={{
           position: 'relative',
           zIndex: 1,
@@ -46,6 +49,7 @@ export const HomeVisual = () => {
           objectFit: 'contain',
           filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))',
           transform: 'rotateY(-10deg)', // Subtle 3D effect
+          willChange: 'transform',
         }}
       />
     </Box>

@@ -122,6 +122,8 @@ export const ResumeCard = ({
                 component="img"
                 src={thumbnailUrl ?? ''}
                 alt="Resume thumbnail preview"
+                width={400}
+                height={300}
                 sx={{
                   width: '100%',
                   height: '100%',

@@ -18,6 +18,11 @@
   }
 }
 
+/* Ensure animations use composited properties only */
+.bumper-weirdling-float {
+  will-change: transform;
+}
+
 @keyframes bumperCaret {
   0%,
   100% {

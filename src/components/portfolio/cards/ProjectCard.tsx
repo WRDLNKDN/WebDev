@@ -171,6 +171,8 @@ export const ProjectCard = ({
             component="img"
             src={thumbnailUrl}
             alt={project.title}
+            width={400}
+            height={300}
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </Box>

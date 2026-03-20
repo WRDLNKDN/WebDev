@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#121212" />
 
     <!-- Performance: Preconnect to Supabase for faster API calls on mobile -->
-    <link rel="preconnect" href="https://rpcaazmxymymqdejevtb.supabase.co" />
+    <link rel="preconnect" href="https://rpcaazmxymymqdejevtb.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rpcaazmxymymqdejevtb.supabase.co" />
 
     <!-- Preload critical assets for mobile performance -->
@@ -35,6 +35,13 @@
       as="image"
       type="image/jpeg"
       fetchpriority="high"
+    />
+    <!-- Preload hero video for faster LCP -->
+    <link
+      rel="preload"
+      href="/assets/video/hero-motion.mp4"
+      as="video"
+      type="video/mp4"
     />
 
     <title>Business, but weirder. | WRDLNKDN</title>

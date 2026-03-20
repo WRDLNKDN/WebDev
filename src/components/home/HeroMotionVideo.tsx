@@ -90,6 +90,7 @@ export const HeroMotionVideo = () => {
         muted
         loop={false}
         autoPlay
+        preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         onError={() => setLoadFailed(true)}

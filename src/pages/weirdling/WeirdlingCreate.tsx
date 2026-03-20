@@ -1,5 +1,3 @@
-import { createAvatar } from '@dicebear/core';
-import { bottts } from '@dicebear/collection';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -129,6 +127,9 @@ export const WeirdlingCreate = ({
         result.preview.handle
       ) {
         const seed = `${result.preview.handle}|${result.preview.roleVibe}`;
+        // Lazy load dicebear only when needed (not on critical path)
+        const { createAvatar } = await import('@dicebear/core');
+        const { bottts } = await import('@dicebear/collection');
         const dataUri = createAvatar(bottts, { seed }).toDataUri();
         previewWithImage = { ...previewWithImage, avatarUrl: dataUri };
       }

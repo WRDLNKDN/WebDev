@@ -33,11 +33,14 @@ export const WeirdlingLogo = (props: BoxProps) => {
         component="img"
         src={`/assets/weirdling_${weirdlingIndex}.png`}
         alt="Weirdling Animation"
+        width={64}
+        height={64}
         sx={{
           height: '100%',
           width: 'auto',
           transform: 'scale(2.1) translateY(10%)',
-          transition: 'all 0.5s ease-in-out',
+          transition: 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out',
+          willChange: 'transform',
         }}
       />
     </Box>

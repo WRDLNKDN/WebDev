@@ -1,31 +1,13 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import '../../components/home/homeLanding.css';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import { COMING_SOON_FLAG } from '../../lib/featureFlags/keys';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
-import { trackEvent } from '../../lib/analytics/trackEvent';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
-
-const WhatMakesDifferent = lazy(async () => ({
-  default: (await import('../../components/home/WhatMakesDifferent'))
-    .WhatMakesDifferent,
-}));
-const HowItWorks = lazy(async () => ({
-  default: (await import('../../components/home/HowItWorks')).HowItWorks,
-}));
-const SocialProof = lazy(async () => ({
-  default: (await import('../../components/home/SocialProof')).SocialProof,
-}));
 
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
@@ -62,11 +44,6 @@ const getStoredSessionTokens = async (): Promise<{
   }
 };
 
-/** When true, show only video + "Coming soon" (e.g. wrdlnkdn.vercel.app preview). */
-const isComingSoonHost = (): boolean =>
-  typeof window !== 'undefined' &&
-  window.location.hostname === 'wrdlnkdn.vercel.app';
-
 /**
  * Home: public brand landing at /. MVP = intro video, Join Us CTA, persistent header.
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
@@ -75,15 +52,13 @@ const isComingSoonHost = (): boolean =>
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const scrollMilestonesSeenRef = useRef<Set<number>>(new Set());
-  const belowFoldTrackedRef = useRef(false);
   const authStartedRef = useRef(false);
+  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);
   /** When session exists and onboarded, redirect to /dashboard (no auth data on Home). */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
-  const [comingSoon] = useState(() => isComingSoonHost());
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -94,6 +69,8 @@ export const Home = () => {
 
   const [videoFailed, setVideoFailed] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [showFooter, setShowFooter] = useState(false);
 
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
@@ -101,18 +78,29 @@ export const Home = () => {
 
   const ensureVideoPlayback = useCallback(() => {
     const el = videoRef.current;
-    if (!el || prefersReducedMotion) return;
+    if (!el || prefersReducedMotion || videoFailed) {
+      // If no video, show content immediately
+      setShowContent(true);
+      setTimeout(() => setShowFooter(true), 500);
+      return;
+    }
+    // Don't show content yet - wait for video to end or be clicked
     try {
       const playAttempt = el.play();
       if (playAttempt && typeof playAttempt.catch === 'function') {
         void playAttempt.catch(() => {
-          // Best effort only. If autoplay is blocked, the page still remains usable.
+          // If autoplay is blocked, show content as fallback
+          setShowContent(true);
+          setTimeout(() => setShowFooter(true), 500);
         });
       }
+      // Video is playing - content will show when video ends or is clicked
     } catch {
-      // Best effort only. If autoplay is blocked, the page still remains usable.
+      // If play fails, show content as fallback
+      setShowContent(true);
+      setTimeout(() => setShowFooter(true), 500);
     }
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, videoFailed]);
 
   useEffect(() => {
     let mounted = true;
@@ -267,65 +255,36 @@ export const Home = () => {
     };
   }, [session?.id, onboarded]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const milestones = [25, 50, 75, 100];
-    const handleScrollDepth = () => {
-      const doc = document.documentElement;
-      const maxScrollable = doc.scrollHeight - window.innerHeight;
-      if (maxScrollable <= 0) return;
-      const depthPercent = Math.min(
-        100,
-        Math.round((window.scrollY / maxScrollable) * 100),
-      );
-      if (!belowFoldTrackedRef.current && depthPercent >= 25) {
-        belowFoldTrackedRef.current = true;
-        trackEvent('home_below_fold_reached', {
-          source: 'home',
-          depth_percent: depthPercent,
-        });
-      }
-      milestones.forEach((milestone) => {
-        if (depthPercent < milestone) return;
-        if (scrollMilestonesSeenRef.current.has(milestone)) return;
-        scrollMilestonesSeenRef.current.add(milestone);
-        trackEvent('home_scroll_depth', {
-          source: 'home',
-          depth_percent: milestone,
-          viewport_height: window.innerHeight,
-          document_height: doc.scrollHeight,
-        });
-      });
-    };
-    window.addEventListener('scroll', handleScrollDepth, { passive: true });
-    window.addEventListener('resize', handleScrollDepth);
-    handleScrollDepth();
-    return () => {
-      window.removeEventListener('scroll', handleScrollDepth);
-      window.removeEventListener('resize', handleScrollDepth);
-    };
-  }, []);
+  // Scroll tracking removed - no scrolling on home page
 
   const handleVideoEnded = () => {
+    // Show content when video ends
+    setShowContent(true);
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
       // After video fades out, collapse the hero area
       setTimeout(() => {
         setVideoEnded(true);
+        // Ensure footer is shown when video ends
+        setTimeout(() => setShowFooter(true), 800);
       }, 1000); // Wait for fade transition to complete
     } else {
       setVideoEnded(true);
+      setTimeout(() => setShowFooter(true), 800);
     }
   };
 
-  /** Tap video/backdrop to end hero motion early (CTA stays visible throughout). */
+  /** Tap video/backdrop to end hero motion early and show content immediately. */
   const handleHeroSkip = useCallback(() => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
+    // Show content immediately when clicked
+    setShowContent(true);
     setHeroPhase('dimmed');
     videoRef.current?.pause();
     // Collapse after fade transition
     setTimeout(() => {
       setVideoEnded(true);
+      setTimeout(() => setShowFooter(true), 800);
     }, 1000);
   }, [prefersReducedMotion, videoFailed, heroPhase]);
 
@@ -340,6 +299,36 @@ export const Home = () => {
   useEffect(() => {
     ensureVideoPlayback();
   }, [ensureVideoPlayback]);
+
+  // Control footer visibility via data attribute
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (showFooter) {
+        document.documentElement.setAttribute('data-footer-visible', 'true');
+      } else {
+        document.documentElement.removeAttribute('data-footer-visible');
+      }
+    }
+  }, [showFooter]);
+
+  // Disable scrolling on home page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const preventScroll = (e: WheelEvent | TouchEvent) => {
+      e.preventDefault();
+    };
+
+    // Prevent wheel scrolling
+    window.addEventListener('wheel', preventScroll, { passive: false });
+    // Prevent touch scrolling
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
 
   // Authenticated and onboarded: redirect to /dashboard (Home is public only).
   if (session && onboarded === true) {
@@ -364,16 +353,20 @@ export const Home = () => {
               muted
               loop={false}
               playsInline
-              preload="metadata"
+              preload="auto"
               poster="/assets/video/hero-bg-poster.jpg"
               onLoadedMetadata={setPlaybackRate}
               onCanPlay={setPlaybackRate}
               onLoadedData={ensureVideoPlayback}
               onEnded={handleVideoEnded}
-              onError={() => {
+              onError={(e) => {
+                console.error('Video error:', e);
                 setVideoFailed(true);
                 setHeroPhase('dimmed');
                 setVideoEnded(true);
+                // Show content and footer if video fails
+                setShowContent(true);
+                setTimeout(() => setShowFooter(true), 500);
               }}
               aria-hidden="true"
             >
@@ -395,7 +388,7 @@ export const Home = () => {
         </div>
 
         <div
-          className="home-landing__content home-landing__content--visible"
+          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
           data-testid="app-main"
         >
           <div className="home-landing__hero-grid">
@@ -426,13 +419,7 @@ export const Home = () => {
           </div>
         </div>
       </section>
-      {!comingSoon && (
-        <Suspense fallback={null}>
-          <WhatMakesDifferent />
-          <HowItWorks />
-          <SocialProof />
-        </Suspense>
-      )}
+      {/* Sections removed - no scrolling on home page */}
     </main>
   );
 };

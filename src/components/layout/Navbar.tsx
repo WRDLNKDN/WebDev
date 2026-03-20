@@ -45,7 +45,7 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
-import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
+import { COMING_SOON_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
@@ -81,9 +81,10 @@ export const Navbar = () => {
   const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
-  const [comingSoon] = useState(() => isComingSoonHost());
+  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
+  const isAdminActive = path.startsWith('/admin');
   const eventsEnabled = useFeatureFlag('events');
   const directoryEnabled = useFeatureFlag('directory');
   const storeEnabled = useFeatureFlag('store');
@@ -124,8 +125,15 @@ export const Navbar = () => {
   const { showToast } = useAppToast();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
+  // Show authed header if session exists and either:
+  // 1. Profile is confirmed onboarded, OR
+  // 2. Onboarding check is still loading (fail-open to show icon while checking)
+  // Coming soon mode hides ALL auth UI (including avatar) - only show on admin routes
   const showAuthedHeader =
-    Boolean(session) && profileOnboarded && !forcePublicHeader;
+    Boolean(session) &&
+    (profileOnboarded || !onboardingLoaded) &&
+    !forcePublicHeader &&
+    (!comingSoon || isAdminActive);
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -809,7 +817,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader && !comingSoon ? (
+              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
                 <>
                   {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
                   {!isJoinActive && (
@@ -891,118 +899,133 @@ export const Navbar = () => {
                       </IconButton>
                     </Tooltip>
                   )}
-                  <Tooltip title="Account menu">
-                    <IconButton
-                      type="button"
-                      onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                      aria-label="Account menu"
-                      aria-haspopup="true"
-                      aria-expanded={Boolean(avatarMenuAnchor)}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.25,
-                        p: 0.25,
-                        color: 'inherit',
-                        borderRadius: 9999,
-                        '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '50%',
-                          border: '2px solid rgba(255,255,255,0.4)',
-                          p: '1px',
-                          flexShrink: 0,
+                  {/* Hide avatar completely in coming soon mode unless on admin route */}
+                  {(!comingSoon || isAdminActive) && (
+                    <>
+                      <Tooltip title="Account menu">
+                        <IconButton
+                          type="button"
+                          onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                          aria-label="Account menu"
+                          aria-haspopup="true"
+                          aria-expanded={Boolean(avatarMenuAnchor)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.25,
+                            p: 0.25,
+                            color: 'inherit',
+                            borderRadius: 9999,
+                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '50%',
+                              border: '2px solid rgba(255,255,255,0.4)',
+                              p: '1px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ProfileAvatar
+                              src={avatarUrl ?? undefined}
+                              alt={
+                                session?.user?.user_metadata?.full_name ||
+                                'User'
+                              }
+                              size="small"
+                              sx={{ width: 24, height: 24 }}
+                            />
+                          </Box>
+                          <KeyboardArrowDownIcon
+                            sx={{
+                              fontSize: 16,
+                              color: 'rgba(255,255,255,0.8)',
+                            }}
+                          />
+                        </IconButton>
+                      </Tooltip>
+                      <Menu
+                        anchorEl={avatarMenuAnchor}
+                        open={Boolean(avatarMenuAnchor)}
+                        onClose={() => setAvatarMenuAnchor(null)}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                        slotProps={{
+                          paper: {
+                            sx: {
+                              mt: 1.5,
+                              minWidth: 180,
+                              borderRadius: 2,
+                              bgcolor: 'rgba(30,30,30,0.98)',
+                              border: '1px solid rgba(156,187,217,0.26)',
+                            },
+                          },
                         }}
                       >
-                        <ProfileAvatar
-                          src={avatarUrl ?? undefined}
-                          alt={
-                            session?.user?.user_metadata?.full_name || 'User'
-                          }
-                          size="small"
-                          sx={{ width: 24, height: 24 }}
-                        />
-                      </Box>
-                      <KeyboardArrowDownIcon
-                        sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
-                      />
-                    </IconButton>
-                  </Tooltip>
-                  <Menu
-                    anchorEl={avatarMenuAnchor}
-                    open={Boolean(avatarMenuAnchor)}
-                    onClose={() => setAvatarMenuAnchor(null)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    slotProps={{
-                      paper: {
-                        sx: {
-                          mt: 1.5,
-                          minWidth: 180,
-                          borderRadius: 2,
-                          bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(156,187,217,0.26)',
-                        },
-                      },
-                    }}
-                  >
-                    {dashboardEnabled && (
-                      <MenuItem
-                        component={RouterLink}
-                        to="/dashboard"
-                        onClick={() => {
-                          setAvatarMenuAnchor(null);
-                          setDrawerOpen(false);
-                        }}
-                        sx={{ py: 1.25 }}
-                      >
-                        Profile
-                      </MenuItem>
-                    )}
-                    {dashboardEnabled && (
-                      <MenuItem
-                        component={RouterLink}
-                        to="/dashboard/settings"
-                        onClick={() => {
-                          setAvatarMenuAnchor(null);
-                          setDrawerOpen(false);
-                        }}
-                        sx={{ py: 1.25 }}
-                      >
-                        Settings
-                      </MenuItem>
-                    )}
-                    {isAdmin && (
-                      <MenuItem
-                        component={RouterLink}
-                        to="/admin"
-                        onClick={() => {
-                          setAvatarMenuAnchor(null);
-                          setDrawerOpen(false);
-                        }}
-                        sx={{ py: 1.25, color: 'warning.main' }}
-                      >
-                        Admin
-                      </MenuItem>
-                    )}
-                    {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
-                    <MenuItem
-                      onClick={() => {
-                        setAvatarMenuAnchor(null);
-                        setDrawerOpen(false);
-                        void handleSignOut();
-                      }}
-                      disabled={busy}
-                      sx={{ color: 'text.secondary', py: 1.25 }}
-                    >
-                      Sign Out
-                    </MenuItem>
-                  </Menu>
+                        {dashboardEnabled && (
+                          <MenuItem
+                            component={RouterLink}
+                            to="/dashboard"
+                            onClick={() => {
+                              setAvatarMenuAnchor(null);
+                              setDrawerOpen(false);
+                            }}
+                            sx={{ py: 1.25 }}
+                          >
+                            Profile
+                          </MenuItem>
+                        )}
+                        {dashboardEnabled && (
+                          <MenuItem
+                            component={RouterLink}
+                            to="/dashboard/settings"
+                            onClick={() => {
+                              setAvatarMenuAnchor(null);
+                              setDrawerOpen(false);
+                            }}
+                            sx={{ py: 1.25 }}
+                          >
+                            Settings
+                          </MenuItem>
+                        )}
+                        {isAdmin && (
+                          <MenuItem
+                            component={RouterLink}
+                            to="/admin"
+                            onClick={() => {
+                              setAvatarMenuAnchor(null);
+                              setDrawerOpen(false);
+                            }}
+                            sx={{ py: 1.25, color: 'warning.main' }}
+                          >
+                            Admin
+                          </MenuItem>
+                        )}
+                        {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
+                        <MenuItem
+                          onClick={() => {
+                            setAvatarMenuAnchor(null);
+                            setDrawerOpen(false);
+                            void handleSignOut();
+                          }}
+                          disabled={busy}
+                          sx={{ color: 'text.secondary', py: 1.25 }}
+                        >
+                          Sign Out
+                        </MenuItem>
+                      </Menu>
+                    </>
+                  )}
                 </>
               )}
             </Stack>
@@ -1029,7 +1052,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader && !comingSoon ? (
+              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
                 <>
                   {!isJoinActive && (
                     <Button
@@ -1183,7 +1206,7 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!showAuthedHeader && !comingSoon && (
+            {!showAuthedHeader && (!comingSoon || isAdminActive) && (
               <>
                 {!isJoinActive && (
                   <Button

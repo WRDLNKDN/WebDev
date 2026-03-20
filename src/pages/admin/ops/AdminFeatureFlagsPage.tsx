@@ -20,6 +20,12 @@ type FlagCategory = {
 
 const FLAG_CATEGORIES: FlagCategory[] = [
   {
+    id: 'site-control',
+    title: 'Site Control',
+    description: 'Site-wide maintenance and access controls.',
+    keys: ['coming_soon'],
+  },
+  {
     id: 'core',
     title: 'Core',
     description: 'Primary authenticated surfaces.',

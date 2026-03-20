@@ -36,6 +36,7 @@ const LayoutContent = () => {
   const [session, setSession] = useState<Session | null>(null);
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
+  const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
   const isLight = theme.palette.mode === 'light';
 
@@ -129,12 +130,20 @@ const LayoutContent = () => {
         sx={{
           flex: 1,
           minHeight: 0,
-          overflowY: 'auto',
+          overflowY: isHome ? 'hidden' : 'auto',
           overflowX: 'hidden',
-          WebkitOverflowScrolling: 'touch',
+          WebkitOverflowScrolling: isHome ? 'auto' : 'touch',
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
+          // Hide scrollbar on home page
+          ...(isHome && {
+            '&::-webkit-scrollbar': {
+              display: 'none',
+            },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }),
         }}
       >
         <UatBanner />

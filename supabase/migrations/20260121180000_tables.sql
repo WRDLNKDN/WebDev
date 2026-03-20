@@ -291,6 +291,7 @@ comment on table public.feature_flags is
 -- Seed known feature keys (idempotent: only if missing)
 insert into public.feature_flags (key, enabled)
 values
+  ('coming_soon', true),
   ('feed', true),
   ('dashboard', true),
   ('events', true),

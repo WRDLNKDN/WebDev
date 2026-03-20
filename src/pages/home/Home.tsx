@@ -90,27 +90,11 @@ export const Home = () => {
     try {
       const playAttempt = el.play();
       if (playAttempt && typeof playAttempt.catch === 'function') {
-        void playAttempt
-          .then(() => {
-            // Video started playing, show content after video has played for a bit
-            setTimeout(() => {
-              setShowContent(true);
-              // Show footer after content appears
-              setTimeout(() => setShowFooter(true), 800);
-            }, 1000);
-          })
-          .catch(() => {
-            // Best effort only. If autoplay is blocked, the page still remains usable.
-            setShowContent(true);
-            setTimeout(() => setShowFooter(true), 500);
-          });
-      } else {
-        // Video started playing, show content after a short delay
-        setTimeout(() => {
+        void playAttempt.catch(() => {
+          // Best effort only. If autoplay is blocked, the page still remains usable.
           setShowContent(true);
-          // Show footer after content appears
-          setTimeout(() => setShowFooter(true), 800);
-        }, 1000);
+          setTimeout(() => setShowFooter(true), 500);
+        });
       }
     } catch {
       // Best effort only. If autoplay is blocked, the page still remains usable.
@@ -275,28 +259,33 @@ export const Home = () => {
   // Scroll tracking removed - no scrolling on home page
 
   const handleVideoEnded = () => {
+    // Show content when video ends
+    setShowContent(true);
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
       // After video fades out, collapse the hero area
       setTimeout(() => {
         setVideoEnded(true);
         // Ensure footer is shown when video ends
-        setShowFooter(true);
+        setTimeout(() => setShowFooter(true), 800);
       }, 1000); // Wait for fade transition to complete
     } else {
       setVideoEnded(true);
-      setShowFooter(true);
+      setTimeout(() => setShowFooter(true), 800);
     }
   };
 
-  /** Tap video/backdrop to end hero motion early (CTA stays visible throughout). */
+  /** Tap video/backdrop to end hero motion early and show content immediately. */
   const handleHeroSkip = useCallback(() => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
+    // Show content immediately when clicked
+    setShowContent(true);
     setHeroPhase('dimmed');
     videoRef.current?.pause();
     // Collapse after fade transition
     setTimeout(() => {
       setVideoEnded(true);
+      setTimeout(() => setShowFooter(true), 800);
     }, 1000);
   }, [prefersReducedMotion, videoFailed, heroPhase]);
 
@@ -368,15 +357,7 @@ export const Home = () => {
               preload="auto"
               poster="/assets/video/hero-bg-poster.jpg"
               onLoadedMetadata={setPlaybackRate}
-              onCanPlay={() => {
-                setPlaybackRate();
-                // Video is ready, start showing content after it begins playing
-                setTimeout(() => {
-                  setShowContent(true);
-                  // Show footer after content appears
-                  setTimeout(() => setShowFooter(true), 800);
-                }, 800);
-              }}
+              onCanPlay={setPlaybackRate}
               onLoadedData={ensureVideoPlayback}
               onEnded={handleVideoEnded}
               onError={(e) => {

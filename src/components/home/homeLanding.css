@@ -6,6 +6,13 @@
   color: var(--color-text-primary);
   overflow: hidden;
   position: relative;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.home-landing::-webkit-scrollbar {
+  display: none;
 }
 
 .home-landing__hero {
@@ -80,13 +87,14 @@
 }
 
 .home-landing__content {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(20px);
   z-index: 2;
   width: min(1100px, calc(100% - 2rem));
-  margin: 0 auto;
   padding: 1rem 0 1.5rem;
   opacity: 0;
-  transform: translateY(20px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,7 +108,7 @@
 
 .home-landing__content--visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, -50%) translateY(0);
   pointer-events: auto;
   visibility: visible;
   transition:
@@ -473,4 +481,18 @@ html[data-footer-visible='true'] footer {
   transition:
     opacity 0.8s ease-out,
     visibility 0s;
+}
+
+/* Hide scrollbars completely on home page */
+.home-landing,
+.home-landing * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.home-landing::-webkit-scrollbar,
+.home-landing *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }

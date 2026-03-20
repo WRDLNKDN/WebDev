@@ -136,6 +136,14 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
+          // Hide scrollbar on home page
+          ...(isHome && {
+            '&::-webkit-scrollbar': {
+              display: 'none',
+            },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }),
         }}
       >
         <UatBanner />

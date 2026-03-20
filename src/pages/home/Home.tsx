@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import '../../components/home/homeLanding.css';
+import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import { COMING_SOON_FLAG } from '../../lib/featureFlags/keys';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
@@ -42,11 +44,6 @@ const getStoredSessionTokens = async (): Promise<{
   }
 };
 
-/** When true, show only video + "Coming soon" (e.g. wrdlnkdn.vercel.app preview). */
-const isComingSoonHost = (): boolean =>
-  typeof window !== 'undefined' &&
-  window.location.hostname === 'wrdlnkdn.vercel.app';
-
 /**
  * Home: public brand landing at /. MVP = intro video, Join Us CTA, persistent header.
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
@@ -56,12 +53,12 @@ const isComingSoonHost = (): boolean =>
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const authStartedRef = useRef(false);
+  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);
   /** When session exists and onboarded, redirect to /dashboard (no auth data on Home). */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
-  const [comingSoon] = useState(() => isComingSoonHost());
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -87,17 +84,19 @@ export const Home = () => {
       setTimeout(() => setShowFooter(true), 500);
       return;
     }
+    // Don't show content yet - wait for video to end or be clicked
     try {
       const playAttempt = el.play();
       if (playAttempt && typeof playAttempt.catch === 'function') {
         void playAttempt.catch(() => {
-          // Best effort only. If autoplay is blocked, the page still remains usable.
+          // If autoplay is blocked, show content as fallback
           setShowContent(true);
           setTimeout(() => setShowFooter(true), 500);
         });
       }
+      // Video is playing - content will show when video ends or is clicked
     } catch {
-      // Best effort only. If autoplay is blocked, the page still remains usable.
+      // If play fails, show content as fallback
       setShowContent(true);
       setTimeout(() => setShowFooter(true), 500);
     }

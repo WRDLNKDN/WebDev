@@ -45,7 +45,7 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
-import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
+import { COMING_SOON_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
@@ -76,8 +76,10 @@ export const Navbar = () => {
   const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
+  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
+  const isAdminActive = path.startsWith('/admin');
   const eventsEnabled = useFeatureFlag('events');
   const directoryEnabled = useFeatureFlag('directory');
   const storeEnabled = useFeatureFlag('store');
@@ -118,8 +120,15 @@ export const Navbar = () => {
   const { showToast } = useAppToast();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
+  // Show authed header if session exists and either:
+  // 1. Profile is confirmed onboarded, OR
+  // 2. Onboarding check is still loading (fail-open to show icon while checking)
+  // Admin routes are always accessible even in coming soon mode
   const showAuthedHeader =
-    Boolean(session) && profileOnboarded && !forcePublicHeader;
+    Boolean(session) &&
+    (profileOnboarded || !onboardingLoaded) &&
+    !forcePublicHeader &&
+    (!comingSoon || isAdminActive);
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -803,7 +812,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader ? (
+              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
                 <>
                   {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
                   {!isJoinActive && (
@@ -1023,7 +1032,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader ? (
+              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
                 <>
                   {!isJoinActive && (
                     <Button
@@ -1177,7 +1186,7 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!showAuthedHeader && (
+            {!showAuthedHeader && (!comingSoon || isAdminActive) && (
               <>
                 {!isJoinActive && (
                   <Button

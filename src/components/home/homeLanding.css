@@ -95,11 +95,12 @@
   width: min(1100px, calc(100% - 2rem));
   padding: 1rem 0 1.5rem;
   opacity: 0;
-  display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   visibility: hidden;
+  /* Ensure content is completely hidden until video ends or is clicked */
+  display: none;
   transition:
     opacity 0.8s ease-out,
     transform 0.8s ease-out,
@@ -107,6 +108,7 @@
 }
 
 .home-landing__content--visible {
+  display: flex;
   opacity: 1;
   transform: translate(-50%, -50%) translateY(0);
   pointer-events: auto;

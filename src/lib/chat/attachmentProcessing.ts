@@ -76,9 +76,8 @@ export function getChatAttachmentProcessingPlan(file: {
     return {
       accepted: true,
       mode: 'gif_processing',
-      uploadLabel: 'Preparing GIF...',
-      helperText:
-        'Large GIF detected. We will prepare it before attaching it to your message.',
+      uploadLabel: 'Optimizing GIF...',
+      helperText: 'Large GIF detected. It will be optimized before attaching.',
     };
   }
 

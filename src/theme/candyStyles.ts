@@ -1,4 +1,6 @@
 // src/theme/candyStyles.ts
+import type { Theme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 
 // --- BACKGROUND ASSETS (The Substrate) ---
 // Responsive: mobile on xs/sm, desktop on md+
@@ -29,14 +31,53 @@ export const PAGE_BACKGROUND = {
   ...SUBTLE_GRID,
 } as const;
 
+// Theme-aware glass styles
+export const getAppGlassBorder = (theme: Theme) =>
+  `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.26 : 0.26)}`;
+
+export const getAppGlassSurface = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.paper, isLight ? 0.95 : 0.76);
+};
+
+export const getAppGlassSurfaceStrong = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.paper, isLight ? 0.98 : 0.86);
+};
+
+export const getAppGlassShadow = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return isLight
+    ? '0 18px 60px rgba(0,0,0,0.12)'
+    : '0 18px 60px rgba(0,0,0,0.55)';
+};
+
+export const APP_GLASS_BACKDROP = 'blur(12px)';
+
+export const getAppPageOverlay = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  const color = isLight ? theme.palette.background.default : '#05070F';
+  return `linear-gradient(180deg, ${alpha(color, 0.78)} 0%, ${alpha(color, 0.92)} 100%)`;
+};
+
+// Legacy constants for backward compatibility (dark theme only)
 export const APP_GLASS_BORDER = '1px solid rgba(156,187,217,0.26)';
 export const APP_GLASS_SURFACE = 'rgba(17,24,39,0.76)';
 export const APP_GLASS_SURFACE_STRONG = 'rgba(17,24,39,0.86)';
 export const APP_GLASS_SHADOW = '0 18px 60px rgba(0,0,0,0.55)';
-export const APP_GLASS_BACKDROP = 'blur(12px)';
 export const APP_PAGE_OVERLAY =
   'linear-gradient(180deg, rgba(5,7,15,0.78) 0%, rgba(5,7,15,0.92) 100%)';
 
+export const getNavbarGlass = (theme: Theme) => ({
+  bgcolor: getAppGlassSurface(theme),
+  backgroundColor: getAppGlassSurface(theme),
+  backgroundImage: 'none',
+  color: theme.palette.text.primary,
+  backdropFilter: APP_GLASS_BACKDROP,
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.18)}`,
+});
+
+// Legacy constant for backward compatibility
 export const NAVBAR_GLASS = {
   bgcolor: APP_GLASS_SURFACE,
   backgroundColor: APP_GLASS_SURFACE,
@@ -49,6 +90,39 @@ export const NAVBAR_GLASS = {
 /** @deprecated Use PAGE_BACKGROUND. Kept for legacy SYNERGY_BG usage. */
 export const SYNERGY_BG = 'url("/assets/background-desktop.png")';
 export const PROFILE_BG = 'url("/assets/profile-bg.png")';
+
+// Theme-aware card backgrounds
+export const getCardBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.paper, isLight ? 1 : 0.78);
+};
+
+export const getSearchBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.default, isLight ? 0.6 : 0.4);
+};
+
+export const getEmptyStateBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.paper, isLight ? 1 : 0.84);
+};
+
+export const getHeroCardBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.paper, isLight ? 1 : 0.88);
+};
+
+export const getGridCardBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.primary.main, isLight ? 0.08 : 0.12);
+};
+
+export const getMissionSectionBg = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return alpha(theme.palette.background.default, isLight ? 0.95 : 0.92);
+};
+
+// Legacy constants for backward compatibility (dark theme only)
 export const CARD_BG = 'rgba(17,24,39,0.78)';
 export const SEARCH_BG = 'rgba(0, 0, 0, 0.4)';
 export const EMPTY_STATE_BG = 'rgba(17,24,39,0.84)';
@@ -121,7 +195,20 @@ export const CANDY_BLUEY = {
   },
 };
 
-// 4. Glass card (dark, subtle blue glow — profile/dashboard sections, chat popout)
+// 4. Glass card (theme-aware — profile/dashboard sections, chat popout)
+export const getGlassCard = (theme: Theme) => ({
+  position: 'relative' as const,
+  width: '100%',
+  borderRadius: 3,
+  border: getAppGlassBorder(theme),
+  bgcolor: getAppGlassSurface(theme),
+  backdropFilter: APP_GLASS_BACKDROP,
+  boxShadow: getAppGlassShadow(theme),
+  color: theme.palette.text.primary,
+  overflow: 'hidden' as const,
+});
+
+// Legacy constant for backward compatibility (dark theme only)
 export const GLASS_CARD = {
   position: 'relative' as const,
   width: '100%',
@@ -134,7 +221,45 @@ export const GLASS_CARD = {
   overflow: 'hidden' as const,
 };
 
-// 5. Dashed add card (neutral — Portfolio "Add Project" / "Add Resume")
+// 5. Dashed add card (theme-aware — Portfolio "Add Project" / "Add Resume")
+export const getDashedCardNeutral = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  const borderColor = isLight
+    ? alpha(theme.palette.primary.main, 0.3)
+    : 'rgba(141,188,229,0.42)';
+  const bgColor = isLight
+    ? alpha(theme.palette.background.paper, 0.9)
+    : 'rgba(17,24,39,0.72)';
+  const hoverBgColor = isLight
+    ? alpha(theme.palette.background.paper, 1)
+    : 'rgba(24,34,53,0.84)';
+  return {
+    background: bgColor,
+    backdropFilter: 'blur(8px)',
+    border: `2px dashed ${borderColor}`,
+    color: theme.palette.text.primary,
+    boxShadow: isLight
+      ? '0 0 20px rgba(0,0,0,0.08)'
+      : '0 0 20px rgba(0,0,0,0.3)',
+    transition: 'all 0.25s ease',
+    cursor: 'pointer' as const,
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&:hover': {
+      borderColor: isLight
+        ? alpha(theme.palette.primary.main, 0.5)
+        : 'rgba(141,188,229,0.62)',
+      background: hoverBgColor,
+      boxShadow: isLight
+        ? '0 0 24px rgba(0,0,0,0.12)'
+        : '0 0 24px rgba(56,132,210,0.18)',
+    },
+  };
+};
+
+// Legacy constant for backward compatibility (dark theme only)
 export const DASHED_CARD_NEUTRAL = {
   background: 'rgba(17,24,39,0.72)',
   backdropFilter: 'blur(8px)',

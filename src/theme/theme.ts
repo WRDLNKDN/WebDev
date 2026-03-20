@@ -130,12 +130,16 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
               overflow: 'hidden',
               height: '100%',
               fontFamily: FONT_FAMILY,
+              backgroundColor: PALETTE.background.default,
+              color: PALETTE.text.primary,
             },
             body: {
               overflowX: 'hidden',
               overflowY: 'hidden',
               height: '100%',
               fontFamily: FONT_FAMILY,
+              backgroundColor: PALETTE.background.default,
+              color: PALETTE.text.primary,
             },
             // #root does not scroll; Layout and Join use their own scroll container
             '#root': {
@@ -437,9 +441,14 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
 
       // 4. SURFACES (Cards, Dialogs, Menus)
       MuiPaper: {
+        defaultProps: {
+          elevation: 0,
+        },
         styleOverrides: {
           root: {
             backgroundImage: 'none',
+            backgroundColor: PALETTE.background.paper,
+            color: PALETTE.text.primary,
           },
         },
       },
@@ -448,6 +457,8 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
           root: {
             borderRadius: 12,
             border: `1px solid ${surfaceBorder}`, // Visual definition for low vision
+            backgroundColor: PALETTE.background.paper,
+            color: PALETTE.text.primary,
           },
         },
       },

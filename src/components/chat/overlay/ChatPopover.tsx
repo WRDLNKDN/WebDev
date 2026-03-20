@@ -257,6 +257,7 @@ export const ChatPopover = ({
               disabled={false}
               sending={sending}
               roomType={room?.room_type ?? 'dm'}
+              roomId={roomId}
               groupMembers={
                 room?.room_type === 'group' && room.members
                   ? room.members

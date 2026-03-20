@@ -191,6 +191,31 @@ export const ResumeCard = ({
               flexDirection: 'column',
             }}
           >
+            {/* Error message when preview fails */}
+            {thumbnailStatus === 'failed' && thumbnailError && (
+              <Box
+                sx={{
+                  mb: 1,
+                  p: 0.75,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(255, 132, 132, 0.1)',
+                  border: '1px solid rgba(255, 132, 132, 0.3)',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'error.main',
+                    fontSize: '0.75rem',
+                    display: 'block',
+                  }}
+                >
+                  {errorSuggestsUnsupported
+                    ? 'Preview not available for this file type. Open the document directly.'
+                    : 'Preview failed. Open the document directly.'}
+                </Typography>
+              </Box>
+            )}
             <Box component="p" sx={{ m: 0, mb: 1.1 }}>
               <Typography
                 component="span"
@@ -251,7 +276,11 @@ export const ResumeCard = ({
                       size="small"
                       sx={{ color: 'inherit' }}
                       disabled={retryThumbnailBusy}
-                      onClick={onRetryThumbnail}
+                      onClick={() => {
+                        if (onRetryThumbnail) {
+                          onRetryThumbnail();
+                        }
+                      }}
                     >
                       {retryThumbnailBusy ? 'Retrying…' : 'Retry Preview'}
                     </Button>
@@ -267,7 +296,7 @@ export const ResumeCard = ({
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-start',
+              justifyContent: 'space-between',
               gap: 0.5,
               px: 1.25,
               pt: 1.25,
@@ -292,6 +321,7 @@ export const ResumeCard = ({
                 alignItems: 'center',
                 gap: 0.5,
                 minHeight: 28,
+                ml: 'auto',
               }}
             >
               <Tooltip title="Open document">

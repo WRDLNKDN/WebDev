@@ -48,16 +48,13 @@ import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
-import { NAVBAR_GLASS } from '../../theme/candyStyles';
+import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 
 /**
- * Store link: IF VITE_STORE_URL is set in .env, use it; ELSE use fallback
- * (https://wrdlnkdn.com/store-1). Store always opens in a new tab.
+ * Store link: Routes internally to /store which embeds Ecwid storefront.
+ * GoDaddy storefront (https://wrdlnkdn.com/store-1) remains available as fallback.
  */
-const storeUrl =
-  (import.meta.env.VITE_STORE_URL as string | undefined) ||
-  'https://wrdlnkdn.com/store-1';
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -420,11 +417,11 @@ export const Navbar = () => {
         position="sticky"
         color="transparent"
         elevation={0}
-        sx={{
-          ...NAVBAR_GLASS,
+        sx={(theme) => ({
+          ...getNavbarGlass(theme),
           zIndex: 1100,
           isolation: 'isolate',
-        }}
+        })}
       >
         <Toolbar
           sx={{
@@ -778,10 +775,8 @@ export const Navbar = () => {
               )}
               {storeEnabled && (
                 <Button
-                  component="a"
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  component={RouterLink}
+                  to="/store"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
@@ -1217,10 +1212,8 @@ export const Navbar = () => {
                   Sign in
                 </Button>
                 <Button
-                  component="a"
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  component={RouterLink}
+                  to="/store"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
@@ -1313,10 +1306,8 @@ export const Navbar = () => {
                 )}
                 {storeEnabled && (
                   <Button
-                    component="a"
-                    href={storeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    component={RouterLink}
+                    to="/store"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',

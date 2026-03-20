@@ -162,7 +162,6 @@ export const ProjectPage = () => {
         sx={{
           p: 4,
           borderRadius: 3,
-          bgcolor: 'rgba(30,30,30,0.7)',
           border: '1px solid rgba(156,187,217,0.22)',
         }}
       >

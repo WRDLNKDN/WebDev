@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Suspense, lazy, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { EmojiClickData, Theme } from 'emoji-picker-react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import {
@@ -105,6 +105,8 @@ type MessageInputProps = {
   currentUserId?: string;
   /** Room type to determine if mentions are enabled */
   roomType?: 'dm' | 'group';
+  /** Room ID - used to clear draft state when switching threads */
+  roomId?: string | null;
 };
 
 export const MessageInput = ({
@@ -116,6 +118,7 @@ export const MessageInput = ({
   groupMembers = [],
   currentUserId,
   roomType = 'dm',
+  roomId,
 }: MessageInputProps) => {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -142,6 +145,35 @@ export const MessageInput = ({
     anchorEl: null,
     startPos: 0,
   });
+
+  // Clear draft state when switching between chat threads to prevent
+  // accidentally sending messages to the wrong recipient
+  useEffect(() => {
+    setText('');
+    setError(null);
+    setProcessingMessage(null);
+    setPendingFiles([]);
+    setMentionState({
+      open: false,
+      query: '',
+      anchorEl: null,
+      startPos: 0,
+    });
+    // Clear file input if it exists
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // Directly clear the message input field to ensure it's cleared immediately
+    // This handles edge cases where state updates might be batched or delayed
+    if (messageInputRef.current) {
+      if (
+        messageInputRef.current instanceof HTMLInputElement ||
+        messageInputRef.current instanceof HTMLTextAreaElement
+      ) {
+        messageInputRef.current.value = '';
+      }
+    }
+  }, [roomId]);
   const submitBlocked =
     disabled ||
     sending ||
@@ -217,20 +249,42 @@ export const MessageInput = ({
           setError(plan.reason);
           return;
         }
-        setProcessingMessage(plan.helperText);
-
         if (plan.mode === 'gif_processing') {
-          const processed = await processChatGifUpload({
-            file: f,
-            accessToken: session.access_token,
-          });
-          paths.push(processed.path);
-          meta.push({
-            path: processed.path,
-            mime: processed.mime,
-            size: processed.size,
-          });
+          setProcessingMessage('Optimizing GIF...');
+          setError(null); // Clear any previous errors when starting processing
+          try {
+            const processed = await processChatGifUpload({
+              file: f,
+              accessToken: session.access_token,
+            });
+            paths.push(processed.path);
+            meta.push({
+              path: processed.path,
+              mime: processed.mime,
+              size: processed.size,
+            });
+          } catch (gifError) {
+            setProcessingMessage(null);
+            const errorMsg = toMessage(gifError);
+            // Provide more specific error message for GIF processing failures
+            if (
+              errorMsg.includes('GIF processing failed') ||
+              errorMsg.includes('too large') ||
+              errorMsg.includes('413')
+            ) {
+              setError(
+                'This GIF is too large to process. Try a smaller file (under 8MB).',
+              );
+            } else {
+              setError(errorMsg || 'Failed to optimize GIF. Please try again.');
+            }
+            setPendingFiles([]); // Clear pending files on error so user can try again
+            setUploading(false);
+            return;
+          }
         } else {
+          setProcessingMessage(plan.helperText || 'Uploading attachment...');
+          setError(null); // Clear any previous errors when starting upload
           const blob = await stripExifIfImage(f);
           const ext = f.name.split('.').pop() || 'bin';
           const path = `${basePath}_0.${ext}`;
@@ -241,6 +295,8 @@ export const MessageInput = ({
           if (uploadErr) {
             setProcessingMessage(null);
             setError(toMessage(uploadErr));
+            setPendingFiles([]); // Clear pending files on error
+            setUploading(false);
             return;
           }
           paths.push(path);
@@ -282,6 +338,7 @@ export const MessageInput = ({
     // Clear any previous attachment error as soon as the user makes a new selection,
     // so that choosing a valid file after an invalid one clears the message immediately.
     setError(null);
+    setProcessingMessage(null);
 
     if (files.length > 1) {
       setError('Only one file per message.');
@@ -295,8 +352,30 @@ export const MessageInput = ({
       setProcessingMessage(null);
       return;
     }
-    const plan = getChatAttachmentProcessingPlan(f);
-    setProcessingMessage(plan.accepted ? plan.helperText : null);
+
+    // Get normalized MIME type for processing plan
+    const mime = normalizeChatAttachmentMime(f);
+    if (!mime) {
+      setError(
+        'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
+      );
+      setProcessingMessage(null);
+      return;
+    }
+
+    // Get processing plan to show appropriate helper text
+    const plan = getChatAttachmentProcessingPlan({
+      size: f.size,
+      type: mime,
+    });
+
+    // Set helper text if available (e.g., "Large GIF detected. It will be optimized before attaching.")
+    if (plan.accepted && plan.helperText) {
+      setProcessingMessage(plan.helperText);
+    } else {
+      setProcessingMessage(null);
+    }
+
     setPendingFiles([f]);
   };
 

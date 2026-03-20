@@ -94,7 +94,7 @@ import {
   PROFANITY_ERROR_MESSAGE_INTEREST,
 } from '../../lib/validation/profanity';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
@@ -540,18 +540,20 @@ export const Dashboard = () => {
                 slotProps={{
                   paper: {
                     onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                    sx: {
+                    sx: (theme) => ({
                       mt: 1.5,
                       minWidth: 200,
                       borderRadius: 2,
-                      bgcolor: 'rgba(30,30,30,0.98)',
+                      bgcolor: theme.palette.background.paper,
                       border: '1px solid rgba(156,187,217,0.26)',
                       zIndex: 1300,
                       maxHeight: 'calc(100vh - 100px)',
                       overflow: 'auto',
                       boxShadow:
-                        '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-                    },
+                        theme.palette.mode === 'light'
+                          ? '0 8px 24px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0,0,0,0.05)'
+                          : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+                    }),
                   },
                   root: {
                     onClick: (e: React.MouseEvent) => e.stopPropagation(),
@@ -690,13 +692,13 @@ export const Dashboard = () => {
         <Paper
           elevation={0}
           data-testid="dashboard-portfolio-showcase-section"
-          sx={{
-            ...GLASS_CARD,
+          sx={(theme) => ({
+            ...getGlassCard(theme),
             p: { xs: 2, md: 3 },
             overflowX: 'hidden',
             width: '100%',
             maxWidth: '100%',
-          }}
+          })}
         >
           <Box
             sx={{
@@ -1026,13 +1028,17 @@ export const Dashboard = () => {
                                   : null
                               }
                               onUpload={handleResumeUpload}
-                              onRetryThumbnail={() => {
-                                void retryResumeThumbnail().catch((e) => {
+                              onRetryThumbnail={async () => {
+                                try {
+                                  await retryResumeThumbnail();
+                                  // Refresh data after successful retry to update thumbnail status
+                                  await refresh();
+                                } catch (e) {
                                   showToast({
                                     message: toMessage(e),
                                     severity: 'error',
                                   });
-                                });
+                                }
                               }}
                               retryThumbnailBusy={updating}
                               onDelete={async () => {

@@ -146,6 +146,15 @@
   width: 100%;
 }
 
+.home-landing__coming-soon {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
 .home-landing__section {
   padding: 2rem 0 4rem;
   border-top: 1px solid rgba(156, 187, 217, 0.18);

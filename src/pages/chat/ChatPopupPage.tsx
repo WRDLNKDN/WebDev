@@ -260,6 +260,7 @@ export const ChatPopupPage = () => {
             disabled={loading}
             sending={sending}
             roomType={room?.room_type ?? 'dm'}
+            roomId={roomId ?? null}
             groupMembers={
               room?.room_type === 'group' && room.members
                 ? room.members

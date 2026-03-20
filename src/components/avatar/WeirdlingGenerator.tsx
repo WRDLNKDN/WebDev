@@ -77,16 +77,34 @@ const WeirdlingGenerator = ({
 
       const interestsArray = formData.interests.split(',').map((s) => s.trim());
 
+      const requestBody = {
+        primaryColor: formData.primaryColor.trim(),
+        heldObject: formData.heldObject.trim(),
+        hairStyle: formData.hairStyle.trim(),
+        hairColor: formData.hairColor.trim(),
+        persona: formData.persona.trim(),
+        interests: interestsArray.filter((i) => i.length > 0),
+        userName: session?.user?.user_metadata?.full_name || 'Osgood',
+      };
+
+      // Debug logging
+      console.log('[WeirdlingGenerator] Sending request:', requestBody);
+
       const { data, error: invokeError } = await supabase.functions.invoke(
         'generate-weirdling',
         {
-          body: {
-            ...formData,
-            interests: interestsArray,
-            userName: session?.user?.user_metadata?.full_name || 'Osgood',
-          },
+          body: requestBody,
         },
       );
+
+      // Debug logging
+      if (data) {
+        console.log('[WeirdlingGenerator] Received response:', {
+          status: data.status,
+          active_recipe: data.active_recipe,
+          debug_prompt_snippet: data.debug_prompt_snippet,
+        });
+      }
 
       if (invokeError) throw invokeError;
 

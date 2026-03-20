@@ -2899,10 +2899,9 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     ) => {
       if (!session?.user || (!postId && !userId)) return;
       try {
-        // Use chat_reports table for now (same structure)
-        const { error } = await supabase.from('chat_reports').insert({
+        const { error } = await supabase.from('feed_reports').insert({
           reporter_id: session.user.id,
-          reported_message_id: postId,
+          reported_post_id: postId,
           reported_user_id: userId,
           category: category as
             | 'harassment'

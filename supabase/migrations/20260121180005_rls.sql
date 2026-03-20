@@ -324,6 +324,7 @@ declare
     'chat_message_attachments',
     'chat_read_receipts',
     'chat_reports',
+    'feed_reports',
     'chat_audit_log',
     'chat_moderators',
     'feed_advertisers',
@@ -1196,6 +1197,30 @@ grant select, insert on table public.chat_reports to authenticated;
 grant update on table public.chat_reports to authenticated;
 
 -- -----------------------------
+-- feed_reports: RLS
+-- -----------------------------
+alter table public.feed_reports enable row level security;
+
+create policy "Users can insert reports"
+  on public.feed_reports for insert
+  to authenticated
+  with check ((select auth.uid()) = reporter_id);
+
+create policy "Admins can read all reports"
+  on public.feed_reports for select
+  to authenticated
+  using ((select public.is_admin()));
+
+create policy "Admins can update report status"
+  on public.feed_reports for update
+  to authenticated
+  using ((select public.is_admin()));
+
+revoke all on table public.feed_reports from anon, authenticated;
+grant select, insert on table public.feed_reports to authenticated;
+grant update on table public.feed_reports to authenticated;
+
+-- -----------------------------
 -- storage.objects: chat-attachments bucket
 -- -----------------------------
 drop policy if exists "Authenticated can upload chat-attachments" on storage.objects;
@@ -1667,6 +1692,7 @@ declare
     'chat_message_attachments',
     'chat_read_receipts',
     'chat_reports',
+    'feed_reports',
     'chat_audit_log',
     'chat_moderators',
     'feed_advertisers',

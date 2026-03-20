@@ -1609,6 +1609,34 @@ create index if not exists idx_chat_reports_status on public.chat_reports(status
 
 comment on table public.chat_reports is 'Reports: message or user; moderator workflow.';
 
+-- -----------------------------
+-- feed_reports: Reports for feed posts or users
+-- -----------------------------
+create table if not exists public.feed_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references auth.users(id) on delete cascade,
+  reported_post_id uuid references public.feed_items(id) on delete set null,
+  reported_user_id uuid references auth.users(id) on delete set null,
+  category text not null check (category in (
+    'harassment', 'spam', 'inappropriate_content', 'other'
+  )),
+  free_text text,
+  status text not null default 'open' check (status in (
+    'open', 'under_review', 'resolved'
+  )),
+  created_at timestamptz not null default now(),
+  constraint feed_reports_post_or_user check (
+    reported_post_id is not null or reported_user_id is not null
+  )
+);
+
+create index if not exists idx_feed_reports_reporter_id on public.feed_reports(reporter_id);
+create index if not exists idx_feed_reports_status on public.feed_reports(status);
+create index if not exists idx_feed_reports_post_id on public.feed_reports(reported_post_id) where reported_post_id is not null;
+create index if not exists idx_feed_reports_user_id on public.feed_reports(reported_user_id) where reported_user_id is not null;
+
+comment on table public.feed_reports is 'Reports: feed post or user; moderator workflow.';
+
 -- are_chat_connections: mutual feed_connections required for 1:1 chat
 create or replace function public.are_chat_connections(a uuid, b uuid)
 returns boolean

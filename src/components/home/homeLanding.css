@@ -24,7 +24,8 @@
 .home-landing__hero {
   position: relative;
   flex: 1 1 auto;
-  min-height: 0;
+  /* Keep a real box for the video/backdrop (flex min-height:0 alone could collapse on some layouts) */
+  min-height: min(88dvh, 100vh);
   height: auto;
   max-height: none;
   display: flex;
@@ -115,6 +116,7 @@
 
 .home-landing__content--visible {
   display: flex;
+  flex-direction: column;
   opacity: 1;
   transform: translate(-50%, -50%) translateY(0);
   pointer-events: auto;
@@ -123,6 +125,11 @@
     opacity 0.8s ease-out,
     transform 0.8s ease-out,
     visibility 0s;
+}
+
+/* Coming soon: text over video — clicks pass through to backdrop so bumper tap-to-skip still works */
+.home-landing__content--visible.home-landing__content--coming-soon-overlay {
+  pointer-events: none;
 }
 
 .home-landing__hero-grid {

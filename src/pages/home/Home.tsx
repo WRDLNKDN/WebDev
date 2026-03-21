@@ -299,6 +299,17 @@ export const Home = () => {
     ensureVideoPlayback();
   }, [ensureVideoPlayback]);
 
+  // Production coming soon: keep full headline + taglines + “Coming soon” centered over the bumper
+  // while it plays (do not wait for onEnded — that left PROD with no copy if play events stall).
+  useEffect(() => {
+    if (!comingSoon) return;
+    setShowContent(true);
+    const id = requestAnimationFrame(() => {
+      ensureVideoPlayback();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [comingSoon, ensureVideoPlayback]);
+
   // Control footer visibility via data attribute (homeLanding.css hides footer until this is set).
   // Coming soon: show site footer immediately — do not wait for video end.
   useEffect(() => {
@@ -387,7 +398,7 @@ export const Home = () => {
         </div>
 
         <div
-          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
+          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}${comingSoon && showContent ? ' home-landing__content--coming-soon-overlay' : ''}`}
           data-testid="app-main"
         >
           <div className="home-landing__hero-grid">

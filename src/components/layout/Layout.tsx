@@ -42,8 +42,8 @@ const LayoutContent = () => {
   const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
   const comingSoon = usePublicComingSoonMode();
-  /** Prod marketing home: no synthwave / photo bleed behind the hero video */
-  const suppressShellBackgroundArt = isHome && comingSoon;
+  /** Home (/): solid shell so hero video never shows synthwave / photo grid bleed (UAT + prod). */
+  const matteHomeShell = isHome;
   const showMessengerUi = !isAdmin && chatEnabled && !comingSoon;
   const isLight = theme.palette.mode === 'light';
 
@@ -97,8 +97,8 @@ const LayoutContent = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: suppressShellBackgroundArt ? '#05070f' : 'background.default',
-        ...(suppressShellBackgroundArt
+        bgcolor: matteHomeShell && !isLight ? '#05070f' : 'background.default',
+        ...(matteHomeShell
           ? {
               backgroundImage: 'none',
               position: 'relative',
@@ -149,10 +149,8 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
-          // Prod coming soon: matte in the scroll column so grid/photos never bleed beside the hero
-          ...(suppressShellBackgroundArt && {
-            bgcolor: '#05070f',
-            backgroundColor: '#05070f',
+          ...(matteHomeShell && {
+            bgcolor: isLight ? 'background.default' : '#05070f',
           }),
           // Hide scrollbar on home page
           ...(isHome && {
@@ -176,9 +174,8 @@ const LayoutContent = () => {
             flexDirection: 'column',
             overflowX: 'hidden',
             overflowY: 'visible',
-            ...(suppressShellBackgroundArt && {
-              bgcolor: '#05070f',
-              backgroundColor: '#05070f',
+            ...(matteHomeShell && {
+              bgcolor: isLight ? 'background.default' : '#05070f',
             }),
           }}
         >

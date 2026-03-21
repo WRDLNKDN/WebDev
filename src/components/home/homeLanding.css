@@ -1,6 +1,5 @@
 /* Fill Layout main (flex column) so navbar + this + site footer fit in 100dvh — avoid 100vh forcing footer off-screen */
 .home-landing {
-  --home-banner-offset: 0px;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -8,10 +7,12 @@
   max-height: none;
   display: flex;
   flex-direction: column;
-  /* Let Layout body background (grid + /assets/background-*.png) show through on UAT/PROD */
+  /* Home uses Layout matte shell on / — keep transparent so shell color shows through */
   background: transparent;
   color: var(--color-text-primary);
-  overflow: hidden;
+  /* Guest hero: allow vertical overflow so post-video CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
+  overflow-x: hidden;
+  overflow-y: visible;
   position: relative;
   /* Hide scrollbar */
   scrollbar-width: none;
@@ -23,13 +24,11 @@
   flex: 1 1 auto;
   align-self: stretch;
   width: 100%;
-  min-height: max(
-    0px,
-    min(calc(100dvh - 7rem - var(--home-banner-offset)), 100%)
-  );
+  min-height: min(calc(100dvh - 7rem), 100%);
   display: flex;
   flex-direction: column;
   background: #05070f;
+  overflow: hidden;
 }
 
 .home-landing::-webkit-scrollbar {
@@ -39,14 +38,8 @@
 .home-landing__hero {
   position: relative;
   flex: 1 1 auto;
-  /* Keep a real box for the video/backdrop (flex min-height:0 alone could collapse on some layouts) */
-  min-height: max(
-    0px,
-    min(
-      calc(88dvh - var(--home-banner-offset)),
-      calc(100dvh - var(--home-banner-offset))
-    )
-  );
+  /* UAT banner is a sibling above <main>; hero lives inside main — use full viewport-based height only */
+  min-height: min(88dvh, 100vh);
   height: auto;
   max-height: none;
   display: flex;
@@ -60,20 +53,8 @@
 .home-landing__hero--coming-soon {
   flex: 1 1 auto;
   align-self: stretch;
-  /* Do not use min-height: 0 only — it collapses the hero so the video disappears */
-  min-height: max(
-    0px,
-    min(
-      calc(88dvh - var(--home-banner-offset)),
-      calc(100dvh - 9rem - var(--home-banner-offset))
-    )
-  );
+  min-height: min(88dvh, calc(100dvh - 9rem));
   width: 100%;
-}
-
-.home-landing__hero-backdrop--coming-soon {
-  background-color: #05070f;
-  overflow: hidden;
 }
 
 /* Collapsed state after video ends - compact hero with just sign-in content */
@@ -95,6 +76,9 @@
   inset: 0;
   z-index: 0;
   cursor: pointer;
+  /* Matte behind video so no grid/photo peeks through letterboxing or edges (UAT + prod) */
+  background-color: #05070f;
+  overflow: hidden;
 }
 
 .home-landing__video,
@@ -110,15 +94,15 @@
   z-index: 0;
 }
 
-/* Coming soon: full-bleed cover, bias to lower frame + shift up so weirdling feet stay in frame */
+/* Hero video: full-bleed cover, bias to lower frame + nudge up so weirdling feet stay in frame */
 .home-landing__video--focus-feet {
   object-fit: cover;
-  object-position: center 88%;
-  top: -8%;
+  object-position: center 92%;
+  top: -11%;
   left: 0;
   right: 0;
   width: 100%;
-  height: 118%;
+  height: 122%;
   bottom: auto;
 }
 

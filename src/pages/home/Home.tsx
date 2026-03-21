@@ -316,12 +316,18 @@ export const Home = () => {
   // Control footer visibility via data attribute (homeLanding.css hides footer until this is set).
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (showFooter) {
+    if (showFooter || comingSoon) {
       document.documentElement.setAttribute('data-footer-visible', 'true');
     } else {
       document.documentElement.removeAttribute('data-footer-visible');
     }
   }, [showFooter, comingSoon]);
+
+  // Coming soon: show site footer without waiting on guest hero / video lifecycle
+  useEffect(() => {
+    if (!comingSoon) return;
+    setShowFooter(true);
+  }, [comingSoon]);
 
   // Disable scrolling on home page
   useEffect(() => {
@@ -348,7 +354,12 @@ export const Home = () => {
   }
 
   return (
-    <main className="home-landing" data-testid="signed-out-landing">
+    <main
+      className={['home-landing', comingSoon ? 'home-landing--coming-soon' : '']
+        .filter(Boolean)
+        .join(' ')}
+      data-testid="signed-out-landing"
+    >
       <section
         className={[
           'home-landing__hero',
@@ -359,7 +370,12 @@ export const Home = () => {
           .join(' ')}
       >
         <div
-          className="home-landing__hero-backdrop"
+          className={[
+            'home-landing__hero-backdrop',
+            comingSoon ? 'home-landing__hero-backdrop--coming-soon' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           onPointerDown={handleHeroSkip}
           aria-hidden="true"
         >
@@ -445,7 +461,22 @@ export const Home = () => {
           </div>
         ) : (
           <div className="home-landing__coming-soon-shell">
-            <p className="home-landing__coming-soon">Coming Soon</p>
+            <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">
+              <div className="home-landing__headline">
+                <h1 className="home-landing__title">WRDLNKDN</h1>
+                <div className="home-landing__copy">
+                  <p className="home-landing__pronunciation">
+                    (Weird Link-uh-din)
+                  </p>
+                  <p className="home-landing__tagline">
+                    Business, but weirder.
+                  </p>
+                </div>
+              </div>
+              <div className="home-landing__cta">
+                <p className="home-landing__coming-soon">Coming soon</p>
+              </div>
+            </div>
           </div>
         )}
       </section>

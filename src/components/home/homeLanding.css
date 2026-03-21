@@ -17,6 +17,13 @@
   -ms-overflow-style: none;
 }
 
+/* Coming soon (prod): matte behind hero — no layout grid / photo bleed */
+.home-landing--coming-soon {
+  flex: 1;
+  min-height: 0;
+  background: #05070f;
+}
+
 .home-landing::-webkit-scrollbar {
   display: none;
 }
@@ -37,7 +44,13 @@
 }
 
 .home-landing__hero--coming-soon {
-  min-height: calc(100dvh - 64px);
+  flex: 1 1 auto;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.home-landing__hero-backdrop--coming-soon {
+  background-color: #05070f;
 }
 
 /* Collapsed state after video ends - compact hero with just sign-in content */
@@ -74,11 +87,11 @@
   z-index: 0;
 }
 
-/* Coming soon: bias crop toward lower frame + slight upward shift so weirdling feet aren’t clipped */
+/* Coming soon: bias crop to lower frame + nudge up so feet stay in view (full-bleed cover) */
 .home-landing__video--focus-feet {
-  object-position: center 74%;
-  top: -6%;
-  height: 112%;
+  object-position: center 82%;
+  top: -7%;
+  height: 114%;
   bottom: auto;
 }
 
@@ -226,14 +239,20 @@
 }
 
 .home-landing__coming-soon-shell {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
-  width: 100%;
-  min-height: inherit;
-  display: grid;
-  place-items: center;
-  padding: 2rem 1.5rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
   text-align: center;
+  pointer-events: none;
+}
+
+.home-landing__hero-grid--coming-soon {
+  gap: 1.5rem;
+  pointer-events: auto;
 }
 
 .home-landing__section {

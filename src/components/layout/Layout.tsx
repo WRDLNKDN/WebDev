@@ -42,6 +42,8 @@ const LayoutContent = () => {
   const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
   const comingSoon = usePublicComingSoonMode();
+  /** Prod marketing home: no synthwave / photo bleed behind the hero video */
+  const suppressShellBackgroundArt = isHome && comingSoon;
   const showMessengerUi = !isAdmin && chatEnabled && !comingSoon;
   const isLight = theme.palette.mode === 'light';
 
@@ -95,35 +97,41 @@ const LayoutContent = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'background.default',
-        ...(isLight
+        bgcolor: suppressShellBackgroundArt ? '#05070f' : 'background.default',
+        ...(suppressShellBackgroundArt
           ? {
-              // Light theme: use solid background color
               backgroundImage: 'none',
-            }
-          : {
-              // Dark theme: use background images with overlay
-              backgroundImage: {
-                xs: 'url("/assets/background-mobile.png")',
-                md: 'url("/assets/background-desktop.png")',
-              },
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundAttachment: { xs: 'scroll', md: 'fixed' },
               position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: `
+              '&::before': { display: 'none' },
+            }
+          : isLight
+            ? {
+                // Light theme: use solid background color
+                backgroundImage: 'none',
+              }
+            : {
+                // Dark theme: use background images with overlay
+                backgroundImage: {
+                  xs: 'url("/assets/background-mobile.png")',
+                  md: 'url("/assets/background-desktop.png")',
+                },
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: { xs: 'scroll', md: 'fixed' },
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `
                   linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
                   linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
                 `,
-                backgroundSize: '24px 24px',
-                pointerEvents: 'none',
-                zIndex: 0,
-              },
-            }),
+                  backgroundSize: '24px 24px',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                },
+              }),
       }}
     >
       <Suspense fallback={<NavbarFallback />}>

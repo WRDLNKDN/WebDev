@@ -36,6 +36,10 @@
   width: 100%;
 }
 
+.home-landing__hero--coming-soon {
+  min-height: calc(100dvh - 64px);
+}
+
 /* Collapsed state after video ends - compact hero with just sign-in content */
 .home-landing__hero--collapsed {
   flex: 0 0 auto;
@@ -72,9 +76,9 @@
 
 /* Coming soon: bias crop toward lower frame + slight upward shift so weirdling feet aren’t clipped */
 .home-landing__video--focus-feet {
-  object-position: center 68%;
-  top: -3.5%;
-  height: 107%;
+  object-position: center 74%;
+  top: -6%;
+  height: 112%;
   bottom: auto;
 }
 
@@ -219,6 +223,17 @@
   text-shadow:
     0 0 24px rgba(167, 68, 194, 0.45),
     0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.home-landing__coming-soon-shell {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: inherit;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem 3rem;
+  text-align: center;
 }
 
 .home-landing__section {

@@ -263,9 +263,8 @@ export const Home = () => {
   // Scroll tracking removed - no scrolling on home page
 
   const handleVideoEnded = () => {
-    // Coming soon keeps the hero clean: no overlay copy, only reveal the footer after playback.
+    // Coming soon keeps the hero as a full-screen holding page.
     if (comingSoon) {
-      setTimeout(() => setShowFooter(true), 800);
       return;
     }
     // Show content when video ends
@@ -289,7 +288,6 @@ export const Home = () => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
     if (comingSoon) {
       videoRef.current?.pause();
-      setShowFooter(true);
       return;
     }
     // Show content immediately when clicked
@@ -352,7 +350,13 @@ export const Home = () => {
   return (
     <main className="home-landing" data-testid="signed-out-landing">
       <section
-        className={`home-landing__hero${videoEnded && !comingSoon ? ' home-landing__hero--collapsed' : ''}`}
+        className={[
+          'home-landing__hero',
+          comingSoon ? 'home-landing__hero--coming-soon' : '',
+          videoEnded && !comingSoon ? 'home-landing__hero--collapsed' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <div
           className="home-landing__hero-backdrop"
@@ -439,7 +443,11 @@ export const Home = () => {
               </div>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="home-landing__coming-soon-shell">
+            <p className="home-landing__coming-soon">Coming Soon</p>
+          </div>
+        )}
       </section>
       {/* Sections removed - no scrolling on home page */}
     </main>

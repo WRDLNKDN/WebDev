@@ -127,11 +127,6 @@
     visibility 0s;
 }
 
-/* Coming soon: text over video — clicks pass through to backdrop so bumper tap-to-skip still works */
-.home-landing__content--visible.home-landing__content--coming-soon-overlay {
-  pointer-events: none;
-}
-
 .home-landing__hero-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -209,11 +204,13 @@
 
 .home-landing__coming-soon {
   margin: 0;
-  color: var(--color-text-primary);
+  color: #cb8fdb;
   font-size: clamp(1.25rem, 3vw, 1.5rem);
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  text-shadow:
+    0 0 24px rgba(167, 68, 194, 0.45),
+    0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .home-landing__section {

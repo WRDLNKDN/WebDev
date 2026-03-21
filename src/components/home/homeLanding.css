@@ -70,6 +70,14 @@
   z-index: 0;
 }
 
+/* Coming soon: bias crop toward lower frame + slight upward shift so weirdling feet aren’t clipped */
+.home-landing__video--focus-feet {
+  object-position: center 68%;
+  top: -3.5%;
+  height: 107%;
+  bottom: auto;
+}
+
 .home-landing__video--dimmed {
   opacity: 0;
   transition: opacity 1s ease-out;

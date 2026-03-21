@@ -259,6 +259,11 @@ export const Home = () => {
   const handleVideoEnded = () => {
     // Show content when video ends
     setShowContent(true);
+    // Coming soon: keep full hero + last frame + overlay — no fade-to-grid / collapse swap
+    if (comingSoon) {
+      setTimeout(() => setShowFooter(true), 800);
+      return;
+    }
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
       // After video fades out, collapse the hero area
@@ -278,6 +283,11 @@ export const Home = () => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
     // Show content immediately when clicked
     setShowContent(true);
+    if (comingSoon) {
+      videoRef.current?.pause();
+      setShowFooter(true);
+      return;
+    }
     setHeroPhase('dimmed');
     videoRef.current?.pause();
     // Collapse after fade transition
@@ -285,7 +295,7 @@ export const Home = () => {
       setVideoEnded(true);
       setTimeout(() => setShowFooter(true), 800);
     }, 1000);
-  }, [prefersReducedMotion, videoFailed, heroPhase]);
+  }, [prefersReducedMotion, videoFailed, heroPhase, comingSoon]);
 
   // 1.5x playback improves pacing; respect prefers-reduced-motion
   const setPlaybackRate = useCallback(() => {
@@ -337,7 +347,7 @@ export const Home = () => {
   return (
     <main className="home-landing" data-testid="signed-out-landing">
       <section
-        className={`home-landing__hero${videoEnded ? ' home-landing__hero--collapsed' : ''}`}
+        className={`home-landing__hero${videoEnded && !comingSoon ? ' home-landing__hero--collapsed' : ''}`}
       >
         <div
           className="home-landing__hero-backdrop"
@@ -349,6 +359,7 @@ export const Home = () => {
               ref={videoRef}
               className={[
                 'home-landing__video',
+                comingSoon ? 'home-landing__video--focus-feet' : '',
                 heroPhase === 'dimmed' ? 'home-landing__video--dimmed' : '',
               ]
                 .filter(Boolean)
@@ -366,8 +377,10 @@ export const Home = () => {
               onError={(e) => {
                 console.error('Video error:', e);
                 setVideoFailed(true);
-                setHeroPhase('dimmed');
-                setVideoEnded(true);
+                if (!comingSoon) {
+                  setHeroPhase('dimmed');
+                  setVideoEnded(true);
+                }
                 // Show content and footer if video fails
                 setShowContent(true);
                 setTimeout(() => setShowFooter(true), 500);

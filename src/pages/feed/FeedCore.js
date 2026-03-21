@@ -1243,6 +1243,7 @@ const Feed = ({ savedMode = false }) => {
                 ),
               ),
               chatEnabled &&
+                session?.user?.id &&
                 /* @__PURE__ */ React.createElement(
                   ListItem,
                   { disablePadding: true },

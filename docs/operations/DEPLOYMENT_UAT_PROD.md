@@ -11,14 +11,17 @@
 - **PROD:** [wrdlnkdn.vercel.app](https://wrdlnkdn.vercel.app/) →
   `rpcaazmxymymqdejevtb.supabase.co`
 
-## Coming soon mode (production only)
+## Coming soon mode (no Vercel-only toggle)
 
-The `coming_soon` feature flag affects **public** chrome (home CTA, login
-buttons, floating chat, etc.) only when **`VITE_APP_ENV=production`** is baked
-into the build. **UAT** (`VITE_APP_ENV=uat`) and **local dev** always behave as
-the full site so [webdev-uat.vercel.app](https://webdev-uat.vercel.app/) stays
-usable for testing. Toggle the flag in Admin → Feature flags on the
-**production** Supabase project when you are ready to go live.
+There is **no** dedicated Vercel env var (e.g. `VITE_COMING_SOON`). Public
+“coming soon” chrome (home CTA, join/sign-in, messenger, etc.) follows the
+Supabase feature flag **`coming_soon`**, toggled in **Admin → Feature flags**
+(no redeploy). Use the flag on the Supabase project that matches that deploy
+(UAT project vs prod project).
+
+The app only **reads** that flag when **`VITE_APP_ENV`** is **`production`** (or
+`prod`) or **`uat`** (baked into the Vercel build). **Local dev** (`development`
+/ unset) always behaves as the full live site so engineers are not blocked.
 
 ## Problem: UAT Sign-in or Refresh Shows PROD Supabase
 

@@ -94,16 +94,18 @@
   z-index: 0;
 }
 
-/* Hero video: full-bleed cover, anchored to bottom so weirdling feet stay in frame */
+/* Hero video: cover + bottom anchor + slight scale so feet aren’t clipped by viewport crop */
 .home-landing__video--focus-feet {
   object-fit: cover;
-  object-position: center bottom;
+  object-position: center 92%;
   top: 0;
   left: 0;
   right: 0;
   width: 100%;
   height: 100%;
   bottom: auto;
+  transform: scale(1.06);
+  transform-origin: center bottom;
 }
 
 .home-landing__video--dimmed {
@@ -123,9 +125,9 @@
   background: rgba(5, 7, 15, 0.92);
 }
 
-/* When hero is collapsed, keep overlay dark so grid doesn't bleed through during content fade-in */
+/* After reveal, let Layout grid/photos show through (video layer is already faded out) */
 .home-landing__hero--collapsed .home-landing__video-overlay {
-  background: rgba(5, 7, 15, 0.97);
+  background: transparent;
   transition: background-color 0.6s ease-out 0.2s;
 }
 
@@ -240,23 +242,15 @@
 
 .home-landing__coming-soon {
   margin: 0;
-  color: #cb8fdb;
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: #d946ef;
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-shadow:
-    0 0 24px rgba(167, 68, 194, 0.45),
-    0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Coming soon: same centered overlay as guest hero — always visible over video */
-.home-landing__content--coming-soon {
-  display: flex !important;
-  flex-direction: column;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) translateY(0);
+    0 0 28px rgba(217, 70, 239, 0.55),
+    0 0 48px rgba(139, 92, 246, 0.35),
+    0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
 .home-landing__hero-grid--coming-soon {

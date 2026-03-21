@@ -26,6 +26,7 @@ import type {
   ChatRoomSort,
 } from '../../lib/chat/roomListState';
 import { getChatRoomLabel } from '../../lib/chat/roomListState';
+import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { MessengerOverlayPanel } from './MessengerOverlayPanel';
 
@@ -139,7 +140,9 @@ export const MessengerOverlay = () => {
     [session?.user?.id],
   );
 
-  if (comingSoon || !session?.user?.id || !chatEnabled) return null;
+  if (comingSoon || !chatUiForMember(chatEnabled, session?.user?.id))
+    return null;
+  if (!session?.user) return null;
 
   const showFloatingChat = Boolean(messenger && !messenger.overlayOpen);
   const floatingChatButton = showFloatingChat ? (

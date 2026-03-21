@@ -6,6 +6,8 @@ type NavbarDesktopNavLinksProps = {
   isAdmin: boolean;
   showAuthedHeader: boolean;
   chatEnabled: boolean;
+  /** Chat nav only for signed-in Members (never guests). */
+  memberSignedIn: boolean;
   dashboardEnabled: boolean;
   directoryEnabled: boolean;
   eventsEnabled: boolean;
@@ -24,6 +26,7 @@ export const NavbarDesktopNavLinks = ({
   isAdmin,
   showAuthedHeader,
   chatEnabled,
+  memberSignedIn,
   dashboardEnabled,
   directoryEnabled,
   eventsEnabled,
@@ -128,7 +131,7 @@ export const NavbarDesktopNavLinks = ({
               Dashboard
             </Button>
           )}
-          {chatEnabled && (
+          {chatEnabled && memberSignedIn ? (
             <Button
               component={RouterLink}
               to="/chat-full"
@@ -146,7 +149,7 @@ export const NavbarDesktopNavLinks = ({
             >
               Chat
             </Button>
-          )}
+          ) : null}
         </>
       )}
       {isAdmin && (

@@ -16,6 +16,8 @@ type NavbarMobileDrawerProps = {
   feedEnabled: boolean;
   storeEnabled: boolean;
   chatEnabled: boolean;
+  /** Chat nav only for signed-in Members. */
+  memberSignedIn: boolean;
   gamesEnabled: boolean;
   isDashboardActive: boolean;
   isDirectoryActive: boolean;
@@ -40,6 +42,7 @@ export const NavbarMobileDrawer = ({
   feedEnabled,
   storeEnabled,
   chatEnabled,
+  memberSignedIn,
   gamesEnabled,
   isDashboardActive,
   isDirectoryActive,
@@ -226,7 +229,7 @@ export const NavbarMobileDrawer = ({
                   Dashboard
                 </Button>
               )}
-              {chatEnabled && (
+              {chatEnabled && memberSignedIn ? (
                 <Button
                   component={RouterLink}
                   to="/chat-full"
@@ -246,7 +249,7 @@ export const NavbarMobileDrawer = ({
                 >
                   Chat
                 </Button>
-              )}
+              ) : null}
             </>
           )}
         </Stack>

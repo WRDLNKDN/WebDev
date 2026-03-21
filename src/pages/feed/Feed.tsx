@@ -114,6 +114,7 @@ import {
   reduceImagePreviewLoaded,
 } from '../../lib/feed/imagePreviewState';
 import { formatPostTime } from '../../lib/post/formatPostTime';
+import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 
@@ -522,7 +523,7 @@ const ShareDialog = ({
   mobile,
   onOpenShareToConnection,
   onOpenShareToGroup,
-  chatEnabled,
+  showChatShareTargets,
 }: {
   item: FeedItem | null;
   open: boolean;
@@ -532,7 +533,8 @@ const ShareDialog = ({
   mobile: boolean;
   onOpenShareToConnection: () => void;
   onOpenShareToGroup: () => void;
-  chatEnabled: boolean;
+  /** Chat share rows only when feature is on and a Member is signed in. */
+  showChatShareTargets: boolean;
 }) => {
   if (!item) return null;
   const postUrl =
@@ -574,7 +576,7 @@ const ShareDialog = ({
           >
             Copy link
           </Button>
-          {chatEnabled && (
+          {showChatShareTargets ? (
             <>
               <Button
                 fullWidth
@@ -597,7 +599,7 @@ const ShareDialog = ({
                 Share to Group
               </Button>
             </>
-          )}
+          ) : null}
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -3253,7 +3255,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     />
                   </ListItemButton>
                 </ListItem>
-                {chatEnabled && (
+                {chatUiForMember(chatEnabled, session?.user?.id) ? (
                   <ListItem disablePadding>
                     <ListItemButton
                       component={RouterLink}
@@ -3274,7 +3276,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       />
                     </ListItemButton>
                   </ListItem>
-                )}
+                ) : null}
                 <ListSubheader
                   disableSticky
                   sx={{
@@ -4199,7 +4201,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         mobile={isSmallScreen}
         onOpenShareToConnection={() => setShareSubDialog('connection')}
         onOpenShareToGroup={() => setShareSubDialog('group')}
-        chatEnabled={chatEnabled}
+        showChatShareTargets={chatUiForMember(chatEnabled, session?.user?.id)}
       />
       <ReportDialog
         open={reportDialogOpen}
@@ -4213,7 +4215,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         reportedMessageId={reportTarget?.postId ?? null}
         reportedUserId={reportTarget?.userId ?? null}
       />
-      {shareModalItem && (
+      {shareModalItem && session?.user?.id ? (
         <>
           <ShareToConnectionDialog
             open={shareSubDialog === 'connection'}
@@ -4238,7 +4240,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             onError={(msg) => showToast({ message: msg, severity: 'error' })}
           />
         </>
-      )}
+      ) : null}
     </Box>
   );
 };

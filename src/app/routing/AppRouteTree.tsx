@@ -128,6 +128,7 @@ export const AppRouteTree = ({
           </RequirePublicSiteLive>
         }
       />
+      {/* Public identity / share / portfolio deep links (dashboard profile is under /dashboard). */}
       <Route path="/profile/:handle" element={<LandingPage />} />
       <Route path="/p/:shareToken" element={<PublicProfilePage />} />
       <Route path="/projects/:id" element={<ProjectPage />} />
@@ -188,7 +189,9 @@ export const AppRouteTree = ({
         path="/groups"
         element={
           <RequireFeatureFlag flagKey={GROUPS_FLAG} fallbackTo="/feed">
-            <GroupsPage />
+            <RequireOnboarded>
+              <GroupsPage />
+            </RequireOnboarded>
           </RequireFeatureFlag>
         }
       />
@@ -200,7 +203,14 @@ export const AppRouteTree = ({
           </RequireFeatureFlag>
         }
       />
-      <Route path="/saved" element={<SavedPage />} />
+      <Route
+        path="/saved"
+        element={
+          <RequireOnboarded>
+            <SavedPage />
+          </RequireOnboarded>
+        }
+      />
       <Route path="/advertise" element={<AdvertisePage />} />
       <Route
         path="/games"
@@ -669,7 +679,14 @@ export const AppRouteTree = ({
         }
       />
 
-      <Route path="/weirdling/create" element={<WeirdlingCreate />} />
+      <Route
+        path="/weirdling/create"
+        element={
+          <RequireOnboarded>
+            <WeirdlingCreate />
+          </RequireOnboarded>
+        }
+      />
       <Route
         path="/submit"
         element={

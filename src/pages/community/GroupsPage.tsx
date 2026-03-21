@@ -9,15 +9,32 @@ import {
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import type { Session } from '@supabase/supabase-js';
 import { Link as RouterLink } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChatRooms } from '../../hooks/useChat';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
  * Groups page (route: /groups) – open your active group chats.
  */
 export const GroupsPage = () => {
   const { rooms, loading } = useChatRooms();
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled) setSession(data.session ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!cancelled) setSession(s ?? null);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
   const actionButtonSx = {
     color: 'text.primary',
     borderColor: 'rgba(255,255,255,0.42)',
@@ -63,15 +80,17 @@ export const GroupsPage = () => {
                 Groups
               </Typography>
             </Stack>
-            <Button
-              component={RouterLink}
-              to="/chat-full"
-              variant="outlined"
-              size="small"
-              sx={actionButtonSx}
-            >
-              Open Chat Hub
-            </Button>
+            {session?.user?.id ? (
+              <Button
+                component={RouterLink}
+                to="/chat-full"
+                variant="outlined"
+                size="small"
+                sx={actionButtonSx}
+              >
+                Open Chat Hub
+              </Button>
+            ) : null}
           </Stack>
 
           {loading ? (
@@ -84,10 +103,12 @@ export const GroupsPage = () => {
                 You are not in any groups yet.
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Open Chat Hub to create a new group or accept an invite.
+                {session?.user?.id
+                  ? 'Open Chat Hub to create a new group or accept an invite.'
+                  : 'Sign in to use Chat and manage groups.'}
               </Typography>
             </Stack>
-          ) : (
+          ) : session?.user?.id ? (
             <Stack spacing={1.25}>
               {groupRooms.map((room) => (
                 <Paper
@@ -141,6 +162,10 @@ export const GroupsPage = () => {
                 </Paper>
               ))}
             </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Sign in to open your group chats.
+            </Typography>
           )}
         </Paper>
       </Container>

@@ -1,6 +1,12 @@
 import { Box, useTheme } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   MessengerProvider,
@@ -10,6 +16,12 @@ import {
   useFeatureFlag,
   usePublicComingSoonMode,
 } from '../../context/FeatureFlagsContext';
+import {
+  getHomeHeroPhaseSnapshot,
+  subscribeHomeHeroPhase,
+} from '../../lib/utils/homeHeroPhaseStore';
+import { chatUiForMember } from '../../lib/utils/chatUiForMember';
+import { homeMatteUntilContentRevealEnabled } from '../../lib/utils/homeMatteUntilReveal';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -42,10 +54,61 @@ const LayoutContent = () => {
   const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
   const comingSoon = usePublicComingSoonMode();
-  /** Home (/): solid shell so hero video never shows synthwave / photo grid bleed (UAT + prod). */
-  const matteHomeShell = isHome;
-  const showMessengerUi = !isAdmin && chatEnabled && !comingSoon;
+  /**
+   * Chat shell UI only when a Member is signed in — never for guests (any env).
+   * Still off in public coming-soon mode so marketing stays minimal.
+   */
+  const showMessengerUi =
+    !isAdmin && !comingSoon && chatUiForMember(chatEnabled, session?.user?.id);
   const isLight = theme.palette.mode === 'light';
+
+  const homeHeroShellPhase = useSyncExternalStore(
+    subscribeHomeHeroPhase,
+    getHomeHeroPhaseSnapshot,
+    () => 'video' as const,
+  );
+
+  /** Matte only while hero video plays; grid returns after copy reveals (see VITE_HOME_MATTE_UNTIL_CONTENT_REVEAL). */
+  const matteDuringHomeVideo =
+    isHome &&
+    homeMatteUntilContentRevealEnabled() &&
+    homeHeroShellPhase === 'video';
+
+  const darkShellBg = {
+    backgroundImage: {
+      xs: 'url("/assets/background-mobile.png")',
+      md: 'url("/assets/background-desktop.png")',
+    },
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: { xs: 'scroll', md: 'fixed' },
+    position: 'relative' as const,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: `
+                  linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
+                `,
+      backgroundSize: '24px 24px',
+      pointerEvents: 'none',
+      zIndex: 0,
+    },
+  };
+
+  const rootShellSx = matteDuringHomeVideo
+    ? {
+        backgroundImage: 'none',
+        position: 'relative' as const,
+        '&::before': { display: 'none' },
+      }
+    : isLight
+      ? { backgroundImage: 'none' }
+      : darkShellBg;
+
+  const rootBgcolor =
+    matteDuringHomeVideo && !isLight ? '#05070f' : 'background.default';
 
   useEffect(() => {
     let cancelled = false;
@@ -97,41 +160,8 @@ const LayoutContent = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: matteHomeShell && !isLight ? '#05070f' : 'background.default',
-        ...(matteHomeShell
-          ? {
-              backgroundImage: 'none',
-              position: 'relative',
-              '&::before': { display: 'none' },
-            }
-          : isLight
-            ? {
-                // Light theme: use solid background color
-                backgroundImage: 'none',
-              }
-            : {
-                // Dark theme: use background images with overlay
-                backgroundImage: {
-                  xs: 'url("/assets/background-mobile.png")',
-                  md: 'url("/assets/background-desktop.png")',
-                },
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundAttachment: { xs: 'scroll', md: 'fixed' },
-                position: 'relative',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundImage: `
-                  linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
-                `,
-                  backgroundSize: '24px 24px',
-                  pointerEvents: 'none',
-                  zIndex: 0,
-                },
-              }),
+        bgcolor: rootBgcolor,
+        ...rootShellSx,
       }}
     >
       <Suspense fallback={<NavbarFallback />}>
@@ -149,7 +179,7 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
-          ...(matteHomeShell && {
+          ...(matteDuringHomeVideo && {
             bgcolor: isLight ? 'background.default' : '#05070f',
           }),
           // Hide scrollbar on home page
@@ -174,7 +204,7 @@ const LayoutContent = () => {
             flexDirection: 'column',
             overflowX: 'hidden',
             overflowY: 'visible',
-            ...(matteHomeShell && {
+            ...(matteDuringHomeVideo && {
               bgcolor: isLight ? 'background.default' : '#05070f',
             }),
           }}

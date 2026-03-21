@@ -50,6 +50,7 @@ import {
 } from '../../context/FeatureFlagsContext';
 import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
+import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
@@ -1365,7 +1366,7 @@ export const Navbar = () => {
                     Store
                   </Button>
                 )}
-                {chatEnabled && (
+                {chatUiForMember(chatEnabled, session?.user?.id) ? (
                   <Button
                     component={RouterLink}
                     to="/chat-full"
@@ -1386,7 +1387,7 @@ export const Navbar = () => {
                   >
                     Chat
                   </Button>
-                )}
+                ) : null}
               </>
             )}
           </Stack>

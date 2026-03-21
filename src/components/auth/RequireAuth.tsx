@@ -5,8 +5,11 @@ import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 /**
- * Route guard: redirects to home when user is not signed in.
- * Use for Feed and other auth-required routes.
+ * Session-only guard: redirects to `/` when there is no Supabase session.
+ * Prefer **`RequireOnboarded`** for in-app routes (session + profile row); it is
+ * what `AppRouteTree` uses for Feed, Dashboard, Chat, etc. This component is
+ * available if you need “signed in but not necessarily onboarded” without
+ * duplicating `RequireOnboarded` logic.
  */
 export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();

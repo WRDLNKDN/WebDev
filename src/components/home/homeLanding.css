@@ -17,10 +17,14 @@
   -ms-overflow-style: none;
 }
 
-/* Coming soon (prod): matte behind hero — no layout grid / photo bleed */
+/* Coming soon (prod): matte + fill layout column so hero/video has real height */
 .home-landing--coming-soon {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-height: min(calc(100dvh - 7rem), 100%);
+  display: flex;
+  flex-direction: column;
   background: #05070f;
 }
 
@@ -45,12 +49,15 @@
 
 .home-landing__hero--coming-soon {
   flex: 1 1 auto;
-  min-height: 0;
   align-self: stretch;
+  /* Do not use min-height: 0 only — it collapses the hero so the video disappears */
+  min-height: min(88dvh, calc(100dvh - 9rem));
+  width: 100%;
 }
 
 .home-landing__hero-backdrop--coming-soon {
   background-color: #05070f;
+  overflow: hidden;
 }
 
 /* Collapsed state after video ends - compact hero with just sign-in content */
@@ -87,11 +94,15 @@
   z-index: 0;
 }
 
-/* Coming soon: bias crop to lower frame + nudge up so feet stay in view (full-bleed cover) */
+/* Coming soon: full-bleed cover, bias to lower frame + shift up so weirdling feet stay in frame */
 .home-landing__video--focus-feet {
-  object-position: center 82%;
-  top: -7%;
-  height: 114%;
+  object-fit: cover;
+  object-position: center 88%;
+  top: -8%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 118%;
   bottom: auto;
 }
 
@@ -238,21 +249,22 @@
     0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
-.home-landing__coming-soon-shell {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.5rem;
-  text-align: center;
+/* Coming soon: same centered overlay as guest hero — always visible over video */
+.home-landing__content--coming-soon {
+  display: flex !important;
+  flex-direction: column;
+  opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: none;
+  transform: translate(-50%, -50%) translateY(0);
+}
+
+.home-landing__content--coming-soon .home-landing__hero-grid--coming-soon {
+  pointer-events: auto;
 }
 
 .home-landing__hero-grid--coming-soon {
   gap: 1.5rem;
-  pointer-events: auto;
 }
 
 .home-landing__section {

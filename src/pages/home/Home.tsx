@@ -353,6 +353,12 @@ export const Home = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const showGuestVideo = !comingSoon && !prefersReducedMotion && !videoFailed;
+  const showComingSoonVideo =
+    comingSoon && !prefersReducedMotion && !videoFailed;
+  const showComingSoonPoster =
+    comingSoon && (prefersReducedMotion || videoFailed);
+
   return (
     <main
       className={['home-landing', comingSoon ? 'home-landing--coming-soon' : '']
@@ -379,7 +385,15 @@ export const Home = () => {
           onPointerDown={handleHeroSkip}
           aria-hidden="true"
         >
-          {!prefersReducedMotion && !videoFailed ? (
+          {showComingSoonPoster ? (
+            <img
+              className="home-landing__video home-landing__video--focus-feet"
+              src="/assets/video/hero-bg-poster.jpg"
+              alt=""
+              aria-hidden="true"
+            />
+          ) : null}
+          {showComingSoonVideo || showGuestVideo ? (
             <video
               ref={videoRef}
               className={[
@@ -407,7 +421,6 @@ export const Home = () => {
                   setVideoEnded(true);
                   setShowContent(true);
                 }
-                // Show footer if video fails. Full hero copy stays hidden in coming-soon mode.
                 setTimeout(() => setShowFooter(true), 500);
               }}
               aria-hidden="true"
@@ -460,7 +473,10 @@ export const Home = () => {
             </div>
           </div>
         ) : (
-          <div className="home-landing__coming-soon-shell">
+          <div
+            className="home-landing__content home-landing__content--visible home-landing__content--coming-soon"
+            data-testid="coming-soon-hero-copy"
+          >
             <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">
               <div className="home-landing__headline">
                 <h1 className="home-landing__title">WRDLNKDN</h1>

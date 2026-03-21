@@ -149,6 +149,11 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
+          // Prod coming soon: matte in the scroll column so grid/photos never bleed beside the hero
+          ...(suppressShellBackgroundArt && {
+            bgcolor: '#05070f',
+            backgroundColor: '#05070f',
+          }),
           // Hide scrollbar on home page
           ...(isHome && {
             '&::-webkit-scrollbar': {
@@ -171,6 +176,10 @@ const LayoutContent = () => {
             flexDirection: 'column',
             overflowX: 'hidden',
             overflowY: 'visible',
+            ...(suppressShellBackgroundArt && {
+              bgcolor: '#05070f',
+              backgroundColor: '#05070f',
+            }),
           }}
         >
           <ErrorBoundary>

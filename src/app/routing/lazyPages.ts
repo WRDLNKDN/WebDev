@@ -58,7 +58,7 @@ export const Feed = lazyWithRetry(async () => {
   return { default: m.Feed };
 });
 
-export const Home = lazy(async () => {
+export const Home = lazyWithRetry(async () => {
   const m = await import('../../pages/home/Home');
   return { default: m.Home };
 });

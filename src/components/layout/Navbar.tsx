@@ -124,8 +124,8 @@ export const Navbar = () => {
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const isHomePath = path === '/' || path === '/home';
-  /** Coming soon + home: logo only — no hamburger (avoids drawer / extra chrome). */
-  const hideMobileNavOnComingSoonHome =
+  /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
+  const minimalComingSoonHomeNavbar =
     comingSoon && !isAdminActive && isHomePath;
   // Show authed header if session exists and either:
   // 1. Profile is confirmed onboarded, OR
@@ -182,15 +182,13 @@ export const Navbar = () => {
       }, delay),
     );
 
-    // Guard: if getSession() hangs or is very slow, stop showing spinner and resolve state
-    const sessionGuardTimer = setTimeout(async () => {
-      if (cancelled) return;
-      const { data } = await supabase.auth.getSession();
+    // Guard: never await getSession again here — on slow mobile networks a second hung
+    // getSession() left sessionLoaded false forever (perpetual navbar spinner).
+    const sessionGuardTimer = setTimeout(() => {
       if (!cancelled) {
-        setSession(data.session ?? null);
         setSessionLoaded(true);
       }
-    }, 2500);
+    }, 3000);
 
     return () => {
       cancelled = true;
@@ -447,13 +445,13 @@ export const Navbar = () => {
             gap: { xs: 0.35, sm: 0.75, md: 1 },
             overflow: 'visible',
             ...(isMobile &&
-              hideMobileNavOnComingSoonHome && {
+              minimalComingSoonHomeNavbar && {
                 justifyContent: 'center',
               }),
           }}
         >
           {/* Mobile: hamburger — hidden on home during coming soon (video + text only) */}
-          {isMobile && !hideMobileNavOnComingSoonHome && (
+          {isMobile && !minimalComingSoonHomeNavbar && (
             <Tooltip title="Open menu">
               <IconButton
                 color="inherit"
@@ -811,12 +809,12 @@ export const Navbar = () => {
             </Box>
           )}
 
-          {!(isMobile && hideMobileNavOnComingSoonHome) && (
+          {!(isMobile && minimalComingSoonHomeNavbar) && (
             <Box sx={{ flexGrow: 1 }} />
           )}
 
-          {/* Desktop auth: hidden on mobile (shown in drawer) */}
-          {!isMobile && (
+          {/* Desktop auth: hidden on mobile (shown in drawer); hidden on coming-soon home (no stuck spinner). */}
+          {!isMobile && !minimalComingSoonHomeNavbar && (
             <Stack direction="row" spacing={2} alignItems="center">
               {path === '/auth/callback' ? null : !sessionLoaded ||
                 (session && !onboardingLoaded) ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
@@ -1040,7 +1038,7 @@ export const Navbar = () => {
           )}
 
           {/* Mobile: Join/Sign in — real links + touch-action so iOS doesn't eat taps */}
-          {isMobile && (
+          {isMobile && !minimalComingSoonHomeNavbar && (
             <Stack
               direction="row"
               spacing={0.5}

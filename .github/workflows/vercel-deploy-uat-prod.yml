@@ -105,11 +105,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-uat
 
-    # Auto-deploy to PROD after UAT succeeds on push to main.
-    # For workflow_dispatch, only deploy if "Deploy to PRODUCTION" checkbox is checked.
-    if:
-      ${{ github.event_name == 'push' || (github.event_name ==
-      'workflow_dispatch' && inputs.deploy_prod) }}
+    # Prod deploys only when you explicitly request it via workflow_dispatch with "Also deploy production" checked.
+    # Push to main deploys UAT only; no automatic prod publish.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_prod }}
 
     env:
       # Opt into Node.js 24 for JavaScript actions (actions/checkout, actions/setup-node)

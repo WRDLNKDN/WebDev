@@ -13,7 +13,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateGroupDialog } from '../chat/dialogs/CreateGroupDialog';
 import { StartDmDialog } from '../chat/dialogs/StartDmDialog';
-import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import {
+  useFeatureFlag,
+  usePublicComingSoonMode,
+} from '../../context/FeatureFlagsContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -45,6 +48,7 @@ export const MessengerOverlay = () => {
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
   const chatEnabled = useFeatureFlag('chat');
+  const comingSoon = usePublicComingSoonMode();
   const floatingButtonBg = 'rgba(12, 18, 29, 0.96)';
   const floatingButtonBorder = 'rgba(141,188,229,0.34)';
 
@@ -135,7 +139,7 @@ export const MessengerOverlay = () => {
     [session?.user?.id],
   );
 
-  if (!session?.user?.id || !chatEnabled) return null;
+  if (comingSoon || !session?.user?.id || !chatEnabled) return null;
 
   const showFloatingChat = Boolean(messenger && !messenger.overlayOpen);
   const floatingChatButton = showFloatingChat ? (

@@ -6,7 +6,10 @@ import {
   MessengerProvider,
   useMessenger,
 } from '../../context/MessengerContext';
-import { useFeatureFlag } from '../../context/FeatureFlagsContext';
+import {
+  useFeatureFlag,
+  usePublicComingSoonMode,
+} from '../../context/FeatureFlagsContext';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -38,6 +41,8 @@ const LayoutContent = () => {
   const isAdmin = pathname.startsWith('/admin');
   const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
+  const comingSoon = usePublicComingSoonMode();
+  const showMessengerUi = !isAdmin && chatEnabled && !comingSoon;
   const isLight = theme.palette.mode === 'light';
 
   useEffect(() => {
@@ -172,12 +177,12 @@ const LayoutContent = () => {
           </Suspense>
         </Box>
       )}
-      {!isAdmin && chatEnabled && (
+      {showMessengerUi && (
         <Suspense fallback={null}>
           <MessengerOverlay />
         </Suspense>
       )}
-      {!isAdmin && chatEnabled && session?.user && messenger?.popoverRoomId && (
+      {showMessengerUi && session?.user && messenger?.popoverRoomId && (
         <Suspense fallback={null}>
           <ChatPopover
             roomId={messenger.popoverRoomId}

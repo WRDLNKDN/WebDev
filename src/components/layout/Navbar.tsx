@@ -44,8 +44,11 @@ import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { useFeatureFlag } from '../../context/FeatureFlagsContext';
-import { COMING_SOON_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
+import {
+  useFeatureFlag,
+  usePublicComingSoonMode,
+} from '../../context/FeatureFlagsContext';
+import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
@@ -69,11 +72,6 @@ const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 const SEARCH_MAX_QUERY_CHARS = 500;
 
-/** When true, hide auth buttons (e.g. wrdlnkdn.vercel.app coming soon preview). */
-const isComingSoonHost = (): boolean =>
-  typeof window !== 'undefined' &&
-  window.location.hostname === 'wrdlnkdn.vercel.app';
-
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,7 +79,7 @@ export const Navbar = () => {
   const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
-  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
+  const comingSoon = usePublicComingSoonMode();
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
   const isAdminActive = path.startsWith('/admin');
@@ -125,6 +123,10 @@ export const Navbar = () => {
   const { showToast } = useAppToast();
   const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
+  const isHomePath = path === '/' || path === '/home';
+  /** Coming soon + home: logo only — no hamburger (avoids drawer / extra chrome). */
+  const hideMobileNavOnComingSoonHome =
+    comingSoon && !isAdminActive && isHomePath;
   // Show authed header if session exists and either:
   // 1. Profile is confirmed onboarded, OR
   // 2. Onboarding check is still loading (fail-open to show icon while checking)
@@ -444,10 +446,14 @@ export const Navbar = () => {
             minHeight: { xs: 48, sm: 56 },
             gap: { xs: 0.35, sm: 0.75, md: 1 },
             overflow: 'visible',
+            ...(isMobile &&
+              hideMobileNavOnComingSoonHome && {
+                justifyContent: 'center',
+              }),
           }}
         >
-          {/* Mobile: hamburger menu */}
-          {isMobile && (
+          {/* Mobile: hamburger — hidden on home during coming soon (video + text only) */}
+          {isMobile && !hideMobileNavOnComingSoonHome && (
             <Tooltip title="Open menu">
               <IconButton
                 color="inherit"
@@ -787,7 +793,7 @@ export const Navbar = () => {
                   )}
                 </>
               )}
-              {storeEnabled && (
+              {storeEnabled && (!comingSoon || isAdminActive) && (
                 <Button
                   component={RouterLink}
                   to="/store"
@@ -805,7 +811,9 @@ export const Navbar = () => {
             </Box>
           )}
 
-          <Box sx={{ flexGrow: 1 }} />
+          {!(isMobile && hideMobileNavOnComingSoonHome) && (
+            <Box sx={{ flexGrow: 1 }} />
+          )}
 
           {/* Desktop auth: hidden on mobile (shown in drawer) */}
           {!isMobile && (
@@ -817,9 +825,9 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
+              ) : !session && (!comingSoon || isAdminActive) ? (
                 <>
-                  {/* Guest: Join + Sign in — same spacing and hover as other nav items */}
+                  {/* Guest: Join + Sign in — only when signed out (never show if session exists) */}
                   {!isJoinActive && (
                     <Button
                       component="button"
@@ -1052,7 +1060,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !showAuthedHeader && (!comingSoon || isAdminActive) ? (
+              ) : !session && (!comingSoon || isAdminActive) ? (
                 <>
                   {!isJoinActive && (
                     <Button
@@ -1105,85 +1113,96 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  {showAuthedHeader && dashboardEnabled && (
-                    <Tooltip
-                      title={
-                        notificationsUnread > 0
-                          ? `${notificationsUnread} unread notifications`
-                          : 'Notifications'
-                      }
-                    >
-                      <IconButton
-                        component={RouterLink}
-                        to="/dashboard/notifications"
-                        aria-label={
-                          notificationsUnread > 0
-                            ? `${notificationsUnread} unread notifications`
-                            : 'Notifications'
-                        }
-                        sx={{
-                          color: 'white',
-                          ...(path === '/dashboard/notifications' && {
-                            bgcolor: 'rgba(156,187,217,0.26)',
-                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                          }),
-                        }}
-                      >
-                        <Badge
-                          badgeContent={
+                  {/* Match desktop: hide notifications + avatar in coming soon unless /admin */}
+                  {(!comingSoon || isAdminActive) && (
+                    <>
+                      {showAuthedHeader && dashboardEnabled && (
+                        <Tooltip
+                          title={
                             notificationsUnread > 0
-                              ? notificationsUnread
-                              : undefined
+                              ? `${notificationsUnread} unread notifications`
+                              : 'Notifications'
                           }
-                          color="error"
                         >
-                          <NotificationsIcon sx={{ fontSize: 22 }} />
-                        </Badge>
-                      </IconButton>
-                    </Tooltip>
+                          <IconButton
+                            component={RouterLink}
+                            to="/dashboard/notifications"
+                            aria-label={
+                              notificationsUnread > 0
+                                ? `${notificationsUnread} unread notifications`
+                                : 'Notifications'
+                            }
+                            sx={{
+                              color: 'white',
+                              ...(path === '/dashboard/notifications' && {
+                                bgcolor: 'rgba(156,187,217,0.26)',
+                                '&:hover': {
+                                  bgcolor: 'rgba(141,188,229,0.34)',
+                                },
+                              }),
+                            }}
+                          >
+                            <Badge
+                              badgeContent={
+                                notificationsUnread > 0
+                                  ? notificationsUnread
+                                  : undefined
+                              }
+                              color="error"
+                            >
+                              <NotificationsIcon sx={{ fontSize: 22 }} />
+                            </Badge>
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Account menu">
+                        <IconButton
+                          type="button"
+                          onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                          aria-label="Account menu"
+                          aria-haspopup="true"
+                          aria-expanded={Boolean(avatarMenuAnchor)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.25,
+                            p: 0.25,
+                            color: 'inherit',
+                            borderRadius: 9999,
+                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '50%',
+                              border: '2px solid rgba(255,255,255,0.4)',
+                              p: '1px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ProfileAvatar
+                              src={avatarUrl ?? undefined}
+                              alt={
+                                session?.user?.user_metadata?.full_name ||
+                                'User'
+                              }
+                              size="small"
+                              sx={{ width: 24, height: 24 }}
+                            />
+                          </Box>
+                          <KeyboardArrowDownIcon
+                            sx={{
+                              fontSize: 16,
+                              color: 'rgba(255,255,255,0.8)',
+                            }}
+                          />
+                        </IconButton>
+                      </Tooltip>
+                    </>
                   )}
-                  <Tooltip title="Account menu">
-                    <IconButton
-                      type="button"
-                      onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                      aria-label="Account menu"
-                      aria-haspopup="true"
-                      aria-expanded={Boolean(avatarMenuAnchor)}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.25,
-                        p: 0.25,
-                        color: 'inherit',
-                        borderRadius: 9999,
-                        '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '50%',
-                          border: '2px solid rgba(255,255,255,0.4)',
-                          p: '1px',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <ProfileAvatar
-                          src={avatarUrl ?? undefined}
-                          alt={
-                            session?.user?.user_metadata?.full_name || 'User'
-                          }
-                          size="small"
-                          sx={{ width: 24, height: 24 }}
-                        />
-                      </Box>
-                      <KeyboardArrowDownIcon
-                        sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
-                      />
-                    </IconButton>
-                  </Tooltip>
                 </>
               )}
             </Stack>
@@ -1206,7 +1225,7 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!showAuthedHeader && (!comingSoon || isAdminActive) && (
+            {!session && (!comingSoon || isAdminActive) && (
               <>
                 {!isJoinActive && (
                   <Button

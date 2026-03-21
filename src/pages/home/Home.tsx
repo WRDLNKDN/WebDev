@@ -330,8 +330,8 @@ export const Home = () => {
     };
   }, []);
 
-  // Authenticated and onboarded: redirect to /dashboard (Home is public only).
-  if (session && onboarded === true) {
+  // Authenticated and onboarded: redirect to dashboard unless public site is in coming soon (stay on marketing home).
+  if (session && onboarded === true && !comingSoon) {
     return <Navigate to="/dashboard" replace />;
   }
 

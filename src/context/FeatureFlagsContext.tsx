@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
 
 export type FeatureFlagsMap = Record<string, boolean>;
 
@@ -91,17 +92,21 @@ export function useFeatureFlags(): FeatureFlagsContextValue {
 }
 
 /**
- * Returns true if the feature is enabled. While loading or if key is missing, returns true (safe default).
- * Exception: coming_soon defaults to true (enabled) when not in database.
+ * Returns true if the feature is enabled. While loading, most flags default to true (safe for nav).
+ * `coming_soon` defaults to ON while loading or if missing from DB; only explicit `enabled: false` turns it off.
  */
 export function useFeatureFlag(key: string): boolean {
   const { flags, loading } = useFeatureFlags();
-  if (loading) {
-    // Default coming_soon to true (enabled) while loading
-    if (key === 'coming_soon') return true;
-    return true;
+  if (key === COMING_SOON_FLAG) {
+    if (loading) return true;
+    if (flags[key] === undefined) return true;
+    return flags[key] === true;
   }
-  // coming_soon defaults to true if not in database
-  if (key === 'coming_soon' && flags[key] === undefined) return true;
+  if (loading) return true;
   return flags[key] !== false;
+}
+
+/** Public marketing “coming soon” — same as `coming_soon` flag; use for navbar + home CTAs. */
+export function usePublicComingSoonMode(): boolean {
+  return useFeatureFlag(COMING_SOON_FLAG);
 }

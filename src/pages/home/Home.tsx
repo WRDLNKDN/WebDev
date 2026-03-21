@@ -78,8 +78,10 @@ export const Home = () => {
   const ensureVideoPlayback = useCallback(() => {
     const el = videoRef.current;
     if (!el || prefersReducedMotion || videoFailed) {
-      // If no video, show content immediately
-      setShowContent(true);
+      // If no video, show content immediately unless production is in coming-soon mode.
+      if (!comingSoon) {
+        setShowContent(true);
+      }
       setTimeout(() => setShowFooter(true), 500);
       return;
     }
@@ -88,18 +90,22 @@ export const Home = () => {
       const playAttempt = el.play();
       if (playAttempt && typeof playAttempt.catch === 'function') {
         void playAttempt.catch(() => {
-          // If autoplay is blocked, show content as fallback
-          setShowContent(true);
+          // If autoplay is blocked, only reveal the full content outside coming-soon mode.
+          if (!comingSoon) {
+            setShowContent(true);
+          }
           setTimeout(() => setShowFooter(true), 500);
         });
       }
       // Video is playing - content will show when video ends or is clicked
     } catch {
-      // If play fails, show content as fallback
-      setShowContent(true);
+      // If play fails, only reveal the full content outside coming-soon mode.
+      if (!comingSoon) {
+        setShowContent(true);
+      }
       setTimeout(() => setShowFooter(true), 500);
     }
-  }, [prefersReducedMotion, videoFailed]);
+  }, [comingSoon, prefersReducedMotion, videoFailed]);
 
   useEffect(() => {
     let mounted = true;
@@ -257,13 +263,13 @@ export const Home = () => {
   // Scroll tracking removed - no scrolling on home page
 
   const handleVideoEnded = () => {
-    // Show content when video ends
-    setShowContent(true);
-    // Coming soon: keep full hero + last frame + overlay — no fade-to-grid / collapse swap
+    // Coming soon keeps the hero clean: no overlay copy, only reveal the footer after playback.
     if (comingSoon) {
       setTimeout(() => setShowFooter(true), 800);
       return;
     }
+    // Show content when video ends
+    setShowContent(true);
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
       // After video fades out, collapse the hero area
@@ -281,13 +287,13 @@ export const Home = () => {
   /** Tap video/backdrop to end hero motion early and show content immediately. */
   const handleHeroSkip = useCallback(() => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
-    // Show content immediately when clicked
-    setShowContent(true);
     if (comingSoon) {
       videoRef.current?.pause();
       setShowFooter(true);
       return;
     }
+    // Show content immediately when clicked
+    setShowContent(true);
     setHeroPhase('dimmed');
     videoRef.current?.pause();
     // Collapse after fade transition
@@ -310,10 +316,9 @@ export const Home = () => {
   }, [ensureVideoPlayback]);
 
   // Control footer visibility via data attribute (homeLanding.css hides footer until this is set).
-  // Coming soon: show site footer immediately — do not wait for video end.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (showFooter || comingSoon) {
+    if (showFooter) {
       document.documentElement.setAttribute('data-footer-visible', 'true');
     } else {
       document.documentElement.removeAttribute('data-footer-visible');
@@ -380,9 +385,9 @@ export const Home = () => {
                 if (!comingSoon) {
                   setHeroPhase('dimmed');
                   setVideoEnded(true);
+                  setShowContent(true);
                 }
-                // Show content and footer if video fails
-                setShowContent(true);
+                // Show footer if video fails. Full hero copy stays hidden in coming-soon mode.
                 setTimeout(() => setShowFooter(true), 500);
               }}
               aria-hidden="true"
@@ -404,37 +409,37 @@ export const Home = () => {
           />
         </div>
 
-        <div
-          className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
-          data-testid="app-main"
-        >
-          <div className="home-landing__hero-grid">
-            <div className="home-landing__headline">
-              {!comingSoon && error ? (
-                <div className="home-landing__error" role="alert">
-                  {error}
+        {!comingSoon ? (
+          <div
+            className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
+            data-testid="app-main"
+          >
+            <div className="home-landing__hero-grid">
+              <div className="home-landing__headline">
+                {error ? (
+                  <div className="home-landing__error" role="alert">
+                    {error}
+                  </div>
+                ) : null}
+                <h1 className="home-landing__title">WRDLNKDN</h1>
+                <div className="home-landing__copy">
+                  <p className="home-landing__pronunciation">
+                    (Weird Link-uh-din)
+                  </p>
+                  <p className="home-landing__tagline">
+                    Business, but weirder.
+                  </p>
+                  <p className="home-landing__subcopy">
+                    A networking space for people who think differently
+                  </p>
                 </div>
-              ) : null}
-              <h1 className="home-landing__title">WRDLNKDN</h1>
-              <div className="home-landing__copy">
-                <p className="home-landing__pronunciation">
-                  (Weird Link-uh-din)
-                </p>
-                <p className="home-landing__tagline">Business, but weirder.</p>
-                <p className="home-landing__subcopy">
-                  A networking space for people who think differently
-                </p>
+              </div>
+              <div className="home-landing__cta">
+                <GuestView buttonsOnly />
               </div>
             </div>
-            <div className="home-landing__cta">
-              {comingSoon ? (
-                <p className="home-landing__coming-soon">Coming soon</p>
-              ) : (
-                <GuestView buttonsOnly />
-              )}
-            </div>
           </div>
-        </div>
+        ) : null}
       </section>
       {/* Sections removed - no scrolling on home page */}
     </main>

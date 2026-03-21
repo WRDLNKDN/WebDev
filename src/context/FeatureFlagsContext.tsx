@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
-import { isProduction } from '../lib/utils/env';
+import { isProduction, isUat } from '../lib/utils/env';
 
 export type FeatureFlagsMap = Record<string, boolean>;
 const DEFAULT_FLAG_VALUES: FeatureFlagsMap = {
@@ -118,12 +118,15 @@ export function getFeatureFlagValue(
 }
 
 /**
- * Public marketing “coming soon” (navbar, home CTAs, messenger off, etc.).
- * Only **production** builds honor the DB flag — UAT and local dev always behave as “live” for testing.
+ * Public marketing "coming soon" (navbar, home CTAs, messenger off, etc.).
+ * - PROD: controlled by the DB feature flag (toggle in Admin panel without deploy).
+ * - UAT:  also honors the DB feature flag so UAT can mirror PROD coming-soon state.
+ * - Local dev: always false (live) so developers see the full site.
  */
 export function usePublicComingSoonMode(): boolean {
   const flagOn = useFeatureFlag(COMING_SOON_FLAG);
-  if (!isProduction) {
+  // Local dev always shows the live site — no coming soon during development.
+  if (!isProduction && !isUat) {
     return false;
   }
   return flagOn;

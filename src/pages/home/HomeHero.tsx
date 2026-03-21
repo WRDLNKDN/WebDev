@@ -1,10 +1,11 @@
+import type { RefObject } from 'react';
 import { Alert, Box, Container, Grid, Stack, Typography } from '@mui/material';
 import { GuestView } from '../../components/home/GuestView';
 
 type HomeHeroProps = {
   error: string | null;
   onClearError: () => void;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLVideoElement | null>;
   videoSrc: string;
   showContent: boolean;
   heroPhase: 'playing' | 'dimmed';
@@ -44,10 +45,12 @@ export const HomeHero = ({
     <Box
       component="video"
       ref={videoRef}
+      aria-hidden="true"
       autoPlay
       muted
       loop={false}
       playsInline
+      poster="/assets/video/hero-bg-poster.jpg"
       onLoadedMetadata={onLoadedMetadata}
       onCanPlay={onCanPlay}
       onEnded={onVideoEnded}

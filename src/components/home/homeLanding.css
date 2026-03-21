@@ -57,18 +57,13 @@
   width: 100%;
 }
 
-/* Collapsed state after video ends - compact hero with just sign-in content */
+/* Collapsed state after video ends - keep full height so centered content stays centered */
 .home-landing__hero--collapsed {
-  flex: 0 0 auto;
-  min-height: auto;
-  padding: 3rem 0 4rem;
-  align-items: flex-start;
-}
-
-@media (min-width: 768px) {
-  .home-landing__hero--collapsed {
-    padding: 4rem 0 5rem;
-  }
+  /* Do NOT collapse height or change align-items — content uses position:absolute top:50%
+     so any height change breaks the vertical center. Keep hero full-height always. */
+  flex: 1 1 auto;
+  min-height: min(88dvh, 100vh);
+  align-items: center;
 }
 
 .home-landing__hero-backdrop {
@@ -76,9 +71,14 @@
   inset: 0;
   z-index: 0;
   cursor: pointer;
-  /* Matte behind video so no grid/photo peeks through letterboxing or edges (UAT + prod) */
-  background-color: #05070f;
+  /* Pure black during video — grid must NOT show while Weirdling plays */
+  background-color: #000000;
   overflow: hidden;
+}
+
+/* Reveal the matte/grid only after video ends and hero collapses */
+.home-landing__hero--collapsed .home-landing__hero-backdrop {
+  background-color: #05070f;
 }
 
 .home-landing__video,
@@ -94,15 +94,15 @@
   z-index: 0;
 }
 
-/* Hero video: full-bleed cover, bias to lower frame + nudge up so weirdling feet stay in frame */
+/* Hero video: full-bleed cover, anchored to bottom so weirdling feet stay in frame */
 .home-landing__video--focus-feet {
   object-fit: cover;
-  object-position: center 92%;
-  top: -11%;
+  object-position: center bottom;
+  top: 0;
   left: 0;
   right: 0;
   width: 100%;
-  height: 122%;
+  height: 100%;
   bottom: auto;
 }
 
@@ -114,8 +114,8 @@
 .home-landing__video-overlay {
   z-index: 1;
   pointer-events: none;
-  /* Slightly stronger while video plays so headline + CTAs stay readable */
-  background: rgba(5, 7, 15, 0.68);
+  /* Transparent during playback — no tint over the Weirdling video */
+  background: rgba(5, 7, 15, 0);
   transition: background-color 1s ease-out;
 }
 
@@ -123,10 +123,10 @@
   background: rgba(5, 7, 15, 0.92);
 }
 
-/* When hero is collapsed, fade overlay to transparent to reveal background grid */
+/* When hero is collapsed, keep overlay dark so grid doesn't bleed through during content fade-in */
 .home-landing__hero--collapsed .home-landing__video-overlay {
-  opacity: 0;
-  transition: opacity 0.6s ease-out 0.2s;
+  background: rgba(5, 7, 15, 0.97);
+  transition: background-color 0.6s ease-out 0.2s;
 }
 
 .home-landing__content {
@@ -255,12 +255,8 @@
   flex-direction: column;
   opacity: 1 !important;
   visibility: visible !important;
-  pointer-events: none;
-  transform: translate(-50%, -50%) translateY(0);
-}
-
-.home-landing__content--coming-soon .home-landing__hero-grid--coming-soon {
   pointer-events: auto;
+  transform: translate(-50%, -50%) translateY(0);
 }
 
 .home-landing__hero-grid--coming-soon {

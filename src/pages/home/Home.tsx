@@ -81,6 +81,12 @@ export const Home = () => {
     setTimeout(() => setShowFooter(true), 500);
   }, []);
 
+  // Coming soon: reveal content immediately without waiting for video
+  useEffect(() => {
+    if (!comingSoon) return;
+    revealComingSoonContent();
+  }, [comingSoon, revealComingSoonContent]);
+
   const ensureVideoPlayback = useCallback(() => {
     const el = videoRef.current;
     if (!el) {
@@ -349,11 +355,7 @@ export const Home = () => {
     }
   }, [showFooter, comingSoon]);
 
-  // Coming soon: show site footer without waiting on guest hero / video lifecycle
-  useEffect(() => {
-    if (!comingSoon) return;
-    setShowFooter(true);
-  }, [comingSoon]);
+  // Coming soon footer visibility handled in revealComingSoonContent effect above
 
   // Disable scrolling on home page
   useEffect(() => {

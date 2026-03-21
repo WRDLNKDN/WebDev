@@ -300,16 +300,16 @@ export const Home = () => {
     ensureVideoPlayback();
   }, [ensureVideoPlayback]);
 
-  // Control footer visibility via data attribute
+  // Control footer visibility via data attribute (homeLanding.css hides footer until this is set).
+  // Coming soon: show site footer immediately — do not wait for video end.
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      if (showFooter) {
-        document.documentElement.setAttribute('data-footer-visible', 'true');
-      } else {
-        document.documentElement.removeAttribute('data-footer-visible');
-      }
+    if (typeof document === 'undefined') return;
+    if (showFooter || comingSoon) {
+      document.documentElement.setAttribute('data-footer-visible', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-footer-visible');
     }
-  }, [showFooter]);
+  }, [showFooter, comingSoon]);
 
   // Disable scrolling on home page
   useEffect(() => {

@@ -1,7 +1,12 @@
+/* Fill Layout main (flex column) so navbar + this + site footer fit in 100dvh — avoid 100vh forcing footer off-screen */
 .home-landing {
-  min-height: 100vh;
-  max-height: 100vh;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-default);
   color: var(--color-text-primary);
   overflow: hidden;
@@ -17,11 +22,10 @@
 
 .home-landing__hero {
   position: relative;
-  /* Full viewport so hero video isn’t cropped short */
-  height: 100vh;
-  height: 100svh;
-  max-height: 100vh;
-  max-height: 100svh;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,6 +36,7 @@
 
 /* Collapsed state after video ends - compact hero with just sign-in content */
 .home-landing__hero--collapsed {
+  flex: 0 0 auto;
   min-height: auto;
   padding: 3rem 0 4rem;
   align-items: flex-start;

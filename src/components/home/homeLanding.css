@@ -7,7 +7,8 @@
   max-height: none;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-default);
+  /* Let Layout body background (grid + /assets/background-*.png) show through on UAT/PROD */
+  background: transparent;
   color: var(--color-text-primary);
   overflow: hidden;
   position: relative;

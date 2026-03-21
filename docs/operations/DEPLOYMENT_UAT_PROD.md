@@ -11,6 +11,15 @@
 - **PROD:** [wrdlnkdn.vercel.app](https://wrdlnkdn.vercel.app/) →
   `rpcaazmxymymqdejevtb.supabase.co`
 
+## Coming soon mode (production only)
+
+The `coming_soon` feature flag affects **public** chrome (home CTA, login
+buttons, floating chat, etc.) only when **`VITE_APP_ENV=production`** is baked
+into the build. **UAT** (`VITE_APP_ENV=uat`) and **local dev** always behave as
+the full site so [webdev-uat.vercel.app](https://webdev-uat.vercel.app/) stays
+usable for testing. Toggle the flag in Admin → Feature flags on the
+**production** Supabase project when you are ready to go live.
+
 ## Problem: UAT Sign-in or Refresh Shows PROD Supabase
 
 If the Google "Choose an account" dialog shows

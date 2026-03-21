@@ -16,7 +16,7 @@ export const FLAG_LABELS: Record<string, string> = {
 /** Hover descriptions shown for each toggle. */
 const FLAG_DESCRIPTIONS: Record<string, string> = {
   coming_soon:
-    'When enabled, shows "Coming soon" message on home page and hides all login/auth UI. Admin routes remain accessible.',
+    'Production builds only (VITE_APP_ENV=production). UAT/dev always show the full site. When on, home shows Coming soon and hides login/chat chrome; admin routes stay reachable.',
   feed: 'Controls access to the main Feed surface.',
   dashboard:
     'Controls access to Dashboard, notifications, and settings surfaces.',

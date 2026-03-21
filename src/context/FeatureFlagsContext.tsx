@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
+import { isProduction } from '../lib/utils/env';
 
 export type FeatureFlagsMap = Record<string, boolean>;
 
@@ -106,7 +107,14 @@ export function useFeatureFlag(key: string): boolean {
   return flags[key] !== false;
 }
 
-/** Public marketing “coming soon” — same as `coming_soon` flag; use for navbar + home CTAs. */
+/**
+ * Public marketing “coming soon” (navbar, home CTAs, messenger off, etc.).
+ * Only **production** builds honor the DB flag — UAT and local dev always behave as “live” for testing.
+ */
 export function usePublicComingSoonMode(): boolean {
-  return useFeatureFlag(COMING_SOON_FLAG);
+  const flagOn = useFeatureFlag(COMING_SOON_FLAG);
+  if (!isProduction) {
+    return false;
+  }
+  return flagOn;
 }

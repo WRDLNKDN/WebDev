@@ -3,8 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import '../../components/home/homeLanding.css';
-import { useFeatureFlag } from '../../context/FeatureFlagsContext';
-import { COMING_SOON_FLAG } from '../../lib/featureFlags/keys';
+import { usePublicComingSoonMode } from '../../context/FeatureFlagsContext';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
@@ -53,7 +52,7 @@ const getStoredSessionTokens = async (): Promise<{
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const authStartedRef = useRef(false);
-  const comingSoon = useFeatureFlag(COMING_SOON_FLAG);
+  const comingSoon = usePublicComingSoonMode();
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);

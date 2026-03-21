@@ -70,6 +70,12 @@
   z-index: 0;
 }
 
+/* Coming soon: show full frame (weirdlings / feet) — cover was cropping the bottom */
+.home-landing__video--contain {
+  object-fit: contain;
+  object-position: center bottom;
+}
+
 .home-landing__video--dimmed {
   opacity: 0;
   transition: opacity 1s ease-out;
@@ -136,6 +142,24 @@
   justify-items: center;
   width: min(640px, 100%);
   margin: 0 auto;
+}
+
+.home-landing__hero-grid--coming-soon-only {
+  gap: 0;
+  width: min(100%, calc(100% - 2rem));
+}
+
+.home-landing__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .home-landing__headline {

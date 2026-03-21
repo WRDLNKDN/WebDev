@@ -347,7 +347,13 @@ export const Home = () => {
           {!prefersReducedMotion && !videoFailed ? (
             <video
               ref={videoRef}
-              className={`home-landing__video${heroPhase === 'dimmed' ? ' home-landing__video--dimmed' : ''}`}
+              className={[
+                'home-landing__video',
+                heroPhase === 'dimmed' ? 'home-landing__video--dimmed' : '',
+                comingSoon ? 'home-landing__video--contain' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               autoPlay
               muted
               loop={false}
@@ -390,24 +396,32 @@ export const Home = () => {
           className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
           data-testid="app-main"
         >
-          <div className="home-landing__hero-grid">
-            <div className="home-landing__headline">
-              {error && !comingSoon ? (
-                <div className="home-landing__error" role="alert">
-                  {error}
+          <div
+            className={`home-landing__hero-grid${comingSoon ? ' home-landing__hero-grid--coming-soon-only' : ''}`}
+          >
+            {comingSoon ? (
+              <h1 className="home-landing__sr-only">WRDLNKDN</h1>
+            ) : (
+              <div className="home-landing__headline">
+                {error ? (
+                  <div className="home-landing__error" role="alert">
+                    {error}
+                  </div>
+                ) : null}
+                <h1 className="home-landing__title">WRDLNKDN</h1>
+                <div className="home-landing__copy">
+                  <p className="home-landing__pronunciation">
+                    (Weird Link-uh-din)
+                  </p>
+                  <p className="home-landing__tagline">
+                    Business, but weirder.
+                  </p>
+                  <p className="home-landing__subcopy">
+                    A networking space for people who think differently
+                  </p>
                 </div>
-              ) : null}
-              <h1 className="home-landing__title">WRDLNKDN</h1>
-              <div className="home-landing__copy">
-                <p className="home-landing__pronunciation">
-                  (Weird Link-uh-din)
-                </p>
-                <p className="home-landing__tagline">Business, but weirder.</p>
-                <p className="home-landing__subcopy">
-                  A networking space for people who think differently
-                </p>
               </div>
-            </div>
+            )}
             <div className="home-landing__cta">
               {comingSoon ? (
                 <p className="home-landing__coming-soon">Coming soon</p>

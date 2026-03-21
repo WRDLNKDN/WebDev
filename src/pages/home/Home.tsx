@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
@@ -7,6 +8,7 @@ import { usePublicComingSoonMode } from '../../context/FeatureFlagsContext';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
@@ -53,6 +55,7 @@ export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const authStartedRef = useRef(false);
   const comingSoon = usePublicComingSoonMode();
+  const uatBannerOffset = useUatBannerOffset();
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);
@@ -75,14 +78,22 @@ export const Home = () => {
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
+  const revealComingSoonContent = useCallback(() => {
+    setHeroPhase('dimmed');
+    setShowContent(true);
+    setTimeout(() => setShowFooter(true), 500);
+  }, []);
+
   const ensureVideoPlayback = useCallback(() => {
     const el = videoRef.current;
     if (!el || prefersReducedMotion || videoFailed) {
-      // If no video, show content immediately unless production is in coming-soon mode.
-      if (!comingSoon) {
+      if (comingSoon) {
+        revealComingSoonContent();
+      } else {
+        // If no video, show content immediately unless production is in coming-soon mode.
         setShowContent(true);
+        setTimeout(() => setShowFooter(true), 500);
       }
-      setTimeout(() => setShowFooter(true), 500);
       return;
     }
     // Don't show content yet - wait for video to end or be clicked
@@ -90,22 +101,26 @@ export const Home = () => {
       const playAttempt = el.play();
       if (playAttempt && typeof playAttempt.catch === 'function') {
         void playAttempt.catch(() => {
-          // If autoplay is blocked, only reveal the full content outside coming-soon mode.
-          if (!comingSoon) {
+          if (comingSoon) {
+            revealComingSoonContent();
+          } else {
+            // If autoplay is blocked, only reveal the full content outside coming-soon mode.
             setShowContent(true);
+            setTimeout(() => setShowFooter(true), 500);
           }
-          setTimeout(() => setShowFooter(true), 500);
         });
       }
       // Video is playing - content will show when video ends or is clicked
     } catch {
-      // If play fails, only reveal the full content outside coming-soon mode.
-      if (!comingSoon) {
+      if (comingSoon) {
+        revealComingSoonContent();
+      } else {
+        // If play fails, only reveal the full content outside coming-soon mode.
         setShowContent(true);
+        setTimeout(() => setShowFooter(true), 500);
       }
-      setTimeout(() => setShowFooter(true), 500);
     }
-  }, [comingSoon, prefersReducedMotion, videoFailed]);
+  }, [comingSoon, prefersReducedMotion, revealComingSoonContent, videoFailed]);
 
   useEffect(() => {
     let mounted = true;
@@ -263,8 +278,8 @@ export const Home = () => {
   // Scroll tracking removed - no scrolling on home page
 
   const handleVideoEnded = () => {
-    // Coming soon keeps the hero as a full-screen holding page.
     if (comingSoon) {
+      revealComingSoonContent();
       return;
     }
     // Show content when video ends
@@ -288,6 +303,7 @@ export const Home = () => {
     if (prefersReducedMotion || videoFailed || heroPhase === 'dimmed') return;
     if (comingSoon) {
       videoRef.current?.pause();
+      revealComingSoonContent();
       return;
     }
     // Show content immediately when clicked
@@ -299,7 +315,13 @@ export const Home = () => {
       setVideoEnded(true);
       setTimeout(() => setShowFooter(true), 800);
     }, 1000);
-  }, [prefersReducedMotion, videoFailed, heroPhase, comingSoon]);
+  }, [
+    prefersReducedMotion,
+    videoFailed,
+    heroPhase,
+    comingSoon,
+    revealComingSoonContent,
+  ]);
 
   // 1.5x playback improves pacing; respect prefers-reduced-motion
   const setPlaybackRate = useCallback(() => {
@@ -365,6 +387,11 @@ export const Home = () => {
         .filter(Boolean)
         .join(' ')}
       data-testid="signed-out-landing"
+      style={
+        {
+          '--home-banner-offset': `${uatBannerOffset}px`,
+        } as CSSProperties
+      }
     >
       <section
         className={[
@@ -416,12 +443,14 @@ export const Home = () => {
               onError={(e) => {
                 console.error('Video error:', e);
                 setVideoFailed(true);
-                if (!comingSoon) {
+                if (comingSoon) {
+                  revealComingSoonContent();
+                } else {
                   setHeroPhase('dimmed');
                   setVideoEnded(true);
                   setShowContent(true);
+                  setTimeout(() => setShowFooter(true), 500);
                 }
-                setTimeout(() => setShowFooter(true), 500);
               }}
               aria-hidden="true"
             >
@@ -474,7 +503,7 @@ export const Home = () => {
           </div>
         ) : (
           <div
-            className="home-landing__content home-landing__content--visible home-landing__content--coming-soon"
+            className={`home-landing__content home-landing__content--coming-soon${showContent ? ' home-landing__content--visible' : ''}`}
             data-testid="coming-soon-hero-copy"
           >
             <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">

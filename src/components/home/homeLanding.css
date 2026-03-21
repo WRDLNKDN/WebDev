@@ -1,5 +1,6 @@
 /* Fill Layout main (flex column) so navbar + this + site footer fit in 100dvh — avoid 100vh forcing footer off-screen */
 .home-landing {
+  --home-banner-offset: 0px;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -22,7 +23,10 @@
   flex: 1 1 auto;
   align-self: stretch;
   width: 100%;
-  min-height: min(calc(100dvh - 7rem), 100%);
+  min-height: max(
+    0px,
+    min(calc(100dvh - 7rem - var(--home-banner-offset)), 100%)
+  );
   display: flex;
   flex-direction: column;
   background: #05070f;
@@ -36,7 +40,13 @@
   position: relative;
   flex: 1 1 auto;
   /* Keep a real box for the video/backdrop (flex min-height:0 alone could collapse on some layouts) */
-  min-height: min(88dvh, 100vh);
+  min-height: max(
+    0px,
+    min(
+      calc(88dvh - var(--home-banner-offset)),
+      calc(100dvh - var(--home-banner-offset))
+    )
+  );
   height: auto;
   max-height: none;
   display: flex;
@@ -51,7 +61,13 @@
   flex: 1 1 auto;
   align-self: stretch;
   /* Do not use min-height: 0 only — it collapses the hero so the video disappears */
-  min-height: min(88dvh, calc(100dvh - 9rem));
+  min-height: max(
+    0px,
+    min(
+      calc(88dvh - var(--home-banner-offset)),
+      calc(100dvh - 9rem - var(--home-banner-offset))
+    )
+  );
   width: 100%;
 }
 

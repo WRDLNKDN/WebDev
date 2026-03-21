@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { Navigate, Route, Routes, type Location } from 'react-router-dom';
 import { RequireFeatureFlag } from '../../components/auth/RequireFeatureFlag';
 import { RequireOnboarded } from '../../components/auth/RequireOnboarded';
+import { RequirePublicSiteLive } from '../../components/auth/RequirePublicSiteLive';
 import { Layout } from '../../components/layout/Layout';
 import {
   DASHBOARD_FLAG,
@@ -103,7 +104,14 @@ export const AppRouteTree = ({
       }
     />
 
-    <Route path="/signin" element={<SignIn />} />
+    <Route
+      path="/signin"
+      element={
+        <RequirePublicSiteLive>
+          <SignIn />
+        </RequirePublicSiteLive>
+      }
+    />
     <Route path="/auth/callback" element={<AuthCallback />} />
 
     <Route element={<Layout />}>
@@ -112,7 +120,14 @@ export const AppRouteTree = ({
         element={<Navigate to="/admin" replace />}
       />
       <Route path="/" element={<Home />} />
-      <Route path="/join" element={<Join />} />
+      <Route
+        path="/join"
+        element={
+          <RequirePublicSiteLive>
+            <Join />
+          </RequirePublicSiteLive>
+        }
+      />
       <Route path="/profile/:handle" element={<LandingPage />} />
       <Route path="/p/:shareToken" element={<PublicProfilePage />} />
       <Route path="/projects/:id" element={<ProjectPage />} />

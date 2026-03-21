@@ -8,7 +8,10 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppToast } from '../../../context/AppToastContext';
-import { useFeatureFlags } from '../../../context/FeatureFlagsContext';
+import {
+  getFeatureFlagValue,
+  useFeatureFlags,
+} from '../../../context/FeatureFlagsContext';
 import { describeFlag, FLAG_LABELS, humanizeFlagKey } from './featureFlagUtils';
 
 type FlagCategory = {
@@ -213,10 +216,12 @@ export const AdminFeatureFlagsPage = () => {
                         variant="caption"
                         sx={{ minWidth: 22, textAlign: 'right', opacity: 0.85 }}
                       >
-                        {flags[key] !== false ? 'On' : 'Off'}
+                        {getFeatureFlagValue(flags, loading, key)
+                          ? 'On'
+                          : 'Off'}
                       </Typography>
                       <Switch
-                        checked={flags[key] !== false}
+                        checked={getFeatureFlagValue(flags, loading, key)}
                         disabled={busyKeys.has(key)}
                         onChange={(_, checked) =>
                           void handleToggle(key, checked)

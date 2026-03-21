@@ -14,6 +14,9 @@ import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
 import { isProduction } from '../lib/utils/env';
 
 export type FeatureFlagsMap = Record<string, boolean>;
+const DEFAULT_FLAG_VALUES: FeatureFlagsMap = {
+  [COMING_SOON_FLAG]: true,
+};
 
 export interface FeatureFlagsContextValue {
   flags: FeatureFlagsMap;
@@ -98,13 +101,20 @@ export function useFeatureFlags(): FeatureFlagsContextValue {
  */
 export function useFeatureFlag(key: string): boolean {
   const { flags, loading } = useFeatureFlags();
-  if (key === COMING_SOON_FLAG) {
-    if (loading) return true;
-    if (flags[key] === undefined) return true;
-    return flags[key] === true;
-  }
+  return getFeatureFlagValue(flags, loading, key);
+}
+
+export function getFeatureFlagValue(
+  flags: FeatureFlagsMap,
+  loading: boolean,
+  key: string,
+): boolean {
   if (loading) return true;
-  return flags[key] !== false;
+  const explicitValue = flags[key];
+  if (explicitValue !== undefined) return explicitValue === true;
+  const defaultValue = DEFAULT_FLAG_VALUES[key];
+  if (defaultValue !== undefined) return defaultValue === true;
+  return true;
 }
 
 /**

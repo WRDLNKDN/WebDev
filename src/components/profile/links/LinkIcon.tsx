@@ -1,13 +1,16 @@
 import {
   Article,
   CalendarMonth,
+  CloudQueue,
   Code,
   DesignServices,
   Description,
   Facebook,
+  Folder,
   Forum,
   GitHub,
   Instagram,
+  LibraryMusic,
   LinkedIn,
   Palette,
   Public,
@@ -142,6 +145,59 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
       Icon = CalendarMonth;
       brandColor = '#006bff';
       break;
+
+    // --- FILES / CLOUD STORAGE ---
+    case 'box':
+      Icon = Folder;
+      brandColor = '#0061d5';
+      break;
+    case 'dropbox':
+      Icon = CloudQueue;
+      brandColor = '#0061ff';
+      break;
+    case 'google drive':
+      Icon = Folder;
+      brandColor = '#4285f4';
+      break;
+    case 'mega':
+      Icon = CloudQueue;
+      brandColor = '#d9272e';
+      break;
+    case 'onedrive':
+      Icon = CloudQueue;
+      brandColor = '#0078d4';
+      break;
+
+    // --- MUSIC ---
+    case 'amazon music':
+      Icon = LibraryMusic;
+      brandColor = '#ff9900';
+      break;
+    case 'apple music':
+      Icon = LibraryMusic;
+      brandColor = '#fa243c';
+      break;
+    case 'bandcamp':
+      Icon = LibraryMusic;
+      brandColor = '#629aa9';
+      break;
+    case 'pandora':
+      Icon = LibraryMusic;
+      brandColor = '#3668ff';
+      break;
+    case 'soundcloud':
+      Icon = LibraryMusic;
+      brandColor = '#ff5500';
+      break;
+    case 'spotify':
+      Icon = LibraryMusic;
+      brandColor = '#1db954';
+      break;
+    case 'tidal':
+      Icon = LibraryMusic;
+      brandColor = '#5ce1e6';
+      break;
+
     // --- GAMES ---
     case 'armor games':
     case 'epic games store':

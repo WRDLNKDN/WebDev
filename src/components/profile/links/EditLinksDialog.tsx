@@ -200,6 +200,10 @@ export const EditLinksDialog = ({
             return 'Community Platforms';
           }
           return 'Playable & Dev';
+        case 'Files':
+          return 'File hosting';
+        case 'Music':
+          return 'Streaming & distribution';
         case 'Custom':
           return 'Custom';
         default:

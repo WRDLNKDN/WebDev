@@ -128,6 +128,14 @@ export const Navbar = () => {
   /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
   const minimalComingSoonHomeNavbar =
     productionComingSoon && !isAdminActive && isHomePath;
+  /** Avatar menu must mount for both desktop and mobile headers (mobile had anchor + no Menu = dead clicks). */
+  const showHeaderAccountDropdown =
+    Boolean(session) &&
+    sessionLoaded &&
+    onboardingLoaded &&
+    (!productionComingSoon || isAdminActive) &&
+    path !== '/auth/callback' &&
+    !minimalComingSoonHomeNavbar;
   // Show authed header if session exists and either:
   // 1. Profile is confirmed onboarded, OR
   // 2. Onboarding check is still loading (fail-open to show icon while checking)
@@ -937,7 +945,7 @@ export const Navbar = () => {
                   {/* Hide avatar completely in coming soon mode unless on admin route */}
                   {(!productionComingSoon || isAdminActive) && (
                     <>
-                      <Tooltip title="Account menu">
+                      <Tooltip title="Account menu" disableInteractive>
                         <IconButton
                           type="button"
                           onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
@@ -983,82 +991,6 @@ export const Navbar = () => {
                           />
                         </IconButton>
                       </Tooltip>
-                      <Menu
-                        anchorEl={avatarMenuAnchor}
-                        open={Boolean(avatarMenuAnchor)}
-                        onClose={() => setAvatarMenuAnchor(null)}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                        slotProps={{
-                          paper: {
-                            sx: {
-                              mt: 1.5,
-                              minWidth: 180,
-                              borderRadius: 2,
-                              bgcolor: 'rgba(30,30,30,0.98)',
-                              border: '1px solid rgba(156,187,217,0.26)',
-                            },
-                          },
-                        }}
-                      >
-                        {dashboardEnabled && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/dashboard"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25 }}
-                          >
-                            Profile
-                          </MenuItem>
-                        )}
-                        {dashboardEnabled && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/dashboard/settings"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25 }}
-                          >
-                            Settings
-                          </MenuItem>
-                        )}
-                        {isAdmin && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/admin"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25, color: 'warning.main' }}
-                          >
-                            Admin
-                          </MenuItem>
-                        )}
-                        {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
-                        <MenuItem
-                          onClick={() => {
-                            setAvatarMenuAnchor(null);
-                            setDrawerOpen(false);
-                            void handleSignOut();
-                          }}
-                          disabled={busy}
-                          sx={{ color: 'text.secondary', py: 1.25 }}
-                        >
-                          Sign Out
-                        </MenuItem>
-                      </Menu>
                     </>
                   )}
                 </>
@@ -1182,7 +1114,7 @@ export const Navbar = () => {
                           </IconButton>
                         </Tooltip>
                       )}
-                      <Tooltip title="Account menu">
+                      <Tooltip title="Account menu" disableInteractive>
                         <IconButton
                           type="button"
                           onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
@@ -1235,6 +1167,84 @@ export const Navbar = () => {
             </Stack>
           )}
         </Toolbar>
+        {showHeaderAccountDropdown ? (
+          <Menu
+            anchorEl={avatarMenuAnchor}
+            open={Boolean(avatarMenuAnchor)}
+            onClose={() => setAvatarMenuAnchor(null)}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1.5,
+                  minWidth: 180,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(30,30,30,0.98)',
+                  border: '1px solid rgba(156,187,217,0.26)',
+                },
+              },
+            }}
+          >
+            {dashboardEnabled && (
+              <MenuItem
+                component={RouterLink}
+                to="/dashboard"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25 }}
+              >
+                Profile
+              </MenuItem>
+            )}
+            {dashboardEnabled && (
+              <MenuItem
+                component={RouterLink}
+                to="/dashboard/settings"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25 }}
+              >
+                Settings
+              </MenuItem>
+            )}
+            {isAdmin && (
+              <MenuItem
+                component={RouterLink}
+                to="/admin"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25, color: 'warning.main' }}
+              >
+                Admin
+              </MenuItem>
+            )}
+            {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
+            <MenuItem
+              onClick={() => {
+                setAvatarMenuAnchor(null);
+                setDrawerOpen(false);
+                void handleSignOut();
+              }}
+              disabled={busy}
+              sx={{ color: 'text.secondary', py: 1.25 }}
+            >
+              Sign Out
+            </MenuItem>
+          </Menu>
+        ) : null}
       </AppBar>
 
       {/* Mobile drawer */}

@@ -65,6 +65,25 @@ export const PLATFORM_OPTIONS = [
     value: 'Xbox / Microsoft Store',
     category: 'Games',
   },
+
+  // --- FILES / CLOUD STORAGE ---
+  { label: 'Box', value: 'Box', category: 'Files' },
+  { label: 'Dropbox', value: 'Dropbox', category: 'Files' },
+  { label: 'Google Drive', value: 'Google Drive', category: 'Files' },
+  { label: 'Mega', value: 'Mega', category: 'Files' },
+  { label: 'OneDrive', value: 'OneDrive', category: 'Files' },
+
+  // --- MUSIC ---
+  // Alphabetical by label. YouTube also appears under Content; first occurrence
+  // wins in PLATFORM_TO_CATEGORY so URL inference stays Content unless category is stored.
+  { label: 'Amazon Music', value: 'Amazon Music', category: 'Music' },
+  { label: 'Apple Music', value: 'Apple Music', category: 'Music' },
+  { label: 'Bandcamp', value: 'Bandcamp', category: 'Music' },
+  { label: 'Pandora', value: 'Pandora', category: 'Music' },
+  { label: 'SoundCloud', value: 'SoundCloud', category: 'Music' },
+  { label: 'Spotify', value: 'Spotify', category: 'Music' },
+  { label: 'Tidal', value: 'Tidal', category: 'Music' },
+  { label: 'YouTube', value: 'YouTube', category: 'Music' },
 ] as const;
 
 export const CATEGORY_ORDER: LinkCategory[] = [
@@ -72,6 +91,8 @@ export const CATEGORY_ORDER: LinkCategory[] = [
   'Social',
   'Content',
   'Games',
+  'Files',
+  'Music',
   'Custom',
 ];
 
@@ -81,13 +102,19 @@ const VALID_LINK_CATEGORIES: LinkCategory[] = [
   'Social',
   'Content',
   'Games',
+  'Files',
+  'Music',
   'Custom',
 ];
 
 /** Map platform value (lowercase) → LinkCategory. Used when category is missing. */
-const PLATFORM_TO_CATEGORY = new Map<string, LinkCategory>(
-  PLATFORM_OPTIONS.map((p) => [p.value.toLowerCase(), p.category]),
-);
+const PLATFORM_TO_CATEGORY = new Map<string, LinkCategory>();
+for (const p of PLATFORM_OPTIONS) {
+  const key = p.value.trim().toLowerCase();
+  if (!PLATFORM_TO_CATEGORY.has(key)) {
+    PLATFORM_TO_CATEGORY.set(key, p.category);
+  }
+}
 
 /**
  * Returns the canonical category for a platform. Use when stored category is

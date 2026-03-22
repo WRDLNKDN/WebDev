@@ -10,6 +10,7 @@ import {
 } from '../../constants/platforms';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import type { LinkCategory, SocialLink } from '../../types/profile';
+import { compareSocialLinksAlphabetically } from '../../lib/profile/socialLinksPresentation';
 import {
   detectPlatformFromUrl,
   getShortLinkLabel,
@@ -33,6 +34,8 @@ const DISPLAY_CATEGORY_LABELS: Record<LinkCategory, string> = {
   Social: 'Social',
   Content: 'Content',
   Games: 'Games',
+  Files: 'Files',
+  Music: 'Music',
   Custom: 'Other',
 };
 
@@ -62,13 +65,7 @@ export const groupDashboardLinks = (
   CATEGORY_ORDER.map((category) => {
     const links = socials
       .filter((link) => getNormalizedCategory(link) === category)
-      .sort((a, b) => {
-        const labelCmp = getShortLinkLabel(a.url)
-          .toLowerCase()
-          .localeCompare(getShortLinkLabel(b.url).toLowerCase());
-        if (labelCmp !== 0) return labelCmp;
-        return a.url.toLowerCase().localeCompare(b.url.toLowerCase());
-      });
+      .sort((a, b) => compareSocialLinksAlphabetically(a, b));
 
     if (links.length === 0) return null;
 

@@ -1,0 +1,37 @@
+# If a closed Issue is moved to Project Status = Done, reopen the issue so GitHub state
+# matches an active workflow. Issues only (not PRs or draft issues).
+#
+# Trigger: projects_v2_item edited. Field must be named "Status" with option "Done".
+#
+# Default GITHUB_TOKEN can reopen issues in this repository. For org projects with issues
+# in other private repos, add a PAT with `issues: write` on those repos as secret
+# PROJECT_REOPEN_DONE_TOKEN.
+
+name: Reopen issue when status is Done
+
+on:
+  projects_v2_item:
+    types: [edited]
+
+permissions:
+  contents: read
+  issues: write
+  projects: read
+
+concurrency:
+  group: reopen-on-done-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  reopen-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reopen closed issue if status is Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_REOPEN_DONE_TOKEN || github.token }}
+          script: |
+            const run = require('./scripts/github-projects/reopen-on-done.cjs');
+            await run({ github, context, core });

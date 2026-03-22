@@ -24,6 +24,18 @@ describe('detectPlatformFromUrl', () => {
     expect(detectPlatformFromUrl('https://member.itch.io/my-game')).toBe(
       'itch.io',
     );
+    expect(detectPlatformFromUrl('https://www.dropbox.com/s/abc/file')).toBe(
+      'Dropbox',
+    );
+    expect(
+      detectPlatformFromUrl('https://drive.google.com/file/d/abc/view'),
+    ).toBe('Google Drive');
+    expect(
+      detectPlatformFromUrl('https://docs.google.com/document/d/abc/edit'),
+    ).toBe('Google Drive');
+    expect(detectPlatformFromUrl('https://mega.nz/folder/abc')).toBe('Mega');
+    expect(detectPlatformFromUrl('https://1drv.ms/u/s!abc')).toBe('OneDrive');
+    expect(detectPlatformFromUrl('https://app.box.com/folder/123')).toBe('Box');
   });
 
   it('returns Custom for unrecognized hosts', () => {
@@ -68,6 +80,48 @@ describe('detectPlatformFromUrl', () => {
       'Games',
     );
     expect(getCategoryForPlatform('GitHub')).toBe('Professional');
+  });
+
+  it('maps file hosting platforms to Files category', () => {
+    expect(getCategoryForPlatform('Box')).toBe('Files');
+    expect(getCategoryForPlatform('Dropbox')).toBe('Files');
+    expect(getCategoryForPlatform('Google Drive')).toBe('Files');
+    expect(getCategoryForPlatform('Mega')).toBe('Files');
+    expect(getCategoryForPlatform('OneDrive')).toBe('Files');
+  });
+
+  it('detects music service domains', () => {
+    expect(detectPlatformFromUrl('https://open.spotify.com/artist/abc')).toBe(
+      'Spotify',
+    );
+    expect(detectPlatformFromUrl('https://soundcloud.com/artist/handle')).toBe(
+      'SoundCloud',
+    );
+    expect(detectPlatformFromUrl('https://bandcamp.com/album/x')).toBe(
+      'Bandcamp',
+    );
+    expect(detectPlatformFromUrl('https://www.pandora.com/artist/x')).toBe(
+      'Pandora',
+    );
+    expect(detectPlatformFromUrl('https://listen.tidal.com/artist/1')).toBe(
+      'Tidal',
+    );
+    expect(
+      detectPlatformFromUrl('https://music.apple.com/us/artist/x/123'),
+    ).toBe('Apple Music');
+    expect(detectPlatformFromUrl('https://music.amazon.com/artists/B001')).toBe(
+      'Amazon Music',
+    );
+  });
+
+  it('maps music platforms to Music category', () => {
+    expect(getCategoryForPlatform('Spotify')).toBe('Music');
+    expect(getCategoryForPlatform('SoundCloud')).toBe('Music');
+    expect(getCategoryForPlatform('Amazon Music')).toBe('Music');
+  });
+
+  it('keeps YouTube inferred category as Content when platform value is shared', () => {
+    expect(getCategoryForPlatform('YouTube')).toBe('Content');
   });
 
   it('sanitizes duplicated protocol input for portfolio URLs', () => {

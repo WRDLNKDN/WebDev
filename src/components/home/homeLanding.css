@@ -53,6 +53,14 @@
   display: none;
 }
 
+/* After the bumper: do not flex-grow to 100% of the scroll area (removes dead space under hero). */
+.home-landing--post-video {
+  flex: 0 1 auto;
+  min-height: 0;
+  align-self: stretch;
+  width: 100%;
+}
+
 .home-landing__hero {
   position: relative;
   flex: 1 1 auto;
@@ -64,7 +72,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: min-height 1.05s cubic-bezier(0.33, 1, 0.68, 1);
   width: 100%;
 }
 
@@ -75,13 +83,55 @@
   width: 100%;
 }
 
-/* Collapsed state after video ends - keep full height so centered content stays centered */
+/* After video: compact hero so sections below enter the viewport without excess whitespace */
+.home-landing__hero--shell-revealed .home-landing__hero-backdrop {
+  background-color: transparent;
+}
+
+/* Content-sized hero: in-flow copy + CTAs; min-height + padding animate from full-bleed */
 .home-landing__hero--collapsed {
-  /* Do NOT collapse height or change align-items — content uses position:absolute top:50%
-     so any height change breaks the vertical center. Keep hero full-height always. */
-  flex: 1 1 auto;
-  min-height: min(88dvh, 100vh);
+  flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0.5rem 0 0.75rem;
+  transition:
+    min-height 1.05s cubic-bezier(0.33, 1, 0.68, 1),
+    padding 0.85s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.home-landing__hero--collapsed .home-landing__content {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  margin: 0 auto;
+  padding: 0.35rem 0 0.5rem;
+  width: min(1100px, calc(100% - 2rem));
+}
+
+.home-landing__hero--collapsed .home-landing__hero-grid {
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .home-landing__hero--collapsed {
+    padding: 0.65rem 0 1rem;
+  }
+
+  .home-landing__hero--collapsed .home-landing__hero-grid {
+    gap: 1.5rem;
+  }
+
+  .home-landing__hero--collapsed .home-landing__content {
+    padding: 0.5rem 0 0.65rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-landing__hero--collapsed .home-landing__hero-grid {
+    gap: 1.75rem;
+  }
 }
 
 .home-landing__hero-backdrop {
@@ -95,15 +145,6 @@
   overflow: hidden;
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease) var(--hero-reveal-backdrop-delay);
-}
-
-.home-landing__hero:has(.home-landing__content--visible)
-  .home-landing__hero-backdrop {
-  background-color: transparent;
-}
-
-.home-landing__hero--collapsed .home-landing__hero-backdrop {
-  background-color: transparent;
 }
 
 .home-landing__video,
@@ -170,14 +211,13 @@
 }
 
 /*
- * Hero copy: keep `display: flex` always so opacity/transform can animate (no
- * display:none pop). Hidden = inert for pointers + visibility + aria-hidden in TSX.
+ * Hero copy: visible during video and after (no delayed fade-in); stays centered in hero.
  */
 .home-landing__content {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateY(12px);
+  transform: translate(-50%, -50%);
   z-index: 2;
   width: min(1100px, calc(100% - 2rem));
   padding: 1rem 0 1.5rem;
@@ -185,26 +225,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-  transition:
-    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
-    transform var(--hero-reveal-content-duration)
-      var(--hero-reveal-content-ease),
-    visibility 0s linear var(--hero-reveal-content-duration);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .home-landing__content--visible {
   opacity: 1;
-  transform: translate(-50%, -50%) translateY(0);
-  pointer-events: auto;
-  visibility: visible;
-  transition:
-    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
-    transform var(--hero-reveal-content-duration)
-      var(--hero-reveal-content-ease),
-    visibility 0s linear 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -212,11 +239,13 @@
     transition-duration: 0.01ms !important;
   }
 
+  .home-landing__hero,
   .home-landing__hero-backdrop,
   .home-landing__video,
   .home-landing__video--dimmed,
   .home-landing__video-overlay,
   .home-landing__hero--collapsed .home-landing__video-overlay,
+  .home-landing__hero--collapsed,
   .home-landing__content,
   .home-landing__content--visible {
     transition-duration: 0.01ms !important;
@@ -258,7 +287,9 @@
   letter-spacing: 0.02em;
   line-height: 1.1;
   font-size: clamp(3rem, 8vw, 4rem);
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 2px 24px rgba(0, 0, 0, 0.78),
+    0 1px 10px rgba(0, 0, 0, 0.9);
 }
 
 .home-landing__copy {
@@ -275,6 +306,7 @@
   letter-spacing: 0.04em;
   font-size: clamp(1.375rem, 4vw, 1.625rem);
   line-height: 1.25;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
 .home-landing__tagline {
@@ -282,12 +314,14 @@
   color: var(--color-link);
   font-size: clamp(1.3rem, 3vw, 1.5rem);
   font-weight: 600;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.65);
 }
 
 .home-landing__subcopy {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.5;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
 .home-landing__cta {
@@ -318,6 +352,11 @@
 .home-landing__section {
   padding: 2rem 0 4rem;
   border-top: 1px solid rgba(156, 187, 217, 0.18);
+}
+
+.home-landing--post-video > .home-landing__section:first-of-type {
+  padding-top: 1rem;
+  padding-bottom: 3rem;
 }
 
 .home-landing__section--alt {

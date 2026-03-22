@@ -1,0 +1,57 @@
+# Syncs Project "Estimate" (number) from "Size" (single select) via GraphQL.
+#
+# Mapping: XS→1, S→2, M→3, L→5, XL→8 (case-insensitive). Fields must be named "Size" and "Estimate".
+#
+# Triggers on Project item created/edited. Idempotent: skips when Estimate already matches.
+# One-time backfill: Actions → run workflow → owner_type, owner_login, project_number.
+#
+# If GITHUB_TOKEN cannot write the project, add a fine-grained PAT (project read/write) as
+# repository secret PROJECT_ESTIMATE_SYNC_TOKEN.
+
+name: Set estimate from size
+
+on:
+  projects_v2_item:
+    types: [edited, created]
+
+  workflow_dispatch:
+    inputs:
+      owner_type:
+        description: Project owner (where the project lives)
+        required: true
+        type: choice
+        options:
+          - org
+          - user
+      owner_login:
+        description: Organization login or GitHub username that owns the project
+        required: true
+        type: string
+      project_number:
+        description:
+          Project number from the URL (e.g. …/orgs/ORG/projects/3 → 3)
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  projects: write
+
+concurrency:
+  group: set-estimate-from-size-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  set-estimate-from-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync Estimate from Size
+        uses: actions/github-script@v7
+        with:
+          github-token:
+            ${{ secrets.PROJECT_ESTIMATE_SYNC_TOKEN || github.token }}
+          script: |
+            const run = require('./scripts/github-projects/set-estimate-from-size.cjs');
+            await run({ github, context, core });

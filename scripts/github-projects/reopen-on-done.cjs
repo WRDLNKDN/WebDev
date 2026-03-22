@@ -48,7 +48,9 @@ module.exports = async ({ github, context, core }) => {
     }
   }`;
 
-  const { node: projectItem } = await github.graphql(query, { id: item.node_id });
+  const { node: projectItem } = await github.graphql(query, {
+    id: item.node_id,
+  });
 
   if (!projectItem) {
     core.info('Project item not found; skipping.');
@@ -92,7 +94,9 @@ module.exports = async ({ github, context, core }) => {
   const owner = issue.repository?.owner?.login;
   const repo = issue.repository?.name;
   if (!owner || !repo) {
-    core.setFailed('Could not resolve issue repository owner/name from GraphQL.');
+    core.setFailed(
+      'Could not resolve issue repository owner/name from GraphQL.',
+    );
     return;
   }
 
@@ -103,5 +107,7 @@ module.exports = async ({ github, context, core }) => {
     state: 'open',
   });
 
-  core.info(`Reopened ${owner}/${repo}#${issue.number} (Status is Done while issue was closed).`);
+  core.info(
+    `Reopened ${owner}/${repo}#${issue.number} (Status is Done while issue was closed).`,
+  );
 };

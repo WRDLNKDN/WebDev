@@ -14,6 +14,10 @@ import {
   resetHomeHeroPhase,
   setHomeHeroPhase,
 } from '../../lib/utils/homeHeroPhaseStore';
+import {
+  HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS,
+  HOME_HERO_VIDEO_FADE_MS,
+} from '../../lib/utils/homeHeroRevealTiming';
 
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
@@ -86,19 +90,25 @@ export const Home = () => {
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
-  /** After video (or skip / error): show centered copy, dim video, collapse hero, then footer — UAT + prod. */
+  /** After video (or skip / error): crossfade to copy + shell, unmount video, then footer — UAT + prod. */
   const finishHomeHeroTransition = useCallback(() => {
     setShowContent(true);
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
-      setTimeout(() => {
+      window.setTimeout(() => {
         setVideoEnded(true);
-        setTimeout(() => setShowFooter(true), 800);
-      }, 1000);
+        window.setTimeout(
+          () => setShowFooter(true),
+          HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS,
+        );
+      }, HOME_HERO_VIDEO_FADE_MS);
     } else {
       setHeroPhase('dimmed');
       setVideoEnded(true);
-      setTimeout(() => setShowFooter(true), 800);
+      window.setTimeout(
+        () => setShowFooter(true),
+        HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS,
+      );
     }
   }, [prefersReducedMotion]);
 
@@ -441,6 +451,7 @@ export const Home = () => {
           <div
             className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
             data-testid="app-main"
+            aria-hidden={!showContent}
           >
             <div className="home-landing__hero-grid">
               <div className="home-landing__headline">
@@ -471,6 +482,7 @@ export const Home = () => {
           <div
             className={`home-landing__content home-landing__content--coming-soon${showContent ? ' home-landing__content--visible' : ''}`}
             data-testid="production-coming-soon-hero-copy"
+            aria-hidden={!showContent}
           >
             <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">
               <div className="home-landing__headline">

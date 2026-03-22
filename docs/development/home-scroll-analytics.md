@@ -165,7 +165,8 @@ Use this as a lightweight recurring review during UX/UI audits.
 ### 5) Qualitative follow-up when alerts trigger
 
 - Re-check for nested scroll containers and sticky overlays.
-- Confirm hero/video transitions do not trap focus or scroll.
+- Confirm hero/video transitions do not trap focus or scroll; hero copy uses
+  `aria-hidden` until visible after the video handoff (see `Home.tsx`).
 - Verify CTA visibility above fold and after first scroll.
 - Pair analytics with a quick session sample (or moderated test) before design
   changes.

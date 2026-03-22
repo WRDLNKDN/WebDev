@@ -448,6 +448,7 @@ export const Navbar = () => {
             ...(isMobile &&
               minimalComingSoonHomeNavbar && {
                 justifyContent: 'center',
+                ...(storeEnabled && { position: 'relative' as const }),
               }),
           }}
         >
@@ -713,6 +714,33 @@ export const Navbar = () => {
               )}
           </Stack>
 
+          {/* Mobile prod coming-soon home: Store stays reachable (hamburger + Join hidden). */}
+          {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
+            <Button
+              component={RouterLink}
+              to="/store"
+              size="small"
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'rgba(255,255,255,0.96)',
+                textTransform: 'none',
+                fontSize: '0.9375rem',
+                minWidth: 0,
+                px: 1.25,
+                zIndex: 1,
+                '&:hover': {
+                  bgcolor: 'rgba(56,132,210,0.14)',
+                  color: 'white',
+                },
+              }}
+            >
+              Store
+            </Button>
+          ) : null}
+
           {/* Desktop nav links: Dashboard, Directory, Events, Feed, Store (Admin is in avatar menu) */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
@@ -792,7 +820,7 @@ export const Navbar = () => {
                   )}
                 </>
               )}
-              {storeEnabled && (!productionComingSoon || isAdminActive) && (
+              {storeEnabled && (
                 <Button
                   component={RouterLink}
                   to="/store"
@@ -1224,53 +1252,59 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!session && (!productionComingSoon || isAdminActive) && (
+            {!session && (
               <>
-                {!isJoinActive && (
+                {(!productionComingSoon || isAdminActive) && (
+                  <>
+                    {!isJoinActive && (
+                      <Button
+                        component={RouterLink}
+                        to="/join"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                          justifyContent: 'flex-start',
+                          color: 'white',
+                          textTransform: 'none',
+                          py: 1.5,
+                          minHeight: 44,
+                          touchAction: 'manipulation',
+                        }}
+                      >
+                        Join
+                      </Button>
+                    )}
+                    <Button
+                      component={RouterLink}
+                      to="/join"
+                      onClick={() => setDrawerOpen(false)}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        color: 'white',
+                        textTransform: 'none',
+                        py: 1.5,
+                        minHeight: 44,
+                        touchAction: 'manipulation',
+                      }}
+                    >
+                      Sign in
+                    </Button>
+                  </>
+                )}
+                {storeEnabled && (
                   <Button
                     component={RouterLink}
-                    to="/join"
+                    to="/store"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
                       color: 'white',
                       textTransform: 'none',
                       py: 1.5,
-                      minHeight: 44,
-                      touchAction: 'manipulation',
                     }}
                   >
-                    Join
+                    Store
                   </Button>
                 )}
-                <Button
-                  component={RouterLink}
-                  to="/join"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    minHeight: 44,
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  Sign in
-                </Button>
-                <Button
-                  component={RouterLink}
-                  to="/store"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                  }}
-                >
-                  Store
-                </Button>
               </>
             )}
             {showAuthedHeader && (

@@ -56,9 +56,12 @@ logic.
 ### 3.3 Hero Behavior ✅
 
 - Animation plays once
-- Fades to dim ambient state
-- Copy fades in after animation
-- Honors `prefers-reduced-motion`
+- **Handoff:** video opacity fades out while hero copy **crossfades** in (no
+  `display: none` pop); marketing shell / hero backdrop ease to transparent so
+  the Layout grid blends in. Timings stay aligned between
+  `src/lib/utils/homeHeroRevealTiming.ts` and
+  `src/components/home/homeLanding.css` (`--hero-reveal-*` custom properties).
+- Honors `prefers-reduced-motion` (transitions collapse to near-instant)
 
 ### 3.4 Auth-Aware Rendering ✅
 

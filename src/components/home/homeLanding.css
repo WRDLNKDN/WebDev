@@ -1,5 +1,15 @@
+/*
+ * Hero reveal (video → copy): durations align with `homeHeroRevealTiming.ts`
+ * (HOME_HERO_VIDEO_FADE_MS, etc.).
+ */
 /* Fill Layout main (flex column) so navbar + this + site footer fit in 100dvh — avoid 100vh forcing footer off-screen */
 .home-landing {
+  --hero-reveal-content-duration: 1.15s;
+  --hero-reveal-content-ease: cubic-bezier(0.33, 1, 0.68, 1);
+  --hero-reveal-backdrop-duration: 1.35s;
+  --hero-reveal-backdrop-ease: cubic-bezier(0.33, 1, 0.68, 1);
+  --hero-reveal-video-duration: 1.2s;
+  --hero-reveal-video-ease: cubic-bezier(0.45, 0.05, 0.55, 0.95);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -9,6 +19,9 @@
   flex-direction: column;
   /* Home uses Layout matte shell on / — keep transparent so shell color shows through */
   background: transparent;
+  /* Marketing black shell → transparent when copy shows (smooth, UAT/PROD) */
+  transition: background-color var(--hero-reveal-backdrop-duration)
+    var(--hero-reveal-backdrop-ease);
   color: var(--color-text-primary);
   /* Guest hero: allow vertical overflow so post-video CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
   overflow-x: hidden;
@@ -78,6 +91,8 @@
   /* Pure black during video — grid must NOT show while Weirdling plays */
   background-color: #000000;
   overflow: hidden;
+  transition: background-color var(--hero-reveal-backdrop-duration)
+    var(--hero-reveal-backdrop-ease);
 }
 
 /* As soon as hero copy is visible, let Layout shell (photo + grid) show through */
@@ -130,7 +145,8 @@
 
 .home-landing__video--dimmed {
   opacity: 0;
-  transition: opacity 1s ease-out;
+  transition: opacity var(--hero-reveal-video-duration)
+    var(--hero-reveal-video-ease);
 }
 
 .home-landing__video-overlay {
@@ -138,7 +154,8 @@
   pointer-events: none;
   /* Transparent during playback — no tint over the Weirdling video */
   background: rgba(5, 7, 15, 0);
-  transition: background-color 1s ease-out;
+  transition: background-color var(--hero-reveal-video-duration)
+    var(--hero-reveal-video-ease);
 }
 
 .home-landing__video-overlay--dimmed {
@@ -148,41 +165,62 @@
 /* After reveal, let Layout grid/photos show through (video layer is already faded out) */
 .home-landing__hero--collapsed .home-landing__video-overlay {
   background: transparent;
-  transition: background-color 0.6s ease-out 0.2s;
+  transition: background-color var(--hero-reveal-backdrop-duration)
+    var(--hero-reveal-backdrop-ease);
 }
 
+/*
+ * Hero copy: keep `display: flex` always so opacity/transform can animate (no
+ * display:none pop). Hidden = inert for pointers + visibility + aria-hidden in TSX.
+ */
 .home-landing__content {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateY(20px);
+  transform: translate(-50%, -50%) translateY(12px);
   z-index: 2;
   width: min(1100px, calc(100% - 2rem));
   padding: 1rem 0 1.5rem;
-  opacity: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  /* Ensure content is completely hidden until video ends or is clicked */
-  display: none;
   transition:
-    opacity 0.8s ease-out,
-    transform 0.8s ease-out,
-    visibility 0s 0.8s;
+    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
+    transform var(--hero-reveal-content-duration)
+      var(--hero-reveal-content-ease),
+    visibility 0s linear var(--hero-reveal-content-duration);
 }
 
 .home-landing__content--visible {
-  display: flex;
-  flex-direction: column;
   opacity: 1;
   transform: translate(-50%, -50%) translateY(0);
   pointer-events: auto;
   visibility: visible;
   transition:
-    opacity 0.8s ease-out,
-    transform 0.8s ease-out,
-    visibility 0s;
+    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
+    transform var(--hero-reveal-content-duration)
+      var(--hero-reveal-content-ease),
+    visibility 0s linear 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-landing {
+    transition-duration: 0.01ms !important;
+  }
+
+  .home-landing__hero-backdrop,
+  .home-landing__video,
+  .home-landing__video--dimmed,
+  .home-landing__video-overlay,
+  .home-landing__hero--collapsed .home-landing__video-overlay,
+  .home-landing__content,
+  .home-landing__content--visible {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .home-landing__hero-grid {

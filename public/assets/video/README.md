@@ -1,5 +1,9 @@
 # Video assets
 
+- **hero-bg-\*.mp4** — Signed-out home hero (desktop/mobile sources). After
+  playback, the UI **crossfades** to on-page copy; see `homeHeroRevealTiming.ts`
+  and `src/components/home/homeLanding.css` if you change pacing.
+
 - **hero-green-pinky.mp4** — Home hero background. Source:
   Marketing/GitHub-Ready `Green-_Pinky Animated Plain.mp4`. Copy into this
   folder and rename to `hero-green-pinky.mp4`.

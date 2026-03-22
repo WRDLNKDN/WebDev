@@ -16,7 +16,7 @@ export const FLAG_LABELS: Record<string, string> = {
 /** Hover descriptions shown for each toggle. */
 const FLAG_DESCRIPTIONS: Record<string, string> = {
   coming_soon:
-    'When on, home shows Coming soon and hides join/sign-in/chat chrome for this Supabase env. Honored when VITE_APP_ENV is production (or prod) or uat; local dev always shows the full site. Admin routes stay reachable.',
+    'When on: **Production** — marketing home + COMING SOON line, no Join/Sign-in on home, /join blocked, minimal chrome. **UAT** — same video/hero as prod but Join/Sign-in and /join stay on for QA. Local dev ignores the flag. Admin routes stay reachable.',
   feed: 'Controls access to the main Feed surface.',
   dashboard:
     'Controls access to Dashboard, notifications, and settings surfaces.',

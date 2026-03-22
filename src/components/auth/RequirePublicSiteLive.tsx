@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { usePublicComingSoonMode } from '../../context/FeatureFlagsContext';
+import { useProductionComingSoonMode } from '../../context/FeatureFlagsContext';
 
 type RequirePublicSiteLiveProps = {
   children: ReactNode;
 };
 
+/** Blocks `/join` only when **production** is in strict coming-soon. UAT stays open for QA. */
 export const RequirePublicSiteLive = ({
   children,
 }: RequirePublicSiteLiveProps) => {
-  const comingSoon = usePublicComingSoonMode();
+  const productionComingSoon = useProductionComingSoonMode();
 
-  if (comingSoon) {
+  if (productionComingSoon) {
     return <Navigate to="/" replace />;
   }
 

@@ -118,16 +118,24 @@ export function getFeatureFlagValue(
 }
 
 /**
- * Public marketing "coming soon" (navbar, home CTAs, messenger off, etc.).
- * - PROD: controlled by the DB feature flag (toggle in Admin panel without deploy).
- * - UAT:  also honors the DB feature flag so UAT can mirror PROD coming-soon state.
- * - Local dev: always false (live) so developers see the full site.
+ * **Marketing home shell** (video-first hero, matte, same layout as prod “coming soon”):
+ * `coming_soon` flag on **UAT or production** builds. Local dev = always off.
  */
-export function usePublicComingSoonMode(): boolean {
+export function useMarketingHomeMode(): boolean {
   const flagOn = useFeatureFlag(COMING_SOON_FLAG);
-  // Local dev always shows the live site — no coming soon during development.
   if (!isProduction && !isUat) {
     return false;
   }
   return flagOn;
+}
+
+/**
+ * **Production-only** “gates closed”: COMING SOON copy (no Join/Sign-in on home),
+ * `/join` blocked, minimal home navbar, no messenger. Same DB flag as
+ * {@link useMarketingHomeMode}, but **only when `VITE_APP_ENV` is production**.
+ * UAT uses the same hero as prod but keeps auth entry points for QA.
+ */
+export function useProductionComingSoonMode(): boolean {
+  const flagOn = useFeatureFlag(COMING_SOON_FLAG);
+  return isProduction && flagOn;
 }

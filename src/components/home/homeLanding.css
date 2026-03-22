@@ -19,7 +19,11 @@
   -ms-overflow-style: none;
 }
 
-/* Coming soon (prod): matte + fill layout column so hero/video has real height */
+/*
+ * Marketing home (UAT + PROD while `coming_soon`, video phase): pure black shell
+ * behind the hero — matches hero-backdrop #000 so the full viewport reads as black
+ * until copy reveals. Class drops once content is visible (see Home.tsx).
+ */
 .home-landing--coming-soon {
   flex: 1 1 auto;
   align-self: stretch;
@@ -27,7 +31,7 @@
   min-height: min(calc(100dvh - 7rem), 100%);
   display: flex;
   flex-direction: column;
-  background: #05070f;
+  background: #000000;
   overflow: hidden;
 }
 

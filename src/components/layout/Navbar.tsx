@@ -46,7 +46,7 @@ import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
   useFeatureFlag,
-  usePublicComingSoonMode,
+  useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
 import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
@@ -80,7 +80,7 @@ export const Navbar = () => {
   const forcePublicHeader = path.startsWith('/join');
   const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
-  const comingSoon = usePublicComingSoonMode();
+  const productionComingSoon = useProductionComingSoonMode();
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
   const isAdminActive = path.startsWith('/admin');
@@ -127,7 +127,7 @@ export const Navbar = () => {
   const isHomePath = path === '/' || path === '/home';
   /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
   const minimalComingSoonHomeNavbar =
-    comingSoon && !isAdminActive && isHomePath;
+    productionComingSoon && !isAdminActive && isHomePath;
   // Show authed header if session exists and either:
   // 1. Profile is confirmed onboarded, OR
   // 2. Onboarding check is still loading (fail-open to show icon while checking)
@@ -136,7 +136,7 @@ export const Navbar = () => {
     Boolean(session) &&
     (profileOnboarded || !onboardingLoaded) &&
     !forcePublicHeader &&
-    (!comingSoon || isAdminActive);
+    (!productionComingSoon || isAdminActive);
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -792,7 +792,7 @@ export const Navbar = () => {
                   )}
                 </>
               )}
-              {storeEnabled && (!comingSoon || isAdminActive) && (
+              {storeEnabled && (!productionComingSoon || isAdminActive) && (
                 <Button
                   component={RouterLink}
                   to="/store"
@@ -824,7 +824,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !session && (!comingSoon || isAdminActive) ? (
+              ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
                   {/* Guest: Join + Sign in — only when signed out (never show if session exists) */}
                   {!isJoinActive && (
@@ -907,7 +907,7 @@ export const Navbar = () => {
                     </Tooltip>
                   )}
                   {/* Hide avatar completely in coming soon mode unless on admin route */}
-                  {(!comingSoon || isAdminActive) && (
+                  {(!productionComingSoon || isAdminActive) && (
                     <>
                       <Tooltip title="Account menu">
                         <IconButton
@@ -1059,7 +1059,7 @@ export const Navbar = () => {
                   sx={{ color: 'text.secondary' }}
                   aria-label="Loading"
                 />
-              ) : !session && (!comingSoon || isAdminActive) ? (
+              ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
                   {!isJoinActive && (
                     <Button
@@ -1113,7 +1113,7 @@ export const Navbar = () => {
               ) : (
                 <>
                   {/* Match desktop: hide notifications + avatar in coming soon unless /admin */}
-                  {(!comingSoon || isAdminActive) && (
+                  {(!productionComingSoon || isAdminActive) && (
                     <>
                       {showAuthedHeader && dashboardEnabled && (
                         <Tooltip
@@ -1224,7 +1224,7 @@ export const Navbar = () => {
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
           <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!session && (!comingSoon || isAdminActive) && (
+            {!session && (!productionComingSoon || isAdminActive) && (
               <>
                 {!isJoinActive && (
                   <Button

@@ -3,7 +3,10 @@ import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import '../../components/home/homeLanding.css';
-import { usePublicComingSoonMode } from '../../context/FeatureFlagsContext';
+import {
+  useMarketingHomeMode,
+  useProductionComingSoonMode,
+} from '../../context/FeatureFlagsContext';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
@@ -51,12 +54,15 @@ const getStoredSessionTokens = async (): Promise<{
  * Home: public brand landing at /. MVP = intro video, Join Us CTA, persistent header.
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
  * If user is already authenticated and onboarded, redirect to /dashboard.
- * On wrdlnkdn.vercel.app, only video + "Coming soon" is shown (no login widget).
+ * **`coming_soon` on UAT or PROD:** Full **black** viewport during video (matte +
+ * hero backdrop), then centered words. **UAT:** Join + Sign-in (GuestView).
+ * **PROD:** Same headline/tagline + purple **COMING SOON!!** (no auth CTAs).
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const authStartedRef = useRef(false);
-  const comingSoon = usePublicComingSoonMode();
+  const marketingHome = useMarketingHomeMode();
+  const productionComingSoon = useProductionComingSoonMode();
 
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<{ id: string } | null>(null);
@@ -336,22 +342,24 @@ export const Home = () => {
     };
   }, []);
 
-  // Authenticated and onboarded: redirect to dashboard unless public site is in coming soon (stay on marketing home).
-  if (session && onboarded === true && !comingSoon) {
+  // Onboarded Members → dashboard unless production “gates closed” (marketing-only prod).
+  if (session && onboarded === true && !productionComingSoon) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const showGuestVideo = !comingSoon && !prefersReducedMotion && !videoFailed;
-  const showComingSoonVideo =
-    comingSoon && !prefersReducedMotion && !videoFailed;
-  const showComingSoonPoster =
-    comingSoon && (prefersReducedMotion || videoFailed);
+  /** Local dev: classic guest hero video. UAT/PROD + flag: same marketing hero pipeline. */
+  const showLocalGuestVideo =
+    !marketingHome && !prefersReducedMotion && !videoFailed;
+  const showMarketingHeroVideo =
+    marketingHome && !prefersReducedMotion && !videoFailed;
+  const showMarketingHeroPoster =
+    marketingHome && (prefersReducedMotion || videoFailed);
 
   return (
     <main
       className={[
         'home-landing',
-        comingSoon && !showContent ? 'home-landing--coming-soon' : '',
+        marketingHome && !showContent ? 'home-landing--coming-soon' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -360,7 +368,7 @@ export const Home = () => {
       <section
         className={[
           'home-landing__hero',
-          comingSoon ? 'home-landing__hero--coming-soon' : '',
+          marketingHome ? 'home-landing__hero--coming-soon' : '',
           videoEnded ? 'home-landing__hero--collapsed' : '',
         ]
           .filter(Boolean)
@@ -371,7 +379,7 @@ export const Home = () => {
           onPointerDown={handleHeroSkip}
           aria-hidden="true"
         >
-          {showComingSoonPoster ? (
+          {showMarketingHeroPoster ? (
             <img
               className="home-landing__video home-landing__video--focus-feet"
               src="/assets/video/hero-bg-poster.jpg"
@@ -379,7 +387,7 @@ export const Home = () => {
               aria-hidden="true"
             />
           ) : null}
-          {showComingSoonVideo || showGuestVideo ? (
+          {showMarketingHeroVideo || showLocalGuestVideo ? (
             <video
               ref={videoRef}
               className={[
@@ -422,7 +430,7 @@ export const Home = () => {
           />
         </div>
 
-        {!comingSoon ? (
+        {!productionComingSoon ? (
           <div
             className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
             data-testid="app-main"
@@ -455,7 +463,7 @@ export const Home = () => {
         ) : (
           <div
             className={`home-landing__content home-landing__content--coming-soon${showContent ? ' home-landing__content--visible' : ''}`}
-            data-testid="coming-soon-hero-copy"
+            data-testid="production-coming-soon-hero-copy"
           >
             <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">
               <div className="home-landing__headline">
@@ -466,6 +474,9 @@ export const Home = () => {
                   </p>
                   <p className="home-landing__tagline">
                     Business, but weirder.
+                  </p>
+                  <p className="home-landing__subcopy">
+                    A networking space for people who think differently
                   </p>
                 </div>
               </div>

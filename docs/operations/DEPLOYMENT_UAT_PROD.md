@@ -13,15 +13,17 @@
 
 ## Coming soon mode (no Vercel-only toggle)
 
-There is **no** dedicated Vercel env var (e.g. `VITE_COMING_SOON`). Public
-“coming soon” chrome (home CTA, join/sign-in, messenger, etc.) follows the
-Supabase feature flag **`coming_soon`**, toggled in **Admin → Feature flags**
-(no redeploy). Use the flag on the Supabase project that matches that deploy
-(UAT project vs prod project).
+There is **no** dedicated Vercel env var (e.g. `VITE_COMING_SOON`). The Supabase
+flag **`coming_soon`** (Admin → Feature flags) drives a **marketing home** shell
+on **UAT and production** when `VITE_APP_ENV` matches. **Local dev** ignores it.
 
-The app only **reads** that flag when **`VITE_APP_ENV`** is **`production`** (or
-`prod`) or **`uat`** (baked into the Vercel build). **Local dev** (`development`
-/ unset) always behaves as the full live site so engineers are not blocked.
+| Build          | `coming_soon` on | Behavior                                                                                                                                     |
+| -------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Production** | yes              | Marketing home: video hero, **COMING SOON** line, **no** Join/Sign-in on `/`, **`/join` → `/`**, minimal home navbar, no floating messenger. |
+| **UAT**        | yes              | **Same hero/video/layout as prod**; **Join / Sign-in and `/join` stay on** for QA; UAT banner unchanged.                                     |
+| Either         | off              | Full public chrome per other flags.                                                                                                          |
+
+Use the flag on the Supabase project tied to that deploy (UAT DB vs prod DB).
 
 ## Problem: UAT Sign-in or Refresh Shows PROD Supabase
 

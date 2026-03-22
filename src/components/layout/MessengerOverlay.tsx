@@ -15,7 +15,7 @@ import { CreateGroupDialog } from '../chat/dialogs/CreateGroupDialog';
 import { StartDmDialog } from '../chat/dialogs/StartDmDialog';
 import {
   useFeatureFlag,
-  usePublicComingSoonMode,
+  useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { useMessenger } from '../../context/MessengerContext';
@@ -49,7 +49,7 @@ export const MessengerOverlay = () => {
   const drawerTopDesktop = 64 + bannerOffsetPx;
   const drawerTopMobile = 56 + bannerOffsetPx;
   const chatEnabled = useFeatureFlag('chat');
-  const comingSoon = usePublicComingSoonMode();
+  const productionComingSoon = useProductionComingSoonMode();
   const floatingButtonBg = 'rgba(12, 18, 29, 0.96)';
   const floatingButtonBorder = 'rgba(141,188,229,0.34)';
 
@@ -140,7 +140,7 @@ export const MessengerOverlay = () => {
     [session?.user?.id],
   );
 
-  if (comingSoon || !chatUiForMember(chatEnabled, session?.user?.id))
+  if (productionComingSoon || !chatUiForMember(chatEnabled, session?.user?.id))
     return null;
   if (!session?.user) return null;
 

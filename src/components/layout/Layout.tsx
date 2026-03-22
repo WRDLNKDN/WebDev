@@ -14,7 +14,7 @@ import {
 } from '../../context/MessengerContext';
 import {
   useFeatureFlag,
-  usePublicComingSoonMode,
+  useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
 import {
   getHomeHeroPhaseSnapshot,
@@ -53,13 +53,15 @@ const LayoutContent = () => {
   const isAdmin = pathname.startsWith('/admin');
   const isHome = pathname === '/';
   const chatEnabled = useFeatureFlag('chat');
-  const comingSoon = usePublicComingSoonMode();
+  const productionComingSoon = useProductionComingSoonMode();
   /**
    * Chat shell UI only when a Member is signed in — never for guests (any env).
-   * Still off in public coming-soon mode so marketing stays minimal.
+   * Off on production marketing-only home; UAT keeps messenger for signed-in QA.
    */
   const showMessengerUi =
-    !isAdmin && !comingSoon && chatUiForMember(chatEnabled, session?.user?.id);
+    !isAdmin &&
+    !productionComingSoon &&
+    chatUiForMember(chatEnabled, session?.user?.id);
   const isLight = theme.palette.mode === 'light';
 
   const homeHeroShellPhase = useSyncExternalStore(
@@ -107,8 +109,9 @@ const LayoutContent = () => {
       ? { backgroundImage: 'none' }
       : darkShellBg;
 
+  /** Pure black during home hero video (UAT + PROD marketing) — matches hero backdrop. */
   const rootBgcolor =
-    matteDuringHomeVideo && !isLight ? '#05070f' : 'background.default';
+    matteDuringHomeVideo && !isLight ? '#000000' : 'background.default';
 
   useEffect(() => {
     let cancelled = false;
@@ -180,7 +183,7 @@ const LayoutContent = () => {
           willChange: 'scroll-position',
           contain: 'layout style paint',
           ...(matteDuringHomeVideo && {
-            bgcolor: isLight ? 'background.default' : '#05070f',
+            bgcolor: isLight ? 'background.default' : '#000000',
           }),
           // Hide scrollbar on home page
           ...(isHome && {

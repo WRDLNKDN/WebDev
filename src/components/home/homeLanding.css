@@ -98,18 +98,18 @@
   z-index: 0;
 }
 
-/* Hero video: cover + bottom anchor + slight scale so feet aren’t clipped by viewport crop */
+/* Hero video: keep cover behavior but bias framing to preserve the top of the shot on UAT/PROD */
 .home-landing__video--focus-feet {
   object-fit: cover;
-  object-position: center 92%;
+  object-position: center top;
   top: 0;
   left: 0;
   right: 0;
   width: 100%;
   height: 100%;
   bottom: auto;
-  transform: scale(1.06);
-  transform-origin: center bottom;
+  transform: none;
+  transform-origin: center top;
 }
 
 .home-landing__video--dimmed {

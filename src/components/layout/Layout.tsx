@@ -208,7 +208,7 @@ const LayoutContent = () => {
             overflowX: 'hidden',
             overflowY: 'visible',
             ...(matteDuringHomeVideo && {
-              bgcolor: isLight ? 'background.default' : '#05070f',
+              bgcolor: isLight ? 'background.default' : '#000000',
             }),
           }}
         >

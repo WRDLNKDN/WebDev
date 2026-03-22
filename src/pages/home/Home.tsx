@@ -55,8 +55,9 @@ const getStoredSessionTokens = async (): Promise<{
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
  * If user is already authenticated and onboarded, redirect to /dashboard.
  * **`coming_soon` on UAT or PROD:** Full **black** viewport during video (matte +
- * hero backdrop), then centered words. **UAT:** Join + Sign-in (GuestView).
- * **PROD:** Same headline/tagline + purple **COMING SOON!!** (no auth CTAs).
+ * hero backdrop), then centered words on the normal **Layout** photo/grid (video
+ * unmounts after the fade). **UAT:** Join + Sign-in (GuestView). **PROD:** Same
+ * headline/tagline + purple **COMING SOON!!** (no auth CTAs).
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -355,11 +356,17 @@ export const Home = () => {
   const showMarketingHeroPoster =
     marketingHome && (prefersReducedMotion || videoFailed);
 
+  const renderHeroMotionVideo =
+    (showMarketingHeroVideo || showLocalGuestVideo) && !videoEnded;
+
   return (
     <main
       className={[
         'home-landing',
         marketingHome && !showContent ? 'home-landing--coming-soon' : '',
+        marketingHome && !videoEnded
+          ? 'home-landing--marketing-video-phase'
+          : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -387,7 +394,7 @@ export const Home = () => {
               aria-hidden="true"
             />
           ) : null}
-          {showMarketingHeroVideo || showLocalGuestVideo ? (
+          {renderHeroMotionVideo ? (
             <video
               ref={videoRef}
               className={[
@@ -426,7 +433,7 @@ export const Home = () => {
           ) : null}
 
           <div
-            className={`home-landing__video-overlay${heroPhase === 'dimmed' ? ' home-landing__video-overlay--dimmed' : ''}`}
+            className={`home-landing__video-overlay${heroPhase === 'dimmed' && !showContent ? ' home-landing__video-overlay--dimmed' : ''}`}
           />
         </div>
 

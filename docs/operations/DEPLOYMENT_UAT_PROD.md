@@ -17,11 +17,11 @@ There is **no** dedicated Vercel env var (e.g. `VITE_COMING_SOON`). The Supabase
 flag **`coming_soon`** (Admin → Feature flags) drives a **marketing home** shell
 on **UAT and production** when `VITE_APP_ENV` matches. **Local dev** ignores it.
 
-| Build          | `coming_soon` on | Behavior                                                                                                                                     |
-| -------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Production** | yes              | Marketing home: video hero, **COMING SOON** line, **no** Join/Sign-in on `/`, **`/join` → `/`**, minimal home navbar, no floating messenger. |
-| **UAT**        | yes              | **Same hero/video/layout as prod**; **Join / Sign-in and `/join` stay on** for QA; UAT banner unchanged.                                     |
-| Either         | off              | Full public chrome per other flags.                                                                                                          |
+| Build          | `coming_soon` on | Behavior                                                                                                                                                                                                                                                                                              |
+| -------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Production** | yes              | Marketing home: video hero, **COMING SOON** line, **no** Join/Sign-in on `/`, **`/join` → `/`**, minimal home navbar, no floating messenger.                                                                                                                                                          |
+| **UAT**        | yes              | **Same hero/video/layout as prod**; **Join / Sign-in and `/join` stay on** for QA; UAT banner unchanged. If `VITE_APP_ENV` is mistakenly `production` on the UAT Vercel slot, known UAT hostnames (`webdev-uat…`, `uat.…`) still keep QA auth chrome (see `isUatHostname` in `src/lib/utils/env.ts`). |
+| Either         | off              | Full public chrome per other flags.                                                                                                                                                                                                                                                                   |
 
 Use the flag on the Supabase project tied to that deploy (UAT DB vs prod DB).
 

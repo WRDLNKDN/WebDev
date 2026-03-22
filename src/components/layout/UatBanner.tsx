@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { isUat } from '../../lib/utils/env';
+import { isUat, isUatHostname } from '../../lib/utils/env';
 import { UAT_BANNER_ELEMENT_ID } from '../../lib/utils/useUatBannerOffset';
 
 const PROD_SUPABASE_REF = 'rpcaazmxymymqdejevtb';
@@ -15,19 +15,12 @@ function getSupabaseProjectRef(): string | null {
   }
 }
 
-/** True if current host looks like UAT (webdev-uat.vercel.app etc.) */
-function isUatHost(): boolean {
-  if (typeof window === 'undefined') return false;
-  const h = window.location.hostname.toLowerCase();
-  return h.includes('webdev-uat') || h.includes('uat.');
-}
-
 export const UatBanner = () => {
   const supabaseRef = getSupabaseProjectRef();
   const isWrongSupabase =
     supabaseRef !== null && supabaseRef === PROD_SUPABASE_REF;
   const showUatBanner = isUat;
-  const showWrongConfigWarning = isWrongSupabase && (isUat || isUatHost());
+  const showWrongConfigWarning = isWrongSupabase && (isUat || isUatHostname());
 
   if (!showUatBanner && !showWrongConfigWarning) return null;
 

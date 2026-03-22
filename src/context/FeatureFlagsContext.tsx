@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
-import { isProduction, isUat } from '../lib/utils/env';
+import { isProduction, isUat, isUatHostname } from '../lib/utils/env';
 
 export type FeatureFlagsMap = Record<string, boolean>;
 const DEFAULT_FLAG_VALUES: FeatureFlagsMap = {
@@ -132,10 +132,15 @@ export function useMarketingHomeMode(): boolean {
 /**
  * **Production-only** “gates closed”: COMING SOON copy (no Join/Sign-in on home),
  * `/join` blocked, minimal home navbar, no messenger. Same DB flag as
- * {@link useMarketingHomeMode}, but **only when `VITE_APP_ENV` is production**.
- * UAT uses the same hero as prod but keeps auth entry points for QA.
+ * {@link useMarketingHomeMode}, but **only on real production** (not UAT).
+ *
+ * UAT keeps Join/Sign-in everywhere when `VITE_APP_ENV=uat`. If UAT is built with
+ * `VITE_APP_ENV=production` (common on Vercel’s “Production” slot), we still treat
+ * known UAT hosts as non-prod for these gates (see `isUatHostname`).
  */
 export function useProductionComingSoonMode(): boolean {
   const flagOn = useFeatureFlag(COMING_SOON_FLAG);
-  return isProduction && flagOn;
+  if (!flagOn || !isProduction) return false;
+  if (isUatHostname()) return false;
+  return true;
 }

@@ -80,9 +80,15 @@
   overflow: hidden;
 }
 
-/* Reveal the matte/grid only after video ends and hero collapses */
+/* As soon as hero copy is visible, let Layout shell (photo + grid) show through */
+.home-landing__hero:has(.home-landing__content--visible)
+  .home-landing__hero-backdrop {
+  background-color: transparent;
+}
+
+/* After collapse animation: same — keep transparent (covers browsers without :has) */
 .home-landing__hero--collapsed .home-landing__hero-backdrop {
-  background-color: #05070f;
+  background-color: transparent;
 }
 
 .home-landing__video,
@@ -110,6 +116,16 @@
   bottom: auto;
   transform: none;
   transform-origin: center top;
+}
+
+/*
+ * UAT/PROD marketing hero: letterbox with `contain` so the full frame (including top)
+ * stays visible on wide/tall viewports — black bars match the matte shell.
+ */
+.home-landing--marketing-video-phase
+  .home-landing__video.home-landing__video--focus-feet {
+  object-fit: contain;
+  object-position: center center;
 }
 
 .home-landing__video--dimmed {

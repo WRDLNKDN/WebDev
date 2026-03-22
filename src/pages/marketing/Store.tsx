@@ -1,14 +1,11 @@
 import {
-  Alert,
   Box,
-  Button,
   CircularProgress,
   Container,
   Stack,
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import {
   buildEcwidProductBrowserInit,
   GODADDY_STOREFRONT_URL,
@@ -50,15 +47,15 @@ export const Store = () => {
   const storeDivId = storeId ? getEcwidStoreDivId(storeId) : '';
   const storeRootRef = useRef<HTMLDivElement | null>(null);
   const cartWidgetRef = useRef<HTMLDivElement | null>(null);
-  const [embedStatus, setEmbedStatus] = useState<'idle' | 'loading' | 'ready'>(
-    storeId ? 'loading' : 'idle',
+  const [activeStorefront, setActiveStorefront] = useState<'ecwid' | 'backup'>(
+    () => (storeId ? 'ecwid' : 'backup'),
   );
-  const [embedError, setEmbedError] = useState<string | null>(null);
+  const [embedStatus, setEmbedStatus] = useState<'idle' | 'loading' | 'ready'>(
+    () => (storeId ? 'loading' : 'idle'),
+  );
 
   useEffect(() => {
-    if (!storeId || !storeDivId) {
-      setEmbedStatus('idle');
-      setEmbedError(null);
+    if (activeStorefront !== 'ecwid' || !storeId || !storeDivId) {
       return;
     }
 
@@ -67,7 +64,6 @@ export const Store = () => {
     if (!storeRoot || !cartWidget) return;
 
     setEmbedStatus('loading');
-    setEmbedError(null);
 
     window.ecwid_script_defer = true;
     window.ecwid_dynamic_widgets = true;
@@ -81,7 +77,6 @@ export const Store = () => {
 
     const markReady = () => {
       setEmbedStatus('ready');
-      setEmbedError(null);
     };
 
     const hasRenderedStore = () =>
@@ -98,11 +93,13 @@ export const Store = () => {
 
     const scriptDomId = getEcwidScriptId(storeId);
     const existingScript = document.getElementById(scriptDomId);
+    const switchToBackup = () => {
+      setActiveStorefront('backup');
+    };
+
     const renderTimeout = window.setTimeout(() => {
       if (!hasRenderedStore()) {
-        setEmbedError(
-          'The embedded storefront is taking longer than expected to load.',
-        );
+        switchToBackup();
       }
     }, ECWID_RENDER_TIMEOUT_MS);
 
@@ -130,13 +127,10 @@ export const Store = () => {
       kickEcwidInit();
     };
     script.onerror = () => {
-      setEmbedStatus('idle');
-      setEmbedError(
-        'The embedded storefront could not be loaded. The backup storefront is still available.',
-      );
       console.warn(
         '[Store] Failed to load Ecwid script. Check VITE_ECWID_STORE_ID and network.',
       );
+      switchToBackup();
     };
 
     document.body.appendChild(script);
@@ -146,46 +140,7 @@ export const Store = () => {
       window.clearTimeout(renderTimeout);
       destroyEcwidWidgets();
     };
-  }, [storeId, storeDivId]);
-
-  if (!storeId) {
-    return (
-      <Box
-        component="main"
-        sx={{
-          minHeight: '60vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-          py: 4,
-        }}
-      >
-        <Container maxWidth="sm">
-          <Typography variant="h5" component="h1" gutterBottom>
-            Store not configured
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Set <code>VITE_ECWID_STORE_ID</code> in your environment to embed
-            the Ecwid storefront.
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <Button
-              href={GODADDY_STOREFRONT_URL}
-              target="_blank"
-              rel="noreferrer"
-              variant="contained"
-            >
-              Open backup storefront
-            </Button>
-            <Button component={RouterLink} to="/" variant="outlined">
-              Back to WRDLNKDN
-            </Button>
-          </Stack>
-        </Container>
-      </Box>
-    );
-  }
+  }, [activeStorefront, storeId, storeDivId]);
 
   return (
     <Box
@@ -194,54 +149,16 @@ export const Store = () => {
     >
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
         <Stack spacing={2.5}>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Typography variant="h3" component="h1" gutterBottom>
-                Store
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Shop inside WRDLNKDN. Cart and checkout stay powered by Ecwid,
-                while the GoDaddy storefront remains live as a backup.
-              </Typography>
-            </Box>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-              <Button
-                href={GODADDY_STOREFRONT_URL}
-                target="_blank"
-                rel="noreferrer"
-                variant="outlined"
-              >
-                Backup storefront
-              </Button>
-              <Button component={RouterLink} to="/" variant="outlined">
-                Back to WRDLNKDN
-              </Button>
-            </Stack>
-          </Stack>
-
-          {embedError ? (
-            <Alert
-              severity="warning"
-              action={
-                <Button
-                  href={GODADDY_STOREFRONT_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  color="inherit"
-                  size="small"
-                >
-                  Open backup
-                </Button>
-              }
-            >
-              {embedError}
-            </Alert>
-          ) : null}
+          <Box>
+            <Typography variant="h3" component="h1" gutterBottom>
+              Store
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {storeId
+                ? 'Shop inside WRDLNKDN. Cart and checkout stay powered by Ecwid when the embed is available; otherwise the GoDaddy storefront loads here automatically.'
+                : 'Browse the WRDLNKDN storefront. Set VITE_ECWID_STORE_ID to prefer the embedded Ecwid experience when you are ready.'}
+            </Typography>
+          </Box>
 
           <Box
             sx={{
@@ -255,35 +172,53 @@ export const Store = () => {
               overflow: 'hidden',
             }}
           >
-            {embedStatus !== 'ready' ? (
-              <Stack
-                spacing={1.5}
-                alignItems="center"
-                justifyContent="center"
+            {activeStorefront === 'backup' ? (
+              <Box
+                component="iframe"
+                src={GODADDY_STOREFRONT_URL}
+                title="WRDLNKDN storefront"
                 sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 1,
-                  bgcolor: 'rgba(255,255,255,0.88)',
+                  display: 'block',
+                  width: '100%',
+                  minHeight: 600,
+                  height: { xs: '70vh', md: '75vh' },
+                  maxHeight: 1200,
+                  border: 'none',
                 }}
-              >
-                <CircularProgress size={28} />
-                <Typography variant="body2" color="text.secondary">
-                  Loading the WRDLNKDN storefront...
-                </Typography>
-              </Stack>
-            ) : null}
-            {/*
+              />
+            ) : (
+              <>
+                {embedStatus !== 'ready' ? (
+                  <Stack
+                    spacing={1.5}
+                    alignItems="center"
+                    justifyContent="center"
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 1,
+                      bgcolor: 'rgba(255,255,255,0.88)',
+                    }}
+                  >
+                    <CircularProgress size={28} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading the WRDLNKDN storefront...
+                    </Typography>
+                  </Stack>
+                ) : null}
+                {/*
           Minicart target required by Ecwid when using deferred init; without it,
           add-to-cart / bag UI often does not appear.
         */}
-            <div
-              ref={cartWidgetRef}
-              className="ec-cart-widget"
-              aria-label="Shopping cart"
-              style={{ minHeight: 1 }}
-            />
-            <div ref={storeRootRef} id={storeDivId} />
+                <div
+                  ref={cartWidgetRef}
+                  className="ec-cart-widget"
+                  aria-label="Shopping cart"
+                  style={{ minHeight: 1 }}
+                />
+                <div ref={storeRootRef} id={storeDivId} />
+              </>
+            )}
           </Box>
         </Stack>
       </Container>

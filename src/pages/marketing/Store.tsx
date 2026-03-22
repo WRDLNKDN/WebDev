@@ -1,5 +1,5 @@
 import { Box, Button, Container, Typography } from '@mui/material';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const ECWID_SCRIPT_BASE = 'https://app.ecwid.com/script.js';
@@ -9,30 +9,89 @@ const getStoreId = (): string | undefined => {
   return typeof id === 'string' && id.trim() ? id.trim() : undefined;
 };
 
+const getEcwidScriptId = (storeId: string) => `ecwid-script-${storeId}`;
+
+/**
+ * Ecwid on a React SPA must use deferred + dynamic widget init; a plain script tag
+ * breaks after client navigation / Strict Mode. See Ecwid "Dynamic loading" docs.
+ */
+function destroyEcwidWidgets(): void {
+  try {
+    window.Ecwid?.destroy?.();
+  } catch {
+    /* Ecwid may throw if already torn down */
+  }
+}
+
+function kickEcwidInit(): void {
+  const run = () => {
+    if (typeof window.ecwid_onBodyDone === 'function') {
+      window.ecwid_onBodyDone();
+      return;
+    }
+    window.Ecwid?.init?.();
+  };
+  requestAnimationFrame(() => {
+    setTimeout(run, 0);
+  });
+}
+
 export const Store = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const storeId = getStoreId();
+  const storeDivId = useMemo(
+    () => (storeId ? `my-store-${storeId}` : ''),
+    [storeId],
+  );
 
   useEffect(() => {
-    if (!storeId || !containerRef.current) return;
+    if (!storeId || !storeDivId) return;
 
-    const existing = document.getElementById(`ecwid-script-${storeId}`);
-    if (existing) return;
+    window.ecwid_script_defer = true;
+    window.ecwid_dynamic_widgets = true;
+
+    destroyEcwidWidgets();
+
+    window._xnext_initialization_scripts = [
+      {
+        widgetType: 'ProductBrowser',
+        id: storeDivId,
+        arg: [`id=${storeDivId}`, 'views=grid(1,60)'],
+      },
+    ];
+
+    const scriptDomId = getEcwidScriptId(storeId);
+    const existingScript = document.getElementById(scriptDomId);
+
+    if (existingScript) {
+      kickEcwidInit();
+      return () => {
+        destroyEcwidWidgets();
+      };
+    }
 
     const script = document.createElement('script');
-    script.id = `ecwid-script-${storeId}`;
+    script.id = scriptDomId;
     script.type = 'text/javascript';
-    script.src = `${ECWID_SCRIPT_BASE}?${storeId}&data_platform=code`;
     script.charset = 'utf-8';
     script.async = true;
     script.setAttribute('data-cfasync', 'false');
+    script.src = `${ECWID_SCRIPT_BASE}?${encodeURIComponent(storeId)}&data_platform=code`;
 
-    containerRef.current.appendChild(script);
+    script.onload = () => {
+      kickEcwidInit();
+    };
+    script.onerror = () => {
+      console.warn(
+        '[Store] Failed to load Ecwid script. Check VITE_ECWID_STORE_ID and network.',
+      );
+    };
+
+    document.body.appendChild(script);
 
     return () => {
-      script.remove();
+      destroyEcwidWidgets();
     };
-  }, [storeId]);
+  }, [storeId, storeDivId]);
 
   if (!storeId) {
     return (
@@ -95,8 +154,17 @@ export const Store = () => {
           Back to WRDLNKDN
         </Button>
       </Box>
-      <Box ref={containerRef} sx={{ minHeight: 600 }}>
-        <div id={`my-store-${storeId}`} />
+      <Box sx={{ minHeight: 600, position: 'relative', isolation: 'isolate' }}>
+        {/*
+          Minicart target required by Ecwid when using deferred init; without it,
+          add-to-cart / bag UI often does not appear.
+        */}
+        <div
+          className="ec-cart-widget"
+          aria-label="Shopping cart"
+          style={{ minHeight: 1 }}
+        />
+        <div id={storeDivId} />
       </Box>
     </Box>
   );

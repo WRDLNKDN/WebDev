@@ -67,6 +67,15 @@ and business needs.
 - Storefront behaves consistently across UAT and Production.
 - MVP scope is documented and future expansion paths are noted.
 
+### 5.1 SPA integration (React)
+
+A **plain** Ecwid script tag is not enough on a Vite/React app: client-side
+navigation and Strict Mode require Ecwid’s **deferred + dynamic** pattern
+(`ecwid_script_defer`, `ecwid_dynamic_widgets`, `_xnext_initialization_scripts`,
+`ecwid_onBodyDone` / `Ecwid.init`). Implementation:
+`src/pages/marketing/Store.tsx`. The page includes a **`.ec-cart-widget`**
+container so the minicart can mount (per Ecwid deferred-init docs).
+
 ---
 
 ## 6. Dependencies

@@ -44,6 +44,9 @@ const NavbarFallback = () => (
   <Box sx={{ minHeight: { xs: 56, md: 64 }, flexShrink: 0 }} />
 );
 
+const HOME_SHELL_REVEAL_TRANSITION =
+  'opacity 1500ms cubic-bezier(0.33, 1, 0.68, 1) 120ms';
+
 const LayoutContent = () => {
   const theme = useTheme();
   const { pathname } = useLocation();
@@ -99,19 +102,26 @@ const LayoutContent = () => {
     },
   };
 
-  const rootShellSx = matteDuringHomeVideo
-    ? {
-        backgroundImage: 'none',
-        position: 'relative' as const,
-        '&::before': { display: 'none' },
-      }
-    : isLight
-      ? { backgroundImage: 'none' }
-      : darkShellBg;
+  const rootShellSx =
+    isHome && homeMatteUntilContentRevealEnabled() && !isLight
+      ? {
+          ...darkShellBg,
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: '#000000',
+            opacity: matteDuringHomeVideo ? 1 : 0,
+            pointerEvents: 'none',
+            transition: HOME_SHELL_REVEAL_TRANSITION,
+            zIndex: 0,
+          },
+        }
+      : isLight
+        ? { backgroundImage: 'none' }
+        : darkShellBg;
 
-  /** Pure black during home hero video (UAT + PROD marketing) — matches hero backdrop. */
-  const rootBgcolor =
-    matteDuringHomeVideo && !isLight ? '#000000' : 'background.default';
+  const rootBgcolor = isLight ? 'background.default' : 'background.default';
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +184,8 @@ const LayoutContent = () => {
         className="app-scroll-container"
         data-testid="app-scroll-container"
         sx={{
+          position: 'relative',
+          zIndex: 1,
           flex: 1,
           minHeight: 0,
           overflowY: isHome ? 'hidden' : 'auto',
@@ -182,9 +194,6 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
-          ...(matteDuringHomeVideo && {
-            bgcolor: isLight ? 'background.default' : '#000000',
-          }),
           // Hide scrollbar on home page
           ...(isHome && {
             '&::-webkit-scrollbar': {
@@ -207,9 +216,6 @@ const LayoutContent = () => {
             flexDirection: 'column',
             overflowX: 'hidden',
             overflowY: 'visible',
-            ...(matteDuringHomeVideo && {
-              bgcolor: isLight ? 'background.default' : '#000000',
-            }),
           }}
         >
           <ErrorBoundary>

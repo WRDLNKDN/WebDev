@@ -6,10 +6,11 @@
 .home-landing {
   --hero-reveal-content-duration: 1.15s;
   --hero-reveal-content-ease: cubic-bezier(0.33, 1, 0.68, 1);
-  --hero-reveal-backdrop-duration: 1.35s;
+  --hero-reveal-backdrop-duration: 1.6s;
   --hero-reveal-backdrop-ease: cubic-bezier(0.33, 1, 0.68, 1);
-  --hero-reveal-video-duration: 1.2s;
-  --hero-reveal-video-ease: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --hero-reveal-backdrop-delay: 120ms;
+  --hero-reveal-video-duration: 1.45s;
+  --hero-reveal-video-ease: cubic-bezier(0.22, 1, 0.36, 1);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -88,20 +89,19 @@
   inset: 0;
   z-index: 0;
   cursor: pointer;
-  /* Pure black during video — grid must NOT show while Weirdling plays */
+  /* Keep the matte behind the video so letterboxed space stays black, then fade it
+     away into the already-mounted shell background during the reveal. */
   background-color: #000000;
   overflow: hidden;
   transition: background-color var(--hero-reveal-backdrop-duration)
-    var(--hero-reveal-backdrop-ease);
+    var(--hero-reveal-backdrop-ease) var(--hero-reveal-backdrop-delay);
 }
 
-/* As soon as hero copy is visible, let Layout shell (photo + grid) show through */
 .home-landing__hero:has(.home-landing__content--visible)
   .home-landing__hero-backdrop {
   background-color: transparent;
 }
 
-/* After collapse animation: same — keep transparent (covers browsers without :has) */
 .home-landing__hero--collapsed .home-landing__hero-backdrop {
   background-color: transparent;
 }
@@ -119,10 +119,10 @@
   z-index: 0;
 }
 
-/* Hero video: keep cover behavior but bias framing to preserve the top of the shot on UAT/PROD */
+/* Hero video: preserve more of the Weirdling frame, especially lower body/feet. */
 .home-landing__video--focus-feet {
   object-fit: cover;
-  object-position: center top;
+  object-position: center 62%;
   top: 0;
   left: 0;
   right: 0;
@@ -134,13 +134,13 @@
 }
 
 /*
- * UAT/PROD marketing hero: letterbox with `contain` so the full frame (including top)
- * stays visible on wide/tall viewports — black bars match the matte shell.
+ * UAT/PROD marketing hero: letterbox the full frame and anchor slightly lower so the
+ * Weirdling stays centered while the matte dissolves into the shell background.
  */
 .home-landing--marketing-video-phase
   .home-landing__video.home-landing__video--focus-feet {
   object-fit: contain;
-  object-position: center center;
+  object-position: center 56%;
 }
 
 .home-landing__video--dimmed {
@@ -152,14 +152,14 @@
 .home-landing__video-overlay {
   z-index: 1;
   pointer-events: none;
-  /* Transparent during playback — no tint over the Weirdling video */
-  background: rgba(5, 7, 15, 0);
+  /* Keep the video itself fully visible; the backdrop behind it handles the fade. */
+  background: rgba(0, 0, 0, 0);
   transition: background-color var(--hero-reveal-video-duration)
     var(--hero-reveal-video-ease);
 }
 
 .home-landing__video-overlay--dimmed {
-  background: rgba(5, 7, 15, 0.92);
+  background: rgba(0, 0, 0, 0);
 }
 
 /* After reveal, let Layout grid/photos show through (video layer is already faded out) */

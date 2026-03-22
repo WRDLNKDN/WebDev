@@ -107,24 +107,33 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          // Heavy dependencies that are lazy-loaded should be in separate chunks
+
+          // Lazy feature libraries: keep them isolated from the app shell.
           if (id.includes('emoji-picker-react')) return 'emoji-picker';
           if (id.includes('@dicebear')) return 'dicebear';
+          if (id.includes('@dnd-kit')) return 'dnd-kit';
           if (id.includes('/uuid/') || id.includes('\\uuid\\')) return 'uuid';
-          // MUI and Emotion are large but used everywhere - keep together
-          if (id.includes('@mui')) return 'mui';
-          if (id.includes('@emotion')) return 'emotion';
-          // Supabase is used everywhere but can be code-split if needed
-          if (id.includes('@supabase')) return 'supabase';
-          // React core libraries
+
+          // Group the broader MUI runtime stack together, but keep icons separate.
+          if (id.includes('@mui/icons-material')) return 'mui-icons';
           if (
-            id.includes('react-dom') ||
-            id.includes('/react/') ||
-            id.includes('react-router') ||
-            id.includes('scheduler')
+            id.includes('/node_modules/@mui/') ||
+            id.includes('\\node_modules\\@mui\\') ||
+            id.includes('@emotion') ||
+            id.includes('@popperjs') ||
+            id.includes('react-transition-group') ||
+            id.includes('stylis') ||
+            id.includes('clsx') ||
+            id.includes('prop-types') ||
+            id.includes('@babel/runtime')
           ) {
-            return 'react-vendor';
+            return 'mui-core';
           }
+
+          // Data/auth SDK stays stable in its own chunk.
+          if (id.includes('@supabase')) return 'supabase';
+
+          // Keep the remaining third-party code in a generic vendor bucket.
           return 'vendor';
         },
       },

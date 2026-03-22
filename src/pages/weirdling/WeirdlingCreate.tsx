@@ -129,7 +129,7 @@ export const WeirdlingCreate = ({
         const seed = `${result.preview.handle}|${result.preview.roleVibe}`;
         // Lazy load dicebear only when needed (not on critical path)
         const { createAvatar } = await import('@dicebear/core');
-        const { bottts } = await import('@dicebear/collection');
+        const bottts = await import('@dicebear/bottts');
         const dataUri = createAvatar(bottts, { seed }).toDataUri();
         previewWithImage = { ...previewWithImage, avatarUrl: dataUri };
       }

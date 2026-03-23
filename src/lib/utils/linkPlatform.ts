@@ -41,6 +41,18 @@ export type DetectablePlatform =
   | 'Steam'
   | 'Unity Play'
   | 'Xbox / Microsoft Store'
+  | 'Box'
+  | 'Dropbox'
+  | 'Google Drive'
+  | 'Mega'
+  | 'OneDrive'
+  | 'Amazon Music'
+  | 'Apple Music'
+  | 'Bandcamp'
+  | 'Pandora'
+  | 'SoundCloud'
+  | 'Spotify'
+  | 'Tidal'
   | 'Custom';
 
 /** Domain (hostname) -> platform value. Order matters for subdomain matches. */
@@ -75,6 +87,23 @@ const DOMAIN_TO_PLATFORM: [string | RegExp, DetectablePlatform][] = [
   ['substack.com', 'Substack'],
   ['patreon.com', 'Patreon'],
   ['calendly.com', 'Calendly'],
+  // Music / audio distribution
+  ['music.amazon.com', 'Amazon Music'],
+  ['music.apple.com', 'Apple Music'],
+  ['bandcamp.com', 'Bandcamp'],
+  ['pandora.com', 'Pandora'],
+  ['soundcloud.com', 'SoundCloud'],
+  ['spotify.com', 'Spotify'],
+  ['tidal.com', 'Tidal'],
+  // Files / cloud storage
+  ['box.com', 'Box'],
+  ['dropbox.com', 'Dropbox'],
+  ['drive.google.com', 'Google Drive'],
+  ['docs.google.com', 'Google Drive'],
+  ['mega.nz', 'Mega'],
+  ['mega.io', 'Mega'],
+  ['onedrive.live.com', 'OneDrive'],
+  ['1drv.ms', 'OneDrive'],
   // Games
   ['armorgames.com', 'Armor Games'],
   ['store.epicgames.com', 'Epic Games Store'],

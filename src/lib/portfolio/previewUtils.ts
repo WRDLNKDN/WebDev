@@ -5,6 +5,7 @@ import {
   normalizeGoogleUrl,
   type PortfolioLinkType,
 } from './linkUtils';
+import { isSupabasePublicResumeUrl } from './resumePreviewSupport';
 import type { PortfolioItem } from '../../types/portfolio';
 
 export type PortfolioPreviewKind = 'image' | 'iframe' | 'none';
@@ -76,7 +77,14 @@ export function getPortfolioPreviewModel(
     linkType === 'google_slides'
       ? normalizeGoogleUrl(sourceUrl)
       : sourceUrl);
-  const previewable = isPreviewableType(linkType);
+  let previewable = isPreviewableType(linkType);
+  if (
+    previewable &&
+    linkType === 'document' &&
+    isSupabasePublicResumeUrl(sourceUrl)
+  ) {
+    previewable = false;
+  }
   const previewUrl = buildPreviewUrl(linkType, sourceUrl, normalizedEmbedUrl);
 
   return {

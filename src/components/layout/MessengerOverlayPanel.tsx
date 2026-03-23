@@ -36,26 +36,15 @@ import {
 } from '../../lib/chat/roomListState';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import { compactGlassDangerIconButtonSx } from '../../theme/iconActionStyles';
+import {
+  CHAT_FAVORITE_ACTIVE_BUTTON_SX,
+  CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
+  CHAT_FAVORITE_IDLE_BUTTON_SX,
+  CHAT_FAVORITE_ROW_BADGE_SX,
+} from '../../theme/chatFavoriteStyles';
 
 const DM_ICON_COLOR = '#3884D2';
 const GROUP_ICON_COLOR = '#4DD166';
-const FAVORITE_ACTIVE_SX = {
-  color: '#f5c451',
-  bgcolor: 'rgba(245,196,81,0.14)',
-  border: '1px solid rgba(245,196,81,0.28)',
-  boxShadow: '0 0 0 1px rgba(245,196,81,0.08) inset',
-  '&:hover': {
-    bgcolor: 'rgba(245,196,81,0.2)',
-  },
-} as const;
-const FAVORITE_IDLE_SX = {
-  color: 'text.secondary',
-  border: '1px solid transparent',
-  '&:hover': {
-    color: '#f5c451',
-    bgcolor: 'rgba(245,196,81,0.08)',
-  },
-} as const;
 
 type Props = {
   mobile: boolean;
@@ -371,11 +360,9 @@ export const MessengerOverlayPanel = ({
                         </Typography>
                         {r.is_favorite ? (
                           <StarIcon
-                            sx={{
-                              fontSize: 14,
-                              color: '#f5c451',
-                              flexShrink: 0,
-                            }}
+                            aria-hidden
+                            data-testid={`messenger-overlay-favorite-badge-${r.id}`}
+                            sx={CHAT_FAVORITE_ROW_BADGE_SX}
                           />
                         ) : null}
                         {(r.unread_count ?? 0) > 0 && (
@@ -413,6 +400,7 @@ export const MessengerOverlayPanel = ({
                       </Typography>
                     </Box>
                     <IconButton
+                      type="button"
                       aria-label={
                         r.is_favorite
                           ? 'Remove from favorites'
@@ -420,23 +408,30 @@ export const MessengerOverlayPanel = ({
                       }
                       data-testid={`messenger-overlay-favorite-${r.id}`}
                       size="small"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleFavorite(r.id, Boolean(r.is_favorite));
+                        Promise.resolve(
+                          onToggleFavorite(r.id, Boolean(r.is_favorite)),
+                        ).catch(() => {});
                       }}
                       sx={{
                         borderRadius: 1.25,
+                        minWidth: 40,
+                        minHeight: 40,
                         transition:
-                          'color 120ms ease, background-color 120ms ease, border-color 120ms ease',
+                          'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
                         ...(r.is_favorite
-                          ? FAVORITE_ACTIVE_SX
-                          : FAVORITE_IDLE_SX),
+                          ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                          : CHAT_FAVORITE_IDLE_BUTTON_SX),
                         ml: 0.25,
                       }}
                     >
                       {r.is_favorite ? (
                         <StarIcon
-                          fontSize="small"
+                          sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
                           data-testid={`messenger-overlay-favorite-icon-filled-${r.id}`}
                         />
                       ) : (

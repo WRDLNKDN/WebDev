@@ -11,6 +11,11 @@
   --hero-reveal-backdrop-delay: 120ms;
   --hero-reveal-video-duration: 1.45s;
   --hero-reveal-video-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Compact hero: align motion with HOME_HERO_VIDEO_FADE_MS (~1.45s) in homeHeroRevealTiming.ts */
+  --hero-compact-layout-duration: 1.35s;
+  --hero-compact-layout-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hero-compact-spacing-duration: 1.2s;
+  --hero-compact-spacing-ease: cubic-bezier(0.33, 1, 0.68, 1);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -24,7 +29,7 @@
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease);
   color: var(--color-text-primary);
-  /* Guest hero: allow vertical overflow so post-video CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
+  /* Guest hero: allow vertical overflow so compact-phase CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
   overflow-x: hidden;
   overflow-y: visible;
   position: relative;
@@ -53,6 +58,14 @@
   display: none;
 }
 
+/* Post-intro (heroMode compact): main column hugs content so sections below enter the viewport sooner */
+.home-landing--hero-compact {
+  flex: 0 1 auto;
+  min-height: 0;
+  align-self: stretch;
+  width: 100%;
+}
+
 .home-landing__hero {
   position: relative;
   flex: 1 1 auto;
@@ -64,8 +77,13 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    min-height var(--hero-compact-layout-duration)
+      var(--hero-compact-layout-ease),
+    padding var(--hero-compact-spacing-duration)
+      var(--hero-compact-spacing-ease);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .home-landing__hero--coming-soon {
@@ -75,13 +93,60 @@
   width: 100%;
 }
 
-/* Collapsed state after video ends - keep full height so centered content stays centered */
-.home-landing__hero--collapsed {
-  /* Do NOT collapse height or change align-items — content uses position:absolute top:50%
-     so any height change breaks the vertical center. Keep hero full-height always. */
-  flex: 1 1 auto;
-  min-height: min(88dvh, 100vh);
+/*
+ * heroMode === compact: conversion-focused block — height follows copy + CTAs (no vh floor),
+ * centered, smooth transition from full intro hero (desktop, tablet, mobile).
+ */
+.home-landing__hero--compact {
+  --hero-compact-pad-y-start: 0.5rem;
+  --hero-compact-pad-y-end: 0.65rem;
+  --hero-compact-content-pad-y-start: 0.15rem;
+  --hero-compact-content-pad-y-end: 0.25rem;
+  --hero-compact-grid-gap: 0.65rem;
+
+  flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: var(--hero-compact-pad-y-start) 0 var(--hero-compact-pad-y-end);
+  transition:
+    min-height var(--hero-compact-layout-duration)
+      var(--hero-compact-layout-ease),
+    padding var(--hero-compact-spacing-duration)
+      var(--hero-compact-spacing-ease);
+}
+
+.home-landing__hero--compact .home-landing__hero-backdrop {
+  background-color: transparent;
+  pointer-events: none;
+  cursor: default;
+}
+
+.home-landing__hero--compact .home-landing__content {
+  margin: 0 auto;
+  padding: var(--hero-compact-content-pad-y-start) 0
+    var(--hero-compact-content-pad-y-end);
+  width: min(1100px, calc(100% - 2rem));
+}
+
+.home-landing__hero--compact .home-landing__hero-grid {
+  gap: var(--hero-compact-grid-gap);
+}
+
+@media (min-width: 768px) {
+  .home-landing__hero--compact {
+    --hero-compact-pad-y-start: 0.55rem;
+    --hero-compact-pad-y-end: 0.75rem;
+    --hero-compact-content-pad-y-start: 0.2rem;
+    --hero-compact-content-pad-y-end: 0.35rem;
+    --hero-compact-grid-gap: 0.85rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-landing__hero--compact {
+    --hero-compact-grid-gap: 1rem;
+  }
 }
 
 .home-landing__hero-backdrop {
@@ -95,15 +160,6 @@
   overflow: hidden;
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease) var(--hero-reveal-backdrop-delay);
-}
-
-.home-landing__hero:has(.home-landing__content--visible)
-  .home-landing__hero-backdrop {
-  background-color: transparent;
-}
-
-.home-landing__hero--collapsed .home-landing__hero-backdrop {
-  background-color: transparent;
 }
 
 .home-landing__video,
@@ -143,6 +199,24 @@
   object-position: center 56%;
 }
 
+/* Mobile: hero video reads huge at full bleed — cap frame size and letterbox in the matte */
+@media (max-width: 767.98px) {
+  .home-landing__hero-backdrop
+    .home-landing__video.home-landing__video--focus-feet {
+    /* Slightly below vertical center so headline/CTA breathe above the Weirdling */
+    top: 54%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: min(88vw, 380px);
+    height: min(42dvh, 320px);
+    max-height: 46dvh;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    object-position: center 56%;
+  }
+}
+
 .home-landing__video--dimmed {
   opacity: 0;
   transition: opacity var(--hero-reveal-video-duration)
@@ -162,49 +236,36 @@
   background: rgba(0, 0, 0, 0);
 }
 
-/* After reveal, let Layout grid/photos show through (video layer is already faded out) */
-.home-landing__hero--collapsed .home-landing__video-overlay {
+/* Compact: grid/photos show through; overlay stays non-blocking */
+.home-landing__hero--compact .home-landing__video-overlay {
   background: transparent;
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease);
 }
 
 /*
- * Hero copy: keep `display: flex` always so opacity/transform can animate (no
- * display:none pop). Hidden = inert for pointers + visibility + aria-hidden in TSX.
+ * Hero copy: visible during video and after (no delayed fade-in).
+ * In-flow + flex-centered parent avoids a layout jump when the hero compresses.
  */
 .home-landing__content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) translateY(12px);
+  position: relative;
   z-index: 2;
+  flex: 0 0 auto;
   width: min(1100px, calc(100% - 2rem));
   padding: 1rem 0 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-  transition:
-    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
-    transform var(--hero-reveal-content-duration)
-      var(--hero-reveal-content-ease),
-    visibility 0s linear var(--hero-reveal-content-duration);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: padding var(--hero-compact-spacing-duration)
+    var(--hero-compact-spacing-ease);
 }
 
 .home-landing__content--visible {
   opacity: 1;
-  transform: translate(-50%, -50%) translateY(0);
-  pointer-events: auto;
-  visibility: visible;
-  transition:
-    opacity var(--hero-reveal-content-duration) var(--hero-reveal-content-ease),
-    transform var(--hero-reveal-content-duration)
-      var(--hero-reveal-content-ease),
-    visibility 0s linear 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -212,11 +273,13 @@
     transition-duration: 0.01ms !important;
   }
 
+  .home-landing__hero,
   .home-landing__hero-backdrop,
   .home-landing__video,
   .home-landing__video--dimmed,
   .home-landing__video-overlay,
-  .home-landing__hero--collapsed .home-landing__video-overlay,
+  .home-landing__hero--compact .home-landing__video-overlay,
+  .home-landing__hero--compact,
   .home-landing__content,
   .home-landing__content--visible {
     transition-duration: 0.01ms !important;
@@ -258,7 +321,9 @@
   letter-spacing: 0.02em;
   line-height: 1.1;
   font-size: clamp(3rem, 8vw, 4rem);
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 2px 24px rgba(0, 0, 0, 0.78),
+    0 1px 10px rgba(0, 0, 0, 0.9);
 }
 
 .home-landing__copy {
@@ -275,6 +340,7 @@
   letter-spacing: 0.04em;
   font-size: clamp(1.375rem, 4vw, 1.625rem);
   line-height: 1.25;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
 .home-landing__tagline {
@@ -282,12 +348,14 @@
   color: var(--color-link);
   font-size: clamp(1.3rem, 3vw, 1.5rem);
   font-weight: 600;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.65);
 }
 
 .home-landing__subcopy {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.5;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
 .home-landing__cta {
@@ -301,6 +369,8 @@
 .home-landing__coming-soon {
   margin: 0;
   color: #d946ef;
+  /* iOS Safari / WebKit: keep glyph fill fuchsia when body/theme text color would otherwise wash inheritance */
+  -webkit-text-fill-color: #d946ef;
   font-size: clamp(1.35rem, 3.5vw, 1.75rem);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -311,6 +381,12 @@
     0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
+/* Production coming-soon hero: beat global body/MUI text color on narrow viewports */
+.home-landing .home-landing__content--coming-soon .home-landing__coming-soon {
+  color: #d946ef;
+  -webkit-text-fill-color: #d946ef;
+}
+
 .home-landing__hero-grid--coming-soon {
   gap: 1.5rem;
 }
@@ -318,6 +394,17 @@
 .home-landing__section {
   padding: 2rem 0 4rem;
   border-top: 1px solid rgba(156, 187, 217, 0.18);
+}
+
+.home-landing--hero-compact > .home-landing__section:first-of-type {
+  padding-top: 0.1rem;
+  padding-bottom: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .home-landing--hero-compact > .home-landing__section:first-of-type {
+    padding-top: 0.15rem;
+  }
 }
 
 .home-landing__section--alt {

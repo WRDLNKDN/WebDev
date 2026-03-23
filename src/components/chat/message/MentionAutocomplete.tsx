@@ -1,4 +1,12 @@
-import { Box, List, ListItemButton, Paper, Typography } from '@mui/material';
+import {
+  Box,
+  List,
+  ListItemButton,
+  Paper,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { denseMenuPaperSxFromTheme } from '../../../lib/ui/formSurface';
 import React, { useMemo, useRef, useEffect } from 'react';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 
@@ -28,6 +36,8 @@ export const MentionAutocomplete = ({
   anchorEl,
   onClose,
 }: MentionAutocompleteProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const listRef = useRef<HTMLUListElement>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
@@ -100,11 +110,11 @@ export const MentionAutocomplete = ({
         maxHeight,
         overflow: 'hidden',
         zIndex: 1500,
-        bgcolor: 'rgba(30,30,30,0.98)',
-        border: '1px solid rgba(156,187,217,0.26)',
         borderRadius: 2,
-        boxShadow:
-          '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+        ...denseMenuPaperSxFromTheme(theme),
+        boxShadow: isLight
+          ? theme.shadows[12]
+          : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
       }}
     >
       <List

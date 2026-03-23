@@ -13,6 +13,7 @@ import { AppThemeProvider } from './context/AppThemeContext';
 import { AppToastProvider } from './context/AppToastContext';
 import { FeatureFlagsProvider } from './context/FeatureFlagsContext';
 import { JoinProvider } from './context/JoinProvider';
+import { ChatRoomsProvider } from './hooks/useChat';
 import { supabase } from './lib/auth/supabaseClient';
 const Loading = () => (
   <Box
@@ -80,19 +81,21 @@ const AppShell = () => {
       <AuthBoot />
 
       <AppToastProvider>
-        <JoinProvider>
-          <AvatarProvider>
-            <FeatureFlagsProvider>
-              <Suspense fallback={<Loading />}>
-                <AppRouteTree
-                  redirectUToProfile={<RedirectUToProfile />}
-                  routesLocation={backgroundLocation ?? location}
-                />
-                {backgroundLocation ? <AppOverlayRoutes /> : null}
-              </Suspense>
-            </FeatureFlagsProvider>
-          </AvatarProvider>
-        </JoinProvider>
+        <ChatRoomsProvider>
+          <JoinProvider>
+            <AvatarProvider>
+              <FeatureFlagsProvider>
+                <Suspense fallback={<Loading />}>
+                  <AppRouteTree
+                    redirectUToProfile={<RedirectUToProfile />}
+                    routesLocation={backgroundLocation ?? location}
+                  />
+                  {backgroundLocation ? <AppOverlayRoutes /> : null}
+                </Suspense>
+              </FeatureFlagsProvider>
+            </AvatarProvider>
+          </JoinProvider>
+        </ChatRoomsProvider>
       </AppToastProvider>
     </AppThemeProvider>
   );

@@ -26,6 +26,8 @@ type NavbarMobileAuthControlsProps = {
   avatarUrl: string | null;
   setDrawerOpen: (open: boolean) => void;
   setAvatarMenuAnchor: (el: HTMLElement | null) => void;
+  /** When wired to the same menu as desktop, reflect open state for aria-expanded. */
+  avatarMenuOpen?: boolean;
 };
 
 export const NavbarMobileAuthControls = ({
@@ -41,6 +43,7 @@ export const NavbarMobileAuthControls = ({
   avatarUrl,
   setDrawerOpen,
   setAvatarMenuAnchor,
+  avatarMenuOpen = false,
 }: NavbarMobileAuthControlsProps) => {
   if (!isMobile) return null;
 
@@ -158,7 +161,7 @@ export const NavbarMobileAuthControls = ({
               onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
               aria-label="Account menu"
               aria-haspopup="true"
-              aria-expanded={false}
+              aria-expanded={avatarMenuOpen}
               sx={{
                 display: 'flex',
                 alignItems: 'center',

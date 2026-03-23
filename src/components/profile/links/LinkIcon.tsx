@@ -1,13 +1,16 @@
 import {
   Article,
   CalendarMonth,
+  CloudQueue,
   Code,
   DesignServices,
   Description,
   Facebook,
+  Folder,
   Forum,
   GitHub,
   Instagram,
+  LibraryMusic,
   LinkedIn,
   Palette,
   Public,
@@ -32,117 +35,118 @@ interface LinkIconProps extends BoxProps {
 
 type IconComponent = React.ComponentType<SvgIconProps>;
 
-export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
-  const key = platform?.toLowerCase() || 'custom';
+type LinkIconStyle = { Icon: IconComponent; brandColor: string };
 
-  // 1. Define the Icon and the Brand Color
-  let Icon: IconComponent = Public;
-  let brandColor = '#757575'; // Default Grey
-
+function pickProfessionalLinkIcon(key: string): LinkIconStyle | null {
   switch (key) {
-    // --- PROFESSIONAL / MAKER ---
     case 'linkedin':
-      Icon = LinkedIn;
-      brandColor = '#0077b5';
-      break;
+      return { Icon: LinkedIn, brandColor: '#0077b5' };
     case 'github':
-      Icon = GitHub;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: GitHub, brandColor: '#FFFFFF' };
     case 'gitlab':
-      Icon = Code;
-      brandColor = '#fc6d26';
-      break;
+      return { Icon: Code, brandColor: '#fc6d26' };
     case 'stack overflow':
     case 'stack exchange':
-      Icon = Code;
-      brandColor = '#f48024';
-      break;
+      return { Icon: Code, brandColor: '#f48024' };
     case 'dev.to':
-      Icon = Code;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: Code, brandColor: '#FFFFFF' };
     case 'behance':
-      Icon = Palette;
-      brandColor = '#1769ff';
-      break;
+      return { Icon: Palette, brandColor: '#1769ff' };
     case 'dribbble':
-      Icon = Palette;
-      brandColor = '#ea4c89';
-      break;
+      return { Icon: Palette, brandColor: '#ea4c89' };
     case 'figma':
-      Icon = DesignServices;
-      brandColor = '#f24e1e';
-      break;
+      return { Icon: DesignServices, brandColor: '#f24e1e' };
     case 'notion':
-      Icon = Description;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: Description, brandColor: '#FFFFFF' };
+    default:
+      return null;
+  }
+}
 
-    // --- SOCIAL / COMMUNITY ---
+function pickSocialLinkIcon(key: string): LinkIconStyle | null {
+  switch (key) {
     case 'x':
-      Icon = X;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: X, brandColor: '#FFFFFF' };
     case 'twitter':
-      Icon = Twitter;
-      brandColor = '#1da1f2';
-      break;
+      return { Icon: Twitter, brandColor: '#1da1f2' };
     case 'facebook':
-      Icon = Facebook;
-      brandColor = '#1877f2';
-      break;
+      return { Icon: Facebook, brandColor: '#1877f2' };
     case 'instagram':
-      Icon = Instagram;
-      brandColor = '#e4405f';
-      break;
+      return { Icon: Instagram, brandColor: '#e4405f' };
     case 'tiktok':
-      Icon = MusicNote;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: MusicNote, brandColor: '#FFFFFF' };
     case 'reddit':
-      Icon = Reddit;
-      brandColor = '#ff4500';
-      break;
+      return { Icon: Reddit, brandColor: '#ff4500' };
     case 'discord':
-      Icon = Forum;
-      brandColor = '#5865F2';
-      break;
+      return { Icon: Forum, brandColor: '#5865F2' };
     case 'mastodon':
-      Icon = Share;
-      brandColor = '#6364ff';
-      break;
+      return { Icon: Share, brandColor: '#6364ff' };
     case 'threads':
-      Icon = Share;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: Share, brandColor: '#FFFFFF' };
+    default:
+      return null;
+  }
+}
 
-    // --- CONTENT ---
+function pickContentLinkIcon(key: string): LinkIconStyle | null {
+  switch (key) {
     case 'youtube':
-      Icon = YouTube;
-      brandColor = '#ff0000';
-      break;
+      return { Icon: YouTube, brandColor: '#ff0000' };
     case 'twitch':
-      Icon = VideoLibrary;
-      brandColor = '#9146ff';
-      break;
+      return { Icon: VideoLibrary, brandColor: '#9146ff' };
     case 'medium':
-      Icon = Article;
-      brandColor = '#FFFFFF';
-      break;
+      return { Icon: Article, brandColor: '#FFFFFF' };
     case 'substack':
-      Icon = RssFeed;
-      brandColor = '#ff6719';
-      break;
+      return { Icon: RssFeed, brandColor: '#ff6719' };
     case 'patreon':
-      Icon = VolunteerActivism;
-      brandColor = '#ff424d';
-      break;
+      return { Icon: VolunteerActivism, brandColor: '#ff424d' };
     case 'calendly':
-      Icon = CalendarMonth;
-      brandColor = '#006bff';
-      break;
-    // --- GAMES ---
+      return { Icon: CalendarMonth, brandColor: '#006bff' };
+    default:
+      return null;
+  }
+}
+
+function pickCloudLinkIcon(key: string): LinkIconStyle | null {
+  switch (key) {
+    case 'box':
+      return { Icon: Folder, brandColor: '#0061d5' };
+    case 'dropbox':
+      return { Icon: CloudQueue, brandColor: '#0061ff' };
+    case 'google drive':
+      return { Icon: Folder, brandColor: '#4285f4' };
+    case 'mega':
+      return { Icon: CloudQueue, brandColor: '#d9272e' };
+    case 'onedrive':
+      return { Icon: CloudQueue, brandColor: '#0078d4' };
+    default:
+      return null;
+  }
+}
+
+function pickMusicLinkIcon(key: string): LinkIconStyle | null {
+  switch (key) {
+    case 'amazon music':
+      return { Icon: LibraryMusic, brandColor: '#ff9900' };
+    case 'apple music':
+      return { Icon: LibraryMusic, brandColor: '#fa243c' };
+    case 'bandcamp':
+      return { Icon: LibraryMusic, brandColor: '#629aa9' };
+    case 'pandora':
+      return { Icon: LibraryMusic, brandColor: '#3668ff' };
+    case 'soundcloud':
+      return { Icon: LibraryMusic, brandColor: '#ff5500' };
+    case 'spotify':
+      return { Icon: LibraryMusic, brandColor: '#1db954' };
+    case 'tidal':
+      return { Icon: LibraryMusic, brandColor: '#5ce1e6' };
+    default:
+      return null;
+  }
+}
+
+function pickGamesLinkIcon(key: string): LinkIconStyle | null {
+  switch (key) {
     case 'armor games':
     case 'epic games store':
     case 'game jolt':
@@ -157,22 +161,27 @@ export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
     case 'unity play':
     case 'web browser (playable web game)':
     case 'xbox / microsoft store':
-      Icon = SportsEsports;
-      brandColor = '#7dd3fc';
-      break;
-    case 'other':
-      Icon = Public;
-      brandColor = 'inherit';
-      break;
-
-    // --- CUSTOM / DEFAULT ---
+      return { Icon: SportsEsports, brandColor: '#7dd3fc' };
     default:
-      Icon = Public;
-      brandColor = 'inherit';
-      break;
+      return null;
   }
+}
 
-  // 2. Render wrapped in a Box for MUI compatibility
+function resolveLinkIconStyle(key: string): LinkIconStyle {
+  return (
+    pickProfessionalLinkIcon(key) ??
+    pickSocialLinkIcon(key) ??
+    pickContentLinkIcon(key) ??
+    pickCloudLinkIcon(key) ??
+    pickMusicLinkIcon(key) ??
+    pickGamesLinkIcon(key) ?? { Icon: Public, brandColor: 'inherit' }
+  );
+}
+
+export const LinkIcon = ({ platform, ...props }: LinkIconProps) => {
+  const key = platform?.toLowerCase() || 'custom';
+  const { Icon, brandColor } = resolveLinkIconStyle(key);
+
   return (
     <Box
       component="span"

@@ -1,0 +1,27 @@
+name: Reopen issue when status is Done
+
+on:
+  projects_v2_item:
+    types: [edited]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: reopen-on-done-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  reopen-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reopen closed issue if status is Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_REOPEN_DONE_TOKEN || github.token }}
+          script: |
+            const run = require('./scripts/github-projects/reopen-on-done.cjs');
+            await run({ github, context, core });

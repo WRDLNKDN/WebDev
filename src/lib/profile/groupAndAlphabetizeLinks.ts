@@ -3,7 +3,7 @@
  *
  * Pure utility for Issue #609.
  * Groups visible SocialLinks into display categories (Professional, Social,
- * Content, Games, Other) and sorts links alphabetically by label within each group.
+ * Content, Games, Files, Music, Other) and sorts links alphabetically by title within each group.
  *
  * Used by:
  *   - ProfileLinksWidget (grouped render path — Profile + Dashboard Identity)
@@ -13,13 +13,15 @@
 import type { SocialLink } from '../../types/profile';
 import { getCategoryForPlatform } from '../../constants/platforms';
 import { detectPlatformFromUrl } from '../utils/linkPlatform';
-import { compareLinksByTitle } from './linkTitle';
+import { compareSocialLinksAlphabetically } from './socialLinksPresentation';
 
 export type DisplayCategory =
   | 'Professional'
   | 'Social'
   | 'Content'
   | 'Games'
+  | 'Files'
+  | 'Music'
   | 'Other';
 
 /** Canonical render order for category groups. */
@@ -28,6 +30,8 @@ export const DISPLAY_CATEGORY_ORDER: DisplayCategory[] = [
   'Social',
   'Content',
   'Games',
+  'Files',
+  'Music',
   'Other',
 ];
 
@@ -42,7 +46,9 @@ function resolveDisplayCategory(link: SocialLink): DisplayCategory {
     link.category === 'Professional' ||
     link.category === 'Social' ||
     link.category === 'Content' ||
-    link.category === 'Games'
+    link.category === 'Games' ||
+    link.category === 'Files' ||
+    link.category === 'Music'
   ) {
     return link.category;
   }
@@ -54,6 +60,8 @@ function resolveDisplayCategory(link: SocialLink): DisplayCategory {
   if (inferred === 'Social') return 'Social';
   if (inferred === 'Content') return 'Content';
   if (inferred === 'Games') return 'Games';
+  if (inferred === 'Files') return 'Files';
+  if (inferred === 'Music') return 'Music';
   return 'Other';
 }
 
@@ -71,6 +79,8 @@ export function groupAndAlphabetizeLinks(socials: SocialLink[]): GroupedLinks {
     Social: [],
     Content: [],
     Games: [],
+    Files: [],
+    Music: [],
     Other: [],
   };
 
@@ -80,9 +90,9 @@ export function groupAndAlphabetizeLinks(socials: SocialLink[]): GroupedLinks {
     result[category].push(link);
   }
 
-  // Sort each bucket alphabetically by label
+  // Sort each bucket alphabetically by link title (matches Profile / Edit Links)
   for (const category of DISPLAY_CATEGORY_ORDER) {
-    result[category].sort((a, b) => compareLinksByTitle(a, b));
+    result[category].sort((a, b) => compareSocialLinksAlphabetically(a, b));
   }
 
   return result;

@@ -2,6 +2,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -13,18 +14,19 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
 } from '../../../constants/industryTaxonomy';
 import {
   BORDER_COLOR,
+  getInputStyles,
   getSubIndustryPlaceholder,
   INPUT_BG,
   INPUT_HEIGHT,
-  INPUT_STYLES,
   PURPLE_ACCENT,
 } from './constants';
 import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
@@ -41,6 +43,25 @@ import type { EditProfileFormData } from './types';
 /** Message for clear-all confirmation on multi-select fields (Industries and others). */
 export const CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE =
   'Warning - you are about to remove all entries. Continue?';
+
+const OtherIndustryChip = ({
+  value,
+  busy,
+  onRemove,
+}: {
+  value: string;
+  busy: boolean;
+  onRemove: (v: string) => void;
+}) => {
+  return (
+    <Chip
+      label={value}
+      size="small"
+      disabled={busy}
+      onDelete={busy ? undefined : () => onRemove(value)}
+    />
+  );
+};
 
 type ClearConfirmTarget =
   | { type: 'sub-industries'; idx: number }
@@ -69,6 +90,22 @@ export const EditProfileIndustrySection = ({
   const [otherInputValue, setOtherInputValue] = useState('');
   const [clearConfirmTarget, setClearConfirmTarget] =
     useState<ClearConfirmTarget>(null);
+
+  const theme = useTheme();
+  const inputStyles = getInputStyles(theme);
+  const isLight = theme.palette.mode === 'light';
+
+  const removeOtherIndustryLabel = useCallback(
+    (entry: string) => {
+      onChange((prev) => ({
+        ...prev,
+        niche_field: serializeNicheValues(
+          otherValues.filter((v) => v !== entry),
+        ),
+      }));
+    },
+    [onChange, otherValues],
+  );
 
   const setInputValue = (idx: number, value: string) => {
     setStatusMessages((prev) => ({ ...prev, [idx]: '' }));
@@ -150,7 +187,9 @@ export const EditProfileIndustrySection = ({
             key={idx}
             sx={{
               pl: { xs: 0, sm: 1 },
-              borderLeft: { sm: `2px solid ${BORDER_COLOR}` },
+              borderLeft: {
+                sm: `2px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
+              },
               py: 0.5,
             }}
           >
@@ -158,7 +197,7 @@ export const EditProfileIndustrySection = ({
               fullWidth
               disabled={busy}
               variant="filled"
-              sx={{ ...INPUT_STYLES, mb: idx === 0 ? 0 : 0.75 }}
+              sx={{ ...inputStyles, mb: idx === 0 ? 0 : 0.75 }}
             >
               <Select
                 value={group.industry}
@@ -181,6 +220,22 @@ export const EditProfileIndustrySection = ({
                   '& .MuiSelect-select': {
                     py: '8px !important',
                     lineHeight: 1.35,
+                  },
+                  '& .MuiSelect-icon': {
+                    color: isLight
+                      ? theme.palette.text.secondary
+                      : 'rgba(255,255,255,0.6)',
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: isLight
+                        ? theme.palette.background.paper
+                        : INPUT_BG,
+                      color: theme.palette.text.primary,
+                      border: `1px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
+                    },
                   },
                 }}
               >
@@ -205,7 +260,7 @@ export const EditProfileIndustrySection = ({
                   variant="caption"
                   sx={{
                     display: 'block',
-                    color: 'rgba(255,255,255,0.62)',
+                    color: 'text.secondary',
                     lineHeight: 1.45,
                   }}
                 >
@@ -215,7 +270,7 @@ export const EditProfileIndustrySection = ({
                   variant="caption"
                   sx={{
                     display: 'block',
-                    color: 'rgba(255,255,255,0.5)',
+                    color: 'text.secondary',
                     lineHeight: 1.45,
                   }}
                 >
@@ -299,9 +354,8 @@ export const EditProfileIndustrySection = ({
                     }
                   }}
                   sx={{
-                    ...INPUT_STYLES,
+                    ...inputStyles,
                     '& .MuiFilledInput-root': {
-                      ...INPUT_STYLES['& .MuiFilledInput-root'],
                       minHeight: INPUT_HEIGHT,
                       alignItems: 'center',
                     },
@@ -313,8 +367,10 @@ export const EditProfileIndustrySection = ({
               slotProps={{
                 paper: {
                   sx: {
-                    bgcolor: INPUT_BG,
-                    border: `1px solid ${BORDER_COLOR}`,
+                    bgcolor: isLight
+                      ? theme.palette.background.paper
+                      : INPUT_BG,
+                    border: `1px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
                   },
                 },
                 clearIndicator: {
@@ -336,7 +392,7 @@ export const EditProfileIndustrySection = ({
                 to save.
               </FormHelperText>
             ) : statusMessages[idx] ? (
-              <FormHelperText sx={{ color: 'rgba(255,255,255,0.62)' }}>
+              <FormHelperText sx={{ color: 'text.secondary' }}>
                 {statusMessages[idx]}
               </FormHelperText>
             ) : null}
@@ -395,75 +451,60 @@ export const EditProfileIndustrySection = ({
         >
           Other
         </Typography>
-        <Autocomplete
-          multiple
-          freeSolo
-          clearOnBlur
-          selectOnFocus
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Add niche or cross-industry labels. Type and press Enter, or paste
+          comma-separated values.
+        </Typography>
+        {otherValues.length > 0 ? (
+          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.25 }}>
+            {otherValues.map((value) => (
+              <OtherIndustryChip
+                key={value}
+                value={value}
+                busy={busy}
+                onRemove={removeOtherIndustryLabel}
+              />
+            ))}
+          </Stack>
+        ) : null}
+        {otherValues.length > 0 && !busy ? (
+          <Button
+            size="small"
+            onClick={() => setClearConfirmTarget({ type: 'other' })}
+            sx={{ mb: 1, textTransform: 'none', color: 'text.secondary' }}
+          >
+            Clear all other labels
+          </Button>
+        ) : null}
+        <TextField
+          fullWidth
+          variant="filled"
           disabled={busy}
-          options={[]}
-          value={otherValues}
-          inputValue={otherInputValue}
-          onInputChange={(_, next, reason) => {
-            if (reason === 'reset') {
-              setOtherInputValue('');
-              return;
+          value={otherInputValue}
+          onChange={(e) => setOtherInputValue(e.target.value)}
+          placeholder="e.g. FinTech, DevSecOps"
+          helperText="Enter adds typed text; commas split multiple entries."
+          aria-label="Other industries"
+          onKeyDown={(event) => {
+            if (
+              event.key === 'Enter' ||
+              event.key === ',' ||
+              event.key === 'Tab'
+            ) {
+              const committed = commitOtherValue();
+              if (committed) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
             }
-            setOtherInputValue(next);
           }}
-          onChange={(_, next) => {
-            const values = next.filter(
-              (value): value is string => typeof value === 'string',
-            );
-            onChange((prev) => ({
-              ...prev,
-              niche_field: serializeNicheValues(values),
-            }));
-          }}
-          slotProps={{
-            clearIndicator: {
-              onClick: (e: React.MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (otherValues.length > 0) {
-                  setClearConfirmTarget({ type: 'other' });
-                }
-              },
+          sx={{
+            ...inputStyles,
+            '& .MuiFilledInput-root': {
+              minHeight: INPUT_HEIGHT,
+              alignItems: 'center',
             },
           }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="filled"
-              placeholder="Add other specialties (e.g. FinTech, DevSecOps)"
-              helperText="Type or paste comma-separated values; press Enter to add all."
-              inputProps={{
-                ...params.inputProps,
-                'aria-label': 'Other industries',
-              }}
-              onKeyDown={(event) => {
-                if (
-                  event.key === 'Enter' ||
-                  event.key === ',' ||
-                  event.key === 'Tab'
-                ) {
-                  const committed = commitOtherValue();
-                  if (committed) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                  }
-                }
-              }}
-              sx={{
-                ...INPUT_STYLES,
-                '& .MuiFilledInput-root': {
-                  ...INPUT_STYLES['& .MuiFilledInput-root'],
-                  minHeight: INPUT_HEIGHT,
-                  alignItems: 'center',
-                },
-              }}
-            />
-          )}
         />
       </Box>
 
@@ -478,7 +519,7 @@ export const EditProfileIndustrySection = ({
           sx: {
             bgcolor: 'background.paper',
             borderRadius: 2,
-            border: '1px solid rgba(156,187,217,0.22)',
+            border: `1px solid ${theme.palette.divider}`,
           },
         }}
       >

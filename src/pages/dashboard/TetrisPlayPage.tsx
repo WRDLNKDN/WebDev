@@ -3,18 +3,9 @@
  * to complete rows. Completed rows disappear and increase score. Speed increases over
  * time. Game ends when blocks reach the top.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createTetrisSession,
@@ -23,6 +14,13 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const COLS = 10;
 const ROWS = 20;
@@ -338,7 +336,7 @@ export const TetrisPlayPage = () => {
       return;
     }
     setLoading(true);
-    void loadSession(sessionId.trim()).finally(() => setLoading(false));
+    loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
 
   const recordScoreAndEnd = useCallback(
@@ -405,7 +403,7 @@ export const TetrisPlayPage = () => {
       intervalRef.current = null;
       setStatus('gameover');
       setPiece(null);
-      void recordScoreAndEnd(nextScore, nextLevel);
+      recordScoreAndEnd(nextScore, nextLevel);
       return;
     }
     setPiece(nextPiece);
@@ -529,60 +527,20 @@ export const TetrisPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!sessionId) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Tetris
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Blocks fall from the top. Rotate and place them to complete rows.
-            Completed rows disappear and add to your score. Speed increases over
-            time.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handlePlayAgain()}
-            aria-label="Start new Tetris game"
-          >
-            {startingNew ? 'Starting…' : 'Start new game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Tetris"
+        description="Blocks fall from the top. Rotate and place them to complete rows. Completed rows disappear and add to your score. Speed increases over time."
+        startingNew={startingNew}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
+        startAriaLabel="Start new Tetris game"
+      />
     );
   }
 
@@ -599,62 +557,25 @@ export const TetrisPlayPage = () => {
   }
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{ mb: 2 }}
-        flexWrap="wrap"
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Tetris
-        </Typography>
-        {status === 'playing' && (
-          <>
-            <Typography variant="body2" color="text.secondary">
-              Score: {score} · Level: {level} · Lines: {linesCleared}
-            </Typography>
-          </>
-        )}
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Tetris"
+        showStats={status === 'playing'}
+        stats={
+          <Typography variant="body2" color="text.secondary">
+            Score: {score} · Level: {level} · Lines: {linesCleared}
+          </Typography>
+        }
+      />
 
       {status === 'gameover' && (
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360, mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Game over
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Final score: {score} · Level: {level}
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              startIcon={<ReplayIcon />}
-              onClick={() => void handlePlayAgain()}
-              disabled={startingNew}
-            >
-              Play again
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="outlined"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        </Paper>
+        <MiniGameGameOverPanel
+          summary={`Final score: ${score} · Level: ${level}`}
+          startingNew={startingNew}
+          onPlayAgain={async () => {
+            await handlePlayAgain();
+          }}
+        />
       )}
 
       <Paper variant="outlined" sx={{ p: 0.5, display: 'inline-block' }}>
@@ -701,6 +622,6 @@ export const TetrisPlayPage = () => {
           drop
         </Typography>
       )}
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

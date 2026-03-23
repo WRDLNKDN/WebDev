@@ -15,7 +15,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { EmojiClickData, Theme } from 'emoji-picker-react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import {
@@ -131,6 +138,16 @@ export const MessageInput = ({
     null,
   );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const removePendingFileAtIndex = useCallback((indexToRemove: number) => {
+    setPendingFiles((prev) => {
+      const next = prev.filter((_, j) => j !== indexToRemove);
+      if (next.length === 0) {
+        setError(null);
+        setProcessingMessage(null);
+      }
+      return next;
+    });
+  }, []);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -272,9 +289,7 @@ export const MessageInput = ({
               errorMsg.includes('too large') ||
               errorMsg.includes('413')
             ) {
-              setError(
-                'This GIF is too large to process. Try a smaller file (under 8MB).',
-              );
+              setError('This GIF is too large to process. Try a smaller file.');
             } else {
               setError(errorMsg || 'Failed to optimize GIF. Please try again.');
             }
@@ -419,9 +434,7 @@ export const MessageInput = ({
               <Box
                 component="button"
                 type="button"
-                onClick={() =>
-                  setPendingFiles((prev) => prev.filter((_, j) => j !== i))
-                }
+                onClick={() => removePendingFileAtIndex(i)}
                 sx={{ cursor: 'pointer', color: 'error.main', ml: 0.5 }}
               >
                 ×
@@ -572,26 +585,26 @@ export const MessageInput = ({
             onChange={handleFileSelect}
             style={{ display: 'none' }}
           />
-          <Tooltip title="Attach image">
+          <Tooltip title="Attach image or GIF">
             <span>
               <IconButton
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || sending || uploading}
-                aria-label="Attach image"
+                aria-label="Attach image or GIF"
                 sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
               >
                 <ImageIcon fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Attach file">
+          <Tooltip title="Attach document or file (PDF, Word, text)">
             <span>
               <IconButton
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || sending || uploading}
-                aria-label="Attach file"
+                aria-label="Attach document or file"
                 sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
               >
                 <AttachFileIcon fontSize="small" />

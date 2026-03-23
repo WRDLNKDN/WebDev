@@ -25,6 +25,11 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
+import {
+  CHAT_FAVORITE_ACTIVE_BUTTON_SX,
+  CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
+  CHAT_FAVORITE_IDLE_BUTTON_SX,
+} from '../../../theme/chatFavoriteStyles';
 
 type ChatRoomHeaderProps = {
   room: ChatRoomWithMembers | null;
@@ -257,30 +262,29 @@ export const ChatRoomHeader = ({
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <IconButton
-              onClick={onToggleFavorite}
+              type="button"
+              onClick={() => {
+                Promise.resolve(onToggleFavorite()).catch(() => {});
+              }}
               aria-label={
                 isFavorite ? 'Remove from favorites' : 'Add to favorites'
               }
               sx={{
-                color: isFavorite ? '#f5c451' : 'rgba(255,255,255,0.75)',
-                bgcolor: isFavorite ? 'rgba(245,196,81,0.14)' : 'transparent',
-                border: isFavorite
-                  ? '1px solid rgba(245,196,81,0.28)'
-                  : '1px solid transparent',
-                boxShadow: isFavorite
-                  ? '0 0 0 1px rgba(245,196,81,0.08) inset'
-                  : 'none',
+                minWidth: 40,
+                minHeight: 40,
                 transition:
-                  'color 120ms ease, background-color 120ms ease, border-color 120ms ease',
-                '&:hover': {
-                  color: '#f5c451',
-                  bgcolor: 'rgba(245,196,81,0.18)',
-                },
+                  'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
+                ...(isFavorite
+                  ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                  : {
+                      ...CHAT_FAVORITE_IDLE_BUTTON_SX,
+                      color: 'rgba(255,255,255,0.72)',
+                    }),
               }}
             >
               {isFavorite ? (
                 <StarIcon
-                  fontSize="small"
+                  sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
                   data-testid={`chat-room-header-favorite-icon-filled-${room?.id ?? 'unknown'}`}
                 />
               ) : (

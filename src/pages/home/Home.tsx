@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
+import { HowItWorks } from '../../components/home/HowItWorks';
+import { SocialProof } from '../../components/home/SocialProof';
+import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 import '../../components/home/homeLanding.css';
 import {
   useMarketingHomeMode,
@@ -14,6 +17,7 @@ import {
   resetHomeHeroPhase,
   setHomeHeroPhase,
 } from '../../lib/utils/homeHeroPhaseStore';
+import type { HomeHeroUiMode } from '../../lib/utils/homeHeroUiMode';
 import {
   HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS,
   HOME_HERO_VIDEO_FADE_MS,
@@ -59,9 +63,12 @@ const getStoredSessionTokens = async (): Promise<{
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
  * If user is already authenticated and onboarded, redirect to /dashboard.
  * **`coming_soon` on UAT or PROD:** Full **black** viewport during video (matte +
- * hero backdrop), then centered words on the normal **Layout** photo/grid (video
- * unmounts after the fade). **UAT:** Join + Sign-in (GuestView). **PROD:** Same
- * headline/tagline + purple **COMING SOON!!** (no auth CTAs).
+ * hero backdrop); headline and CTAs stay visible for the whole video (no delayed
+ * fade-in). On end/skip, the video fades out, the shell crossfades to the Layout
+ * grid, and the hero **compresses in the same window** so sections below (e.g.
+ * What Makes This Different) move up without a tall dead zone. **UAT:** Join +
+ * Sign-in (GuestView). **PROD:** Same headline/tagline + purple **COMING SOON!!**
+ * (no auth CTAs).
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -83,16 +90,19 @@ export const Home = () => {
 
   const [videoFailed, setVideoFailed] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
-  const [showContent, setShowContent] = useState(false);
   const [showFooter, setShowFooter] = useState(false);
 
+  /**
+   * Video opacity / playback handoff only (`playing` → `dimmed`). For layout and CSS,
+   * use `heroMode` (`HomeHeroUiMode`): `video` = full intro, `compact` = post-intro
+   * when `hasIntroFinished` (dimmed, ended, reduced motion, or error).
+   */
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
 
-  /** After video (or skip / error): crossfade to copy + shell, unmount video, then footer — UAT + prod. */
+  /** After video (or skip / error): crossfade shell + unmount video; copy stays visible throughout. */
   const finishHomeHeroTransition = useCallback(() => {
-    setShowContent(true);
     if (!prefersReducedMotion) {
       setHeroPhase('dimmed');
       window.setTimeout(() => {
@@ -315,8 +325,13 @@ export const Home = () => {
   }, [ensureVideoPlayback]);
 
   useEffect(() => {
-    setHomeHeroPhase(showContent ? 'reveal' : 'video');
-  }, [showContent]);
+    const hasIntroFinished =
+      heroPhase === 'dimmed' ||
+      videoEnded ||
+      prefersReducedMotion ||
+      videoFailed;
+    setHomeHeroPhase(hasIntroFinished ? 'reveal' : 'video');
+  }, [heroPhase, videoEnded, prefersReducedMotion, videoFailed]);
 
   useEffect(() => {
     return () => {
@@ -334,25 +349,6 @@ export const Home = () => {
     }
   }, [showFooter]);
 
-  // Disable scrolling on home page
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const preventScroll = (e: WheelEvent | TouchEvent) => {
-      e.preventDefault();
-    };
-
-    // Prevent wheel scrolling
-    window.addEventListener('wheel', preventScroll, { passive: false });
-    // Prevent touch scrolling
-    window.addEventListener('touchmove', preventScroll, { passive: false });
-
-    return () => {
-      window.removeEventListener('wheel', preventScroll);
-      window.removeEventListener('touchmove', preventScroll);
-    };
-  }, []);
-
   // Onboarded Members → dashboard unless production “gates closed” (marketing-only prod).
   if (session && onboarded === true && !productionComingSoon) {
     return <Navigate to="/dashboard" replace />;
@@ -369,24 +365,45 @@ export const Home = () => {
   const renderHeroMotionVideo =
     (showMarketingHeroVideo || showLocalGuestVideo) && !videoEnded;
 
+  const hasIntroFinished =
+    heroPhase === 'dimmed' || videoEnded || prefersReducedMotion || videoFailed;
+
+  const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
+
   return (
     <main
       className={[
         'home-landing',
-        marketingHome && !showContent ? 'home-landing--coming-soon' : '',
-        marketingHome && !videoEnded
+        marketingHome &&
+        heroPhase === 'playing' &&
+        !prefersReducedMotion &&
+        !videoFailed
+          ? 'home-landing--coming-soon'
+          : '',
+        marketingHome && !videoEnded && !prefersReducedMotion && !videoFailed
           ? 'home-landing--marketing-video-phase'
           : '',
+        /* Compact: stop flex-growing main so below-the-fold sections move up (desktop + mobile) */
+        heroMode === 'compact' ? 'home-landing--hero-compact' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      data-home-hero-mode={heroMode}
       data-testid="signed-out-landing"
     >
       <section
         className={[
           'home-landing__hero',
-          marketingHome ? 'home-landing__hero--coming-soon' : '',
-          videoEnded ? 'home-landing__hero--collapsed' : '',
+          /* Drop tall coming-soon min-height as soon as handoff starts so compact transition runs cleanly */
+          marketingHome &&
+          !videoEnded &&
+          !prefersReducedMotion &&
+          !videoFailed &&
+          heroMode === 'video'
+            ? 'home-landing__hero--coming-soon'
+            : '',
+          /* Post-intro: tight height, transparent backdrop, grid shows through */
+          heroMode === 'compact' ? 'home-landing__hero--compact' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -443,15 +460,15 @@ export const Home = () => {
           ) : null}
 
           <div
-            className={`home-landing__video-overlay${heroPhase === 'dimmed' && !showContent ? ' home-landing__video-overlay--dimmed' : ''}`}
+            className={`home-landing__video-overlay${heroPhase === 'dimmed' ? ' home-landing__video-overlay--dimmed' : ''}`}
           />
         </div>
 
         {!productionComingSoon ? (
           <div
-            className={`home-landing__content${showContent ? ' home-landing__content--visible' : ''}`}
+            className="home-landing__content home-landing__content--visible"
             data-testid="app-main"
-            aria-hidden={!showContent}
+            aria-hidden={false}
           >
             <div className="home-landing__hero-grid">
               <div className="home-landing__headline">
@@ -480,9 +497,9 @@ export const Home = () => {
           </div>
         ) : (
           <div
-            className={`home-landing__content home-landing__content--coming-soon${showContent ? ' home-landing__content--visible' : ''}`}
+            className="home-landing__content home-landing__content--coming-soon home-landing__content--visible"
             data-testid="production-coming-soon-hero-copy"
-            aria-hidden={!showContent}
+            aria-hidden={false}
           >
             <div className="home-landing__hero-grid home-landing__hero-grid--coming-soon">
               <div className="home-landing__headline">
@@ -511,7 +528,13 @@ export const Home = () => {
           </div>
         )}
       </section>
-      {/* Sections removed - no scrolling on home page */}
+      {productionComingSoon ? null : (
+        <>
+          <WhatMakesDifferent />
+          <HowItWorks />
+          <SocialProof />
+        </>
+      )}
     </main>
   );
 };

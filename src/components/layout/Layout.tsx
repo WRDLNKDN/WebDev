@@ -188,9 +188,10 @@ const LayoutContent = () => {
           zIndex: 1,
           flex: 1,
           minHeight: 0,
-          overflowY: isHome ? 'hidden' : 'auto',
+          overflowY:
+            isHome && homeHeroShellPhase === 'video' ? 'hidden' : 'auto',
           overflowX: 'hidden',
-          WebkitOverflowScrolling: isHome ? 'auto' : 'touch',
+          WebkitOverflowScrolling: 'touch',
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',

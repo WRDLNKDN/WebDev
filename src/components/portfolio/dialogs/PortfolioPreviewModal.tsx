@@ -4,26 +4,24 @@
  */
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DownloadIcon from '@mui/icons-material/Download';
-import { Box, Button, Dialog, DialogContent, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { useEffect, useMemo, useState } from 'react';
 import { PortfolioPreviewDialogHeader } from '../preview/PortfolioPreviewDialogHeader';
 import { PortfolioPreviewMeta } from '../preview/PortfolioPreviewMeta';
 import { getPortfolioPreviewModel } from '../../../lib/portfolio/previewUtils';
+import {
+  RESUME_PREVIEW_UNSUPPORTED_MESSAGE,
+  isSupabasePublicResumeUrl,
+} from '../../../lib/portfolio/resumePreviewSupport';
 import type { PortfolioItem } from '../../../types/portfolio';
-
-const GLASS_MODAL = {
-  bgcolor: '#1a1a1d',
-  border: '1px solid rgba(156,187,217,0.28)',
-  borderRadius: 2.5,
-  color: 'white',
-  overflow: 'hidden',
-  backdropFilter: 'blur(20px)',
-  boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(56,132,210,0.14)',
-  margin: '32px auto',
-  maxHeight: 'calc(100vh - 64px)',
-  display: 'flex',
-  flexDirection: 'column',
-};
 
 type PreviewError =
   | 'unsupported'
@@ -49,9 +47,49 @@ export const PortfolioPreviewModal = ({
   open,
   onClose,
 }: PortfolioPreviewModalProps) => {
+  const theme = useTheme();
   const [previewError, setPreviewError] = useState<PreviewError | null>(null);
-  const { kind, linkType, typeLabel, openUrl, downloadUrl, previewUrl } =
-    getPortfolioPreviewModel(project);
+  const model = useMemo(() => getPortfolioPreviewModel(project), [project]);
+  const {
+    kind,
+    linkType,
+    typeLabel,
+    openUrl,
+    downloadUrl,
+    previewUrl,
+    previewable,
+  } = model;
+
+  const paperSx = useMemo(
+    () => ({
+      bgcolor:
+        theme.palette.mode === 'light'
+          ? theme.palette.background.paper
+          : '#1a1a1d',
+      border: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 1 : 0.28)}`,
+      borderRadius: 2.5,
+      color: theme.palette.text.primary,
+      overflow: 'hidden',
+      backdropFilter: 'blur(20px)',
+      boxShadow:
+        theme.palette.mode === 'light'
+          ? `0 24px 48px ${alpha(theme.palette.common.black, 0.12)}`
+          : '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(56,132,210,0.14)',
+      margin: '32px auto',
+      maxHeight: 'calc(100vh - 64px)',
+      display: 'flex',
+      flexDirection: 'column' as const,
+    }),
+    [theme],
+  );
+
+  const resumeInlineBlockedCopy =
+    !previewable &&
+    linkType === 'document' &&
+    Boolean(openUrl) &&
+    isSupabasePublicResumeUrl(openUrl)
+      ? RESUME_PREVIEW_UNSUPPORTED_MESSAGE
+      : null;
 
   useEffect(() => {
     if (open) setPreviewError(null);
@@ -235,11 +273,14 @@ export const PortfolioPreviewModal = ({
       data-testid="portfolio-preview-modal"
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: GLASS_MODAL }}
+      PaperProps={{ sx: paperSx }}
       BackdropProps={{
         sx: {
           backdropFilter: 'blur(6px)',
-          backgroundColor: 'rgba(6, 10, 20, 0.72)',
+          backgroundColor:
+            theme.palette.mode === 'light'
+              ? alpha(theme.palette.common.black, 0.25)
+              : 'rgba(6, 10, 20, 0.72)',
         },
       }}
       sx={{ '& .MuiDialog-container': { alignItems: 'center' } }}
@@ -276,7 +317,8 @@ export const PortfolioPreviewModal = ({
             }}
           >
             <Typography color="text.secondary" gutterBottom>
-              This artifact cannot be previewed in-browser. Download to open it.
+              {resumeInlineBlockedCopy ??
+                'This artifact cannot be previewed in-browser. Download to open it.'}
             </Typography>
             {openUrl ? (
               <Button

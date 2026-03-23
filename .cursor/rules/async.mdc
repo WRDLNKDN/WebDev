@@ -1,0 +1,8 @@
+---
+description: Async usage conventions
+alwaysApply: true
+---
+
+- Prefer async/await over .then()
+- Use try/catch for errors
+- Use void fn() for fire-and-forget

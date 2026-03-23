@@ -110,7 +110,16 @@ export const CHAT_ALLOWED_ACCEPT = [
   ...CHAT_ALLOWED_EXTENSIONS,
 ].join(',');
 
+/** Max size for direct upload without server-side processing (non-GIF and small GIF). */
 export const CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES = 2 * 1024 * 1024;
+/**
+ * GIFs larger than {@link CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES} but within this limit are
+ * sent to server transcoding (e.g. MP4). Keep in sync with `CHAT_GIF_PROCESSING_MAX_BYTES` in backend.
+ */
+export const CHAT_GIF_PROCESSING_MAX_FILE_BYTES = 8 * 1024 * 1024;
+export const CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES =
+  CHAT_GIF_PROCESSING_MAX_FILE_BYTES;
+/** Alias for direct-upload ceiling (non-GIF); do not use as max for GIF processing. */
 export const CHAT_MAX_FILE_BYTES = CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES;
 export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 1;
 export const CHAT_MAX_GROUP_MEMBERS = 100;

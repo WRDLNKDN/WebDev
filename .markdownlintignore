@@ -1,2 +1,9 @@
-test-results/
-dist/
+node_modules/**
+dist/**
+build/**
+coverage/**
+.vercel/**
+.git/**
+playwright-report/**
+lighthouse-reports/**
+test-results/**

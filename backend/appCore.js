@@ -210,35 +210,124 @@ const errorMessage = (e, fallback) => {
   if (typeof e === 'string' && e.trim()) return e;
   return fallback;
 };
+// Keep in sync with WebDev `CHAT_GIF_PROCESSING_MAX_FILE_BYTES` (src/types/chat.ts).
 const CHAT_GIF_PROCESSING_MAX_BYTES = 8 * 1024 * 1024;
 const CHAT_PROCESSED_MEDIA_MAX_BYTES = CHAT_GIF_PROCESSING_MAX_BYTES;
 const FFMPEG_BINARY = process.env.FFMPEG_PATH || 'ffmpeg';
-const runExecFile = (file, args) =>
+const FFMPEG_EXEC_MAX_BUFFER = 64 * 1024 * 1024;
+
+const runFfmpeg = (args) =>
   new Promise((resolve, reject) => {
-    execFile(file, args, { maxBuffer: 10 * 1024 * 1024 }, (error) => {
-      if (error) reject(error);
-      else resolve();
-    });
+    execFile(
+      FFMPEG_BINARY,
+      args,
+      { maxBuffer: FFMPEG_EXEC_MAX_BUFFER },
+      (error, _stdout, stderr) => {
+        if (error) {
+          const tail = (stderr || '').toString().trim().slice(-4000);
+          reject(
+            tail
+              ? new Error(`${error.message}\n${tail}`, { cause: error })
+              : error,
+          );
+          return;
+        }
+        resolve();
+      },
+    );
   });
+
+/**
+ * GIF → MP4 for chat. yuv420p requires even width/height; many GIFs use odd
+ * dimensions; a follow-up scale rounds to even pixels for libx264. Tries
+ * smaller scale, then mpeg4 if x264 is unavailable on the host.
+ */
 const transcodeGifBufferToMp4 = async (buffer) => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wrdlnkdn-gif-'));
   const inputPath = path.join(tempDir, 'input.gif');
   const outputPath = path.join(tempDir, 'output.mp4');
-  try {
-    await fs.writeFile(inputPath, buffer);
-    await runExecFile(FFMPEG_BINARY, [
+  const argSets = [
+    [
+      '-hide_banner',
+      '-loglevel',
+      'error',
       '-y',
       '-i',
       inputPath,
+      '-an',
       '-movflags',
       '+faststart',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'veryfast',
+      '-crf',
+      '26',
       '-pix_fmt',
       'yuv420p',
       '-vf',
-      'fps=15,scale=min(960\\,iw):-2:flags=lanczos',
+      String.raw`fps=15,scale=min(960\,iw):-2:flags=lanczos,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
       outputPath,
-    ]);
-    return await fs.readFile(outputPath);
+    ],
+    [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-i',
+      inputPath,
+      '-an',
+      '-movflags',
+      '+faststart',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'veryfast',
+      '-crf',
+      '28',
+      '-pix_fmt',
+      'yuv420p',
+      '-vf',
+      'fps=10,scale=480:-2:flags=lanczos,scale=trunc(iw/2)*2:trunc(ih/2)*2',
+      outputPath,
+    ],
+    [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-i',
+      inputPath,
+      '-an',
+      '-movflags',
+      '+faststart',
+      '-c:v',
+      'mpeg4',
+      '-q:v',
+      '8',
+      '-pix_fmt',
+      'yuv420p',
+      '-vf',
+      'fps=10,scale=480:-2:flags=lanczos,scale=trunc(iw/2)*2:trunc(ih/2)*2',
+      outputPath,
+    ],
+  ];
+  try {
+    await fs.writeFile(inputPath, buffer);
+    let lastErr;
+    for (const args of argSets) {
+      try {
+        await runFfmpeg(args);
+        const out = await fs.readFile(outputPath);
+        if (!out.length) throw new Error('GIF transcode produced empty output');
+        return out;
+      } catch (e) {
+        lastErr = e;
+        await fs.unlink(outputPath).catch(() => {});
+      }
+    }
+    console.error('[chat/process-gif] ffmpeg exhausted fallbacks', lastErr);
+    throw lastErr ?? new Error('GIF transcode failed');
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
   }
@@ -1804,7 +1893,11 @@ app.post('/api/chat/attachments/process-gif', requireAuth, (req, res) => {
     const userId = req.userId;
     if (!userId) return sendApiError(res, 401, 'Unauthorized');
     const file = req.file;
-    if (!file || file.mimetype !== 'image/gif') {
+    const name =
+      typeof file?.originalname === 'string' ? file.originalname : '';
+    const looksLikeGif =
+      name.toLowerCase().endsWith('.gif') || file?.mimetype === 'image/gif';
+    if (!file || !looksLikeGif) {
       return sendApiError(res, 400, 'GIF file required');
     }
     if (file.size > CHAT_GIF_PROCESSING_MAX_BYTES) {
@@ -1831,7 +1924,10 @@ app.post('/api/chat/attachments/process-gif', requireAuth, (req, res) => {
           contentType: 'video/mp4',
           upsert: false,
         });
-      if (error) return sendApiError(res, 500, 'GIF processing failed');
+      if (error) {
+        console.error('[chat/process-gif] storage upload failed', error);
+        return sendApiError(res, 500, 'GIF processing failed');
+      }
 
       return res.json({
         ok: true,

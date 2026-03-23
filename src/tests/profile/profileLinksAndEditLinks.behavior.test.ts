@@ -3,7 +3,11 @@ import {
   groupAndAlphabetizeLinks,
   DISPLAY_CATEGORY_ORDER,
 } from '../../lib/profile/groupAndAlphabetizeLinks';
-import { compareLinksByTitle } from '../../lib/profile/linkTitle';
+import {
+  DISPLAY_LINK_CATEGORY_ORDER,
+  getDisplayLinkCategory,
+  sortSocialLinksForEdit,
+} from '../../lib/profile/socialLinksPresentation';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import type { SocialLink } from '../../types/profile';
 import {
@@ -13,46 +17,32 @@ import {
 } from './profileLinksAndEditLinks.fixtures';
 
 describe('EditLinksDialog sortedLinks: alphabetical within category', () => {
-  const sortForDisplay = (links: SocialLink[]): SocialLink[] => {
-    const CATEGORY_ORDER = [
-      'Professional',
-      'Social',
-      'Content',
-      'Games',
-      'Custom',
-    ];
-    return [...links].sort((a, b) => {
-      const catA = CATEGORY_ORDER.indexOf(a.category);
-      const catB = CATEGORY_ORDER.indexOf(b.category);
-      if (catA !== catB) return catA - catB;
-      return compareLinksByTitle(a, b);
-    });
-  };
-
   it('sorts within Professional alphabetically regardless of order property', () => {
-    const sorted = sortForDisplay(PROFESSIONAL_LINKS);
+    const sorted = sortSocialLinksForEdit(PROFESSIONAL_LINKS);
     const labels = sorted.map((l) => l.label);
     expect(labels).toEqual(['GitHub', 'LinkedIn', 'Stack Overflow']);
   });
 
   it('sorts within Social alphabetically regardless of order property', () => {
-    const sorted = sortForDisplay(SOCIAL_LINKS);
+    const sorted = sortSocialLinksForEdit(SOCIAL_LINKS);
     const labels = sorted.map((l) => l.label);
     expect(labels).toEqual(['Discord', 'Instagram']);
   });
 
-  it('Professional comes before Social before Content in sorted output', () => {
-    const sorted = sortForDisplay(ALL_LINKS);
-    const categories = sorted.map((l) => l.category);
-    const profIdx = categories.lastIndexOf('Professional');
-    const socialIdx = categories.indexOf('Social');
-    const contentIdx = categories.indexOf('Content');
-    expect(profIdx).toBeLessThan(socialIdx);
-    expect(socialIdx).toBeLessThan(contentIdx);
+  it('follows DISPLAY_LINK_CATEGORY_ORDER between categories in sorted output', () => {
+    const sorted = sortSocialLinksForEdit(ALL_LINKS);
+    const displayCategories = sorted.map((l) => getDisplayLinkCategory(l));
+    const rank = (cat: (typeof DISPLAY_LINK_CATEGORY_ORDER)[number]) =>
+      DISPLAY_LINK_CATEGORY_ORDER.indexOf(cat);
+    for (let i = 1; i < displayCategories.length; i += 1) {
+      expect(rank(displayCategories[i])).toBeGreaterThanOrEqual(
+        rank(displayCategories[i - 1]),
+      );
+    }
   });
 
   it('does not use order property as a tiebreaker when labels differ', () => {
-    const sorted = sortForDisplay(PROFESSIONAL_LINKS);
+    const sorted = sortSocialLinksForEdit(PROFESSIONAL_LINKS);
     expect(sorted[0].platform).toBe('GitHub');
   });
 });

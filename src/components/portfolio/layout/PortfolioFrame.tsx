@@ -15,6 +15,11 @@ export const PortfolioFrame = ({ title, children }: PortfolioFrameProps) => (
         fontWeight: 600,
         pl: { xs: 0.5, sm: 2 },
         letterSpacing: 1,
+        maxWidth: '100%',
+        minWidth: 0,
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
+        whiteSpace: 'normal',
       }}
     >
       {title}

@@ -76,7 +76,7 @@ export const AttachmentPreview = ({
         />
       ) : (
         <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', fontSize: 12 }}>
-          {signedUrl ? 'File' : '...'}
+          {signedUrl ? 'File' : '…'}
         </Box>
       )}
     </Box>

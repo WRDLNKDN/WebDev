@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildEcwidProductBrowserInit,
+  getAlternateStorefrontUrl,
   getEcwidScriptId,
   getEcwidStoreDivId,
   getEcwidStoreId,
+  getStoreExternalUrl,
   GODADDY_STOREFRONT_URL,
+  resolveStoreExternalUrl,
 } from '../../lib/marketing/storefront';
 
 describe('storefront helpers', () => {
@@ -32,5 +35,81 @@ describe('storefront helpers', () => {
 
   it('keeps the backup storefront URL available for rollback', () => {
     expect(GODADDY_STOREFRONT_URL).toBe('https://wrdlnkdn.com/store-1');
+  });
+
+  it('uses VITE_STORE_URL when set for external store link', () => {
+    expect(
+      getStoreExternalUrl({
+        VITE_STORE_URL: ' https://shop.example/ ',
+        VITE_ECWID_STORE_ID: '99',
+      }),
+    ).toBe('https://shop.example/');
+  });
+
+  it('uses Ecwid instant-site style host from store id when URL unset', () => {
+    expect(getStoreExternalUrl({ VITE_ECWID_STORE_ID: '12345' })).toBe(
+      'https://12345.company.site',
+    );
+  });
+
+  it('falls back to GoDaddy when no storefront env is set', () => {
+    expect(getStoreExternalUrl({})).toBe(GODADDY_STOREFRONT_URL);
+  });
+
+  it('exposes alternate URL only when env configures Ecwid or VITE_STORE_URL', () => {
+    expect(getAlternateStorefrontUrl({})).toBeUndefined();
+    expect(
+      getAlternateStorefrontUrl({ VITE_STORE_URL: 'https://shop.example/' }),
+    ).toBe('https://shop.example/');
+    expect(getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' })).toBe(
+      'https://9.company.site',
+    );
+  });
+});
+
+describe('resolveStoreExternalUrl', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.unstubAllGlobals();
+  });
+
+  it('prefers GoDaddy when the probe fetch completes', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({}) as typeof fetch;
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: 'https://alt.example/',
+        VITE_ECWID_STORE_ID: '1',
+      }),
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+  });
+
+  it('uses alternate URL when probe fails and env has Ecwid', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error('network')) as typeof fetch;
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
+        VITE_ECWID_STORE_ID: '111',
+      }),
+    ).resolves.toBe('https://111.company.site');
+  });
+
+  it('still returns GoDaddy when probe fails and no alternate is configured', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error('network')) as typeof fetch;
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 });

@@ -1,3 +1,5 @@
+import type { Route } from '@playwright/test';
+
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
@@ -7,10 +9,160 @@ const ROOM_ID_2 = 'e2e-room-favorite-2222-4222-8222-222222222222';
 const OTHER_USER_ID = 'favorite-other-user-1';
 const OTHER_USER_ID_2 = 'favorite-other-user-2';
 
+function parseEqFilter(url: URL, column: string): string | undefined {
+  const raw = url.searchParams.get(column);
+  if (!raw?.startsWith('eq.')) return undefined;
+  return decodeURIComponent(raw.slice(3));
+}
+
+function parseInFilter(url: URL, column: string): string[] | undefined {
+  const raw = url.searchParams.get(column);
+  if (!raw?.startsWith('in.')) return undefined;
+  const inner = raw.slice(3).replaceAll('(', '').replaceAll(')', '');
+  if (!inner.trim()) return [];
+  return inner.split(',').map((part) => decodeURIComponent(part.trim()));
+}
+
+function requestedRoomIds(url: URL): string[] {
+  const single = parseEqFilter(url, 'room_id');
+  if (single) return [single];
+  const many = parseInFilter(url, 'room_id');
+  return many ?? [];
+}
+
+type RoomPrefs = Map<string, { is_favorite: boolean }>;
+
+async function fulfillChatRoomPreferencesGet(
+  route: Route,
+  url: URL,
+  roomPrefs: RoomPrefs,
+  userId: string,
+): Promise<void> {
+  const accept = route.request().headers()['accept'] ?? '';
+  const wantsObject = accept.includes('application/vnd.pgrst.object+json');
+  const ids = requestedRoomIds(url);
+
+  if (wantsObject) {
+    const rid = ids[0];
+    const row = rid && roomPrefs.has(rid) ? { room_id: rid } : null;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: row === null ? 'null' : JSON.stringify(row),
+    });
+    return;
+  }
+
+  const rows = ids
+    .filter((id) => roomPrefs.has(id))
+    .map((id) => ({
+      room_id: id,
+      user_id: userId,
+      is_favorite: roomPrefs.get(id)!.is_favorite,
+    }));
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(rows),
+  });
+}
+
+async function fulfillChatRoomPreferencesPatch(
+  route: Route,
+  url: URL,
+  roomPrefs: RoomPrefs,
+  syncFavoriteState: () => void,
+  userId: string,
+): Promise<void> {
+  const rid = parseEqFilter(url, 'room_id');
+  const uid = parseEqFilter(url, 'user_id');
+  const body = route.request().postDataJSON() as { is_favorite?: boolean };
+  if (rid && uid === userId) {
+    roomPrefs.set(rid, { is_favorite: Boolean(body?.is_favorite) });
+    syncFavoriteState();
+  }
+  await route.fulfill({ status: 204, body: '' });
+}
+
+async function fulfillChatRoomPreferencesPost(
+  route: Route,
+  roomPrefs: RoomPrefs,
+  syncFavoriteState: () => void,
+): Promise<void> {
+  const raw = route.request().postDataJSON() as
+    | {
+        room_id?: string;
+        user_id?: string;
+        is_favorite?: boolean;
+      }
+    | Array<{
+        room_id?: string;
+        user_id?: string;
+        is_favorite?: boolean;
+      }>;
+  const rows = Array.isArray(raw) ? raw : [raw];
+  for (const payload of rows) {
+    if (payload.room_id) {
+      roomPrefs.set(payload.room_id, {
+        is_favorite: Boolean(payload.is_favorite),
+      });
+    }
+  }
+  syncFavoriteState();
+  await route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify(rows),
+  });
+}
+
+async function fulfillChatRoomPreferencesRoute(
+  route: Route,
+  roomPrefs: RoomPrefs,
+  syncFavoriteState: () => void,
+  userId: string,
+): Promise<void> {
+  const method = route.request().method();
+  const url = new URL(route.request().url());
+
+  if (method === 'GET') {
+    await fulfillChatRoomPreferencesGet(route, url, roomPrefs, userId);
+    return;
+  }
+  if (method === 'PATCH') {
+    await fulfillChatRoomPreferencesPatch(
+      route,
+      url,
+      roomPrefs,
+      syncFavoriteState,
+      userId,
+    );
+    return;
+  }
+  if (method === 'POST') {
+    await fulfillChatRoomPreferencesPost(route, roomPrefs, syncFavoriteState);
+    return;
+  }
+
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  });
+}
+
 async function stubChatFavoritesSurface(
   page: import('@playwright/test').Page,
   favoriteState: { value: boolean },
 ) {
+  const roomPrefs = new Map<string, { is_favorite: boolean }>();
+  if (favoriteState.value) {
+    roomPrefs.set(ROOM_ID, { is_favorite: true });
+  }
+
+  const syncFavoriteState = () => {
+    favoriteState.value = roomPrefs.get(ROOM_ID)?.is_favorite ?? false;
+  };
   await page.route('**/rest/v1/feature_flags*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -136,51 +288,12 @@ async function stubChatFavoritesSurface(
   });
 
   await page.route('**/rest/v1/chat_room_preferences*', async (route) => {
-    const method = route.request().method();
-    if (method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          favoriteState.value
-            ? [
-                {
-                  room_id: ROOM_ID,
-                  is_favorite: true,
-                },
-              ]
-            : [],
-        ),
-      });
-      return;
-    }
-
-    if (method === 'POST') {
-      const payload = route.request().postDataJSON() as {
-        room_id?: string;
-        user_id?: string;
-        is_favorite?: boolean;
-      };
-      favoriteState.value = Boolean(payload?.is_favorite);
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            room_id: ROOM_ID,
-            user_id: USER_ID,
-            is_favorite: favoriteState.value,
-          },
-        ]),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: '[]',
-    });
+    await fulfillChatRoomPreferencesRoute(
+      route,
+      roomPrefs,
+      syncFavoriteState,
+      USER_ID,
+    );
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {

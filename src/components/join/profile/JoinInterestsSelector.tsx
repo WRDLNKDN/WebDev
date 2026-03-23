@@ -1,4 +1,11 @@
-import { Box, Chip, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Chip,
+  Stack,
+  TextField,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { useState } from 'react';
 import {
   INTEREST_CATEGORIES,
@@ -13,8 +20,8 @@ import {
   PROFANITY_ERROR_MESSAGE_INTEREST,
 } from '../../../lib/validation/profanity';
 import {
-  FORM_OUTLINED_FIELD_SX,
   FORM_SECTION_HEADING_SX,
+  outlinedFieldSxFromTheme,
 } from '../../../lib/ui/formSurface';
 
 export interface JoinInterestsSelectorProps {
@@ -39,6 +46,9 @@ export const JoinInterestsSelector = ({
   error,
   onValidationError,
 }: JoinInterestsSelectorProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+  const outlinedFieldSx = outlinedFieldSxFromTheme(theme);
   const [customOtherInput, setCustomOtherInput] = useState('');
 
   const atMax = value.length >= INTERESTS_MAX;
@@ -137,8 +147,12 @@ export const JoinInterestsSelector = ({
                         variant={selected ? 'filled' : 'outlined'}
                         sx={{
                           '&.MuiChip-outlined': {
-                            borderColor: 'rgba(255,255,255,0.35)',
-                            color: 'rgba(255,255,255,0.9)',
+                            borderColor: isLight
+                              ? 'divider'
+                              : 'rgba(255,255,255,0.35)',
+                            color: isLight
+                              ? 'text.primary'
+                              : 'rgba(255,255,255,0.9)',
                           },
                         }}
                         aria-pressed={selected}
@@ -182,7 +196,7 @@ export const JoinInterestsSelector = ({
                       }
                     }}
                     sx={{
-                      ...FORM_OUTLINED_FIELD_SX,
+                      ...outlinedFieldSx,
                       flex: '1 1 200px',
                       minWidth: 0,
                     }}

@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures';
 
-test.describe('Storefront route', () => {
-  test('keeps store navigation inside WRDLNKDN and preserves backup storefront access', async ({
+test.describe('Storefront', () => {
+  test('/store opens external shop in a new tab and returns to home', async ({
     page,
   }) => {
     await page.route('**/rest/v1/feature_flags*', async (route) => {
@@ -18,35 +18,21 @@ test.describe('Storefront route', () => {
       });
     });
 
-    const externalStoreRequests: string[] = [];
-    page.on('request', (request) => {
-      const url = request.url();
-      if (url.includes('wrdlnkdn.com/store-1')) {
-        externalStoreRequests.push(url);
-      }
-    });
-
+    const popupPromise = page.waitForEvent('popup');
     await page.goto('/store', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/store$/);
 
-    const backupLinks = page.getByRole('link', { name: /backup storefront/i });
-    await expect(backupLinks.first()).toBeVisible({ timeout: 15_000 });
-    await expect(backupLinks.first()).toHaveAttribute(
-      'href',
-      'https://wrdlnkdn.com/store-1',
-    );
+    const popup = await popupPromise;
+    try {
+      await expect(popup).toHaveURL(
+        /wrdlnkdn\.com\/store-1|company\.site|ecwid/i,
+        {
+          timeout: 15_000,
+        },
+      );
+    } finally {
+      await popup.close().catch(() => {});
+    }
 
-    const headings = page.getByRole('heading', { name: /^Store$/ });
-    const fallbackHeading = page.getByRole('heading', {
-      name: 'Store not configured',
-    });
-
-    await expect
-      .poll(
-        async () => (await headings.count()) + (await fallbackHeading.count()),
-      )
-      .toBeGreaterThan(0);
-
-    expect(externalStoreRequests).toEqual([]);
+    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
   });
 });

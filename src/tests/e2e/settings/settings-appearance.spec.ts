@@ -1,6 +1,12 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
+import {
+  stubE2eApiGetOkEmpty,
+  stubFeatureFlagSettingsPrivacyMarketing,
+  stubIsAdminRpcFalse,
+  stubRestV1EmptyReadList,
+} from '../utils/settingsRoutesStubs';
 
 type ThemeUpdatePayload = Record<string, unknown>;
 
@@ -20,50 +26,10 @@ async function stubAppearanceSettingsSurface(page: Page) {
 
   const themeUpdates: ThemeUpdatePayload[] = [];
 
-  await page.route('**/api/**', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, data: [] }),
-    });
-  });
-
-  await page.route('**/rest/v1/**', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([]),
-    });
-  });
-
-  await page.route('**/rest/v1/rpc/is_admin', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(false),
-    });
-  });
-
-  await page.route('**/rest/v1/feature_flags*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          key: 'settings_privacy_marketing_consent',
-          enabled: true,
-        },
-      ]),
-    });
-  });
+  await stubE2eApiGetOkEmpty(page);
+  await stubRestV1EmptyReadList(page);
+  await stubIsAdminRpcFalse(page);
+  await stubFeatureFlagSettingsPrivacyMarketing(page, true);
 
   await page.route('**/rest/v1/profiles*', async (route) => {
     const method = route.request().method();

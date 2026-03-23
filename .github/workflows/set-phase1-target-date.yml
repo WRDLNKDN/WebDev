@@ -1,0 +1,50 @@
+name: Set Phase 1 target date when blank
+
+on:
+  issues:
+    types: [opened, edited, milestoned]
+
+  projects_v2_item:
+    types: [created, edited]
+
+  workflow_dispatch:
+    inputs:
+      owner_type:
+        description: Project owner (where the project lives)
+        required: true
+        type: choice
+        options:
+          - org
+          - user
+      owner_login:
+        description: Organization login or GitHub username that owns the project
+        required: true
+        type: string
+      project_number:
+        description:
+          Project number from the URL (e.g. …/orgs/ORG/projects/3 → 3)
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: set-phase1-target-date-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  set-target-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Target Date for Phase 1 when blank
+        uses: actions/github-script@v7
+        with:
+          github-token:
+            ${{ secrets.PROJECT_PHASE1_TARGET_DATE_TOKEN || github.token }}
+          script: |
+            const run = require('./scripts/github-projects/set-phase1-target-date.cjs');
+            await run({ github, context, core });

@@ -1,11 +1,79 @@
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PsychologyIcon from '@mui/icons-material/Psychology';
-import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { alpha, type Theme } from '@mui/material/styles';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import React from 'react';
 
+const nameHeadingSx = {
+  fontWeight: 700,
+  mb: 0.5,
+  letterSpacing: -0.5,
+  fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
+  wordBreak: 'break-word' as const,
+  overflowWrap: 'break-word' as const,
+};
+
+type IdentityHeaderTitleBlockProps = {
+  displayName: string;
+  memberHandle?: string | null;
+  tagline?: string;
+  bioBlock: React.ReactNode;
+};
+
+const IdentityHeaderTitleBlock = ({
+  displayName,
+  memberHandle,
+  tagline,
+  bioBlock,
+}: IdentityHeaderTitleBlockProps) => {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="h4" sx={nameHeadingSx}>
+        {displayName}
+      </Typography>
+      {memberHandle ? (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            mb: tagline ? 0.5 : 1,
+            fontWeight: 600,
+            wordBreak: 'break-all',
+          }}
+        >
+          @{memberHandle}
+        </Typography>
+      ) : null}
+      {tagline && (
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            mb: 1,
+            color: 'primary.main',
+          }}
+        >
+          {tagline}
+        </Typography>
+      )}
+      {bioBlock}
+    </Box>
+  );
+};
+
 interface IdentityHeaderProps {
   displayName: string;
+  /** @handle shown under the display name when set (dashboard / public profile). */
+  memberHandle?: string | null;
   tagline?: string;
   bio: string;
   /** When true, bio is empty-state prompt (no quotes, muted style) */
@@ -38,12 +106,257 @@ interface IdentityHeaderProps {
   onAddBio?: () => void;
 }
 
-const CARD_BG = 'rgba(30, 30, 30, 0.65)';
-const BANNER_GLOW =
-  '0 0 40px rgba(66, 165, 245, 0.12), 0 18px 60px rgba(0,0,0,0.5)';
+const IdentityBioBlock = ({
+  theme,
+  isLight,
+  layoutVariant,
+  bio,
+  bioIsPlaceholder,
+  onAddBio,
+}: {
+  theme: Theme;
+  isLight: boolean;
+  layoutVariant: 'default' | 'three-column';
+  bio: string;
+  bioIsPlaceholder: boolean;
+  onAddBio?: () => void;
+}) => {
+  if (bioIsPlaceholder && onAddBio) {
+    return (
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => onAddBio()}
+        aria-label="Add bio"
+        sx={{
+          mt: 0.5,
+          my: 1,
+          borderColor: 'rgba(141,188,229,0.50)',
+          color: isLight ? 'primary.main' : 'white',
+          textTransform: 'none',
+          fontSize: '0.9rem',
+          '&:hover': {
+            borderColor: isLight ? 'primary.dark' : 'rgba(255,255,255,0.5)',
+            bgcolor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.14),
+          },
+        }}
+      >
+        Add bio
+      </Button>
+    );
+  }
+  if (!bioIsPlaceholder && bio) {
+    return (
+      <Typography
+        component="blockquote"
+        variant="body1"
+        color="text.secondary"
+        sx={{
+          lineHeight: 1.6,
+          fontStyle: 'italic',
+          borderLeft: '3px solid',
+          borderColor: 'primary.main',
+          pl: { xs: 1.5, md: 2 },
+          my: 1,
+          mt: 0.5,
+          maxWidth: layoutVariant === 'three-column' ? '100%' : 560,
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
+        }}
+      >
+        &ldquo;{bio}&rdquo;
+      </Typography>
+    );
+  }
+  return null;
+};
+
+const IdentityHeaderThreeColumnGrid = ({
+  avatarBlock,
+  displayName,
+  memberHandle,
+  tagline,
+  bioBlock,
+  badges,
+  actions,
+  rightColumn,
+}: {
+  avatarBlock: React.ReactNode;
+  displayName: string;
+  memberHandle?: string | null;
+  tagline?: string;
+  bioBlock: React.ReactNode;
+  badges?: React.ReactNode;
+  actions?: React.ReactNode;
+  rightColumn?: React.ReactNode;
+}) => {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gap: { xs: 2, sm: 3, md: 4 },
+        alignItems: 'start',
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: '120px minmax(0, 1fr) minmax(220px, 280px)',
+        },
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>{avatarBlock}</Box>
+      <Stack spacing={2} sx={{ minWidth: 0 }}>
+        <IdentityHeaderTitleBlock
+          displayName={displayName}
+          memberHandle={memberHandle}
+          tagline={tagline}
+          bioBlock={bioBlock}
+        />
+        {badges ? <Box sx={{ minWidth: 0 }}>{badges}</Box> : null}
+        {actions ? (
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="flex-start"
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            flexWrap="wrap"
+            useFlexGap
+            spacing={{ xs: 1.25, sm: 2 }}
+            sx={{
+              '& .MuiButton-root': { minWidth: 0 },
+            }}
+          >
+            {actions}
+          </Stack>
+        ) : null}
+      </Stack>
+      {rightColumn ? <Box sx={{ minWidth: 0 }}>{rightColumn}</Box> : null}
+    </Box>
+  );
+};
+
+const IdentityHeaderDefaultStack = ({
+  avatarBlock,
+  displayName,
+  memberHandle,
+  tagline,
+  bioBlock,
+  badges,
+  slotLeftOfAvatar,
+  slotBetweenContentAndActionsLabel,
+  slotBetweenContentAndActions,
+  actions,
+}: {
+  avatarBlock: React.ReactNode;
+  displayName: string;
+  memberHandle?: string | null;
+  tagline?: string;
+  bioBlock: React.ReactNode;
+  badges?: React.ReactNode;
+  slotLeftOfAvatar?: React.ReactNode;
+  slotBetweenContentAndActionsLabel?: string;
+  slotBetweenContentAndActions?: React.ReactNode;
+  actions?: React.ReactNode;
+}) => {
+  return (
+    <Stack
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={{ xs: 2, sm: 3, md: 4 }}
+      alignItems={{ xs: 'stretch', md: 'center' }}
+      justifyContent="flex-start"
+      sx={{ textAlign: 'left', minWidth: 0 }}
+    >
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={{ xs: 1.5, md: 2 }}
+        alignItems="flex-start"
+        sx={{ flex: '1 1 0', minWidth: 0, maxWidth: '100%' }}
+      >
+        {avatarBlock}
+        <Box
+          sx={{
+            flex: '1 1 0',
+            minWidth: 0,
+            maxWidth: '100%',
+            '@media (min-width: 900px)': { minWidth: 360 },
+          }}
+        >
+          <IdentityHeaderTitleBlock
+            displayName={displayName}
+            memberHandle={memberHandle}
+            tagline={tagline}
+            bioBlock={bioBlock}
+          />
+
+          {badges && (
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              gap={1}
+              sx={{ mt: 2, mb: 2 }}
+            >
+              {badges}
+            </Stack>
+          )}
+        </Box>
+      </Stack>
+      {slotLeftOfAvatar && (
+        <Box
+          sx={{
+            flexShrink: 0,
+            minWidth: { md: 220 },
+            maxWidth: { md: 280 },
+          }}
+        >
+          {slotLeftOfAvatar}
+        </Box>
+      )}
+      {slotBetweenContentAndActions && (
+        <Stack
+          alignItems={{ xs: 'center', md: 'flex-end' }}
+          sx={{
+            flexShrink: 0,
+            minWidth: 0,
+          }}
+        >
+          {slotBetweenContentAndActionsLabel && (
+            <Typography
+              variant="overline"
+              sx={{
+                letterSpacing: 1.5,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                mb: 1,
+              }}
+            >
+              {slotBetweenContentAndActionsLabel}
+            </Typography>
+          )}
+          {slotBetweenContentAndActions}
+        </Stack>
+      )}
+      {actions && (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="flex-start"
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          flexWrap="wrap"
+          useFlexGap
+          spacing={{ xs: 1.25, sm: 2 }}
+          sx={{
+            flexShrink: 0,
+            alignSelf: { xs: 'stretch', md: 'center' },
+            '& .MuiButton-root': { minWidth: 0 },
+          }}
+        >
+          {actions}
+        </Stack>
+      )}
+    </Stack>
+  );
+};
 
 export const IdentityHeader = ({
   displayName,
+  memberHandle,
   tagline,
   bio,
   bioIsPlaceholder = false,
@@ -61,6 +374,15 @@ export const IdentityHeader = ({
   statusEmoji: _statusEmoji,
   statusMessage: _statusMessage,
 }: IdentityHeaderProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+  const cardBg = isLight
+    ? alpha(theme.palette.primary.main, 0.06)
+    : 'rgba(30, 30, 30, 0.65)';
+  const bannerGlow = isLight
+    ? `0 0 24px ${alpha(theme.palette.primary.main, 0.12)}, 0 12px 40px ${alpha(theme.palette.common.black, 0.08)}`
+    : '0 0 40px rgba(66, 165, 245, 0.12), 0 18px 60px rgba(0,0,0,0.5)';
+
   const avatarBlock = (
     <Stack alignItems="flex-start" spacing={1.5} sx={{ flexShrink: 0 }}>
       <Box
@@ -104,49 +426,16 @@ export const IdentityHeader = ({
     </Stack>
   );
 
-  const bioBlock =
-    bioIsPlaceholder && onAddBio ? (
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => onAddBio()}
-        aria-label="Add bio"
-        sx={{
-          mt: 0.5,
-          my: 1,
-          borderColor: 'rgba(141,188,229,0.50)',
-          color: 'white',
-          textTransform: 'none',
-          fontSize: '0.9rem',
-          '&:hover': {
-            borderColor: 'rgba(255,255,255,0.5)',
-            bgcolor: 'rgba(56,132,210,0.14)',
-          },
-        }}
-      >
-        Add bio
-      </Button>
-    ) : !bioIsPlaceholder && bio ? (
-      <Typography
-        component="blockquote"
-        variant="body1"
-        color="text.secondary"
-        sx={{
-          lineHeight: 1.6,
-          fontStyle: 'italic',
-          borderLeft: '3px solid',
-          borderColor: 'primary.main',
-          pl: { xs: 1.5, md: 2 },
-          my: 1,
-          mt: 0.5,
-          maxWidth: layoutVariant === 'three-column' ? '100%' : 560,
-          wordBreak: 'break-word',
-          overflowWrap: 'break-word',
-        }}
-      >
-        &ldquo;{bio}&rdquo;
-      </Typography>
-    ) : null;
+  const bioBlock = (
+    <IdentityBioBlock
+      theme={theme}
+      isLight={isLight}
+      layoutVariant={layoutVariant}
+      bio={bio}
+      bioIsPlaceholder={bioIsPlaceholder}
+      onAddBio={onAddBio}
+    />
+  );
 
   return (
     <Paper
@@ -155,192 +444,42 @@ export const IdentityHeader = ({
       sx={{
         p: { xs: 1.5, sm: 2, md: 4 },
         borderRadius: 4,
-        bgcolor: CARD_BG,
+        bgcolor: cardBg,
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(156,187,217,0.26)',
-        boxShadow: BANNER_GLOW,
+        border: '1px solid',
+        borderColor: isLight
+          ? alpha(theme.palette.divider, 0.9)
+          : 'rgba(156,187,217,0.26)',
+        boxShadow: bannerGlow,
         mb: { xs: 2, sm: 3, md: 4 },
         position: 'relative',
         overflow: 'hidden',
       }}
     >
       {layoutVariant === 'three-column' ? (
-        <Box
-          sx={{
-            display: 'grid',
-            gap: { xs: 2, sm: 3, md: 4 },
-            alignItems: 'start',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: '120px minmax(0, 1fr) minmax(220px, 280px)',
-            },
-          }}
-        >
-          <Box sx={{ minWidth: 0 }}>{avatarBlock}</Box>
-          <Stack spacing={2} sx={{ minWidth: 0 }}>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  mb: 0.5,
-                  letterSpacing: -0.5,
-                  fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
-                }}
-              >
-                {displayName}
-              </Typography>
-              {tagline && (
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    mb: 1,
-                    color: 'primary.main',
-                  }}
-                >
-                  {tagline}
-                </Typography>
-              )}
-              {bioBlock}
-            </Box>
-            {badges ? <Box sx={{ minWidth: 0 }}>{badges}</Box> : null}
-            {actions ? (
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                justifyContent="flex-start"
-                alignItems={{ xs: 'stretch', sm: 'center' }}
-                flexWrap="wrap"
-                useFlexGap
-                spacing={{ xs: 1.25, sm: 2 }}
-                sx={{
-                  '& .MuiButton-root': { minWidth: 0 },
-                }}
-              >
-                {actions}
-              </Stack>
-            ) : null}
-          </Stack>
-          {rightColumn ? <Box sx={{ minWidth: 0 }}>{rightColumn}</Box> : null}
-        </Box>
+        <IdentityHeaderThreeColumnGrid
+          avatarBlock={avatarBlock}
+          displayName={displayName}
+          memberHandle={memberHandle}
+          tagline={tagline}
+          bioBlock={bioBlock}
+          badges={badges}
+          actions={actions}
+          rightColumn={rightColumn}
+        />
       ) : (
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={{ xs: 2, sm: 3, md: 4 }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="flex-start"
-          sx={{ textAlign: 'left', minWidth: 0 }}
-        >
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={{ xs: 1.5, md: 2 }}
-            alignItems="flex-start"
-            sx={{ flex: '1 1 0', minWidth: 0, maxWidth: '100%' }}
-          >
-            {avatarBlock}
-            <Box
-              sx={{
-                flex: '1 1 0',
-                minWidth: 0,
-                maxWidth: '100%',
-                '@media (min-width: 900px)': { minWidth: 360 },
-              }}
-            >
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  mb: 0.5,
-                  letterSpacing: -0.5,
-                  fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2.125rem' },
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
-                }}
-              >
-                {displayName}
-              </Typography>
-              {tagline && (
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    mb: 1,
-                    color: 'primary.main',
-                  }}
-                >
-                  {tagline}
-                </Typography>
-              )}
-              {bioBlock}
-
-              {badges && (
-                <Stack
-                  direction="row"
-                  flexWrap="wrap"
-                  gap={1}
-                  sx={{ mt: 2, mb: 2 }}
-                >
-                  {badges}
-                </Stack>
-              )}
-            </Box>
-          </Stack>
-          {slotLeftOfAvatar && (
-            <Box
-              sx={{
-                flexShrink: 0,
-                minWidth: { md: 220 },
-                maxWidth: { md: 280 },
-              }}
-            >
-              {slotLeftOfAvatar}
-            </Box>
-          )}
-          {slotBetweenContentAndActions && (
-            <Stack
-              alignItems={{ xs: 'center', md: 'flex-end' }}
-              sx={{
-                flexShrink: 0,
-                minWidth: 0,
-              }}
-            >
-              {slotBetweenContentAndActionsLabel && (
-                <Typography
-                  variant="overline"
-                  sx={{
-                    letterSpacing: 1.5,
-                    color: 'text.secondary',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    mb: 1,
-                  }}
-                >
-                  {slotBetweenContentAndActionsLabel}
-                </Typography>
-              )}
-              {slotBetweenContentAndActions}
-            </Stack>
-          )}
-          {actions && (
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent="flex-start"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              flexWrap="wrap"
-              useFlexGap
-              spacing={{ xs: 1.25, sm: 2 }}
-              sx={{
-                flexShrink: 0,
-                alignSelf: { xs: 'stretch', md: 'center' },
-                '& .MuiButton-root': { minWidth: 0 },
-              }}
-            >
-              {actions}
-            </Stack>
-          )}
-        </Stack>
+        <IdentityHeaderDefaultStack
+          avatarBlock={avatarBlock}
+          displayName={displayName}
+          memberHandle={memberHandle}
+          tagline={tagline}
+          bioBlock={bioBlock}
+          badges={badges}
+          slotLeftOfAvatar={slotLeftOfAvatar}
+          slotBetweenContentAndActionsLabel={slotBetweenContentAndActionsLabel}
+          slotBetweenContentAndActions={slotBetweenContentAndActions}
+          actions={actions}
+        />
       )}
     </Paper>
   );

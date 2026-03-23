@@ -33,6 +33,12 @@ import {
 } from '../../../lib/chat/roomListState';
 import { GLASS_CARD } from '../../../theme/candyStyles';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
+import {
+  CHAT_FAVORITE_ACTIVE_BUTTON_SX,
+  CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
+  CHAT_FAVORITE_IDLE_BUTTON_SX,
+  CHAT_FAVORITE_ROW_BADGE_SX,
+} from '../../../theme/chatFavoriteStyles';
 
 type ChatRoomListProps = {
   rooms: ChatRoomWithMembers[];
@@ -49,24 +55,6 @@ type ChatRoomListProps = {
 const DEFAULT_CHAT_PREFIX = '/chat';
 const DM_ICON_COLOR = '#3884D2';
 const GROUP_ICON_COLOR = '#4DD166';
-const FAVORITE_ACTIVE_SX = {
-  color: '#f5c451',
-  bgcolor: 'rgba(245,196,81,0.14)',
-  border: '1px solid rgba(245,196,81,0.28)',
-  boxShadow: '0 0 0 1px rgba(245,196,81,0.08) inset',
-  '&:hover': {
-    bgcolor: 'rgba(245,196,81,0.2)',
-  },
-} as const;
-const FAVORITE_IDLE_SX = {
-  color: 'text.secondary',
-  border: '1px solid transparent',
-  '&:hover': {
-    color: '#f5c451',
-    bgcolor: 'rgba(245,196,81,0.08)',
-  },
-} as const;
-
 export const ChatRoomList = ({
   rooms,
   loading,
@@ -306,13 +294,9 @@ export const ChatRoomList = ({
                   </Typography>
                   {room.is_favorite ? (
                     <StarIcon
-                      data-testid={`chat-room-favorite-icon-filled-${room.id}`}
-                      sx={{
-                        fontSize: 14,
-                        color: '#f5c451',
-                        flexShrink: 0,
-                        filter: 'drop-shadow(0 0 8px rgba(245,196,81,0.28))',
-                      }}
+                      aria-hidden
+                      data-testid={`chat-room-favorite-badge-${room.id}`}
+                      sx={CHAT_FAVORITE_ROW_BADGE_SX}
                     />
                   ) : null}
                 </Stack>
@@ -341,6 +325,7 @@ export const ChatRoomList = ({
                   }
                 >
                   <IconButton
+                    type="button"
                     aria-label={
                       room.is_favorite
                         ? 'Remove from favorites'
@@ -348,22 +333,29 @@ export const ChatRoomList = ({
                     }
                     data-testid={`chat-room-favorite-${room.id}`}
                     size="small"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onToggleFavorite(room.id, Boolean(room.is_favorite));
+                      Promise.resolve(
+                        onToggleFavorite(room.id, Boolean(room.is_favorite)),
+                      ).catch(() => {});
                     }}
                     sx={{
                       borderRadius: 1.25,
+                      minWidth: 40,
+                      minHeight: 40,
                       transition:
-                        'color 120ms ease, background-color 120ms ease, border-color 120ms ease',
+                        'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
                       ...(room.is_favorite
-                        ? FAVORITE_ACTIVE_SX
-                        : FAVORITE_IDLE_SX),
+                        ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                        : CHAT_FAVORITE_IDLE_BUTTON_SX),
                     }}
                   >
                     {room.is_favorite ? (
                       <StarIcon
-                        fontSize="small"
+                        sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
                         data-testid={`chat-room-favorite-icon-filled-${room.id}`}
                       />
                     ) : (

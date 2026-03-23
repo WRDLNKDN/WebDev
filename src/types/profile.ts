@@ -3,6 +3,8 @@ export type LinkCategory =
   | 'Social'
   | 'Content'
   | 'Games'
+  | 'Files'
+  | 'Music'
   | 'Custom';
 
 export interface SocialLink {

@@ -2,18 +2,10 @@
  * Daily Word: one puzzle per day for all players. Guess the 5-letter word in up to 6 tries.
  * Letter hints: correct (green), present (yellow), absent (gray). Results recorded; optional share.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   fetchSessionById,
   getOrCreateDailyWordSession,
@@ -23,6 +15,11 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const ROWS = 6;
 const COLS = 5;
@@ -168,21 +165,12 @@ export const DailyWordPlayPage = () => {
 
   if (loading || notFound) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading puzzle" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Puzzle not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
+      <MiniGameLoadingNotFound
+        loading={loading}
+        notFound={notFound}
+        notFoundMessage="Puzzle not found."
+        loadingAriaLabel="Loading puzzle"
+      />
     );
   }
 
@@ -198,33 +186,16 @@ export const DailyWordPlayPage = () => {
     : '';
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{ mb: 2 }}
-        flexWrap="wrap"
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Daily Word
-        </Typography>
-        {puzzleDateLabel && (
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Daily Word"
+        showStats={Boolean(puzzleDateLabel)}
+        stats={
           <Typography variant="body2" color="text.secondary">
             {puzzleDateLabel}
           </Typography>
-        )}
-      </Stack>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 3, maxWidth: 360, mx: 'auto' }}>
         <Stack spacing={2} alignItems="center">
@@ -365,6 +336,6 @@ export const DailyWordPlayPage = () => {
           </Button>
         </Stack>
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

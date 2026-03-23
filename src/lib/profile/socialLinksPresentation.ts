@@ -13,6 +13,8 @@ export type DisplayLinkCategory =
   | 'Content'
   | 'Social'
   | 'Games'
+  | 'Files'
+  | 'Music'
   | 'Other';
 
 export type SocialLinkGroup = {
@@ -25,6 +27,8 @@ export const DISPLAY_LINK_CATEGORY_ORDER: DisplayLinkCategory[] = [
   'Content',
   'Social',
   'Games',
+  'Files',
+  'Music',
   'Other',
 ];
 
@@ -66,7 +70,9 @@ export function getDisplayLinkCategory(link: SocialLink): DisplayLinkCategory {
     storedCategory === 'Professional' ||
     storedCategory === 'Content' ||
     storedCategory === 'Social' ||
-    storedCategory === 'Games'
+    storedCategory === 'Games' ||
+    storedCategory === 'Files' ||
+    storedCategory === 'Music'
   ) {
     return storedCategory;
   }

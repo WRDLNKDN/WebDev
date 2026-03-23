@@ -18,6 +18,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -94,6 +95,7 @@ import {
   PROFANITY_ERROR_MESSAGE_INTEREST,
 } from '../../lib/validation/profanity';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getGlassCard } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
@@ -128,6 +130,23 @@ export const Dashboard = () => {
   const editDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useAppToast();
+  const theme = useTheme();
+  const addMenuPaperSx = useMemo(
+    () => ({
+      mt: 1.5,
+      minWidth: 200,
+      borderRadius: 2,
+      ...denseMenuPaperSxFromTheme(theme),
+      zIndex: 1300,
+      maxHeight: 'calc(100vh - 100px)',
+      overflow: 'auto' as const,
+      boxShadow:
+        theme.palette.mode === 'light'
+          ? theme.shadows[12]
+          : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+    }),
+    [theme],
+  );
 
   useEffect(() => {
     const init = async () => {
@@ -192,6 +211,7 @@ export const Dashboard = () => {
     deleteProject,
     reorderPortfolioItems,
     uploadResume,
+    uploadResumeThumbnailImage,
     deleteResume,
     retryResumeThumbnail,
     updating,
@@ -258,8 +278,9 @@ export const Dashboard = () => {
 
   const descriptionFromJoin = safeStr(profile?.additional_context).trim();
   const descriptionFromBio = safeStr(safeNerdCreds.bio).trim();
-  const hasDescription = Boolean(descriptionFromJoin || descriptionFromBio);
-  const bio = hasDescription ? descriptionFromJoin || descriptionFromBio : '';
+  const hasDescription = Boolean(descriptionFromBio || descriptionFromJoin);
+  /** Prefer saved profile bio over join-time blurb so Edit Profile is the source of truth. */
+  const bio = descriptionFromBio || descriptionFromJoin || '';
   const bioIsPlaceholder = !hasDescription;
   const nicheField = (
     profile as unknown as { niche_field?: string }
@@ -366,6 +387,42 @@ export const Dashboard = () => {
       showToast({ message: toMessage(e), severity: 'error' });
     }
   };
+
+  const handleEditReplaceResume = async (file: File) => {
+    try {
+      await uploadResume(file);
+      await refresh();
+      showToast({ message: 'Resume updated.', severity: 'success' });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
+    }
+  };
+
+  const handleEditUploadResumeThumbnail = async (file: File) => {
+    try {
+      await uploadResumeThumbnailImage(file);
+      await refresh();
+      showToast({ message: 'Preview image updated.', severity: 'success' });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
+    }
+  };
+
+  const handleEditRegenerateResumeThumbnail = async () => {
+    try {
+      await retryResumeThumbnail();
+      await refresh();
+      showToast({
+        message: 'Preview regenerated from your document.',
+        severity: 'success',
+      });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
+    }
+  };
   const handleResumeInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -431,6 +488,7 @@ export const Dashboard = () => {
         <IdentityHeader
           layoutVariant="three-column"
           displayName={displayName}
+          memberHandle={profile?.handle?.trim() || undefined}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           bioIsPlaceholder={bioIsPlaceholder}
@@ -617,7 +675,7 @@ export const Dashboard = () => {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  Settings
+                  Account & settings
                 </MenuItem>
                 <MenuItem
                   onClick={async () => {
@@ -716,6 +774,11 @@ export const Dashboard = () => {
                 letterSpacing: 2,
                 color: 'text.secondary',
                 fontWeight: 600,
+                maxWidth: '100%',
+                minWidth: 0,
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                whiteSpace: 'normal',
               }}
             >
               PORTFOLIO SHOWCASE
@@ -804,18 +867,7 @@ export const Dashboard = () => {
                     slotProps={{
                       paper: {
                         onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                        sx: {
-                          mt: 1.5,
-                          minWidth: 200,
-                          borderRadius: 2,
-                          bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(156,187,217,0.26)',
-                          zIndex: 1300,
-                          maxHeight: 'calc(100vh - 100px)',
-                          overflow: 'auto',
-                          boxShadow:
-                            '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-                        },
+                        sx: addMenuPaperSx,
                       },
                       root: {
                         onClick: (e: React.MouseEvent) => e.stopPropagation(),
@@ -931,18 +983,7 @@ export const Dashboard = () => {
                     slotProps={{
                       paper: {
                         onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                        sx: {
-                          mt: 1.5,
-                          minWidth: 200,
-                          borderRadius: 2,
-                          bgcolor: 'rgba(30,30,30,0.98)',
-                          border: '1px solid rgba(156,187,217,0.26)',
-                          zIndex: 1300,
-                          maxHeight: 'calc(100vh - 100px)',
-                          overflow: 'auto',
-                          boxShadow:
-                            '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-                        },
+                        sx: addMenuPaperSx,
                       },
                       root: {
                         onClick: (e: React.MouseEvent) => e.stopPropagation(),
@@ -1053,6 +1094,14 @@ export const Dashboard = () => {
                                 }
                               }}
                               deleteBusy={updating}
+                              onEditReplaceResume={handleEditReplaceResume}
+                              onEditUploadThumbnail={
+                                handleEditUploadResumeThumbnail
+                              }
+                              onEditRegenerateThumbnail={
+                                handleEditRegenerateResumeThumbnail
+                              }
+                              editBusy={updating}
                               isOwner
                               dragHandle={dragHandle}
                               onOpenPreview={setPreviewProject}
@@ -1186,8 +1235,11 @@ export const Dashboard = () => {
             setIsLinksOpen(true);
           }}
           onAvatarChanged={() => {
-            void refresh();
-            void refreshAvatar();
+            refresh().catch(() => {});
+            refreshAvatar().catch(() => {});
+          }}
+          onProfileSaved={() => {
+            refresh().catch(() => {});
           }}
         />
         <EditLinksDialog

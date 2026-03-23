@@ -38,6 +38,7 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
@@ -52,13 +53,15 @@ import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
+import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
+import {
+  GODADDY_STOREFRONT_URL,
+  resolveStoreExternalUrl,
+} from '../../lib/marketing/storefront';
 
-/**
- * Store link: Routes internally to /store which embeds Ecwid storefront.
- * GoDaddy storefront (https://wrdlnkdn.com/store-1) remains available as fallback.
- */
+/** Store: resolved URL (GoDaddy when live, else Ecwid / VITE_STORE_URL); opens in a new tab. */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -95,6 +98,8 @@ export const Navbar = () => {
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
 
+  const [storeHref, setStoreHref] = useState(GODADDY_STOREFRONT_URL);
+
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -117,6 +122,26 @@ export const Navbar = () => {
   );
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
+  const isLightNav = theme.palette.mode === 'light';
+  const drawerPaperSx = {
+    width: 280,
+    bgcolor: isLightNav
+      ? theme.palette.background.paper
+      : 'rgba(18, 18, 18, 0.98)',
+    borderRight: isLightNav
+      ? `1px solid ${theme.palette.divider}`
+      : '1px solid rgba(156,187,217,0.18)',
+  };
+  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
+  const drawerActiveNavSx = isLightNav
+    ? {
+        bgcolor: alpha(theme.palette.primary.main, 0.12),
+        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
+      }
+    : {
+        bgcolor: 'rgba(156,187,217,0.26)',
+        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+      };
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
@@ -128,6 +153,14 @@ export const Navbar = () => {
   /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
   const minimalComingSoonHomeNavbar =
     productionComingSoon && !isAdminActive && isHomePath;
+  /** Avatar menu must mount for both desktop and mobile headers (mobile had anchor + no Menu = dead clicks). */
+  const showHeaderAccountDropdown =
+    Boolean(session) &&
+    sessionLoaded &&
+    onboardingLoaded &&
+    (!productionComingSoon || isAdminActive) &&
+    path !== '/auth/callback' &&
+    !minimalComingSoonHomeNavbar;
   // Show authed header if session exists and either:
   // 1. Profile is confirmed onboarded, OR
   // 2. Onboarding check is still loading (fail-open to show icon while checking)
@@ -425,6 +458,22 @@ export const Navbar = () => {
     }
   }, [path]);
 
+  useEffect(() => {
+    if (!storeEnabled) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const url = await resolveStoreExternalUrl();
+        if (!cancelled) setStoreHref(url);
+      } catch {
+        if (!cancelled) setStoreHref(GODADDY_STOREFRONT_URL);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeEnabled]);
+
   return (
     <>
       <AppBar
@@ -447,8 +496,7 @@ export const Navbar = () => {
             overflow: 'visible',
             ...(isMobile &&
               minimalComingSoonHomeNavbar && {
-                justifyContent: 'center',
-                ...(storeEnabled && { position: 'relative' as const }),
+                justifyContent: 'flex-start',
               }),
           }}
         >
@@ -516,6 +564,42 @@ export const Navbar = () => {
                 }}
               />
             </Box>
+            {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
+            {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
+              <Button
+                component="a"
+                href={storeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small"
+                sx={{
+                  flexShrink: 0,
+                  ml: 0.75,
+                  color: 'rgba(255,255,255,0.96)',
+                  textTransform: 'none',
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  minHeight: 40,
+                  minWidth: 44,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(0,0,0,0.35)',
+                  border: '1px solid rgba(156,187,217,0.22)',
+                  textDecoration: 'none',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                  boxSizing: 'border-box',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.5)',
+                    color: 'white',
+                    borderColor: 'rgba(156,187,217,0.32)',
+                  },
+                }}
+              >
+                Store
+              </Button>
+            ) : null}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&
               !isCompactDesktop &&
@@ -617,8 +701,7 @@ export const Navbar = () => {
                         maxWidth: 360,
                         maxHeight: 320,
                         overflow: 'auto',
-                        bgcolor: 'rgba(30,30,30,0.98)',
-                        border: '1px solid rgba(156,187,217,0.26)',
+                        ...denseMenuPaperSxFromTheme(theme),
                       }}
                     >
                       {searchLoading ? (
@@ -631,7 +714,9 @@ export const Navbar = () => {
                         >
                           <CircularProgress
                             size={24}
-                            sx={{ color: 'white' }}
+                            sx={{
+                              color: isLightNav ? 'primary.main' : 'white',
+                            }}
                             aria-label="Loading search"
                           />
                         </Box>
@@ -639,7 +724,7 @@ export const Navbar = () => {
                         <Box sx={{ px: 2, py: 2 }}>
                           <Box
                             sx={{
-                              color: 'rgba(255,255,255,0.7)',
+                              color: 'text.secondary',
                               fontSize: '1rem',
                               mb: 1,
                             }}
@@ -677,16 +762,16 @@ export const Navbar = () => {
                                   closeSearchDropdown();
                                 }}
                                 sx={{
-                                  color: 'white',
+                                  color: 'text.primary',
                                   '&:hover': {
-                                    bgcolor: 'rgba(156,187,217,0.18)',
+                                    bgcolor: 'action.hover',
                                   },
                                 }}
                               >
                                 <ListItemIcon sx={{ minWidth: 36 }}>
                                   <PersonIcon
                                     sx={{
-                                      color: 'rgba(255,255,255,0.6)',
+                                      color: 'text.secondary',
                                       fontSize: 20,
                                     }}
                                   />
@@ -713,33 +798,6 @@ export const Navbar = () => {
                 </Box>
               )}
           </Stack>
-
-          {/* Mobile prod coming-soon home: Store stays reachable (hamburger + Join hidden). */}
-          {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
-            <Button
-              component={RouterLink}
-              to="/store"
-              size="small"
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'rgba(255,255,255,0.96)',
-                textTransform: 'none',
-                fontSize: '0.9375rem',
-                minWidth: 0,
-                px: 1.25,
-                zIndex: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(56,132,210,0.14)',
-                  color: 'white',
-                },
-              }}
-            >
-              Store
-            </Button>
-          ) : null}
 
           {/* Desktop nav links: Dashboard, Directory, Events, Feed, Store (Admin is in avatar menu) */}
           {!isMobile && (
@@ -822,8 +880,10 @@ export const Navbar = () => {
               )}
               {storeEnabled && (
                 <Button
-                  component={RouterLink}
-                  to="/store"
+                  component="a"
+                  href={storeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
@@ -838,9 +898,7 @@ export const Navbar = () => {
             </Box>
           )}
 
-          {!(isMobile && minimalComingSoonHomeNavbar) && (
-            <Box sx={{ flexGrow: 1 }} />
-          )}
+          <Box sx={{ flexGrow: 1 }} />
 
           {/* Desktop auth: hidden on mobile (shown in drawer); hidden on coming-soon home (no stuck spinner). */}
           {!isMobile && !minimalComingSoonHomeNavbar && (
@@ -936,130 +994,51 @@ export const Navbar = () => {
                   )}
                   {/* Hide avatar completely in coming soon mode unless on admin route */}
                   {(!productionComingSoon || isAdminActive) && (
-                    <>
-                      <Tooltip title="Account menu">
-                        <IconButton
-                          type="button"
-                          onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                          aria-label="Account menu"
-                          aria-haspopup="true"
-                          aria-expanded={Boolean(avatarMenuAnchor)}
+                    <Tooltip title="Account menu" disableInteractive>
+                      <IconButton
+                        type="button"
+                        onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                        aria-label="Account menu"
+                        aria-haspopup="true"
+                        aria-expanded={Boolean(avatarMenuAnchor)}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.25,
+                          p: 0.25,
+                          color: 'inherit',
+                          borderRadius: 9999,
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                        }}
+                      >
+                        <Box
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 0.25,
-                            p: 0.25,
-                            color: 'inherit',
-                            borderRadius: 9999,
-                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            border: '2px solid rgba(255,255,255,0.4)',
+                            p: '1px',
+                            flexShrink: 0,
                           }}
                         >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: '50%',
-                              border: '2px solid rgba(255,255,255,0.4)',
-                              p: '1px',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <ProfileAvatar
-                              src={avatarUrl ?? undefined}
-                              alt={
-                                session?.user?.user_metadata?.full_name ||
-                                'User'
-                              }
-                              size="small"
-                              sx={{ width: 24, height: 24 }}
-                            />
-                          </Box>
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: 16,
-                              color: 'rgba(255,255,255,0.8)',
-                            }}
+                          <ProfileAvatar
+                            src={avatarUrl ?? undefined}
+                            alt={
+                              session?.user?.user_metadata?.full_name || 'User'
+                            }
+                            size="small"
+                            sx={{ width: 24, height: 24 }}
                           />
-                        </IconButton>
-                      </Tooltip>
-                      <Menu
-                        anchorEl={avatarMenuAnchor}
-                        open={Boolean(avatarMenuAnchor)}
-                        onClose={() => setAvatarMenuAnchor(null)}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                        slotProps={{
-                          paper: {
-                            sx: {
-                              mt: 1.5,
-                              minWidth: 180,
-                              borderRadius: 2,
-                              bgcolor: 'rgba(30,30,30,0.98)',
-                              border: '1px solid rgba(156,187,217,0.26)',
-                            },
-                          },
-                        }}
-                      >
-                        {dashboardEnabled && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/dashboard"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25 }}
-                          >
-                            Profile
-                          </MenuItem>
-                        )}
-                        {dashboardEnabled && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/dashboard/settings"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25 }}
-                          >
-                            Settings
-                          </MenuItem>
-                        )}
-                        {isAdmin && (
-                          <MenuItem
-                            component={RouterLink}
-                            to="/admin"
-                            onClick={() => {
-                              setAvatarMenuAnchor(null);
-                              setDrawerOpen(false);
-                            }}
-                            sx={{ py: 1.25, color: 'warning.main' }}
-                          >
-                            Admin
-                          </MenuItem>
-                        )}
-                        {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
-                        <MenuItem
-                          onClick={() => {
-                            setAvatarMenuAnchor(null);
-                            setDrawerOpen(false);
-                            void handleSignOut();
+                        </Box>
+                        <KeyboardArrowDownIcon
+                          sx={{
+                            fontSize: 16,
+                            color: 'rgba(255,255,255,0.8)',
                           }}
-                          disabled={busy}
-                          sx={{ color: 'text.secondary', py: 1.25 }}
-                        >
-                          Sign Out
-                        </MenuItem>
-                      </Menu>
-                    </>
+                        />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </>
               )}
@@ -1182,7 +1161,7 @@ export const Navbar = () => {
                           </IconButton>
                         </Tooltip>
                       )}
-                      <Tooltip title="Account menu">
+                      <Tooltip title="Account menu" disableInteractive>
                         <IconButton
                           type="button"
                           onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
@@ -1235,6 +1214,85 @@ export const Navbar = () => {
             </Stack>
           )}
         </Toolbar>
+        {showHeaderAccountDropdown ? (
+          <Menu
+            anchorEl={avatarMenuAnchor}
+            open={Boolean(avatarMenuAnchor)}
+            onClose={() => setAvatarMenuAnchor(null)}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            slotProps={{
+              paper: {
+                sx: (t) => ({
+                  mt: 1.5,
+                  minWidth: 180,
+                  borderRadius: 2,
+                  bgcolor: t.palette.background.paper,
+                  border: `1px solid ${t.palette.divider}`,
+                  color: t.palette.text.primary,
+                }),
+              },
+            }}
+          >
+            {dashboardEnabled && (
+              <MenuItem
+                component={RouterLink}
+                to="/dashboard"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25 }}
+              >
+                Profile
+              </MenuItem>
+            )}
+            {dashboardEnabled && (
+              <MenuItem
+                component={RouterLink}
+                to="/dashboard/settings"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25 }}
+              >
+                Account & settings
+              </MenuItem>
+            )}
+            {isAdmin && (
+              <MenuItem
+                component={RouterLink}
+                to="/admin"
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                }}
+                sx={{ py: 1.25, color: 'warning.main' }}
+              >
+                Admin
+              </MenuItem>
+            )}
+            {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
+            <MenuItem
+              onClick={() => {
+                setAvatarMenuAnchor(null);
+                setDrawerOpen(false);
+                void handleSignOut();
+              }}
+              disabled={busy}
+              sx={{ color: 'text.secondary', py: 1.25 }}
+            >
+              Sign Out
+            </MenuItem>
+          </Menu>
+        ) : null}
       </AppBar>
 
       {/* Mobile drawer */}
@@ -1243,11 +1301,7 @@ export const Navbar = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
-          sx: {
-            width: 280,
-            bgcolor: 'rgba(18, 18, 18, 0.98)',
-            borderRight: '1px solid rgba(156,187,217,0.18)',
-          },
+          sx: drawerPaperSx,
         }}
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
@@ -1263,7 +1317,7 @@ export const Navbar = () => {
                         onClick={() => setDrawerOpen(false)}
                         sx={{
                           justifyContent: 'flex-start',
-                          color: 'white',
+                          color: drawerLinkColor,
                           textTransform: 'none',
                           py: 1.5,
                           minHeight: 44,
@@ -1279,7 +1333,7 @@ export const Navbar = () => {
                       onClick={() => setDrawerOpen(false)}
                       sx={{
                         justifyContent: 'flex-start',
-                        color: 'white',
+                        color: drawerLinkColor,
                         textTransform: 'none',
                         py: 1.5,
                         minHeight: 44,
@@ -1292,12 +1346,14 @@ export const Navbar = () => {
                 )}
                 {storeEnabled && (
                   <Button
-                    component={RouterLink}
-                    to="/store"
+                    component="a"
+                    href={storeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                     }}
@@ -1316,13 +1372,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isDashboardActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isDashboardActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Dashboard
@@ -1335,13 +1388,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isDirectoryActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isDirectoryActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Directory
@@ -1354,13 +1404,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isEventsActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isEventsActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Events
@@ -1373,13 +1420,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isFeedActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isFeedActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Feed
@@ -1387,12 +1431,14 @@ export const Navbar = () => {
                 )}
                 {storeEnabled && (
                   <Button
-                    component={RouterLink}
-                    to="/store"
+                    component="a"
+                    href={storeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                     }}
@@ -1407,15 +1453,12 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                       ...(path === '/chat-full' ||
                       path.startsWith('/chat-full/')
-                        ? {
-                            bgcolor: 'rgba(156,187,217,0.26)',
-                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                          }
+                        ? drawerActiveNavSx
                         : {}),
                     }}
                   >
@@ -1481,10 +1524,7 @@ export const Navbar = () => {
                   sx={{
                     minHeight: 40,
                     py: 0.5,
-                    ...(isGroupsActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
+                    ...(isGroupsActive ? drawerActiveNavSx : {}),
                   }}
                 >
                   <ListItemIcon sx={{ minWidth: 36 }}>

@@ -19,18 +19,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useAppToast } from '../../../context/AppToastContext';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
+import { dialogPaperSxFromTheme } from '../../../lib/ui/formSurface';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { toMessage } from '../../../lib/utils/errors';
-
-const GLASS_MODAL = {
-  bgcolor: '#141414',
-  backgroundImage:
-    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(156,187,217,0.22)',
-  color: 'white',
-  borderRadius: 3,
-};
 
 type MarketingPrefs = {
   marketing_email_enabled: boolean;
@@ -49,6 +40,7 @@ export const EmailPreferencesDialog = ({
   onClose,
 }: EmailPreferencesDialogProps) => {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [prefs, setPrefs] = useState<MarketingPrefs>({
     marketing_email_enabled: false,
@@ -156,7 +148,7 @@ export const EmailPreferencesDialog = ({
       fullWidth
       fullScreen={fullScreen}
       aria-label="Email preferences"
-      PaperProps={{ sx: GLASS_MODAL }}
+      PaperProps={{ sx: dialogPaperSxFromTheme(theme, { borderRadius: 3 }) }}
     >
       <Tooltip title="Close">
         <IconButton
@@ -167,7 +159,7 @@ export const EmailPreferencesDialog = ({
             right: 8,
             top: 8,
             zIndex: 1,
-            color: 'white',
+            color: isLight ? 'text.secondary' : 'white',
           }}
         >
           <CloseIcon />

@@ -1,13 +1,3 @@
-# Syncs Project "Estimate" (number) from "Size" (single select) via GraphQL.
-#
-# Mapping: XS→1, S→2, M→3, L→5, XL→8 (case-insensitive). Fields must be named "Size" and "Estimate".
-#
-# Triggers on Project item created/edited. Idempotent: skips when Estimate already matches.
-# One-time backfill: Actions → run workflow → owner_type, owner_login, project_number.
-#
-# If GITHUB_TOKEN cannot write the project, add a fine-grained PAT (project read/write) as
-# repository secret PROJECT_ESTIMATE_SYNC_TOKEN.
-
 name: Set estimate from size
 
 on:
@@ -35,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  projects: write
 
 concurrency:
   group: set-estimate-from-size-${{ github.run_id }}

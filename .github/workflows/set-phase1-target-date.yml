@@ -1,17 +1,3 @@
-# When an Issue is on milestone "Phase 1", set Project v2 "Target Date" to 2026-04-27
-# only if that field is currently blank. Never overwrites an existing Target Date.
-#
-# Triggers:
-# - issues: opened / edited / milestoned (milestone assigned or issue updated while on Phase 1)
-# - projects_v2_item: created / edited (issue added to board or project fields change)
-#
-# One-time cleanup: Actions → run workflow manually with owner_type, owner_login, project_number.
-#
-# Field names must match exactly: milestone "Phase 1", project field "Target Date".
-#
-# If GITHUB_TOKEN cannot write the org/user project, set secret PROJECT_PHASE1_TARGET_DATE_TOKEN
-# (fine-grained PAT with project read/write), same pattern as set-estimate-from-size.
-
 name: Set Phase 1 target date when blank
 
 on:
@@ -43,7 +29,6 @@ on:
 permissions:
   contents: read
   issues: read
-  projects: write
 
 concurrency:
   group: set-phase1-target-date-${{ github.run_id }}

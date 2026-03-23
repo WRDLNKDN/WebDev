@@ -17,6 +17,7 @@ import {
   resetHomeHeroPhase,
   setHomeHeroPhase,
 } from '../../lib/utils/homeHeroPhaseStore';
+import type { HomeHeroUiMode } from '../../lib/utils/homeHeroUiMode';
 import {
   HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS,
   HOME_HERO_VIDEO_FADE_MS,
@@ -91,6 +92,11 @@ export const Home = () => {
   const [videoEnded, setVideoEnded] = useState(false);
   const [showFooter, setShowFooter] = useState(false);
 
+  /**
+   * Video opacity / playback handoff only (`playing` → `dimmed`). For layout and CSS,
+   * use `heroMode` (`HomeHeroUiMode`): `video` = full intro, `compact` = post-intro
+   * when `hasIntroFinished` (dimmed, ended, reduced motion, or error).
+   */
   const [heroPhase, setHeroPhase] = useState<'playing' | 'dimmed'>(() =>
     prefersReducedMotion ? 'dimmed' : 'playing',
   );
@@ -319,12 +325,12 @@ export const Home = () => {
   }, [ensureVideoPlayback]);
 
   useEffect(() => {
-    const shellRevealed =
+    const hasIntroFinished =
       heroPhase === 'dimmed' ||
       videoEnded ||
       prefersReducedMotion ||
       videoFailed;
-    setHomeHeroPhase(shellRevealed ? 'reveal' : 'video');
+    setHomeHeroPhase(hasIntroFinished ? 'reveal' : 'video');
   }, [heroPhase, videoEnded, prefersReducedMotion, videoFailed]);
 
   useEffect(() => {
@@ -359,8 +365,10 @@ export const Home = () => {
   const renderHeroMotionVideo =
     (showMarketingHeroVideo || showLocalGuestVideo) && !videoEnded;
 
-  const shellRevealed =
+  const hasIntroFinished =
     heroPhase === 'dimmed' || videoEnded || prefersReducedMotion || videoFailed;
+
+  const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
 
   return (
     <main
@@ -375,22 +383,27 @@ export const Home = () => {
         marketingHome && !videoEnded && !prefersReducedMotion && !videoFailed
           ? 'home-landing--marketing-video-phase'
           : '',
-        /* Stop flex-growing the main column as soon as the hero handoff starts (with hero compress) */
-        shellRevealed ? 'home-landing--post-video' : '',
+        /* Compact: stop flex-growing main so below-the-fold sections move up (desktop + mobile) */
+        heroMode === 'compact' ? 'home-landing--hero-compact' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      data-home-hero-mode={heroMode}
       data-testid="signed-out-landing"
     >
       <section
         className={[
           'home-landing__hero',
-          marketingHome && !videoEnded && !prefersReducedMotion && !videoFailed
+          /* Drop tall coming-soon min-height as soon as handoff starts so compact transition runs cleanly */
+          marketingHome &&
+          !videoEnded &&
+          !prefersReducedMotion &&
+          !videoFailed &&
+          heroMode === 'video'
             ? 'home-landing__hero--coming-soon'
             : '',
-          shellRevealed ? 'home-landing__hero--shell-revealed' : '',
-          /* Compress in sync with video fade + grid reveal (not after unmount) */
-          shellRevealed ? 'home-landing__hero--collapsed' : '',
+          /* Post-intro: tight height, transparent backdrop, grid shows through */
+          heroMode === 'compact' ? 'home-landing__hero--compact' : '',
         ]
           .filter(Boolean)
           .join(' ')}

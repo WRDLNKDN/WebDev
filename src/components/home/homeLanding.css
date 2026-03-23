@@ -11,6 +11,11 @@
   --hero-reveal-backdrop-delay: 120ms;
   --hero-reveal-video-duration: 1.45s;
   --hero-reveal-video-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Compact hero: align motion with HOME_HERO_VIDEO_FADE_MS (~1.45s) in homeHeroRevealTiming.ts */
+  --hero-compact-layout-duration: 1.35s;
+  --hero-compact-layout-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hero-compact-spacing-duration: 1.2s;
+  --hero-compact-spacing-ease: cubic-bezier(0.33, 1, 0.68, 1);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -24,7 +29,7 @@
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease);
   color: var(--color-text-primary);
-  /* Guest hero: allow vertical overflow so post-video CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
+  /* Guest hero: allow vertical overflow so compact-phase CTAs aren’t clipped (UAT banner sits above main — do not shrink hero by banner height here). */
   overflow-x: hidden;
   overflow-y: visible;
   position: relative;
@@ -53,8 +58,8 @@
   display: none;
 }
 
-/* After the bumper: do not flex-grow to 100% of the scroll area (removes dead space under hero). */
-.home-landing--post-video {
+/* Post-intro (heroMode compact): main column hugs content so sections below enter the viewport sooner */
+.home-landing--hero-compact {
   flex: 0 1 auto;
   min-height: 0;
   align-self: stretch;
@@ -72,10 +77,11 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* Aligned with video opacity fade (~1.45s) so height, grid, and copy move as one motion */
   transition:
-    min-height 1.35s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
+    min-height var(--hero-compact-layout-duration)
+      var(--hero-compact-layout-ease),
+    padding var(--hero-compact-spacing-duration)
+      var(--hero-compact-spacing-ease);
   width: 100%;
   box-sizing: border-box;
 }
@@ -87,58 +93,59 @@
   width: 100%;
 }
 
-/* After video: compact hero so sections below enter the viewport without excess whitespace */
-.home-landing__hero--shell-revealed .home-landing__hero-backdrop {
-  background-color: transparent;
-}
-
 /*
- * Compact resting hero: frees vertical space so “What Makes This Different” et al.
- * sit much closer without extra scroll (desktop + responsive).
+ * heroMode === compact: conversion-focused block — height follows copy + CTAs (no vh floor),
+ * centered, smooth transition from full intro hero (desktop, tablet, mobile).
  */
-.home-landing__hero--collapsed {
+.home-landing__hero--compact {
+  --hero-compact-pad-y-start: 0.5rem;
+  --hero-compact-pad-y-end: 0.65rem;
+  --hero-compact-content-pad-y-start: 0.15rem;
+  --hero-compact-content-pad-y-end: 0.25rem;
+  --hero-compact-grid-gap: 0.65rem;
+
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-height: clamp(200px, 30dvh, 360px);
-  padding: 0.35rem 0 0.5rem;
+  min-height: 0;
+  padding: var(--hero-compact-pad-y-start) 0 var(--hero-compact-pad-y-end);
   transition:
-    min-height 1.35s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
+    min-height var(--hero-compact-layout-duration)
+      var(--hero-compact-layout-ease),
+    padding var(--hero-compact-spacing-duration)
+      var(--hero-compact-spacing-ease);
 }
 
-.home-landing__hero--collapsed .home-landing__content {
+.home-landing__hero--compact .home-landing__hero-backdrop {
+  background-color: transparent;
+  pointer-events: none;
+  cursor: default;
+}
+
+.home-landing__hero--compact .home-landing__content {
   margin: 0 auto;
-  padding: 0.25rem 0 0.4rem;
+  padding: var(--hero-compact-content-pad-y-start) 0
+    var(--hero-compact-content-pad-y-end);
   width: min(1100px, calc(100% - 2rem));
 }
 
-.home-landing__hero--collapsed .home-landing__hero-grid {
-  gap: 1rem;
+.home-landing__hero--compact .home-landing__hero-grid {
+  gap: var(--hero-compact-grid-gap);
 }
 
 @media (min-width: 768px) {
-  .home-landing__hero--collapsed {
-    min-height: clamp(220px, 28dvh, 380px);
-    padding: 0.5rem 0 0.65rem;
-  }
-
-  .home-landing__hero--collapsed .home-landing__hero-grid {
-    gap: 1.25rem;
-  }
-
-  .home-landing__hero--collapsed .home-landing__content {
-    padding: 0.35rem 0 0.5rem;
+  .home-landing__hero--compact {
+    --hero-compact-pad-y-start: 0.55rem;
+    --hero-compact-pad-y-end: 0.75rem;
+    --hero-compact-content-pad-y-start: 0.2rem;
+    --hero-compact-content-pad-y-end: 0.35rem;
+    --hero-compact-grid-gap: 0.85rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .home-landing__hero--collapsed {
-    min-height: clamp(240px, 26dvh, 400px);
-  }
-
-  .home-landing__hero--collapsed .home-landing__hero-grid {
-    gap: 1.5rem;
+  .home-landing__hero--compact {
+    --hero-compact-grid-gap: 1rem;
   }
 }
 
@@ -192,6 +199,24 @@
   object-position: center 56%;
 }
 
+/* Mobile: hero video reads huge at full bleed — cap frame size and letterbox in the matte */
+@media (max-width: 767.98px) {
+  .home-landing__hero-backdrop
+    .home-landing__video.home-landing__video--focus-feet {
+    /* Slightly below vertical center so headline/CTA breathe above the Weirdling */
+    top: 54%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: min(88vw, 380px);
+    height: min(42dvh, 320px);
+    max-height: 46dvh;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    object-position: center 56%;
+  }
+}
+
 .home-landing__video--dimmed {
   opacity: 0;
   transition: opacity var(--hero-reveal-video-duration)
@@ -211,8 +236,8 @@
   background: rgba(0, 0, 0, 0);
 }
 
-/* After reveal, let Layout grid/photos show through (video layer is already faded out) */
-.home-landing__hero--collapsed .home-landing__video-overlay {
+/* Compact: grid/photos show through; overlay stays non-blocking */
+.home-landing__hero--compact .home-landing__video-overlay {
   background: transparent;
   transition: background-color var(--hero-reveal-backdrop-duration)
     var(--hero-reveal-backdrop-ease);
@@ -235,7 +260,8 @@
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
-  transition: padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: padding var(--hero-compact-spacing-duration)
+    var(--hero-compact-spacing-ease);
 }
 
 .home-landing__content--visible {
@@ -252,8 +278,8 @@
   .home-landing__video,
   .home-landing__video--dimmed,
   .home-landing__video-overlay,
-  .home-landing__hero--collapsed .home-landing__video-overlay,
-  .home-landing__hero--collapsed,
+  .home-landing__hero--compact .home-landing__video-overlay,
+  .home-landing__hero--compact,
   .home-landing__content,
   .home-landing__content--visible {
     transition-duration: 0.01ms !important;
@@ -343,6 +369,8 @@
 .home-landing__coming-soon {
   margin: 0;
   color: #d946ef;
+  /* iOS Safari / WebKit: keep glyph fill fuchsia when body/theme text color would otherwise wash inheritance */
+  -webkit-text-fill-color: #d946ef;
   font-size: clamp(1.35rem, 3.5vw, 1.75rem);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -351,6 +379,12 @@
     0 0 28px rgba(217, 70, 239, 0.55),
     0 0 48px rgba(139, 92, 246, 0.35),
     0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* Production coming-soon hero: beat global body/MUI text color on narrow viewports */
+.home-landing .home-landing__content--coming-soon .home-landing__coming-soon {
+  color: #d946ef;
+  -webkit-text-fill-color: #d946ef;
 }
 
 .home-landing__hero-grid--coming-soon {
@@ -362,14 +396,14 @@
   border-top: 1px solid rgba(156, 187, 217, 0.18);
 }
 
-.home-landing--post-video > .home-landing__section:first-of-type {
-  padding-top: 0.35rem;
-  padding-bottom: 2.75rem;
+.home-landing--hero-compact > .home-landing__section:first-of-type {
+  padding-top: 0.1rem;
+  padding-bottom: 2.5rem;
 }
 
 @media (min-width: 768px) {
-  .home-landing--post-video > .home-landing__section:first-of-type {
-    padding-top: 0.5rem;
+  .home-landing--hero-compact > .home-landing__section:first-of-type {
+    padding-top: 0.15rem;
   }
 }
 

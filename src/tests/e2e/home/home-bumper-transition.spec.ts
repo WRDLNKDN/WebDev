@@ -32,6 +32,7 @@ test.describe('Home bumper transition', () => {
       const before = {
         backdropBg: window.getComputedStyle(backdrop).backgroundColor,
         backdropTransition: window.getComputedStyle(backdrop).transition,
+        homeHeroMode: landing.getAttribute('data-home-hero-mode'),
       };
 
       video.dispatchEvent(new Event('ended'));
@@ -43,9 +44,13 @@ test.describe('Home bumper transition', () => {
           videoRemoved: boolean;
           overlayBg: string;
           backdropBg: string;
+          homeHeroMode: string | null;
+          landingHasHeroCompactClass: boolean;
+          heroSectionHasCompactClass: boolean;
         };
       }>((resolve) => {
         window.setTimeout(() => {
+          const heroEl = document.querySelector('.home-landing__hero');
           resolve({
             before,
             after: {
@@ -56,6 +61,13 @@ test.describe('Home bumper transition', () => {
                 document.querySelector('.home-landing__video') === null,
               overlayBg: window.getComputedStyle(overlay).backgroundColor,
               backdropBg: window.getComputedStyle(backdrop).backgroundColor,
+              homeHeroMode: landing.getAttribute('data-home-hero-mode'),
+              landingHasHeroCompactClass: landing.classList.contains(
+                'home-landing--hero-compact',
+              ),
+              heroSectionHasCompactClass: Boolean(
+                heroEl?.classList.contains('home-landing__hero--compact'),
+              ),
             },
           });
         }, 1700);
@@ -67,8 +79,12 @@ test.describe('Home bumper transition', () => {
     expect(transitionState?.before.backdropTransition).toContain(
       'background-color',
     );
+    expect(transitionState?.before.homeHeroMode).toBe('video');
     expect(transitionState?.after.heroCopyVisible).toBe(true);
     expect(transitionState?.after.videoRemoved).toBe(true);
+    expect(transitionState?.after.homeHeroMode).toBe('compact');
+    expect(transitionState?.after.landingHasHeroCompactClass).toBe(true);
+    expect(transitionState?.after.heroSectionHasCompactClass).toBe(true);
     expect(transitionState?.after.overlayBg).toBe('rgba(0, 0, 0, 0)');
     const backdropAlpha = transitionState?.after.backdropBg?.match(
       /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*([\d.]+)\s*\)/,

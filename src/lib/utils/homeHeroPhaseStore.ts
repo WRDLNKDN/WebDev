@@ -1,6 +1,7 @@
 /**
  * Syncs signed-out home hero state with Layout so the shell can stay matte during
  * video playback and restore the brand grid only after copy is revealed.
+ * Pairs with `HomeHeroUiMode` in `homeHeroUiMode.ts` (`video` ↔ `video`, `compact` ↔ `reveal`).
  */
 export type HomeHeroPhase = 'video' | 'reveal';
 

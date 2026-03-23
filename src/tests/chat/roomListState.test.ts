@@ -83,4 +83,33 @@ describe('deriveVisibleChatRooms', () => {
       'room-1',
     ]);
   });
+
+  it('sorts multiple favorites by recency before non-favorites', () => {
+    const rooms = [
+      baseRoom('room-a', 'Older fav', {
+        is_favorite: true,
+        last_message_at: '2026-03-12T08:00:00.000Z',
+      }),
+      baseRoom('room-b', 'Newer fav', {
+        is_favorite: true,
+        last_message_at: '2026-03-12T12:00:00.000Z',
+      }),
+      baseRoom('room-c', 'Recent non-fav', {
+        is_favorite: false,
+        last_message_at: '2026-03-12T14:00:00.000Z',
+      }),
+    ];
+
+    const result = deriveVisibleChatRooms(rooms, {
+      currentUserId: 'user-1',
+      filter: 'all',
+      sort: 'recent',
+    });
+
+    expect(result.map((room) => room.id)).toEqual([
+      'room-b',
+      'room-a',
+      'room-c',
+    ]);
+  });
 });

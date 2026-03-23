@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import {
   canonicalizeDmRooms,
@@ -10,7 +18,32 @@ import { toMessage } from '../lib/utils/errors';
 import type { ChatRoom, ChatRoomMember } from '../types/chat';
 import type { ChatRoomWithMembers } from './chatTypes';
 
-export function useChatRooms() {
+export type ChatRoomsContextValue = {
+  rooms: ChatRoomWithMembers[];
+  loading: boolean;
+  fetchRooms: () => Promise<void>;
+  removeChat: (targetRoomId: string) => Promise<void>;
+  createDm: (otherUserId: string) => Promise<string | null>;
+  createGroup: (name: string, memberIds: string[]) => Promise<string | null>;
+  toggleFavorite: (roomId: string, isFavorite: boolean) => Promise<void>;
+};
+
+const ChatRoomsContext = createContext<ChatRoomsContextValue | null>(null);
+
+export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {
+  const value = useChatRoomsState();
+  return createElement(ChatRoomsContext.Provider, { value }, children);
+};
+
+export function useChatRooms(): ChatRoomsContextValue {
+  const ctx = useContext(ChatRoomsContext);
+  if (!ctx) {
+    throw new Error('useChatRooms must be used within ChatRoomsProvider');
+  }
+  return ctx;
+}
+
+function useChatRoomsState() {
   const { showToast } = useAppToast();
   const [rooms, setRooms] = useState<ChatRoomWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
@@ -452,15 +485,46 @@ export function useChatRooms() {
       );
 
       try {
-        const { error } = await supabase.from('chat_room_preferences').upsert(
-          {
-            room_id: roomId,
-            user_id: session.user.id,
-            is_favorite: nextFavorite,
-          },
-          { onConflict: 'room_id,user_id' },
-        );
-        if (error) throw error;
+        const { data: existing, error: selectError } = await supabase
+          .from('chat_room_preferences')
+          .select('room_id')
+          .eq('room_id', roomId)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (selectError) throw selectError;
+
+        const payload = {
+          room_id: roomId,
+          user_id: session.user.id,
+          is_favorite: nextFavorite,
+        };
+
+        if (existing?.room_id) {
+          const { error: updateError } = await supabase
+            .from('chat_room_preferences')
+            .update({ is_favorite: nextFavorite })
+            .eq('room_id', roomId)
+            .eq('user_id', session.user.id);
+          if (updateError) throw updateError;
+        } else {
+          const { error: insertError } = await supabase
+            .from('chat_room_preferences')
+            .insert(payload);
+          if (insertError) {
+            if (insertError.code === '23505') {
+              const { error: updateError } = await supabase
+                .from('chat_room_preferences')
+                .update({ is_favorite: nextFavorite })
+                .eq('room_id', roomId)
+                .eq('user_id', session.user.id);
+              if (updateError) throw updateError;
+            } else {
+              throw insertError;
+            }
+          }
+        }
+
         showToast({
           message: nextFavorite
             ? 'Added to favorites.'
@@ -468,7 +532,20 @@ export function useChatRooms() {
           severity: nextFavorite ? 'success' : 'info',
         });
       } catch (cause) {
-        console.warn('toggleFavorite failed:', toMessage(cause));
+        const pg = cause as {
+          code?: string;
+          message?: string;
+          details?: string;
+          hint?: string;
+        };
+        console.warn('toggleFavorite failed:', {
+          roomId,
+          intendedFavorite: nextFavorite,
+          message: toMessage(cause),
+          code: pg.code,
+          details: pg.details,
+          hint: pg.hint,
+        });
         setRooms((prev) =>
           prev.map((room) =>
             room.id === roomId ? { ...room, is_favorite: isFavorite } : room,

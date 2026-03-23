@@ -79,6 +79,6 @@ export function useChat(roomId: string | null) {
   };
 }
 
-export { useChatRooms } from './useChatRooms';
+export { ChatRoomsProvider, useChatRooms } from './useChatRooms';
 export { useReportMessage } from './useReportMessage';
 export type { ChatRoomWithMembers, MessageWithExtras } from './chatTypes';

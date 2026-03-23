@@ -175,7 +175,7 @@ export const SnakePlayPage = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
         setGameStatus('gameover');
-        void recordScoreAndEnd(scoreRef.current);
+        recordScoreAndEnd(scoreRef.current);
         return;
       }
       const hitSelf = prevSnake.some(
@@ -185,7 +185,7 @@ export const SnakePlayPage = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
         setGameStatus('gameover');
-        void recordScoreAndEnd(scoreRef.current);
+        recordScoreAndEnd(scoreRef.current);
         return;
       }
 
@@ -281,7 +281,9 @@ export const SnakePlayPage = () => {
         title="Snake"
         description="Control the snake with arrow keys or WASD. Collect targets to grow. Avoid walls and yourself."
         startingNew={startingNew}
-        onStartNew={() => void handlePlayAgain()}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
         startAriaLabel="Start new Snake game"
       />
     );
@@ -312,7 +314,9 @@ export const SnakePlayPage = () => {
         <MiniGameGameOverPanel
           summary={`Final score: ${score}`}
           startingNew={startingNew}
-          onPlayAgain={() => void handlePlayAgain()}
+          onPlayAgain={async () => {
+            await handlePlayAgain();
+          }}
         />
       )}
 

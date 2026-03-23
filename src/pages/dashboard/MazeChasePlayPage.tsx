@@ -166,7 +166,7 @@ export const MazeChasePlayPage = () => {
       return;
     }
     setLoading(true);
-    void loadSession(sessionId.trim()).finally(() => setLoading(false));
+    loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
 
   const recordScoreAndEnd = useCallback(
@@ -191,7 +191,7 @@ export const MazeChasePlayPage = () => {
         if (ghostIntervalRef.current) clearInterval(ghostIntervalRef.current);
         if (powerIntervalRef.current) clearInterval(powerIntervalRef.current);
         setStatus('gameover');
-        void recordScoreAndEnd(scoreRef.current);
+        recordScoreAndEnd(scoreRef.current);
         return 0;
       }
       setPlayer(PLAYER_START);
@@ -431,7 +431,9 @@ export const MazeChasePlayPage = () => {
         title="Maze Chase"
         description="Move through the maze collecting dots. Avoid enemies; collect power pellets to turn the tables. Score from items and catching enemies when powered. Game ends when lives run out."
         startingNew={startingNew}
-        onStartNew={() => void handlePlayAgain()}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
         startAriaLabel="Start new Maze Chase game"
       />
     );
@@ -457,7 +459,9 @@ export const MazeChasePlayPage = () => {
         <MiniGameGameOverPanel
           summary={`Final score: ${score}`}
           startingNew={startingNew}
-          onPlayAgain={() => void handlePlayAgain()}
+          onPlayAgain={async () => {
+            await handlePlayAgain();
+          }}
         />
       )}
 

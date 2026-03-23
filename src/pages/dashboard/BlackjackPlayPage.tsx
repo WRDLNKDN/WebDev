@@ -265,7 +265,9 @@ export const BlackjackPlayPage = () => {
         title="Blackjack"
         description="Play against the dealer. Hit to take a card, Stand to hold. Get closer to 21 than the dealer without going over. For entertainment only — no real money or rewards."
         startingNew={startingNew}
-        onStartNew={() => void handlePlayAgain()}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
         startAriaLabel="Start new Blackjack game"
       />
     );

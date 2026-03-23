@@ -336,7 +336,7 @@ export const TetrisPlayPage = () => {
       return;
     }
     setLoading(true);
-    void loadSession(sessionId.trim()).finally(() => setLoading(false));
+    loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
 
   const recordScoreAndEnd = useCallback(
@@ -403,7 +403,7 @@ export const TetrisPlayPage = () => {
       intervalRef.current = null;
       setStatus('gameover');
       setPiece(null);
-      void recordScoreAndEnd(nextScore, nextLevel);
+      recordScoreAndEnd(nextScore, nextLevel);
       return;
     }
     setPiece(nextPiece);
@@ -536,7 +536,9 @@ export const TetrisPlayPage = () => {
         title="Tetris"
         description="Blocks fall from the top. Rotate and place them to complete rows. Completed rows disappear and add to your score. Speed increases over time."
         startingNew={startingNew}
-        onStartNew={() => void handlePlayAgain()}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
         startAriaLabel="Start new Tetris game"
       />
     );
@@ -570,7 +572,9 @@ export const TetrisPlayPage = () => {
         <MiniGameGameOverPanel
           summary={`Final score: ${score} · Level: ${level}`}
           startingNew={startingNew}
-          onPlayAgain={() => void handlePlayAgain()}
+          onPlayAgain={async () => {
+            await handlePlayAgain();
+          }}
         />
       )}
 

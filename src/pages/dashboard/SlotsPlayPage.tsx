@@ -165,7 +165,9 @@ export const SlotsPlayPage = () => {
         title="Slots"
         description="Spin the reels for fun. Match three symbols to win. No real-money play—entertainment only."
         startingNew={startingNew}
-        onStartNew={() => void handlePlayAgain()}
+        onStartNew={async () => {
+          await handlePlayAgain();
+        }}
         startAriaLabel="Start Slots game"
         startButtonLabel="Start game"
       />

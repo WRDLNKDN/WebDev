@@ -81,32 +81,35 @@ describe('resolveStoreExternalUrl', () => {
 
   it('prefers GoDaddy when the probe fetch completes', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({}) as typeof fetch;
-    await expect(resolveStoreExternalUrl()).resolves.toBe(
-      GODADDY_STOREFRONT_URL,
-    );
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: 'https://alt.example/',
+        VITE_ECWID_STORE_ID: '1',
+      }),
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 
   it('uses alternate URL when probe fails and env has Ecwid', async () => {
     globalThis.fetch = vi
       .fn()
       .mockRejectedValue(new Error('network')) as typeof fetch;
-    vi.stubEnv('VITE_ECWID_STORE_ID', '111');
-    vi.stubEnv('VITE_STORE_URL', '');
-    await expect(resolveStoreExternalUrl()).resolves.toBe(
-      'https://111.company.site',
-    );
-    vi.unstubAllEnvs();
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
+        VITE_ECWID_STORE_ID: '111',
+      }),
+    ).resolves.toBe('https://111.company.site');
   });
 
   it('still returns GoDaddy when probe fails and no alternate is configured', async () => {
     globalThis.fetch = vi
       .fn()
       .mockRejectedValue(new Error('network')) as typeof fetch;
-    vi.stubEnv('VITE_ECWID_STORE_ID', '');
-    vi.stubEnv('VITE_STORE_URL', '');
-    await expect(resolveStoreExternalUrl()).resolves.toBe(
-      GODADDY_STOREFRONT_URL,
-    );
-    vi.unstubAllEnvs();
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 });

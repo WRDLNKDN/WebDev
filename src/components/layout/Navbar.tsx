@@ -474,8 +474,7 @@ export const Navbar = () => {
             overflow: 'visible',
             ...(isMobile &&
               minimalComingSoonHomeNavbar && {
-                justifyContent: 'center',
-                ...(storeEnabled && { position: 'relative' as const }),
+                justifyContent: 'flex-start',
               }),
           }}
         >
@@ -543,6 +542,42 @@ export const Navbar = () => {
                 }}
               />
             </Box>
+            {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
+            {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
+              <Button
+                component="a"
+                href={storeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small"
+                sx={{
+                  flexShrink: 0,
+                  ml: 0.75,
+                  color: 'rgba(255,255,255,0.96)',
+                  textTransform: 'none',
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  minHeight: 40,
+                  minWidth: 44,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(0,0,0,0.35)',
+                  border: '1px solid rgba(156,187,217,0.22)',
+                  textDecoration: 'none',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                  boxSizing: 'border-box',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.5)',
+                    color: 'white',
+                    borderColor: 'rgba(156,187,217,0.32)',
+                  },
+                }}
+              >
+                Store
+              </Button>
+            ) : null}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&
               !isCompactDesktop &&
@@ -741,35 +776,6 @@ export const Navbar = () => {
               )}
           </Stack>
 
-          {/* Mobile prod coming-soon home: Store stays reachable (hamburger + Join hidden). */}
-          {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
-            <Button
-              component="a"
-              href={storeHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              size="small"
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'rgba(255,255,255,0.96)',
-                textTransform: 'none',
-                fontSize: '0.9375rem',
-                minWidth: 0,
-                px: 1.25,
-                zIndex: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(56,132,210,0.14)',
-                  color: 'white',
-                },
-              }}
-            >
-              Store
-            </Button>
-          ) : null}
-
           {/* Desktop nav links: Dashboard, Directory, Events, Feed, Store (Admin is in avatar menu) */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
@@ -869,9 +875,7 @@ export const Navbar = () => {
             </Box>
           )}
 
-          {!(isMobile && minimalComingSoonHomeNavbar) && (
-            <Box sx={{ flexGrow: 1 }} />
-          )}
+          <Box sx={{ flexGrow: 1 }} />
 
           {/* Desktop auth: hidden on mobile (shown in drawer); hidden on coming-soon home (no stuck spinner). */}
           {!isMobile && !minimalComingSoonHomeNavbar && (

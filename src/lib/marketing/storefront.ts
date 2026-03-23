@@ -64,9 +64,12 @@ export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
 
 /**
  * Navbar Store and /store: prefer GoDaddy when reachable; else Ecwid / VITE_STORE_URL; else GoDaddy.
+ * Optional `env` matches `getAlternateStorefrontUrl` (useful in tests).
  */
-export async function resolveStoreExternalUrl(): Promise<string> {
-  const alternate = getAlternateStorefrontUrl();
+export async function resolveStoreExternalUrl(
+  env?: StorefrontEnv,
+): Promise<string> {
+  const alternate = getAlternateStorefrontUrl(env);
   const godaddyOk = await probeGodaddyStorefrontReachable();
   if (godaddyOk) return GODADDY_STOREFRONT_URL;
   if (alternate) return alternate;

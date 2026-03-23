@@ -3,7 +3,11 @@
  * `github` is the graphql client from actions/github-script.
  * `onItem` receives each item node id; return true to increment `updated`.
  */
-module.exports = async function forEachProjectV2Item(github, projectId, onItem) {
+module.exports = async function forEachProjectV2Item(
+  github,
+  projectId,
+  onItem,
+) {
   let cursor = null;
   let scanned = 0;
   let updated = 0;

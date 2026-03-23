@@ -250,7 +250,9 @@ function targetDateIsBlank(dateVal) {
  */
 async function maybeSetTargetDateOnItem(github, core, item, opts) {
   const fieldNodes = item.project?.fields?.nodes ?? [];
-  const targetFieldId = fieldNodes.find((f) => f?.name === opts.targetField)?.id;
+  const targetFieldId = fieldNodes.find(
+    (f) => f?.name === opts.targetField,
+  )?.id;
 
   if (!targetFieldId) {
     core.info(

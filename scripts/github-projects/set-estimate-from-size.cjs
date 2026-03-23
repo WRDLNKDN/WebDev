@@ -13,13 +13,7 @@ async function handleProjectV2ItemEstimate({ github, context, core }) {
     core.info('No projects_v2_item.node_id; skipping.');
     return;
   }
-  await syncEstimateFromSize(
-    github,
-    core,
-    itemNodeId,
-    null,
-    SIZE_TO_ESTIMATE,
-  );
+  await syncEstimateFromSize(github, core, itemNodeId, null, SIZE_TO_ESTIMATE);
 }
 
 async function handleWorkflowDispatchEstimate({ github, context, core }) {
@@ -68,9 +62,7 @@ async function handleWorkflowDispatchEstimate({ github, context, core }) {
   });
 
   const project =
-    ownerType === 'user'
-      ? root.user?.projectV2
-      : root.organization?.projectV2;
+    ownerType === 'user' ? root.user?.projectV2 : root.organization?.projectV2;
 
   if (!project?.id) {
     core.setFailed(

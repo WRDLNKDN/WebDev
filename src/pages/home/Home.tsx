@@ -528,13 +528,13 @@ export const Home = () => {
           </div>
         )}
       </section>
-      {!productionComingSoon ? (
+      {productionComingSoon ? null : (
         <>
           <WhatMakesDifferent />
           <HowItWorks />
           <SocialProof />
         </>
-      ) : null}
+      )}
     </main>
   );
 };

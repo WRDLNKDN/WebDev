@@ -107,17 +107,17 @@ export const Directory = () => {
     : 'rgba(255,255,255,0.7)';
 
   const directoryMenuProps = useMemo(() => {
+    const baseSx = filterSelectMenuProps?.PaperProps?.sx;
     const paperSx = {
-      ...((filterSelectMenuProps?.PaperProps?.sx ?? {}) as Record<
-        string,
-        unknown
-      >),
+      ...(typeof baseSx === 'object' && baseSx !== null
+        ? (baseSx as Record<string, unknown>)
+        : {}),
       ...denseMenuPaperSxFromTheme(theme),
     };
     return {
-      ...(filterSelectMenuProps ?? {}),
+      ...filterSelectMenuProps,
       PaperProps: {
-        ...(filterSelectMenuProps?.PaperProps ?? {}),
+        ...filterSelectMenuProps?.PaperProps,
         sx: paperSx,
       },
     };
@@ -303,6 +303,14 @@ export const Directory = () => {
   const [exportingConnections, setExportingConnections] = useState(false);
   // Location filter inline edit state
   const [locationInput, setLocationInput] = useState(location);
+  let locationFieldsetBorderColor: string;
+  if (locationInput) {
+    locationFieldsetBorderColor = theme.palette.primary.main;
+  } else if (isLight) {
+    locationFieldsetBorderColor = theme.palette.divider;
+  } else {
+    locationFieldsetBorderColor = 'rgba(255,255,255,0.18)';
+  }
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
   /** When true, skip persisting directory rows (avoids caching empty after a failed fetch). */
@@ -1286,11 +1294,7 @@ export const Directory = () => {
                           ...chipSelectSxThemed,
                           color: locationInput ? chipFilled : chipMuted,
                           '& fieldset': {
-                            borderColor: locationInput
-                              ? theme.palette.primary.main
-                              : isLight
-                                ? theme.palette.divider
-                                : 'rgba(255,255,255,0.18)',
+                            borderColor: locationFieldsetBorderColor,
                             borderWidth: '1.5px',
                           },
                           '&:hover fieldset': {

@@ -16,7 +16,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   getSecondaryOptionsForPrimary,
   INDUSTRY_PRIMARY_OPTIONS,
@@ -43,6 +43,25 @@ import type { EditProfileFormData } from './types';
 /** Message for clear-all confirmation on multi-select fields (Industries and others). */
 export const CLEAR_ALL_ENTRIES_CONFIRM_MESSAGE =
   'Warning - you are about to remove all entries. Continue?';
+
+const OtherIndustryChip = ({
+  value,
+  busy,
+  onRemove,
+}: {
+  value: string;
+  busy: boolean;
+  onRemove: (v: string) => void;
+}) => {
+  return (
+    <Chip
+      label={value}
+      size="small"
+      disabled={busy}
+      onDelete={busy ? undefined : () => onRemove(value)}
+    />
+  );
+};
 
 type ClearConfirmTarget =
   | { type: 'sub-industries'; idx: number }
@@ -75,6 +94,18 @@ export const EditProfileIndustrySection = ({
   const theme = useTheme();
   const inputStyles = getInputStyles(theme);
   const isLight = theme.palette.mode === 'light';
+
+  const removeOtherIndustryLabel = useCallback(
+    (entry: string) => {
+      onChange((prev) => ({
+        ...prev,
+        niche_field: serializeNicheValues(
+          otherValues.filter((v) => v !== entry),
+        ),
+      }));
+    },
+    [onChange, otherValues],
+  );
 
   const setInputValue = (idx: number, value: string) => {
     setStatusMessages((prev) => ({ ...prev, [idx]: '' }));
@@ -427,23 +458,11 @@ export const EditProfileIndustrySection = ({
         {otherValues.length > 0 ? (
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.25 }}>
             {otherValues.map((value) => (
-              <Chip
+              <OtherIndustryChip
                 key={value}
-                label={value}
-                size="small"
-                disabled={busy}
-                onDelete={
-                  busy
-                    ? undefined
-                    : () => {
-                        onChange((prev) => ({
-                          ...prev,
-                          niche_field: serializeNicheValues(
-                            otherValues.filter((entry) => entry !== value),
-                          ),
-                        }));
-                      }
-                }
+                value={value}
+                busy={busy}
+                onRemove={removeOtherIndustryLabel}
               />
             ))}
           </Stack>

@@ -4,14 +4,7 @@
  * Pieces drop to lowest open slot; horizontal, vertical, diagonal wins and draw.
  */
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { fetchSessionById, makeConnectFourMove } from '../../lib/api/gamesApi';
@@ -19,6 +12,11 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const ROWS = 6;
 const COLS = 7;
@@ -176,23 +174,7 @@ export const ConnectFourPlayPage = () => {
   );
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!session) return null;
@@ -263,22 +245,11 @@ export const ConnectFourPlayPage = () => {
         : null;
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Connect 4
-        </Typography>
-        {!myTurn && !completed && session?.id && (
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Connect 4"
+        showStats={!myTurn && !completed && !!session?.id}
+        stats={
           <Button
             size="small"
             variant="outlined"
@@ -287,8 +258,8 @@ export const ConnectFourPlayPage = () => {
           >
             Refresh
           </Button>
-        )}
-      </Stack>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 2, display: 'inline-block' }}>
         <Typography
@@ -384,6 +355,6 @@ export const ConnectFourPlayPage = () => {
           </Stack>
         )}
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

@@ -16,6 +16,31 @@ function directoryUrl(path: string, qs?: string): string {
   return qs ? `${base}?${qs}` : base;
 }
 
+async function readDirectoryJsonBody(
+  res: Response,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function throwIfDirectoryResponseNotOk(
+  res: Response,
+  data: Record<string, unknown>,
+): void {
+  if (res.ok) return;
+  const msg = typeof data.error === 'string' ? data.error : undefined;
+  const bodyMsg = typeof data.message === 'string' ? data.message : undefined;
+  const retryAfter =
+    typeof data.retryAfter === 'number' ? data.retryAfter : undefined;
+  if (res.status === 429 && retryAfter != null) {
+    throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
+  }
+  throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
+}
+
 export type DirectorySort = 'recently_active' | 'alphabetical' | 'newest';
 export type ConnectionState =
   | 'not_connected'
@@ -79,23 +104,8 @@ export async function fetchDirectory(
       credentials: API_BASE ? 'omit' : 'include',
     },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
   return {
     data: (data.data as DirectoryMember[]) ?? [],
     hasMore: Boolean(data.hasMore),
@@ -140,23 +150,8 @@ export async function connectRequest(
     },
     { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
 }
 
 export async function acceptRequest(
@@ -171,23 +166,8 @@ export async function acceptRequest(
     },
     { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
 }
 
 export async function declineRequest(
@@ -202,23 +182,8 @@ export async function declineRequest(
     },
     { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
 }
 
 export async function cancelRequest(
@@ -233,23 +198,8 @@ export async function cancelRequest(
     },
     { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
 }
 
 export async function disconnect(
@@ -264,21 +214,6 @@ export async function disconnect(
     },
     { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    const retryAfter =
-      typeof data?.retryAfter === 'number' ? data.retryAfter : undefined;
-    if (res.status === 429 && retryAfter != null) {
-      throw new Error(`Too many requests. Try again in ${retryAfter} seconds.`);
-    }
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
 }

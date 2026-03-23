@@ -413,7 +413,9 @@ export const MessengerOverlayPanel = ({
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        void onToggleFavorite(r.id, Boolean(r.is_favorite));
+                        Promise.resolve(
+                          onToggleFavorite(r.id, Boolean(r.is_favorite)),
+                        ).catch(() => {});
                       }}
                       sx={{
                         borderRadius: 1.25,

@@ -15,7 +15,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { EmojiClickData, Theme } from 'emoji-picker-react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import {
@@ -131,6 +138,16 @@ export const MessageInput = ({
     null,
   );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const removePendingFileAtIndex = useCallback((indexToRemove: number) => {
+    setPendingFiles((prev) => {
+      const next = prev.filter((_, j) => j !== indexToRemove);
+      if (next.length === 0) {
+        setError(null);
+        setProcessingMessage(null);
+      }
+      return next;
+    });
+  }, []);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -417,16 +434,7 @@ export const MessageInput = ({
               <Box
                 component="button"
                 type="button"
-                onClick={() =>
-                  setPendingFiles((prev) => {
-                    const next = prev.filter((_, j) => j !== i);
-                    if (next.length === 0) {
-                      setError(null);
-                      setProcessingMessage(null);
-                    }
-                    return next;
-                  })
-                }
+                onClick={() => removePendingFileAtIndex(i)}
                 sx={{ cursor: 'pointer', color: 'error.main', ml: 0.5 }}
               >
                 ×

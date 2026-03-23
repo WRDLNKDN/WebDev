@@ -1235,11 +1235,11 @@ export const Dashboard = () => {
             setIsLinksOpen(true);
           }}
           onAvatarChanged={() => {
-            void refresh();
-            void refreshAvatar();
+            refresh().catch(() => {});
+            refreshAvatar().catch(() => {});
           }}
           onProfileSaved={() => {
-            void refresh();
+            refresh().catch(() => {});
           }}
         />
         <EditLinksDialog

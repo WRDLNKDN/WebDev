@@ -1,47 +1,12 @@
-import { expect, test, type Page, type Route } from '../fixtures';
+import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import {
+  fulfillPostgrest,
+  parseEqParam,
+  readDashboardOrder,
+  readProfileOrder,
+} from '../utils/portfolioPlaywrightHelpers';
 import { stubAppSurface } from '../utils/stubAppSurface';
-
-function parseEqParam(url: string, key: string) {
-  const raw = new URL(url).searchParams.get(key);
-  return raw?.replace(/^eq\./, '') ?? null;
-}
-
-async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    headers: Array.isArray(rowOrRows)
-      ? {
-          'content-range': `0-${Math.max(rowOrRows.length - 1, 0)}/${rowOrRows.length}`,
-        }
-      : undefined,
-    body: JSON.stringify(
-      isSingle && Array.isArray(rowOrRows) ? rowOrRows[0] : rowOrRows,
-    ),
-  });
-}
-
-async function readDashboardOrder(page: Page): Promise<string[]> {
-  return page
-    .locator('main button[aria-label^="Edit project "]')
-    .evaluateAll((els) =>
-      els.map((el) =>
-        (el.getAttribute('aria-label') || '').replace(/^Edit project\s+/, ''),
-      ),
-    );
-}
-
-async function readProfileOrder(page: Page): Promise<string[]> {
-  return page.locator('main img[alt$="Artifact"]').evaluateAll((els) =>
-    els
-      .map((el) => (el as HTMLImageElement).alt.trim())
-      .filter(Boolean)
-      .slice(0, 10),
-  );
-}
 
 test.describe('Portfolio artifact reorder', () => {
   test('persists configured artifact order on dashboard and profile', async ({

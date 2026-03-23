@@ -2,7 +2,7 @@
  * When a Project v2 item's Status is Done and the linked Issue is closed, reopen the issue.
  * Resolves repo owner/name from the issue so org boards with multi-repo issues work.
  */
-module.exports = async ({ github, context, core }) => {
+async function reopenIssueWhenDoneProjectItem({ github, context, core }) {
   const item = context.payload.projects_v2_item;
   if (!item?.node_id) {
     core.info('No projects_v2_item.node_id; skipping.');
@@ -80,7 +80,7 @@ module.exports = async ({ github, context, core }) => {
   }
 
   const issue = projectItem.content;
-  if (!issue || issue.__typename !== 'Issue') {
+  if (issue?.__typename !== 'Issue') {
     core.info('No linked Issue on project item; skipping.');
     return;
   }
@@ -110,4 +110,6 @@ module.exports = async ({ github, context, core }) => {
   core.info(
     `Reopened ${owner}/${repo}#${issue.number} (Status is Done while issue was closed).`,
   );
-};
+}
+
+module.exports = reopenIssueWhenDoneProjectItem;

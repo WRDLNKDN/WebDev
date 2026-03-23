@@ -994,54 +994,51 @@ export const Navbar = () => {
                   )}
                   {/* Hide avatar completely in coming soon mode unless on admin route */}
                   {(!productionComingSoon || isAdminActive) && (
-                    <>
-                      <Tooltip title="Account menu" disableInteractive>
-                        <IconButton
-                          type="button"
-                          onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                          aria-label="Account menu"
-                          aria-haspopup="true"
-                          aria-expanded={Boolean(avatarMenuAnchor)}
+                    <Tooltip title="Account menu" disableInteractive>
+                      <IconButton
+                        type="button"
+                        onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                        aria-label="Account menu"
+                        aria-haspopup="true"
+                        aria-expanded={Boolean(avatarMenuAnchor)}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.25,
+                          p: 0.25,
+                          color: 'inherit',
+                          borderRadius: 9999,
+                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                        }}
+                      >
+                        <Box
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 0.25,
-                            p: 0.25,
-                            color: 'inherit',
-                            borderRadius: 9999,
-                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            border: '2px solid rgba(255,255,255,0.4)',
+                            p: '1px',
+                            flexShrink: 0,
                           }}
                         >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: '50%',
-                              border: '2px solid rgba(255,255,255,0.4)',
-                              p: '1px',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <ProfileAvatar
-                              src={avatarUrl ?? undefined}
-                              alt={
-                                session?.user?.user_metadata?.full_name ||
-                                'User'
-                              }
-                              size="small"
-                              sx={{ width: 24, height: 24 }}
-                            />
-                          </Box>
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: 16,
-                              color: 'rgba(255,255,255,0.8)',
-                            }}
+                          <ProfileAvatar
+                            src={avatarUrl ?? undefined}
+                            alt={
+                              session?.user?.user_metadata?.full_name || 'User'
+                            }
+                            size="small"
+                            sx={{ width: 24, height: 24 }}
                           />
-                        </IconButton>
-                      </Tooltip>
-                    </>
+                        </Box>
+                        <KeyboardArrowDownIcon
+                          sx={{
+                            fontSize: 16,
+                            color: 'rgba(255,255,255,0.8)',
+                          }}
+                        />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </>
               )}

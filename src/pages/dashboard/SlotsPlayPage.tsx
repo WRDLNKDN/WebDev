@@ -3,22 +3,20 @@
  * No real-money wagering, no currency, no redeemable prizes—cosmetic/play only.
  * User spins, reels animate and stop, result is displayed; can spin again immediately.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { createSlotsSession, fetchSessionById } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const SYMBOLS = ['Cherry', 'Lemon', 'Orange', 'Bar', 'Seven', 'Star'] as const;
 type Symbol = (typeof SYMBOLS)[number];
@@ -158,79 +156,25 @@ export const SlotsPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!sessionId) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Slots
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Spin the reels for fun. Match three symbols to win. No real-money
-            play—entertainment only.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handlePlayAgain()}
-            aria-label="Start Slots game"
-          >
-            {startingNew ? 'Starting…' : 'Start game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Slots"
+        description="Spin the reels for fun. Match three symbols to win. No real-money play—entertainment only."
+        startingNew={startingNew}
+        onStartNew={() => void handlePlayAgain()}
+        startAriaLabel="Start Slots game"
+        startButtonLabel="Start game"
+      />
     );
   }
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Slots
-        </Typography>
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow title="Slots" showStats={false} />
 
       <Paper
         variant="outlined"
@@ -309,6 +253,6 @@ export const SlotsPlayPage = () => {
           {isSpinning ? 'Spinning…' : 'Spin'}
         </Button>
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

@@ -30,6 +30,53 @@ export type ChatRoomsContextValue = {
 
 const ChatRoomsContext = createContext<ChatRoomsContextValue | null>(null);
 
+async function persistChatRoomFavoriteForMember(
+  userId: string,
+  roomId: string,
+  nextFavorite: boolean,
+): Promise<void> {
+  const { data: existing, error: selectError } = await supabase
+    .from('chat_room_preferences')
+    .select('room_id')
+    .eq('room_id', roomId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (selectError) throw selectError;
+
+  const payload = {
+    room_id: roomId,
+    user_id: userId,
+    is_favorite: nextFavorite,
+  };
+
+  if (existing?.room_id) {
+    const { error: updateError } = await supabase
+      .from('chat_room_preferences')
+      .update({ is_favorite: nextFavorite })
+      .eq('room_id', roomId)
+      .eq('user_id', userId);
+    if (updateError) throw updateError;
+    return;
+  }
+
+  const { error: insertError } = await supabase
+    .from('chat_room_preferences')
+    .insert(payload);
+  if (!insertError) return;
+
+  if (insertError.code !== '23505') {
+    throw insertError;
+  }
+
+  const { error: updateError } = await supabase
+    .from('chat_room_preferences')
+    .update({ is_favorite: nextFavorite })
+    .eq('room_id', roomId)
+    .eq('user_id', userId);
+  if (updateError) throw updateError;
+}
+
 export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {
   const value = useChatRoomsState();
   return createElement(ChatRoomsContext.Provider, { value }, children);
@@ -485,45 +532,11 @@ function useChatRoomsState() {
       );
 
       try {
-        const { data: existing, error: selectError } = await supabase
-          .from('chat_room_preferences')
-          .select('room_id')
-          .eq('room_id', roomId)
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (selectError) throw selectError;
-
-        const payload = {
-          room_id: roomId,
-          user_id: session.user.id,
-          is_favorite: nextFavorite,
-        };
-
-        if (existing?.room_id) {
-          const { error: updateError } = await supabase
-            .from('chat_room_preferences')
-            .update({ is_favorite: nextFavorite })
-            .eq('room_id', roomId)
-            .eq('user_id', session.user.id);
-          if (updateError) throw updateError;
-        } else {
-          const { error: insertError } = await supabase
-            .from('chat_room_preferences')
-            .insert(payload);
-          if (insertError) {
-            if (insertError.code === '23505') {
-              const { error: updateError } = await supabase
-                .from('chat_room_preferences')
-                .update({ is_favorite: nextFavorite })
-                .eq('room_id', roomId)
-                .eq('user_id', session.user.id);
-              if (updateError) throw updateError;
-            } else {
-              throw insertError;
-            }
-          }
-        }
+        await persistChatRoomFavoriteForMember(
+          session.user.id,
+          roomId,
+          nextFavorite,
+        );
 
         showToast({
           message: nextFavorite

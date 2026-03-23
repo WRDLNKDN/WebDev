@@ -2,18 +2,10 @@
  * Solo Blackjack: play against the dealer. Hit, stand; dealer follows house rules.
  * Entertainment only — no real-money betting, purchasable credits, or redeemable rewards.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   createBlackjackSession,
   fetchSessionById,
@@ -21,6 +13,12 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const RANKS = [
   '2',
@@ -258,60 +256,18 @@ export const BlackjackPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!sessionId) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Blackjack
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Play against the dealer. Hit to take a card, Stand to hold. Get
-            closer to 21 than the dealer without going over. For entertainment
-            only — no real money or rewards.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handlePlayAgain()}
-            aria-label="Start new Blackjack game"
-          >
-            {startingNew ? 'Starting…' : 'Start new game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Blackjack"
+        description="Play against the dealer. Hit to take a card, Stand to hold. Get closer to 21 than the dealer without going over. For entertainment only — no real money or rewards."
+        startingNew={startingNew}
+        onStartNew={() => void handlePlayAgain()}
+        startAriaLabel="Start new Blackjack game"
+      />
     );
   }
 
@@ -322,32 +278,17 @@ export const BlackjackPlayPage = () => {
   const stats = statsRef.current;
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{ mb: 2 }}
-        flexWrap="wrap"
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Blackjack
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Session: {stats.wins}W / {stats.losses}L / {stats.pushes}P — for fun
-          only
-        </Typography>
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Blackjack"
+        showStats
+        stats={
+          <Typography variant="body2" color="text.secondary">
+            Session: {stats.wins}W / {stats.losses}L / {stats.pushes}P — for fun
+            only
+          </Typography>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 3, maxWidth: 520 }}>
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -456,6 +397,6 @@ export const BlackjackPlayPage = () => {
           </Button>
         )}
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

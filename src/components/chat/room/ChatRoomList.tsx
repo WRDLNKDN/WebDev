@@ -338,7 +338,9 @@ export const ChatRoomList = ({
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      void onToggleFavorite(room.id, Boolean(room.is_favorite));
+                      Promise.resolve(
+                        onToggleFavorite(room.id, Boolean(room.is_favorite)),
+                      ).catch(() => {});
                     }}
                     sx={{
                       borderRadius: 1.25,

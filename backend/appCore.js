@@ -266,7 +266,7 @@ const transcodeGifBufferToMp4 = async (buffer) => {
       '-pix_fmt',
       'yuv420p',
       '-vf',
-      'fps=15,scale=min(960\\,iw):-2:flags=lanczos,scale=trunc(iw/2)*2:trunc(ih/2)*2',
+      String.raw`fps=15,scale=min(960\,iw):-2:flags=lanczos,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
       outputPath,
     ],
     [

@@ -3,14 +3,7 @@
  * diagonal move/capture, king promotion, mandatory capture, multi-capture continuation.
  */
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { fetchSessionById, makeCheckersMove } from '../../lib/api/gamesApi';
@@ -18,6 +11,11 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const SIZE = 8;
 const CELL_PX = 42;
@@ -342,23 +340,7 @@ export const CheckersPlayPage = () => {
   );
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!session) return null;
@@ -420,22 +402,13 @@ export const CheckersPlayPage = () => {
   }
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Checkers
-        </Typography>
-        {!isMyTurn(session, myUserId ?? '') && !completed && session?.id && (
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Checkers"
+        showStats={
+          !isMyTurn(session, myUserId ?? '') && !completed && !!session?.id
+        }
+        stats={
           <Button
             size="small"
             variant="outlined"
@@ -444,8 +417,8 @@ export const CheckersPlayPage = () => {
           >
             Refresh
           </Button>
-        )}
-      </Stack>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 1, display: 'inline-block' }}>
         <Typography
@@ -551,6 +524,6 @@ export const CheckersPlayPage = () => {
           )}
         </Box>
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

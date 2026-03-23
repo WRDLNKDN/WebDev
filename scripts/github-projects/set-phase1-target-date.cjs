@@ -8,129 +8,120 @@
  * If GITHUB_TOKEN cannot write the project, add a fine-grained PAT with project write as
  * secret PROJECT_PHASE1_TARGET_DATE_TOKEN (same pattern as set-estimate-from-size).
  */
-module.exports = async ({ github, context, core }) => {
-  const PHASE1_TITLE = 'Phase 1';
-  const TARGET_FIELD = 'Target Date';
-  const DATE_ISO = '2026-04-27';
+const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
 
-  if (context.eventName === 'issues') {
-    const issue = context.payload.issue;
-    if (!issue?.node_id) {
-      core.info('No issue node_id; skipping.');
-      return;
-    }
-    const mTitle = issue.milestone?.title?.trim();
-    if (mTitle !== PHASE1_TITLE) {
-      core.info(
-        `Milestone is not "${PHASE1_TITLE}" (${mTitle ?? 'none'}); skipping.`,
-      );
-      return;
-    }
-    await syncFromIssueNode(github, core, issue.node_id, {
-      targetField: TARGET_FIELD,
-      dateIso: DATE_ISO,
-      phase1Title: PHASE1_TITLE,
-    });
+const PHASE1_TITLE = 'Phase 1';
+const TARGET_FIELD = 'Target Date';
+const DATE_ISO = '2026-04-27';
+
+async function handleIssuesPhase1Target({ github, context, core }) {
+  const issue = context.payload.issue;
+  if (!issue?.node_id) {
+    core.info('No issue node_id; skipping.');
+    return;
+  }
+  const mTitle = issue.milestone?.title?.trim();
+  if (mTitle !== PHASE1_TITLE) {
+    core.info(
+      `Milestone is not "${PHASE1_TITLE}" (${mTitle ?? 'none'}); skipping.`,
+    );
+    return;
+  }
+  await syncFromIssueNode(github, core, issue.node_id, {
+    targetField: TARGET_FIELD,
+    dateIso: DATE_ISO,
+    phase1Title: PHASE1_TITLE,
+  });
+}
+
+async function handleProjectsV2ItemPhase1Target({ github, context, core }) {
+  const itemNodeId = context.payload.projects_v2_item?.node_id;
+  if (!itemNodeId) {
+    core.info('No projects_v2_item.node_id; skipping.');
+    return;
+  }
+  await syncFromProjectItemNode(github, core, itemNodeId, {
+    targetField: TARGET_FIELD,
+    dateIso: DATE_ISO,
+    phase1Title: PHASE1_TITLE,
+  });
+}
+
+async function handleWorkflowDispatchPhase1Backfill({ github, context, core }) {
+  const inputs = context.payload.inputs || {};
+  const ownerType = inputs.owner_type;
+  const ownerLogin = inputs.owner_login;
+  const projectNumber = Number(inputs.project_number);
+
+  if (!ownerLogin || !Number.isFinite(projectNumber)) {
+    core.setFailed('owner_login and project_number are required.');
     return;
   }
 
-  if (context.eventName === 'projects_v2_item') {
-    const itemNodeId = context.payload.projects_v2_item?.node_id;
-    if (!itemNodeId) {
-      core.info('No projects_v2_item.node_id; skipping.');
-      return;
-    }
-    await syncFromProjectItemNode(github, core, itemNodeId, {
-      targetField: TARGET_FIELD,
-      dateIso: DATE_ISO,
-      phase1Title: PHASE1_TITLE,
-    });
-    return;
-  }
-
-  if (context.eventName === 'workflow_dispatch') {
-    const inputs = context.payload.inputs || {};
-    const ownerType = inputs.owner_type;
-    const ownerLogin = inputs.owner_login;
-    const projectNumber = Number(inputs.project_number);
-
-    if (!ownerLogin || !Number.isFinite(projectNumber)) {
-      core.setFailed('owner_login and project_number are required.');
-      return;
-    }
-
-    const projectQuery =
-      ownerType === 'user'
-        ? `query($login: String!, $number: Int!) {
+  const projectQuery =
+    ownerType === 'user'
+      ? `query($login: String!, $number: Int!) {
             user(login: $login) {
               projectV2(number: $number) { id }
             }
           }`
-        : `query($login: String!, $number: Int!) {
+      : `query($login: String!, $number: Int!) {
             organization(login: $login) {
               projectV2(number: $number) { id }
             }
           }`;
 
-    const root = await github.graphql(projectQuery, {
-      login: ownerLogin,
-      number: projectNumber,
-    });
+  const root = await github.graphql(projectQuery, {
+    login: ownerLogin,
+    number: projectNumber,
+  });
 
-    const projectId =
-      ownerType === 'user'
-        ? root.user?.projectV2?.id
-        : root.organization?.projectV2?.id;
+  const projectId =
+    ownerType === 'user'
+      ? root.user?.projectV2?.id
+      : root.organization?.projectV2?.id;
 
-    if (!projectId) {
-      core.setFailed(
-        `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
-      );
-      return;
-    }
+  if (!projectId) {
+    core.setFailed(
+      `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
+    );
+    return;
+  }
 
-    let cursor = null;
-    let updated = 0;
-    let scanned = 0;
+  const { scanned, updated } = await forEachProjectV2Item(
+    github,
+    projectId,
+    async (itemId) =>
+      syncFromProjectItemNode(github, core, itemId, {
+        targetField: TARGET_FIELD,
+        dateIso: DATE_ISO,
+        phase1Title: PHASE1_TITLE,
+      }),
+  );
 
-    for (;;) {
-      const page = await github.graphql(
-        `query($projectId: ID!, $after: String) {
-          node(id: $projectId) {
-            ... on ProjectV2 {
-              items(first: 100, after: $after) {
-                pageInfo { hasNextPage endCursor }
-                nodes { id }
-              }
-            }
-          }
-        }`,
-        { projectId, after: cursor },
-      );
+  core.info(`Backfill complete: scanned ${scanned}, updated ${updated}.`);
+}
 
-      const conn = page.node?.items;
-      const nodes = conn?.nodes ?? [];
+async function runSetPhase1TargetDate({ github, context, core }) {
+  if (context.eventName === 'issues') {
+    await handleIssuesPhase1Target({ github, context, core });
+    return;
+  }
 
-      for (const row of nodes) {
-        scanned += 1;
-        const changed = await syncFromProjectItemNode(github, core, row.id, {
-          targetField: TARGET_FIELD,
-          dateIso: DATE_ISO,
-          phase1Title: PHASE1_TITLE,
-        });
-        if (changed) updated += 1;
-      }
+  if (context.eventName === 'projects_v2_item') {
+    await handleProjectsV2ItemPhase1Target({ github, context, core });
+    return;
+  }
 
-      if (!conn?.pageInfo?.hasNextPage) break;
-      cursor = conn.pageInfo.endCursor;
-    }
-
-    core.info(`Backfill complete: scanned ${scanned}, updated ${updated}.`);
+  if (context.eventName === 'workflow_dispatch') {
+    await handleWorkflowDispatchPhase1Backfill({ github, context, core });
     return;
   }
 
   core.info(`Unsupported event: ${context.eventName}`);
-};
+}
+
+module.exports = runSetPhase1TargetDate;
 
 /**
  * @returns {Promise<boolean>} true if a field value was written
@@ -259,13 +250,11 @@ function targetDateIsBlank(dateVal) {
  */
 async function maybeSetTargetDateOnItem(github, core, item, opts) {
   const fieldNodes = item.project?.fields?.nodes ?? [];
-  const targetFieldId = fieldNodes.find(
-    (f) => f?.name === opts.targetField,
-  )?.id;
+  const targetFieldId = fieldNodes.find((f) => f?.name === opts.targetField)?.id;
 
   if (!targetFieldId) {
     core.info(
-      `Project ${item.project.id} has no "${opts.targetField}" field; skipping item ${item.id}.`,
+      `Project ${item.project?.id ?? 'unknown'} has no "${opts.targetField}" field; skipping item ${item.id}.`,
     );
     return false;
   }

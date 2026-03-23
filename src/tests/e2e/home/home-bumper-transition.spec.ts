@@ -29,10 +29,12 @@ test.describe('Home bumper transition', () => {
         return null;
       }
 
+      const landingEl = landing as HTMLElement;
+
       const before = {
-        backdropBg: window.getComputedStyle(backdrop).backgroundColor,
-        backdropTransition: window.getComputedStyle(backdrop).transition,
-        homeHeroMode: landing.getAttribute('data-home-hero-mode'),
+        backdropBg: globalThis.getComputedStyle(backdrop).backgroundColor,
+        backdropTransition: globalThis.getComputedStyle(backdrop).transition,
+        homeHeroMode: landingEl.dataset.homeHeroMode ?? null,
       };
 
       video.dispatchEvent(new Event('ended'));
@@ -49,7 +51,7 @@ test.describe('Home bumper transition', () => {
           heroSectionHasCompactClass: boolean;
         };
       }>((resolve) => {
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
           const heroEl = document.querySelector('.home-landing__hero');
           resolve({
             before,
@@ -59,9 +61,9 @@ test.describe('Home bumper transition', () => {
               ),
               videoRemoved:
                 document.querySelector('.home-landing__video') === null,
-              overlayBg: window.getComputedStyle(overlay).backgroundColor,
-              backdropBg: window.getComputedStyle(backdrop).backgroundColor,
-              homeHeroMode: landing.getAttribute('data-home-hero-mode'),
+              overlayBg: globalThis.getComputedStyle(overlay).backgroundColor,
+              backdropBg: globalThis.getComputedStyle(backdrop).backgroundColor,
+              homeHeroMode: landingEl.dataset.homeHeroMode ?? null,
               landingHasHeroCompactClass: landing.classList.contains(
                 'home-landing--hero-compact',
               ),

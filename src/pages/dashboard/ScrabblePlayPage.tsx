@@ -3,14 +3,7 @@
  * words validated against dictionary; score and turn order persisted.
  */
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
@@ -25,6 +18,11 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const BOARD_SIZE = 15;
 const CELL_PX = 28;
@@ -245,23 +243,7 @@ export const ScrabblePlayPage = () => {
   }, [session, submitting, myTurn, loadSession, showToast]);
 
   if (loading || notFound) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        {loading && <CircularProgress aria-label="Loading game" />}
-        {notFound && (
-          <Stack spacing={2} alignItems="center">
-            <Typography color="text.secondary">Game not found.</Typography>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="contained"
-            >
-              Back to Games
-            </Button>
-          </Stack>
-        )}
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={loading} notFound={notFound} />;
   }
 
   if (!session) return null;
@@ -326,7 +308,7 @@ export const ScrabblePlayPage = () => {
           )?.display_name ?? `Player ${(winnerPosition as number) + 1}`)
         : null;
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
+      <MiniGamePlayPageRoot>
         <Button
           component={RouterLink}
           to="/dashboard/games"
@@ -360,40 +342,36 @@ export const ScrabblePlayPage = () => {
             Back to Games
           </Button>
         </Paper>
-      </Box>
+      </MiniGamePlayPageRoot>
     );
   }
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          aria-label="Back to Games"
-        >
-          Back
-        </Button>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Scrabble
-        </Typography>
-        {phase === 'playing' && (
-          <Typography variant="body2" color="text.secondary">
-            Scores:{' '}
-            {ordered
-              .map((_, i) => `P${i + 1}: ${scores[String(i)] ?? 0}`)
-              .join(' · ')}
-          </Typography>
-        )}
-        {!myTurn && phase === 'playing' && (
-          <Button size="small" variant="outlined" onClick={refreshSession}>
-            Refresh
-          </Button>
-        )}
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Scrabble"
+        showStats={phase === 'playing'}
+        stats={
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={2}
+            flexWrap="wrap"
+          >
+            <Typography variant="body2" color="text.secondary">
+              Scores:{' '}
+              {ordered
+                .map((_, i) => `P${i + 1}: ${scores[String(i)] ?? 0}`)
+                .join(' · ')}
+            </Typography>
+            {!myTurn && (
+              <Button size="small" variant="outlined" onClick={refreshSession}>
+                Refresh
+              </Button>
+            )}
+          </Stack>
+        }
+      />
 
       {phase === 'waiting_players' && (
         <Paper variant="outlined" sx={{ p: 3, maxWidth: 420 }}>
@@ -533,6 +511,6 @@ export const ScrabblePlayPage = () => {
           )}
         </Stack>
       )}
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

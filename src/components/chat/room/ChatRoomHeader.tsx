@@ -264,7 +264,7 @@ export const ChatRoomHeader = ({
             <IconButton
               type="button"
               onClick={() => {
-                void onToggleFavorite();
+                Promise.resolve(onToggleFavorite()).catch(() => {});
               }}
               aria-label={
                 isFavorite ? 'Remove from favorites' : 'Add to favorites'

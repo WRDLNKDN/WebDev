@@ -3,39 +3,39 @@
  * CommonJS (.cjs) so this file works under the repo root "type": "module".
  * Loaded via require(); github-script passes { github, context, core }.
  */
-module.exports = async ({ github, context, core }) => {
-  const SIZE_TO_ESTIMATE = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
+const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
 
-  if (context.eventName === 'projects_v2_item') {
-    const itemNodeId = context.payload.projects_v2_item?.node_id;
-    if (!itemNodeId) {
-      core.info('No projects_v2_item.node_id; skipping.');
-      return;
-    }
-    await syncEstimateFromSize(
-      github,
-      core,
-      itemNodeId,
-      null,
-      SIZE_TO_ESTIMATE,
-    );
+const SIZE_TO_ESTIMATE = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
+
+async function handleProjectV2ItemEstimate({ github, context, core }) {
+  const itemNodeId = context.payload.projects_v2_item?.node_id;
+  if (!itemNodeId) {
+    core.info('No projects_v2_item.node_id; skipping.');
+    return;
+  }
+  await syncEstimateFromSize(
+    github,
+    core,
+    itemNodeId,
+    null,
+    SIZE_TO_ESTIMATE,
+  );
+}
+
+async function handleWorkflowDispatchEstimate({ github, context, core }) {
+  const inputs = context.payload.inputs || {};
+  const ownerType = inputs.owner_type;
+  const ownerLogin = inputs.owner_login;
+  const projectNumber = Number(inputs.project_number);
+
+  if (!ownerLogin || !Number.isFinite(projectNumber)) {
+    core.setFailed('owner_login and project_number are required.');
     return;
   }
 
-  if (context.eventName === 'workflow_dispatch') {
-    const inputs = context.payload.inputs || {};
-    const ownerType = inputs.owner_type;
-    const ownerLogin = inputs.owner_login;
-    const projectNumber = Number(inputs.project_number);
-
-    if (!ownerLogin || !Number.isFinite(projectNumber)) {
-      core.setFailed('owner_login and project_number are required.');
-      return;
-    }
-
-    const projectQuery =
-      ownerType === 'user'
-        ? `query($login: String!, $number: Int!) {
+  const projectQuery =
+    ownerType === 'user'
+      ? `query($login: String!, $number: Int!) {
             user(login: $login) {
               projectV2(number: $number) {
                 id
@@ -48,7 +48,7 @@ module.exports = async ({ github, context, core }) => {
               }
             }
           }`
-        : `query($login: String!, $number: Int!) {
+      : `query($login: String!, $number: Int!) {
             organization(login: $login) {
               projectV2(number: $number) {
                 id
@@ -62,80 +62,67 @@ module.exports = async ({ github, context, core }) => {
             }
           }`;
 
-    const root = await github.graphql(projectQuery, {
-      login: ownerLogin,
-      number: projectNumber,
-    });
+  const root = await github.graphql(projectQuery, {
+    login: ownerLogin,
+    number: projectNumber,
+  });
 
-    const project =
-      ownerType === 'user'
-        ? root.user?.projectV2
-        : root.organization?.projectV2;
+  const project =
+    ownerType === 'user'
+      ? root.user?.projectV2
+      : root.organization?.projectV2;
 
-    if (!project?.id) {
-      core.setFailed(
-        `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
-      );
-      return;
-    }
+  if (!project?.id) {
+    core.setFailed(
+      `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
+    );
+    return;
+  }
 
-    const fieldNodes = project.fields?.nodes ?? [];
-    const sizeFieldId = fieldNodes.find((f) => f?.name === 'Size')?.id;
-    const estimateFieldId = fieldNodes.find((f) => f?.name === 'Estimate')?.id;
+  const fieldNodes = project.fields?.nodes ?? [];
+  const sizeFieldId = fieldNodes.find((f) => f?.name === 'Size')?.id;
+  const estimateFieldId = fieldNodes.find((f) => f?.name === 'Estimate')?.id;
 
-    if (!sizeFieldId || !estimateFieldId) {
-      core.setFailed('Project must define "Size" and "Estimate" fields.');
-      return;
-    }
+  if (!sizeFieldId || !estimateFieldId) {
+    core.setFailed('Project must define "Size" and "Estimate" fields.');
+    return;
+  }
 
-    let cursor = null;
-    let updated = 0;
-    let scanned = 0;
+  const { scanned, updated } = await forEachProjectV2Item(
+    github,
+    project.id,
+    async (itemId) =>
+      syncEstimateFromSize(
+        github,
+        core,
+        itemId,
+        {
+          projectId: project.id,
+          sizeFieldId,
+          estimateFieldId,
+        },
+        SIZE_TO_ESTIMATE,
+      ),
+  );
 
-    for (;;) {
-      const page = await github.graphql(
-        `query($projectId: ID!, $after: String) {
-          node(id: $projectId) {
-            ... on ProjectV2 {
-              items(first: 100, after: $after) {
-                pageInfo { hasNextPage endCursor }
-                nodes { id }
-              }
-            }
-          }
-        }`,
-        { projectId: project.id, after: cursor },
-      );
+  core.info(`Backfill complete: scanned ${scanned}, updated ${updated}.`);
+}
 
-      const conn = page.node.items;
-      const nodes = conn.nodes ?? [];
+async function runSetEstimateFromSize({ github, context, core }) {
+  if (context.eventName === 'projects_v2_item') {
+    await handleProjectV2ItemEstimate({ github, context, core });
+    return;
+  }
 
-      for (const item of nodes) {
-        scanned += 1;
-        const changed = await syncEstimateFromSize(
-          github,
-          core,
-          item.id,
-          {
-            projectId: project.id,
-            sizeFieldId,
-            estimateFieldId,
-          },
-          SIZE_TO_ESTIMATE,
-        );
-        if (changed) updated += 1;
-      }
-
-      if (!conn.pageInfo?.hasNextPage) break;
-      cursor = conn.pageInfo.endCursor;
-    }
-
-    core.info(`Backfill complete: scanned ${scanned}, updated ${updated}.`);
+  if (context.eventName === 'workflow_dispatch') {
+    await handleWorkflowDispatchEstimate({ github, context, core });
     return;
   }
 
   core.info(`Unsupported event: ${context.eventName}`);
-};
+}
+
+module.exports = runSetEstimateFromSize;
 
 async function syncEstimateFromSize(
   github,

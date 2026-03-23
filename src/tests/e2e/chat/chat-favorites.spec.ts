@@ -16,7 +16,7 @@ function parseEqFilter(url: URL, column: string): string | undefined {
 function parseInFilter(url: URL, column: string): string[] | undefined {
   const raw = url.searchParams.get(column);
   if (!raw?.startsWith('in.')) return undefined;
-  const inner = raw.slice(3).replace(/[()]/g, '');
+  const inner = raw.slice(3).replaceAll('(', '').replaceAll(')', '');
   if (!inner.trim()) return [];
   return inner.split(',').map((part) => decodeURIComponent(part.trim()));
 }
@@ -26,6 +26,95 @@ function requestedRoomIds(url: URL): string[] {
   if (single) return [single];
   const many = parseInFilter(url, 'room_id');
   return many ?? [];
+}
+
+async function fulfillChatRoomPreferencesRoute(
+  route: import('@playwright/test').Route,
+  roomPrefs: Map<string, { is_favorite: boolean }>,
+  syncFavoriteState: () => void,
+  userId: string,
+): Promise<void> {
+  const method = route.request().method();
+  const url = new URL(route.request().url());
+  const accept = route.request().headers()['accept'] ?? '';
+  const wantsObject = accept.includes('application/vnd.pgrst.object+json');
+
+  if (method === 'GET') {
+    const ids = requestedRoomIds(url);
+    if (wantsObject) {
+      const rid = ids[0];
+      const row = rid && roomPrefs.has(rid) ? { room_id: rid } : null;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: row === null ? 'null' : JSON.stringify(row),
+      });
+      return;
+    }
+
+    const rows = ids
+      .filter((id) => roomPrefs.has(id))
+      .map((id) => ({
+        room_id: id,
+        user_id: userId,
+        is_favorite: roomPrefs.get(id)!.is_favorite,
+      }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(rows),
+    });
+    return;
+  }
+
+  if (method === 'PATCH') {
+    const rid = parseEqFilter(url, 'room_id');
+    const uid = parseEqFilter(url, 'user_id');
+    const body = route.request().postDataJSON() as {
+      is_favorite?: boolean;
+    };
+    if (rid && uid === userId) {
+      roomPrefs.set(rid, { is_favorite: Boolean(body?.is_favorite) });
+      syncFavoriteState();
+    }
+    await route.fulfill({ status: 204, body: '' });
+    return;
+  }
+
+  if (method === 'POST') {
+    const raw = route.request().postDataJSON() as
+      | {
+          room_id?: string;
+          user_id?: string;
+          is_favorite?: boolean;
+        }
+      | Array<{
+          room_id?: string;
+          user_id?: string;
+          is_favorite?: boolean;
+        }>;
+    const rows = Array.isArray(raw) ? raw : [raw];
+    for (const payload of rows) {
+      if (payload.room_id) {
+        roomPrefs.set(payload.room_id, {
+          is_favorite: Boolean(payload.is_favorite),
+        });
+      }
+    }
+    syncFavoriteState();
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify(rows),
+    });
+    return;
+  }
+
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  });
 }
 
 async function stubChatFavoritesSurface(
@@ -165,87 +254,12 @@ async function stubChatFavoritesSurface(
   });
 
   await page.route('**/rest/v1/chat_room_preferences*', async (route) => {
-    const method = route.request().method();
-    const url = new URL(route.request().url());
-    const accept = route.request().headers()['accept'] ?? '';
-    const wantsObject = accept.includes('application/vnd.pgrst.object+json');
-
-    if (method === 'GET') {
-      const ids = requestedRoomIds(url);
-      if (wantsObject) {
-        const rid = ids[0];
-        const row = rid && roomPrefs.has(rid) ? { room_id: rid } : null;
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: row === null ? 'null' : JSON.stringify(row),
-        });
-        return;
-      }
-
-      const rows = ids
-        .filter((id) => roomPrefs.has(id))
-        .map((id) => ({
-          room_id: id,
-          user_id: USER_ID,
-          is_favorite: roomPrefs.get(id)!.is_favorite,
-        }));
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(rows),
-      });
-      return;
-    }
-
-    if (method === 'PATCH') {
-      const rid = parseEqFilter(url, 'room_id');
-      const uid = parseEqFilter(url, 'user_id');
-      const body = route.request().postDataJSON() as {
-        is_favorite?: boolean;
-      };
-      if (rid && uid === USER_ID) {
-        roomPrefs.set(rid, { is_favorite: Boolean(body?.is_favorite) });
-        syncFavoriteState();
-      }
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
-
-    if (method === 'POST') {
-      const raw = route.request().postDataJSON() as
-        | {
-            room_id?: string;
-            user_id?: string;
-            is_favorite?: boolean;
-          }
-        | Array<{
-            room_id?: string;
-            user_id?: string;
-            is_favorite?: boolean;
-          }>;
-      const rows = Array.isArray(raw) ? raw : [raw];
-      for (const payload of rows) {
-        if (payload.room_id) {
-          roomPrefs.set(payload.room_id, {
-            is_favorite: Boolean(payload.is_favorite),
-          });
-        }
-      }
-      syncFavoriteState();
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify(rows),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: '[]',
-    });
+    await fulfillChatRoomPreferencesRoute(
+      route,
+      roomPrefs,
+      syncFavoriteState,
+      USER_ID,
+    );
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {

@@ -4,10 +4,8 @@ import {
   CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
 } from '../../types/chat';
 
-export {
-  CHAT_GIF_PROCESSING_MAX_FILE_BYTES,
-  CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
-};
+export { CHAT_GIF_PROCESSING_MAX_FILE_BYTES } from '../../types/chat';
+export { CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES } from '../../types/chat';
 
 export type ChatAttachmentProcessingPlan =
   | {

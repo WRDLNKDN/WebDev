@@ -10,7 +10,9 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import type { PortfolioItem } from '../../../types/portfolio';
@@ -35,6 +37,8 @@ export const PortfolioHighlightsCarousel = ({
   projects,
   onOpenPreview,
 }: PortfolioHighlightsCarouselProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const highlightedProjects = useMemo(
     () => projects.filter((project) => project.is_highlighted),
     [projects],
@@ -116,8 +120,12 @@ export const PortfolioHighlightsCarousel = ({
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 3,
-        border: '1px solid rgba(156,187,217,0.26)',
-        bgcolor: 'rgba(11,18,32,0.82)',
+        border: isLight
+          ? `1px solid ${theme.palette.divider}`
+          : '1px solid rgba(156,187,217,0.26)',
+        bgcolor: isLight
+          ? alpha(theme.palette.primary.main, 0.04)
+          : 'rgba(11,18,32,0.82)',
         backdropFilter: 'blur(14px)',
       }}
     >
@@ -182,8 +190,12 @@ export const PortfolioHighlightsCarousel = ({
                       aspectRatio: { xs: '4 / 3', sm: '16 / 9' },
                       borderRadius: 2.5,
                       overflow: 'hidden',
-                      bgcolor: 'rgba(56,132,210,0.10)',
-                      border: '1px solid rgba(156,187,217,0.18)',
+                      bgcolor: isLight
+                        ? alpha(theme.palette.primary.main, 0.06)
+                        : 'rgba(56,132,210,0.10)',
+                      border: isLight
+                        ? `1px solid ${theme.palette.divider}`
+                        : '1px solid rgba(156,187,217,0.18)',
                       cursor: onOpenPreview ? 'pointer' : 'default',
                     }}
                   >

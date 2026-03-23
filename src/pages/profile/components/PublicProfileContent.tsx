@@ -134,7 +134,7 @@ export const PublicProfileContent = ({
                 sx={{ minWidth: 0 }}
                 data-testid="portfolio-section"
               >
-                <PortfolioFrame title="Portfolio">
+                <PortfolioFrame title="Portfolio Showcase">
                   <PortfolioHighlightsCarousel
                     projects={projects}
                     onOpenPreview={onOpenPreview}

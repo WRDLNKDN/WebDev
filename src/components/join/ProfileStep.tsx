@@ -6,15 +6,16 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
 import {
-  FORM_OUTLINED_FIELD_SX,
   FORM_SECTION_HEADING_SX,
   FORM_SECTION_PANEL_SX,
+  outlinedFieldSxFromTheme,
 } from '../../lib/ui/formSurface';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
@@ -25,6 +26,7 @@ import { ProfileStepMarketingOptIn } from './profile/ProfileStepMarketingOptIn';
 import { ProfileStepPreviewCard } from './profile/ProfileStepPreviewCard';
 
 const ProfileStep = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const {
     state,
@@ -174,7 +176,7 @@ const ProfileStep = () => {
                 ? 'Name is required'
                 : 'Visible across the community'
             }
-            sx={FORM_OUTLINED_FIELD_SX}
+            sx={outlinedFieldSxFromTheme(theme)}
           />
         </Box>
 

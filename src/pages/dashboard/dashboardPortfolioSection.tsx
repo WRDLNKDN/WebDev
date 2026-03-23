@@ -8,10 +8,13 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
+import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { GLASS_CARD } from '../../theme/candyStyles';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 
@@ -44,14 +47,6 @@ type Props = {
   onToggleHighlight: (id: string, highlighted: boolean) => Promise<void>;
   onEditProject: (project: PortfolioItem) => void;
   onOpenPreview: (project: PortfolioItem) => void;
-};
-
-const menuPaperSx = {
-  mt: 1.5,
-  minWidth: 200,
-  borderRadius: 2,
-  bgcolor: 'rgba(30,30,30,0.98)',
-  border: '1px solid rgba(156,187,217,0.26)',
 };
 
 const addButtonSx = {
@@ -97,6 +92,16 @@ export const DashboardPortfolioSection = ({
   onEditProject,
   onOpenPreview,
 }: Props) => {
+  const theme = useTheme();
+  const menuPaperSx = useMemo(
+    () => ({
+      mt: 1.5,
+      minWidth: 200,
+      borderRadius: 2,
+      ...denseMenuPaperSxFromTheme(theme),
+    }),
+    [theme],
+  );
   const isEmpty = !resumeUrl && projects.length === 0;
 
   return (

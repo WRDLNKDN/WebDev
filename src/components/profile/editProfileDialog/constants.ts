@@ -1,6 +1,9 @@
+import type { Theme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 import {
   FORM_DIALOG_SX,
   FORM_SECTION_PANEL_SX,
+  dialogPaperSxFromTheme,
 } from '../../../lib/ui/formSurface';
 
 // Brand colors matching the profile editor visual system.
@@ -17,6 +20,13 @@ export const GLASS_MODAL = {
   maxWidth: '540px',
   width: '100%',
 };
+
+export function getGlassModalSx(theme: Theme) {
+  return dialogPaperSxFromTheme(theme, {
+    maxWidth: '540px',
+    width: '100%',
+  });
+}
 
 export const SECTION_PANEL_SX = FORM_SECTION_PANEL_SX;
 
@@ -81,6 +91,47 @@ export const INPUT_STYLES = {
     ml: 0,
   },
 };
+
+/** Theme-aware filled inputs for Edit Profile (light vs dark). */
+export function getInputStyles(theme: Theme) {
+  if (theme.palette.mode !== 'light') {
+    return INPUT_STYLES;
+  }
+  const border = theme.palette.divider;
+  const hoverBg = alpha(theme.palette.common.black, 0.04);
+  const focusBg = theme.palette.background.paper;
+  return {
+    ...INPUT_STYLES,
+    '& .MuiFilledInput-root': {
+      ...INPUT_STYLES['& .MuiFilledInput-root'],
+      bgcolor: hoverBg,
+      border: `1px solid ${border}`,
+      '&:hover': {
+        bgcolor: alpha(theme.palette.common.black, 0.06),
+        borderColor: border,
+      },
+      '&.Mui-focused': {
+        bgcolor: focusBg,
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    '& .MuiInputLabel-root': {
+      ...INPUT_STYLES['& .MuiInputLabel-root'],
+      color: theme.palette.text.secondary,
+    },
+    '& .MuiInputBase-input': {
+      ...INPUT_STYLES['& .MuiInputBase-input'],
+      color: theme.palette.text.primary,
+    },
+    '& .MuiFormHelperText-root': {
+      ...INPUT_STYLES['& .MuiFormHelperText-root'],
+      color: theme.palette.text.secondary,
+    },
+    '& .MuiAutocomplete-input': {
+      color: theme.palette.text.primary,
+    },
+  };
+}
 
 export const getSubIndustryPlaceholder = (
   hasPrimaryIndustry: boolean,

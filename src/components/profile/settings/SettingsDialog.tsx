@@ -18,16 +18,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
-
-const GLASS_MODAL = {
-  bgcolor: '#141414',
-  backgroundImage:
-    'linear-gradient(rgba(56,132,210,0.12), rgba(255,255,255,0))',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(156,187,217,0.22)',
-  color: 'white',
-  borderRadius: 3,
-};
+import { dialogPaperSxFromTheme } from '../../../lib/ui/formSurface';
 
 export type SettingsDialogProps = {
   open: boolean;
@@ -45,6 +36,7 @@ export const SettingsDialog = ({
   onEmailPreferences,
 }: SettingsDialogProps) => {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const primaryActionRef = useRef<HTMLDivElement | null>(null);
 
@@ -81,7 +73,7 @@ export const SettingsDialog = ({
       fullWidth
       fullScreen={fullScreen}
       aria-label="Settings"
-      PaperProps={{ sx: GLASS_MODAL }}
+      PaperProps={{ sx: dialogPaperSxFromTheme(theme, { borderRadius: 3 }) }}
     >
       <Tooltip title="Close">
         <IconButton
@@ -92,7 +84,7 @@ export const SettingsDialog = ({
             right: 8,
             top: 8,
             zIndex: 1,
-            color: 'white',
+            color: isLight ? 'text.secondary' : 'white',
           }}
         >
           <CloseIcon />
@@ -111,7 +103,10 @@ export const SettingsDialog = ({
           <ListItemButton
             ref={primaryActionRef}
             onClick={handleEditProfile}
-            sx={{ py: 2, borderBottom: '1px solid rgba(56,132,210,0.14)' }}
+            sx={{
+              py: 2,
+              borderBottom: `1px solid ${isLight ? theme.palette.divider : 'rgba(56,132,210,0.14)'}`,
+            }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <EditIcon sx={{ color: 'primary.main' }} />
@@ -123,7 +118,10 @@ export const SettingsDialog = ({
           </ListItemButton>
           <ListItemButton
             onClick={handleManageLinks}
-            sx={{ py: 2, borderBottom: '1px solid rgba(56,132,210,0.14)' }}
+            sx={{
+              py: 2,
+              borderBottom: `1px solid ${isLight ? theme.palette.divider : 'rgba(56,132,210,0.14)'}`,
+            }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <LinkIcon sx={{ color: 'primary.main' }} />

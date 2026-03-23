@@ -1,0 +1,11 @@
+---
+description: Supabase migration rules
+globs: supabase/migrations/**/*
+alwaysApply: false
+---
+
+- Only two migration files:
+  - tables.sql
+  - rls.sql
+- Never create new migration files
+- Merge changes into correct file

@@ -36,13 +36,13 @@ import type {
   NerdCreds,
 } from '../../types/profile';
 import { EditProfileBasicSection } from './editProfileDialog/EditProfileBasicSection';
+import { sectionPanelSxFromTheme } from '../../lib/ui/formSurface';
 import {
   AVATAR_GRADIENT,
   BORDER_COLOR,
-  GLASS_MODAL,
+  getGlassModalSx,
   HANDLE_CHECK_DEBOUNCE_MS,
   PURPLE_ACCENT,
-  SECTION_PANEL_SX,
   safeStr,
 } from './editProfileDialog/constants';
 import { EditProfileDetailsSection } from './editProfileDialog/EditProfileDetailsSection';
@@ -63,6 +63,8 @@ type EditProfileDialogProps = {
   onUpload: (file: File) => Promise<string | undefined>;
   onManageLinks?: () => void;
   onAvatarChanged?: () => void;
+  /** Optional: refetch profile/projects after a successful save (e.g. dashboard). */
+  onProfileSaved?: () => void;
   focusBioOnOpen?: boolean;
 };
 
@@ -100,9 +102,11 @@ export const EditProfileDialog = ({
   onUpload,
   onManageLinks,
   onAvatarChanged,
+  onProfileSaved,
   focusBioOnOpen = false,
 }: EditProfileDialogProps) => {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bioInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -231,6 +235,8 @@ export const EditProfileDialog = ({
     [formData, profile?.avatar, uploadedAvatarUrl],
   );
 
+  const sectionPanelSx = useMemo(() => sectionPanelSxFromTheme(theme), [theme]);
+
   const isDirty = initialSnapshotRef.current !== draftSnapshot;
 
   useEffect(
@@ -318,6 +324,7 @@ export const EditProfileDialog = ({
         message: 'Profile updated successfully!',
         severity: 'success',
       });
+      onProfileSaved?.();
       initialSnapshotRef.current = draftSnapshot;
       const pendingAction = pendingActionRef.current;
       pendingActionRef.current = null;
@@ -437,7 +444,7 @@ export const EditProfileDialog = ({
         fullScreen={fullScreen}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: GLASS_MODAL }}
+        PaperProps={{ sx: getGlassModalSx(theme) }}
       >
         <DialogTitle
           sx={{
@@ -445,7 +452,7 @@ export const EditProfileDialog = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             pb: 2,
-            borderBottom: `1px solid ${BORDER_COLOR}`,
+            borderBottom: `1px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
           }}
         >
           <Typography
@@ -468,9 +475,9 @@ export const EditProfileDialog = ({
                 disabled={busy}
                 aria-label="Close"
                 sx={{
-                  color: 'rgba(255,255,255,0.6)',
+                  color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.6)',
                   '&:hover': {
-                    color: 'white',
+                    color: isLight ? 'text.primary' : 'white',
                     bgcolor: 'rgba(56,132,210,0.12)',
                   },
                 }}
@@ -492,7 +499,7 @@ export const EditProfileDialog = ({
                 profile details aligned across the platform.
               </Typography>
 
-              <Box sx={SECTION_PANEL_SX}>
+              <Box sx={sectionPanelSx}>
                 <EditProfileBasicSection
                   busy={busy}
                   formData={formData}
@@ -528,7 +535,7 @@ export const EditProfileDialog = ({
                 />
               </Box>
 
-              <Box sx={SECTION_PANEL_SX}>
+              <Box sx={sectionPanelSx}>
                 <EditProfileIndustrySection
                   busy={busy}
                   formData={formData}
@@ -537,7 +544,7 @@ export const EditProfileDialog = ({
               </Box>
 
               <Box
-                sx={SECTION_PANEL_SX}
+                sx={sectionPanelSx}
                 data-testid="edit-profile-interests-section"
               >
                 <JoinInterestsSelector
@@ -552,7 +559,7 @@ export const EditProfileDialog = ({
                 />
               </Box>
 
-              <Box sx={SECTION_PANEL_SX}>
+              <Box sx={sectionPanelSx}>
                 <EditProfileDetailsSection
                   busy={busy}
                   checkingHandle={checkingHandle}

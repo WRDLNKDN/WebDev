@@ -19,6 +19,11 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { getResumeDisplayName } from '../../../lib/portfolio/resumeDisplayName';
+import {
+  RESUME_PREVIEW_UNSUPPORTED_MESSAGE,
+  resumePublicUrlLooksWord,
+  resumeSupportsServerThumbnailGeneration,
+} from '../../../lib/portfolio/resumePreviewSupport';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
 
@@ -79,6 +84,11 @@ export const ResumeCard = ({
   const isPdf =
     (fileName?.toLowerCase().endsWith('.pdf') ?? false) ||
     (url?.toLowerCase().includes('.pdf') ?? false);
+  const isWordResume = resumePublicUrlLooksWord(fileName, url);
+  const serverPreviewEligible = resumeSupportsServerThumbnailGeneration(
+    fileName,
+    url,
+  );
   const errorSuggestsUnsupported =
     typeof thumbnailError === 'string' &&
     (thumbnailError.toLowerCase().includes('not supported') ||
@@ -88,7 +98,9 @@ export const ResumeCard = ({
     isOwner &&
     thumbnailStatus === 'failed' &&
     onRetryThumbnail &&
-    !errorSuggestsUnsupported;
+    serverPreviewEligible &&
+    !errorSuggestsUnsupported &&
+    !isWordResume;
 
   const showEdit =
     Boolean(isOwner && hasResume) &&
@@ -97,10 +109,7 @@ export const ResumeCard = ({
     );
 
   const canRegenerateFromDocument =
-    Boolean(onEditRegenerateThumbnail) &&
-    /\.(pdf|docx?)(\?|#|$)/i.test(
-      `${fileName ?? ''} ${url ?? ''}`.toLowerCase(),
-    );
+    Boolean(onEditRegenerateThumbnail) && serverPreviewEligible;
 
   const handleDeleteClick = () => setConfirmDeleteOpen(true);
   const handleConfirmDelete = async () => {
@@ -258,31 +267,57 @@ export const ResumeCard = ({
               flexDirection: 'column',
             }}
           >
-            {/* Error message when preview fails */}
-            {thumbnailStatus === 'failed' && thumbnailError && (
+            {/* Word / unsupported: deterministic copy (no server round-trip for Word thumbnails). */}
+            {isWordResume && !hasThumbnail ? (
               <Box
                 sx={{
                   mb: 1,
                   p: 0.75,
                   borderRadius: 1,
-                  bgcolor: 'rgba(255, 132, 132, 0.1)',
-                  border: '1px solid rgba(255, 132, 132, 0.3)',
+                  bgcolor: 'action.hover',
+                  border: '1px solid',
+                  borderColor: 'divider',
                 }}
               >
                 <Typography
                   variant="caption"
                   sx={{
-                    color: 'error.main',
+                    color: 'text.secondary',
                     fontSize: '0.75rem',
                     display: 'block',
                   }}
                 >
-                  {errorSuggestsUnsupported
-                    ? 'Preview not available for this file type. Open the document directly.'
-                    : 'Preview failed. Open the document directly.'}
+                  {RESUME_PREVIEW_UNSUPPORTED_MESSAGE}
                 </Typography>
               </Box>
-            )}
+            ) : null}
+            {/* PDF (or legacy) thumbnail generation failure */}
+            {thumbnailStatus === 'failed' &&
+              thumbnailError &&
+              !isWordResume && (
+                <Box
+                  sx={{
+                    mb: 1,
+                    p: 0.75,
+                    borderRadius: 1,
+                    bgcolor: 'rgba(255, 132, 132, 0.1)',
+                    border: '1px solid rgba(255, 132, 132, 0.3)',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'error.main',
+                      fontSize: '0.75rem',
+                      display: 'block',
+                    }}
+                  >
+                    {errorSuggestsUnsupported
+                      ? RESUME_PREVIEW_UNSUPPORTED_MESSAGE
+                      : 'Preview failed. Open the document directly.'}
+                  </Typography>
+                </Box>
+              )}
             <Box component="p" sx={{ m: 0, mb: 1.1 }}>
               <Typography
                 component="span"
@@ -336,7 +371,7 @@ export const ResumeCard = ({
               }}
             >
               {showRetry && (
-                <Tooltip title="Retry preview">
+                <Tooltip title="Retry preview (fetches a new preview from the server)">
                   <span>
                     <Button
                       variant="text"
@@ -345,7 +380,7 @@ export const ResumeCard = ({
                       disabled={retryThumbnailBusy}
                       onClick={() => {
                         if (onRetryThumbnail) {
-                          onRetryThumbnail();
+                          void Promise.resolve(onRetryThumbnail());
                         }
                       }}
                     >

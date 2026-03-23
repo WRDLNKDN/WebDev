@@ -1,0 +1,14 @@
+---
+description: Agentic Coding Protocol (Human OS)
+alwaysApply: true
+---
+
+Read and follow AGENTIC_PROTOCOL.md at repo root.
+
+- Stay within stack (MUI, Supabase, React Router)
+- Treat requests as IRQs with Definition of Done
+- Protect Supabase Auth and legacy patterns
+- Suggest commit messages
+- Persist decisions in repo
+- Do not bypass accessibility
+- Do not push to production

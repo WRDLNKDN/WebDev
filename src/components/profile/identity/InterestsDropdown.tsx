@@ -7,7 +7,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import React, { useId, useState } from 'react';
+import { denseMenuPaperSxFromTheme } from '../../../lib/ui/formSurface';
 import {
   INTEREST_CUSTOM_OTHER_MAX_LENGTH,
   INTEREST_OPTIONS_FLAT,
@@ -43,6 +45,8 @@ export const InterestsDropdown = ({
   disabled = false,
   'aria-label': ariaLabelProp,
 }: InterestsDropdownProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const triggerAriaLabel =
     ariaLabelProp ??
     (value.length === 0 ? 'Interests' : `Interests (${value.length})`);
@@ -123,9 +127,8 @@ export const InterestsDropdown = ({
               minWidth: Math.min(320, anchor?.offsetWidth ?? 320),
               maxWidth: 400,
               maxHeight: 360,
-              bgcolor: 'rgba(30,30,30,0.98)',
-              border: '1px solid rgba(156,187,217,0.26)',
               borderRadius: 2,
+              ...denseMenuPaperSxFromTheme(theme),
             },
           },
         }}
@@ -192,10 +195,14 @@ export const InterestsDropdown = ({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.06)',
+                    bgcolor: isLight
+                      ? alpha(theme.palette.common.black, 0.04)
+                      : 'rgba(255,255,255,0.06)',
                     borderRadius: 1,
                     '& fieldset': {
-                      borderColor: 'rgba(156,187,217,0.3)',
+                      borderColor: isLight
+                        ? theme.palette.divider
+                        : 'rgba(156,187,217,0.3)',
                     },
                   },
                 }}
@@ -203,10 +210,7 @@ export const InterestsDropdown = ({
             )}
             slotProps={{
               paper: {
-                sx: {
-                  bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(156,187,217,0.26)',
-                },
+                sx: denseMenuPaperSxFromTheme(theme),
               },
             }}
             sx={{

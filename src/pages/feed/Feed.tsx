@@ -3075,7 +3075,6 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         flex: 1,
         width: '100%',
         minWidth: 0,
-        overflowX: 'hidden',
       }}
     >
       <Box

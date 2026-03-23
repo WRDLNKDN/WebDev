@@ -47,9 +47,9 @@ import {
 } from '../../../lib/portfolio/linkValidation';
 import {
   FORM_ACCENT_GRADIENT,
-  FORM_DIALOG_SX,
   FORM_SECTION_HEADING_SX,
   FORM_SECTION_PANEL_SX,
+  dialogPaperSxFromTheme,
 } from '../../../lib/ui/formSurface';
 import { containsProfanity } from '../../../lib/utils/profanityFilter';
 import { normalizeUrlForDedup } from '../../../lib/utils/linkPlatform';
@@ -456,14 +456,15 @@ export const AddProjectDialog = ({
       fullWidth
       PaperProps={{
         sx: {
-          ...FORM_DIALOG_SX,
-          display: 'flex',
-          flexDirection: 'column',
-          width: { xs: '100%', md: 'min(980px, 96vw)' },
-          maxHeight: {
-            xs: '100dvh',
-            md: 'min(920px, calc(100dvh - 32px))',
-          },
+          ...dialogPaperSxFromTheme(theme, {
+            display: 'flex',
+            flexDirection: 'column',
+            width: { xs: '100%', md: 'min(980px, 96vw)' },
+            maxHeight: {
+              xs: '100dvh',
+              md: 'min(920px, calc(100dvh - 32px))',
+            },
+          }),
         },
       }}
     >

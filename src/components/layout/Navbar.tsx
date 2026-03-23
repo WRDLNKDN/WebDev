@@ -38,6 +38,7 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
@@ -52,6 +53,7 @@ import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
+import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import {
@@ -120,6 +122,26 @@ export const Navbar = () => {
   );
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
+  const isLightNav = theme.palette.mode === 'light';
+  const drawerPaperSx = {
+    width: 280,
+    bgcolor: isLightNav
+      ? theme.palette.background.paper
+      : 'rgba(18, 18, 18, 0.98)',
+    borderRight: isLightNav
+      ? `1px solid ${theme.palette.divider}`
+      : '1px solid rgba(156,187,217,0.18)',
+  };
+  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
+  const drawerActiveNavSx = isLightNav
+    ? {
+        bgcolor: alpha(theme.palette.primary.main, 0.12),
+        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
+      }
+    : {
+        bgcolor: 'rgba(156,187,217,0.26)',
+        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+      };
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
@@ -679,8 +701,7 @@ export const Navbar = () => {
                         maxWidth: 360,
                         maxHeight: 320,
                         overflow: 'auto',
-                        bgcolor: 'rgba(30,30,30,0.98)',
-                        border: '1px solid rgba(156,187,217,0.26)',
+                        ...denseMenuPaperSxFromTheme(theme),
                       }}
                     >
                       {searchLoading ? (
@@ -693,7 +714,9 @@ export const Navbar = () => {
                         >
                           <CircularProgress
                             size={24}
-                            sx={{ color: 'white' }}
+                            sx={{
+                              color: isLightNav ? 'primary.main' : 'white',
+                            }}
                             aria-label="Loading search"
                           />
                         </Box>
@@ -701,7 +724,7 @@ export const Navbar = () => {
                         <Box sx={{ px: 2, py: 2 }}>
                           <Box
                             sx={{
-                              color: 'rgba(255,255,255,0.7)',
+                              color: 'text.secondary',
                               fontSize: '1rem',
                               mb: 1,
                             }}
@@ -739,16 +762,16 @@ export const Navbar = () => {
                                   closeSearchDropdown();
                                 }}
                                 sx={{
-                                  color: 'white',
+                                  color: 'text.primary',
                                   '&:hover': {
-                                    bgcolor: 'rgba(156,187,217,0.18)',
+                                    bgcolor: 'action.hover',
                                   },
                                 }}
                               >
                                 <ListItemIcon sx={{ minWidth: 36 }}>
                                   <PersonIcon
                                     sx={{
-                                      color: 'rgba(255,255,255,0.6)',
+                                      color: 'text.secondary',
                                       fontSize: 20,
                                     }}
                                   />
@@ -1209,13 +1232,14 @@ export const Navbar = () => {
             }}
             slotProps={{
               paper: {
-                sx: {
+                sx: (t) => ({
                   mt: 1.5,
                   minWidth: 180,
                   borderRadius: 2,
-                  bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(156,187,217,0.26)',
-                },
+                  bgcolor: t.palette.background.paper,
+                  border: `1px solid ${t.palette.divider}`,
+                  color: t.palette.text.primary,
+                }),
               },
             }}
           >
@@ -1242,7 +1266,7 @@ export const Navbar = () => {
                 }}
                 sx={{ py: 1.25 }}
               >
-                Settings
+                Account & settings
               </MenuItem>
             )}
             {isAdmin && (
@@ -1280,11 +1304,7 @@ export const Navbar = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
-          sx: {
-            width: 280,
-            bgcolor: 'rgba(18, 18, 18, 0.98)',
-            borderRight: '1px solid rgba(156,187,217,0.18)',
-          },
+          sx: drawerPaperSx,
         }}
       >
         <Box sx={{ py: 2, overflow: 'auto' }}>
@@ -1300,7 +1320,7 @@ export const Navbar = () => {
                         onClick={() => setDrawerOpen(false)}
                         sx={{
                           justifyContent: 'flex-start',
-                          color: 'white',
+                          color: drawerLinkColor,
                           textTransform: 'none',
                           py: 1.5,
                           minHeight: 44,
@@ -1316,7 +1336,7 @@ export const Navbar = () => {
                       onClick={() => setDrawerOpen(false)}
                       sx={{
                         justifyContent: 'flex-start',
-                        color: 'white',
+                        color: drawerLinkColor,
                         textTransform: 'none',
                         py: 1.5,
                         minHeight: 44,
@@ -1336,7 +1356,7 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                     }}
@@ -1355,13 +1375,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isDashboardActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isDashboardActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Dashboard
@@ -1374,13 +1391,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isDirectoryActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isDirectoryActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Directory
@@ -1393,13 +1407,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isEventsActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isEventsActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Events
@@ -1412,13 +1423,10 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
-                      ...(isFeedActive && {
-                        bgcolor: 'rgba(156,187,217,0.26)',
-                        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                      }),
+                      ...(isFeedActive ? drawerActiveNavSx : {}),
                     }}
                   >
                     Feed
@@ -1433,7 +1441,7 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                     }}
@@ -1448,15 +1456,12 @@ export const Navbar = () => {
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: 'white',
+                      color: drawerLinkColor,
                       textTransform: 'none',
                       py: 1.5,
                       ...(path === '/chat-full' ||
                       path.startsWith('/chat-full/')
-                        ? {
-                            bgcolor: 'rgba(156,187,217,0.26)',
-                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                          }
+                        ? drawerActiveNavSx
                         : {}),
                     }}
                   >
@@ -1522,10 +1527,7 @@ export const Navbar = () => {
                   sx={{
                     minHeight: 40,
                     py: 0.5,
-                    ...(isGroupsActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
+                    ...(isGroupsActive ? drawerActiveNavSx : {}),
                   }}
                 >
                   <ListItemIcon sx={{ minWidth: 36 }}>

@@ -187,13 +187,14 @@ export const NavbarDesktopAuthControls = ({
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             slotProps={{
               paper: {
-                sx: {
+                sx: (t) => ({
                   mt: 1.5,
                   minWidth: 180,
                   borderRadius: 2,
-                  bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(156,187,217,0.26)',
-                },
+                  bgcolor: t.palette.background.paper,
+                  border: `1px solid ${t.palette.divider}`,
+                  color: t.palette.text.primary,
+                }),
               },
             }}
           >
@@ -220,7 +221,7 @@ export const NavbarDesktopAuthControls = ({
                 }}
                 sx={{ py: 1.25 }}
               >
-                Settings
+                Account & settings
               </MenuItem>
             )}
             <MenuItem

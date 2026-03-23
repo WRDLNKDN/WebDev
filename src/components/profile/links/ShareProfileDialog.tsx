@@ -78,13 +78,23 @@ export const ShareProfileDialog = ({
           px: 3,
           pt: 3,
           pb: 2,
+          pr: 2,
           fontWeight: 700,
+          boxSizing: 'border-box',
         }}
       >
         <Typography
           component="span"
           variant="h6"
-          sx={{ fontWeight: 700, flex: 1 }}
+          sx={{
+            fontWeight: 700,
+            flex: '1 1 auto',
+            minWidth: 0,
+            pr: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
         >
           Share My Profile
         </Typography>
@@ -93,7 +103,7 @@ export const ShareProfileDialog = ({
             onClick={onClose}
             aria-label="Close share profile modal"
             size="small"
-            sx={{ flexShrink: 0, ml: 'auto' }}
+            sx={{ flexShrink: 0 }}
           >
             <CloseIcon />
           </IconButton>

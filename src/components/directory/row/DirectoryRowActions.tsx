@@ -19,6 +19,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import type { DirectoryMember } from '../../../lib/api/directoryApi';
 import { connectionStateLabel } from '../../../lib/directory/connectionState';
+import { denseMenuPaperSxFromTheme } from '../../../lib/ui/formSurface';
 import { INTERACTION_COLORS } from '../../../theme/themeConstants';
 
 type DirectoryRowActionsProps = {
@@ -263,8 +264,7 @@ export const DirectoryRowActions = ({
                   minWidth: 160,
                   mt: 1.25,
                   borderRadius: 2,
-                  bgcolor: 'rgba(30,30,30,0.98)',
-                  border: '1px solid rgba(156,187,217,0.26)',
+                  ...denseMenuPaperSxFromTheme(theme),
                 },
               },
             }}

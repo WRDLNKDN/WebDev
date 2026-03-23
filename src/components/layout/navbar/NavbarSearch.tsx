@@ -10,8 +10,10 @@ import {
   Paper,
   Popper,
   Stack,
+  useTheme,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
+import { denseMenuPaperSxFromTheme } from '../../../lib/ui/formSurface';
 import type { RefObject } from 'react';
 
 export type SearchMatch = {
@@ -59,6 +61,9 @@ export const NavbarSearch = ({
   onOpenDirectory,
   onOpenProfile,
 }: NavbarSearchProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+
   if (isMobile || forcePublicHeader) return null;
 
   return (
@@ -143,15 +148,14 @@ export const NavbarSearch = ({
             maxWidth: 360,
             maxHeight: 320,
             overflow: 'auto',
-            bgcolor: 'rgba(30,30,30,0.98)',
-            border: '1px solid rgba(156,187,217,0.26)',
+            ...denseMenuPaperSxFromTheme(theme),
           }}
         >
           {searchLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
               <CircularProgress
                 size={24}
-                sx={{ color: 'white' }}
+                sx={{ color: isLight ? 'primary.main' : 'white' }}
                 aria-label="Loading search"
               />
             </Box>
@@ -159,7 +163,7 @@ export const NavbarSearch = ({
             <Box sx={{ px: 2, py: 2 }}>
               <Box
                 sx={{
-                  color: 'rgba(255,255,255,0.7)',
+                  color: 'text.secondary',
                   fontSize: '1rem',
                   mb: 1,
                 }}
@@ -194,16 +198,16 @@ export const NavbarSearch = ({
                       onOpenProfile(handle);
                     }}
                     sx={{
-                      color: 'white',
+                      color: 'text.primary',
                       '&:hover': {
-                        bgcolor: 'rgba(156,187,217,0.18)',
+                        bgcolor: 'action.hover',
                       },
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 36 }}>
                       <PersonIcon
                         sx={{
-                          color: 'rgba(255,255,255,0.6)',
+                          color: 'text.secondary',
                           fontSize: 20,
                         }}
                       />

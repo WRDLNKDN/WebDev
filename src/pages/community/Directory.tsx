@@ -29,7 +29,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
@@ -67,10 +67,11 @@ import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { filterSelectMenuProps } from '../../theme/filterControls';
 import {
-  FORM_FILTER_SELECT_SX,
-  FORM_OUTLINED_FIELD_SX,
+  denseMenuPaperSxFromTheme,
+  filterSelectSxFromTheme,
   FORM_SECTION_HEADING_SX,
   FORM_SECTION_PANEL_SX,
+  outlinedFieldSxFromTheme,
 } from '../../lib/ui/formSurface';
 
 const PAGE_SIZE = 25;
@@ -97,62 +98,176 @@ type DirectoryCachePayload = {
 
 const FILTER_CONTROL_HEIGHT = 40;
 
-// Shared sx for the chip-style filter controls in the filter row
-const filterChipSx = {
-  height: FILTER_CONTROL_HEIGHT,
-  minHeight: FILTER_CONTROL_HEIGHT,
-  borderRadius: 5,
-  border: '1.5px solid rgba(141,188,229,0.34)',
-  bgcolor: 'rgba(56,132,210,0.12)',
-  color: 'rgba(255,255,255,0.85)',
-  fontWeight: 500,
-  fontSize: '0.8rem',
-  textTransform: 'none',
-  px: 1.5,
-  '&:hover': {
-    bgcolor: 'rgba(156,187,217,0.22)',
-    borderColor: 'rgba(141,188,229,0.50)',
-  },
-  '& .MuiButton-endIcon': { ml: 0.5 },
-} as const;
-
-// Select styled as a chip (no label, compact)
-const chipSelectSx = {
-  height: FILTER_CONTROL_HEIGHT,
-  minHeight: FILTER_CONTROL_HEIGHT,
-  borderRadius: 5,
-  '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(141,188,229,0.34)',
-    borderWidth: '1.5px',
-  },
-  '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'rgba(141,188,229,0.50)',
-  },
-  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#3884D2',
-    borderWidth: '1.5px',
-  },
-  bgcolor: 'rgba(56,132,210,0.12)',
-  color: 'rgba(255,255,255,0.85)',
-  fontWeight: 500,
-  fontSize: '0.8rem',
-  '& .MuiSelect-select': {
-    py: '9px',
-    px: 1.5,
-    pr: '28px !important',
-    display: 'flex',
-    alignItems: 'center',
-    minHeight: FILTER_CONTROL_HEIGHT,
-    boxSizing: 'border-box',
-  },
-  '& .MuiSelect-icon': {
-    color: 'rgba(255,255,255,0.5)',
-    right: 6,
-  },
-} as const;
-
 export const Directory = () => {
   const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+  const chipFilled = isLight ? theme.palette.text.primary : '#fff';
+  const chipMuted = isLight
+    ? theme.palette.text.secondary
+    : 'rgba(255,255,255,0.7)';
+
+  const directoryMenuProps = useMemo(() => {
+    const paperSx = {
+      ...((filterSelectMenuProps?.PaperProps?.sx ?? {}) as Record<
+        string,
+        unknown
+      >),
+      ...denseMenuPaperSxFromTheme(theme),
+    };
+    return {
+      ...(filterSelectMenuProps ?? {}),
+      PaperProps: {
+        ...(filterSelectMenuProps?.PaperProps ?? {}),
+        sx: paperSx,
+      },
+    };
+  }, [theme]);
+
+  const directorySearchFieldSx = useMemo(() => {
+    const base = outlinedFieldSxFromTheme(theme);
+    const rootBase =
+      (base['& .MuiOutlinedInput-root'] as Record<string, unknown>) || {};
+    return {
+      flex: 1,
+      ...base,
+      '& .MuiOutlinedInput-root': {
+        ...rootBase,
+        height: 48,
+        minHeight: 48,
+        borderRadius: 2.75,
+        ...(isLight
+          ? {
+              bgcolor: theme.palette.background.paper,
+              boxShadow: theme.shadows[2],
+              '&:hover': { boxShadow: theme.shadows[4] },
+            }
+          : {
+              background:
+                'linear-gradient(180deg, rgba(8,18,34,0.92), rgba(8,18,34,0.8))',
+              boxShadow: '0 10px 24px rgba(3,8,20,0.22)',
+              '&:hover': {
+                boxShadow: '0 14px 28px rgba(3,8,20,0.28)',
+              },
+            }),
+      },
+      '& .MuiInputBase-input::placeholder': isLight
+        ? {
+            color: alpha(theme.palette.text.secondary, 0.85),
+            opacity: 1,
+            fontSize: '0.875rem',
+          }
+        : {
+            color: 'rgba(141,188,229,0.50)',
+            opacity: 1,
+            fontSize: '0.875rem',
+          },
+    };
+  }, [theme, isLight]);
+
+  const directoryFilterSelectSx = useMemo(
+    () => ({
+      ...filterSelectSxFromTheme(theme),
+      height: FILTER_CONTROL_HEIGHT,
+      minHeight: FILTER_CONTROL_HEIGHT,
+      '& .MuiSelect-select': {
+        py: '9px',
+        pl: 1.75,
+        pr: '32px !important',
+        minHeight: FILTER_CONTROL_HEIGHT,
+        boxSizing: 'border-box',
+      },
+    }),
+    [theme],
+  );
+
+  const filterChipSxThemed = useMemo(
+    () => ({
+      height: FILTER_CONTROL_HEIGHT,
+      minHeight: FILTER_CONTROL_HEIGHT,
+      borderRadius: 5,
+      border: isLight
+        ? `1.5px solid ${theme.palette.divider}`
+        : '1.5px solid rgba(141,188,229,0.34)',
+      bgcolor: isLight
+        ? alpha(theme.palette.primary.main, 0.06)
+        : 'rgba(56,132,210,0.12)',
+      color: isLight ? theme.palette.text.primary : 'rgba(255,255,255,0.85)',
+      fontWeight: 500,
+      fontSize: '0.8rem',
+      textTransform: 'none' as const,
+      px: 1.5,
+      '&:hover': {
+        bgcolor: isLight
+          ? alpha(theme.palette.primary.main, 0.1)
+          : 'rgba(156,187,217,0.22)',
+        borderColor: isLight
+          ? alpha(theme.palette.primary.main, 0.35)
+          : 'rgba(141,188,229,0.50)',
+      },
+      '& .MuiButton-endIcon': { ml: 0.5 },
+    }),
+    [theme, isLight],
+  );
+
+  const chipSelectSxThemed = useMemo(
+    () => ({
+      height: FILTER_CONTROL_HEIGHT,
+      minHeight: FILTER_CONTROL_HEIGHT,
+      borderRadius: 5,
+      '& .MuiOutlinedInput-notchedOutline': {
+        borderColor: isLight ? theme.palette.divider : 'rgba(141,188,229,0.34)',
+        borderWidth: '1.5px',
+      },
+      '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: isLight
+          ? alpha(theme.palette.primary.main, 0.45)
+          : 'rgba(141,188,229,0.50)',
+      },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: theme.palette.primary.main,
+        borderWidth: '1.5px',
+      },
+      bgcolor: isLight
+        ? alpha(theme.palette.primary.main, 0.06)
+        : 'rgba(56,132,210,0.12)',
+      color: isLight ? theme.palette.text.primary : 'rgba(255,255,255,0.85)',
+      fontWeight: 500,
+      fontSize: '0.8rem',
+      '& .MuiSelect-select': {
+        py: '9px',
+        px: 1.5,
+        pr: '28px !important',
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: FILTER_CONTROL_HEIGHT,
+        boxSizing: 'border-box',
+      },
+      '& .MuiSelect-icon': {
+        color: isLight ? theme.palette.text.secondary : 'rgba(255,255,255,0.5)',
+        right: 6,
+      },
+    }),
+    [theme, isLight],
+  );
+
+  const activeFilterChipSx = useMemo(
+    () => ({
+      height: 28,
+      ...(isLight
+        ? {
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+            border: `1px solid ${theme.palette.divider}`,
+            color: 'text.primary',
+          }
+        : {
+            bgcolor: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.75)',
+          }),
+    }),
+    [theme, isLight],
+  );
+
   const isMobileFilters = useMediaQuery(theme.breakpoints.down('sm'));
   const { showToast } = useAppToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -743,7 +858,7 @@ export const Directory = () => {
               <Typography
                 variant="body2"
                 sx={{
-                  color: 'rgba(219,230,244,0.72)',
+                  color: isLight ? 'text.secondary' : 'rgba(219,230,244,0.72)',
                   maxWidth: 680,
                   lineHeight: 1.55,
                 }}
@@ -774,32 +889,18 @@ export const Directory = () => {
                   startAdornment: (
                     <InputAdornment position="start">
                       <SearchIcon
-                        sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 20 }}
+                        sx={{
+                          color: isLight
+                            ? 'text.secondary'
+                            : 'rgba(255,255,255,0.35)',
+                          fontSize: 20,
+                        }}
                       />
                     </InputAdornment>
                   ),
                   inputProps: { maxLength: DIRECTORY_SEARCH_MAX_CHARS },
                 }}
-                sx={{
-                  flex: 1,
-                  ...FORM_OUTLINED_FIELD_SX,
-                  '& .MuiOutlinedInput-root': {
-                    height: 48,
-                    minHeight: 48,
-                    borderRadius: 2.75,
-                    background:
-                      'linear-gradient(180deg, rgba(8,18,34,0.92), rgba(8,18,34,0.8))',
-                    boxShadow: '0 10px 24px rgba(3,8,20,0.22)',
-                    '&:hover': {
-                      boxShadow: '0 14px 28px rgba(3,8,20,0.28)',
-                    },
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: 'rgba(141,188,229,0.50)',
-                    opacity: 1,
-                    fontSize: '0.875rem',
-                  },
-                }}
+                sx={directorySearchFieldSx}
               />
             </Stack>
 
@@ -817,7 +918,7 @@ export const Directory = () => {
                   data-testid="directory-mobile-controls-toggle"
                   aria-expanded={mobileControlsOpen}
                   sx={{
-                    ...filterChipSx,
+                    ...filterChipSxThemed,
                     minWidth: 0,
                     px: 1.5,
                   }}
@@ -827,7 +928,12 @@ export const Directory = () => {
                 {activeFilterCount > 0 && (
                   <Typography
                     variant="caption"
-                    sx={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}
+                    sx={{
+                      color: isLight
+                        ? 'text.secondary'
+                        : 'rgba(255,255,255,0.55)',
+                      fontWeight: 600,
+                    }}
                   >
                     {activeFilterCount} active
                   </Typography>
@@ -842,9 +948,15 @@ export const Directory = () => {
                   mt: 0.1,
                   p: { xs: 1.1, sm: 1.2, md: 1.3 },
                   borderRadius: 3,
-                  bgcolor: 'rgba(7,15,28,0.58)',
-                  border: '1px solid rgba(141,188,229,0.12)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                  bgcolor: isLight
+                    ? alpha(theme.palette.primary.main, 0.04)
+                    : 'rgba(7,15,28,0.58)',
+                  border: isLight
+                    ? `1px solid ${theme.palette.divider}`
+                    : '1px solid rgba(141,188,229,0.12)',
+                  boxShadow: isLight
+                    ? 'none'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
               >
                 <Stack
@@ -857,7 +969,9 @@ export const Directory = () => {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: 'rgba(191,214,239,0.72)',
+                      color: isLight
+                        ? 'text.secondary'
+                        : 'rgba(191,214,239,0.72)',
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
                       fontWeight: 700,
@@ -871,14 +985,16 @@ export const Directory = () => {
                       variant="text"
                       onClick={() => clearAllFilters('Filters cleared.')}
                       sx={{
-                        color: 'rgba(191,214,239,0.78)',
+                        color: isLight
+                          ? 'primary.main'
+                          : 'rgba(191,214,239,0.78)',
                         textTransform: 'none',
                         fontSize: '0.8rem',
                         fontWeight: 600,
                         minWidth: 0,
                         px: 0.5,
                         '&:hover': {
-                          color: '#fff',
+                          color: isLight ? 'primary.dark' : '#fff',
                           bgcolor: 'transparent',
                         },
                       }}
@@ -888,7 +1004,11 @@ export const Directory = () => {
                   ) : (
                     <Typography
                       variant="caption"
-                      sx={{ color: 'rgba(255,255,255,0.42)' }}
+                      sx={{
+                        color: isLight
+                          ? 'text.secondary'
+                          : 'rgba(255,255,255,0.42)',
+                      }}
                     >
                       Add filters to narrow the directory
                     </Typography>
@@ -899,10 +1019,10 @@ export const Directory = () => {
                     <InputLabel
                       id="dir-sort-mobile-label"
                       sx={{
-                        color: 'rgba(255,255,255,0.45)',
+                        color: 'text.secondary',
                         fontSize: '0.8rem',
                         top: '-2px',
-                        '&.Mui-focused': { color: '#3b82f6' },
+                        '&.Mui-focused': { color: 'primary.main' },
                         '&.MuiInputLabel-shrink': { top: 0 },
                       }}
                     >
@@ -913,19 +1033,8 @@ export const Directory = () => {
                       label="Sort results"
                       value={sort}
                       onChange={(e) => updateUrl({ sort: e.target.value })}
-                      MenuProps={filterSelectMenuProps}
-                      sx={{
-                        height: FILTER_CONTROL_HEIGHT,
-                        minHeight: FILTER_CONTROL_HEIGHT,
-                        ...FORM_FILTER_SELECT_SX,
-                        '& .MuiSelect-select': {
-                          py: '9px',
-                          pl: 1.75,
-                          pr: '32px !important',
-                          minHeight: FILTER_CONTROL_HEIGHT,
-                          boxSizing: 'border-box',
-                        },
-                      }}
+                      MenuProps={directoryMenuProps}
+                      sx={directoryFilterSelectSx}
                     >
                       <MenuItem value="recently_active">
                         Recently Active
@@ -946,7 +1055,9 @@ export const Directory = () => {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: 'rgba(255,255,255,0.4)',
+                      color: isLight
+                        ? 'text.secondary'
+                        : 'rgba(255,255,255,0.4)',
                       fontWeight: 600,
                       mr: 0.25,
                       flexShrink: 0,
@@ -987,16 +1098,14 @@ export const Directory = () => {
                             : '',
                         });
                       }}
-                      MenuProps={filterSelectMenuProps}
+                      MenuProps={directoryMenuProps}
                       IconComponent={KeyboardArrowDownIcon}
                       sx={{
-                        ...chipSelectSx,
+                        ...chipSelectSxThemed,
                         '& .MuiSelect-select': {
-                          ...chipSelectSx['& .MuiSelect-select'],
+                          ...chipSelectSxThemed['& .MuiSelect-select'],
                           fontWeight: primaryIndustry ? 600 : 500,
-                          color: primaryIndustry
-                            ? '#fff'
-                            : 'rgba(255,255,255,0.7)',
+                          color: primaryIndustry ? chipFilled : chipMuted,
                           minWidth: 110,
                         },
                         ...(primaryIndustry
@@ -1029,16 +1138,14 @@ export const Directory = () => {
                         onChange={(e) =>
                           updateUrl({ secondary_industry: e.target.value })
                         }
-                        MenuProps={filterSelectMenuProps}
+                        MenuProps={directoryMenuProps}
                         IconComponent={KeyboardArrowDownIcon}
                         sx={{
-                          ...chipSelectSx,
+                          ...chipSelectSxThemed,
                           '& .MuiSelect-select': {
-                            ...chipSelectSx['& .MuiSelect-select'],
+                            ...chipSelectSxThemed['& .MuiSelect-select'],
                             fontWeight: secondaryIndustry ? 600 : 500,
-                            color: secondaryIndustry
-                              ? '#fff'
-                              : 'rgba(255,255,255,0.7)',
+                            color: secondaryIndustry ? chipFilled : chipMuted,
                             minWidth: 100,
                           },
                           ...(secondaryIndustry
@@ -1074,16 +1181,16 @@ export const Directory = () => {
                       onChange={(e) =>
                         updateUrl({ connection_status: e.target.value })
                       }
-                      MenuProps={filterSelectMenuProps}
+                      MenuProps={directoryMenuProps}
                       IconComponent={KeyboardArrowDownIcon}
                       sx={{
-                        ...chipSelectSx,
+                        ...chipSelectSxThemed,
                         '& .MuiSelect-select': {
-                          ...chipSelectSx['& .MuiSelect-select'],
+                          ...chipSelectSxThemed['& .MuiSelect-select'],
                           fontWeight: normalizedConnectionStatus ? 600 : 500,
                           color: normalizedConnectionStatus
-                            ? '#fff'
-                            : 'rgba(255,255,255,0.7)',
+                            ? chipFilled
+                            : chipMuted,
                           minWidth: 95,
                         },
                         ...(normalizedConnectionStatus
@@ -1120,19 +1227,17 @@ export const Directory = () => {
                         });
                       }}
                       MenuProps={{
-                        ...filterSelectMenuProps,
+                        ...directoryMenuProps,
                         autoFocus: false,
                       }}
                       IconComponent={KeyboardArrowDownIcon}
                       sx={{
-                        ...chipSelectSx,
+                        ...chipSelectSxThemed,
                         minWidth: 120,
                         '& .MuiSelect-select': {
-                          ...chipSelectSx['& .MuiSelect-select'],
+                          ...chipSelectSxThemed['& .MuiSelect-select'],
                           fontWeight: interests.length ? 600 : 500,
-                          color: interests.length
-                            ? '#fff'
-                            : 'rgba(255,255,255,0.7)',
+                          color: interests.length ? chipFilled : chipMuted,
                         },
                         ...(interests.length
                           ? {
@@ -1178,22 +1283,24 @@ export const Directory = () => {
                       sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {
-                          ...chipSelectSx,
-                          height: FILTER_CONTROL_HEIGHT,
-                          minHeight: FILTER_CONTROL_HEIGHT,
-                          color: locationInput
-                            ? '#fff'
-                            : 'rgba(255,255,255,0.7)',
+                          ...chipSelectSxThemed,
+                          color: locationInput ? chipFilled : chipMuted,
                           '& fieldset': {
                             borderColor: locationInput
-                              ? '#3b82f6'
-                              : 'rgba(255,255,255,0.18)',
+                              ? theme.palette.primary.main
+                              : isLight
+                                ? theme.palette.divider
+                                : 'rgba(255,255,255,0.18)',
                             borderWidth: '1.5px',
                           },
                           '&:hover fieldset': {
-                            borderColor: 'rgba(255,255,255,0.3)',
+                            borderColor: isLight
+                              ? alpha(theme.palette.primary.main, 0.35)
+                              : 'rgba(255,255,255,0.3)',
                           },
-                          '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                          '&.Mui-focused fieldset': {
+                            borderColor: theme.palette.primary.main,
+                          },
                           '& input': {
                             py: '9px',
                             px: 1.5,
@@ -1203,7 +1310,9 @@ export const Directory = () => {
                             boxSizing: 'border-box',
                           },
                           '& input::placeholder': {
-                            color: 'rgba(255,255,255,0.5)',
+                            color: isLight
+                              ? alpha(theme.palette.text.secondary, 0.85)
+                              : 'rgba(255,255,255,0.5)',
                             opacity: 1,
                             fontSize: '0.8rem',
                           },
@@ -1229,9 +1338,13 @@ export const Directory = () => {
                         label={`"${q.length > 20 ? q.slice(0, 20) + '…' : q}"`}
                         onDelete={() => updateUrl({ q: '' })}
                         sx={{
-                          bgcolor: 'rgba(59,130,246,0.15)',
-                          border: '1px solid rgba(59,130,246,0.35)',
-                          color: '#93c5fd',
+                          bgcolor: isLight
+                            ? alpha(theme.palette.primary.main, 0.12)
+                            : 'rgba(59,130,246,0.15)',
+                          border: isLight
+                            ? `1px solid ${alpha(theme.palette.primary.main, 0.35)}`
+                            : '1px solid rgba(59,130,246,0.35)',
+                          color: isLight ? 'primary.main' : '#93c5fd',
                           height: 28,
                         }}
                       />
@@ -1247,12 +1360,7 @@ export const Directory = () => {
                             secondary_industry: '',
                           })
                         }
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     )}
                     {secondaryIndustry && (
@@ -1261,12 +1369,7 @@ export const Directory = () => {
                         size="small"
                         label={`Sub-industry: ${secondaryIndustry}`}
                         onDelete={() => updateUrl({ secondary_industry: '' })}
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     )}
                     {location && (
@@ -1275,12 +1378,7 @@ export const Directory = () => {
                         size="small"
                         label={`Location: ${location}`}
                         onDelete={() => updateUrl({ location: '' })}
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     )}
                     {normalizedConnectionStatus && (
@@ -1289,12 +1387,7 @@ export const Directory = () => {
                         size="small"
                         label={`Connection: ${CONNECTION_LABEL[normalizedConnectionStatus] ?? normalizedConnectionStatus}`}
                         onDelete={() => updateUrl({ connection_status: '' })}
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     )}
                     {skills.map((s) => (
@@ -1308,12 +1401,7 @@ export const Directory = () => {
                             skills: skills.filter((x) => x !== s).join(','),
                           })
                         }
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     ))}
                     {interests.map((i) => (
@@ -1329,12 +1417,7 @@ export const Directory = () => {
                               .join(','),
                           })
                         }
-                        sx={{
-                          bgcolor: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: 'rgba(255,255,255,0.75)',
-                          height: 28,
-                        }}
+                        sx={activeFilterChipSx}
                       />
                     ))}
                   </Stack>
@@ -1445,7 +1528,7 @@ export const Directory = () => {
                       data-testid="directory-export-connections-csv"
                       aria-label="Export connections to CSV"
                       sx={{
-                        ...filterChipSx,
+                        ...filterChipSxThemed,
                         minWidth: 0,
                         px: 1.5,
                       }}
@@ -1464,7 +1547,7 @@ export const Directory = () => {
                 data-testid="directory-mobile-toolbar-toggle"
                 aria-expanded={mobileControlsOpen}
                 sx={{
-                  ...filterChipSx,
+                  ...filterChipSxThemed,
                   minWidth: 0,
                   px: 1.5,
                 }}
@@ -1483,10 +1566,10 @@ export const Directory = () => {
                 <InputLabel
                   id="dir-sort-label"
                   sx={{
-                    color: 'rgba(255,255,255,0.45)',
+                    color: 'text.secondary',
                     fontSize: '0.8rem',
                     top: 1,
-                    '&.Mui-focused': { color: '#3b82f6' },
+                    '&.Mui-focused': { color: 'primary.main' },
                     '&.MuiInputLabel-shrink': { top: 2 },
                   }}
                 >
@@ -1497,19 +1580,8 @@ export const Directory = () => {
                   label="Sort results"
                   value={sort}
                   onChange={(e) => updateUrl({ sort: e.target.value })}
-                  MenuProps={filterSelectMenuProps}
-                  sx={{
-                    height: FILTER_CONTROL_HEIGHT,
-                    minHeight: FILTER_CONTROL_HEIGHT,
-                    ...FORM_FILTER_SELECT_SX,
-                    '& .MuiSelect-select': {
-                      py: '9px',
-                      pl: 1.75,
-                      pr: '32px !important',
-                      minHeight: FILTER_CONTROL_HEIGHT,
-                      boxSizing: 'border-box',
-                    },
-                  }}
+                  MenuProps={directoryMenuProps}
+                  sx={directoryFilterSelectSx}
                 >
                   <MenuItem value="recently_active">Recently Active</MenuItem>
                   <MenuItem value="alphabetical">Alphabetical</MenuItem>
@@ -1548,7 +1620,7 @@ export const Directory = () => {
                 <Typography
                   variant="body1"
                   sx={{
-                    color: 'rgba(255,255,255,0.85)',
+                    color: isLight ? 'text.primary' : 'rgba(255,255,255,0.85)',
                     mb: 1.5,
                     maxWidth: 420,
                   }}
@@ -1565,11 +1637,17 @@ export const Directory = () => {
                   sx={{
                     fontWeight: 700,
                     textTransform: 'none',
-                    borderColor: 'rgba(141,188,229,0.5)',
-                    color: 'rgba(255,255,255,0.9)',
+                    borderColor: isLight
+                      ? 'primary.main'
+                      : 'rgba(141,188,229,0.5)',
+                    color: isLight ? 'primary.main' : 'rgba(255,255,255,0.9)',
                     '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      bgcolor: 'rgba(56,132,210,0.12)',
+                      borderColor: isLight
+                        ? 'primary.dark'
+                        : 'rgba(255,255,255,0.5)',
+                      bgcolor: isLight
+                        ? alpha(theme.palette.primary.main, 0.08)
+                        : 'rgba(56,132,210,0.12)',
                     },
                   }}
                 >
@@ -1621,13 +1699,21 @@ export const Directory = () => {
                       onClick={() => void load(true, rows.length)}
                       disabled={loadingMore}
                       sx={{
-                        borderColor: 'rgba(141,188,229,0.38)',
-                        color: 'rgba(255,255,255,0.7)',
+                        borderColor: isLight
+                          ? 'divider'
+                          : 'rgba(141,188,229,0.38)',
+                        color: isLight
+                          ? 'text.primary'
+                          : 'rgba(255,255,255,0.7)',
                         textTransform: 'none',
                         fontWeight: 600,
                         '&:hover': {
-                          borderColor: 'rgba(255,255,255,0.4)',
-                          bgcolor: 'rgba(56,132,210,0.10)',
+                          borderColor: isLight
+                            ? 'primary.main'
+                            : 'rgba(255,255,255,0.4)',
+                          bgcolor: isLight
+                            ? alpha(theme.palette.primary.main, 0.06)
+                            : 'rgba(56,132,210,0.10)',
                         },
                       }}
                     >
@@ -1661,7 +1747,9 @@ export const Directory = () => {
             <IconButton
               aria-label="Close"
               onClick={() => setDisconnectTarget(null)}
-              sx={{ color: 'rgba(255,255,255,0.75)' }}
+              sx={{
+                color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.75)',
+              }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>

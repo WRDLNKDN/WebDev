@@ -180,7 +180,11 @@ export function useProfile() {
   const retryResumeThumbnail = async () => {
     try {
       setUpdating(true);
-      await retryResumeThumbnailAsset({ profile, fetchData });
+      await retryResumeThumbnailAsset({
+        profile,
+        fetchData,
+        updateProfile,
+      });
     } catch (cause) {
       console.error(cause);
       throw new Error(normalizeThrownError(cause));

@@ -171,10 +171,11 @@ export const LandingPageContent = ({
           <IdentityHeader
             layoutVariant="three-column"
             displayName={safeStr(profile.display_name)}
+            memberHandle={profile.handle?.trim() || undefined}
             tagline={profile.tagline ?? undefined}
             bio={
-              safeStr(profile.additional_context).trim() ||
-              safeStr(creds.bio).trim()
+              safeStr(creds.bio).trim() ||
+              safeStr(profile.additional_context).trim()
             }
             bioIsPlaceholder={false}
             avatarUrl={
@@ -223,7 +224,7 @@ export const LandingPageContent = ({
             sx={{ mt: { xs: 2, sm: 4, md: 6 } }}
           >
             <Grid size={12} sx={{ minWidth: 0 }}>
-              <PortfolioFrame title="Portfolio">
+              <PortfolioFrame title="Portfolio Showcase">
                 <PortfolioHighlightsCarousel
                   projects={projects}
                   onOpenPreview={setPreviewProject}

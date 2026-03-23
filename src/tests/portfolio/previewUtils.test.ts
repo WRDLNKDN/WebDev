@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { getPortfolioPreviewModel } from '../../lib/portfolio/previewUtils';
 import type { PortfolioItem } from '../../types/portfolio';
 
@@ -28,16 +29,27 @@ describe('getPortfolioPreviewModel', () => {
     );
   });
 
-  it('builds an Office embed preview for docx files', () => {
+  it('does not inline-preview Word resumes on our storage bucket (Office viewer cannot fetch them)', () => {
     const url =
       'https://example.supabase.co/storage/v1/object/public/resumes/user-1/resume.docx';
     const model = getPortfolioPreviewModel(
       makeProject({ project_url: url, title: 'Resume.docx' }),
     );
 
+    expect(model.kind).toBe('none');
+    expect(model.previewable).toBe(false);
+    expect(model.typeLabel).toBe('Document');
+    expect(model.openUrl).toBe(url);
+  });
+
+  it('still allows Office embed preview for docx hosted outside the resumes bucket', () => {
+    const url = 'https://example.com/files/sample.docx';
+    const model = getPortfolioPreviewModel(
+      makeProject({ project_url: url, title: 'Sample.docx' }),
+    );
+
     expect(model.kind).toBe('iframe');
     expect(model.previewable).toBe(true);
-    expect(model.typeLabel).toBe('Document');
     expect(model.previewUrl).toBe(
       `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`,
     );

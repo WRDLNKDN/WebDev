@@ -9,6 +9,7 @@ import {
   API_BASE,
   RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
 } from './useProfileHelpers';
+import { resumeSupportsServerThumbnailGeneration } from '../../lib/portfolio/resumePreviewSupport';
 
 export const uploadAvatarAsset = async ({
   file,
@@ -121,6 +122,11 @@ export const uploadResumeAsset = async ({
     data: { publicUrl },
   } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
+  const thumbTargetPending = resumeSupportsServerThumbnailGeneration(
+    originalResumeFileName,
+    publicUrl,
+  );
+
   await updateProfile({
     resume_url: publicUrl,
     nerd_creds: {
@@ -129,13 +135,15 @@ export const uploadResumeAsset = async ({
       resume_thumbnail_error: null,
       resume_thumbnail_updated_at: undefined,
       resume_thumbnail_source_extension: undefined,
-      ...(ext === '.doc' || ext === '.docx' || ext === '.pdf'
-        ? { resume_thumbnail_status: 'pending' }
-        : { resume_thumbnail_status: undefined }),
+      ...(thumbTargetPending
+        ? { resume_thumbnail_status: 'pending' as const }
+        : {
+            resume_thumbnail_status: 'complete' as const,
+          }),
     },
   } as Partial<DashboardProfile>);
 
-  if (ext === '.doc' || ext === '.docx' || ext === '.pdf') {
+  if (thumbTargetPending) {
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),
@@ -278,9 +286,11 @@ export const deleteResumeAsset = async ({
 export const retryResumeThumbnailAsset = async ({
   profile,
   fetchData,
+  updateProfile,
 }: {
   profile: DashboardProfile | null;
   fetchData: () => Promise<void>;
+  updateProfile: (updates: Partial<DashboardProfile>) => Promise<void>;
 }) => {
   const {
     data: { session },
@@ -293,18 +303,40 @@ export const retryResumeThumbnailAsset = async ({
     typeof profile?.resume_url === 'string' ? profile.resume_url : '';
   if (!resumeUrl) throw new Error('No resume found to generate a preview.');
 
-  const ext = `.${resumeUrl.split('.').pop()?.toLowerCase() ?? ''}`;
-  if (!['.pdf', '.doc', '.docx'].includes(ext)) {
+  const fileName =
+    typeof profile?.nerd_creds === 'object' &&
+    profile.nerd_creds &&
+    typeof (profile.nerd_creds as { resume_file_name?: unknown })
+      .resume_file_name === 'string'
+      ? String(
+          (profile.nerd_creds as { resume_file_name: string }).resume_file_name,
+        )
+      : '';
+
+  if (!resumeSupportsServerThumbnailGeneration(fileName, resumeUrl)) {
     throw new Error(
-      'Retry preview is only available for PDF and Word documents.',
+      'Preview generation is only available for PDF resumes. Open your Word resume to view it.',
     );
   }
 
+  const urlExt =
+    resumeUrl.split('.').pop()?.toLowerCase().split('?')[0] || 'pdf';
   const parsedStoragePath = getResumeStoragePathFromPublicUrl(resumeUrl);
   const storagePath =
     parsedStoragePath && parsedStoragePath.startsWith(`${session.user.id}/`)
       ? parsedStoragePath
-      : `${session.user.id}/resume.${ext.slice(1)}`;
+      : `${session.user.id}/resume.${urlExt}`;
+
+  const currentCreds =
+    (profile?.nerd_creds as Record<string, unknown> | undefined) ?? {};
+  await updateProfile({
+    nerd_creds: {
+      ...currentCreds,
+      resume_thumbnail_status: 'pending',
+      resume_thumbnail_error: null,
+    },
+  } as Partial<DashboardProfile>);
+  await fetchData();
 
   const controller = new AbortController();
   const timeoutId = setTimeout(
@@ -334,13 +366,13 @@ export const retryResumeThumbnailAsset = async ({
     clearTimeout(timeoutId);
   }
 
-  await fetchData();
-
   if (!response.ok) {
+    await fetchData();
     throw new Error(
       messageFromApiResponse(response.status, payload?.error, payload?.message),
     );
   }
+  await fetchData();
 };
 
 export const normalizeThrownError = (cause: unknown) => {

@@ -86,7 +86,7 @@
     "word-extractor": "1.0.4"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.11.0",
+    "@axe-core/playwright": "4.11.1",
     "@eslint/js": "9.17.0",
     "@playwright/test": "1.57.0",
     "@types/cors": "2.8.19",

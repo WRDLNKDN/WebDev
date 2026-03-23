@@ -89,9 +89,23 @@ test.describe('Home hero', () => {
     await expect(page.getByRole('link', { name: 'Go to home' })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByTestId('signed-out-landing')).toBeVisible();
+
+    /* Footer stays hidden until Home sets data-footer-visible after intro handoff */
+    const heroVideo = page.locator('video.home-landing__video').first();
+    if ((await heroVideo.count()) > 0) {
+      await heroVideo.evaluate((el) => {
+        el.dispatchEvent(new Event('ended'));
+      });
+    }
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-footer-visible',
+      'true',
+      { timeout: 25_000 },
+    );
+
     const footer = page.getByTestId('site-footer');
     await footer.scrollIntoViewIfNeeded();
     await expect(footer).toBeVisible();
-    await expect(page.getByTestId('signed-out-landing')).toBeVisible();
   });
 });

@@ -1,20 +1,36 @@
-import { useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStoreExternalUrl } from '../../lib/marketing/storefront';
+import {
+  GODADDY_STOREFRONT_URL,
+  resolveStoreExternalUrl,
+} from '../../lib/marketing/storefront';
 
 /**
- * Visiting /store opens the external storefront (Ecwid when configured) in a new tab
- * and sends the user back into the app—no embedded iframe or loading shell.
+ * Visiting /store resolves the same URL as the navbar Store link (GoDaddy when live, else Ecwid),
+ * opens it in a new tab, and returns you to home in this tab.
  */
 export const Store = () => {
   const navigate = useNavigate();
 
-  useLayoutEffect(() => {
-    const id = window.setTimeout(() => {
-      window.open(getStoreExternalUrl(), '_blank', 'noopener,noreferrer');
-      navigate('/', { replace: true });
-    }, 0);
-    return () => window.clearTimeout(id);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const url = await resolveStoreExternalUrl();
+        if (!cancelled) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          navigate('/', { replace: true });
+        }
+      } catch {
+        if (!cancelled) {
+          window.open(GODADDY_STOREFRONT_URL, '_blank', 'noopener,noreferrer');
+          navigate('/', { replace: true });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return null;

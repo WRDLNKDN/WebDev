@@ -54,9 +54,12 @@ import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
-import { getStoreExternalUrl } from '../../lib/marketing/storefront';
+import {
+  GODADDY_STOREFRONT_URL,
+  resolveStoreExternalUrl,
+} from '../../lib/marketing/storefront';
 
-/** Store opens Ecwid (or `VITE_STORE_URL`) in a new tab; `/store` redirects the same way. */
+/** Store: resolved URL (GoDaddy when live, else Ecwid / VITE_STORE_URL); opens in a new tab. */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -93,7 +96,7 @@ export const Navbar = () => {
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
 
-  const storeHref = getStoreExternalUrl();
+  const [storeHref, setStoreHref] = useState(GODADDY_STOREFRONT_URL);
 
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
@@ -432,6 +435,22 @@ export const Navbar = () => {
       setDrawerOpen(false);
     }
   }, [path]);
+
+  useEffect(() => {
+    if (!storeEnabled) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const url = await resolveStoreExternalUrl();
+        if (!cancelled) setStoreHref(url);
+      } catch {
+        if (!cancelled) setStoreHref(GODADDY_STOREFRONT_URL);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeEnabled]);
 
   return (
     <>

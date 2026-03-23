@@ -34,6 +34,9 @@ type Props = {
   onOpenNewProjectDialog: () => void;
   onResumeInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onResumeUpload: (file: File) => Promise<void>;
+  onEditReplaceResume?: (file: File) => Promise<void>;
+  onEditUploadResumeThumbnail?: (file: File) => Promise<void>;
+  onEditRegenerateResumeThumbnail?: () => Promise<void>;
   onRetryThumbnail: () => Promise<void>;
   onDeleteResume: () => Promise<void>;
   onReorder: (orderedIds: string[]) => Promise<void>;
@@ -83,6 +86,9 @@ export const DashboardPortfolioSection = ({
   onOpenNewProjectDialog,
   onResumeInputChange,
   onResumeUpload,
+  onEditReplaceResume,
+  onEditUploadResumeThumbnail,
+  onEditRegenerateResumeThumbnail,
   onRetryThumbnail,
   onDeleteResume,
   onReorder,
@@ -230,6 +236,12 @@ export const DashboardPortfolioSection = ({
                         retryThumbnailBusy={updating}
                         onDelete={() => void onDeleteResume()}
                         deleteBusy={updating}
+                        onEditReplaceResume={onEditReplaceResume}
+                        onEditUploadThumbnail={onEditUploadResumeThumbnail}
+                        onEditRegenerateThumbnail={
+                          onEditRegenerateResumeThumbnail
+                        }
+                        editBusy={updating}
                         isOwner
                         dragHandle={dragHandle}
                       />

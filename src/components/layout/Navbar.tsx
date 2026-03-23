@@ -54,11 +54,9 @@ import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
+import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 
-/**
- * Store link: Routes internally to /store which embeds Ecwid storefront.
- * GoDaddy storefront (https://wrdlnkdn.com/store-1) remains available as fallback.
- */
+/** Store opens Ecwid (or `VITE_STORE_URL`) in a new tab; `/store` redirects the same way. */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -94,6 +92,8 @@ export const Navbar = () => {
   const dashboardEnabled = useFeatureFlag('dashboard');
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
+
+  const storeHref = getStoreExternalUrl();
 
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
@@ -725,8 +725,10 @@ export const Navbar = () => {
           {/* Mobile prod coming-soon home: Store stays reachable (hamburger + Join hidden). */}
           {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
             <Button
-              component={RouterLink}
-              to="/store"
+              component="a"
+              href={storeHref}
+              target="_blank"
+              rel="noopener noreferrer"
               size="small"
               sx={{
                 position: 'absolute',
@@ -830,8 +832,10 @@ export const Navbar = () => {
               )}
               {storeEnabled && (
                 <Button
-                  component={RouterLink}
-                  to="/store"
+                  component="a"
+                  href={storeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
@@ -1302,8 +1306,10 @@ export const Navbar = () => {
                 )}
                 {storeEnabled && (
                   <Button
-                    component={RouterLink}
-                    to="/store"
+                    component="a"
+                    href={storeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',
@@ -1397,8 +1403,10 @@ export const Navbar = () => {
                 )}
                 {storeEnabled && (
                   <Button
-                    component={RouterLink}
-                    to="/store"
+                    component="a"
+                    href={storeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => setDrawerOpen(false)}
                     sx={{
                       justifyContent: 'flex-start',

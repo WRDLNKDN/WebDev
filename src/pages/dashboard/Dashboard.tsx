@@ -192,6 +192,7 @@ export const Dashboard = () => {
     deleteProject,
     reorderPortfolioItems,
     uploadResume,
+    uploadResumeThumbnailImage,
     deleteResume,
     retryResumeThumbnail,
     updating,
@@ -364,6 +365,42 @@ export const Dashboard = () => {
       await refresh();
     } catch (e) {
       showToast({ message: toMessage(e), severity: 'error' });
+    }
+  };
+
+  const handleEditReplaceResume = async (file: File) => {
+    try {
+      await uploadResume(file);
+      await refresh();
+      showToast({ message: 'Resume updated.', severity: 'success' });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
+    }
+  };
+
+  const handleEditUploadResumeThumbnail = async (file: File) => {
+    try {
+      await uploadResumeThumbnailImage(file);
+      await refresh();
+      showToast({ message: 'Preview image updated.', severity: 'success' });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
+    }
+  };
+
+  const handleEditRegenerateResumeThumbnail = async () => {
+    try {
+      await retryResumeThumbnail();
+      await refresh();
+      showToast({
+        message: 'Preview regenerated from your document.',
+        severity: 'success',
+      });
+    } catch (e) {
+      showToast({ message: toMessage(e), severity: 'error' });
+      throw e;
     }
   };
   const handleResumeInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -1053,6 +1090,14 @@ export const Dashboard = () => {
                                 }
                               }}
                               deleteBusy={updating}
+                              onEditReplaceResume={handleEditReplaceResume}
+                              onEditUploadThumbnail={
+                                handleEditUploadResumeThumbnail
+                              }
+                              onEditRegenerateThumbnail={
+                                handleEditRegenerateResumeThumbnail
+                              }
+                              editBusy={updating}
                               isOwner
                               dragHandle={dragHandle}
                               onOpenPreview={setPreviewProject}

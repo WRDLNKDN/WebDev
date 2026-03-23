@@ -24,6 +24,7 @@ import {
   retryResumeThumbnailAsset,
   uploadAvatarAsset,
   uploadResumeAsset,
+  uploadResumeThumbnailImageAsset,
 } from './profile/useProfileAssets';
 
 export function useProfile() {
@@ -150,7 +151,12 @@ export function useProfile() {
   const uploadResume = async (file: File) => {
     try {
       setUpdating(true);
-      return await uploadResumeAsset({ file, updateProfile, fetchData });
+      return await uploadResumeAsset({
+        file,
+        updateProfile,
+        fetchData,
+        profile,
+      });
     } catch (cause) {
       console.error(cause);
       throw new Error(toMessage(cause));
@@ -178,6 +184,22 @@ export function useProfile() {
     } catch (cause) {
       console.error(cause);
       throw new Error(normalizeThrownError(cause));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const uploadResumeThumbnailImage = async (file: File) => {
+    try {
+      setUpdating(true);
+      await uploadResumeThumbnailImageAsset({
+        file,
+        updateProfile,
+        profile,
+      });
+    } catch (cause) {
+      console.error(cause);
+      throw new Error(toMessage(cause));
     } finally {
       setUpdating(false);
     }
@@ -218,6 +240,7 @@ export function useProfile() {
     reorderProjects,
     reorderPortfolioItems,
     uploadResume,
+    uploadResumeThumbnailImage,
     deleteResume,
     retryResumeThumbnail,
   };

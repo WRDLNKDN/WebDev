@@ -62,10 +62,12 @@ const getStoredSessionTokens = async (): Promise<{
  * No authenticated data rendered. No OAuth on /; auth entry is /join only.
  * If user is already authenticated and onboarded, redirect to /dashboard.
  * **`coming_soon` on UAT or PROD:** Full **black** viewport during video (matte +
- * hero backdrop); headline and CTAs stay visible over the video. After the video,
- * the shell crossfades to the Layout grid, the hero **compresses**, and sections
- * below (What Makes This Different, etc.) scroll into view. **UAT:** Join + Sign-in
- * (GuestView). **PROD:** Same headline/tagline + purple **COMING SOON!!** (no auth CTAs).
+ * hero backdrop); headline and CTAs stay visible for the whole video (no delayed
+ * fade-in). On end/skip, the video fades out, the shell crossfades to the Layout
+ * grid, and the hero **compresses in the same window** so sections below (e.g.
+ * What Makes This Different) move up without a tall dead zone. **UAT:** Join +
+ * Sign-in (GuestView). **PROD:** Same headline/tagline + purple **COMING SOON!!**
+ * (no auth CTAs).
  */
 export const Home = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -373,8 +375,8 @@ export const Home = () => {
         marketingHome && !videoEnded && !prefersReducedMotion && !videoFailed
           ? 'home-landing--marketing-video-phase'
           : '',
-        /* Stop filling the viewport below the hero so sections sit directly under the card */
-        videoEnded ? 'home-landing--post-video' : '',
+        /* Stop flex-growing the main column as soon as the hero handoff starts (with hero compress) */
+        shellRevealed ? 'home-landing--post-video' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -387,7 +389,8 @@ export const Home = () => {
             ? 'home-landing__hero--coming-soon'
             : '',
           shellRevealed ? 'home-landing__hero--shell-revealed' : '',
-          videoEnded ? 'home-landing__hero--collapsed' : '',
+          /* Compress in sync with video fade + grid reveal (not after unmount) */
+          shellRevealed ? 'home-landing__hero--collapsed' : '',
         ]
           .filter(Boolean)
           .join(' ')}

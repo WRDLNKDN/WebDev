@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures';
 
-test.describe('Storefront route', () => {
-  test('embeds the storefront in-page and falls back to the GoDaddy URL in an iframe', async ({
+test.describe('Storefront', () => {
+  test('/store opens external shop in a new tab and returns to home', async ({
     page,
   }) => {
     await page.route('**/rest/v1/feature_flags*', async (route) => {
@@ -18,16 +18,21 @@ test.describe('Storefront route', () => {
       });
     });
 
-    // Deterministic fallback when Ecwid is configured: script load fails → backup iframe.
-    await page.route('https://app.ecwid.com/**', (route) => route.abort());
-
+    const popupPromise = page.waitForEvent('popup');
     await page.goto('/store', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/store$/);
 
-    const iframe = page.locator('iframe[title="WRDLNKDN storefront"]');
-    await expect(iframe).toBeVisible({ timeout: 20_000 });
-    await expect(iframe).toHaveAttribute('src', 'https://wrdlnkdn.com/store-1');
+    const popup = await popupPromise;
+    try {
+      await expect(popup).toHaveURL(
+        /wrdlnkdn\.com\/store-1|company\.site|ecwid/i,
+        {
+          timeout: 15_000,
+        },
+      );
+    } finally {
+      await popup.close().catch(() => {});
+    }
 
-    await expect(page.getByRole('heading', { name: /^Store$/ })).toBeVisible();
+    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
   });
 });

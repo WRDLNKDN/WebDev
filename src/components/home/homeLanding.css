@@ -72,8 +72,12 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: min-height 1.05s cubic-bezier(0.33, 1, 0.68, 1);
+  /* Aligned with video opacity fade (~1.45s) so height, grid, and copy move as one motion */
+  transition:
+    min-height 1.35s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .home-landing__hero--coming-soon {
@@ -88,49 +92,53 @@
   background-color: transparent;
 }
 
-/* Content-sized hero: in-flow copy + CTAs; min-height + padding animate from full-bleed */
+/*
+ * Compact resting hero: frees vertical space so “What Makes This Different” et al.
+ * sit much closer without extra scroll (desktop + responsive).
+ */
 .home-landing__hero--collapsed {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-height: 0;
-  padding: 0.5rem 0 0.75rem;
+  min-height: clamp(200px, 30dvh, 360px);
+  padding: 0.35rem 0 0.5rem;
   transition:
-    min-height 1.05s cubic-bezier(0.33, 1, 0.68, 1),
-    padding 0.85s cubic-bezier(0.33, 1, 0.68, 1);
+    min-height 1.35s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .home-landing__hero--collapsed .home-landing__content {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
   margin: 0 auto;
-  padding: 0.35rem 0 0.5rem;
+  padding: 0.25rem 0 0.4rem;
   width: min(1100px, calc(100% - 2rem));
 }
 
 .home-landing__hero--collapsed .home-landing__hero-grid {
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 @media (min-width: 768px) {
   .home-landing__hero--collapsed {
-    padding: 0.65rem 0 1rem;
+    min-height: clamp(220px, 28dvh, 380px);
+    padding: 0.5rem 0 0.65rem;
   }
 
   .home-landing__hero--collapsed .home-landing__hero-grid {
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .home-landing__hero--collapsed .home-landing__content {
-    padding: 0.5rem 0 0.65rem;
+    padding: 0.35rem 0 0.5rem;
   }
 }
 
 @media (min-width: 1024px) {
+  .home-landing__hero--collapsed {
+    min-height: clamp(240px, 26dvh, 400px);
+  }
+
   .home-landing__hero--collapsed .home-landing__hero-grid {
-    gap: 1.75rem;
+    gap: 1.5rem;
   }
 }
 
@@ -211,14 +219,13 @@
 }
 
 /*
- * Hero copy: visible during video and after (no delayed fade-in); stays centered in hero.
+ * Hero copy: visible during video and after (no delayed fade-in).
+ * In-flow + flex-centered parent avoids a layout jump when the hero compresses.
  */
 .home-landing__content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   z-index: 2;
+  flex: 0 0 auto;
   width: min(1100px, calc(100% - 2rem));
   padding: 1rem 0 1.5rem;
   display: flex;
@@ -228,6 +235,7 @@
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
+  transition: padding 1.2s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .home-landing__content--visible {
@@ -355,8 +363,14 @@
 }
 
 .home-landing--post-video > .home-landing__section:first-of-type {
-  padding-top: 1rem;
-  padding-bottom: 3rem;
+  padding-top: 0.35rem;
+  padding-bottom: 2.75rem;
+}
+
+@media (min-width: 768px) {
+  .home-landing--post-video > .home-landing__section:first-of-type {
+    padding-top: 0.5rem;
+  }
 }
 
 .home-landing__section--alt {

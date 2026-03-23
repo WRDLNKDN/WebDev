@@ -78,4 +78,38 @@ test.describe('Dashboard resume delete', () => {
       .click();
     await expect(confirmDialog).not.toBeVisible({ timeout: 3_000 });
   });
+
+  test('Resume card shows edit resume control when a resume exists', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubAppSurface(page);
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { 'content-range': '0-0/1' },
+          body: JSON.stringify([STUB_PROFILE_WITH_RESUME]),
+        });
+        return;
+      }
+      await route.fulfill({ status: 204, body: '' });
+    });
+
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('app-main')).toBeVisible({
+      timeout: 35_000,
+    });
+    await expect(
+      page.getByText('PORTFOLIO SHOWCASE', { exact: true }),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      page.getByRole('button', { name: /edit resume/i }),
+    ).toBeVisible({ timeout: 10_000 });
+  });
 });

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import { processAvatarForUpload } from '../../lib/utils/avatarResize';
 import { messageFromApiResponse, toMessage } from '../../lib/utils/errors';
 import type { DashboardProfile } from '../../types/profile';
+import { processResumeThumbnailImageForUpload } from '../../lib/portfolio/processResumeThumbnailImage';
 import { getResumeStoragePathFromPublicUrl } from '../../lib/portfolio/resumeStorage';
 import {
   API_BASE,
@@ -48,10 +49,13 @@ export const uploadResumeAsset = async ({
   file,
   updateProfile,
   fetchData,
+  profile,
 }: {
   file: File;
   updateProfile: (updates: Partial<DashboardProfile>) => Promise<void>;
   fetchData: () => Promise<void>;
+  /** When replacing an existing resume, used to remove the prior storage object if the extension changes. */
+  profile?: DashboardProfile | null;
 }) => {
   const {
     data: { session },
@@ -86,6 +90,27 @@ export const uploadResumeAsset = async ({
       : ext === '.doc'
         ? 'application/msword'
         : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  const previousUrl =
+    typeof profile?.resume_url === 'string' ? profile.resume_url : '';
+  const previousPath = previousUrl
+    ? getResumeStoragePathFromPublicUrl(previousUrl)
+    : null;
+  if (
+    previousPath &&
+    previousPath !== fileName &&
+    previousPath.startsWith(`${session.user.id}/`)
+  ) {
+    const { error: removeError } = await supabase.storage
+      .from('resumes')
+      .remove([previousPath]);
+    if (removeError) {
+      console.warn('[uploadResume] could not remove previous resume object', {
+        previousPath,
+        message: removeError.message,
+      });
+    }
+  }
 
   const { error } = await supabase.storage
     .from('resumes')
@@ -163,6 +188,51 @@ export const uploadResumeAsset = async ({
   }
 
   return publicUrl;
+};
+
+const resumeCustomThumbPath = (userId: string) =>
+  `${userId}/resume-thumb-custom.jpg`;
+
+export const uploadResumeThumbnailImageAsset = async ({
+  file,
+  updateProfile,
+  profile,
+}: {
+  file: File;
+  updateProfile: (updates: Partial<DashboardProfile>) => Promise<void>;
+  profile: DashboardProfile | null;
+}) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user)
+    throw new Error('You need to sign in to update your resume preview.');
+
+  const blob = await processResumeThumbnailImageForUpload(file);
+  const thumbPath = resumeCustomThumbPath(session.user.id);
+  const { error } = await supabase.storage
+    .from('resumes')
+    .upload(thumbPath, blob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+  if (error) throw error;
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('resumes').getPublicUrl(thumbPath);
+
+  const creds = profile?.nerd_creds ?? {};
+  await updateProfile({
+    nerd_creds: {
+      ...creds,
+      resume_thumbnail_url: publicUrl,
+      resume_thumbnail_status: 'complete',
+      resume_thumbnail_error: null,
+      resume_thumbnail_updated_at: new Date().toISOString(),
+      resume_thumbnail_source_extension: 'custom',
+    },
+  } as Partial<DashboardProfile>);
 };
 
 export const deleteResumeAsset = async ({

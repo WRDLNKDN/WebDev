@@ -1,5 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import DescriptionIcon from '@mui/icons-material/Description';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
@@ -9,12 +10,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   Paper,
+  Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { getResumeDisplayName } from '../../../lib/portfolio/resumeDisplayName';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
@@ -37,6 +40,13 @@ interface ResumeCardProps {
   dragHandle?: React.ReactNode;
   onOpenPreview?: (project: PortfolioItem) => void;
   previewProject?: PortfolioItem | null;
+  /** Dashboard: replace PDF/Word without deleting the resume slot (metadata merged on save). */
+  onEditReplaceResume?: (file: File) => void | Promise<void>;
+  /** Dashboard: custom card preview image (JPEG/PNG/WebP/GIF). */
+  onEditUploadThumbnail?: (file: File) => void | Promise<void>;
+  /** Dashboard: re-run server preview from the current document (PDF/Word). */
+  onEditRegenerateThumbnail?: () => void | Promise<void>;
+  editBusy?: boolean;
 }
 
 export const ResumeCard = ({
@@ -54,8 +64,15 @@ export const ResumeCard = ({
   dragHandle,
   onOpenPreview,
   previewProject,
+  onEditReplaceResume,
+  onEditUploadThumbnail,
+  onEditRegenerateThumbnail,
+  editBusy = false,
 }: ResumeCardProps) => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const thumbFileInputRef = useRef<HTMLInputElement>(null);
   const hasResume = Boolean(url);
   const hasThumbnail = Boolean(thumbnailUrl);
   const resumeTitle = getResumeDisplayName({ fileName, url });
@@ -73,11 +90,61 @@ export const ResumeCard = ({
     onRetryThumbnail &&
     !errorSuggestsUnsupported;
 
+  const showEdit =
+    Boolean(isOwner && hasResume) &&
+    Boolean(
+      onEditReplaceResume || onEditUploadThumbnail || onEditRegenerateThumbnail,
+    );
+
+  const canRegenerateFromDocument =
+    Boolean(onEditRegenerateThumbnail) &&
+    /\.(pdf|docx?)(\?|#|$)/i.test(
+      `${fileName ?? ''} ${url ?? ''}`.toLowerCase(),
+    );
+
   const handleDeleteClick = () => setConfirmDeleteOpen(true);
   const handleConfirmDelete = async () => {
     if (onDelete) {
       await Promise.resolve(onDelete());
       setConfirmDeleteOpen(false);
+    }
+  };
+
+  const handleReplaceFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !onEditReplaceResume) return;
+    try {
+      await Promise.resolve(onEditReplaceResume(file));
+      setEditOpen(false);
+    } catch {
+      /* Parent surfaces toast */
+    }
+  };
+
+  const handleThumbFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !onEditUploadThumbnail) return;
+    try {
+      await Promise.resolve(onEditUploadThumbnail(file));
+      setEditOpen(false);
+    } catch {
+      /* Parent surfaces toast */
+    }
+  };
+
+  const handleRegenerateClick = async () => {
+    if (!onEditRegenerateThumbnail) return;
+    try {
+      await Promise.resolve(onEditRegenerateThumbnail());
+      setEditOpen(false);
+    } catch {
+      /* Parent surfaces toast */
     }
   };
 
@@ -387,6 +454,34 @@ export const ResumeCard = ({
                   )}
                 </Box>
               </Tooltip>
+              {showEdit && (
+                <Tooltip title="Edit resume">
+                  <IconButton
+                    size="small"
+                    onClick={() => setEditOpen(true)}
+                    disabled={editBusy || deleteBusy || retryThumbnailBusy}
+                    aria-label="Edit resume"
+                    sx={{
+                      bgcolor: 'transparent',
+                      minWidth: 32,
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      color: '#b9c3dd',
+                      border: '1px solid rgba(141,188,229,0.48)',
+                      borderRadius: 1,
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                      '&:hover': {
+                        bgcolor: 'rgba(0,196,204,0.22)',
+                        color: '#ecfeff',
+                        borderColor: 'rgba(0,196,204,0.65)',
+                      },
+                    }}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
               {onDelete && (
                 <Tooltip title="Delete resume">
                   <IconButton
@@ -419,6 +514,93 @@ export const ResumeCard = ({
           </Box>
         )}
       </Paper>
+
+      <Dialog
+        open={editOpen}
+        onClose={() => !editBusy && setEditOpen(false)}
+        aria-labelledby="resume-edit-dialog-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="resume-edit-dialog-title">Edit resume</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            {onEditReplaceResume ? (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  Replace the PDF or Word file. Portfolio order and other
+                  settings stay the same.
+                </Typography>
+                <input
+                  ref={replaceFileInputRef}
+                  type="file"
+                  hidden
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(e) => void handleReplaceFileChange(e)}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={editBusy}
+                  onClick={() => replaceFileInputRef.current?.click()}
+                >
+                  Choose new file
+                </Button>
+              </>
+            ) : null}
+            {onEditReplaceResume && onEditUploadThumbnail ? (
+              <Divider sx={{ borderColor: 'rgba(156,187,217,0.2)' }} />
+            ) : null}
+            {onEditUploadThumbnail ? (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  Upload a custom preview image for your resume card (JPEG, PNG,
+                  WebP, or GIF).
+                </Typography>
+                <input
+                  ref={thumbFileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                  onChange={(e) => void handleThumbFileChange(e)}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={editBusy}
+                  onClick={() => thumbFileInputRef.current?.click()}
+                >
+                  Upload preview image
+                </Button>
+              </>
+            ) : null}
+            {canRegenerateFromDocument ? (
+              <>
+                {(onEditReplaceResume || onEditUploadThumbnail) && (
+                  <Divider sx={{ borderColor: 'rgba(156,187,217,0.2)' }} />
+                )}
+                <Typography variant="body2" color="text.secondary">
+                  Prefer an automatic preview from your document instead? We
+                  will replace the current preview image.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={editBusy}
+                  onClick={() => void handleRegenerateClick()}
+                >
+                  Regenerate preview from document
+                </Button>
+              </>
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)} disabled={editBusy}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={confirmDeleteOpen}

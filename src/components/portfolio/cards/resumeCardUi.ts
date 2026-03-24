@@ -53,18 +53,18 @@ export function computeResumeCardUiState(
       p.thumbnailError.toLowerCase().includes('file type'));
   const showRetry = Boolean(
     p.isOwner &&
-      p.thumbnailStatus === 'failed' &&
-      p.onRetryThumbnail &&
-      serverPreviewEligible &&
-      !errorSuggestsUnsupported &&
-      !isWordResume,
+    p.thumbnailStatus === 'failed' &&
+    p.onRetryThumbnail &&
+    serverPreviewEligible &&
+    !errorSuggestsUnsupported &&
+    !isWordResume,
   );
   const showEdit =
     Boolean(p.isOwner && hasResume) &&
     Boolean(
       p.onEditReplaceResume ||
-        p.onEditUploadThumbnail ||
-        p.onEditRegenerateThumbnail,
+      p.onEditUploadThumbnail ||
+      p.onEditRegenerateThumbnail,
     );
   const canRegenerateFromDocument =
     Boolean(p.onEditRegenerateThumbnail) && serverPreviewEligible;

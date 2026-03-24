@@ -1,3 +1,5 @@
+import type { BrowserContext, Locator, Page } from '@playwright/test';
+
 import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
@@ -18,9 +20,7 @@ const CONNECTED_MEMBER = {
   use_weirdling_avatar: false,
 };
 
-async function stubDirectoryWithConnectedMember(
-  page: import('@playwright/test').Page,
-) {
+async function stubDirectoryWithConnectedMember(page: Page) {
   await page.route('**/api/directory*', async (route) => {
     if (route.request().method() !== 'GET') {
       await route.fulfill({ status: 204, body: '' });
@@ -37,103 +37,89 @@ async function stubDirectoryWithConnectedMember(
   });
 }
 
+async function gotoStubbedDirectory(page: Page, context: BrowserContext) {
+  const { stubAdminRpc } = await seedSignedInSession(context);
+  await stubAdminRpc(page);
+  await stubAppSurface(page);
+  await stubDirectoryWithConnectedMember(page);
+
+  await page.goto('/directory');
+  await expect(page.locator('main').first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(
+    page.getByRole('heading', { name: /discover members/i }),
+  ).toBeVisible({
+    timeout: 20_000,
+  });
+}
+
+async function openManageConnectionMenu(page: Page) {
+  await expect(
+    page.getByRole('button', { name: /manage connection/i }),
+  ).toBeVisible({
+    timeout: 10_000,
+  });
+  await page.getByRole('button', { name: /manage connection/i }).click();
+}
+
+async function clickCancelAndExpectDialogClosed(page: Page, dialog: Locator) {
+  await page
+    .getByRole('button', { name: /cancel/i })
+    .first()
+    .click();
+  await expect(dialog).not.toBeVisible();
+}
+
 test.describe('Directory Manage menu (Disconnect / Block)', () => {
   // fixme: E2E auth/session stub causes SYSTEM_HALT on directory; fix stubs or run against real backend
-  test.fixme(
-    'Manage opens menu with Disconnect and Block; Disconnect shows confirmation',
-    async ({ page, context }) => {
-      test.setTimeout(45_000);
-      const { stubAdminRpc } = await seedSignedInSession(context);
-      await stubAdminRpc(page);
-      await stubAppSurface(page);
-      await stubDirectoryWithConnectedMember(page);
+  test.beforeEach(async ({ page, context }) => {
+    test.setTimeout(45_000);
+    await gotoStubbedDirectory(page, context);
+    await openManageConnectionMenu(page);
+  });
 
-      await page.goto('/directory');
-      await expect(page.locator('main').first()).toBeVisible({
-        timeout: 15_000,
-      });
-      await expect(
-        page.getByRole('heading', { name: /discover members/i }),
-      ).toBeVisible({
-        timeout: 20_000,
-      });
+  test.fixme('Manage opens menu with Disconnect and Block; Disconnect shows confirmation', async ({
+    page,
+  }) => {
+    await expect(
+      page.getByRole('menuitem', { name: /disconnect/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /block/i })).toBeVisible();
 
-      await expect(
-        page.getByRole('button', { name: /manage connection/i }),
-      ).toBeVisible({
-        timeout: 10_000,
-      });
-      await page.getByRole('button', { name: /manage connection/i }).click();
+    await page.getByRole('menuitem', { name: /disconnect/i }).click();
 
-      await expect(
-        page.getByRole('menuitem', { name: /disconnect/i }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('menuitem', { name: /block/i }),
-      ).toBeVisible();
+    const disconnectDialog = page
+      .getByRole('dialog')
+      .filter({ hasText: /disconnect from/i });
+    await expect(disconnectDialog).toBeVisible();
+    await expect(
+      page.getByText(/this will remove your connection/i),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /cancel/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /confirm/i }).first(),
+    ).toBeVisible();
 
-      await page.getByRole('menuitem', { name: /disconnect/i }).click();
+    await clickCancelAndExpectDialogClosed(page, disconnectDialog);
+  });
 
-      await expect(
-        page.getByRole('dialog').filter({ hasText: /disconnect from/i }),
-      ).toBeVisible();
-      await expect(
-        page.getByText(/this will remove your connection/i),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('button', { name: /cancel/i }).first(),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('button', { name: /confirm/i }).first(),
-      ).toBeVisible();
+  test.fixme('Manage → Block shows Block confirmation dialog', async ({
+    page,
+  }) => {
+    await page.getByRole('menuitem', { name: /^block$/i }).click();
 
-      await page
-        .getByRole('button', { name: /cancel/i })
-        .first()
-        .click();
-      await expect(
-        page.getByRole('dialog').filter({ hasText: /disconnect from/i }),
-      ).not.toBeVisible();
-    },
-  );
+    const blockDialog = page.getByRole('dialog', { name: 'Block' });
+    await expect(blockDialog).toBeVisible();
+    await expect(
+      page.getByText(
+        /blocking will remove your connection and prevent future interactions/i,
+      ),
+    ).toBeVisible();
+    await expect(page.getByText(/unblock later in settings/i)).toBeVisible();
 
-  test.fixme(
-    'Manage → Block shows Block confirmation dialog',
-    async ({ page, context }) => {
-      test.setTimeout(45_000);
-      const { stubAdminRpc } = await seedSignedInSession(context);
-      await stubAdminRpc(page);
-      await stubAppSurface(page);
-      await stubDirectoryWithConnectedMember(page);
-
-      await page.goto('/directory');
-      await expect(page.locator('main').first()).toBeVisible({
-        timeout: 15_000,
-      });
-      await expect(
-        page.getByRole('heading', { name: /discover members/i }),
-      ).toBeVisible({
-        timeout: 15_000,
-      });
-
-      await page.getByRole('button', { name: /manage connection/i }).click();
-      await page.getByRole('menuitem', { name: /^block$/i }).click();
-
-      await expect(page.getByRole('dialog', { name: 'Block' })).toBeVisible();
-      await expect(
-        page.getByText(
-          /blocking will remove your connection and prevent future interactions/i,
-        ),
-      ).toBeVisible();
-      await expect(page.getByText(/unblock later in settings/i)).toBeVisible();
-
-      await page
-        .getByRole('button', { name: /cancel/i })
-        .first()
-        .click();
-      await expect(
-        page.getByRole('dialog', { name: 'Block' }),
-      ).not.toBeVisible();
-    },
-  );
+    await clickCancelAndExpectDialogClosed(page, blockDialog);
+  });
 });

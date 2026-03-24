@@ -127,7 +127,6 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, q, limit, offset, sort, order]);
 
   const toggle = (id: string) => {

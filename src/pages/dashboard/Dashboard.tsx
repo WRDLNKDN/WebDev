@@ -49,9 +49,9 @@ const AddProjectDialog = lazy(
 );
 const PortfolioPreviewModal = lazy(
   async () =>
-    await import(
-      '../../components/portfolio/dialogs/PortfolioPreviewModal'
-    ).then((m) => ({ default: m.PortfolioPreviewModal })),
+    await import('../../components/portfolio/dialogs/PortfolioPreviewModal').then(
+      (m) => ({ default: m.PortfolioPreviewModal }),
+    ),
 );
 const EditProfileDialog = lazy(
   async () =>

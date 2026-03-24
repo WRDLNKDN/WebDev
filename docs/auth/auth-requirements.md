@@ -70,7 +70,6 @@ Admin API routes use a **requireAdmin** middleware. A request is treated as
 admin if **either** of the following is true:
 
 1. **Preferred — Supabase JWT + allowlist**
-
    - Request has `Authorization: Bearer &lt;access_token&gt;`.
    - Token is validated with Supabase Auth (`getUser`).
    - The user’s email is looked up in `admin_allowlist`.

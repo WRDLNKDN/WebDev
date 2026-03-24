@@ -302,12 +302,11 @@ export const AddProjectDialog = ({
   );
   const isDuplicateProjectUrl = Boolean(
     normalizedFormUrl &&
-      existingProjects.some(
-        (p) =>
-          p.id !== projectId &&
-          normalizeUrlForDedup(p.project_url?.trim() ?? '') ===
-            normalizedFormUrl,
-      ),
+    existingProjects.some(
+      (p) =>
+        p.id !== projectId &&
+        normalizeUrlForDedup(p.project_url?.trim() ?? '') === normalizedFormUrl,
+    ),
   );
   const isDuplicateLinkUrl = Boolean(
     normalizedFormUrl && normalizedLinkUrls.has(normalizedFormUrl),

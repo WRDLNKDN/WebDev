@@ -27,7 +27,6 @@ checkout steps inside the pipeline **does not** fix this first clone.
 
 4. **Credentials:** pick a **Username with password** (or Bitbucket **app
    password**) credential that can read the repo.
-
    - **Do not** select `jenkins_bitbucket_ssh` here if you are using an HTTPS
      URL.
    - Use the same style of credential as `jenkins-bitbucket.org-rbrunault` (ID

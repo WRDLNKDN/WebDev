@@ -28,8 +28,10 @@ coverage/
 .next/
 .out/
 build/
-scripts/lighthouse-reports/*.html
-scripts/lighthouse-reports/*.json
+
+# --- Lighthouse (generated reports; do not commit) ---
+lighthouse-reports/
+scripts/lighthouse-reports/
 
 # --- Environment Secrets (Integrity Layer) ---
 # We block all .env variants to prevent leaking credentials

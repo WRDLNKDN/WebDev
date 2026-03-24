@@ -21,14 +21,12 @@ The OAuth consent screen display name is controlled by:
 ## How to Change It
 
 1. In **Google Cloud Console** → APIs & Services → OAuth consent screen:
-
    - Set "Application name" to "WRDLNKDN" or "wrdlnkdn.com"
    - Add `wrdlnkdn.com` and
      [webdev-uat.vercel.app](https://webdev-uat.vercel.app/) to Authorized
      domains
 
 2. Ensure the OAuth client "Authorized redirect URIs" include both:
-
    - `https://<supabase-project>.supabase.co/auth/v1/callback` (required for
      Supabase)
    - Your app's auth callback if using a custom flow

@@ -15,8 +15,10 @@ function normalizeHref(url: string): string {
   return `https://${trimmed}`;
 }
 
-export interface DestinationLinkProps
-  extends Omit<LinkProps, 'href' | 'target'> {
+export interface DestinationLinkProps extends Omit<
+  LinkProps,
+  'href' | 'target'
+> {
   /** Destination URL (will be normalized with https if no protocol). */
   href: string;
   /** Optional label for aria-label (e.g. link title). Screen readers get "label, destination: url". */

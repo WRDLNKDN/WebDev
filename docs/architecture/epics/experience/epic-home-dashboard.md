@@ -61,7 +61,6 @@ Profile edits are saved immediately or with clear save affordances.
 
 - **Status message:** Users can set a short, ephemeral-style status message
   labeled "How I'm feeling"
-
   - Displayed as a visual bubble near or above the profile header
   - Optional and editable
   - Not required to be public-facing in all contexts

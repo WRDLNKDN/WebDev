@@ -359,16 +359,14 @@ export const AdminDashboard = lazy(async () => {
 });
 
 export const AdminAuthCallbackHealthPage = lazy(async () => {
-  const m = await import(
-    '../../pages/admin/auth-callback/AdminAuthCallbackHealthPage'
-  );
+  const m =
+    await import('../../pages/admin/auth-callback/AdminAuthCallbackHealthPage');
   return { default: m.AdminAuthCallbackHealthPage };
 });
 
 export const AdminContentModerationPage = lazy(async () => {
-  const m = await import(
-    '../../pages/admin/content/AdminContentModerationPage'
-  );
+  const m =
+    await import('../../pages/admin/content/AdminContentModerationPage');
   return { default: m.AdminContentModerationPage };
 });
 

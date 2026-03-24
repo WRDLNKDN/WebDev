@@ -1,25 +1,23 @@
-name: Set estimate from size
+name: 📏 Sync Estimate from Size
 
 on:
-  projects_v2_item:
-    types: [edited, created]
-
+  schedule:
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       owner_type:
-        description: Project owner (where the project lives)
+        description: Project owner (org or user)
         required: true
         type: choice
         options:
           - org
           - user
       owner_login:
-        description: Organization login or GitHub username that owns the project
+        description: Organization login or GitHub username
         required: true
         type: string
       project_number:
-        description:
-          Project number from the URL (e.g. …/orgs/ORG/projects/3 → 3)
+        description: Project number from the URL
         required: true
         type: number
 
@@ -27,11 +25,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: set-estimate-from-size-${{ github.run_id }}
+  group: sync-estimate-from-size
   cancel-in-progress: false
 
 jobs:
-  set-estimate-from-size:
+  sync-estimate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,8 +37,7 @@ jobs:
       - name: Sync Estimate from Size
         uses: actions/github-script@v7
         with:
-          github-token:
-            ${{ secrets.PROJECT_ESTIMATE_SYNC_TOKEN || github.token }}
+          github-token: ${{ secrets.GITHUBACTION || github.token }}
           script: |
             const run = require('./scripts/github-projects/set-estimate-from-size.cjs');
             await run({ github, context, core });

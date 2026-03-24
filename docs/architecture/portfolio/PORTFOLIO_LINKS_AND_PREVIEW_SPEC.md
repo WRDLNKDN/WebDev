@@ -229,7 +229,6 @@ failed.
 ### 4.1 Priority order
 
 1. **If “Upload an image” is provided**
-
    - Use the uploaded image as the thumbnail.
    - **Skip** automatic thumbnail generation.
    - No background preview fetch for thumbnail purposes.

@@ -187,7 +187,6 @@ service is not configured":
    invalid) in the UAT Vercel project.
 
 2. **Fix:** In Vercel → UAT project → Settings → Environment Variables, add:
-
    - **Name:** `RESEND_API_KEY`
    - **Value:** Your Resend API key (create one at resend.com; use the same key
      as prod if desired).

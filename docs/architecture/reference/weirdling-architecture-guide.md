@@ -45,19 +45,16 @@ If a submission is:
 Breaking these rules is a **System Audit failure**.
 
 - **Handle Anchor**
-
   - Top handle MUST be visible.
   - Handle color: **Source Brown** `#5D4037`.
   - No hats or props may hide the handle.
 
 - **Interface Topology**
-
   - **NO noses** (no structural noses).
   - **NO realistic mouths** (no lips, teeth, tongues).
   - Mouths are 8‑bit logic: lines, curves, or small squares only.
 
 - **Toy‑First Rule**
-
   - All equipment must look like **Spirit Halloween / high‑end costume shop**
     props.
   - Textures: molded plastic, safety tips, playful colors.
@@ -157,7 +154,6 @@ When proposing a new variant, open an Issue using this structure:
    “Translucent GameBoy purple”.
 
 3. **Interface Topology (Face DNA)**
-
    - Eyes: `[Standard / Squint / Blink / Glitch]`
    - Mouth: `[Smile / Line / Open Square]`
    - Decals: `[Blush Stickers / Band‑Aids / None]`

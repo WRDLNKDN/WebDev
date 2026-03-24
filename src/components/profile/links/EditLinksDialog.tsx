@@ -673,7 +673,7 @@ export const EditLinksDialog = ({
                         (isDuplicateUrl ||
                           isDuplicatePortfolioUrl ||
                           urlSafetyError)) ||
-                        (addAttempted && urlFormatError),
+                      (addAttempted && urlFormatError),
                     )}
                     helperText={
                       newUrl.trim() && urlSafetyError

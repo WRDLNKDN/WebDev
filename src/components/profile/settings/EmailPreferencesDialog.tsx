@@ -65,7 +65,7 @@ export const EmailPreferencesDialog = ({
     setPrefs({
       marketing_email_enabled: Boolean(
         (data as MarketingPrefs | null)?.marketing_email_enabled ??
-          (data as MarketingPrefs | null)?.marketing_opt_in,
+        (data as MarketingPrefs | null)?.marketing_opt_in,
       ),
       marketing_opt_in: Boolean(
         (data as MarketingPrefs | null)?.marketing_opt_in,

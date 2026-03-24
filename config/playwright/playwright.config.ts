@@ -18,7 +18,7 @@ const API_URL = 'http://127.0.0.1:3001/api/health';
 const isCI = process.env.CI === 'true';
 const hasBackendEnv = Boolean(
   process.env.SUPABASE_URL?.trim() &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
 );
 const frontendOnlyE2e =
   process.env.PLAYWRIGHT_FRONTEND_ONLY === '1' ||

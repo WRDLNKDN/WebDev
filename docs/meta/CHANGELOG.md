@@ -9,7 +9,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - **Dashboard modals – combo box ghosted/overlapping text**
-
   - Add Links modal: Category and Platform selects now show a single clear
     value/placeholder (no ghosted or duplicated text).
   - Edit Profile modal: Industry and Sub-industry selects and Autocomplete now
@@ -20,7 +19,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     placeholder source to avoid duplicate placeholder text.
 
 - **Add Links modal – duplicate plus icon**
-
   - "+ Add to List" button now shows a single plus: label set to `+ Add to List`
     and `startIcon` removed to prevent duplicate plus from icon + label.
 
@@ -37,7 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **E2E**
-
   - Dashboard resume delete spec un-skipped: profile route is registered after
     `stubAppSurface` so the stub with `resume_url` wins; stub includes `socials`
     and `industries`; Portfolio section is located via `getByText('PORTFOLIO')`.

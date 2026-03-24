@@ -1,17 +1,7 @@
 // vite.config.ts
 import react from '@vitejs/plugin-react';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import { ServerResponse, type IncomingMessage } from 'node:http';
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
-
-type ProxyErrorHandler = (
-  err: Error,
-  req: IncomingMessage,
-  res: ServerResponse<IncomingMessage>,
-) => void;
-
-type ProxyServerLike = {
-  on(event: 'error', listener: ProxyErrorHandler): void;
-};
 
 const frontendOnlyE2E = process.env.PLAYWRIGHT_FRONTEND_ONLY === 'true';
 
@@ -72,26 +62,20 @@ export default defineConfig({
             target: 'http://127.0.0.1:3001',
             changeOrigin: true,
             secure: false,
-            configure: (proxy: ProxyServerLike) => {
-              proxy.on(
-                'error',
-                (
-                  _err: Error,
-                  _req: IncomingMessage,
-                  res: ServerResponse<IncomingMessage>,
-                ) => {
-                  // When backend is down, respond 503 instead of leaking ECONNREFUSED to console
-                  if (res && !res.headersSent) {
-                    res.writeHead(503, { 'Content-Type': 'application/json' });
-                    res.end(
-                      JSON.stringify({
-                        error: 'Service unavailable',
-                        detail: 'Backend not running. Start with: npm run api',
-                      }),
-                    );
-                  }
-                },
-              );
+            configure: (proxy) => {
+              proxy.on('error', (_err, _req, res) => {
+                // When backend is down, respond 503 instead of leaking ECONNREFUSED to console.
+                // `res` is only a ServerResponse for HTTP; WebSocket proxy errors pass a Socket.
+                if (res instanceof ServerResponse && !res.headersSent) {
+                  res.writeHead(503, { 'Content-Type': 'application/json' });
+                  res.end(
+                    JSON.stringify({
+                      error: 'Service unavailable',
+                      detail: 'Backend not running. Start with: npm run api',
+                    }),
+                  );
+                }
+              });
             },
           },
         },

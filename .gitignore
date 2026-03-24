@@ -31,6 +31,9 @@ build/
 scripts/lighthouse-reports/*.html
 scripts/lighthouse-reports/*.json
 
+# Root Lighthouse CLI output (generated; exclude from VCS and Sonar via sonar-project.properties)
+lighthouse-reports/
+
 # --- Environment Secrets (Integrity Layer) ---
 # We block all .env variants to prevent leaking credentials
 .env

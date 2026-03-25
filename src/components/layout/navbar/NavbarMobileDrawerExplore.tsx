@@ -10,6 +10,7 @@ import {
   ListItemText,
   ListSubheader,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { Link as RouterLink, type Location } from 'react-router-dom';
 
 type NavbarMobileDrawerExploreProps = {
@@ -19,7 +20,14 @@ type NavbarMobileDrawerExploreProps = {
   isGroupsActive: boolean;
   location: Location;
   onNavigate: () => void;
+  /** When set (e.g. from `getNavbarDrawerChrome`), used for active Groups row; else dark-theme fallback. */
+  drawerActiveNavSx?: SxProps<Theme>;
 };
+
+const groupsActiveFallbackSx = {
+  bgcolor: 'rgba(156,187,217,0.26)',
+  '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+} as const;
 
 export const NavbarMobileDrawerExplore = ({
   showAuthedHeader,
@@ -28,6 +36,7 @@ export const NavbarMobileDrawerExplore = ({
   isGroupsActive,
   location,
   onNavigate,
+  drawerActiveNavSx,
 }: NavbarMobileDrawerExploreProps) => {
   if (!showAuthedHeader) return null;
 
@@ -69,10 +78,9 @@ export const NavbarMobileDrawerExplore = ({
           sx={{
             minHeight: 40,
             py: 0.5,
-            ...(isGroupsActive && {
-              bgcolor: 'rgba(156,187,217,0.26)',
-              '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-            }),
+            ...(isGroupsActive
+              ? (drawerActiveNavSx ?? groupsActiveFallbackSx)
+              : {}),
           }}
         >
           <ListItemIcon sx={{ minWidth: 36 }}>

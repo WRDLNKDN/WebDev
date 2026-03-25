@@ -44,6 +44,13 @@ async function fulfillEmptyJsonArray(route: Route): Promise<void> {
   await fulfillJson(route, '[]');
 }
 
+/** When request is not GET, respond 204 and return true (caller skips body). */
+async function fulfillNonGetNoContent(route: Route): Promise<boolean> {
+  if (route.request().method() === 'GET') return false;
+  await route.fulfill({ status: 204, body: '' });
+  return true;
+}
+
 function wantsPgrstObject(route: Route): boolean {
   const accept = route.request().headers()['accept'] ?? '';
   return accept.includes('application/vnd.pgrst.object+json');
@@ -100,19 +107,17 @@ export async function stubChatGroupMentionSurface(page: Page) {
     ]);
   });
 
-  await page.route('**/rest/v1/rpc/chat_create_dm', async (route) => {
-    await fulfillJson(route, JSON.stringify(roomId));
-  });
-
-  await page.route('**/rest/v1/rpc/chat_create_group', async (route) => {
-    await fulfillJson(route, JSON.stringify(roomId));
-  });
+  for (const pattern of [
+    '**/rest/v1/rpc/chat_create_dm*',
+    '**/rest/v1/rpc/chat_create_group*',
+  ] as const) {
+    await page.route(pattern, async (route) => {
+      await fulfillJson(route, JSON.stringify(roomId));
+    });
+  }
 
   await page.route('**/rest/v1/chat_rooms*', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
+    if (await fulfillNonGetNoContent(route)) return;
     const wantsObject = wantsPgrstObject(route);
     const url = new URL(route.request().url());
     const idEq = parseEqFilter(url, 'id');
@@ -128,10 +133,7 @@ export async function stubChatGroupMentionSurface(page: Page) {
   });
 
   await page.route('**/rest/v1/chat_room_members*', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.fulfill({ status: 204, body: '' });
-      return;
-    }
+    if (await fulfillNonGetNoContent(route)) return;
     const url = new URL(route.request().url());
     const select = url.searchParams.get('select') ?? '';
     const userEq = parseEqFilter(url, 'user_id');
@@ -180,20 +182,32 @@ export async function stubChatGroupMentionSurface(page: Page) {
     await page.route(pattern, fulfillEmptyJsonArray);
   }
 
-  const memberProfile = {
-    id: USER_ID,
-    handle: 'e2e-member',
-    display_name: 'E2E Member',
-    avatar: null,
-    status: 'approved',
+  const profileById: Record<
+    string,
+    {
+      id: string;
+      handle: string;
+      display_name: string;
+      avatar: null;
+      status: string;
+    }
+  > = {
+    [USER_ID]: {
+      id: USER_ID,
+      handle: 'e2e-member',
+      display_name: 'E2E Member',
+      avatar: null,
+      status: 'approved',
+    },
+    [peerId]: {
+      id: peerId,
+      handle: 'mentionbuddy',
+      display_name: 'Mention Buddy',
+      avatar: null,
+      status: 'approved',
+    },
   };
-  const peerProfile = {
-    id: peerId,
-    handle: 'mentionbuddy',
-    display_name: 'Mention Buddy',
-    avatar: null,
-    status: 'approved',
-  };
+  const allProfiles = Object.values(profileById);
 
   await page.route('**/rest/v1/profiles*', async (route) => {
     const url = new URL(route.request().url());
@@ -201,20 +215,20 @@ export async function stubChatGroupMentionSurface(page: Page) {
     const idEq = parseEqFilter(url, 'id');
     const idIn = parseInFilter(url, 'id');
 
-    if (idEq === USER_ID) {
-      await fulfillJson(route, wantsObject ? memberProfile : [memberProfile]);
-      return;
-    }
-    if (idEq === peerId) {
-      await fulfillJson(route, wantsObject ? peerProfile : [peerProfile]);
+    if (idEq && profileById[idEq]) {
+      const row = profileById[idEq];
+      await fulfillJson(route, wantsObject ? row : [row]);
       return;
     }
 
     const inList = idIn ?? [];
-    const picked = [memberProfile, peerProfile].filter(
+    const picked = allProfiles.filter(
       (p) => inList.length === 0 || inList.includes(p.id),
     );
-    await fulfillJson(route, picked.length > 0 ? picked : [memberProfile]);
+    await fulfillJson(
+      route,
+      picked.length > 0 ? picked : [profileById[USER_ID]],
+    );
   });
 
   await page.route('**/rest/v1/chat_messages*', async (route) => {

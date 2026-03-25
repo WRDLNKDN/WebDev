@@ -1,14 +1,8 @@
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import ForumIcon from '@mui/icons-material/Forum';
-import GavelIcon from '@mui/icons-material/Gavel';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {
   AppBar,
   Backdrop,
@@ -20,11 +14,8 @@ import {
   Drawer,
   IconButton,
   InputBase,
-  List,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListSubheader,
   Menu,
   MenuItem,
   Paper,
@@ -55,6 +46,8 @@ import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
+import { NavbarMobileDrawerExplore } from './navbar/NavbarMobileDrawerExplore';
+import { NavbarMobileDrawerLegal } from './navbar/NavbarMobileDrawerLegal';
 import {
   GODADDY_STOREFRONT_URL,
   getStoreExternalUrl,
@@ -1372,259 +1365,16 @@ export const Navbar = () => {
             )}
           </Stack>
 
-          {/* Explore: sub-menus (matches Feed sidebar) */}
-          {showAuthedHeader && (
-            <List dense disablePadding sx={{ py: 0 }}>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  letterSpacing: 1,
-                  pt: 2,
-                  pb: 0.5,
-                  px: 2,
-                }}
-              >
-                Explore
-              </ListSubheader>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                }}
-              >
-                Community
-              </ListSubheader>
-              {groupsEnabled && (
-                <ListItemButton
-                  component={RouterLink}
-                  to="/groups"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    minHeight: 40,
-                    py: 0.5,
-                    ...(isGroupsActive ? drawerActiveNavSx : {}),
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <ForumIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Groups"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItemButton>
-              )}
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Your stuff
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/saved"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <BookmarkBorderIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Saved"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Platform
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/advertise"
-                state={{ backgroundLocation: location }}
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <CampaignIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Advertise"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-              {gamesEnabled && (
-                <>
-                  <ListSubheader
-                    component="div"
-                    sx={{
-                      bgcolor: 'transparent',
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                      py: 0.5,
-                      px: 2,
-                      pt: 1.5,
-                    }}
-                  >
-                    Games
-                  </ListSubheader>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/dashboard/games"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{ minHeight: 40, py: 0.5 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <SportsEsportsIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="All games"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                  {[
-                    { to: '/dashboard/games', label: 'Phuzzle' },
-                    { to: '/dashboard/games/hangman', label: 'Hangman' },
-                    { to: '/dashboard/games/snake', label: 'Snake' },
-                    { to: '/dashboard/games/slots', label: 'Slots' },
-                    { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
-                    { to: '/dashboard/games', label: 'Connect 4' },
-                    { to: '/dashboard/games', label: 'Checkers' },
-                  ].map(({ to, label }) => (
-                    <ListItemButton
-                      key={label}
-                      component={RouterLink}
-                      to={to}
-                      onClick={() => setDrawerOpen(false)}
-                      sx={{ minHeight: 36, py: 0.5, pl: 4 }}
-                    >
-                      <ListItemText
-                        primary={label}
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  ))}
-                </>
-              )}
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Support
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/help"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <HelpOutlineIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Help"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-            </List>
-          )}
-
-          {/* Legal (always visible in drawer for all users) */}
-          <List dense disablePadding sx={{ py: 0 }}>
-            <ListSubheader
-              component="div"
-              sx={{
-                bgcolor: 'transparent',
-                color: 'text.secondary',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                py: 0.5,
-                px: 2,
-                pt: 2,
-                pb: 0.5,
-              }}
-            >
-              Legal
-            </ListSubheader>
-            <ListItemButton
-              component={RouterLink}
-              to="/terms"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Terms of Service"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-            <ListItemButton
-              component={RouterLink}
-              to="/privacy"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Privacy Policy"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-            <ListItemButton
-              component={RouterLink}
-              to="/guidelines"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Community Guidelines"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-          </List>
+          <NavbarMobileDrawerExplore
+            showAuthedHeader={showAuthedHeader}
+            groupsEnabled={groupsEnabled}
+            gamesEnabled={gamesEnabled}
+            isGroupsActive={isGroupsActive}
+            location={location}
+            onNavigate={() => setDrawerOpen(false)}
+            drawerActiveNavSx={drawerActiveNavSx}
+          />
+          <NavbarMobileDrawerLegal onNavigate={() => setDrawerOpen(false)} />
         </Box>
       </Drawer>
       <Backdrop

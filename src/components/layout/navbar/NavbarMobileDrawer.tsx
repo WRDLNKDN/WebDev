@@ -174,6 +174,7 @@ export const NavbarMobileDrawer = ({
           isGroupsActive={isGroupsActive}
           location={location}
           onNavigate={() => setDrawerOpen(false)}
+          drawerActiveNavSx={drawerActiveNavSx}
         />
 
         <NavbarMobileDrawerLegal onNavigate={() => setDrawerOpen(false)} />

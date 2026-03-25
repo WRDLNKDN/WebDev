@@ -1,29 +1,8 @@
-import { expect, test, type Route } from '../fixtures';
+import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { fulfillPostgrest, parseEqParam } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
-
-async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    headers: Array.isArray(rowOrRows)
-      ? {
-          'content-range': `0-${Math.max(rowOrRows.length - 1, 0)}/${rowOrRows.length}`,
-        }
-      : undefined,
-    body: JSON.stringify(
-      isSingle && Array.isArray(rowOrRows) ? rowOrRows[0] : rowOrRows,
-    ),
-  });
-}
-
-function parseEqParam(url: string, key: string) {
-  const raw = new URL(url).searchParams.get(key);
-  return raw?.replace(/^eq\./, '') ?? null;
-}
 
 test.describe('Dashboard portfolio showcase management', () => {
   test('creates, highlights, and deletes portfolio artifacts with public profile updates', async ({

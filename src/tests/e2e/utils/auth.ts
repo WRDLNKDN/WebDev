@@ -15,6 +15,7 @@
 
 import type { BrowserContext, Page } from '@playwright/test';
 import { FIXTURE_PROFILES, FIXTURE_USER_ID } from './authFixtures';
+import { acceptWantsPgrstObjectJson } from './postgrestFulfill';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -150,9 +151,7 @@ export async function loginAs(page: Page, fixture: string) {
     FIXTURE_PROFILES[fixture] ?? FIXTURE_PROFILES['test-user-with-links'];
   const session = getStubSession();
   const buildProfilesBody = (acceptHeader: string | undefined) => {
-    const wantsSingleObject = Boolean(
-      acceptHeader?.includes('application/vnd.pgrst.object+json'),
-    );
+    const wantsSingleObject = acceptWantsPgrstObjectJson(acceptHeader);
     return wantsSingleObject
       ? JSON.stringify(profile)
       : JSON.stringify([profile]);

@@ -11,7 +11,6 @@ import {
   Button,
   CircularProgress,
   Divider,
-  Drawer,
   IconButton,
   InputBase,
   ListItemIcon,
@@ -45,10 +44,8 @@ import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
-import { NavbarDrawerAuthedPrimary } from './navbar/NavbarDrawerAuthedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
-import { NavbarMobileDrawerExplore } from './navbar/NavbarMobileDrawerExplore';
-import { NavbarMobileDrawerLegal } from './navbar/NavbarMobileDrawerLegal';
+import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
 import {
   GODADDY_STOREFRONT_URL,
   getStoreExternalUrl,
@@ -1244,108 +1241,31 @@ export const Navbar = () => {
         ) : null}
       </AppBar>
 
-      {/* Mobile drawer */}
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: drawerPaperSx,
-        }}
-      >
-        <Box sx={{ py: 2, overflow: 'auto' }}>
-          <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!session && (
-              <>
-                {(!productionComingSoon || isAdminActive) && (
-                  <>
-                    {!isJoinActive && (
-                      <Button
-                        component={RouterLink}
-                        to="/join"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                          justifyContent: 'flex-start',
-                          color: drawerLinkColor,
-                          textTransform: 'none',
-                          fontWeight: 600,
-                          py: 1.5,
-                          minHeight: 44,
-                          touchAction: 'manipulation',
-                        }}
-                      >
-                        Join
-                      </Button>
-                    )}
-                    <Button
-                      component={RouterLink}
-                      to="/signin"
-                      onClick={() => setDrawerOpen(false)}
-                      sx={{
-                        justifyContent: 'flex-start',
-                        color: drawerLinkColor,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.5,
-                        minHeight: 44,
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      Sign in
-                    </Button>
-                  </>
-                )}
-                {storeEnabled && (
-                  <Button
-                    component="a"
-                    href={storeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Store
-                  </Button>
-                )}
-              </>
-            )}
-            {showAuthedHeader && (
-              <NavbarDrawerAuthedPrimary
-                path={path}
-                showAuthedHeader={showAuthedHeader}
-                feedEnabled={feedEnabled}
-                directoryEnabled={directoryEnabled}
-                chatEnabled={chatEnabled}
-                dashboardEnabled={dashboardEnabled}
-                eventsEnabled={eventsEnabled}
-                sessionUserId={session?.user?.id}
-                drawerLinkColor={drawerLinkColor}
-                drawerActiveNavSx={drawerActiveNavSx}
-                onDrawerNavigate={() => setDrawerOpen(false)}
-                storeEnabled={storeEnabled}
-                storeHref={storeHref}
-                isAdmin={isAdmin}
-              />
-            )}
-          </Stack>
-
-          <NavbarMobileDrawerExplore
-            showAuthedHeader={showAuthedHeader}
-            groupsEnabled={groupsEnabled}
-            gamesEnabled={gamesEnabled}
-            isGroupsActive={isGroupsActive}
-            location={location}
-            onNavigate={() => setDrawerOpen(false)}
-            drawerActiveNavSx={drawerActiveNavSx}
-          />
-          <NavbarMobileDrawerLegal onNavigate={() => setDrawerOpen(false)} />
-        </Box>
-      </Drawer>
+      <NavbarMobileDrawer
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+        isAdmin={isAdmin}
+        showAuthedHeader={showAuthedHeader}
+        session={session}
+        productionComingSoon={productionComingSoon}
+        isAdminActive={isAdminActive}
+        isJoinActive={isJoinActive}
+        dashboardEnabled={dashboardEnabled}
+        directoryEnabled={directoryEnabled}
+        eventsEnabled={eventsEnabled}
+        groupsEnabled={groupsEnabled}
+        feedEnabled={feedEnabled}
+        storeEnabled={storeEnabled}
+        chatEnabled={chatEnabled}
+        gamesEnabled={gamesEnabled}
+        isGroupsActive={isGroupsActive}
+        path={path}
+        storeUrl={storeHref}
+        location={location}
+        drawerPaperSx={drawerPaperSx}
+        drawerLinkColor={drawerLinkColor}
+        drawerActiveNavSx={drawerActiveNavSx}
+      />
       <Backdrop
         open={joinLoading}
         sx={{

@@ -1,6 +1,11 @@
 import type { Page, Route } from '@playwright/test';
 import { USER_ID } from './auth';
 import { wantsPgrstObjectResponse } from './postgrestFulfill';
+import {
+  parsePostgrestEqFilter,
+  parsePostgrestInFilter,
+  postgrestEqOrInColumnValues,
+} from './postgrestUrlFilters';
 
 /** Group room used only for @mention E2E stubs. */
 export const GROUP_MENTION_ROOM_ID =
@@ -8,26 +13,6 @@ export const GROUP_MENTION_ROOM_ID =
 
 /** Second member in the group (has a handle, shown in @ autocomplete). */
 export const GROUP_MENTION_PEER_ID = '00000000-0000-0000-0000-000000000002';
-
-function parseEqFilter(url: URL, column: string): string | undefined {
-  const raw = url.searchParams.get(column);
-  if (!raw?.startsWith('eq.')) return undefined;
-  return decodeURIComponent(raw.slice(3));
-}
-
-function parseInFilter(url: URL, column: string): string[] | undefined {
-  const raw = url.searchParams.get(column);
-  if (!raw?.startsWith('in.')) return undefined;
-  const inner = raw.slice(3).replaceAll('(', '').replaceAll(')', '');
-  if (!inner.trim()) return [];
-  return inner.split(',').map((part) => decodeURIComponent(part.trim()));
-}
-
-function roomIdsFromChatMembersUrl(url: URL): string[] {
-  const single = parseEqFilter(url, 'room_id');
-  if (single) return [single];
-  return parseInFilter(url, 'room_id') ?? [];
-}
 
 async function fulfillJson(
   route: Route,
@@ -116,8 +101,8 @@ export async function stubChatGroupMentionSurface(page: Page) {
     if (await fulfillNonGetNoContent(route)) return;
     const wantsObject = wantsPgrstObjectResponse(route);
     const url = new URL(route.request().url());
-    const idEq = parseEqFilter(url, 'id');
-    const idIn = parseInFilter(url, 'id');
+    const idEq = parsePostgrestEqFilter(url, 'id');
+    const idIn = parsePostgrestInFilter(url, 'id');
     const matches = idEq === roomId || Boolean(idIn?.includes(roomId));
 
     if (!matches) {
@@ -132,8 +117,8 @@ export async function stubChatGroupMentionSurface(page: Page) {
     if (await fulfillNonGetNoContent(route)) return;
     const url = new URL(route.request().url());
     const select = url.searchParams.get('select') ?? '';
-    const userEq = parseEqFilter(url, 'user_id');
-    const roomIds = roomIdsFromChatMembersUrl(url);
+    const userEq = parsePostgrestEqFilter(url, 'user_id');
+    const roomIds = postgrestEqOrInColumnValues(url, 'room_id');
 
     /* useChatRooms: memberships for current user (room_id only). */
     if (select === 'room_id' && userEq === USER_ID && roomIds.length === 0) {
@@ -208,8 +193,8 @@ export async function stubChatGroupMentionSurface(page: Page) {
   await page.route('**/rest/v1/profiles*', async (route) => {
     const url = new URL(route.request().url());
     const wantsObject = wantsPgrstObjectResponse(route);
-    const idEq = parseEqFilter(url, 'id');
-    const idIn = parseInFilter(url, 'id');
+    const idEq = parsePostgrestEqFilter(url, 'id');
+    const idIn = parsePostgrestInFilter(url, 'id');
 
     if (idEq && profileById[idEq]) {
       const row = profileById[idEq];

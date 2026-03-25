@@ -1,15 +1,19 @@
-import { Box, Button, Drawer, Stack, useTheme } from '@mui/material';
+import { Box, Button, Drawer, Stack } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
+import type { Session } from '@supabase/supabase-js';
 import { Link as RouterLink, type Location } from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
-import { getNavbarDrawerChrome } from './navbarDrawerChrome';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 
-type NavbarMobileDrawerProps = {
+export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   isAdmin: boolean;
   showAuthedHeader: boolean;
+  session: Session | null;
+  productionComingSoon: boolean;
+  isAdminActive: boolean;
   isJoinActive: boolean;
   dashboardEnabled: boolean;
   directoryEnabled: boolean;
@@ -23,17 +27,20 @@ type NavbarMobileDrawerProps = {
   path: string;
   storeUrl: string;
   location: Location;
-  sessionUserId: string | undefined | null;
+  drawerPaperSx: SxProps<Theme>;
+  drawerLinkColor: string;
+  drawerActiveNavSx: SxProps<Theme>;
 };
 
-/**
- * Optional mobile drawer composition — same canonical primary nav as `Navbar` when used.
- */
+/** Mobile nav drawer: single composition used by `Navbar` (guest rules match main app bar). */
 export const NavbarMobileDrawer = ({
   drawerOpen,
   setDrawerOpen,
   isAdmin,
   showAuthedHeader,
+  session,
+  productionComingSoon,
+  isAdminActive,
   isJoinActive,
   dashboardEnabled,
   directoryEnabled,
@@ -47,12 +54,10 @@ export const NavbarMobileDrawer = ({
   path,
   storeUrl,
   location,
-  sessionUserId,
+  drawerPaperSx,
+  drawerLinkColor,
+  drawerActiveNavSx,
 }: NavbarMobileDrawerProps) => {
-  const theme = useTheme();
-  const { drawerPaperSx, drawerLinkColor, drawerActiveNavSx } =
-    getNavbarDrawerChrome(theme);
-
   return (
     <Drawer
       anchor="left"
@@ -64,55 +69,63 @@ export const NavbarMobileDrawer = ({
     >
       <Box sx={{ py: 2, overflow: 'auto' }}>
         <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-          {!showAuthedHeader && (
+          {!session && (
             <>
-              <Button
-                component="a"
-                href={storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  color: drawerLinkColor,
-                  textTransform: 'none',
-                  py: 1.5,
-                }}
-              >
-                Store
-              </Button>
-              {!isJoinActive && (
+              {(!productionComingSoon || isAdminActive) && (
+                <>
+                  {!isJoinActive && (
+                    <Button
+                      component={RouterLink}
+                      to="/join"
+                      onClick={() => setDrawerOpen(false)}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        color: drawerLinkColor,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        py: 1.5,
+                        minHeight: 44,
+                        touchAction: 'manipulation',
+                      }}
+                    >
+                      Join
+                    </Button>
+                  )}
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              )}
+              {storeEnabled && (
                 <Button
-                  component={RouterLink}
-                  to="/join"
+                  component="a"
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: drawerLinkColor,
                     textTransform: 'none',
                     py: 1.5,
-                    minHeight: 44,
-                    touchAction: 'manipulation',
                   }}
                 >
-                  Join
+                  Store
                 </Button>
               )}
-              <Button
-                component={RouterLink}
-                to="/signin"
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  color: drawerLinkColor,
-                  textTransform: 'none',
-                  py: 1.5,
-                  minHeight: 44,
-                  touchAction: 'manipulation',
-                }}
-              >
-                Sign in
-              </Button>
             </>
           )}
           {showAuthedHeader && (
@@ -124,7 +137,7 @@ export const NavbarMobileDrawer = ({
               chatEnabled={chatEnabled}
               dashboardEnabled={dashboardEnabled}
               eventsEnabled={eventsEnabled}
-              sessionUserId={sessionUserId}
+              sessionUserId={session?.user?.id}
               drawerLinkColor={drawerLinkColor}
               drawerActiveNavSx={drawerActiveNavSx}
               onDrawerNavigate={() => setDrawerOpen(false)}

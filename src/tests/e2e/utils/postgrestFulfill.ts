@@ -1,8 +1,16 @@
 import type { Route } from '@playwright/test';
 
+const PGRST_OBJECT_JSON = 'application/vnd.pgrst.object+json';
+
+/** Accept header check without a Playwright `Route` (e.g. `stubAppSurface`). */
+export function acceptWantsPgrstObjectJson(
+  accept: string | undefined,
+): boolean {
+  return Boolean(accept?.includes(PGRST_OBJECT_JSON));
+}
+
 export function wantsPgrstObjectResponse(route: Route): boolean {
-  const accept = route.request().headers()['accept'] ?? '';
-  return accept.includes('application/vnd.pgrst.object+json');
+  return acceptWantsPgrstObjectJson(route.request().headers()['accept']);
 }
 
 export function parseEqParam(url: string, key: string): string | null {

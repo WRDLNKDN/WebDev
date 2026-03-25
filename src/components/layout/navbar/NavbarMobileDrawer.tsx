@@ -1,5 +1,7 @@
-import { Box, Button, Drawer, Stack } from '@mui/material';
+import { Box, Button, Drawer, Stack, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, type Location } from 'react-router-dom';
+import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 
@@ -16,19 +18,17 @@ type NavbarMobileDrawerProps = {
   feedEnabled: boolean;
   storeEnabled: boolean;
   chatEnabled: boolean;
-  /** Chat nav only for signed-in Members. */
-  memberSignedIn: boolean;
   gamesEnabled: boolean;
-  isDashboardActive: boolean;
-  isDirectoryActive: boolean;
-  isEventsActive: boolean;
-  isFeedActive: boolean;
   isGroupsActive: boolean;
   path: string;
   storeUrl: string;
   location: Location;
+  sessionUserId: string | undefined | null;
 };
 
+/**
+ * Optional mobile drawer composition — same canonical primary nav as `Navbar` when used.
+ */
 export const NavbarMobileDrawer = ({
   drawerOpen,
   setDrawerOpen,
@@ -42,17 +42,26 @@ export const NavbarMobileDrawer = ({
   feedEnabled,
   storeEnabled,
   chatEnabled,
-  memberSignedIn,
   gamesEnabled,
-  isDashboardActive,
-  isDirectoryActive,
-  isEventsActive,
-  isFeedActive,
   isGroupsActive,
   path,
   storeUrl,
   location,
+  sessionUserId,
 }: NavbarMobileDrawerProps) => {
+  const theme = useTheme();
+  const isLightNav = theme.palette.mode === 'light';
+  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
+  const drawerActiveNavSx = isLightNav
+    ? {
+        bgcolor: alpha(theme.palette.primary.main, 0.12),
+        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
+      }
+    : {
+        bgcolor: 'rgba(156,187,217,0.26)',
+        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+      };
+
   return (
     <Drawer
       anchor="left"
@@ -61,28 +70,17 @@ export const NavbarMobileDrawer = ({
       PaperProps={{
         sx: {
           width: 280,
-          bgcolor: 'rgba(18, 18, 18, 0.98)',
-          borderRight: '1px solid rgba(156,187,217,0.18)',
+          bgcolor: isLightNav
+            ? theme.palette.background.paper
+            : 'rgba(18, 18, 18, 0.98)',
+          borderRight: isLightNav
+            ? `1px solid ${theme.palette.divider}`
+            : '1px solid rgba(156,187,217,0.18)',
         },
       }}
     >
       <Box sx={{ py: 2, overflow: 'auto' }}>
         <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-          {isAdmin && (
-            <Button
-              component={RouterLink}
-              to="/admin"
-              onClick={() => setDrawerOpen(false)}
-              sx={{
-                justifyContent: 'flex-start',
-                color: 'warning.main',
-                textTransform: 'none',
-                py: 1.5,
-              }}
-            >
-              Admin
-            </Button>
-          )}
           {!showAuthedHeader && (
             <>
               <Button
@@ -93,7 +91,7 @@ export const NavbarMobileDrawer = ({
                 onClick={() => setDrawerOpen(false)}
                 sx={{
                   justifyContent: 'flex-start',
-                  color: 'white',
+                  color: drawerLinkColor,
                   textTransform: 'none',
                   py: 1.5,
                 }}
@@ -107,7 +105,7 @@ export const NavbarMobileDrawer = ({
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
-                    color: 'white',
+                    color: drawerLinkColor,
                     textTransform: 'none',
                     py: 1.5,
                     minHeight: 44,
@@ -123,7 +121,7 @@ export const NavbarMobileDrawer = ({
                 onClick={() => setDrawerOpen(false)}
                 sx={{
                   justifyContent: 'flex-start',
-                  color: 'white',
+                  color: drawerLinkColor,
                   textTransform: 'none',
                   py: 1.5,
                   minHeight: 44,
@@ -136,6 +134,20 @@ export const NavbarMobileDrawer = ({
           )}
           {showAuthedHeader && (
             <>
+              <GlobalNavAuthenticatedPrimary
+                variant="drawer"
+                path={path}
+                showAuthedHeader={showAuthedHeader}
+                feedEnabled={feedEnabled}
+                directoryEnabled={directoryEnabled}
+                chatEnabled={chatEnabled}
+                dashboardEnabled={dashboardEnabled}
+                eventsEnabled={eventsEnabled}
+                sessionUserId={sessionUserId}
+                drawerLinkColor={drawerLinkColor}
+                drawerActiveNavSx={drawerActiveNavSx}
+                onDrawerNavigate={() => setDrawerOpen(false)}
+              />
               {storeEnabled && (
                 <Button
                   component="a"
@@ -145,7 +157,7 @@ export const NavbarMobileDrawer = ({
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
-                    color: 'white',
+                    color: drawerLinkColor,
                     textTransform: 'none',
                     py: 1.5,
                   }}
@@ -153,101 +165,19 @@ export const NavbarMobileDrawer = ({
                   Store
                 </Button>
               )}
-              {feedEnabled && (
+              {isAdmin ? (
                 <Button
                   component={RouterLink}
-                  to="/feed"
+                  to="/admin"
                   onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
-                    color: 'white',
+                    color: 'warning.main',
                     textTransform: 'none',
                     py: 1.5,
-                    ...(isFeedActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
                   }}
                 >
-                  Feed
-                </Button>
-              )}
-              {directoryEnabled && (
-                <Button
-                  component={RouterLink}
-                  to="/directory"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDirectoryActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
-                  }}
-                >
-                  Directory
-                </Button>
-              )}
-              {eventsEnabled && (
-                <Button
-                  component={RouterLink}
-                  to="/events"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isEventsActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
-                  }}
-                >
-                  Events
-                </Button>
-              )}
-              {dashboardEnabled && (
-                <Button
-                  component={RouterLink}
-                  to="/dashboard"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(isDashboardActive && {
-                      bgcolor: 'rgba(156,187,217,0.26)',
-                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                    }),
-                  }}
-                >
-                  Dashboard
-                </Button>
-              )}
-              {chatEnabled && memberSignedIn ? (
-                <Button
-                  component={RouterLink}
-                  to="/chat-full"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    ...(path === '/chat-full' || path.startsWith('/chat-full/')
-                      ? {
-                          bgcolor: 'rgba(156,187,217,0.26)',
-                          '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                        }
-                      : {}),
-                  }}
-                >
-                  Chat
+                  Admin
                 </Button>
               ) : null}
             </>
@@ -256,7 +186,6 @@ export const NavbarMobileDrawer = ({
 
         <NavbarMobileDrawerExplore
           showAuthedHeader={showAuthedHeader}
-          eventsEnabled={eventsEnabled}
           groupsEnabled={groupsEnabled}
           gamesEnabled={gamesEnabled}
           isGroupsActive={isGroupsActive}

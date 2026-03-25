@@ -212,8 +212,8 @@ test.describe('Dashboard portfolio showcase management', () => {
       name: 'Category',
     });
     await categoriesInput.click();
-    await categoriesInput.fill('Data');
-    await page.getByRole('option', { name: 'Data' }).click();
+    await categoriesInput.fill('Research');
+    await page.getByRole('option', { name: 'Research' }).click();
     await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
@@ -250,7 +250,7 @@ test.describe('Dashboard portfolio showcase management', () => {
       page.getByTestId('portfolio-highlights-carousel'),
     ).toContainText('Portfolio Launch');
     await expect(
-      page.getByTestId('portfolio-section-data').getByRole('button', {
+      page.getByTestId('portfolio-section-research').getByRole('button', {
         name: /portfolio launch/i,
       }),
     ).toBeVisible();
@@ -268,6 +268,6 @@ test.describe('Dashboard portfolio showcase management', () => {
     await expect(page.getByTestId('portfolio-highlights-carousel')).toHaveCount(
       0,
     );
-    await expect(page.getByTestId('portfolio-section-data')).toHaveCount(0);
+    await expect(page.getByTestId('portfolio-section-research')).toHaveCount(0);
   });
 });

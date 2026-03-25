@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
+import { mergeFullScreenDialogPaperSx } from '../../../lib/ui/fullScreenDialogSx';
 
 export interface ViewTagsSkillsDialogProps {
   open: boolean;
@@ -47,6 +48,9 @@ export const ViewTagsSkillsDialog = ({
       fullWidth
       fullScreen={fullScreen}
       aria-label="Tags & Skills"
+      PaperProps={{
+        sx: mergeFullScreenDialogPaperSx(fullScreen, {}),
+      }}
     >
       <Tooltip title="Close">
         <IconButton
@@ -59,7 +63,14 @@ export const ViewTagsSkillsDialog = ({
         </IconButton>
       </Tooltip>
       <DialogTitle sx={{ pr: 6, pb: 0.5 }}>Tags & Skills</DialogTitle>
-      <DialogContent sx={{ pt: 1.5 }}>
+      <DialogContent
+        sx={{
+          pt: 1.5,
+          pb: fullScreen
+            ? 'calc(12px + env(safe-area-inset-bottom, 0px))'
+            : undefined,
+        }}
+      >
         <Stack spacing={3}>
           {hasTags || hasSkills ? (
             <>

@@ -12,6 +12,7 @@ import { useChat, useReportMessage } from '../../../hooks/useChat';
 import { useChatPresence } from '../../../hooks/useChatPresence';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
+import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
 import { GLASS_CARD } from '../../../theme/candyStyles';
 
 const POPOVER_WIDTH = 460;
@@ -258,18 +259,7 @@ export const ChatPopover = ({
               sending={sending}
               roomType={room?.room_type ?? 'dm'}
               roomId={roomId}
-              groupMembers={
-                room?.room_type === 'group' && room.members
-                  ? room.members
-                      .filter((m) => m.profile)
-                      .map((m) => ({
-                        user_id: m.user_id,
-                        handle: m.profile!.handle,
-                        display_name: m.profile!.display_name,
-                        avatar: m.profile!.avatar,
-                      }))
-                  : undefined
-              }
+              groupMembers={roomMembersToMentionable(room)}
               currentUserId={session?.user?.id}
             />
           </Box>

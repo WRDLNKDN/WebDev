@@ -414,17 +414,40 @@ export const EditLinksDialog = ({
         maxWidth="sm"
         fullWidth
         aria-label="Manage Links"
+        slotProps={{
+          paper: {
+            sx: { overflow: 'hidden' },
+          },
+        }}
       >
-        <DialogTitle sx={{ pr: 6, fontWeight: 700 }}>Manage Links</DialogTitle>
-        <Tooltip title="Close">
-          <IconButton
-            aria-label="Close"
-            onClick={handleRequestClose}
-            sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Tooltip>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            pr: 1,
+            pl: 2,
+            py: 2,
+            fontWeight: 700,
+          }}
+        >
+          <Typography component="span" variant="h6" sx={{ fontWeight: 700 }}>
+            Manage Links
+          </Typography>
+          <Tooltip title="Close">
+            <IconButton
+              aria-label="Close"
+              onClick={handleRequestClose}
+              edge="end"
+              color="inherit"
+              size="small"
+              sx={{ flexShrink: 0 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        </DialogTitle>
         <DialogContent
           sx={{ pt: 2.5 }}
           onKeyDown={(event) => {
@@ -523,16 +546,18 @@ export const EditLinksDialog = ({
                         setNewPlatform(value?.value ?? '')
                       }
                       getOptionLabel={(option) => option.label}
-                      isOptionEqualToValue={(option, value) =>
-                        option.value === value.value
-                      }
+                      isOptionEqualToValue={(option, value) => {
+                        if (value == null) return false;
+                        return option.value === value.value;
+                      }}
                       groupBy={(option) => option.group}
                       autoHighlight
-                      selectOnFocus
                       clearOnBlur={false}
                       handleHomeEndKeys
-                      popupIcon={<InfoOutlinedIcon sx={{ opacity: 0 }} />}
                       slotProps={{
+                        popupIndicator: {
+                          sx: { color: 'rgba(156,187,217,0.82)' },
+                        },
                         paper: {
                           sx: {
                             mt: 0.75,
@@ -578,23 +603,26 @@ export const EditLinksDialog = ({
                           {params.children}
                         </Box>
                       )}
-                      renderOption={(props, option) => (
-                        <Box component="li" {...props} key={option.value}>
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                          >
-                            <LinkIcon
-                              platform={option.value}
-                              sx={{ width: 18, fontSize: '1rem' }}
-                            />
-                            <Typography variant="body2">
-                              {option.label}
-                            </Typography>
-                          </Stack>
-                        </Box>
-                      )}
+                      renderOption={(props, option) => {
+                        const { key, ...optionProps } = props;
+                        return (
+                          <Box component="li" key={key} {...optionProps}>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <LinkIcon
+                                platform={option.value}
+                                sx={{ width: 18, fontSize: '1rem' }}
+                              />
+                              <Typography variant="body2">
+                                {option.label}
+                              </Typography>
+                            </Stack>
+                          </Box>
+                        );
+                      }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -615,13 +643,13 @@ export const EditLinksDialog = ({
                             'aria-label': 'Platform',
                           }}
                           sx={{
-                            ...dialogSelectSx,
-                            '& .MuiInputBase-root': {
-                              ...dialogSelectSx,
-                              pr: 1,
-                            },
-                            '& .MuiAutocomplete-input': {
+                            /* dialogSelectSx hides the real <input> for Select ghosting — breaks Autocomplete */
+                            ...dialogTextFieldSx,
+                            '& .MuiOutlinedInput-input': {
                               py: '9px !important',
+                              px: 1.75,
+                              opacity: 1,
+                              pointerEvents: 'auto',
                             },
                           }}
                         />

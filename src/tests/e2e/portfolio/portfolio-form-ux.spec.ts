@@ -250,7 +250,7 @@ test.describe('Add Project dialog UX', () => {
 
     await dialog.getByLabel('Project Name').fill('No Description Project');
     await dialog.getByRole('combobox', { name: 'Category' }).click();
-    await page.getByRole('option', { name: 'Data' }).click();
+    await page.getByRole('option', { name: 'Research' }).click();
     await dialog
       .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/no-description-project');
@@ -264,7 +264,7 @@ test.describe('Add Project dialog UX', () => {
     expect(postedPortfolioPayloads[0]).toMatchObject({
       title: 'No Description Project',
       description: null,
-      tech_stack: ['Data'],
+      tech_stack: ['Research'],
     });
 
     await expect(page.getByText('No Description Project')).toBeVisible();

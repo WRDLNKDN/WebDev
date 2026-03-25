@@ -7,7 +7,12 @@ import {
   useTheme,
 } from '@mui/material';
 import { denseMenuPaperSxFromTheme } from '../../../lib/ui/formSurface';
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useReducer } from 'react';
+import {
+  computeMentionPanelLayout,
+  MENTION_PANEL_VIEWPORT_GUTTER,
+  readVisualViewportMetrics,
+} from '../../../lib/chat/mentionPanelLayout';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 
 export type MentionableUser = {
@@ -40,15 +45,16 @@ export const MentionAutocomplete = ({
   const isLight = theme.palette.mode === 'light';
   const listRef = useRef<HTMLUListElement>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [, bumpLayout] = useReducer((n: number) => n + 1, 0);
 
   const filteredUsers = useMemo(() => {
-    if (!query.trim()) return users;
+    const others = users.filter((u) => u.user_id !== currentUserId);
+    if (!query.trim()) return others;
     const lowerQuery = query.toLowerCase();
-    return users.filter(
+    return others.filter(
       (user) =>
-        user.user_id !== currentUserId &&
-        (user.handle?.toLowerCase().includes(lowerQuery) ||
-          user.display_name?.toLowerCase().includes(lowerQuery)),
+        user.handle.toLowerCase().includes(lowerQuery) ||
+        user.display_name?.toLowerCase().includes(lowerQuery),
     );
   }, [query, users, currentUserId]);
 
@@ -57,9 +63,16 @@ export const MentionAutocomplete = ({
   }, [filteredUsers.length, query]);
 
   useEffect(() => {
-    if (!open || !listRef.current) return;
+    if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (filteredUsers.length === 0) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+        return;
+      }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((prev) =>
@@ -92,11 +105,60 @@ export const MentionAutocomplete = ({
     }
   }, [selectedIndex]);
 
-  if (!open || !anchorEl || filteredUsers.length === 0) return null;
+  useEffect(() => {
+    if (!open || !anchorEl) return;
+    const bump = () => bumpLayout();
+    window.addEventListener('resize', bump);
+    window.addEventListener('scroll', bump, true);
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', bump);
+    vv?.addEventListener('scroll', bump);
+    return () => {
+      window.removeEventListener('resize', bump);
+      window.removeEventListener('scroll', bump, true);
+      vv?.removeEventListener('resize', bump);
+      vv?.removeEventListener('scroll', bump);
+    };
+  }, [open, anchorEl]);
 
-  const rect = anchorEl.getBoundingClientRect();
-  const maxHeight = 200;
-  const itemHeight = 48;
+  if (!open || !anchorEl) return null;
+
+  const layout = computeMentionPanelLayout(
+    anchorEl.getBoundingClientRect(),
+    readVisualViewportMetrics(),
+  );
+
+  if (users.length === 0) {
+    return (
+      <Paper
+        role="status"
+        aria-live="polite"
+        sx={{
+          position: 'fixed',
+          top: layout.top,
+          left: layout.left,
+          width: layout.width,
+          maxWidth: `calc(100vw - ${MENTION_PANEL_VIEWPORT_GUTTER * 2}px)`,
+          zIndex: (t) => t.zIndex.modal + 2,
+          borderRadius: 2,
+          p: 2,
+          ...denseMenuPaperSxFromTheme(theme),
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          No members with a handle are available to mention in this group.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  const maxHeight = layout.maxHeight;
+  const activeMentionUser = filteredUsers[selectedIndex];
+  const mentionActiveDescendantId = activeMentionUser
+    ? `mention-opt-${activeMentionUser.user_id}`
+    : undefined;
+  /** Slightly taller rows on phones for reliable taps. */
+  const itemHeight = 52;
   const maxVisible = Math.floor(maxHeight / itemHeight);
   const showScrollbar = filteredUsers.length > maxVisible;
 
@@ -104,13 +166,15 @@ export const MentionAutocomplete = ({
     <Paper
       sx={{
         position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: Math.max(280, rect.width),
+        top: layout.top,
+        left: layout.left,
+        width: layout.width,
+        maxWidth: `calc(100vw - ${MENTION_PANEL_VIEWPORT_GUTTER * 2}px)`,
         maxHeight,
         overflow: 'hidden',
-        zIndex: 1500,
+        zIndex: (t) => t.zIndex.modal + 2,
         borderRadius: 2,
+        WebkitOverflowScrolling: 'touch',
         ...denseMenuPaperSxFromTheme(theme),
         boxShadow: isLight
           ? theme.shadows[12]
@@ -119,21 +183,42 @@ export const MentionAutocomplete = ({
     >
       <List
         ref={listRef}
+        role="listbox"
+        aria-label="Members to mention"
+        aria-activedescendant={mentionActiveDescendantId}
         sx={{
           py: 0.5,
           maxHeight,
           overflowY: showScrollbar ? 'auto' : 'visible',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
+        {filteredUsers.length === 0 ? (
+          <Box role="status" aria-live="polite" sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              No matching members. Use @ and pick someone, or type their exact
+              handle.
+            </Typography>
+          </Box>
+        ) : null}
         {filteredUsers.map((user, index) => (
           <ListItemButton
             key={user.user_id}
+            id={`mention-opt-${user.user_id}`}
+            role="option"
+            aria-selected={index === selectedIndex}
             selected={index === selectedIndex}
+            onMouseDown={(e) => {
+              /* Keep focus on the composer so blur doesn’t cancel the tap (mobile + desktop). */
+              e.preventDefault();
+            }}
             onClick={() => onSelect(user)}
             onMouseEnter={() => setSelectedIndex(index)}
+            onTouchStart={() => setSelectedIndex(index)}
             sx={{
               py: 1,
               minHeight: itemHeight,
+              touchAction: 'manipulation',
               '&.Mui-selected': {
                 bgcolor: 'rgba(45, 212, 191, 0.2)',
                 '&:hover': {

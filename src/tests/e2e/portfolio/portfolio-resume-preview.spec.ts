@@ -1,7 +1,8 @@
+import { RESUME_PREVIEW_UNSUPPORTED_MESSAGE } from '../../../lib/portfolio/resumePreviewSupport';
 import { expect, test } from '../fixtures';
 
 test.describe('Portfolio resume preview modal', () => {
-  test('opens an in-app preview for resume artifacts and closes without navigation', async ({
+  test('shows unsupported preview fallback for Supabase resume documents and closes without navigation', async ({
     page,
   }) => {
     test.setTimeout(60_000);
@@ -51,17 +52,19 @@ test.describe('Portfolio resume preview modal', () => {
     await expect(previewDialog.getByText(resumeFileName)).toBeVisible();
     await expect(page).toHaveURL(/\/p\/resume-preview-token$/);
 
-    const previewFrame = page.getByTestId('portfolio-preview-frame');
-    await expect(previewFrame).toBeVisible();
-    await expect(previewFrame).toHaveAttribute(
-      'src',
-      new RegExp(
-        `^https://view\\.officeapps\\.live\\.com/op/embed\\.aspx\\?src=${encodeURIComponent(resumeUrl).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
-      ),
-    );
+    await expect(page.getByTestId('portfolio-preview-fallback')).toBeVisible();
+    await expect(
+      previewDialog.getByText(RESUME_PREVIEW_UNSUPPORTED_MESSAGE),
+    ).toBeVisible();
+    await expect(page.getByTestId('portfolio-preview-frame')).toHaveCount(0);
 
     await expect(
       previewDialog.getByRole('link', { name: 'Download artifact' }),
+    ).toHaveAttribute('href', resumeUrl);
+    await expect(
+      previewDialog
+        .getByTestId('portfolio-preview-fallback')
+        .getByRole('link', { name: 'Download' }),
     ).toHaveAttribute('href', resumeUrl);
 
     await page.keyboard.press('Escape');

@@ -5,7 +5,10 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['vitest.setup.ts'],
-    include: ['src/tests/**/*.{test,spec}.ts'],
+    include: [
+      'src/tests/**/*.{test,spec}.ts',
+      'src/tests/**/*.{test,spec}.tsx',
+    ],
     pool: 'forks',
     maxWorkers: 12,
     minWorkers: 1,

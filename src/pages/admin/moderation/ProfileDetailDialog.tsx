@@ -13,6 +13,10 @@ import {
 import { useTheme } from '@mui/material/styles';
 import type { ProfileRow } from '../core/adminApi';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
+import {
+  dialogActionsSafeAreaSx,
+  mergeFullScreenDialogPaperSx,
+} from '../../../lib/ui/fullScreenDialogSx';
 
 type Props = {
   open: boolean;
@@ -34,6 +38,9 @@ export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
       maxWidth="sm"
       fullWidth
       fullScreen={fullScreen}
+      PaperProps={{
+        sx: mergeFullScreenDialogPaperSx(fullScreen, {}),
+      }}
     >
       <DialogTitle sx={{ pr: 6 }}>Profile Details</DialogTitle>
       <DialogContent dividers>
@@ -125,7 +132,7 @@ export const ProfileDetailDialog = ({ open, profile, onClose }: Props) => {
           )}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={dialogActionsSafeAreaSx(fullScreen, { px: 3, pb: 2 })}>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>

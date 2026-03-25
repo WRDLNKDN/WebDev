@@ -7,8 +7,14 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
+import {
+  dialogActionsSafeAreaSx,
+  mergeFullScreenDialogPaperSx,
+} from '../../../lib/ui/fullScreenDialogSx';
 
 type BlockConfirmDialogProps = {
   open: boolean;
@@ -23,13 +29,23 @@ export const BlockConfirmDialog = ({
   onConfirm,
   displayName = 'this member',
 }: BlockConfirmDialogProps) => {
+  const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
+
   const handleConfirm = async () => {
     await onConfirm();
     onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullScreen={isSmDown}
+      PaperProps={{
+        sx: mergeFullScreenDialogPaperSx(isSmDown, {}),
+      }}
+    >
       <DialogTitle
         sx={{
           display: 'flex',
@@ -55,7 +71,7 @@ export const BlockConfirmDialog = ({
           future interactions. You can unblock later in Settings.
         </DialogContentText>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={dialogActionsSafeAreaSx(isSmDown)}>
         <Button onClick={onClose}>Cancel</Button>
         <Button
           onClick={() => void handleConfirm()}

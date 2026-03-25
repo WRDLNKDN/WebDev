@@ -77,6 +77,18 @@ describe('getNotificationLink', () => {
     ).toBe('/chat-full');
   });
 
+  it('returns /chat-full/room?message= for chat mention with message_id', () => {
+    expect(
+      getNotificationLink(
+        row({
+          type: 'mention',
+          reference_type: 'chat_message',
+          payload: { room_id: 'room-abc', message_id: 'msg-42' },
+        }),
+      ),
+    ).toBe('/chat-full/room-abc?message=msg-42');
+  });
+
   it('returns /chat-full when chat_message reference is deleted', () => {
     expect(
       getNotificationLink(

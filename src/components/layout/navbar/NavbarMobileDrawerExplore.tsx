@@ -1,6 +1,5 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
-import EventIcon from '@mui/icons-material/Event';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -15,7 +14,6 @@ import { Link as RouterLink, type Location } from 'react-router-dom';
 
 type NavbarMobileDrawerExploreProps = {
   showAuthedHeader: boolean;
-  eventsEnabled: boolean;
   groupsEnabled: boolean;
   gamesEnabled: boolean;
   isGroupsActive: boolean;
@@ -25,7 +23,6 @@ type NavbarMobileDrawerExploreProps = {
 
 export const NavbarMobileDrawerExplore = ({
   showAuthedHeader,
-  eventsEnabled,
   groupsEnabled,
   gamesEnabled,
   isGroupsActive,
@@ -64,22 +61,6 @@ export const NavbarMobileDrawerExplore = ({
       >
         Community
       </ListSubheader>
-      {eventsEnabled && (
-        <ListItemButton
-          component={RouterLink}
-          to="/events"
-          onClick={onNavigate}
-          sx={{ minHeight: 40, py: 0.5 }}
-        >
-          <ListItemIcon sx={{ minWidth: 36 }}>
-            <EventIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText
-            primary="Events"
-            primaryTypographyProps={{ variant: 'body2' }}
-          />
-        </ListItemButton>
-      )}
       {groupsEnabled && (
         <ListItemButton
           component={RouterLink}

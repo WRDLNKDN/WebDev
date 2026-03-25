@@ -19,6 +19,7 @@ import { useTheme } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import { dialogPaperSxFromTheme } from '../../../lib/ui/formSurface';
+import { mergeFullScreenDialogPaperSx } from '../../../lib/ui/fullScreenDialogSx';
 
 export type SettingsDialogProps = {
   open: boolean;
@@ -73,7 +74,12 @@ export const SettingsDialog = ({
       fullWidth
       fullScreen={fullScreen}
       aria-label="Settings"
-      PaperProps={{ sx: dialogPaperSxFromTheme(theme, { borderRadius: 3 }) }}
+      PaperProps={{
+        sx: mergeFullScreenDialogPaperSx(
+          fullScreen,
+          dialogPaperSxFromTheme(theme, { borderRadius: 3 }),
+        ),
+      }}
     >
       <Tooltip title="Close">
         <IconButton
@@ -91,7 +97,13 @@ export const SettingsDialog = ({
         </IconButton>
       </Tooltip>
       <DialogTitle sx={{ pr: 6, pb: 0.5 }}>Settings</DialogTitle>
-      <DialogContent sx={{ pt: 1.5, px: 0, pb: 0 }}>
+      <DialogContent
+        sx={{
+          pt: 1.5,
+          px: 0,
+          pb: fullScreen ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 0,
+        }}
+      >
         <Typography
           variant="body2"
           color="text.secondary"

@@ -73,6 +73,10 @@ import {
   FORM_SECTION_PANEL_SX,
   outlinedFieldSxFromTheme,
 } from '../../lib/ui/formSurface';
+import {
+  dialogActionsSafeAreaSx,
+  mergeFullScreenDialogPaperSx,
+} from '../../lib/ui/fullScreenDialogSx';
 
 const PAGE_SIZE = 25;
 const DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -161,6 +165,10 @@ export const Directory = () => {
             opacity: 1,
             fontSize: '0.875rem',
           },
+      /* 16px on xs avoids iOS Safari zoom-on-focus */
+      '& .MuiInputBase-input': {
+        fontSize: { xs: '1rem', sm: '0.875rem' },
+      },
     };
   }, [theme, isLight]);
 
@@ -779,7 +787,7 @@ export const Directory = () => {
         sx={{
           flex: 1,
           pt: 8,
-          pb: 8,
+          pb: 'calc(32px + env(safe-area-inset-bottom, 0px))',
           display: 'flex',
           justifyContent: 'center',
         }}
@@ -806,7 +814,10 @@ export const Directory = () => {
         minWidth: 0,
         overflowX: 'hidden',
         pt: { xs: 1.5, md: 3 },
-        pb: { xs: 4, md: 8 },
+        pb: {
+          xs: 'calc(32px + env(safe-area-inset-bottom, 0px))',
+          md: 8,
+        },
       }}
     >
       <Container
@@ -906,7 +917,10 @@ export const Directory = () => {
                       />
                     </InputAdornment>
                   ),
-                  inputProps: { maxLength: DIRECTORY_SEARCH_MAX_CHARS },
+                  inputProps: {
+                    maxLength: DIRECTORY_SEARCH_MAX_CHARS,
+                    spellCheck: false,
+                  },
                 }}
                 sx={directorySearchFieldSx}
               />
@@ -1737,6 +1751,10 @@ export const Directory = () => {
       <Dialog
         open={Boolean(disconnectTarget)}
         onClose={() => setDisconnectTarget(null)}
+        fullScreen={isMobileFilters}
+        PaperProps={{
+          sx: mergeFullScreenDialogPaperSx(isMobileFilters, {}),
+        }}
       >
         <DialogTitle
           sx={{
@@ -1764,7 +1782,7 @@ export const Directory = () => {
             This will remove your connection. You can reconnect later.
           </Typography>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={dialogActionsSafeAreaSx(isMobileFilters)}>
           <Button onClick={() => setDisconnectTarget(null)}>Cancel</Button>
           <Button
             color="error"

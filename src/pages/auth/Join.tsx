@@ -46,7 +46,7 @@ const BG_SX = {
   position: 'relative' as const,
   px: { xs: 1.5, sm: 2 },
   py: { xs: 1, sm: 1.5, md: 2 },
-  pb: 3,
+  pb: 'calc(24px + env(safe-area-inset-bottom, 0px))',
   WebkitOverflowScrolling: 'touch' as const, // iOS momentum scrolling
 };
 
@@ -65,6 +65,11 @@ const CARD_SX = {
   minWidth: 0,
   overflow: 'visible',
 };
+
+/** 16px inputs on narrow viewports reduce iOS Safari zoom-on-focus. */
+const JOIN_CARD_INPUT_MOBILE_SX = {
+  '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
+} as const;
 
 export const Join = () => {
   const navigate = useNavigate();
@@ -199,6 +204,7 @@ export const Join = () => {
         }
         sx={{
           ...CARD_SX,
+          ...JOIN_CARD_INPUT_MOBILE_SX,
           zIndex: 1,
           transition: 'max-width 0.4s ease',
         }}

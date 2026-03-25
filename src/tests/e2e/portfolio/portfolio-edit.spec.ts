@@ -216,8 +216,8 @@ test.describe('Portfolio artifact editing', () => {
       name: 'Category',
     });
     await categoriesInput.click();
-    await categoriesInput.fill('Data');
-    await page.getByRole('option', { name: 'Data' }).click();
+    await categoriesInput.fill('Research');
+    await page.getByRole('option', { name: 'Research' }).click();
     // Move focus out of the category control without closing the dialog.
     await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 
@@ -239,18 +239,18 @@ test.describe('Portfolio artifact editing', () => {
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Member')).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.getByTestId('portfolio-section-data').getByRole('button', {
+      page.getByTestId('portfolio-section-research').getByRole('button', {
         name: /updated artifact/i,
       }),
     ).toBeVisible();
     await expect(
       page
-        .getByTestId('portfolio-section-data')
+        .getByTestId('portfolio-section-research')
         .getByText('Updated dashboard artifact description.'),
     ).toBeVisible();
     await expect(
       page
-        .getByTestId('portfolio-section-data')
+        .getByTestId('portfolio-section-research')
         .locator('img[alt="Updated Artifact"]'),
     ).toBeVisible();
   });

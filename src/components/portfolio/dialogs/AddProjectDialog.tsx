@@ -51,6 +51,7 @@ import {
   FORM_SECTION_PANEL_SX,
   dialogPaperSxFromTheme,
 } from '../../../lib/ui/formSurface';
+import { mergeFullScreenDialogPaperSx } from '../../../lib/ui/fullScreenDialogSx';
 import { containsProfanity } from '../../../lib/utils/profanityFilter';
 import { normalizeUrlForDedup } from '../../../lib/utils/linkPlatform';
 import {
@@ -454,8 +455,9 @@ export const AddProjectDialog = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: {
-          ...dialogPaperSxFromTheme(theme, {
+        sx: mergeFullScreenDialogPaperSx(
+          fullScreen,
+          dialogPaperSxFromTheme(theme, {
             display: 'flex',
             flexDirection: 'column',
             width: { xs: '100%', md: 'min(980px, 96vw)' },
@@ -464,7 +466,7 @@ export const AddProjectDialog = ({
               md: 'min(920px, calc(100dvh - 32px))',
             },
           }),
-        },
+        ),
       }}
     >
       <Box
@@ -1031,7 +1033,10 @@ export const AddProjectDialog = ({
           sx={{
             flexShrink: 0,
             px: { xs: 2, md: 3 },
-            py: { xs: 1.5, md: 2 },
+            pt: { xs: 1.5, md: 2 },
+            pb: fullScreen
+              ? 'calc(12px + env(safe-area-inset-bottom, 0px))'
+              : { xs: 1.5, md: 2 },
             borderTop: '1px solid rgba(255,255,255,0.15)',
             bgcolor: 'rgba(10,14,24,0.94)',
             backdropFilter: 'blur(12px)',

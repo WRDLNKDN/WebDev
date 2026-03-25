@@ -105,7 +105,8 @@ export const InterestsDropdown = ({
           fontSize: '0.8125rem',
           borderColor: 'rgba(156,187,217,0.4)',
           color: 'text.secondary',
-          minHeight: 36,
+          minHeight: { xs: 44, sm: 36 },
+          py: { xs: 0.75, sm: 0.5 },
           '&:hover': {
             borderColor: 'rgba(156,187,217,0.6)',
             bgcolor: 'rgba(255,255,255,0.04)',
@@ -124,9 +125,9 @@ export const InterestsDropdown = ({
           paper: {
             sx: {
               mt: 1,
-              minWidth: Math.min(320, anchor?.offsetWidth ?? 320),
-              maxWidth: 400,
-              maxHeight: 360,
+              minWidth: Math.min(280, anchor?.offsetWidth ?? 280),
+              maxWidth: 'min(calc(100vw - 24px), 400px)',
+              maxHeight: 'min(360px, 70vh)',
               borderRadius: 2,
               ...denseMenuPaperSxFromTheme(theme),
             },

@@ -244,6 +244,7 @@ export const uploadResumeAsset = async ({
       ) {
         throw new Error(
           'Preview generation timed out. You can try again from the resume card.',
+          { cause: thumbnailError },
         );
       }
       const thumbMsg = toMessage(thumbnailError);

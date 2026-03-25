@@ -38,6 +38,10 @@ import type {
 import { EditProfileBasicSection } from './editProfileDialog/EditProfileBasicSection';
 import { sectionPanelSxFromTheme } from '../../lib/ui/formSurface';
 import {
+  dialogActionsSafeAreaSx,
+  mergeFullScreenDialogPaperSx,
+} from '../../lib/ui/fullScreenDialogSx';
+import {
   AVATAR_GRADIENT,
   BORDER_COLOR,
   getGlassModalSx,
@@ -108,6 +112,7 @@ export const EditProfileDialog = ({
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const unsavedFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bioInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const handleCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -444,7 +449,9 @@ export const EditProfileDialog = ({
         fullScreen={fullScreen}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: getGlassModalSx(theme) }}
+        PaperProps={{
+          sx: mergeFullScreenDialogPaperSx(fullScreen, getGlassModalSx(theme)),
+        }}
       >
         <DialogTitle
           sx={{
@@ -487,7 +494,15 @@ export const EditProfileDialog = ({
             </span>
           </Tooltip>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2, pb: 2, px: 3 }}>
+        <DialogContent
+          sx={{
+            pt: 2,
+            px: 3,
+            pb: fullScreen
+              ? 'calc(16px + env(safe-area-inset-bottom, 0px))'
+              : 2,
+          }}
+        >
           {busy && !uploadedAvatarUrl ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress sx={{ color: PURPLE_ACCENT }} />
@@ -594,8 +609,12 @@ export const EditProfileDialog = ({
       <Dialog
         open={unsavedConfirmOpen}
         onClose={() => setUnsavedConfirmOpen(false)}
+        fullScreen={unsavedFullScreen}
         aria-labelledby="edit-profile-unsaved-title"
         aria-describedby="edit-profile-unsaved-desc"
+        PaperProps={{
+          sx: mergeFullScreenDialogPaperSx(unsavedFullScreen, {}),
+        }}
       >
         <DialogTitle id="edit-profile-unsaved-title">
           Unsaved changes
@@ -605,7 +624,7 @@ export const EditProfileDialog = ({
             You have unsaved profile changes. Save before closing?
           </Typography>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={dialogActionsSafeAreaSx(unsavedFullScreen)}>
           <Button onClick={() => setUnsavedConfirmOpen(false)} color="inherit">
             Continue Editing
           </Button>

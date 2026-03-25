@@ -1,6 +1,5 @@
 import { Box, Container, Grid, Typography } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink } from 'react-router-dom';
 import { PortfolioFrame } from '../../../components/portfolio/layout/PortfolioFrame';
 import { PortfolioHighlightsCarousel } from '../../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../../components/portfolio/dialogs/PortfolioPreviewModal';
@@ -72,21 +71,6 @@ export const PublicProfileContent = ({
         sx={{ minHeight: '100vh', bgcolor: 'background.default', py: 3, px: 2 }}
       >
         <Container maxWidth="lg" disableGutters>
-          <Box sx={{ mb: 3, textAlign: 'center' }}>
-            <Typography
-              component={RouterLink}
-              to="/"
-              sx={{
-                color: 'text.secondary',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                '&:hover': { color: 'primary.main' },
-              }}
-            >
-              WRDLNKDN
-            </Typography>
-          </Box>
-
           <IdentityHeader
             layoutVariant="three-column"
             displayName={safeStr(profile.display_name)}

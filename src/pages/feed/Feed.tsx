@@ -3403,7 +3403,28 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                   alignItems={{ xs: 'stretch', sm: 'center' }}
                   spacing={{ xs: 1.25, sm: 2 }}
                 >
-                  <Typography component="h2" variant="h6" fontWeight={600}>
+                  <Typography
+                    component={RouterLink}
+                    to="/feed"
+                    variant="h6"
+                    fontWeight={600}
+                    sx={{
+                      color: 'text.primary',
+                      textDecoration: 'none',
+                      alignSelf: { sm: 'center' },
+                      borderRadius: 0.5,
+                      outlineOffset: 2,
+                      '&:hover': {
+                        color: 'primary.light',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 4,
+                      },
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                      },
+                    }}
+                  >
                     Feed
                   </Typography>
                   <ToggleButtonGroup
@@ -3716,16 +3737,19 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           </IconButton>
         </DialogTitle>
         <DialogContent
-          sx={{
+          sx={(theme) => ({
             px: { xs: 1.75, sm: 2.25 },
             pt: { xs: 2.25, sm: 2.75 },
-            pb: { xs: 1.4, sm: 1.6 },
+            pb: {
+              xs: `calc(${theme.spacing(1.4)} + env(safe-area-inset-bottom, 0px))`,
+              sm: 1.6,
+            },
             display: 'flex',
             flexDirection: 'column',
             gap: { xs: 1.5, sm: 1.75 },
             minHeight: { xs: 'auto', sm: 360 },
             overflowY: 'auto',
-          }}
+          })}
         >
           <Box
             sx={{
@@ -3749,11 +3773,12 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               value={composerValue}
               onChange={(e) => setComposerValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void handleSubmitPost();
+                /* Enter = newline only; submit via Post button (stopPropagation so Dialog/form never steals Enter). */
+                if (e.key === 'Enter') {
+                  e.stopPropagation();
                 }
               }}
+              inputProps={{ spellCheck: false }}
               fullWidth
               multiline
               minRows={5}
@@ -3945,6 +3970,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                 alignSelf: { xs: 'stretch', sm: 'center' },
                 width: { xs: '100%', sm: 'auto' },
                 minWidth: { sm: 112 },
+                minHeight: { xs: 44, sm: 'auto' },
                 boxShadow: '0 10px 24px rgba(56,132,210,0.24)',
                 '&:hover': { filter: 'brightness(1.08)' },
               }}
@@ -4005,7 +4031,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogContent sx={{ pt: 2, pb: { xs: 1, sm: 2 } }}>
           {scheduleDate && scheduleTime && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString(
@@ -4071,7 +4097,15 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             </TextField>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: isSmallScreen
+              ? 'calc(16px + env(safe-area-inset-bottom, 0px))'
+              : 2,
+            gap: 1,
+          }}
+        >
           <Button
             variant="outlined"
             onClick={() => setScheduleDialogOpen(false)}

@@ -33,21 +33,23 @@ import {
   APP_GLASS_SURFACE,
 } from '../../theme/candyStyles';
 
+/** Fills the layout main region; scroll lives on the glass card, not the page shell. */
 const BG_SX = {
   flex: 1,
   minHeight: 0,
-  maxHeight: '100%',
-  overflowY: 'auto',
+  width: '100%',
+  maxWidth: '100%',
+  overflow: 'hidden',
   overflowX: 'hidden',
   display: 'flex',
   flexDirection: 'column' as const,
-  justifyContent: 'flex-start',
-  alignItems: { xs: 'stretch', md: 'center' },
+  justifyContent: 'center',
+  alignItems: 'center',
   position: 'relative' as const,
-  px: { xs: 1.5, sm: 2 },
-  py: { xs: 1, sm: 1.5, md: 2 },
-  pb: 3,
-  WebkitOverflowScrolling: 'touch' as const, // iOS momentum scrolling
+  px: { xs: 1, sm: 1.5 },
+  py: { xs: 0.5, sm: 1 },
+  pb: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+  boxSizing: 'border-box' as const,
 };
 
 const CARD_SX = {
@@ -59,12 +61,21 @@ const CARD_SX = {
   bgcolor: APP_GLASS_SURFACE,
   backdropFilter: APP_GLASS_BACKDROP,
   boxShadow: APP_GLASS_SHADOW,
-  p: { xs: 1.5, sm: 2, md: 3 },
-  pb: { xs: 2.5, sm: 3, md: 3.5 },
+  p: { xs: 1.25, sm: 1.75, md: 2.5 },
+  pb: { xs: 1.5, sm: 2, md: 2.75 },
   color: '#FFFFFF',
   minWidth: 0,
-  overflow: 'visible',
+  maxHeight: '100%',
+  minHeight: 0,
+  overflowX: 'hidden',
+  overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch' as const,
 };
+
+/** 16px inputs on narrow viewports reduce iOS Safari zoom-on-focus. */
+const JOIN_CARD_INPUT_MOBILE_SX = {
+  '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
+} as const;
 
 export const Join = () => {
   const navigate = useNavigate();
@@ -199,12 +210,14 @@ export const Join = () => {
         }
         sx={{
           ...CARD_SX,
+          ...JOIN_CARD_INPUT_MOBILE_SX,
           zIndex: 1,
           transition: 'max-width 0.4s ease',
+          alignSelf: 'stretch',
         }}
       >
         {isFlowActive && (
-          <Box sx={{ mb: 1.5, width: '100%', minWidth: 0 }}>
+          <Box sx={{ mb: 1, width: '100%', minWidth: 0 }}>
             <JoinProgress
               currentStep={state.currentStep}
               completedSteps={state.completedSteps}

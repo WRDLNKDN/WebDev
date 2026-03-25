@@ -61,13 +61,19 @@ module.exports = [
         ecmaFeatures: { jsx: true },
       },
     },
+    // Explicit version: ESLint 10 removes context.getFilename(); "detect" breaks in flat config
+    // with eslint-plugin-react until the plugin catches up (see resolveBasedir in version.js).
     settings: {
-      react: { version: 'detect' },
+      react: { version: '19.2' },
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,
       ...reactPlugin.configs['jsx-runtime'].rules,
-      ...reactHooksPlugin.configs.recommended.rules,
+      // Do not spread reactHooksPlugin.configs.recommended: v7 bundles React Compiler
+      // rules (refs, set-state-in-effect, static-components, etc.) that flag most
+      // existing MUI/React patterns. Keep classic hooks lint only.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       ...jsxA11y.configs.recommended.rules,
 
       // Formatting Firewall

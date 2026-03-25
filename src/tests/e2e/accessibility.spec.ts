@@ -6,19 +6,27 @@ import { stubAppSurface } from './utils/stubAppSurface';
 
 async function analyzeRouteAccessibility(page: Page, selector: string) {
   const target = page.locator(selector);
+  await target.first().waitFor({ state: 'attached', timeout: 60_000 });
   const targetCount = await target.count();
 
-  const builder = new AxeBuilder({ page }).withTags([
-    'wcag2a',
-    'wcag2aa',
-    'wcag21aa',
-  ]);
+  const tags = ['wcag2a', 'wcag2aa', 'wcag21aa'] as const;
+
+  const builder = new AxeBuilder({ page }).withTags([...tags]);
 
   if (targetCount > 0) {
     builder.include(selector);
   }
 
-  return builder.analyze();
+  try {
+    return await builder.analyze();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    /* Axe occasionally throws when the include context disappears between count and scan (e.g. landing hero). */
+    if (targetCount > 0 && message.includes('No elements found for include')) {
+      return new AxeBuilder({ page }).withTags([...tags]).analyze();
+    }
+    throw error;
+  }
 }
 
 async function stubSettingsSurface(

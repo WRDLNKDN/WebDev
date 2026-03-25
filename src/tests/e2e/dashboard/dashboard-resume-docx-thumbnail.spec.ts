@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { fulfillPostgrest } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 const DOCX_FILE = {
@@ -16,16 +17,8 @@ const resumeOriginalPublicUrl = `https://example.supabase.co/storage/v1/object/p
 
 type ProfileRow = Record<string, unknown>;
 
-function fulfillProfilesGet(route: Route, row: ProfileRow) {
-  const accept = route.request().headers()['accept'] || '';
-  const wantsSingle = accept.includes('application/vnd.pgrst.object+json');
-  const body = wantsSingle ? row : [row];
-  return route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    headers: { 'content-range': '0-0/1' },
-    body: JSON.stringify(body),
-  });
+async function fulfillProfilesGet(route: Route, row: ProfileRow) {
+  await fulfillPostgrest(route, row);
 }
 
 function mergeProfilePatch(prev: ProfileRow, payload: ProfileRow): ProfileRow {

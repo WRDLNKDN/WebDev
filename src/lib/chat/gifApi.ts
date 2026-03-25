@@ -97,12 +97,13 @@ async function fetchGiphy(
       msg.includes('Failed to fetch') || msg.includes('NetworkError')
         ? 'GIF search failed. Check your connection or try again.'
         : `Could not load GIFs: ${msg}`,
+      { cause: e },
     );
   }
 
   const text = await res.text();
   if (!res.ok) {
-    let detail = '';
+    let detail: string;
     try {
       const body = JSON.parse(text) as {
         message?: string;

@@ -87,8 +87,9 @@ const getStoredSessionTokens = async (): Promise<{
  * **`coming_soon` on UAT or PROD:** Full **black** viewport during video (matte +
  * hero backdrop); headline and CTAs stay visible for the whole video (no delayed
  * fade-in). On end/skip, the video fades out, the shell crossfades to the Layout
- * grid, and the hero **compresses in the same window** so sections below (e.g.
- * What Makes This Different) move up without a tall dead zone. **UAT:** Join +
+ * grid, and the hero **compresses from the bottom** (copy stays high) so sections
+ * below (e.g. What Makes This Different) peek into view without a tall dead zone.
+ * **UAT:** Join +
  * Sign-in (GuestView). **PROD:** Same headline/tagline + purple **COMING SOON!!**
  * (no auth CTAs).
  */
@@ -402,8 +403,6 @@ export const Home = () => {
   const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
 
   const storageAuthHint = hasStoredAuthTokensSync();
-  const treatAsMemberMarketing =
-    Boolean(session) || (storageAuthHint && !authInitialCheckDone);
 
   return (
     <main
@@ -592,13 +591,10 @@ export const Home = () => {
           </div>
         )}
       </section>
-      {productionComingSoon ? null : (
-        <>
-          <WhatMakesDifferent />
-          <HowItWorks memberSignedIn={treatAsMemberMarketing} />
-          <SocialProof />
-        </>
-      )}
+      {/* Marketing sections: same on UAT and PROD (coming-soon still hides Join in hero only). */}
+      <WhatMakesDifferent />
+      <HowItWorks />
+      <SocialProof />
     </main>
   );
 };

@@ -121,7 +121,7 @@ test.describe('Share profile route', () => {
     });
     const fileNameTrigger = page.getByTestId('resume-file-name');
     await expect(fileNameTrigger).toContainText('Nicholas_Clark_Senior_');
-    await expect(fileNameTrigger).toHaveAttribute('title', resumeFileName);
+    await expect(fileNameTrigger).toHaveAttribute('aria-label', resumeFileName);
     await fileNameTrigger.hover();
     await expect(page.getByRole('tooltip')).toContainText(resumeFileName);
     await fileNameTrigger.focus();
@@ -168,6 +168,6 @@ test.describe('Share profile route', () => {
     });
     const fileNameTrigger = page.getByTestId('resume-file-name');
     await expect(fileNameTrigger).toHaveText('Resume.pdf');
-    await expect(fileNameTrigger).toHaveAttribute('title', 'Resume.pdf');
+    await expect(fileNameTrigger).toHaveAttribute('aria-label', 'Resume.pdf');
   });
 });

@@ -3,6 +3,7 @@ import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
 import { MessageInput } from '../../components/chat/message/MessageInput';
 import { MessageList } from '../../components/chat/message/MessageList';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
+import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { ChatPageEmptyState } from './ChatPageEmptyState';
 
 type ChatPageContentPaneProps = {
@@ -43,6 +44,8 @@ type ChatPageContentPaneProps = {
   onStopTyping: () => void;
   onStartDm: () => void;
   onCreateGroup: () => void;
+  /** Deep-link scroll target (e.g. from notification `?message=`). */
+  scrollToMessageId?: string | null;
 };
 
 export const ChatPageContentPane = ({
@@ -78,6 +81,7 @@ export const ChatPageContentPane = ({
   onStopTyping,
   onStartDm,
   onCreateGroup,
+  scrollToMessageId = null,
 }: ChatPageContentPaneProps) => (
   <Box
     sx={{
@@ -161,6 +165,7 @@ export const ChatPageContentPane = ({
                 typingUsers.has(otherMember.user_id)
               )
             }
+            scrollToMessageId={scrollToMessageId}
           />
         )}
 
@@ -171,6 +176,9 @@ export const ChatPageContentPane = ({
           disabled={chatLoading}
           sending={sending}
           roomId={roomId ?? null}
+          roomType={room?.room_type ?? 'dm'}
+          groupMembers={roomMembersToMentionable(room)}
+          currentUserId={uid}
         />
       </>
     ) : (

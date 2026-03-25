@@ -19,11 +19,11 @@ test.describe('Portfolio categories on public profile', () => {
       portfolio: [
         {
           id: 'project-2',
-          title: 'Data Artifact',
-          description: 'Categorized under data.',
-          project_url: 'https://example.com/data-case-study.pdf',
+          title: 'Research Artifact',
+          description: 'Categorized under research.',
+          project_url: 'https://example.com/research-artifact.pdf',
           image_url: null,
-          tech_stack: ['Data'],
+          tech_stack: ['Research'],
           sort_order: 0,
           normalized_url: 'https://example.com/data-case-study.pdf',
           embed_url: null,
@@ -76,14 +76,14 @@ test.describe('Portfolio categories on public profile', () => {
         nodes.map((node) => node.getAttribute('data-testid')),
       );
     expect(sectionOrder.slice(0, 2)).toEqual([
-      'portfolio-section-data',
+      'portfolio-section-research',
       'portfolio-section-case-study',
     ]);
 
     await expect(
       page.getByTestId('portfolio-section-case-study'),
     ).toBeVisible();
-    await expect(page.getByTestId('portfolio-section-data')).toBeVisible();
+    await expect(page.getByTestId('portfolio-section-research')).toBeVisible();
     await expect(
       page
         .getByTestId('portfolio-section-case-study')
@@ -91,8 +91,8 @@ test.describe('Portfolio categories on public profile', () => {
     ).toBeVisible();
     await expect(
       page
-        .getByTestId('portfolio-section-data')
-        .getByRole('button', { name: /data artifact/i }),
+        .getByTestId('portfolio-section-research')
+        .getByRole('button', { name: /research artifact/i }),
     ).toBeVisible();
 
     await page

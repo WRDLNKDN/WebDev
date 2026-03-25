@@ -36,7 +36,7 @@ export const PublicProfilePage = () => {
 
     const load = async () => {
       const trimmedToken = shareToken.trim();
-      let payload: PublicProfilePayload | null = null;
+      let payload: PublicProfilePayload | null;
       let error: { message?: string } | null = null;
 
       if (trimmedToken.startsWith('h~')) {

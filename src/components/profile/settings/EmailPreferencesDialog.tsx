@@ -20,6 +20,10 @@ import { useTheme } from '@mui/material/styles';
 import { useAppToast } from '../../../context/AppToastContext';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import { dialogPaperSxFromTheme } from '../../../lib/ui/formSurface';
+import {
+  dialogActionsSafeAreaSx,
+  mergeFullScreenDialogPaperSx,
+} from '../../../lib/ui/fullScreenDialogSx';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { toMessage } from '../../../lib/utils/errors';
 
@@ -148,7 +152,12 @@ export const EmailPreferencesDialog = ({
       fullWidth
       fullScreen={fullScreen}
       aria-label="Email preferences"
-      PaperProps={{ sx: dialogPaperSxFromTheme(theme, { borderRadius: 3 }) }}
+      PaperProps={{
+        sx: mergeFullScreenDialogPaperSx(
+          fullScreen,
+          dialogPaperSxFromTheme(theme, { borderRadius: 3 }),
+        ),
+      }}
     >
       <Tooltip title="Close">
         <IconButton
@@ -261,7 +270,13 @@ export const EmailPreferencesDialog = ({
           </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2, pt: 1.5 }}>
+      <DialogActions
+        sx={dialogActionsSafeAreaSx(fullScreen, {
+          px: 3,
+          pb: 2,
+          pt: 1.5,
+        })}
+      >
         <Typography
           variant="caption"
           color="text.secondary"

@@ -82,11 +82,23 @@ export const MessageContent = ({ content }: MessageContentProps) => {
               component={RouterLink}
               to={`/p/h~${encodeURIComponent(mentionPart.handle)}`}
               sx={{
-                color: '#2dd4bf',
+                display: 'inline-block',
+                color: '#5eead4',
                 textDecoration: 'none',
-                fontWeight: 500,
+                fontWeight: 600,
+                px: { xs: 0.75, sm: 0.5 },
+                py: { xs: 0.25, sm: 0.125 },
+                mx: 0.125,
+                borderRadius: 1,
+                bgcolor: 'rgba(45, 212, 191, 0.14)',
+                border: '1px solid rgba(45, 212, 191, 0.35)',
+                verticalAlign: 'baseline',
+                lineHeight: 1.45,
+                WebkitTapHighlightColor: 'rgba(45, 212, 191, 0.25)',
                 '&:hover': {
-                  textDecoration: 'underline',
+                  textDecoration: 'none',
+                  bgcolor: 'rgba(45, 212, 191, 0.22)',
+                  borderColor: 'rgba(45, 212, 191, 0.5)',
                 },
               }}
             >

@@ -7,11 +7,11 @@ const CHAT_REDIRECT_TSX = readFileSync(
 );
 
 describe('chat redirect stability governance', () => {
-  it('uses generation guard so stale async redirect work cannot beat newer runs', () => {
+  it('uses run-generation guard so stale async redirect work does not apply after a newer run', () => {
     expect(CHAT_REDIRECT_TSX).toContain('redirectRunGenRef');
     expect(CHAT_REDIRECT_TSX).toContain('redirectTargetKey');
     expect(CHAT_REDIRECT_TSX).toContain('stillValid');
-    expect(CHAT_REDIRECT_TSX).toContain('redirectRunGenRef.current');
+    expect(CHAT_REDIRECT_TSX).toContain('myGen === redirectRunGenRef.current');
   });
 
   it('opens overlay deterministically instead of toggling in redirect flow', () => {

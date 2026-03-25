@@ -211,7 +211,7 @@ export const JoinProvider = ({ children }: { children: React.ReactNode }) => {
       }
       if (profile.display_name?.trim()) completedSteps.push('profile');
 
-      let currentStep: JoinStep = 'welcome';
+      let currentStep: JoinStep;
       if (
         (profile.join_reason?.length ?? 0) === 0 ||
         (profile.participation_style?.length ?? 0) === 0

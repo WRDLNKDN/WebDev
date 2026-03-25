@@ -1,15 +1,8 @@
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import EventIcon from '@mui/icons-material/Event';
-import ForumIcon from '@mui/icons-material/Forum';
-import GavelIcon from '@mui/icons-material/Gavel';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {
   AppBar,
   Backdrop,
@@ -18,14 +11,10 @@ import {
   Button,
   CircularProgress,
   Divider,
-  Drawer,
   IconButton,
   InputBase,
-  List,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListSubheader,
   Menu,
   MenuItem,
   Paper,
@@ -38,7 +27,6 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
@@ -49,13 +37,15 @@ import {
   useFeatureFlag,
   useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
-import { GROUPS_FLAG } from '../../lib/featureFlags/keys';
+import { EVENTS_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
-import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
+import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
+import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
+import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
 import {
   GODADDY_STOREFRONT_URL,
   getStoreExternalUrl,
@@ -82,13 +72,10 @@ export const Navbar = () => {
   const location = useLocation();
   const path = location.pathname;
   const forcePublicHeader = path.startsWith('/join');
-  const isFeedActive = path === '/feed';
   const isJoinActive = path.startsWith('/join');
   const productionComingSoon = useProductionComingSoonMode();
-  const isDirectoryActive =
-    path === '/directory' || path.startsWith('/directory');
   const isAdminActive = path.startsWith('/admin');
-  const eventsEnabled = useFeatureFlag('events');
+  const eventsEnabled = useFeatureFlag(EVENTS_FLAG);
   const directoryEnabled = useFeatureFlag('directory');
   const storeEnabled = useFeatureFlag('store');
   const chatEnabled = useFeatureFlag('chat');
@@ -96,9 +83,6 @@ export const Navbar = () => {
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
-  const isDashboardActive =
-    path === '/dashboard' || path.startsWith('/dashboard/');
-
   const [storeHref, setStoreHref] = useState(GODADDY_STOREFRONT_URL);
 
   const [session, setSession] = useState<Session | null>(null);
@@ -124,31 +108,13 @@ export const Navbar = () => {
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
   const isLightNav = theme.palette.mode === 'light';
-  const drawerPaperSx = {
-    width: 280,
-    bgcolor: isLightNav
-      ? theme.palette.background.paper
-      : 'rgba(18, 18, 18, 0.98)',
-    borderRight: isLightNav
-      ? `1px solid ${theme.palette.divider}`
-      : '1px solid rgba(156,187,217,0.18)',
-  };
-  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
-  const drawerActiveNavSx = isLightNav
-    ? {
-        bgcolor: alpha(theme.palette.primary.main, 0.12),
-        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
-      }
-    : {
-        bgcolor: 'rgba(156,187,217,0.26)',
-        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-      };
+  const { drawerPaperSx, drawerLinkColor, drawerActiveNavSx } =
+    getNavbarDrawerChrome(theme);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();
   const notificationsUnread = useNotificationsUnread();
   const { showToast } = useAppToast();
-  const isEventsActive = path === '/events' || path.startsWith('/events/');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const isHomePath = path === '/' || path === '/home';
   /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
@@ -484,7 +450,8 @@ export const Navbar = () => {
         elevation={0}
         sx={(theme) => ({
           ...getNavbarGlass(theme),
-          zIndex: 1100,
+          /* Above messenger FAB (1200) so header taps aren’t eaten on narrow viewports */
+          zIndex: 1250,
           isolation: 'isolate',
         })}
       >
@@ -800,85 +767,21 @@ export const Navbar = () => {
               )}
           </Stack>
 
-          {/* Desktop nav links: Dashboard, Directory, Events, Feed, Store (Admin is in avatar menu) */}
+          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store + Admin */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
-              {showAuthedHeader && (
-                <>
-                  {dashboardEnabled && (
-                    <Button
-                      component={RouterLink}
-                      to="/dashboard"
-                      sx={{
-                        color: 'rgba(255,255,255,0.85)',
-                        textTransform: 'none',
-                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                        px: isCompactDesktop ? 1 : 1.5,
-                        ...(isDashboardActive && {
-                          color: 'white',
-                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                        }),
-                      }}
-                    >
-                      Dashboard
-                    </Button>
-                  )}
-                  {directoryEnabled && (
-                    <Button
-                      component={RouterLink}
-                      to="/directory"
-                      sx={{
-                        color: 'rgba(255,255,255,0.85)',
-                        textTransform: 'none',
-                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                        px: isCompactDesktop ? 1 : 1.5,
-                        ...(isDirectoryActive && {
-                          color: 'white',
-                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                        }),
-                      }}
-                    >
-                      Directory
-                    </Button>
-                  )}
-                  {eventsEnabled && (
-                    <Button
-                      component={RouterLink}
-                      to="/events"
-                      sx={{
-                        color: 'rgba(255,255,255,0.85)',
-                        textTransform: 'none',
-                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                        px: isCompactDesktop ? 1 : 1.5,
-                        ...(isEventsActive && {
-                          color: 'white',
-                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                        }),
-                      }}
-                    >
-                      Events
-                    </Button>
-                  )}
-                  {feedEnabled && (
-                    <Button
-                      component={RouterLink}
-                      to="/feed"
-                      sx={{
-                        color: 'rgba(255,255,255,0.85)',
-                        textTransform: 'none',
-                        fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                        px: isCompactDesktop ? 1 : 1.5,
-                        ...(isFeedActive && {
-                          color: 'white',
-                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                        }),
-                      }}
-                    >
-                      Feed
-                    </Button>
-                  )}
-                </>
-              )}
+              <GlobalNavAuthenticatedPrimary
+                variant="desktop"
+                path={path}
+                showAuthedHeader={showAuthedHeader}
+                feedEnabled={feedEnabled}
+                directoryEnabled={directoryEnabled}
+                chatEnabled={chatEnabled}
+                dashboardEnabled={dashboardEnabled}
+                eventsEnabled={eventsEnabled}
+                sessionUserId={session?.user?.id}
+                isCompactDesktop={isCompactDesktop}
+              />
               {storeEnabled && (
                 <Button
                   component="a"
@@ -896,6 +799,20 @@ export const Navbar = () => {
                   Store
                 </Button>
               )}
+              {isAdmin ? (
+                <Button
+                  component={RouterLink}
+                  to="/admin"
+                  sx={{
+                    color: 'warning.main',
+                    textTransform: 'none',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    px: isCompactDesktop ? 1 : 1.5,
+                  }}
+                >
+                  Admin
+                </Button>
+              ) : null}
             </Box>
           )}
 
@@ -998,44 +915,63 @@ export const Navbar = () => {
                   {/* Hide avatar completely in coming soon mode unless on admin route */}
                   {(!productionComingSoon || isAdminActive) && (
                     <Tooltip title="Account menu" disableInteractive>
-                      <IconButton
-                        type="button"
-                        disableRipple
-                        onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                        aria-label="Account menu"
-                        aria-haspopup="true"
-                        aria-expanded={Boolean(avatarMenuAnchor)}
+                      {/* Span wrapper: reliable ref + clicks with MUI Tooltip + IconButton */}
+                      <Box
+                        component="span"
                         sx={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 0.5,
-                          px: 0.75,
-                          py: 0.5,
-                          minWidth: 0,
-                          width: 'auto',
-                          height: 'auto',
-                          color: 'inherit',
-                          bgcolor: 'transparent',
-                          borderRadius: 2,
-                          '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                          lineHeight: 0,
                         }}
                       >
-                        <ProfileAvatar
-                          src={avatarUrl ?? undefined}
-                          alt={
-                            session?.user?.user_metadata?.full_name || 'User'
-                          }
-                          size="small"
-                          sx={{ width: 28, height: 28, flexShrink: 0 }}
-                        />
-                        <KeyboardArrowDownIcon
-                          sx={{
-                            fontSize: 16,
-                            color: 'rgba(255,255,255,0.8)',
-                            flexShrink: 0,
+                        <IconButton
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAvatarMenuAnchor(e.currentTarget);
                           }}
-                        />
-                      </IconButton>
+                          aria-label="Account menu"
+                          aria-haspopup="true"
+                          aria-expanded={Boolean(avatarMenuAnchor)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.25,
+                            p: 0.25,
+                            color: 'inherit',
+                            borderRadius: 9999,
+                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '50%',
+                              border: '2px solid rgba(255,255,255,0.4)',
+                              p: '1px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ProfileAvatar
+                              src={avatarUrl ?? undefined}
+                              alt={
+                                session?.user?.user_metadata?.full_name ||
+                                'User'
+                              }
+                              size="small"
+                              sx={{ width: 24, height: 24 }}
+                            />
+                          </Box>
+                          <KeyboardArrowDownIcon
+                            sx={{
+                              fontSize: 16,
+                              color: 'rgba(255,255,255,0.8)',
+                            }}
+                          />
+                        </IconButton>
+                      </Box>
                     </Tooltip>
                   )}
                 </>
@@ -1162,44 +1098,62 @@ export const Navbar = () => {
                         </Tooltip>
                       )}
                       <Tooltip title="Account menu" disableInteractive>
-                        <IconButton
-                          type="button"
-                          disableRipple
-                          onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-                          aria-label="Account menu"
-                          aria-haspopup="true"
-                          aria-expanded={Boolean(avatarMenuAnchor)}
+                        <Box
+                          component="span"
                           sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 0.5,
-                            px: 0.75,
-                            py: 0.5,
-                            minWidth: 0,
-                            width: 'auto',
-                            height: 'auto',
-                            color: 'inherit',
-                            bgcolor: 'transparent',
-                            borderRadius: 2,
-                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                            lineHeight: 0,
                           }}
                         >
-                          <ProfileAvatar
-                            src={avatarUrl ?? undefined}
-                            alt={
-                              session?.user?.user_metadata?.full_name || 'User'
-                            }
-                            size="small"
-                            sx={{ width: 28, height: 28, flexShrink: 0 }}
-                          />
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: 16,
-                              color: 'rgba(255,255,255,0.8)',
-                              flexShrink: 0,
+                          <IconButton
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAvatarMenuAnchor(e.currentTarget);
                             }}
-                          />
-                        </IconButton>
+                            aria-label="Account menu"
+                            aria-haspopup="true"
+                            aria-expanded={Boolean(avatarMenuAnchor)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.25,
+                              p: 0.25,
+                              color: 'inherit',
+                              borderRadius: 9999,
+                              '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '50%',
+                                border: '2px solid rgba(255,255,255,0.4)',
+                                p: '1px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <ProfileAvatar
+                                src={avatarUrl ?? undefined}
+                                alt={
+                                  session?.user?.user_metadata?.full_name ||
+                                  'User'
+                                }
+                                size="small"
+                                sx={{ width: 24, height: 24 }}
+                              />
+                            </Box>
+                            <KeyboardArrowDownIcon
+                              sx={{
+                                fontSize: 16,
+                                color: 'rgba(255,255,255,0.8)',
+                              }}
+                            />
+                          </IconButton>
+                        </Box>
                       </Tooltip>
                     </>
                   )}
@@ -1213,6 +1167,7 @@ export const Navbar = () => {
             anchorEl={avatarMenuAnchor}
             open={Boolean(avatarMenuAnchor)}
             onClose={() => setAvatarMenuAnchor(null)}
+            disableScrollLock
             anchorOrigin={{
               vertical: 'bottom',
               horizontal: 'right',
@@ -1236,11 +1191,10 @@ export const Navbar = () => {
           >
             {dashboardEnabled && (
               <MenuItem
-                component={RouterLink}
-                to="/dashboard"
                 onClick={() => {
                   setAvatarMenuAnchor(null);
                   setDrawerOpen(false);
+                  navigate('/dashboard');
                 }}
                 sx={{ py: 1.25 }}
               >
@@ -1249,11 +1203,10 @@ export const Navbar = () => {
             )}
             {dashboardEnabled && (
               <MenuItem
-                component={RouterLink}
-                to="/dashboard/settings"
                 onClick={() => {
                   setAvatarMenuAnchor(null);
                   setDrawerOpen(false);
+                  navigate('/dashboard/settings');
                 }}
                 sx={{ py: 1.25 }}
               >
@@ -1262,11 +1215,10 @@ export const Navbar = () => {
             )}
             {isAdmin && (
               <MenuItem
-                component={RouterLink}
-                to="/admin"
                 onClick={() => {
                   setAvatarMenuAnchor(null);
                   setDrawerOpen(false);
+                  navigate('/admin');
                 }}
                 sx={{ py: 1.25, color: 'warning.main' }}
               >
@@ -1289,453 +1241,31 @@ export const Navbar = () => {
         ) : null}
       </AppBar>
 
-      {/* Mobile drawer */}
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: drawerPaperSx,
-        }}
-      >
-        <Box sx={{ py: 2, overflow: 'auto' }}>
-          <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-            {!session && (
-              <>
-                {(!productionComingSoon || isAdminActive) && (
-                  <>
-                    {!isJoinActive && (
-                      <Button
-                        component={RouterLink}
-                        to="/join"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                          justifyContent: 'flex-start',
-                          color: drawerLinkColor,
-                          textTransform: 'none',
-                          fontWeight: 600,
-                          py: 1.5,
-                          minHeight: 44,
-                          touchAction: 'manipulation',
-                        }}
-                      >
-                        Join
-                      </Button>
-                    )}
-                    <Button
-                      component={RouterLink}
-                      to="/signin"
-                      onClick={() => setDrawerOpen(false)}
-                      sx={{
-                        justifyContent: 'flex-start',
-                        color: drawerLinkColor,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.5,
-                        minHeight: 44,
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      Sign in
-                    </Button>
-                  </>
-                )}
-                {storeEnabled && (
-                  <Button
-                    component="a"
-                    href={storeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Store
-                  </Button>
-                )}
-              </>
-            )}
-            {showAuthedHeader && (
-              <>
-                {dashboardEnabled && (
-                  <Button
-                    component={RouterLink}
-                    to="/dashboard"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      ...(isDashboardActive ? drawerActiveNavSx : {}),
-                    }}
-                  >
-                    Dashboard
-                  </Button>
-                )}
-                {directoryEnabled && (
-                  <Button
-                    component={RouterLink}
-                    to="/directory"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      ...(isDirectoryActive ? drawerActiveNavSx : {}),
-                    }}
-                  >
-                    Directory
-                  </Button>
-                )}
-                {eventsEnabled && (
-                  <Button
-                    component={RouterLink}
-                    to="/events"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      ...(isEventsActive ? drawerActiveNavSx : {}),
-                    }}
-                  >
-                    Events
-                  </Button>
-                )}
-                {feedEnabled && (
-                  <Button
-                    component={RouterLink}
-                    to="/feed"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      ...(isFeedActive ? drawerActiveNavSx : {}),
-                    }}
-                  >
-                    Feed
-                  </Button>
-                )}
-                {storeEnabled && (
-                  <Button
-                    component="a"
-                    href={storeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Store
-                  </Button>
-                )}
-                {chatUiForMember(chatEnabled, session?.user?.id) ? (
-                  <Button
-                    component={RouterLink}
-                    to="/chat-full"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      ...(path === '/chat-full' ||
-                      path.startsWith('/chat-full/')
-                        ? drawerActiveNavSx
-                        : {}),
-                    }}
-                  >
-                    Chat
-                  </Button>
-                ) : null}
-              </>
-            )}
-          </Stack>
-
-          {/* Explore: sub-menus (matches Feed sidebar) */}
-          {showAuthedHeader && (
-            <List dense disablePadding sx={{ py: 0 }}>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  letterSpacing: 1,
-                  pt: 2,
-                  pb: 0.5,
-                  px: 2,
-                }}
-              >
-                Explore
-              </ListSubheader>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                }}
-              >
-                Community
-              </ListSubheader>
-              {eventsEnabled && (
-                <ListItemButton
-                  component={RouterLink}
-                  to="/events"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{ minHeight: 40, py: 0.5 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <EventIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Events"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItemButton>
-              )}
-              {groupsEnabled && (
-                <ListItemButton
-                  component={RouterLink}
-                  to="/groups"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    minHeight: 40,
-                    py: 0.5,
-                    ...(isGroupsActive ? drawerActiveNavSx : {}),
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <ForumIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Groups"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItemButton>
-              )}
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Your stuff
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/saved"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <BookmarkBorderIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Saved"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Platform
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/advertise"
-                state={{ backgroundLocation: location }}
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <CampaignIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Advertise"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-              {gamesEnabled && (
-                <>
-                  <ListSubheader
-                    component="div"
-                    sx={{
-                      bgcolor: 'transparent',
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                      py: 0.5,
-                      px: 2,
-                      pt: 1.5,
-                    }}
-                  >
-                    Games
-                  </ListSubheader>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/dashboard/games"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{ minHeight: 40, py: 0.5 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <SportsEsportsIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="All games"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                  {[
-                    { to: '/dashboard/games', label: 'Phuzzle' },
-                    { to: '/dashboard/games/hangman', label: 'Hangman' },
-                    { to: '/dashboard/games/snake', label: 'Snake' },
-                    { to: '/dashboard/games/slots', label: 'Slots' },
-                    { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
-                    { to: '/dashboard/games', label: 'Connect 4' },
-                    { to: '/dashboard/games', label: 'Checkers' },
-                  ].map(({ to, label }) => (
-                    <ListItemButton
-                      key={label}
-                      component={RouterLink}
-                      to={to}
-                      onClick={() => setDrawerOpen(false)}
-                      sx={{ minHeight: 36, py: 0.5, pl: 4 }}
-                    >
-                      <ListItemText
-                        primary={label}
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  ))}
-                </>
-              )}
-              <ListSubheader
-                component="div"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  py: 0.5,
-                  px: 2,
-                  pt: 1.5,
-                }}
-              >
-                Support
-              </ListSubheader>
-              <ListItemButton
-                component={RouterLink}
-                to="/help"
-                onClick={() => setDrawerOpen(false)}
-                sx={{ minHeight: 40, py: 0.5 }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <HelpOutlineIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Help"
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItemButton>
-            </List>
-          )}
-
-          {/* Legal (always visible in drawer for all users) */}
-          <List dense disablePadding sx={{ py: 0 }}>
-            <ListSubheader
-              component="div"
-              sx={{
-                bgcolor: 'transparent',
-                color: 'text.secondary',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                py: 0.5,
-                px: 2,
-                pt: 2,
-                pb: 0.5,
-              }}
-            >
-              Legal
-            </ListSubheader>
-            <ListItemButton
-              component={RouterLink}
-              to="/terms"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Terms of Service"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-            <ListItemButton
-              component={RouterLink}
-              to="/privacy"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Privacy Policy"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-            <ListItemButton
-              component={RouterLink}
-              to="/guidelines"
-              onClick={() => setDrawerOpen(false)}
-              sx={{ minHeight: 40, py: 0.5 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <GavelIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Community Guidelines"
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </ListItemButton>
-          </List>
-        </Box>
-      </Drawer>
+      <NavbarMobileDrawer
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+        isAdmin={isAdmin}
+        showAuthedHeader={showAuthedHeader}
+        session={session}
+        productionComingSoon={productionComingSoon}
+        isAdminActive={isAdminActive}
+        isJoinActive={isJoinActive}
+        dashboardEnabled={dashboardEnabled}
+        directoryEnabled={directoryEnabled}
+        eventsEnabled={eventsEnabled}
+        groupsEnabled={groupsEnabled}
+        feedEnabled={feedEnabled}
+        storeEnabled={storeEnabled}
+        chatEnabled={chatEnabled}
+        gamesEnabled={gamesEnabled}
+        isGroupsActive={isGroupsActive}
+        path={path}
+        storeUrl={storeHref}
+        location={location}
+        drawerPaperSx={drawerPaperSx}
+        drawerLinkColor={drawerLinkColor}
+        drawerActiveNavSx={drawerActiveNavSx}
+      />
       <Backdrop
         open={joinLoading}
         sx={{

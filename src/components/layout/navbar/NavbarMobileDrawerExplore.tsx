@@ -1,6 +1,5 @@
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import CampaignIcon from '@mui/icons-material/Campaign';
-import EventIcon from '@mui/icons-material/Event';
 import ForumIcon from '@mui/icons-material/Forum';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
@@ -11,26 +10,33 @@ import {
   ListItemText,
   ListSubheader,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { Link as RouterLink, type Location } from 'react-router-dom';
 
 type NavbarMobileDrawerExploreProps = {
   showAuthedHeader: boolean;
-  eventsEnabled: boolean;
   groupsEnabled: boolean;
   gamesEnabled: boolean;
   isGroupsActive: boolean;
   location: Location;
   onNavigate: () => void;
+  /** When set (e.g. from `getNavbarDrawerChrome`), used for active Groups row; else dark-theme fallback. */
+  drawerActiveNavSx?: SxProps<Theme>;
 };
+
+const groupsActiveFallbackSx = {
+  bgcolor: 'rgba(156,187,217,0.26)',
+  '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+} as const;
 
 export const NavbarMobileDrawerExplore = ({
   showAuthedHeader,
-  eventsEnabled,
   groupsEnabled,
   gamesEnabled,
   isGroupsActive,
   location,
   onNavigate,
+  drawerActiveNavSx,
 }: NavbarMobileDrawerExploreProps) => {
   if (!showAuthedHeader) return null;
 
@@ -64,22 +70,6 @@ export const NavbarMobileDrawerExplore = ({
       >
         Community
       </ListSubheader>
-      {eventsEnabled && (
-        <ListItemButton
-          component={RouterLink}
-          to="/events"
-          onClick={onNavigate}
-          sx={{ minHeight: 40, py: 0.5 }}
-        >
-          <ListItemIcon sx={{ minWidth: 36 }}>
-            <EventIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText
-            primary="Events"
-            primaryTypographyProps={{ variant: 'body2' }}
-          />
-        </ListItemButton>
-      )}
       {groupsEnabled && (
         <ListItemButton
           component={RouterLink}
@@ -88,10 +78,9 @@ export const NavbarMobileDrawerExplore = ({
           sx={{
             minHeight: 40,
             py: 0.5,
-            ...(isGroupsActive && {
-              bgcolor: 'rgba(156,187,217,0.26)',
-              '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-            }),
+            ...(isGroupsActive
+              ? (drawerActiveNavSx ?? groupsActiveFallbackSx)
+              : {}),
           }}
         >
           <ListItemIcon sx={{ minWidth: 36 }}>

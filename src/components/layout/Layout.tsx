@@ -189,7 +189,9 @@ const LayoutContent = () => {
           flex: 1,
           minHeight: 0,
           overflowY:
-            isHome && homeHeroShellPhase === 'video' ? 'hidden' : 'auto',
+            isJoin || (isHome && homeHeroShellPhase === 'video')
+              ? 'hidden'
+              : 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           // Mobile performance optimizations

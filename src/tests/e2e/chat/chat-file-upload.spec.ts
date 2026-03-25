@@ -436,7 +436,7 @@ test.describe('Chat file upload', () => {
       page.getByRole('button', { name: 'Chat options' }),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: 'Attach image' }),
+      page.getByRole('button', { name: 'Attach image or GIF' }),
     ).toBeVisible();
 
     const metrics = await page.evaluate(() => {
@@ -467,25 +467,28 @@ test.describe('Chat file upload', () => {
         ''
       );
     });
-    expect(['Expand input', 'Attach image', 'Open menu']).toContain(
-      firstComposerFocus,
-    );
+    expect([
+      'Expand input',
+      'Attach image',
+      'Attach image or GIF',
+      'Open menu',
+    ]).toContain(firstComposerFocus);
     if (
       firstComposerFocus === 'Expand input' ||
       firstComposerFocus === 'Open menu'
     ) {
       await page.keyboard.press('Tab');
       await expect(
-        page.getByRole('button', { name: 'Attach image' }),
+        page.getByRole('button', { name: 'Attach image or GIF' }),
       ).toBeFocused();
     } else {
       await expect(
-        page.getByRole('button', { name: 'Attach image' }),
+        page.getByRole('button', { name: 'Attach image or GIF' }),
       ).toBeFocused();
     }
     await page.keyboard.press('Tab');
     await expect(
-      page.getByRole('button', { name: 'Attach file' }),
+      page.getByRole('button', { name: 'Attach document or file' }),
     ).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Add GIF' })).toBeFocused();

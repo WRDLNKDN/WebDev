@@ -14,6 +14,8 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Suspense,
@@ -127,6 +129,8 @@ export const MessageInput = ({
   roomType = 'dm',
   roomId,
 }: MessageInputProps) => {
+  const theme = useTheme();
+  const isNarrowViewport = useMediaQuery(theme.breakpoints.down('sm'));
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -405,6 +409,7 @@ export const MessageInput = ({
         gap: 0.75,
         borderTop: `2px solid ${INPUT_SEPARATOR_GREEN}`,
         p: 1.25,
+        pb: `max(10px, calc(0.625rem + env(safe-area-inset-bottom, 0px)))`,
         bgcolor: 'rgba(54,58,66,0.95)',
         minWidth: 0,
         width: '100%',
@@ -463,8 +468,8 @@ export const MessageInput = ({
             setText(newValue);
             onTyping?.();
 
-            // Handle @mention detection (only in group chats)
-            if (roomType === 'group' && groupMembers.length > 0) {
+            // Handle @mention detection (group chats; autocomplete lists members with handles)
+            if (roomType === 'group') {
               const cursorPos = e.target.selectionStart ?? newValue.length;
               const textBeforeCursor = newValue.slice(0, cursorPos);
               const lastAt = textBeforeCursor.lastIndexOf('@');
@@ -499,11 +504,16 @@ export const MessageInput = ({
               return;
             }
 
-            if (e.key === 'Enter' && !e.shiftKey && !mentionState.open) {
+            /* Desktop: Enter sends; Shift+Enter newline. Mobile: Enter always newline — use send button (virtual keyboards). */
+            if (
+              e.key === 'Enter' &&
+              !e.shiftKey &&
+              !mentionState.open &&
+              !isNarrowViewport
+            ) {
               e.preventDefault();
               const form = e.currentTarget.closest('form');
               if (form) {
-                // Double-defer so submit runs in a separate macrotask from keydown (avoids violation)
                 setTimeout(() => form.requestSubmit(), 0);
               } else {
                 setTimeout(
@@ -514,9 +524,11 @@ export const MessageInput = ({
             }
           }}
           onBlur={(e) => {
-            // Delay closing to allow click on autocomplete
+            // Delay closing to allow click on autocomplete; capture target — React clears
+            // `e.currentTarget` before this timeout runs.
+            const root = e.currentTarget;
             setTimeout(() => {
-              if (!e.currentTarget.contains(document.activeElement)) {
+              if (!root?.contains(document.activeElement)) {
                 setMentionState((prev) => ({ ...prev, open: false }));
                 onStopTyping?.();
               }
@@ -538,8 +550,14 @@ export const MessageInput = ({
               '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
               '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
             },
+            /* 16px on narrow viewports avoids iOS Safari zoom-on-focus */
+            '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
           }}
-          inputProps={{ 'aria-label': 'Message', title: 'Type a message' }}
+          inputProps={{
+            'aria-label': 'Message',
+            title: 'Type a message',
+            spellCheck: false,
+          }}
         />
         <Tooltip title={expanded ? 'Collapse input' : 'Expand input'}>
           <IconButton
@@ -656,10 +674,14 @@ export const MessageInput = ({
             sx={{
               fontSize: '0.7rem',
               opacity: 0.85,
-              display: { xs: 'none', sm: 'inline' },
+              display: 'inline',
+              maxWidth: { xs: '42%', sm: 'none' },
+              lineHeight: 1.35,
             }}
           >
-            Press Enter to Send
+            {isNarrowViewport
+              ? 'Tap send — Enter adds a line'
+              : 'Press Enter to send · Shift+Enter for new line'}
           </Typography>
           <Tooltip title="More options">
             <IconButton
@@ -676,7 +698,13 @@ export const MessageInput = ({
                 type="submit"
                 disabled={submitBlocked}
                 aria-label="Send message"
-                sx={{ color: INPUT_SEPARATOR_GREEN, p: 0.75 }}
+                sx={{
+                  color: INPUT_SEPARATOR_GREEN,
+                  p: 0.75,
+                  minWidth: { xs: 44, sm: 40 },
+                  minHeight: { xs: 44, sm: 40 },
+                  touchAction: 'manipulation',
+                }}
               >
                 <SendIcon fontSize="small" />
               </IconButton>
@@ -690,7 +718,7 @@ export const MessageInput = ({
         onClose={() => setGifPickerOpen(false)}
         onPick={(url, title) => void handlePickGif(url, title)}
       />
-      {roomType === 'group' && groupMembers.length > 0 && (
+      {roomType === 'group' && (
         <MentionAutocomplete
           open={mentionState.open}
           query={mentionState.query}

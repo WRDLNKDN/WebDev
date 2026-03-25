@@ -3,7 +3,7 @@
  */
 
 export const signupPaper = {
-  p: { xs: 2, md: 2.5 },
+  p: { xs: 1.5, sm: 1.75, md: 2.5 },
   borderRadius: 2,
   border: '1px solid',
   borderColor: 'divider',

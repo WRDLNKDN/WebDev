@@ -10,13 +10,14 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import { DestinationLink } from '../../components/common/DestinationLink';
 import { useState } from 'react';
 import {
   CATEGORY_ORDER,
   getCategoryForPlatform,
 } from '../../constants/platforms';
-import { getGlassCard } from '../../theme/candyStyles';
+import { getGlassCardStrong } from '../../theme/candyStyles';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { compareSocialLinksAlphabetically } from '../../lib/profile/socialLinksPresentation';
 import {
@@ -218,9 +219,9 @@ export const DashboardLinksSection = ({
       data-testid="dashboard-links-section"
       elevation={0}
       sx={{
-        ...getGlassCard(theme),
+        ...getGlassCardStrong(theme),
         p: { xs: 2, md: 3 },
-        mb: 3,
+        mb: 2.5,
       }}
     >
       <Stack spacing={2}>
@@ -228,7 +229,8 @@ export const DashboardLinksSection = ({
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1.25}
           justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ width: '100%' }}
         >
           <Typography
             variant="overline"
@@ -248,16 +250,78 @@ export const DashboardLinksSection = ({
             onClick={onOpenLinks}
             disabled={loading}
             aria-label="Add links"
-            sx={addButtonSx}
+            sx={{
+              ...addButtonSx,
+              minHeight: { xs: 44, sm: 34 },
+              width: { xs: '100%', sm: 'auto' },
+            }}
           >
             Add
           </Button>
         </Stack>
 
         {groups.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            No links added yet.
-          </Typography>
+          <Box
+            sx={{
+              borderRadius: 2,
+              border: '1px solid rgba(156,187,217,0.22)',
+              bgcolor: 'rgba(0,0,0,0.2)',
+              p: { xs: 2, sm: 2.25 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 2, sm: 3 },
+              alignItems: { xs: 'stretch', sm: 'flex-start' },
+            }}
+          >
+            <Box
+              sx={{
+                flex: '1 1 auto',
+                minWidth: 0,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.25,
+              }}
+            >
+              <LinkOutlinedIcon
+                sx={{
+                  fontSize: 28,
+                  color: 'primary.light',
+                  opacity: 0.9,
+                  flexShrink: 0,
+                  mt: 0.25,
+                }}
+                aria-hidden
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="subtitle2"
+                  component="p"
+                  sx={{ fontWeight: 700, mb: 0.5 }}
+                >
+                  No outbound links yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Add sites you want visitors to explore—portfolio sites, repos,
+                  socials, or files. They appear on your public profile in
+                  categories you control.
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              onClick={onOpenLinks}
+              disabled={loading}
+              aria-label="Add your first link"
+              sx={{
+                ...addButtonSx,
+                alignSelf: { xs: 'stretch', sm: 'center' },
+              }}
+            >
+              Add a link
+            </Button>
+          </Box>
         ) : (
           <Box
             sx={{

@@ -77,7 +77,7 @@
   max-height: none;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding-top: var(--hero-copy-pad-top);
   padding-bottom: 1.25rem;
@@ -91,6 +91,20 @@
   box-sizing: border-box;
 }
 
+/* Intro / bumper video: keep headline + CTAs visually centered with the hero frame (UAT + PROD). */
+.home-landing__hero:not(.home-landing__hero--compact) {
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+.home-landing--marketing-video-phase
+  .home-landing__hero:not(.home-landing__hero--compact),
+.home-landing--coming-soon
+  .home-landing__hero:not(.home-landing__hero--compact) {
+  padding-top: clamp(0.5rem, 3dvh, 1.5rem);
+  padding-bottom: clamp(0.5rem, 3dvh, 2rem);
+}
+
 .home-landing__hero--coming-soon {
   flex: 1 1 auto;
   align-self: stretch;
@@ -99,21 +113,25 @@
 }
 
 /*
- * heroMode === compact: conversion-focused block — height follows copy + CTAs (no vh floor),
- * centered, smooth transition from full intro hero (desktop, tablet, mobile).
+ * heroMode === compact: height follows copy + CTAs (no vh floor). Align to flex-start
+ * so when min-height animates down from the video frame, collapse eats space *below*
+ * the copy — headline/CTAs stay high and the first marketing section peeks in
+ * (scroll affordance before commit). Horizontally still centered via justify-content.
  */
 .home-landing__hero--compact {
-  --hero-compact-pad-y-end: 1.5rem;
-  --hero-compact-content-pad-y-start: 0.15rem;
-  --hero-compact-content-pad-y-end: 0.25rem;
+  --hero-compact-pad-y-start: 0.35rem;
+  --hero-compact-pad-y-end: 0.5rem;
+  --hero-compact-content-pad-y-start: 0.1rem;
+  --hero-compact-content-pad-y-end: 0.2rem;
   --hero-compact-grid-gap: 0.65rem;
 
   flex: 0 0 auto;
   align-items: flex-start;
   justify-content: center;
   min-height: 0;
-  /* Match intro: same top padding so headline/CTAs stay in the same vertical band */
-  padding: var(--hero-copy-pad-top) 0 var(--hero-compact-pad-y-end);
+  padding: var(--hero-compact-pad-y-start)
+    max(0.75rem, env(safe-area-inset-right, 0px)) var(--hero-compact-pad-y-end)
+    max(0.75rem, env(safe-area-inset-left, 0px));
   transition:
     min-height var(--hero-compact-layout-duration)
       var(--hero-compact-layout-ease),
@@ -138,11 +156,17 @@
   gap: var(--hero-compact-grid-gap);
 }
 
+/* Coming-soon grid defaults to 1.5rem gap; in compact phase use the same tight scale as UAT. */
+.home-landing__hero--compact .home-landing__hero-grid--coming-soon {
+  gap: var(--hero-compact-grid-gap);
+}
+
 @media (min-width: 768px) {
   .home-landing__hero--compact {
-    --hero-compact-pad-y-end: 1.75rem;
-    --hero-compact-content-pad-y-start: 0.2rem;
-    --hero-compact-content-pad-y-end: 0.35rem;
+    --hero-compact-pad-y-start: 0.45rem;
+    --hero-compact-pad-y-end: 0.65rem;
+    --hero-compact-content-pad-y-start: 0.15rem;
+    --hero-compact-content-pad-y-end: 0.3rem;
     --hero-compact-grid-gap: 0.85rem;
   }
 }
@@ -248,7 +272,8 @@
 
 /*
  * Hero copy: visible during video and after (no delayed fade-in).
- * Parent hero uses the same top padding in video + compact so copy stays put vertically.
+ * In-flow + compact hero align-items:flex-start avoids vertical centering dead space
+ * after the video handoff.
  */
 .home-landing__content {
   position: relative;
@@ -363,6 +388,44 @@
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
+/* Mobile: smaller hero type so copy + scaled video share the viewport without crowding */
+@media (max-width: 767.98px) {
+  .home-landing__title {
+    font-size: clamp(2rem, 9vw, 2.75rem);
+  }
+
+  .home-landing__pronunciation {
+    font-size: clamp(0.95rem, 3.2vw, 1.2rem);
+  }
+
+  .home-landing__tagline {
+    font-size: clamp(1rem, 2.9vw, 1.25rem);
+  }
+
+  .home-landing__subcopy {
+    font-size: clamp(0.875rem, 2.7vw, 1.05rem);
+    line-height: 1.45;
+  }
+
+  .home-landing__coming-soon {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+  }
+
+  .home-landing__hero-grid {
+    gap: 1.25rem;
+  }
+
+  .home-landing__copy {
+    gap: 0.5rem;
+    max-width: min(420px, 100%);
+  }
+
+  .home-landing__content {
+    padding-top: 0.75rem;
+    padding-bottom: 1rem;
+  }
+}
+
 .home-landing__cta {
   display: flex;
   flex-direction: column;
@@ -402,8 +465,14 @@
 }
 
 .home-landing--hero-compact > .home-landing__section:first-of-type {
-  padding-top: 2rem;
-  padding-bottom: 2.5rem;
+  padding-top: 0;
+  padding-bottom: 2.25rem;
+}
+
+@media (min-width: 768px) {
+  .home-landing--hero-compact > .home-landing__section:first-of-type {
+    padding-top: 0;
+  }
 }
 
 .home-landing__section--alt {

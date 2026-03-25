@@ -15,6 +15,7 @@ import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
+import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 
 /**
  * Standalone popout chat window (LinkedIn-style).
@@ -261,18 +262,7 @@ export const ChatPopupPage = () => {
             sending={sending}
             roomType={room?.room_type ?? 'dm'}
             roomId={roomId ?? null}
-            groupMembers={
-              room?.room_type === 'group' && room.members
-                ? room.members
-                    .filter((m) => m.profile)
-                    .map((m) => ({
-                      user_id: m.user_id,
-                      handle: m.profile!.handle,
-                      display_name: m.profile!.display_name,
-                      avatar: m.profile!.avatar,
-                    }))
-                : undefined
-            }
+            groupMembers={roomMembersToMentionable(room)}
             currentUserId={uid}
           />
         )}

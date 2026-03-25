@@ -90,11 +90,12 @@ export const FeedCardCommentsComposer = ({
           value={commentDraft}
           onChange={(e) => setCommentDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void onSubmit();
+            /* Enter = newline only; submit via Post button only. */
+            if (e.key === 'Enter') {
+              e.stopPropagation();
             }
           }}
+          inputProps={{ spellCheck: false }}
           sx={{
             width: '100%',
             '& .MuiInputBase-root': {
@@ -112,6 +113,7 @@ export const FeedCardCommentsComposer = ({
               whiteSpace: 'pre-wrap',
               resize: 'none',
               minHeight: '1.5em',
+              fontSize: { xs: '1rem', sm: '0.875rem' },
             },
           }}
         />

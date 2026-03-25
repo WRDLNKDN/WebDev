@@ -2,33 +2,17 @@ import type { Route } from '@playwright/test';
 
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { wantsPgrstObjectResponse } from '../utils/postgrestFulfill';
+import {
+  parsePostgrestEqFilter,
+  postgrestEqOrInColumnValues,
+} from '../utils/postgrestUrlFilters';
 import { stubAppSurface } from '../utils/stubAppSurface';
 
 const ROOM_ID = 'e2e-room-favorite-1111-4111-8111-111111111111';
 const ROOM_ID_2 = 'e2e-room-favorite-2222-4222-8222-222222222222';
 const OTHER_USER_ID = 'favorite-other-user-1';
 const OTHER_USER_ID_2 = 'favorite-other-user-2';
-
-function parseEqFilter(url: URL, column: string): string | undefined {
-  const raw = url.searchParams.get(column);
-  if (!raw?.startsWith('eq.')) return undefined;
-  return decodeURIComponent(raw.slice(3));
-}
-
-function parseInFilter(url: URL, column: string): string[] | undefined {
-  const raw = url.searchParams.get(column);
-  if (!raw?.startsWith('in.')) return undefined;
-  const inner = raw.slice(3).replaceAll('(', '').replaceAll(')', '');
-  if (!inner.trim()) return [];
-  return inner.split(',').map((part) => decodeURIComponent(part.trim()));
-}
-
-function requestedRoomIds(url: URL): string[] {
-  const single = parseEqFilter(url, 'room_id');
-  if (single) return [single];
-  const many = parseInFilter(url, 'room_id');
-  return many ?? [];
-}
 
 type RoomPrefs = Map<string, { is_favorite: boolean }>;
 
@@ -38,9 +22,8 @@ async function fulfillChatRoomPreferencesGet(
   roomPrefs: RoomPrefs,
   userId: string,
 ): Promise<void> {
-  const accept = route.request().headers()['accept'] ?? '';
-  const wantsObject = accept.includes('application/vnd.pgrst.object+json');
-  const ids = requestedRoomIds(url);
+  const wantsObject = wantsPgrstObjectResponse(route);
+  const ids = postgrestEqOrInColumnValues(url, 'room_id');
 
   if (wantsObject) {
     const rid = ids[0];
@@ -74,8 +57,8 @@ async function fulfillChatRoomPreferencesPatch(
   syncFavoriteState: () => void,
   userId: string,
 ): Promise<void> {
-  const rid = parseEqFilter(url, 'room_id');
-  const uid = parseEqFilter(url, 'user_id');
+  const rid = parsePostgrestEqFilter(url, 'room_id');
+  const uid = parsePostgrestEqFilter(url, 'user_id');
   const body = route.request().postDataJSON() as { is_favorite?: boolean };
   if (rid && uid === userId) {
     roomPrefs.set(rid, { is_favorite: Boolean(body?.is_favorite) });

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { getStubSession, USER_ID } from './auth';
+import { acceptWantsPgrstObjectJson } from './postgrestFulfill';
 
 // Stub auth token (refresh) so client doesn't clear session on refresh
 async function stubAuthToken(page: Page) {
@@ -89,9 +90,7 @@ const STUB_PROFILE = {
 
 export async function stubAppSurface(page: Page) {
   const buildProfilesBody = (acceptHeader: string | undefined) => {
-    const wantsSingleObject = Boolean(
-      acceptHeader?.includes('application/vnd.pgrst.object+json'),
-    );
+    const wantsSingleObject = acceptWantsPgrstObjectJson(acceptHeader);
     return wantsSingleObject
       ? JSON.stringify(STUB_PROFILE)
       : JSON.stringify([STUB_PROFILE]);

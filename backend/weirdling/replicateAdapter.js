@@ -78,7 +78,7 @@ export function createReplicateAdapter(token) {
         .slice(0, 200);
       const bio = `${displayName} is a ${input.roleVibe}.`.slice(0, 500);
 
-      let avatarUrl = null;
+      let avatarUrl;
       if (input.includeImage) {
         const prompt = buildWeirdlingPrompt(input);
         const createRes = await fetch(`${REPLICATE_API_BASE}/predictions`, {

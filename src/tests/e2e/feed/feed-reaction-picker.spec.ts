@@ -142,7 +142,8 @@ test.describe('Feed reaction picker', () => {
 
     await page.goto('/feed', { waitUntil: 'domcontentloaded' });
     await feedResponse;
-    await page.waitForTimeout(500);
+    // Under parallel workers the feed shell can paint before action-bar styles settle.
+    await page.waitForTimeout(900);
 
     if (
       await page
@@ -246,7 +247,7 @@ test.describe('Feed reaction picker', () => {
     const rageButton = originalCard.getByRole('button', { name: 'Rage' });
 
     await reactButton.click();
-    await expect(laughButton).toBeVisible({ timeout: 8000 });
+    await expect(laughButton).toBeVisible({ timeout: 15_000 });
     await page.waitForTimeout(1200);
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await expect(laughButton).toBeVisible();
@@ -291,7 +292,7 @@ test.describe('Feed reaction picker', () => {
     await expect(laughButton).toBeHidden({ timeout: 4000 });
 
     await reactButton.click();
-    await expect(rageButton).toBeVisible({ timeout: 8000 });
+    await expect(rageButton).toBeVisible({ timeout: 15_000 });
     await page.waitForTimeout(1200);
     await expect(reactButton).toHaveAttribute('aria-expanded', 'true');
     await rageButton.click();

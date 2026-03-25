@@ -233,7 +233,6 @@ const ResumeCardBodyBlock = ({
             fontWeight={600}
             data-testid="resume-file-name"
             aria-label={ui.resumeTitle}
-            title={ui.resumeTitle}
             tabIndex={0}
             sx={{
               letterSpacing: 0.4,

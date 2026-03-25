@@ -20,7 +20,7 @@ export const WelcomeStep = () => {
           mx: 'auto',
         }}
       >
-        <Stack spacing={2}>
+        <Stack spacing={{ xs: 1.5, sm: 2 }}>
           <Box>
             <Typography variant="h5" sx={welcomeStepTitle}>
               Start with intent.

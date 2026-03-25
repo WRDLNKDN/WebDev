@@ -37,7 +37,6 @@ import {
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
@@ -55,6 +54,7 @@ import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
+import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import {
   GODADDY_STOREFRONT_URL,
   getStoreExternalUrl,
@@ -117,25 +117,8 @@ export const Navbar = () => {
   const [joinLoading, setJoinLoading] = useState(false);
   const theme = useTheme();
   const isLightNav = theme.palette.mode === 'light';
-  const drawerPaperSx = {
-    width: 280,
-    bgcolor: isLightNav
-      ? theme.palette.background.paper
-      : 'rgba(18, 18, 18, 0.98)',
-    borderRight: isLightNav
-      ? `1px solid ${theme.palette.divider}`
-      : '1px solid rgba(156,187,217,0.18)',
-  };
-  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
-  const drawerActiveNavSx = isLightNav
-    ? {
-        bgcolor: alpha(theme.palette.primary.main, 0.12),
-        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
-      }
-    : {
-        bgcolor: 'rgba(156,187,217,0.26)',
-        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-      };
+  const { drawerPaperSx, drawerLinkColor, drawerActiveNavSx } =
+    getNavbarDrawerChrome(theme);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
   const { avatarUrl } = useCurrentUserAvatar();

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test, type Route } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
+import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const IMAGE_FIXTURE = path.resolve(
@@ -212,12 +213,7 @@ test.describe('Portfolio artifact editing', () => {
       .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/updated-artifact.pdf');
 
-    const categoriesInput = dialog.getByRole('combobox', {
-      name: 'Category',
-    });
-    await categoriesInput.click();
-    await categoriesInput.fill('Research');
-    await page.getByRole('option', { name: 'Research' }).click();
+    await selectResearchCategoryInProjectDialog(page, dialog);
     // Move focus out of the category control without closing the dialog.
     await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 

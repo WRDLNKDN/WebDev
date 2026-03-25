@@ -1,6 +1,7 @@
 import { expect, test, type Route } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
+import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
 
 async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
   const accept = route.request().headers()['accept'] || '';
@@ -208,12 +209,7 @@ test.describe('Dashboard portfolio showcase management', () => {
       .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/portfolio-launch');
 
-    const categoriesInput = dialog.getByRole('combobox', {
-      name: 'Category',
-    });
-    await categoriesInput.click();
-    await categoriesInput.fill('Research');
-    await page.getByRole('option', { name: 'Research' }).click();
+    await selectResearchCategoryInProjectDialog(page, dialog);
     await dialog.getByRole('textbox', { name: 'Project URL' }).click();
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();

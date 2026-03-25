@@ -1,5 +1,8 @@
 import AddIcon from '@mui/icons-material/Add';
+import AddLinkIcon from '@mui/icons-material/AddLink';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -18,6 +21,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
@@ -98,7 +102,7 @@ import {
 } from '../../lib/validation/profanity';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
-import { getGlassCard } from '../../theme/candyStyles';
+import { getGlassCardStrong } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
@@ -134,10 +138,12 @@ export const Dashboard = () => {
   const resumeUploadHintId = useId();
   const { showToast } = useAppToast();
   const theme = useTheme();
+  const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
   const addMenuPaperSx = useMemo(
     () => ({
       mt: 1.5,
       minWidth: 200,
+      maxWidth: 'min(calc(100vw - 24px), 400px)',
       borderRadius: 2,
       ...denseMenuPaperSxFromTheme(theme),
       zIndex: 1300,
@@ -496,18 +502,64 @@ export const Dashboard = () => {
     });
   };
 
+  const profileMenuButtonStyles = {
+    borderColor: 'rgba(45, 212, 191, 0.6)',
+    color: '#2dd4bf',
+    minHeight: { xs: 44, sm: 40 },
+    fontSize: '0.875rem',
+    py: { xs: 1, sm: 0.65 },
+    px: 1.5,
+    touchAction: 'manipulation' as const,
+    WebkitTapHighlightColor: 'transparent',
+    '&:hover': {
+      borderColor: '#2dd4bf',
+      bgcolor: 'rgba(45, 212, 191, 0.12)',
+    },
+    '&:active': {
+      bgcolor: 'rgba(45, 212, 191, 0.2)',
+    },
+  };
+
   return (
     <Box
       sx={{
         flex: 1,
-        pt: { xs: 2, md: 4 },
-        pb: { xs: 'calc(32px + env(safe-area-inset-bottom))', md: 8 },
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        position: 'relative',
+        pt: { xs: 1.25, md: 2.5 },
+        pb: {
+          xs: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          md: 5,
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          insetInline: 0,
+          bottom: 0,
+          height: { xs: 'min(32vh, 200px)', md: 'min(26vh, 300px)' },
+          pointerEvents: 'none',
+          zIndex: 0,
+          background:
+            'linear-gradient(to top, rgba(5,7,15,0.5) 0%, rgba(5,7,15,0.12) 50%, transparent 100%)',
+        },
       }}
     >
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* Canonical Identity: left=Avatar+CTAs, center=Bio+Skills+Interests, right=Industries. See docs/PROFILE_LAYOUT.md. */}
+      <Container
+        maxWidth="lg"
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          px: { xs: 1.5, sm: 3 },
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Identity: avatar + summary; interests & profile menu live with skills row. */}
         <IdentityHeader
           layoutVariant="three-column"
+          paperMaxWidth={900}
           displayName={displayName}
           memberHandle={profile?.handle?.trim() || undefined}
           tagline={profile?.tagline ?? undefined}
@@ -521,237 +573,110 @@ export const Dashboard = () => {
               : undefined
           }
           avatarUrl={avatarUrl}
-          slotUnderAvatarLabel={undefined}
-          slotUnderAvatar={
-            <>
-              <Stack spacing={1.5} sx={{ width: '100%' }}>
-                <InterestsDropdown
-                  value={selectedInterests}
-                  onSave={async (interests) => {
-                    try {
-                      const [blocklist, allowlist] = await Promise.all([
-                        getProfanityOverrides(),
-                        getProfanityAllowlist(),
-                      ]);
-                      for (const value of interests) {
-                        validateProfanity(
-                          value,
-                          blocklist,
-                          allowlist,
-                          PROFANITY_ERROR_MESSAGE_INTEREST,
-                        );
-                      }
-                      const creds = {
-                        ...safeNerdCreds,
-                        interests,
-                      };
-                      await updateProfile({ nerd_creds: creds });
-                      await refresh();
-                      showToast({
-                        message: 'Interests updated.',
-                        severity: 'success',
-                      });
-                    } catch (e) {
-                      showToast({
-                        message: toMessage(e),
-                        severity: 'error',
-                      });
-                      throw e;
-                    }
-                  }}
-                  disabled={loading}
-                />
-                <Button
-                  ref={profileMenuButtonRef}
-                  id="profile-menu-button"
-                  variant="outlined"
-                  size="small"
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.stopPropagation();
-                    setProfileMenuAnchor(e.currentTarget);
-                  }}
-                  onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
-                    e.stopPropagation();
-                    setProfileMenuAnchor(e.currentTarget);
-                  }}
-                  endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                  disabled={loading}
-                  aria-label="Profile menu"
-                  aria-haspopup="true"
-                  aria-expanded={Boolean(profileMenuAnchor)}
-                  sx={{
-                    borderColor: 'rgba(45, 212, 191, 0.6)',
-                    color: '#2dd4bf',
-                    minHeight: { xs: 44, sm: 38 },
-                    fontSize: '0.875rem',
-                    py: { xs: 1, sm: 0.6 },
-                    px: 1.5,
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
-                    '&:hover': {
-                      borderColor: '#2dd4bf',
-                      bgcolor: 'rgba(45, 212, 191, 0.12)',
-                    },
-                    '&:active': {
-                      bgcolor: 'rgba(45, 212, 191, 0.2)',
-                    },
-                  }}
-                >
-                  Profile
-                </Button>
-              </Stack>
-              <Menu
-                anchorEl={profileMenuAnchor}
-                open={Boolean(profileMenuAnchor)}
-                onClose={() => setProfileMenuAnchor(null)}
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                disableScrollLock={false}
-                disablePortal={false}
-                MenuListProps={{
-                  'aria-labelledby': 'profile-menu-button',
-                  onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                  sx: {
-                    py: 0.5,
-                    overflowX: 'hidden',
-                  },
-                }}
-                slotProps={{
-                  paper: {
-                    onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                    sx: (theme) => ({
-                      mt: 1.5,
-                      minWidth: 200,
-                      borderRadius: 2,
-                      bgcolor: theme.palette.background.paper,
-                      border: '1px solid rgba(156,187,217,0.26)',
-                      zIndex: 1300,
-                      maxHeight: 'calc(100vh - 100px)',
-                      overflowX: 'hidden',
-                      overflowY: 'auto',
-                      boxShadow:
-                        theme.palette.mode === 'light'
-                          ? '0 8px 24px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0,0,0,0.05)'
-                          : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-                    }),
-                  },
-                  root: {
-                    onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                  },
+          badges={
+            <Stack spacing={1.5} sx={{ width: '100%' }}>
+              <SkillsInterestsPills
+                skills={selectedSkills}
+                interests={selectedInterests}
+              />
+              <Box
+                sx={{
+                  pt: 1.5,
+                  borderTop: '1px solid rgba(156,187,217,0.18)',
                 }}
               >
-                {profile?.handle && (
-                  <MenuItem
-                    component="a"
-                    href={`/p/h~${encodeURIComponent(profile.handle)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setProfileMenuAnchor(null)}
-                    onTouchStart={(e: React.TouchEvent) => {
-                      e.preventDefault();
-                      setProfileMenuAnchor(null);
-                    }}
-                    sx={{
-                      py: 1.5,
-                      minHeight: 48,
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    View Profile
-                  </MenuItem>
-                )}
-                <MenuItem
-                  onClick={() => {
-                    setProfileMenuAnchor(null);
-                    openEditProfileDialog();
-                  }}
-                  onTouchStart={(e: React.TouchEvent) => {
-                    e.preventDefault();
-                    setProfileMenuAnchor(null);
-                    openEditProfileDialog();
-                  }}
+                <Typography
+                  variant="caption"
                   sx={{
-                    py: 1.5,
-                    minHeight: 48,
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
+                    display: 'block',
+                    mb: 1,
+                    fontWeight: 700,
+                    letterSpacing: 0.6,
+                    color: 'text.secondary',
+                    textTransform: 'uppercase',
+                    fontSize: '0.68rem',
                   }}
                 >
-                  Edit Profile
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    setProfileMenuAnchor(null);
-                    navigate('/dashboard/settings');
-                  }}
-                  onTouchStart={(e: React.TouchEvent) => {
-                    e.preventDefault();
-                    setProfileMenuAnchor(null);
-                    navigate('/dashboard/settings');
-                  }}
-                  sx={{
-                    py: 1.5,
-                    minHeight: 48,
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
+                  Profile & interests
+                </Typography>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  flexWrap="wrap"
+                  useFlexGap
+                  spacing={{ xs: 1, sm: 1 }}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
                 >
-                  Account & settings
-                </MenuItem>
-                <MenuItem
-                  onClick={async () => {
-                    setProfileMenuAnchor(null);
-                    await loadShareToken();
-                    setIsShareDialogOpen(true);
-                  }}
-                  onTouchStart={async (e: React.TouchEvent) => {
-                    e.preventDefault();
-                    setProfileMenuAnchor(null);
-                    await loadShareToken();
-                    setIsShareDialogOpen(true);
-                  }}
-                  sx={{
-                    py: 1.5,
-                    minHeight: 48,
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  Share My Profile
-                </MenuItem>
-                <Divider sx={{ my: 0.5 }} />
-                <MenuItem
-                  onClick={async () => {
-                    setProfileMenuAnchor(null);
-                    await signOut({ redirectTo: '/' });
-                    navigate('/', { replace: true });
-                  }}
-                  onTouchStart={async (e: React.TouchEvent) => {
-                    e.preventDefault();
-                    setProfileMenuAnchor(null);
-                    await signOut({ redirectTo: '/' });
-                    navigate('/', { replace: true });
-                  }}
-                  sx={{
-                    py: 1.5,
-                    minHeight: 48,
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
-                    color: 'error.main',
-                  }}
-                >
-                  Sign Out
-                </MenuItem>
-              </Menu>
-            </>
-          }
-          badges={
-            <SkillsInterestsPills
-              skills={selectedSkills}
-              interests={selectedInterests}
-            />
+                  <Box sx={{ flex: { sm: '1 1 220px' }, minWidth: 0 }}>
+                    <InterestsDropdown
+                      value={selectedInterests}
+                      onSave={async (interests) => {
+                        try {
+                          const [blocklist, allowlist] = await Promise.all([
+                            getProfanityOverrides(),
+                            getProfanityAllowlist(),
+                          ]);
+                          for (const value of interests) {
+                            validateProfanity(
+                              value,
+                              blocklist,
+                              allowlist,
+                              PROFANITY_ERROR_MESSAGE_INTEREST,
+                            );
+                          }
+                          const creds = {
+                            ...safeNerdCreds,
+                            interests,
+                          };
+                          await updateProfile({ nerd_creds: creds });
+                          await refresh();
+                          showToast({
+                            message: 'Interests updated.',
+                            severity: 'success',
+                          });
+                        } catch (e) {
+                          showToast({
+                            message: toMessage(e),
+                            severity: 'error',
+                          });
+                          throw e;
+                        }
+                      }}
+                      disabled={loading}
+                    />
+                  </Box>
+                  <Box sx={{ flex: { sm: '0 0 auto' } }}>
+                    <Button
+                      ref={profileMenuButtonRef}
+                      id="profile-menu-button"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      sx={{
+                        ...profileMenuButtonStyles,
+                        width: { xs: '100%', sm: 'auto' },
+                      }}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        setProfileMenuAnchor(e.currentTarget);
+                      }}
+                      onTouchStart={(
+                        e: React.TouchEvent<HTMLButtonElement>,
+                      ) => {
+                        e.stopPropagation();
+                        setProfileMenuAnchor(e.currentTarget);
+                      }}
+                      endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                      disabled={loading}
+                      aria-label="Profile menu"
+                      aria-haspopup="true"
+                      aria-expanded={Boolean(profileMenuAnchor)}
+                    >
+                      Profile
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+            </Stack>
           }
           rightColumn={
             industryGroups.length > 0 || nicheField ? (
@@ -764,6 +689,159 @@ export const Dashboard = () => {
           actions={undefined}
         />
 
+        <Menu
+          anchorEl={profileMenuAnchor}
+          open={Boolean(profileMenuAnchor)}
+          onClose={() => setProfileMenuAnchor(null)}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: isMobileLayout ? 'left' : 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: isMobileLayout ? 'left' : 'right',
+          }}
+          disableScrollLock={false}
+          disablePortal={false}
+          MenuListProps={{
+            'aria-labelledby': 'profile-menu-button',
+            onClick: (e: React.MouseEvent) => e.stopPropagation(),
+            sx: {
+              py: 0.5,
+              overflowX: 'hidden',
+            },
+          }}
+          slotProps={{
+            paper: {
+              onClick: (e: React.MouseEvent) => e.stopPropagation(),
+              sx: (theme) => ({
+                mt: 1.5,
+                minWidth: 200,
+                maxWidth: 'min(calc(100vw - 24px), 320px)',
+                borderRadius: 2,
+                bgcolor: theme.palette.background.paper,
+                border: '1px solid rgba(156,187,217,0.26)',
+                zIndex: 1300,
+                maxHeight: 'calc(100vh - 100px)',
+                overflowX: 'hidden',
+                overflowY: 'auto',
+                boxShadow:
+                  theme.palette.mode === 'light'
+                    ? '0 8px 24px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0,0,0,0.05)'
+                    : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+              }),
+            },
+            root: {
+              onClick: (e: React.MouseEvent) => e.stopPropagation(),
+            },
+          }}
+        >
+          {profile?.handle && (
+            <MenuItem
+              component="a"
+              href={`/p/h~${encodeURIComponent(profile.handle)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setProfileMenuAnchor(null)}
+              onTouchStart={(e: React.TouchEvent) => {
+                e.preventDefault();
+                setProfileMenuAnchor(null);
+              }}
+              sx={{
+                py: 1.5,
+                minHeight: 48,
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              View Profile
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            onTouchStart={(e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Edit Profile
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setProfileMenuAnchor(null);
+              navigate('/dashboard/settings');
+            }}
+            onTouchStart={(e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              navigate('/dashboard/settings');
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Account & settings
+          </MenuItem>
+          <MenuItem
+            onClick={async () => {
+              setProfileMenuAnchor(null);
+              await loadShareToken();
+              setIsShareDialogOpen(true);
+            }}
+            onTouchStart={async (e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              await loadShareToken();
+              setIsShareDialogOpen(true);
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Share My Profile
+          </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem
+            onClick={async () => {
+              setProfileMenuAnchor(null);
+              await signOut({ redirectTo: '/' });
+              navigate('/', { replace: true });
+            }}
+            onTouchStart={async (e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              await signOut({ redirectTo: '/' });
+              navigate('/', { replace: true });
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              color: 'error.main',
+            }}
+          >
+            Sign Out
+          </MenuItem>
+        </Menu>
+
         <DashboardLinksSection
           loading={loading}
           socials={socialsArray}
@@ -774,7 +852,7 @@ export const Dashboard = () => {
           elevation={0}
           data-testid="dashboard-portfolio-showcase-section"
           sx={(theme) => ({
-            ...getGlassCard(theme),
+            ...getGlassCardStrong(theme),
             p: { xs: 2, md: 3 },
             overflowX: 'hidden',
             width: '100%',
@@ -793,7 +871,7 @@ export const Dashboard = () => {
               variant="overline"
               sx={{
                 display: 'block',
-                mb: 2,
+                mb: 1.25,
                 letterSpacing: 2,
                 color: 'text.secondary',
                 fontWeight: 600,
@@ -837,62 +915,142 @@ export const Dashboard = () => {
 
             {!profile?.resume_url && projects.length === 0 ? (
               <>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
+                <Box
+                  sx={{
+                    width: '100%',
+                    borderRadius: 2,
+                    border: '1px solid rgba(156,187,217,0.26)',
+                    bgcolor: 'rgba(7,11,22,0.55)',
+                    p: { xs: 2, sm: 2.5 },
+                    mb: 1,
+                  }}
                 >
-                  Start by adding links, a resume, or a project to build your
-                  public portfolio showcase.
-                </Typography>
-                <Stack
-                  direction="row"
-                  flexWrap="wrap"
-                  gap={1}
-                  sx={{ mb: 2, justifyContent: 'flex-start' }}
-                >
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setAddMenuAnchor(e.currentTarget);
-                    }}
-                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setAddMenuAnchor(e.currentTarget);
-                    }}
-                    disabled={loading}
-                    aria-label="Add resume or project"
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(addMenuAnchor)}
-                    sx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      color: 'white',
-                      background:
-                        'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                      border: 'none',
-                      minHeight: { xs: 44, sm: 34 },
-                      py: { xs: 1, sm: 0.5 },
-                      px: 1.5,
-                      fontSize: '0.8125rem',
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                      '&:hover': {
-                        background:
-                          'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                      },
-                      '&:active': {
-                        background:
-                          'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
-                      },
-                    }}
+                  <Typography
+                    variant="subtitle1"
+                    component="h3"
+                    sx={{ fontWeight: 700, mb: 0.75 }}
                   >
-                    Add
-                  </Button>
+                    Build your public showcase
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2, maxWidth: 640 }}
+                  >
+                    Add a project, upload a resume, and wire up outbound links
+                    so this space tells a complete story—not an empty frame.
+                  </Typography>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    flexWrap="wrap"
+                    useFlexGap
+                    spacing={1}
+                    sx={{ mb: 2 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<FolderOutlinedIcon sx={{ fontSize: 18 }} />}
+                      disabled={loading}
+                      onClick={() => openNewProjectDialog()}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderColor: 'rgba(156,187,217,0.42)',
+                        minHeight: { xs: 44, sm: 40 },
+                      }}
+                    >
+                      Add project
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<ArticleOutlinedIcon sx={{ fontSize: 18 }} />}
+                      disabled={loading}
+                      onClick={() => openResumePicker()}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderColor: 'rgba(156,187,217,0.42)',
+                        minHeight: { xs: 44, sm: 40 },
+                      }}
+                    >
+                      Add resume
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddLinkIcon sx={{ fontSize: 18 }} />}
+                      disabled={loading}
+                      onClick={() => setIsLinksOpen(true)}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderColor: 'rgba(156,187,217,0.42)',
+                        minHeight: { xs: 44, sm: 40 },
+                      }}
+                    >
+                      Add links
+                    </Button>
+                  </Stack>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mb: 1, fontWeight: 600 }}
+                  >
+                    Or pick from the menu
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    flexWrap="wrap"
+                    gap={1}
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                      endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        setAddMenuAnchor(e.currentTarget);
+                      }}
+                      onTouchStart={(
+                        e: React.TouchEvent<HTMLButtonElement>,
+                      ) => {
+                        e.stopPropagation();
+                        setAddMenuAnchor(e.currentTarget);
+                      }}
+                      disabled={loading}
+                      aria-label="Add resume or project"
+                      aria-haspopup="true"
+                      aria-expanded={Boolean(addMenuAnchor)}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        color: 'white',
+                        background:
+                          'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
+                        border: 'none',
+                        minHeight: { xs: 44, sm: 34 },
+                        py: { xs: 1, sm: 0.5 },
+                        px: 1.5,
+                        fontSize: '0.8125rem',
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                        '&:hover': {
+                          background:
+                            'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
+                        },
+                        '&:active': {
+                          background:
+                            'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
+                        },
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </Stack>
                   <Menu
                     anchorEl={addMenuAnchor}
                     open={Boolean(addMenuAnchor)}
@@ -958,7 +1116,7 @@ export const Dashboard = () => {
                       + Add Project
                     </MenuItem>
                   </Menu>
-                </Stack>
+                </Box>
               </>
             ) : (
               <>

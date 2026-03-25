@@ -14,7 +14,7 @@ import { useChatPresence } from '../../../hooks/useChatPresence';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
 import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 
 const POPOVER_WIDTH = 460;
 const POPOVER_HEIGHT = 740;

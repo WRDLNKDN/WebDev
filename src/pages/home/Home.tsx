@@ -403,8 +403,6 @@ export const Home = () => {
   const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
 
   const storageAuthHint = hasStoredAuthTokensSync();
-  const treatAsMemberMarketing =
-    Boolean(session) || (storageAuthHint && !authInitialCheckDone);
 
   return (
     <main

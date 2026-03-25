@@ -26,7 +26,7 @@ import {
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 
 export const ChatPage = () => {
   const theme = useTheme();

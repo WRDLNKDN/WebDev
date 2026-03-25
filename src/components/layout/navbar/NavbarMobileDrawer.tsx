@@ -1,7 +1,7 @@
 import { Box, Button, Drawer, Stack, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, type Location } from 'react-router-dom';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
+import { getNavbarDrawerChrome } from './navbarDrawerChrome';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 
@@ -50,17 +50,8 @@ export const NavbarMobileDrawer = ({
   sessionUserId,
 }: NavbarMobileDrawerProps) => {
   const theme = useTheme();
-  const isLightNav = theme.palette.mode === 'light';
-  const drawerLinkColor = isLightNav ? 'text.primary' : 'white';
-  const drawerActiveNavSx = isLightNav
-    ? {
-        bgcolor: alpha(theme.palette.primary.main, 0.12),
-        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.18) },
-      }
-    : {
-        bgcolor: 'rgba(156,187,217,0.26)',
-        '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-      };
+  const { drawerPaperSx, drawerLinkColor, drawerActiveNavSx } =
+    getNavbarDrawerChrome(theme);
 
   return (
     <Drawer
@@ -68,15 +59,7 @@ export const NavbarMobileDrawer = ({
       open={drawerOpen}
       onClose={() => setDrawerOpen(false)}
       PaperProps={{
-        sx: {
-          width: 280,
-          bgcolor: isLightNav
-            ? theme.palette.background.paper
-            : 'rgba(18, 18, 18, 0.98)',
-          borderRight: isLightNav
-            ? `1px solid ${theme.palette.divider}`
-            : '1px solid rgba(156,187,217,0.18)',
-        },
+        sx: drawerPaperSx,
       }}
     >
       <Box sx={{ py: 2, overflow: 'auto' }}>

@@ -27,11 +27,12 @@ export const JoinProgress = ({
     <Box
       sx={{
         width: '100%',
+        maxWidth: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 1,
-        mb: 2,
+        gap: 0.5,
+        mb: { xs: 1, sm: 1.5 },
       }}
     >
       <Box
@@ -40,6 +41,7 @@ export const JoinProgress = ({
           alignItems: 'flex-start',
           width: '100%',
           maxWidth: 560,
+          minWidth: 0,
         }}
       >
         {STEP_ORDER.map((step, i) => {
@@ -64,12 +66,17 @@ export const JoinProgress = ({
                 }}
               >
                 {isCompleted ? (
-                  <CheckCircleIcon sx={{ fontSize: 28, color: '#4ade80' }} />
+                  <CheckCircleIcon
+                    sx={{
+                      fontSize: { xs: 22, sm: 28 },
+                      color: '#4ade80',
+                    }}
+                  />
                 ) : (
                   <Box
                     sx={{
-                      width: 28,
-                      height: 28,
+                      width: { xs: 22, sm: 28 },
+                      height: { xs: 22, sm: 28 },
                       borderRadius: '50%',
                       border: isActive
                         ? '2.5px solid #3884D2'
@@ -97,7 +104,8 @@ export const JoinProgress = ({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: '0.72rem',
+                    fontSize: { xs: '0.62rem', sm: '0.72rem' },
+                    lineHeight: 1.15,
                     fontWeight: isActive ? 700 : 500,
                     whiteSpace: 'nowrap',
                     color: isCompleted
@@ -116,8 +124,8 @@ export const JoinProgress = ({
                   sx={{
                     flex: 1,
                     height: '1.5px',
-                    mx: 0.75,
-                    mt: '13px',
+                    mx: { xs: 0.25, sm: 0.75 },
+                    mt: { xs: '11px', sm: '13px' },
                     bgcolor: completedSteps.includes(step)
                       ? 'rgba(74,222,128,0.45)'
                       : 'rgba(156,187,217,0.22)',

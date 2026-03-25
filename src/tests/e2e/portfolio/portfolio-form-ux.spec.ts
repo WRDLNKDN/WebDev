@@ -1,6 +1,7 @@
 import { expect, test, type Route } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
+import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
 
 async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
   const accept = route.request().headers()['accept'] || '';
@@ -249,8 +250,7 @@ test.describe('Add Project dialog UX', () => {
     const dialog = await openAddProjectDialog(page);
 
     await dialog.getByLabel('Project Name').fill('No Description Project');
-    await dialog.getByRole('combobox', { name: 'Category' }).click();
-    await page.getByRole('option', { name: 'Research' }).click();
+    await selectResearchCategoryInProjectDialog(page, dialog);
     await dialog
       .getByRole('textbox', { name: 'Project URL' })
       .fill('https://example.com/no-description-project');

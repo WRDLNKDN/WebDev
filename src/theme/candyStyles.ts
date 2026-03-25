@@ -208,6 +208,19 @@ export const getGlassCard = (theme: Theme) => ({
   overflow: 'hidden' as const,
 });
 
+/** Dashboard sections: slightly stronger surface + shadow for contrast on grid background. */
+export const getGlassCardStrong = (theme: Theme) => {
+  const isLight = theme.palette.mode === 'light';
+  return {
+    ...getGlassCard(theme),
+    bgcolor: getAppGlassSurfaceStrong(theme),
+    border: `1px solid ${alpha(theme.palette.divider, isLight ? 0.32 : 0.34)}`,
+    boxShadow: isLight
+      ? '0 20px 56px rgba(0,0,0,0.14)'
+      : '0 22px 64px rgba(0,0,0,0.62)',
+  };
+};
+
 // Legacy constant for backward compatibility (dark theme only)
 export const GLASS_CARD = {
   position: 'relative' as const,

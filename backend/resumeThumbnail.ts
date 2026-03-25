@@ -125,7 +125,7 @@ export const generateResumeThumbnailPng = async (
     return sharp(Buffer.from(svg, 'utf8')).png({ quality: 90 }).toBuffer();
   }
 
-  let extracted = '';
+  let extracted: string;
   try {
     extracted =
       extension === '.doc'

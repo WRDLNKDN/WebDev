@@ -537,7 +537,7 @@ const generateAndPersistResumeThumbnail = async (userId, storagePath) => {
       action: 'RESUME_THUMBNAIL_FAILED',
       meta: { storagePath, extension, error: message },
     });
-    throw new Error(message);
+    throw new Error(message, { cause: e });
   }
 };
 const requireAdmin = async (req, res, next) => {
@@ -684,7 +684,7 @@ const handleWeirdlingGenerate = async (req, res) => {
       'Missing required fields: displayNameOrHandle, roleVibe',
     );
   }
-  let jobId = null;
+  let jobId;
   if (idempotencyKey) {
     const { data: existing } = await adminSupabase
       .from('generation_jobs')

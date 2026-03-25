@@ -61,7 +61,7 @@ export function useProfile() {
       await addProjectItem({ newProject, files, projects, setProjects });
     } catch (cause) {
       console.error('Add Project Error:', cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -73,7 +73,7 @@ export function useProfile() {
       await deleteProjectItem({ projectId, setProjects });
     } catch (cause) {
       console.error('Delete Project Error:', cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -114,7 +114,7 @@ export function useProfile() {
       });
     } catch (cause) {
       console.error('Toggle Project Highlight Error:', cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -130,7 +130,7 @@ export function useProfile() {
       await updateProjectItem({ projectId, updates, files, setProjects });
     } catch (cause) {
       console.error('Update Project Error:', cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -142,7 +142,7 @@ export function useProfile() {
       return await uploadAvatarAsset({ file, updateProfile });
     } catch (cause) {
       console.error(cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -159,7 +159,7 @@ export function useProfile() {
       });
     } catch (cause) {
       console.error(cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -171,7 +171,9 @@ export function useProfile() {
       await deleteResumeAsset({ profile, updateProfile });
     } catch (cause) {
       console.error(cause);
-      throw new Error('Unable to delete resume. Please try again.');
+      throw new Error('Unable to delete resume. Please try again.', {
+        cause,
+      });
     } finally {
       setUpdating(false);
     }
@@ -187,7 +189,7 @@ export function useProfile() {
       });
     } catch (cause) {
       console.error(cause);
-      throw new Error(normalizeThrownError(cause));
+      throw new Error(normalizeThrownError(cause), { cause });
     } finally {
       setUpdating(false);
     }
@@ -203,7 +205,7 @@ export function useProfile() {
       });
     } catch (cause) {
       console.error(cause);
-      throw new Error(toMessage(cause));
+      throw new Error(toMessage(cause), { cause });
     } finally {
       setUpdating(false);
     }

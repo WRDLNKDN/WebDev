@@ -69,7 +69,11 @@ module.exports = [
     rules: {
       ...reactPlugin.configs.recommended.rules,
       ...reactPlugin.configs['jsx-runtime'].rules,
-      ...reactHooksPlugin.configs.recommended.rules,
+      // Do not spread reactHooksPlugin.configs.recommended: v7 bundles React Compiler
+      // rules (refs, set-state-in-effect, static-components, etc.) that flag most
+      // existing MUI/React patterns. Keep classic hooks lint only.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       ...jsxA11y.configs.recommended.rules,
 
       // Formatting Firewall

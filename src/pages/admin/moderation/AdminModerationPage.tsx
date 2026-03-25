@@ -28,7 +28,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { ProfileRow, ProfileStatus } from '../../../types/types';
 import {
@@ -103,7 +103,7 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
 
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -123,11 +123,11 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, status, q, limit, offset, sort, order]);
 
   useEffect(() => {
     void load();
-  }, [status, q, limit, offset, sort, order]);
+  }, [load]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {

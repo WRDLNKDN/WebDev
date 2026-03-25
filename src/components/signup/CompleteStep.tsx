@@ -69,8 +69,9 @@ export const CompleteStep = () => {
               sx={{
                 display: 'block',
                 width: '100%',
-                maxHeight: { xs: 260, md: 340 },
-                objectFit: 'cover',
+                maxHeight: { xs: 200, sm: 260, md: 380 },
+                objectFit: 'contain',
+                objectPosition: 'center center',
               }}
             >
               <source src="/assets/video/concept-bumper.mp4" type="video/mp4" />

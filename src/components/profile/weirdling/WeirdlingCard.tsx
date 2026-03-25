@@ -9,8 +9,9 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import type { Weirdling } from '../../../types/weirdling';
 
@@ -32,9 +33,10 @@ export const WeirdlingCard = ({
   onDeleteRequest,
   loading = false,
 }: WeirdlingCardProps) => {
+  const theme = useTheme();
   if (loading) {
     return (
-      <Paper elevation={0} sx={{ ...GLASS_CARD, p: 3 }}>
+      <Paper elevation={0} sx={{ ...getGlassCard(theme), p: 3 }}>
         <Typography variant="overline" color="text.secondary">
           MY WEIRDLING
         </Typography>
@@ -51,7 +53,7 @@ export const WeirdlingCard = ({
     <Paper
       elevation={0}
       sx={{
-        ...GLASS_CARD,
+        ...getGlassCard(theme),
         p: 3,
         height: '100%',
         minHeight: 200,

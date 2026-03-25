@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const steps = [
+const guestSteps = [
   {
     badge: '01',
     title: 'Join',
@@ -27,7 +27,40 @@ const steps = [
   },
 ];
 
-export const HowItWorks = () => {
+const memberSteps = [
+  {
+    badge: '01',
+    title: 'Profile',
+    body: 'View and edit your profile, portfolio, and how you show up.',
+    to: '/dashboard',
+  },
+  {
+    badge: '02',
+    title: 'Settings',
+    body: 'Update your intent, values, and account preferences.',
+    to: '/dashboard/settings',
+  },
+  {
+    badge: '03',
+    title: 'Follow people',
+    body: 'Discover and follow others who share your values and goals.',
+    to: '/directory',
+  },
+  {
+    badge: '04',
+    title: 'Show up',
+    body: 'Participate: post, comment, and build real professional connections.',
+    to: '/feed',
+  },
+];
+
+export type HowItWorksProps = {
+  /** When true, step links skip /join and point at the app (signed-in Members). */
+  memberSignedIn?: boolean;
+};
+
+export const HowItWorks = ({ memberSignedIn = false }: HowItWorksProps) => {
+  const steps = memberSignedIn ? memberSteps : guestSteps;
   return (
     <section
       className="home-landing__section home-landing__section--alt"

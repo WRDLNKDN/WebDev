@@ -19,7 +19,9 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
@@ -31,7 +33,7 @@ import {
   type ChatRoomFilter,
   type ChatRoomSort,
 } from '../../../lib/chat/roomListState';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
@@ -65,6 +67,8 @@ export const ChatRoomList = ({
   onToggleFavorite,
   chatPathPrefix = DEFAULT_CHAT_PREFIX,
 }: ChatRoomListProps) => {
+  const theme = useTheme();
+  const isLightChrome = theme.palette.mode === 'light';
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
   const [filter, setFilter] = useState<ChatRoomFilter>('all');
@@ -86,7 +90,10 @@ export const ChatRoomList = ({
       sx={{
         width: { xs: '100%', md: 320, lg: 340 },
         minWidth: 0,
-        borderRight: { xs: 'none', md: '1px solid rgba(156,187,217,0.22)' },
+        borderRight: {
+          xs: 'none',
+          md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+        },
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -94,10 +101,11 @@ export const ChatRoomList = ({
       <Box
         sx={{
           p: { xs: 1.5, sm: 2 },
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          background:
-            'linear-gradient(180deg, rgba(10,16,34,0.88) 0%, rgba(10,16,34,0.62) 100%)',
-          backdropFilter: 'blur(14px)',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.2 : 0.14)}`,
+          background: isLightChrome
+            ? alpha(theme.palette.background.paper, 0.92)
+            : 'linear-gradient(180deg, rgba(10,16,34,0.88) 0%, rgba(10,16,34,0.62) 100%)',
+          backdropFilter: isLightChrome ? 'none' : 'blur(14px)',
         }}
       >
         <Stack
@@ -118,7 +126,9 @@ export const ChatRoomList = ({
             label={`${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'}`}
             sx={{
               borderRadius: 999,
-              bgcolor: 'rgba(255,255,255,0.08)',
+              bgcolor: isLightChrome
+                ? alpha(theme.palette.common.black, 0.06)
+                : 'rgba(255,255,255,0.08)',
               color: 'text.secondary',
               fontWeight: 700,
             }}
@@ -180,18 +190,29 @@ export const ChatRoomList = ({
                 sx={{
                   justifyContent: 'flex-start',
                   textTransform: 'none',
-                  color: 'white',
                   fontWeight: 700,
                   borderRadius: 1.5,
                   px: 1.35,
                   py: 0.95,
-                  background:
-                    'linear-gradient(180deg, rgba(39,63,122,0.96) 0%, rgba(19,31,62,0.98) 100%)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-                  '&:hover': {
-                    background:
-                      'linear-gradient(180deg, rgba(46,73,140,0.98) 0%, rgba(22,35,70,1) 100%)',
-                  },
+                  ...(isLightChrome
+                    ? {
+                        color: theme.palette.primary.contrastText,
+                        background: theme.palette.primary.main,
+                        boxShadow: 'none',
+                        '&:hover': {
+                          background: theme.palette.primary.dark,
+                        },
+                      }
+                    : {
+                        color: 'white',
+                        background:
+                          'linear-gradient(180deg, rgba(39,63,122,0.96) 0%, rgba(19,31,62,0.98) 100%)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                        '&:hover': {
+                          background:
+                            'linear-gradient(180deg, rgba(46,73,140,0.98) 0%, rgba(22,35,70,1) 100%)',
+                        },
+                      }),
                 }}
               >
                 New chat
@@ -206,16 +227,34 @@ export const ChatRoomList = ({
                 sx={{
                   justifyContent: 'flex-start',
                   textTransform: 'none',
-                  color: 'white',
-                  borderColor: 'rgba(255,255,255,0.16)',
-                  backgroundColor: 'rgba(13, 18, 33, 0.82)',
                   borderRadius: 1.5,
                   px: 1.25,
                   py: 0.95,
-                  '&:hover': {
-                    borderColor: 'rgba(140,190,255,0.38)',
-                    backgroundColor: 'rgba(18, 25, 46, 0.92)',
-                  },
+                  ...(isLightChrome
+                    ? {
+                        color: theme.palette.primary.main,
+                        borderColor: alpha(theme.palette.primary.main, 0.45),
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.06,
+                        ),
+                        '&:hover': {
+                          borderColor: theme.palette.primary.main,
+                          backgroundColor: alpha(
+                            theme.palette.primary.main,
+                            0.1,
+                          ),
+                        },
+                      }
+                    : {
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.16)',
+                        backgroundColor: 'rgba(13, 18, 33, 0.82)',
+                        '&:hover': {
+                          borderColor: 'rgba(140,190,255,0.38)',
+                          backgroundColor: 'rgba(18, 25, 46, 0.92)',
+                        },
+                      }),
                 }}
               >
                 New group
@@ -257,8 +296,8 @@ export const ChatRoomList = ({
               selected={roomId === room.id}
               onClick={() => navigate(`${base}/${room.id}`)}
               sx={{
-                ...(roomId === room.id ? GLASS_CARD : {}),
-                borderBottom: '1px solid rgba(56,132,210,0.14)',
+                ...(roomId === room.id ? getGlassCard(theme) : {}),
+                borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.14)}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.75,

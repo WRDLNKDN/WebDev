@@ -44,6 +44,7 @@ import {
   LandingPage,
   NotFoundPage,
   NotificationsPage,
+  PayRedirectPage,
   PhuzzlePlayPage,
   Platform,
   TicTacToePlayPage,
@@ -113,6 +114,7 @@ export const AppRouteTree = ({
       }
     />
     <Route path="/auth/callback" element={<AuthCallback />} />
+    <Route path="/pay" element={<PayRedirectPage />} />
 
     <Route element={<Layout />}>
       <Route

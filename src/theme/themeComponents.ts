@@ -81,77 +81,10 @@ export const THEME_COMPONENTS = {
   },
   MuiIconButton: {
     styleOverrides: {
+      // Close / dismiss (and legacy delete/remove/trash) chrome: see createAppTheme → dismissIconButtonChrome in theme.ts.
       root: {
         '&:focus-visible': FOCUS_RING,
         padding: 12,
-        '&[aria-label*="close" i], &[aria-label*="delete" i], &[aria-label*="remove" i], &[aria-label*="trash" i]':
-          {
-            width: '44px !important',
-            height: '44px !important',
-            minWidth: '44px !important',
-            padding: '0 !important',
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: '18px !important',
-            color: '#f5f9ff !important',
-            background:
-              'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%) !important',
-            border: '1px solid rgba(173,203,255,0.24) !important',
-            boxShadow:
-              '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26), 0 0 0 1px rgba(56,132,210,0.10) !important',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: 1,
-              borderRadius: '16px',
-              background:
-                'radial-gradient(circle at 28% 24%, rgba(141,188,229,0.34), rgba(56,132,210,0.08) 45%, rgba(132,154,214,0.08) 100%)',
-              pointerEvents: 'none',
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              right: '-10%',
-              bottom: '-12%',
-              width: '62%',
-              height: '62%',
-              background:
-                'radial-gradient(circle, rgba(96,208,255,0.7) 0%, rgba(96,208,255,0.28) 38%, rgba(96,208,255,0) 74%)',
-              pointerEvents: 'none',
-              opacity: 0.9,
-            },
-            '& .MuiSvgIcon-root': {
-              position: 'relative',
-              zIndex: 1,
-              fontSize: '1.65rem !important',
-            },
-            '&:hover': {
-              color: '#FFFFFF !important',
-              background:
-                'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%) !important',
-              borderColor: 'rgba(191,219,254,0.44) !important',
-              boxShadow:
-                '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(156,187,217,0.32), 0 0 18px rgba(96,208,255,0.18) !important',
-            },
-            '&.Mui-disabled': {
-              color: 'rgba(241,245,249,0.5) !important',
-              borderColor: 'rgba(173,203,255,0.14) !important',
-              background:
-                'linear-gradient(180deg, rgba(118,137,190,0.1) 0%, rgba(92,109,163,0.08) 100%) !important',
-            },
-          },
-        '&.MuiIconButton-sizeSmall[aria-label*="close" i], &.MuiIconButton-sizeSmall[aria-label*="delete" i], &.MuiIconButton-sizeSmall[aria-label*="remove" i], &.MuiIconButton-sizeSmall[aria-label*="trash" i]':
-          {
-            width: '40px !important',
-            height: '40px !important',
-            minWidth: '40px !important',
-            borderRadius: '16px !important',
-            '& .MuiSvgIcon-root': {
-              fontSize: '1.45rem !important',
-            },
-          },
       },
     },
   },
@@ -201,6 +134,9 @@ export const THEME_COMPONENTS = {
       root: {
         color: '#e8e8e8',
         '&.Mui-focused': { color: '#3884D2' },
+        '& .MuiFormLabel-asterisk': { color: PALETTE.error.main },
+        '&.Mui-focused .MuiFormLabel-asterisk': { color: PALETTE.error.main },
+        '&.Mui-error .MuiFormLabel-asterisk': { color: PALETTE.error.main },
       },
       asterisk: {
         color: PALETTE.error.main,
@@ -209,6 +145,11 @@ export const THEME_COMPONENTS = {
   },
   MuiFormLabel: {
     styleOverrides: {
+      root: {
+        '&.Mui-focused .MuiFormLabel-asterisk': {
+          color: PALETTE.error.main,
+        },
+      },
       asterisk: {
         color: PALETTE.error.main,
       },

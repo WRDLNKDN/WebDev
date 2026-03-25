@@ -313,6 +313,11 @@ export const UnsubscribePage = lazy(async () => {
   return { default: m.UnsubscribePage };
 });
 
+export const PayRedirectPage = lazy(async () => {
+  const m = await import('../../pages/misc/PayRedirectPage');
+  return { default: m.PayRedirectPage };
+});
+
 export const NotFoundPage = lazy(async () => {
   const m = await import('../../pages/misc/NotFoundPage');
   return { default: m.NotFoundPage };

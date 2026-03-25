@@ -23,8 +23,8 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { trackEvent } from '../../lib/analytics/trackEvent';
+import { buildPayQrCodeImageUrl } from '../../lib/marketing/payLink';
 import {
-  FOOTER_DONATE_QR_ASSET,
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
@@ -80,6 +80,28 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
   }, []);
   const sectionTestId = (title: string) =>
     `footer-section-${title.toLowerCase().replace(/\s+/g, '-')}`;
+
+  const donateAbsoluteUrl = useMemo(() => {
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://wrdlnkdn.com';
+    return `${origin}${FOOTER_DONATE_URL}`;
+  }, []);
+
+  const donateQrSrc = useMemo(
+    () => buildPayQrCodeImageUrl(donateAbsoluteUrl),
+    [donateAbsoluteUrl],
+  );
+
+  const donateLinkLabel = useMemo(() => {
+    try {
+      const host = new URL(donateAbsoluteUrl).hostname;
+      return `Pay online at ${host}/pay`;
+    } catch {
+      return 'Pay online';
+    }
+  }, [donateAbsoluteUrl]);
 
   const footerStructuredData = useMemo(() => {
     const origin =
@@ -623,7 +645,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>
                       <Box
                         component="img"
-                        src={FOOTER_DONATE_QR_ASSET}
+                        src={donateQrSrc}
                         alt="Donate QR code"
                         width={200}
                         height={200}
@@ -645,7 +667,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                         }}
                         onClick={() => setDonateDialogOpen(false)}
                       >
-                        Pay online at pay.wrdlnkdn.com
+                        {donateLinkLabel}
                       </Link>
                     </Stack>
                   </DialogContent>

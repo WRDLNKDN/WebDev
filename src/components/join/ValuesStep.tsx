@@ -8,6 +8,17 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+
+/** Visible required marker for non-TextField groups (matches MUI required * color). */
+const RequiredFieldMark = () => (
+  <Box
+    component="span"
+    sx={{ color: 'error.main', fontWeight: 700 }}
+    aria-hidden
+  >
+    {' *'}
+  </Box>
+);
 import { useState } from 'react';
 import { useJoin } from '../../context/useJoin';
 import type { ValuesData } from '../../types/join';
@@ -72,6 +83,7 @@ export const ValuesStep = () => {
 
           <Typography variant="subtitle2" sx={valuesStepSectionTitle}>
             Why are you joining?
+            <RequiredFieldMark />
           </Typography>
           <Box
             sx={{
@@ -107,6 +119,7 @@ export const ValuesStep = () => {
 
           <Typography variant="subtitle2" sx={valuesStepSectionTitle}>
             How do you like to participate?
+            <RequiredFieldMark />
           </Typography>
           <Box
             sx={{
@@ -159,7 +172,7 @@ export const ValuesStep = () => {
               },
               '& .MuiInputLabel-root': {
                 color: 'rgba(255,255,255,0.6)',
-                '& .MuiFormLabel-asterisk': { color: '#f44336' },
+                '&.Mui-focused': { color: '#3884D2' },
               },
             }}
           />

@@ -11,10 +11,11 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 import type { Weirdling } from '../../../types/weirdling';
 
 const AUTO_ADVANCE_MS = 4500;
@@ -31,6 +32,7 @@ export const WeirdlingCarousel = ({
   onRemove,
   onAddClick,
 }: WeirdlingCarouselProps) => {
+  const theme = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -56,7 +58,11 @@ export const WeirdlingCarousel = ({
     return (
       <Paper
         elevation={0}
-        sx={{ ...GLASS_CARD, p: { xs: 2, md: 4 }, mb: { xs: 3, md: 4 } }}
+        sx={{
+          ...getGlassCard(theme),
+          p: { xs: 2, md: 4 },
+          mb: { xs: 3, md: 4 },
+        }}
       >
         <Box sx={{ py: 4, textAlign: 'center' }}>
           <Typography color="text.secondary">Loading…</Typography>
@@ -69,7 +75,7 @@ export const WeirdlingCarousel = ({
     <Paper
       elevation={0}
       sx={{
-        ...GLASS_CARD,
+        ...getGlassCard(theme),
         p: { xs: 2, md: 3 },
         mb: { xs: 3, md: 4 },
       }}

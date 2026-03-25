@@ -15,9 +15,10 @@ function normalizeHref(url: string): string {
   return `https://${trimmed}`;
 }
 
+/** `title` omitted: wrapped in MUI Tooltip that shows the URL; native title would duplicate and warn. */
 export interface DestinationLinkProps extends Omit<
   LinkProps,
-  'href' | 'target'
+  'href' | 'target' | 'title'
 > {
   /** Destination URL (will be normalized with https if no protocol). */
   href: string;

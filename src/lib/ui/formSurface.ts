@@ -1,5 +1,6 @@
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
+import { ACTION_COLORS } from '../../theme/themeConstants';
 
 export const FORM_ACCENT_GRADIENT =
   'linear-gradient(90deg, #3884D2 0%, #4DD166 50%, #A744C2 100%)';
@@ -56,7 +57,13 @@ export const FORM_OUTLINED_FIELD_SX = {
     color: 'rgba(255,255,255,0.6)',
     '&.Mui-focused': { color: '#3884D2' },
     '& .MuiFormLabel-asterisk': {
-      color: '#f44336',
+      color: ACTION_COLORS.error,
+    },
+    '&.Mui-focused .MuiFormLabel-asterisk': {
+      color: ACTION_COLORS.error,
+    },
+    '&.Mui-error .MuiFormLabel-asterisk': {
+      color: ACTION_COLORS.error,
     },
   },
   '& .MuiFormHelperText-root': {

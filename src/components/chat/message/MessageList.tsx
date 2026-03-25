@@ -7,7 +7,9 @@ import {
   MenuItem,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useRef, useEffect, useState } from 'react';
 import { PostCard } from '../../post';
 import { CHAT_REACTION_OPTIONS } from '../../post/sharedReactions';
@@ -18,7 +20,7 @@ import {
 } from '../../../lib/chat/linkPreview';
 import type { MessageWithExtras } from '../../../hooks/useChat';
 import type { ChatRoomType } from '../../../types/chat';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 import { MessageContent } from './MessageContent';
 import { AttachmentPreview } from './AttachmentPreview';
 
@@ -70,6 +72,8 @@ export const MessageList = ({
   showTyping = false,
   scrollToMessageId,
 }: MessageListProps) => {
+  const theme = useTheme();
+  const isLightChrome = theme.palette.mode === 'light';
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const previousBoundaryRef = useRef<{
@@ -212,7 +216,9 @@ export const MessageList = ({
         flexDirection: 'column',
         gap: compact ? 1 : 1.5,
         p: compact ? 1.25 : 2,
-        bgcolor: CHAT_PANEL_BG,
+        bgcolor: isLightChrome
+          ? theme.palette.background.default
+          : CHAT_PANEL_BG,
         position: 'relative',
         minWidth: 0,
         width: '100%',
@@ -227,8 +233,11 @@ export const MessageList = ({
             onClick={onLoadOlder}
             disabled={loadingOlder}
             sx={{
-              border: '1px solid rgba(141,188,229,0.38)',
-              bgcolor: 'rgba(56,132,210,0.10)',
+              border: `1px solid ${alpha(theme.palette.primary.main, isLightChrome ? 0.35 : 0.38)}`,
+              bgcolor: alpha(
+                theme.palette.primary.main,
+                isLightChrome ? 0.08 : 0.1,
+              ),
               color: 'text.secondary',
               textTransform: 'none',
             }}
@@ -337,14 +346,23 @@ export const MessageList = ({
                   : null
               }
               sx={{
-                ...GLASS_CARD,
+                ...getGlassCard(theme),
                 borderRadius: 2,
                 bgcolor: isOwn
-                  ? 'rgba(37, 99, 235, 0.34)'
-                  : 'rgba(17, 24, 39, 0.6)',
+                  ? isLightChrome
+                    ? alpha(theme.palette.primary.main, 0.16)
+                    : 'rgba(37, 99, 235, 0.34)'
+                  : isLightChrome
+                    ? alpha(theme.palette.common.black, 0.05)
+                    : 'rgba(17, 24, 39, 0.6)',
                 borderColor: isOwn
-                  ? 'rgba(147,197,253,0.55)'
-                  : 'rgba(156,187,217,0.26)',
+                  ? isLightChrome
+                    ? alpha(theme.palette.primary.main, 0.42)
+                    : 'rgba(147,197,253,0.55)'
+                  : alpha(
+                      theme.palette.primary.light,
+                      isLightChrome ? 0.28 : 0.26,
+                    ),
                 minWidth: 0,
                 width: '100%',
                 maxWidth: '100%',
@@ -363,9 +381,13 @@ export const MessageList = ({
                     style={{
                       padding: '8px',
                       borderRadius: 8,
-                      border: '1px solid rgba(141,188,229,0.38)',
-                      background: 'rgba(0,0,0,0.2)',
-                      color: 'white',
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.38)}`,
+                      background: isLightChrome
+                        ? theme.palette.background.paper
+                        : 'rgba(0,0,0,0.2)',
+                      color: isLightChrome
+                        ? theme.palette.text.primary
+                        : '#ffffff',
                       width: '100%',
                       minWidth: 0,
                       boxSizing: 'border-box',
@@ -439,8 +461,10 @@ export const MessageList = ({
                     textDecoration: 'none',
                     borderRadius: 1.5,
                     overflow: 'hidden',
-                    border: '1px solid rgba(156,187,217,0.30)',
-                    bgcolor: 'rgba(0,0,0,0.25)',
+                    border: `1px solid ${alpha(theme.palette.primary.light, 0.28)}`,
+                    bgcolor: isLightChrome
+                      ? alpha(theme.palette.common.black, 0.04)
+                      : 'rgba(0,0,0,0.25)',
                   }}
                 >
                   {linkPreviews[msg.id]?.image && (
@@ -520,9 +544,11 @@ export const MessageList = ({
                           px: 0.5,
                           py: 0.15,
                           borderRadius: 1,
-                          bgcolor: 'rgba(56,132,210,0.14)',
-                          border: '1px solid rgba(156,187,217,0.18)',
-                          '&:hover': { bgcolor: 'rgba(156,187,217,0.22)' },
+                          bgcolor: alpha(theme.palette.primary.main, 0.12),
+                          border: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.light, 0.18),
+                          },
                         }}
                       >
                         {emoji}
@@ -546,10 +572,10 @@ export const MessageList = ({
                       aria-expanded={reactionMenuAnchor?.messageId === msg.id}
                       sx={{
                         p: 0.25,
-                        color: 'rgba(255,255,255,0.65)',
+                        color: alpha(theme.palette.text.primary, 0.55),
                         '&:hover': {
-                          color: 'rgba(255,255,255,0.9)',
-                          bgcolor: 'rgba(56,132,210,0.12)',
+                          color: theme.palette.text.primary,
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
                         },
                       }}
                     >
@@ -573,8 +599,8 @@ export const MessageList = ({
           paper: {
             sx: {
               minWidth: 160,
-              bgcolor: 'rgba(20,22,27,0.98)',
-              border: '1px solid rgba(156,187,217,0.2)',
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${alpha(theme.palette.divider, 0.35)}`,
               borderRadius: 2,
             },
           },
@@ -618,7 +644,7 @@ export const MessageList = ({
               width: 24,
               height: 24,
               borderRadius: '50%',
-              border: '1px solid rgba(141,188,229,0.38)',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
               objectFit: 'cover',
             }}
           />

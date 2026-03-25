@@ -14,7 +14,9 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
+import { getProjectPreviewFallbackLabel } from '../../../lib/portfolio/projectPreview';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 const AUTO_ADVANCE_MS = 3500;
@@ -211,21 +213,14 @@ export const PortfolioHighlightsCarousel = ({
                         }}
                       />
                     ) : (
-                      <Stack
-                        alignItems="center"
-                        justifyContent="center"
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          px: 3,
-                          textAlign: 'center',
-                          color: 'text.secondary',
-                        }}
-                      >
-                        <Typography variant="body2">
-                          Preview media unavailable
-                        </Typography>
-                      </Stack>
+                      <PortfolioPreviewFallback
+                        project={project}
+                        label={
+                          project.title?.trim() ||
+                          getProjectPreviewFallbackLabel(project)
+                        }
+                        compact
+                      />
                     )}
                   </Box>
 

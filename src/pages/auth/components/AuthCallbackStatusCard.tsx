@@ -6,8 +6,9 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
-import { GLASS_CARD } from '../../../theme/candyStyles';
+import { getGlassCard } from '../../../theme/candyStyles';
 
 type AuthCallbackStatusCardProps = {
   error: string | null;
@@ -26,11 +27,12 @@ export const AuthCallbackStatusCard = ({
   onBackHome,
   onCopyDebugInfo,
 }: AuthCallbackStatusCardProps) => {
+  const theme = useTheme();
   return (
     <Paper
       elevation={24}
       sx={{
-        ...GLASS_CARD,
+        ...getGlassCard(theme),
         p: 6,
         textAlign: 'center',
         zIndex: 1,

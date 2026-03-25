@@ -3,7 +3,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import {
   Box,
-  Chip,
   Container,
   List,
   ListItemButton,
@@ -12,6 +11,7 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import {
   Link as RouterLink,
@@ -23,7 +23,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useFeatureFlag } from '../../context/FeatureFlagsContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { SETTINGS_PRIVACY_MARKETING_CONSENT_FLAG } from '../../lib/featureFlags/keys';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 
 const NAV_ITEMS = [
   {
@@ -93,45 +93,6 @@ export const SettingsLayout = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Manage your account preferences.
         </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 1,
-            mb: 3,
-          }}
-        >
-          <Chip
-            label="Esc closes dialogs"
-            size="small"
-            sx={(theme) => ({
-              bgcolor:
-                theme.palette.mode === 'light'
-                  ? theme.palette.action.hover
-                  : 'rgba(255,255,255,0.08)',
-            })}
-          />
-          <Chip
-            label="Changes save in place"
-            size="small"
-            sx={(theme) => ({
-              bgcolor:
-                theme.palette.mode === 'light'
-                  ? theme.palette.action.hover
-                  : 'rgba(255,255,255,0.08)',
-            })}
-          />
-          <Chip
-            label="Mobile-safe layout"
-            size="small"
-            sx={(theme) => ({
-              bgcolor:
-                theme.palette.mode === 'light'
-                  ? theme.palette.action.hover
-                  : 'rgba(255,255,255,0.08)',
-            })}
-          />
-        </Box>
 
         <Box
           sx={{
@@ -143,14 +104,14 @@ export const SettingsLayout = () => {
         >
           <Paper
             variant="outlined"
-            sx={{
-              ...GLASS_CARD,
+            sx={(theme) => ({
+              ...getGlassCard(theme),
               width: { xs: '100%', md: 220 },
               flexShrink: 0,
               p: 1,
               position: { md: 'sticky' },
               top: { md: 96 },
-            }}
+            })}
           >
             <List disablePadding>
               {navItems.map((item) => {
@@ -161,13 +122,21 @@ export const SettingsLayout = () => {
                     component={RouterLink}
                     to={item.to}
                     selected={isActive}
-                    sx={{
+                    sx={(theme) => ({
                       borderRadius: 1,
                       '&.Mui-selected': {
-                        bgcolor: 'rgba(156,187,217,0.18)',
-                        '&:hover': { bgcolor: 'rgba(156,187,217,0.26)' },
+                        bgcolor: alpha(
+                          theme.palette.primary.main,
+                          theme.palette.mode === 'light' ? 0.12 : 0.22,
+                        ),
+                        '&:hover': {
+                          bgcolor: alpha(
+                            theme.palette.primary.main,
+                            theme.palette.mode === 'light' ? 0.18 : 0.3,
+                          ),
+                        },
                       },
-                    }}
+                    })}
                   >
                     <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                       {item.icon}
@@ -181,12 +150,12 @@ export const SettingsLayout = () => {
 
           <Paper
             variant="outlined"
-            sx={{
-              ...GLASS_CARD,
+            sx={(theme) => ({
+              ...getGlassCard(theme),
               flex: 1,
               minWidth: 0,
               p: { xs: 2, md: 3 },
-            }}
+            })}
           >
             <Outlet />
           </Paper>

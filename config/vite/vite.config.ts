@@ -117,6 +117,30 @@ export default defineConfig({
           // Data/auth SDK stays stable in its own chunk.
           if (id.includes('@supabase')) return 'supabase';
 
+          // PDF optimization (dynamic import); keep out of the main vendor blob.
+          if (id.includes('pdf-lib')) return 'pdf-lib';
+
+          // React + DOM + scheduler: largest share of the old monolithic vendor chunk.
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('\\node_modules\\react\\') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('\\node_modules\\react-dom\\') ||
+            id.includes('/node_modules/scheduler/') ||
+            id.includes('\\node_modules\\scheduler\\')
+          ) {
+            return 'react-core';
+          }
+
+          if (
+            id.includes('/node_modules/react-router') ||
+            id.includes('\\node_modules\\react-router')
+          ) {
+            return 'react-router';
+          }
+
+          if (id.includes('react-helmet-async')) return 'react-helmet';
+
           // Keep the remaining third-party code in a generic vendor bucket.
           return 'vendor';
         },

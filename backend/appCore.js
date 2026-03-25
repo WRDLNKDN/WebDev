@@ -30,10 +30,11 @@ import {
 } from './directory/connectionFlow.js';
 import { sendApiError } from './lib/apiError.js';
 import {
-  generateResumeThumbnailPng,
+  generateResumeThumbnailJpeg,
   getResumeExtension,
   isSupportedResumeThumbnailExtension,
 } from './resumeThumbnail.js';
+import { wordBufferToPdf } from './resumeWordToPdf.js';
 import { registerAdvertiseRequestRoute } from './routes/advertiseRequest.js';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -497,15 +498,64 @@ const generateAndPersistResumeThumbnail = async (userId, storagePath) => {
   }
   try {
     const fileBuffer = Buffer.from(await fileBlob.arrayBuffer());
-    const thumbnailBuffer = await generateResumeThumbnailPng(
-      fileBuffer,
-      storagePath,
+    let thumbnailSourceBuffer = fileBuffer;
+    let thumbnailSourcePath = storagePath;
+    let resumePublicUrl = '';
+
+    const extLower = extension.toLowerCase();
+    if (extLower === '.doc' || extLower === '.docx') {
+      const pdfBuffer = await wordBufferToPdf(fileBuffer, extLower);
+      const pdfPath = `${userId}/resume.pdf`;
+      const { error: pdfUploadError } = await adminSupabase.storage
+        .from('resumes')
+        .upload(pdfPath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+      if (pdfUploadError) throw new Error(pdfUploadError.message);
+      const { data: origPub } = adminSupabase.storage
+        .from('resumes')
+        .getPublicUrl(storagePath);
+      const { data: pdfPub } = adminSupabase.storage
+        .from('resumes')
+        .getPublicUrl(pdfPath);
+      resumePublicUrl = pdfPub.publicUrl;
+      const nerdCreds = await readNerdCreds(userId);
+      const { error: resumeProfileUpdateError } = await adminSupabase
+        .from('profiles')
+        .update({
+          resume_url: resumePublicUrl,
+          nerd_creds: {
+            ...nerdCreds,
+            resume_original_url: origPub.publicUrl,
+            resume_thumbnail_updated_at: new Date().toISOString(),
+          },
+        })
+        .eq('id', userId);
+      if (resumeProfileUpdateError) {
+        throw new Error(
+          resumeProfileUpdateError.message ||
+            'Could not save resume preview URL to your profile',
+        );
+      }
+      thumbnailSourceBuffer = pdfBuffer;
+      thumbnailSourcePath = pdfPath;
+    } else {
+      const { data: pub } = adminSupabase.storage
+        .from('resumes')
+        .getPublicUrl(storagePath);
+      resumePublicUrl = pub.publicUrl;
+    }
+
+    const thumbnailBuffer = await generateResumeThumbnailJpeg(
+      thumbnailSourceBuffer,
+      thumbnailSourcePath,
     );
-    const thumbPath = `${userId}/resume-thumbnail.png`;
+    const thumbPath = `${userId}/resume-thumbnail.jpg`;
     const { error: uploadError } = await adminSupabase.storage
       .from('resumes')
       .upload(thumbPath, thumbnailBuffer, {
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         upsert: true,
       });
     if (uploadError) throw new Error(uploadError.message);
@@ -523,9 +573,9 @@ const generateAndPersistResumeThumbnail = async (userId, storagePath) => {
     await logResumeThumbnailEvent({
       userId,
       action: 'RESUME_THUMBNAIL_COMPLETE',
-      meta: { storagePath, extension, durationMs },
+      meta: { storagePath, extension, durationMs, resumePublicUrl },
     });
-    return { thumbnailUrl, extension, durationMs };
+    return { thumbnailUrl, extension, durationMs, resumePublicUrl };
   } catch (e) {
     const message = errorMessage(e, 'Thumbnail generation failed');
     await updateResumeThumbnailState(userId, {
@@ -1957,7 +2007,7 @@ app.post('/api/resumes/generate-thumbnail', requireAuth, async (req, res) => {
     return sendApiError(res, 400, 'Only .doc, .docx, and .pdf are supported');
   }
   try {
-    const { thumbnailUrl, durationMs } =
+    const { thumbnailUrl, durationMs, resumePublicUrl } =
       await generateAndPersistResumeThumbnail(userId, storagePath);
     console.info('[resume-thumbnail] complete', {
       userId,
@@ -1966,7 +2016,7 @@ app.post('/api/resumes/generate-thumbnail', requireAuth, async (req, res) => {
     });
     return res.json({
       ok: true,
-      data: { status: 'complete', thumbnailUrl },
+      data: { status: 'complete', thumbnailUrl, resumePublicUrl },
     });
   } catch (e) {
     const message = errorMessage(e, 'Thumbnail generation failed');

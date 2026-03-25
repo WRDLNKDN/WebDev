@@ -2,7 +2,6 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import {
   Badge,
-  Box,
   Button,
   CircularProgress,
   IconButton,
@@ -20,6 +19,9 @@ type NavbarMobileAuthControlsProps = {
   sessionLoaded: boolean;
   onboardingLoaded: boolean;
   showAuthedHeader: boolean;
+  /** Match desktop: hide Join/Sign in when marketing gate is on (unless admin). */
+  productionComingSoon?: boolean;
+  isAdminActive?: boolean;
   isJoinActive: boolean;
   dashboardEnabled: boolean;
   notificationsUnread: number;
@@ -37,6 +39,8 @@ export const NavbarMobileAuthControls = ({
   sessionLoaded,
   onboardingLoaded,
   showAuthedHeader,
+  productionComingSoon = false,
+  isAdminActive = false,
   isJoinActive,
   dashboardEnabled,
   notificationsUnread,
@@ -46,6 +50,9 @@ export const NavbarMobileAuthControls = ({
   avatarMenuOpen = false,
 }: NavbarMobileAuthControlsProps) => {
   if (!isMobile) return null;
+
+  const showGuestJoinSignIn =
+    !session && (!productionComingSoon || isAdminActive);
 
   return (
     <Stack
@@ -67,7 +74,7 @@ export const NavbarMobileAuthControls = ({
           sx={{ color: 'text.secondary' }}
           aria-label="Loading"
         />
-      ) : !showAuthedHeader ? (
+      ) : showGuestJoinSignIn ? (
         <>
           {!isJoinActive && (
             <Button
@@ -83,6 +90,7 @@ export const NavbarMobileAuthControls = ({
                 color: 'rgba(255,255,255,0.96)',
                 textTransform: 'none',
                 fontSize: '0.9375rem',
+                fontWeight: 600,
                 touchAction: 'manipulation',
                 pointerEvents: 'auto',
                 '&:hover': {
@@ -107,6 +115,7 @@ export const NavbarMobileAuthControls = ({
               color: 'rgba(255,255,255,0.96)',
               textTransform: 'none',
               fontSize: '0.9375rem',
+              fontWeight: 600,
               touchAction: 'manipulation',
               pointerEvents: 'auto',
               '&:hover': {
@@ -118,7 +127,7 @@ export const NavbarMobileAuthControls = ({
             Sign in
           </Button>
         </>
-      ) : (
+      ) : session ? (
         <>
           {showAuthedHeader && dashboardEnabled && (
             <Tooltip
@@ -172,31 +181,19 @@ export const NavbarMobileAuthControls = ({
                 '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
               }}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '50%',
-                  border: '2px solid rgba(255,255,255,0.4)',
-                  p: '1px',
-                  flexShrink: 0,
-                }}
-              >
-                <ProfileAvatar
-                  src={avatarUrl ?? undefined}
-                  alt={session?.user?.user_metadata?.full_name || 'User'}
-                  size="small"
-                  sx={{ width: 24, height: 24 }}
-                />
-              </Box>
+              <ProfileAvatar
+                src={avatarUrl ?? undefined}
+                alt={session?.user?.user_metadata?.full_name || 'User'}
+                size="small"
+                sx={{ width: 28, height: 28, flexShrink: 0 }}
+              />
               <KeyboardArrowDownIcon
                 sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
               />
             </IconButton>
           </Tooltip>
         </>
-      )}
+      ) : null}
     </Stack>
   );
 };

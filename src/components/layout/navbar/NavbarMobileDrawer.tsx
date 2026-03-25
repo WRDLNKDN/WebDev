@@ -1,6 +1,6 @@
 import { Box, Button, Drawer, Stack, useTheme } from '@mui/material';
 import { Link as RouterLink, type Location } from 'react-router-dom';
-import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
+import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { getNavbarDrawerChrome } from './navbarDrawerChrome';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
@@ -116,54 +116,22 @@ export const NavbarMobileDrawer = ({
             </>
           )}
           {showAuthedHeader && (
-            <>
-              <GlobalNavAuthenticatedPrimary
-                variant="drawer"
-                path={path}
-                showAuthedHeader={showAuthedHeader}
-                feedEnabled={feedEnabled}
-                directoryEnabled={directoryEnabled}
-                chatEnabled={chatEnabled}
-                dashboardEnabled={dashboardEnabled}
-                eventsEnabled={eventsEnabled}
-                sessionUserId={sessionUserId}
-                drawerLinkColor={drawerLinkColor}
-                drawerActiveNavSx={drawerActiveNavSx}
-                onDrawerNavigate={() => setDrawerOpen(false)}
-              />
-              {storeEnabled && (
-                <Button
-                  component="a"
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: drawerLinkColor,
-                    textTransform: 'none',
-                    py: 1.5,
-                  }}
-                >
-                  Store
-                </Button>
-              )}
-              {isAdmin ? (
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'warning.main',
-                    textTransform: 'none',
-                    py: 1.5,
-                  }}
-                >
-                  Admin
-                </Button>
-              ) : null}
-            </>
+            <NavbarDrawerAuthedPrimary
+              path={path}
+              showAuthedHeader={showAuthedHeader}
+              feedEnabled={feedEnabled}
+              directoryEnabled={directoryEnabled}
+              chatEnabled={chatEnabled}
+              dashboardEnabled={dashboardEnabled}
+              eventsEnabled={eventsEnabled}
+              sessionUserId={sessionUserId}
+              drawerLinkColor={drawerLinkColor}
+              drawerActiveNavSx={drawerActiveNavSx}
+              onDrawerNavigate={() => setDrawerOpen(false)}
+              storeEnabled={storeEnabled}
+              storeHref={storeUrl}
+              isAdmin={isAdmin}
+            />
           )}
         </Stack>
 

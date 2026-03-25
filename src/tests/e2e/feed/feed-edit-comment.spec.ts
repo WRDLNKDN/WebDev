@@ -1,17 +1,6 @@
-import { expect, test, type Route } from '../fixtures';
+import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
-
-async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(
-      isSingle && Array.isArray(rowOrRows) ? rowOrRows[0] : rowOrRows,
-    ),
-  });
-}
+import { fulfillPostgrest } from '../utils/postgrestFulfill';
 
 test.describe('Feed post/comment edit persistence', () => {
   // Requires feed request to be intercepted (same-origin or stub wins). Re-enable when e2e env uses same-origin API or stub is verified.

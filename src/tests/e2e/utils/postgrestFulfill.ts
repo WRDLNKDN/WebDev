@@ -1,5 +1,10 @@
 import type { Route } from '@playwright/test';
 
+export function wantsPgrstObjectResponse(route: Route): boolean {
+  const accept = route.request().headers()['accept'] ?? '';
+  return accept.includes('application/vnd.pgrst.object+json');
+}
+
 export function parseEqParam(url: string, key: string): string | null {
   const raw = new URL(url).searchParams.get(key);
   return raw?.replace(/^eq\./, '') ?? null;
@@ -9,8 +14,7 @@ export async function fulfillPostgrest(
   route: Route,
   rowOrRows: unknown,
 ): Promise<void> {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
+  const isSingle = wantsPgrstObjectResponse(route);
   await route.fulfill({
     status: 200,
     contentType: 'application/json',

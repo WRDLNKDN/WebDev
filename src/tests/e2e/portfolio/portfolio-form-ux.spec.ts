@@ -1,24 +1,8 @@
-import { expect, test, type Route } from '../fixtures';
+import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { fulfillPostgrest } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
-
-async function fulfillPostgrest(route: Route, rowOrRows: unknown) {
-  const accept = route.request().headers()['accept'] || '';
-  const isSingle = accept.includes('application/vnd.pgrst.object+json');
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    headers: Array.isArray(rowOrRows)
-      ? {
-          'content-range': `0-${Math.max(rowOrRows.length - 1, 0)}/${rowOrRows.length}`,
-        }
-      : undefined,
-    body: JSON.stringify(
-      isSingle && Array.isArray(rowOrRows) ? rowOrRows[0] : rowOrRows,
-    ),
-  });
-}
 
 test.describe('Add Project dialog UX', () => {
   let portfolioItems: Array<Record<string, unknown>>;

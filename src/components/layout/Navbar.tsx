@@ -45,6 +45,7 @@ import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
+import { NavbarDrawerAuthedPrimary } from './navbar/NavbarDrawerAuthedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawerExplore } from './navbar/NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './navbar/NavbarMobileDrawerLegal';
@@ -1314,54 +1315,22 @@ export const Navbar = () => {
               </>
             )}
             {showAuthedHeader && (
-              <>
-                <GlobalNavAuthenticatedPrimary
-                  variant="drawer"
-                  path={path}
-                  showAuthedHeader={showAuthedHeader}
-                  feedEnabled={feedEnabled}
-                  directoryEnabled={directoryEnabled}
-                  chatEnabled={chatEnabled}
-                  dashboardEnabled={dashboardEnabled}
-                  eventsEnabled={eventsEnabled}
-                  sessionUserId={session?.user?.id}
-                  drawerLinkColor={drawerLinkColor}
-                  drawerActiveNavSx={drawerActiveNavSx}
-                  onDrawerNavigate={() => setDrawerOpen(false)}
-                />
-                {storeEnabled && (
-                  <Button
-                    component="a"
-                    href={storeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Store
-                  </Button>
-                )}
-                {isAdmin ? (
-                  <Button
-                    component={RouterLink}
-                    to="/admin"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'warning.main',
-                      textTransform: 'none',
-                      py: 1.5,
-                    }}
-                  >
-                    Admin
-                  </Button>
-                ) : null}
-              </>
+              <NavbarDrawerAuthedPrimary
+                path={path}
+                showAuthedHeader={showAuthedHeader}
+                feedEnabled={feedEnabled}
+                directoryEnabled={directoryEnabled}
+                chatEnabled={chatEnabled}
+                dashboardEnabled={dashboardEnabled}
+                eventsEnabled={eventsEnabled}
+                sessionUserId={session?.user?.id}
+                drawerLinkColor={drawerLinkColor}
+                drawerActiveNavSx={drawerActiveNavSx}
+                onDrawerNavigate={() => setDrawerOpen(false)}
+                storeEnabled={storeEnabled}
+                storeHref={storeHref}
+                isAdmin={isAdmin}
+              />
             )}
           </Stack>
 

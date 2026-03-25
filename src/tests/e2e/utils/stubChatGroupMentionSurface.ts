@@ -1,5 +1,6 @@
 import type { Page, Route } from '@playwright/test';
 import { USER_ID } from './auth';
+import { wantsPgrstObjectResponse } from './postgrestFulfill';
 
 /** Group room used only for @mention E2E stubs. */
 export const GROUP_MENTION_ROOM_ID =
@@ -49,11 +50,6 @@ async function fulfillNonGetNoContent(route: Route): Promise<boolean> {
   if (route.request().method() === 'GET') return false;
   await route.fulfill({ status: 204, body: '' });
   return true;
-}
-
-function wantsPgrstObject(route: Route): boolean {
-  const accept = route.request().headers()['accept'] ?? '';
-  return accept.includes('application/vnd.pgrst.object+json');
 }
 
 /**
@@ -118,7 +114,7 @@ export async function stubChatGroupMentionSurface(page: Page) {
 
   await page.route('**/rest/v1/chat_rooms*', async (route) => {
     if (await fulfillNonGetNoContent(route)) return;
-    const wantsObject = wantsPgrstObject(route);
+    const wantsObject = wantsPgrstObjectResponse(route);
     const url = new URL(route.request().url());
     const idEq = parseEqFilter(url, 'id');
     const idIn = parseInFilter(url, 'id');
@@ -152,7 +148,7 @@ export async function stubChatGroupMentionSurface(page: Page) {
       roomIds.length === 1 &&
       roomIds[0] === roomId
     ) {
-      const wantsObject = wantsPgrstObject(route);
+      const wantsObject = wantsPgrstObjectResponse(route);
       const row = { room_id: roomId };
       await fulfillJson(route, wantsObject ? row : [row]);
       return;
@@ -211,7 +207,7 @@ export async function stubChatGroupMentionSurface(page: Page) {
 
   await page.route('**/rest/v1/profiles*', async (route) => {
     const url = new URL(route.request().url());
-    const wantsObject = wantsPgrstObject(route);
+    const wantsObject = wantsPgrstObjectResponse(route);
     const idEq = parseEqFilter(url, 'id');
     const idIn = parseInFilter(url, 'id');
 

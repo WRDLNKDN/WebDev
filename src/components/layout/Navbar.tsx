@@ -58,6 +58,7 @@ import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import {
   GODADDY_STOREFRONT_URL,
+  getStoreExternalUrl,
   resolveStoreExternalUrl,
 } from '../../lib/marketing/storefront';
 
@@ -466,7 +467,7 @@ export const Navbar = () => {
         const url = await resolveStoreExternalUrl();
         if (!cancelled) setStoreHref(url);
       } catch {
-        if (!cancelled) setStoreHref(GODADDY_STOREFRONT_URL);
+        if (!cancelled) setStoreHref(getStoreExternalUrl());
       }
     })();
     return () => {
@@ -922,6 +923,7 @@ export const Navbar = () => {
                         color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '1rem',
+                        fontWeight: 600,
                         minWidth: 0,
                         px: 1,
                         '&:hover': {
@@ -941,6 +943,7 @@ export const Navbar = () => {
                       color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '1rem',
+                      fontWeight: 600,
                       minWidth: 0,
                       px: 1,
                       '&:hover': {
@@ -997,44 +1000,39 @@ export const Navbar = () => {
                     <Tooltip title="Account menu" disableInteractive>
                       <IconButton
                         type="button"
+                        disableRipple
                         onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
                         aria-label="Account menu"
                         aria-haspopup="true"
                         aria-expanded={Boolean(avatarMenuAnchor)}
                         sx={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 0.25,
-                          p: 0.25,
+                          gap: 0.5,
+                          px: 0.75,
+                          py: 0.5,
+                          minWidth: 0,
+                          width: 'auto',
+                          height: 'auto',
                           color: 'inherit',
-                          borderRadius: 9999,
+                          bgcolor: 'transparent',
+                          borderRadius: 2,
                           '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '50%',
-                            border: '2px solid rgba(255,255,255,0.4)',
-                            p: '1px',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <ProfileAvatar
-                            src={avatarUrl ?? undefined}
-                            alt={
-                              session?.user?.user_metadata?.full_name || 'User'
-                            }
-                            size="small"
-                            sx={{ width: 24, height: 24 }}
-                          />
-                        </Box>
+                        <ProfileAvatar
+                          src={avatarUrl ?? undefined}
+                          alt={
+                            session?.user?.user_metadata?.full_name || 'User'
+                          }
+                          size="small"
+                          sx={{ width: 28, height: 28, flexShrink: 0 }}
+                        />
                         <KeyboardArrowDownIcon
                           sx={{
                             fontSize: 16,
                             color: 'rgba(255,255,255,0.8)',
+                            flexShrink: 0,
                           }}
                         />
                       </IconButton>
@@ -1082,6 +1080,7 @@ export const Navbar = () => {
                         color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '0.9375rem',
+                        fontWeight: 600,
                         touchAction: 'manipulation',
                         pointerEvents: 'auto',
                         '&:hover': {
@@ -1095,7 +1094,7 @@ export const Navbar = () => {
                   )}
                   <Button
                     component={RouterLink}
-                    to="/join"
+                    to="/signin"
                     onClick={() => setDrawerOpen(false)}
                     aria-label="Sign in"
                     size="small"
@@ -1106,6 +1105,7 @@ export const Navbar = () => {
                       color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '0.9375rem',
+                      fontWeight: 600,
                       touchAction: 'manipulation',
                       pointerEvents: 'auto',
                       '&:hover': {
@@ -1164,45 +1164,39 @@ export const Navbar = () => {
                       <Tooltip title="Account menu" disableInteractive>
                         <IconButton
                           type="button"
+                          disableRipple
                           onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
                           aria-label="Account menu"
                           aria-haspopup="true"
                           aria-expanded={Boolean(avatarMenuAnchor)}
                           sx={{
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 0.25,
-                            p: 0.25,
+                            gap: 0.5,
+                            px: 0.75,
+                            py: 0.5,
+                            minWidth: 0,
+                            width: 'auto',
+                            height: 'auto',
                             color: 'inherit',
-                            borderRadius: 9999,
+                            bgcolor: 'transparent',
+                            borderRadius: 2,
                             '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
                           }}
                         >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: '50%',
-                              border: '2px solid rgba(255,255,255,0.4)',
-                              p: '1px',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <ProfileAvatar
-                              src={avatarUrl ?? undefined}
-                              alt={
-                                session?.user?.user_metadata?.full_name ||
-                                'User'
-                              }
-                              size="small"
-                              sx={{ width: 24, height: 24 }}
-                            />
-                          </Box>
+                          <ProfileAvatar
+                            src={avatarUrl ?? undefined}
+                            alt={
+                              session?.user?.user_metadata?.full_name || 'User'
+                            }
+                            size="small"
+                            sx={{ width: 28, height: 28, flexShrink: 0 }}
+                          />
                           <KeyboardArrowDownIcon
                             sx={{
                               fontSize: 16,
                               color: 'rgba(255,255,255,0.8)',
+                              flexShrink: 0,
                             }}
                           />
                         </IconButton>
@@ -1263,7 +1257,7 @@ export const Navbar = () => {
                 }}
                 sx={{ py: 1.25 }}
               >
-                Account & settings
+                Settings
               </MenuItem>
             )}
             {isAdmin && (
@@ -1319,6 +1313,7 @@ export const Navbar = () => {
                           justifyContent: 'flex-start',
                           color: drawerLinkColor,
                           textTransform: 'none',
+                          fontWeight: 600,
                           py: 1.5,
                           minHeight: 44,
                           touchAction: 'manipulation',
@@ -1329,12 +1324,13 @@ export const Navbar = () => {
                     )}
                     <Button
                       component={RouterLink}
-                      to="/join"
+                      to="/signin"
                       onClick={() => setDrawerOpen(false)}
                       sx={{
                         justifyContent: 'flex-start',
                         color: drawerLinkColor,
                         textTransform: 'none',
+                        fontWeight: 600,
                         py: 1.5,
                         minHeight: 44,
                         touchAction: 'manipulation',

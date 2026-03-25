@@ -10,8 +10,8 @@
 export const MICROSOFT_SIGNIN_NOT_CONFIGURED =
   "This sign-in option isn't available right now.";
 
-/** Max length for treating server message as user-friendly (long messages are often stack traces or technical). */
-const FRIENDLY_MESSAGE_MAX_LEN = 180;
+/** Max length for treating server message as user-friendly (long messages are often stack traces or technical). Keep in sync with `sendApiError` in `backend/lib/apiError.ts` (200). */
+const FRIENDLY_MESSAGE_MAX_LEN = 200;
 
 /** Fallback when no useful error info is available. */
 const FALLBACK_MESSAGE =
@@ -184,6 +184,32 @@ export function messageForStatus(status: number): string {
     default:
       return FALLBACK_MESSAGE;
   }
+}
+
+/**
+ * Reads message/error from a parsed JSON API error body (including nested
+ * `error.message` and plain `detail` from some gateways).
+ */
+export function messageFromApiPayload(
+  status: number,
+  payload: unknown,
+): string {
+  if (!payload || typeof payload !== 'object') {
+    return messageForStatus(status);
+  }
+  const p = payload as Record<string, unknown>;
+  const msg =
+    typeof p.message === 'string' && p.message.trim() ? p.message.trim() : null;
+  let err: string | null =
+    typeof p.error === 'string' && p.error.trim() ? p.error.trim() : null;
+  if (!err && p.error && typeof p.error === 'object' && p.error !== null) {
+    const inner = (p.error as Record<string, unknown>).message;
+    if (typeof inner === 'string' && inner.trim()) err = inner.trim();
+  }
+  if (!err && typeof p.detail === 'string' && p.detail.trim()) {
+    err = p.detail.trim();
+  }
+  return messageFromApiResponse(status, err, msg);
 }
 
 /**

@@ -56,8 +56,7 @@ export function computeResumeCardUiState(
     p.thumbnailStatus === 'failed' &&
     p.onRetryThumbnail &&
     serverPreviewEligible &&
-    !errorSuggestsUnsupported &&
-    !isWordResume,
+    !errorSuggestsUnsupported,
   );
   const showEdit =
     Boolean(p.isOwner && hasResume) &&

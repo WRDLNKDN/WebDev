@@ -1,4 +1,11 @@
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -18,9 +25,10 @@ import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 
 export const ChatPage = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -219,7 +227,7 @@ export const ChatPage = () => {
           height: '100%',
           minWidth: 0,
           maxWidth: '100%',
-          ...GLASS_CARD,
+          ...getGlassCard(theme),
           m: { xs: 0.75, sm: 1.25, md: 2 },
           overflow: 'hidden',
           borderRadius: { xs: 2.5, md: 3 },
@@ -232,7 +240,10 @@ export const ChatPage = () => {
             minWidth: { xs: 0, md: 320, lg: 340 },
             maxWidth: '100%',
             flexShrink: 0,
-            borderRight: { xs: 'none', md: '1px solid rgba(156,187,217,0.22)' },
+            borderRight: {
+              xs: 'none',
+              md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+            },
             flexDirection: 'column',
           }}
         >

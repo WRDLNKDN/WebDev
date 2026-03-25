@@ -33,6 +33,17 @@ export type ApiErrorShape = {
  * Send standardized error response. Never exposes raw Supabase/DB errors to clients.
  * @param extra - Optional fields to merge (e.g. { retryAfter: 60 } for 429)
  */
+/** Redact obvious Postgres / SQL fragments; do not match everyday words like "update". */
+function looksLikeSqlOrSchemaLeak(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    /\bpg_[a-z0-9_]+\b/.test(m) ||
+    /relation\s+["'][^"']+["']\s+does\s+not\s+exist/.test(m) ||
+    /syntax\s+error\s+at\s+or\s+near/.test(m) ||
+    /\bviolates\s+(foreign\s+key|check)\s+constraint\b/.test(m)
+  );
+}
+
 export function sendApiError(
   res: Response,
   status: number,
@@ -41,8 +52,7 @@ export function sendApiError(
   extra?: Record<string, unknown>,
 ): Response {
   const safeMessage =
-    message.length > 200 ||
-    /\b(select|insert|update|delete|pg_|relation)\b/i.test(message)
+    message.length > 200 || looksLikeSqlOrSchemaLeak(message)
       ? 'An unexpected error occurred. Please try again.'
       : message;
   const body: ApiErrorShape = {

@@ -44,6 +44,7 @@ production** (no env-specific bypass).
 | `/store`                                     | Storefront (+ `store` flag)                                                 |
 | `/playlists`, `/playlists/:slug`             | Public curated playlists API                                                |
 | `/about`, `/help`, `/advertise`, legal pages | Marketing / support                                                         |
+| `/pay`                                       | Redirects to external payment link (Vercel 302 + SPA fallback)              |
 
 ## Automated checks
 

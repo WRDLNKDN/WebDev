@@ -23,6 +23,7 @@ import {
   normalizeThrownError,
   retryResumeThumbnailAsset,
   uploadAvatarAsset,
+  type UploadResumeResult,
   uploadResumeAsset,
   uploadResumeThumbnailImageAsset,
 } from './profile/useProfileAssets';
@@ -148,7 +149,7 @@ export function useProfile() {
     }
   };
 
-  const uploadResume = async (file: File) => {
+  const uploadResume = async (file: File): Promise<UploadResumeResult> => {
     try {
       setUpdating(true);
       return await uploadResumeAsset({

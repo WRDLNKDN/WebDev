@@ -410,12 +410,29 @@ create policy profanity_overrides_select
   to anon, authenticated
   using (true);
 
+-- Admin writes only: separate FOR SELECT policy covers reads (lint 0006). PG14
+-- has no `for insert, update, delete` on one policy — use one policy per command.
 drop policy if exists profanity_overrides_admin_all on public.profanity_overrides;
-create policy profanity_overrides_admin_all
-  on public.profanity_overrides for all
+drop policy if exists profanity_overrides_admin_write on public.profanity_overrides;
+drop policy if exists profanity_overrides_admin_insert on public.profanity_overrides;
+drop policy if exists profanity_overrides_admin_update on public.profanity_overrides;
+drop policy if exists profanity_overrides_admin_delete on public.profanity_overrides;
+
+create policy profanity_overrides_admin_insert
+  on public.profanity_overrides for insert
+  to authenticated
+  with check ((select public.is_admin()));
+
+create policy profanity_overrides_admin_update
+  on public.profanity_overrides for update
   to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+
+create policy profanity_overrides_admin_delete
+  on public.profanity_overrides for delete
+  to authenticated
+  using ((select public.is_admin()));
 
 revoke all on table public.profanity_overrides from anon, authenticated;
 grant select on table public.profanity_overrides to anon, authenticated;
@@ -433,11 +450,26 @@ create policy profanity_allowlist_select
   using (true);
 
 drop policy if exists profanity_allowlist_admin_all on public.profanity_allowlist;
-create policy profanity_allowlist_admin_all
-  on public.profanity_allowlist for all
+drop policy if exists profanity_allowlist_admin_write on public.profanity_allowlist;
+drop policy if exists profanity_allowlist_admin_insert on public.profanity_allowlist;
+drop policy if exists profanity_allowlist_admin_update on public.profanity_allowlist;
+drop policy if exists profanity_allowlist_admin_delete on public.profanity_allowlist;
+
+create policy profanity_allowlist_admin_insert
+  on public.profanity_allowlist for insert
+  to authenticated
+  with check ((select public.is_admin()));
+
+create policy profanity_allowlist_admin_update
+  on public.profanity_allowlist for update
   to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+
+create policy profanity_allowlist_admin_delete
+  on public.profanity_allowlist for delete
+  to authenticated
+  using ((select public.is_admin()));
 
 revoke all on table public.profanity_allowlist from anon, authenticated;
 grant select on table public.profanity_allowlist to anon, authenticated;
@@ -902,6 +934,17 @@ create policy "Authenticated can delete own portfolio-thumbnails"
     bucket_id = 'portfolio-thumbnails'
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
+
+-- resumes: allow API/client + server-generated preview images (PNG/JPEG) alongside PDF/Word; idempotent for DBs created before image types were added
+update storage.buckets
+set allowed_mime_types = array[
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg'
+]::text[]
+where id = 'resumes';
 
 -- resumes: authenticated upload (own path), public read
 drop policy if exists "Authenticated can upload resumes" on storage.objects;

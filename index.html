@@ -19,34 +19,12 @@
     />
     <link rel="dns-prefetch" href="https://rpcaazmxymymqdejevtb.supabase.co" />
 
-    <!-- Preload critical assets for mobile performance -->
-    <link
-      rel="preload"
-      href="/assets/square%20logo.png"
-      as="image"
-      type="image/png"
-    />
-    <link
-      rel="preload"
-      href="/assets/wrdlnkdn_logo.png"
-      as="image"
-      type="image/png"
-    />
-    <!-- Preload hero poster (LCP element) for faster initial paint -->
-    <link
-      rel="preload"
-      href="/assets/video/hero-bg-poster.jpg"
-      as="image"
-      type="image/jpeg"
-      fetchpriority="high"
-    />
-    <!-- Preload hero video for faster LCP -->
-    <link
-      rel="preload"
-      href="/assets/video/hero-motion.mp4"
-      as="video"
-      type="video/mp4"
-    />
+    <!--
+      Avoid global <link rel="preload"> for marketing-only assets: on app routes
+      (e.g. /dashboard) they trigger "not used" warnings. Home uses
+      <video poster="/assets/video/hero-bg-poster.jpg"> so the poster loads in
+      context (no orphan preload).
+    -->
 
     <title>Business, but weirder. | WRDLNKDN</title>
     <meta

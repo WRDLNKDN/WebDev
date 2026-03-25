@@ -19,6 +19,51 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
     PALETTE.primary.main,
     isLight ? 0.08 : 0.14,
   );
+  const dismissIconBorder = surfaceBorder;
+  const dismissIconBorderHover = alpha(
+    isLight ? '#0F172A' : '#FFFFFF',
+    isLight ? 0.24 : 0.2,
+  );
+  /** Dialog & panel close (X) and dismiss controls — subtle, matches light/dark (not delete/remove). */
+  const dismissIconButtonChrome = {
+    width: '40px !important',
+    height: '40px !important',
+    minWidth: '40px !important',
+    padding: '0 !important',
+    position: 'relative' as const,
+    overflow: 'hidden',
+    borderRadius: '10px !important',
+    color: `${alpha(PALETTE.text.primary, isLight ? 0.52 : 0.68)} !important`,
+    background: 'transparent !important',
+    backgroundImage: 'none !important',
+    border: `1px solid ${dismissIconBorder} !important`,
+    boxShadow: 'none !important',
+    backdropFilter: 'none !important',
+    WebkitBackdropFilter: 'none !important',
+    transform: 'none !important',
+    transition:
+      'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease',
+    '&::before': { display: 'none !important', content: 'none' as const },
+    '&::after': { display: 'none !important', content: 'none' as const },
+    '& .MuiSvgIcon-root': {
+      position: 'relative' as const,
+      zIndex: 1,
+      fontSize: '1.25rem !important',
+    },
+    '&:hover': {
+      transform: 'none !important',
+      boxShadow: 'none !important',
+      color: `${PALETTE.text.primary} !important`,
+      background: `${menuHoverBackground} !important`,
+      backgroundImage: 'none !important',
+      borderColor: `${dismissIconBorderHover} !important`,
+    },
+    '&.Mui-disabled': {
+      color: `${alpha(PALETTE.text.primary, 0.32)} !important`,
+      borderColor: `${alpha(isLight ? '#0F172A' : '#FFFFFF', 0.1)} !important`,
+      background: 'transparent !important',
+    },
+  };
   const alertTextColor = {
     error: isLight ? '#7F1D1D' : '#FFD6D6',
     info: isLight ? '#0C4A6E' : '#D9FFFF',
@@ -258,75 +303,8 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
               boxShadow: 'inset 0 0 0 2px currentColor',
               backgroundColor: 'rgba(255,255,255,0.08)',
             },
-            '&[aria-label*="close" i], &[aria-label*="delete" i], &[aria-label*="remove" i], &[aria-label*="trash" i]':
-              {
-                width: '44px !important',
-                height: '44px !important',
-                minWidth: '44px !important',
-                padding: '0 !important',
-                position: 'relative',
-                overflow: 'hidden',
-                borderRadius: '18px !important',
-                color: '#f5f9ff !important',
-                background:
-                  'linear-gradient(180deg, rgba(118,137,190,0.18) 0%, rgba(92,109,163,0.16) 100%) !important',
-                border: '1px solid rgba(173,203,255,0.24) !important',
-                boxShadow:
-                  '0 14px 28px rgba(4,10,25,0.42), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04) !important',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 1,
-                  borderRadius: '16px',
-                  background:
-                    'radial-gradient(circle at 28% 24%, rgba(255,255,255,0.18), rgba(255,255,255,0.03) 45%, rgba(132,154,214,0.08) 100%)',
-                  pointerEvents: 'none',
-                },
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  right: '-10%',
-                  bottom: '-12%',
-                  width: '62%',
-                  height: '62%',
-                  background:
-                    'radial-gradient(circle, rgba(96,208,255,0.7) 0%, rgba(96,208,255,0.28) 38%, rgba(96,208,255,0) 74%)',
-                  pointerEvents: 'none',
-                  opacity: 0.9,
-                },
-                '& .MuiSvgIcon-root': {
-                  position: 'relative',
-                  zIndex: 1,
-                  fontSize: '1.65rem !important',
-                },
-                '&:hover': {
-                  transform: 'scale(1.04)',
-                  color: '#ffffff !important',
-                  background:
-                    'linear-gradient(180deg, rgba(128,149,206,0.22) 0%, rgba(98,118,177,0.2) 100%) !important',
-                  borderColor: 'rgba(191,219,254,0.44) !important',
-                  boxShadow:
-                    '0 18px 34px rgba(4,10,25,0.46), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 18px rgba(96,208,255,0.18) !important',
-                },
-                '&.Mui-disabled': {
-                  color: 'rgba(241,245,249,0.5) !important',
-                  borderColor: 'rgba(173,203,255,0.14) !important',
-                  background:
-                    'linear-gradient(180deg, rgba(118,137,190,0.1) 0%, rgba(92,109,163,0.08) 100%) !important',
-                },
-              },
-            '&.MuiIconButton-sizeSmall[aria-label*="close" i], &.MuiIconButton-sizeSmall[aria-label*="delete" i], &.MuiIconButton-sizeSmall[aria-label*="remove" i], &.MuiIconButton-sizeSmall[aria-label*="trash" i]':
-              {
-                width: '40px !important',
-                height: '40px !important',
-                minWidth: '40px !important',
-                borderRadius: '16px !important',
-                '& .MuiSvgIcon-root': {
-                  fontSize: '1.45rem !important',
-                },
-              },
+            '&[aria-label*="close" i], &[aria-label*="dismiss" i]':
+              dismissIconButtonChrome,
             '@media (prefers-reduced-motion: reduce)': {
               transition: 'none',
               '&:hover': {
@@ -384,8 +362,17 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
           root: {
             color: PALETTE.text.secondary,
             '&.Mui-focused': { color: PALETTE.primary.main },
+            // Required * must stay error-colored when label turns primary on focus (MUI 7).
+            '& .MuiFormLabel-asterisk': {
+              color: PALETTE.error.main,
+            },
+            '&.Mui-focused .MuiFormLabel-asterisk': {
+              color: PALETTE.error.main,
+            },
+            '&.Mui-error .MuiFormLabel-asterisk': {
+              color: PALETTE.error.main,
+            },
           },
-          // MERGE: Nick's Asterisk Style (Mapped to OUR Palette)
           asterisk: {
             color: PALETTE.error.main,
           },
@@ -393,6 +380,11 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
       },
       MuiFormLabel: {
         styleOverrides: {
+          root: {
+            '&.Mui-focused .MuiFormLabel-asterisk': {
+              color: PALETTE.error.main,
+            },
+          },
           asterisk: {
             color: PALETTE.error.main,
           },

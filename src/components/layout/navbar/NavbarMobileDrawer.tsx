@@ -100,38 +100,44 @@ export const NavbarMobileDrawer = ({
               >
                 Store
               </Button>
-              {!isJoinActive && (
-                <Button
-                  component={RouterLink}
-                  to="/join"
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'white',
-                    textTransform: 'none',
-                    py: 1.5,
-                    minHeight: 44,
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  Join
-                </Button>
+              {!memberSignedIn && (
+                <>
+                  {!isJoinActive && (
+                    <Button
+                      component={RouterLink}
+                      to="/join"
+                      onClick={() => setDrawerOpen(false)}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        color: 'white',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        py: 1.5,
+                        minHeight: 44,
+                        touchAction: 'manipulation',
+                      }}
+                    >
+                      Join
+                    </Button>
+                  )}
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'white',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </>
               )}
-              <Button
-                component={RouterLink}
-                to="/signin"
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  color: 'white',
-                  textTransform: 'none',
-                  py: 1.5,
-                  minHeight: 44,
-                  touchAction: 'manipulation',
-                }}
-              >
-                Sign in
-              </Button>
             </>
           )}
           {showAuthedHeader && (

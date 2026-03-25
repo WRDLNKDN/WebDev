@@ -35,17 +35,15 @@ test.describe('Footer donate link', () => {
     const payLink = dialog.getByRole('link', {
       name: /pay online/i,
     });
-    const donateUrl =
-      'https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878';
-    await expect(payLink).toHaveAttribute('href', donateUrl);
+    await expect(payLink).toHaveAttribute('href', '/pay');
     await expect(payLink).toHaveAttribute('target', '_blank');
 
     const [popup] = await Promise.all([
       page.waitForEvent('popup'),
       payLink.click(),
     ]);
-    await popup.waitForLoadState('domcontentloaded');
-    await expect(popup).toHaveURL(donateUrl);
+    await popup.waitForURL(/paylinks\.godaddy\.com/, { timeout: 20_000 });
+    await expect(popup).toHaveURL(/paylinks\.godaddy\.com/);
     await popup.close();
   });
 

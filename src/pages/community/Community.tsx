@@ -6,16 +6,34 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { supabase } from '../../lib/auth/supabaseClient';
 
 export const Community = () => {
+  const [memberSignedIn, setMemberSignedIn] = useState(false);
+
   useEffect(() => {
     const hash = window.location.hash.slice(1);
     if (hash) {
       const el = document.getElementById(hash);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setMemberSignedIn(Boolean(data.session?.user));
+    })();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setMemberSignedIn(Boolean(session?.user));
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -39,19 +57,20 @@ export const Community = () => {
 
           <Stack spacing={2} sx={{ mt: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Join the Community
+              {memberSignedIn ? 'Your community' : 'Join the Community'}
             </Typography>
             <Typography variant="body2" paragraph sx={{ mb: 0 }}>
-              Create a profile and join the directory. Join to get your
-              Weirdling and connect with others.
+              {memberSignedIn
+                ? 'Open your profile and dashboard to connect with other Members and keep your Weirdling up to date.'
+                : 'Create a profile and join the directory. Join to get your Weirdling and connect with others.'}
             </Typography>
             <Button
               component={RouterLink}
-              to="/join"
+              to={memberSignedIn ? '/dashboard' : '/join'}
               variant="contained"
               size="small"
             >
-              Join
+              {memberSignedIn ? 'Open dashboard' : 'Join'}
             </Button>
           </Stack>
 

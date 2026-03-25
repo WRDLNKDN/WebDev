@@ -42,20 +42,10 @@ export const GuestView = ({
 
   if (buttonsOnly) {
     return (
-      <div className="home-landing__cta-stack">
-        <Link
-          to="/signin"
-          className={secondaryClass}
-          aria-label="Already a member? Sign In"
-          onClick={() =>
-            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
-          }
-        >
-          Already a member? Sign In
-        </Link>
+      <div className="home-landing__cta-stack home-landing__cta-stack--hero">
         <Link
           to="/join"
-          className={primaryClass}
+          className="home-landing__button home-landing__button--hero-primary"
           role="button"
           aria-disabled={joinLoading}
           onClick={(event) => {
@@ -66,6 +56,16 @@ export const GuestView = ({
           }}
         >
           {joinLoading ? 'Opening Join…' : 'Join Us'}
+        </Link>
+        <Link
+          to="/signin"
+          className="home-landing__link-button home-landing__link-button--hero-secondary"
+          aria-label="Already a member? Sign In"
+          onClick={() =>
+            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
+          }
+        >
+          Already a member? Sign In
         </Link>
       </div>
     );

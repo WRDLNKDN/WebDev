@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/pay",
+      "destination": "https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/api", "destination": "/api" },
     { "source": "/api/:path*", "destination": "/api" },

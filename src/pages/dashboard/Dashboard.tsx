@@ -26,6 +26,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -85,6 +86,7 @@ import { SkillsInterestsPills } from '../../components/profile/identity/SkillsIn
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
+import { RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION } from '../../lib/portfolio/resumeUploadLimits';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { signOut } from '../../lib/auth/signOut';
 import { toMessage } from '../../lib/utils/errors';
@@ -129,6 +131,7 @@ export const Dashboard = () => {
   const profileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const editDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const resumeUploadHintId = useId();
   const { showToast } = useAppToast();
   const theme = useTheme();
   const addMenuPaperSx = useMemo(
@@ -139,7 +142,8 @@ export const Dashboard = () => {
       ...denseMenuPaperSxFromTheme(theme),
       zIndex: 1300,
       maxHeight: 'calc(100vh - 100px)',
-      overflow: 'auto' as const,
+      overflowX: 'hidden',
+      overflowY: 'auto',
       boxShadow:
         theme.palette.mode === 'light'
           ? theme.shadows[12]
@@ -381,8 +385,17 @@ export const Dashboard = () => {
 
   const handleResumeUpload = async (file: File) => {
     try {
-      await uploadResume(file);
+      const result = await uploadResume(file);
       await refresh();
+      if (result.sizeNote) {
+        showToast({ message: result.sizeNote, severity: 'info' });
+      }
+      if (result.thumbnailWarning) {
+        showToast({
+          message: result.thumbnailWarning,
+          severity: 'warning',
+        });
+      }
     } catch (e) {
       showToast({ message: toMessage(e), severity: 'error' });
     }
@@ -390,9 +403,17 @@ export const Dashboard = () => {
 
   const handleEditReplaceResume = async (file: File) => {
     try {
-      await uploadResume(file);
+      const result = await uploadResume(file);
       await refresh();
-      showToast({ message: 'Resume updated.', severity: 'success' });
+      if (result.sizeNote) {
+        showToast({ message: result.sizeNote, severity: 'info' });
+      }
+      showToast({
+        message: result.thumbnailWarning
+          ? `Resume updated. ${result.thumbnailWarning}`
+          : 'Resume updated.',
+        severity: result.thumbnailWarning ? 'warning' : 'success',
+      });
     } catch (e) {
       showToast({ message: toMessage(e), severity: 'error' });
       throw e;
@@ -593,6 +614,7 @@ export const Dashboard = () => {
                   onClick: (e: React.MouseEvent) => e.stopPropagation(),
                   sx: {
                     py: 0.5,
+                    overflowX: 'hidden',
                   },
                 }}
                 slotProps={{
@@ -606,7 +628,8 @@ export const Dashboard = () => {
                       border: '1px solid rgba(156,187,217,0.26)',
                       zIndex: 1300,
                       maxHeight: 'calc(100vh - 100px)',
-                      overflow: 'auto',
+                      overflowX: 'hidden',
+                      overflowY: 'auto',
                       boxShadow:
                         theme.palette.mode === 'light'
                           ? '0 8px 24px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0,0,0,0.05)'
@@ -783,11 +806,32 @@ export const Dashboard = () => {
             >
               PORTFOLIO SHOWCASE
             </Typography>
+            <Typography
+              id={resumeUploadHintId}
+              component="span"
+              variant="body2"
+              sx={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '1px',
+                height: '1px',
+                p: 0,
+                m: '-1px',
+                overflow: 'hidden',
+                clip: 'rect(0,0,0,0)',
+                border: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION}
+            </Typography>
             <input
               ref={resumeFileInputRef}
               type="file"
               hidden
               accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              aria-describedby={resumeUploadHintId}
               onChange={handleResumeInputChange}
             />
 
@@ -862,6 +906,7 @@ export const Dashboard = () => {
                       onClick: (e: React.MouseEvent) => e.stopPropagation(),
                       sx: {
                         py: 0.5,
+                        overflowX: 'hidden',
                       },
                     }}
                     slotProps={{
@@ -978,6 +1023,7 @@ export const Dashboard = () => {
                       onClick: (e: React.MouseEvent) => e.stopPropagation(),
                       sx: {
                         py: 0.5,
+                        overflowX: 'hidden',
                       },
                     }}
                     slotProps={{

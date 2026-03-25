@@ -6,12 +6,14 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   IconButton,
+  LinearProgress,
   Paper,
   Stack,
   Tooltip,
@@ -53,11 +55,13 @@ interface ResumeCardProps {
 const ResumeCardThumbnailArea = ({
   hasThumbnail,
   thumbnailUrl,
+  thumbnailStatus,
   isPdf,
   resumeTitle,
 }: {
   hasThumbnail: boolean;
   thumbnailUrl?: string | null;
+  thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
   isPdf: boolean;
   resumeTitle: string;
 }) => {
@@ -92,6 +96,89 @@ const ResumeCardThumbnailArea = ({
       </Box>
     );
   }
+
+  if (thumbnailStatus === 'pending') {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          minHeight: { xs: 72, sm: 80 },
+          aspectRatio: '16 / 9',
+          maxHeight: { xs: 88, md: 100 },
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          bgcolor: 'rgba(0,0,0,0.2)',
+          borderBottom: '1px solid rgba(156,187,217,0.18)',
+          px: 1.5,
+          position: 'relative',
+        }}
+        role="status"
+        aria-busy="true"
+        aria-label="Generating resume preview"
+      >
+        <LinearProgress
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            borderRadius: 0,
+            bgcolor: 'rgba(255,255,255,0.08)',
+            '& .MuiLinearProgress-bar': { bgcolor: 'primary.light' },
+          }}
+        />
+        <CircularProgress
+          size={28}
+          thickness={4}
+          sx={{ color: 'primary.light' }}
+        />
+        {isPdf ? (
+          <PictureAsPdfIcon
+            sx={{ fontSize: 32, color: 'rgba(255,255,255,0.55)' }}
+            aria-hidden
+          />
+        ) : (
+          <DescriptionIcon
+            sx={{ fontSize: 32, color: 'rgba(255,255,255,0.55)' }}
+            aria-hidden
+          />
+        )}
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            textAlign: 'center',
+            fontWeight: 600,
+            maxWidth: '100%',
+          }}
+        >
+          Generating preview…
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            textAlign: 'center',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            maxWidth: '100%',
+            opacity: 0.9,
+          }}
+        >
+          {resumeTitle}
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -109,7 +196,7 @@ const ResumeCardThumbnailArea = ({
         borderBottom: '1px solid rgba(156,187,217,0.18)',
         px: 1,
       }}
-      aria-hidden="true"
+      aria-label={`Document preview: ${resumeTitle}`}
     >
       {isPdf ? (
         <PictureAsPdfIcon
@@ -166,7 +253,7 @@ const ResumeCardBodyBlock = ({
         flexDirection: 'column',
       }}
     >
-      {ui.isWordResume && !ui.hasThumbnail ? (
+      {ui.isWordResume && !ui.hasThumbnail && thumbnailStatus !== 'pending' ? (
         <Box
           sx={{
             mb: 1,
@@ -227,13 +314,12 @@ const ResumeCardBodyBlock = ({
         >
           Title:{' '}
         </Typography>
-        <Tooltip title={ui.resumeTitle} placement="top">
+        <Tooltip title={ui.resumeTitle} placement="top" describeChild>
           <Typography
             component="span"
             fontWeight={600}
             data-testid="resume-file-name"
             aria-label={ui.resumeTitle}
-            title={ui.resumeTitle}
             tabIndex={0}
             sx={{
               letterSpacing: 0.4,
@@ -578,6 +664,7 @@ export const ResumeCard = ({
         <ResumeCardThumbnailArea
           hasThumbnail={ui.hasThumbnail}
           thumbnailUrl={thumbnailUrl}
+          thumbnailStatus={thumbnailStatus}
           isPdf={ui.isPdf}
           resumeTitle={ui.resumeTitle}
         />

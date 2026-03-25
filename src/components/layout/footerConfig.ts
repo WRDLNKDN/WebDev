@@ -1,3 +1,5 @@
+import { PAY_PATH } from '../../lib/marketing/payLink';
+
 export type FooterLink = {
   label: string;
   href: string;
@@ -14,11 +16,8 @@ export type FooterSocialLink = {
   href: string;
 };
 
-export const FOOTER_DONATE_URL =
-  'https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878';
-
-/** QR code image URL encoding FOOTER_DONATE_URL so it stays in sync when the donate link changes. */
-export const FOOTER_DONATE_QR_ASSET = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(FOOTER_DONATE_URL)}`;
+/** Donate / pay CTA: same-origin path; production redirects to GoDaddy Pay Link (see `vercel.json`). */
+export const FOOTER_DONATE_URL = PAY_PATH;
 
 export const FOOTER_SOCIAL_LINKS: FooterSocialLink[] = [
   {

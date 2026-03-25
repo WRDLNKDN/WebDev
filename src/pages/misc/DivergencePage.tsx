@@ -1,9 +1,10 @@
-import { Box, Button, Container, Typography } from '@mui/material';
+import { Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { WeirdlingRunner } from '../../components/games/WeirdlingRunner';
-import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
+import { getGlassCard, SIGNUP_BG } from '../../theme/candyStyles';
 
 export const DivergencePage = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
 
   return (
@@ -11,7 +12,7 @@ export const DivergencePage = () => {
       <Container maxWidth="md">
         <Box
           sx={{
-            ...GLASS_CARD,
+            ...getGlassCard(theme),
             p: 6,
             textAlign: 'center',
             border: '1px solid #f06292', // Pink border to signal "Easter Egg" mode
@@ -31,7 +32,7 @@ export const DivergencePage = () => {
           <Typography
             variant="h5"
             sx={{
-              color: 'rgba(255,255,255,0.7)',
+              color: 'text.secondary',
               mb: 4,
             }}
           >

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import { HowItWorks } from '../../components/home/HowItWorks';
@@ -10,6 +10,7 @@ import {
   useMarketingHomeMode,
   useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
+import { AUTH_STORAGE_KEY } from '../../lib/auth/supabaseClient';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
@@ -26,6 +27,27 @@ import {
 const getSupabase = async () => {
   const mod = await import('../../lib/auth/supabaseClient');
   return mod.supabase;
+};
+
+/** Sync read so hero CTAs never flash Join/Sign in while a session is restoring from storage. */
+const hasStoredAuthTokensSync = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as {
+      access_token?: string;
+      refresh_token?: string;
+      currentSession?: { access_token?: string; refresh_token?: string };
+    } | null;
+    const direct =
+      parsed?.access_token && parsed?.refresh_token
+        ? parsed
+        : parsed?.currentSession;
+    return Boolean(direct?.access_token && direct?.refresh_token);
+  } catch {
+    return false;
+  }
 };
 
 const getStoredSessionTokens = async (): Promise<{
@@ -81,6 +103,8 @@ export const Home = () => {
   const [session, setSession] = useState<{ id: string } | null>(null);
   /** When session exists and onboarded, redirect to /dashboard (no auth data on Home). */
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  /** After first `loadAuthState` run (avoids showing guest CTAs while tokens exist but session not hydrated yet). */
+  const [authInitialCheckDone, setAuthInitialCheckDone] = useState(false);
 
   const prefersReducedMotion = useMemo(
     () =>
@@ -203,21 +227,28 @@ export const Home = () => {
           setError(toMessage(err));
           setOnboarded(null);
         }
+      } finally {
+        if (mounted) {
+          setAuthInitialCheckDone(true);
+        }
       }
     };
 
     const startAuth = () => {
       if (authStartedRef.current) return;
       authStartedRef.current = true;
-      // Defer auth check until after initial paint to avoid blocking LCP
-      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          void loadAuthState();
-        });
+      const runLoadAuth = () => void loadAuthState();
+      // Likely signed-in: resolve session on a microtask so hero never flashes guest CTAs.
+      // Otherwise defer to idle / timeout to protect LCP for true guests.
+      if (typeof window !== 'undefined' && hasStoredAuthTokensSync()) {
+        queueMicrotask(runLoadAuth);
+      } else if (
+        typeof window !== 'undefined' &&
+        'requestIdleCallback' in window
+      ) {
+        requestIdleCallback(runLoadAuth);
       } else {
-        setTimeout(() => {
-          void loadAuthState();
-        }, 0);
+        setTimeout(runLoadAuth, 0);
       }
       void (async () => {
         const supabase = await getSupabase();
@@ -371,6 +402,10 @@ export const Home = () => {
 
   const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
 
+  const storageAuthHint = hasStoredAuthTokensSync();
+  const treatAsMemberMarketing =
+    Boolean(session) || (storageAuthHint && !authInitialCheckDone);
+
   return (
     <main
       className={[
@@ -432,6 +467,7 @@ export const Home = () => {
               ]
                 .filter(Boolean)
                 .join(' ')}
+              poster="/assets/video/hero-bg-poster.jpg"
               autoPlay
               muted
               loop={false}
@@ -492,7 +528,35 @@ export const Home = () => {
                 </div>
               </div>
               <div className="home-landing__cta">
-                <GuestView buttonsOnly />
+                {session ? (
+                  <div className="home-landing__cta-stack">
+                    {onboarded === false ? (
+                      <Link
+                        to="/join"
+                        className="home-landing__button"
+                        aria-label="Continue setup"
+                      >
+                        Continue setup
+                      </Link>
+                    ) : onboarded === true ? (
+                      <Link
+                        to="/dashboard"
+                        className="home-landing__button"
+                        aria-label="Open dashboard"
+                      >
+                        Open dashboard
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : storageAuthHint && !authInitialCheckDone ? (
+                  <div
+                    className="home-landing__cta-stack"
+                    aria-busy="true"
+                    aria-label="Checking session"
+                  />
+                ) : (
+                  <GuestView buttonsOnly />
+                )}
               </div>
             </div>
           </div>

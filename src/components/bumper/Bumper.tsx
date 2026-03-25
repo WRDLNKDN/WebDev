@@ -129,28 +129,57 @@ export const Bumper = ({
         backgroundColor: '#000',
       }}
     >
-      {/* Voiceover video (hidden). Starts muted so autoplay works; user can tap "Sound on" for voiceover. */}
+      {/* Voiceover video (hidden visually; audio still plays). `contain` keeps full figure in frame; mobile uses a smaller stage. */}
       <Box
-        component="video"
-        ref={videoRef}
-        src={CONCEPT_BUMPER_VIDEO}
-        preload="auto"
-        muted
-        loop={!postJoinMode}
-        playsInline
-        onCanPlayThrough={handleCanPlayThrough}
-        onEnded={postJoinMode ? onComplete : undefined}
         sx={{
           position: 'absolute',
           inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           zIndex: 0,
-          opacity: 0,
           pointerEvents: 'none',
         }}
-      />
+      >
+        <Box
+          sx={{
+            width: {
+              xs: 'min(88vw, 340px)',
+              sm: 'min(90vw, 480px)',
+              md: 'min(94vw, 920px)',
+            },
+            height: {
+              xs: 'min(58vh, 480px)',
+              sm: 'min(72vh, 640px)',
+              md: 'min(88vh, 880px)',
+            },
+            maxWidth: '100%',
+            maxHeight: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Box
+            component="video"
+            ref={videoRef}
+            src={CONCEPT_BUMPER_VIDEO}
+            preload="auto"
+            muted
+            loop={!postJoinMode}
+            playsInline
+            onCanPlayThrough={handleCanPlayThrough}
+            onEnded={postJoinMode ? onComplete : undefined}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center center',
+              opacity: 0,
+            }}
+          />
+        </Box>
+      </Box>
 
       {/* Sound on: restore bumper voiceover (browsers block unmuted autoplay) */}
       {!soundOn && (
@@ -240,35 +269,50 @@ export const Bumper = ({
           {PHONETIC}
         </Typography>
 
-        {/* "Business, but Weirder." (typing animation) */}
-        <Typography
-          component="span"
+        {/* Tagline: reserve two lines so typing / wrap does not shift the stack vertically */}
+        <Box
           sx={{
-            color: 'primary.light',
-            fontWeight: 600,
-            fontStyle: 'italic',
-            fontSize: {
-              xs: 'clamp(1.25rem, 4vw, 2rem)',
-              md: 'clamp(1.5rem, 3vw, 2.25rem)',
+            width: '100%',
+            maxWidth: 'min(92vw, 520px)',
+            minHeight: {
+              xs: 'clamp(3.25rem, 10vw, 4.5rem)',
+              md: 'clamp(3.5rem, 8vw, 5rem)',
             },
-            letterSpacing: '0.02em',
-            '&::after':
-              typed.length < TAGLINE.length
-                ? {
-                    content: '""',
-                    display: 'inline-block',
-                    width: 3,
-                    height: '1em',
-                    ml: 0.25,
-                    verticalAlign: 'text-bottom',
-                    bgcolor: 'primary.light',
-                    animation: 'bumperCaret 0.8s step-end infinite',
-                  }
-                : {},
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
           }}
         >
-          {typed}
-        </Typography>
+          <Typography
+            component="span"
+            sx={{
+              color: 'primary.light',
+              fontWeight: 600,
+              fontStyle: 'italic',
+              fontSize: {
+                xs: 'clamp(1.25rem, 4vw, 2rem)',
+                md: 'clamp(1.5rem, 3vw, 2.25rem)',
+              },
+              letterSpacing: '0.02em',
+              '&::after':
+                typed.length < TAGLINE.length
+                  ? {
+                      content: '""',
+                      display: 'inline-block',
+                      width: 3,
+                      height: '1em',
+                      ml: 0.25,
+                      verticalAlign: 'text-bottom',
+                      bgcolor: 'primary.light',
+                      animation: 'bumperCaret 0.8s step-end infinite',
+                    }
+                  : {},
+            }}
+          >
+            {typed}
+          </Typography>
+        </Box>
 
         {/* Weirdling character (centered under the words) */}
         <Box

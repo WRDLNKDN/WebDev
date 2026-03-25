@@ -228,6 +228,9 @@ export const AdminLayout = ({ children, title, subtitle }: Props) => {
                   '& .MuiFormLabel-root.Mui-focused': {
                     color: ADMIN_TEXT_PRIMARY,
                   },
+                  '& .MuiFormLabel-root.Mui-focused .MuiFormLabel-asterisk': {
+                    color: '#f44336',
+                  },
                   '& .MuiInputBase-root': {
                     color: ADMIN_TEXT_PRIMARY,
                     backgroundColor: 'rgba(56,132,210,0.10)',

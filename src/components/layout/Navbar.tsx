@@ -57,6 +57,7 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import {
   GODADDY_STOREFRONT_URL,
+  getStoreExternalUrl,
   resolveStoreExternalUrl,
 } from '../../lib/marketing/storefront';
 
@@ -458,7 +459,7 @@ export const Navbar = () => {
         const url = await resolveStoreExternalUrl();
         if (!cancelled) setStoreHref(url);
       } catch {
-        if (!cancelled) setStoreHref(GODADDY_STOREFRONT_URL);
+        if (!cancelled) setStoreHref(getStoreExternalUrl());
       }
     })();
     return () => {
@@ -865,6 +866,7 @@ export const Navbar = () => {
                         color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '1rem',
+                        fontWeight: 600,
                         minWidth: 0,
                         px: 1,
                         '&:hover': {
@@ -884,6 +886,7 @@ export const Navbar = () => {
                       color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '1rem',
+                      fontWeight: 600,
                       minWidth: 0,
                       px: 1,
                       '&:hover': {
@@ -1039,6 +1042,7 @@ export const Navbar = () => {
                         color: 'rgba(255,255,255,0.96)',
                         textTransform: 'none',
                         fontSize: '0.9375rem',
+                        fontWeight: 600,
                         touchAction: 'manipulation',
                         pointerEvents: 'auto',
                         '&:hover': {
@@ -1052,7 +1056,7 @@ export const Navbar = () => {
                   )}
                   <Button
                     component={RouterLink}
-                    to="/join"
+                    to="/signin"
                     onClick={() => setDrawerOpen(false)}
                     aria-label="Sign in"
                     size="small"
@@ -1063,6 +1067,7 @@ export const Navbar = () => {
                       color: 'rgba(255,255,255,0.96)',
                       textTransform: 'none',
                       fontSize: '0.9375rem',
+                      fontWeight: 600,
                       touchAction: 'manipulation',
                       pointerEvents: 'auto',
                       '&:hover': {
@@ -1231,7 +1236,7 @@ export const Navbar = () => {
                 }}
                 sx={{ py: 1.25 }}
               >
-                Account & settings
+                Settings
               </MenuItem>
             )}
             {isAdmin && (
@@ -1286,6 +1291,7 @@ export const Navbar = () => {
                           justifyContent: 'flex-start',
                           color: drawerLinkColor,
                           textTransform: 'none',
+                          fontWeight: 600,
                           py: 1.5,
                           minHeight: 44,
                           touchAction: 'manipulation',
@@ -1296,12 +1302,13 @@ export const Navbar = () => {
                     )}
                     <Button
                       component={RouterLink}
-                      to="/join"
+                      to="/signin"
                       onClick={() => setDrawerOpen(false)}
                       sx={{
                         justifyContent: 'flex-start',
                         color: drawerLinkColor,
                         textTransform: 'none',
+                        fontWeight: 600,
                         py: 1.5,
                         minHeight: 44,
                         touchAction: 'manipulation',

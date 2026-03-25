@@ -4,6 +4,9 @@ export function resumePublicUrlLooksWord(
   fileName?: string | null,
   url?: string | null,
 ): boolean {
+  const u = (url ?? '').toLowerCase();
+  /** Served PDF (e.g. converted Word) must not be treated as an inline-Word resume. */
+  if (/\.pdf(\?|#|$)/i.test(u)) return false;
   const blob = `${fileName ?? ''} ${url ?? ''}`.toLowerCase();
   return /\.(doc|docx)(\?|#|$)/i.test(blob);
 }
@@ -16,12 +19,13 @@ export function resumePublicUrlLooksPdf(
   return /\.pdf(\?|#|$)/i.test(blob);
 }
 
-/** Only PDFs use server-side thumbnail generation; Word is opened by the member instead. */
+/** True when the API can render a card thumbnail (matches backend `isSupportedResumeThumbnailExtension`). */
 export function resumeSupportsServerThumbnailGeneration(
   fileName?: string | null,
   url?: string | null,
 ): boolean {
-  return resumePublicUrlLooksPdf(fileName, url);
+  const blob = `${fileName ?? ''} ${url ?? ''}`.toLowerCase();
+  return /\.(pdf|doc|docx)(\?|#|$)/i.test(blob);
 }
 
 export const RESUME_PREVIEW_UNSUPPORTED_MESSAGE =

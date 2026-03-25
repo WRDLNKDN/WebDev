@@ -77,14 +77,39 @@ const extractDocxText = async (buffer: Buffer): Promise<string> => {
   return normalizePreviewText(result.value ?? '');
 };
 
+/** Plain text from Word buffers for thumbnails and PDF generation. */
+export const extractResumePlainText = async (
+  fileBuffer: Buffer,
+  extension: string,
+): Promise<string> => {
+  const ext = extension.toLowerCase();
+  if (ext === '.pdf') return '';
+  try {
+    if (ext === '.doc') return await extractDocText(fileBuffer);
+    if (ext === '.docx') return await extractDocxText(fileBuffer);
+    return '';
+  } catch {
+    return 'Preview text is unavailable for this document. Open the file directly.';
+  }
+};
+
+/**
+ * Legacy `.doc` (OLE) via word-extractor; fallback to mammoth when the file is
+ * OOXML (.docx content) saved with a `.doc` extension, or when OLE parse fails.
+ */
 const extractDocText = async (buffer: Buffer): Promise<string> => {
-  const mod = await import('word-extractor');
-  const WordExtractor = mod.default as new () => {
-    extract: (input: Buffer) => Promise<{ getBody: () => string }>;
-  };
-  const extractor = new WordExtractor();
-  const doc = await extractor.extract(buffer);
-  return normalizePreviewText(doc.getBody() ?? '');
+  try {
+    const mod = await import('word-extractor');
+    const WordExtractor = mod.default as new () => {
+      extract: (input: Buffer) => Promise<{ getBody: () => string }>;
+    };
+    const extractor = new WordExtractor();
+    const doc = await extractor.extract(buffer);
+    return normalizePreviewText(doc.getBody() ?? '');
+  } catch {
+    const ooxml = await mammoth.extractRawText({ buffer });
+    return normalizePreviewText(ooxml.value ?? '');
+  }
 };
 
 export const getResumeExtension = (storagePath: string): string =>
@@ -113,7 +138,8 @@ const buildPdfPlaceholderSvg = (fileName: string): string => {
   </svg>`;
 };
 
-export const generateResumeThumbnailPng = async (
+/** JPEG keeps previews compatible with stricter `resumes` bucket MIME allowlists (some envs omit `image/png`). */
+export const generateResumeThumbnailJpeg = async (
   fileBuffer: Buffer,
   storagePath: string,
 ): Promise<Buffer> => {
@@ -122,7 +148,9 @@ export const generateResumeThumbnailPng = async (
 
   if (extension === '.pdf') {
     const svg = buildPdfPlaceholderSvg(fileName);
-    return sharp(Buffer.from(svg, 'utf8')).png({ quality: 90 }).toBuffer();
+    return sharp(Buffer.from(svg, 'utf8'))
+      .jpeg({ quality: 88, mozjpeg: true })
+      .toBuffer();
   }
 
   let extracted: string;
@@ -140,5 +168,7 @@ export const generateResumeThumbnailPng = async (
   }
   const lines = toPreviewLines(extracted);
   const svg = buildSvg(fileName, lines);
-  return sharp(Buffer.from(svg, 'utf8')).png({ quality: 90 }).toBuffer();
+  return sharp(Buffer.from(svg, 'utf8'))
+    .jpeg({ quality: 88, mozjpeg: true })
+    .toBuffer();
 };

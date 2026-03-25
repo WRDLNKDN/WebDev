@@ -32,14 +32,19 @@ const getIcon = (project: PortfolioItem) => {
   }
 };
 
+const DEFAULT_FALLBACK_SUBTITLE = 'Open the preview to view or download.';
+
 export const PortfolioPreviewFallback = ({
   project,
   label,
   compact = false,
+  subtitle = DEFAULT_FALLBACK_SUBTITLE,
 }: {
   project: PortfolioItem;
   label: string;
   compact?: boolean;
+  /** Shown under the label; avoids empty “no image” style messaging. */
+  subtitle?: string;
 }) => {
   const Icon = getIcon(project);
   return (
@@ -78,7 +83,7 @@ export const PortfolioPreviewFallback = ({
         {label}
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        Preview unavailable right now
+        {subtitle}
       </Typography>
     </Stack>
   );

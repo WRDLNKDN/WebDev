@@ -79,11 +79,38 @@ describe('resolveStoreExternalUrl', () => {
     vi.unstubAllGlobals();
   });
 
-  it('prefers GoDaddy when the probe fetch completes', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({}) as typeof fetch;
+  it('prefers GoDaddy when the probe returns ok', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200 }) as typeof fetch;
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: 'https://alt.example/',
+        VITE_ECWID_STORE_ID: '1',
+      }),
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+  });
+
+  it('uses alternate when probe returns not ok (e.g. storefront gone)', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 404 }) as typeof fetch;
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
+        VITE_ECWID_STORE_ID: '222',
+      }),
+    ).resolves.toBe('https://222.company.site');
+  });
+
+  it('retries GET when HEAD is 405', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 405 })
+      .mockResolvedValueOnce({ ok: true, status: 200 }) as typeof fetch;
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '1',
       }),
     ).resolves.toBe(GODADDY_STOREFRONT_URL);

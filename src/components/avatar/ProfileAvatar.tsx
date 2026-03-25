@@ -2,8 +2,18 @@
  * ProfileAvatar — circular avatars with consistent sizing and fallback.
  * Spec: profile header 160px, feed/comments/nav 48px.
  */
-import { Avatar } from '@mui/material';
+import { Avatar, Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+
+/** Resolve width/height from sx so initials scale when size is overridden (e.g. nav 24px). */
+const resolveDimPx = (value: unknown, fallback: number): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const m = /^(\d+(?:\.\d+)?)px$/.exec(value.trim());
+    if (m) return Number(m[1]);
+  }
+  return fallback;
+};
 
 export type ProfileAvatarSize = 'header' | 'small';
 
@@ -36,6 +46,15 @@ export const ProfileAvatar = ({
 }: ProfileAvatarProps) => {
   const px = SIZE_PX[size];
   const initial = (alt || '?').charAt(0).toUpperCase();
+  const flatSx =
+    typeof sx === 'object' && sx !== null && !Array.isArray(sx)
+      ? (sx as Record<string, unknown>)
+      : {};
+  const dim = Math.min(
+    resolveDimPx(flatSx.width, px),
+    resolveDimPx(flatSx.height, px),
+  );
+  const initialFontPx = Math.max(11, Math.round(dim * 0.48));
   const linkProps =
     component && to
       ? ({ component, to } as { component: React.ElementType; to: string })
@@ -51,7 +70,13 @@ export const ProfileAvatar = ({
         height: px,
         borderRadius: '50%',
         bgcolor: 'primary.dark',
-        ...((typeof sx === 'object' && !Array.isArray(sx) ? sx : {}) as object),
+        fontSize: `${initialFontPx}px`,
+        fontWeight: 600,
+        lineHeight: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...flatSx,
       }}
       slotProps={{
         img: {
@@ -64,7 +89,19 @@ export const ProfileAvatar = ({
         },
       }}
     >
-      {initial}
+      <Box
+        component="span"
+        sx={{
+          display: 'grid',
+          placeItems: 'center',
+          width: '100%',
+          height: '100%',
+          lineHeight: 1,
+          font: 'inherit',
+        }}
+      >
+        {initial}
+      </Box>
     </Avatar>
   );
 };

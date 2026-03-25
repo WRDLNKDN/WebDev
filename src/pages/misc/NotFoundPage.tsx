@@ -5,10 +5,11 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GLASS_CARD, SIGNUP_BG } from '../../theme/candyStyles';
+import { getGlassCard, SIGNUP_BG } from '../../theme/candyStyles';
 
 type NotFoundWeirdling = {
   name: string;
@@ -57,6 +58,7 @@ const NOT_FOUND_WEIRDLINGS: NotFoundWeirdling[] = [
 ];
 
 export const NotFoundPage = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [selectedIndex, setSelectedIndex] = useState(() =>
     Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length),
@@ -101,7 +103,7 @@ export const NotFoundPage = () => {
         <Paper
           elevation={24}
           sx={{
-            ...GLASS_CARD,
+            ...getGlassCard(theme),
             width: '100%',
             maxWidth: 980,
             px: { xs: 2.5, sm: 4, md: 5.5 },
@@ -116,7 +118,9 @@ export const NotFoundPage = () => {
               position: 'absolute',
               inset: 0,
               background:
-                'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 42%)',
+                theme.palette.mode === 'light'
+                  ? 'linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0) 42%)'
+                  : 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 42%)',
               pointerEvents: 'none',
             },
           }}

@@ -36,6 +36,8 @@ export interface NerdCreds {
   interests?: string[];
   portfolio?: PortfolioItem[];
   resume_file_name?: string | null;
+  /** Public URL of the uploaded Word file when `resume_url` points at a generated PDF. */
+  resume_original_url?: string | null;
   resume_thumbnail_url?: string;
   resume_thumbnail_status?: 'pending' | 'complete' | 'failed';
   resume_thumbnail_updated_at?: string;

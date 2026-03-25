@@ -163,7 +163,10 @@ export const SignIn = () => {
               <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
                 Sign In
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.88, fontWeight: 600 }}
+              >
                 Welcome back to WRDLNKDN
               </Typography>
             </Box>
@@ -224,12 +227,19 @@ export const SignIn = () => {
             <Divider />
 
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.88, fontWeight: 600 }}
+              >
                 {"Don't have an account? "}
                 <Typography
                   component={RouterLink}
                   to="/join"
-                  sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                  sx={{
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                    fontWeight: 700,
+                  }}
                 >
                   Join
                 </Typography>

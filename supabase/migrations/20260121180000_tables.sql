@@ -63,6 +63,9 @@ create table if not exists public.admin_allowlist (
   created_by uuid references auth.users(id)
 );
 
+create index if not exists idx_admin_allowlist_created_by
+  on public.admin_allowlist (created_by);
+
 -- -----------------------------
 -- Profanity overrides (admin-configurable; RLS in rls.sql)
 -- Used with OSS profanity filter to block additional terms in freeform text.
@@ -225,6 +228,7 @@ create unique index if not exists idx_profiles_handle_lower_unique
   on public.profiles (lower(handle));
 create index if not exists idx_profiles_created_at on public.profiles (created_at);
 create index if not exists idx_profiles_status on public.profiles (status);
+create index if not exists idx_profiles_reviewed_by on public.profiles (reviewed_by);
 create index if not exists idx_profiles_handle on public.profiles (handle);
 create index if not exists idx_profiles_email on public.profiles (email);
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
@@ -763,6 +767,8 @@ create index if not exists idx_feed_ad_events_advertiser_created
   on public.feed_ad_events(advertiser_id, created_at desc);
 create index if not exists idx_feed_ad_events_name_created
   on public.feed_ad_events(event_name, created_at desc);
+create index if not exists idx_feed_ad_events_member_id
+  on public.feed_ad_events (member_id);
 
 comment on table public.feed_ad_events is
   'Feed ad analytics events for admin reporting.';
@@ -1524,6 +1530,8 @@ create table if not exists public.chat_suspensions (
 );
 
 create index if not exists idx_chat_suspensions_user_id on public.chat_suspensions(user_id);
+create index if not exists idx_chat_suspensions_suspended_by
+  on public.chat_suspensions (suspended_by);
 
 comment on table public.chat_suspensions is 'Chat-only suspension by moderator. Platform suspension via profiles.status.';
 
@@ -1553,6 +1561,8 @@ create table if not exists public.chat_message_reactions (
 );
 
 create index if not exists idx_chat_message_reactions_message_id on public.chat_message_reactions(message_id);
+create index if not exists idx_chat_message_reactions_user_id
+  on public.chat_message_reactions (user_id);
 
 create table if not exists public.chat_message_attachments (
   id uuid primary key default gen_random_uuid(),
@@ -1607,6 +1617,10 @@ create table if not exists public.chat_reports (
 
 create index if not exists idx_chat_reports_reporter_id on public.chat_reports(reporter_id);
 create index if not exists idx_chat_reports_status on public.chat_reports(status);
+create index if not exists idx_chat_reports_reported_message_id
+  on public.chat_reports (reported_message_id);
+create index if not exists idx_chat_reports_reported_user_id
+  on public.chat_reports (reported_user_id);
 
 comment on table public.chat_reports is 'Reports: message or user; moderator workflow.';
 
@@ -2167,14 +2181,20 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- resumes (user resume PDF or Word)
+-- resumes (user resume PDF or Word; PNG/JPEG for server-generated + custom preview thumbnails)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'resumes',
   'resumes',
   true,
   5242880,
-  array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/png',
+    'image/jpeg'
+  ]
 )
 on conflict (id) do update set
   public = excluded.public,
@@ -2272,6 +2292,8 @@ create table if not exists public.content_submissions (
 create index if not exists idx_content_submissions_submitted_by on public.content_submissions(submitted_by);
 create index if not exists idx_content_submissions_status on public.content_submissions(status);
 create index if not exists idx_content_submissions_created_at on public.content_submissions(created_at desc);
+create index if not exists idx_content_submissions_moderated_by
+  on public.content_submissions (moderated_by);
 
 comment on table public.content_submissions is
   'Community video submissions: YouTube links or uploaded files. Status: pending → approved/rejected/changes_requested → published.';
@@ -2296,6 +2318,7 @@ create table if not exists public.playlists (
 
 create index if not exists idx_playlists_slug on public.playlists(slug);
 create index if not exists idx_playlists_is_public on public.playlists(is_public) where is_public = true;
+create index if not exists idx_playlists_created_by on public.playlists (created_by);
 
 comment on table public.playlists is
   'Curated playlists for WRDLNKDN YouTube channel. Admin-only management.';
@@ -2327,6 +2350,8 @@ create table if not exists public.playlist_items (
 create index if not exists idx_playlist_items_playlist_id on public.playlist_items(playlist_id);
 create unique index if not exists idx_playlist_items_playlist_submission
   on public.playlist_items(playlist_id, submission_id);
+create index if not exists idx_playlist_items_submission_id
+  on public.playlist_items (submission_id);
 
 comment on table public.playlist_items is
   'Published items within a playlist. Links to content_submissions.';
@@ -3130,6 +3155,7 @@ create table if not exists public.game_events (
 
 create index if not exists idx_game_events_session on public.game_events(session_id);
 create index if not exists idx_game_events_created_at on public.game_events(session_id, created_at desc);
+create index if not exists idx_game_events_actor_id on public.game_events (actor_id);
 
 comment on table public.game_events is
   'Optional audit trail: moves, turn advances, completion, system events.';

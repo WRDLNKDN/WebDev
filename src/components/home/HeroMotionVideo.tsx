@@ -74,10 +74,11 @@ export const HeroMotionVideo = () => {
         top: 0,
         left: 0,
         zIndex: 1,
-        width: { xs: '40%', sm: '35%', md: '28%' },
-        maxWidth: 320,
+        width: { xs: '36%', sm: '32%', md: '26%' },
+        maxWidth: { xs: 260, sm: 300, md: 320 },
         aspectRatio: '1',
         overflow: 'hidden',
+        bgcolor: '#000',
         borderRadius: 2,
         border: '1px solid rgba(156,187,217,0.18)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -97,7 +98,8 @@ export const HeroMotionVideo = () => {
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit: 'contain',
+          objectPosition: 'center center',
           display: 'block',
         }}
         aria-label="Hero motion: Greenling to Pinkling"

@@ -1,4 +1,5 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -124,8 +125,8 @@ export const ChatPopover = ({
     <>
       <Box
         onClick={(e) => e.stopPropagation()}
-        sx={{
-          ...GLASS_CARD,
+        sx={(t) => ({
+          ...getGlassCard(t),
           position: 'fixed',
           top: topOffsetPx,
           right: 24,
@@ -137,9 +138,10 @@ export const ChatPopover = ({
           overflow: 'hidden',
           boxSizing: 'border-box',
           borderRadius: 3,
-          border: '1px solid rgba(156,187,217,0.26)',
           boxShadow:
-            '0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(56,132,210,0.12)',
+            t.palette.mode === 'light'
+              ? `0 16px 40px ${alpha(t.palette.common.black, 0.12)}, 0 0 0 1px ${alpha(t.palette.primary.main, 0.1)}`
+              : '0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(56,132,210,0.12)',
           animation: 'popoverIn 0.25s cubic-bezier(0.32, 0, 0.37, 1)',
           '@keyframes popoverIn': {
             from: {
@@ -151,7 +153,7 @@ export const ChatPopover = ({
               transform: 'scale(1) translateX(0)',
             },
           },
-        }}
+        })}
       >
         <ChatRoomHeader
           room={room}

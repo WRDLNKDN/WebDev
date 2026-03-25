@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  GODADDY_STOREFRONT_URL,
+  getStoreExternalUrl,
   resolveStoreExternalUrl,
 } from '../../lib/marketing/storefront';
 
@@ -23,7 +23,7 @@ export const Store = () => {
         }
       } catch {
         if (!cancelled) {
-          window.open(GODADDY_STOREFRONT_URL, '_blank', 'noopener,noreferrer');
+          window.open(getStoreExternalUrl(), '_blank', 'noopener,noreferrer');
           navigate('/', { replace: true });
         }
       }

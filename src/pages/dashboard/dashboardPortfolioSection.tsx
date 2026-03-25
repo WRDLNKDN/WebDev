@@ -15,7 +15,7 @@ import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 
 type Props = {
@@ -98,6 +98,9 @@ export const DashboardPortfolioSection = ({
       mt: 1.5,
       minWidth: 200,
       borderRadius: 2,
+      maxHeight: 'calc(100vh - 100px)',
+      overflowX: 'hidden',
+      overflowY: 'auto',
       ...denseMenuPaperSxFromTheme(theme),
     }),
     [theme],
@@ -109,7 +112,7 @@ export const DashboardPortfolioSection = ({
       data-testid="portfolio-section"
       elevation={0}
       sx={{
-        ...GLASS_CARD,
+        ...getGlassCard(theme),
         p: { xs: 2, md: 3 },
         overflowX: 'hidden',
         width: '100%',
@@ -177,6 +180,9 @@ export const DashboardPortfolioSection = ({
             onClose={onCloseAddMenu}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            MenuListProps={{
+              sx: { py: 0.5, overflowX: 'hidden' },
+            }}
             slotProps={{ paper: { sx: menuPaperSx } }}
           >
             <MenuItem onClick={onOpenLinks} sx={{ py: 1.25 }}>

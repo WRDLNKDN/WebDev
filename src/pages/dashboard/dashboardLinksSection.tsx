@@ -1,14 +1,22 @@
 import AddIcon from '@mui/icons-material/Add';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Box, Button, Collapse, Paper, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Collapse,
+  Paper,
+  Stack,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { DestinationLink } from '../../components/common/DestinationLink';
 import { useState } from 'react';
 import {
   CATEGORY_ORDER,
   getCategoryForPlatform,
 } from '../../constants/platforms';
-import { GLASS_CARD } from '../../theme/candyStyles';
+import { getGlassCard } from '../../theme/candyStyles';
 import type { LinkCategory, SocialLink } from '../../types/profile';
 import { compareSocialLinksAlphabetically } from '../../lib/profile/socialLinksPresentation';
 import {
@@ -202,6 +210,7 @@ export const DashboardLinksSection = ({
   socials,
   onOpenLinks,
 }: DashboardLinksSectionProps) => {
+  const theme = useTheme();
   const groups = groupDashboardLinks(socials);
 
   return (
@@ -209,7 +218,7 @@ export const DashboardLinksSection = ({
       data-testid="dashboard-links-section"
       elevation={0}
       sx={{
-        ...GLASS_CARD,
+        ...getGlassCard(theme),
         p: { xs: 2, md: 3 },
         mb: 3,
       }}

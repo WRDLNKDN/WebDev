@@ -12,10 +12,12 @@
   --hero-reveal-video-duration: 1.45s;
   --hero-reveal-video-ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* Compact hero: align motion with HOME_HERO_VIDEO_FADE_MS (~1.45s) in homeHeroRevealTiming.ts */
-  --hero-compact-layout-duration: 1.35s;
-  --hero-compact-layout-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --hero-compact-spacing-duration: 1.2s;
+  --hero-compact-layout-duration: 1.65s;
+  --hero-compact-layout-ease: cubic-bezier(0.25, 0.85, 0.3, 1);
+  --hero-compact-spacing-duration: 1.35s;
   --hero-compact-spacing-ease: cubic-bezier(0.33, 1, 0.68, 1);
+  /* Same top offset for intro video + compact so copy does not jump vertically on handoff */
+  --hero-copy-pad-top: clamp(4.5rem, 15dvh, 8.25rem);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -77,6 +79,8 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  padding-top: var(--hero-copy-pad-top);
+  padding-bottom: 1.25rem;
   overflow: hidden;
   transition:
     min-height var(--hero-compact-layout-duration)
@@ -199,45 +203,44 @@
   z-index: 0;
 }
 
-/* Hero video: preserve more of the Weirdling frame, especially lower body/feet. */
+/*
+ * Full-frame hero video (local + marketing): always `contain` so head/feet are never
+ * cropped. (Previously `cover` applied whenever `home-landing--marketing-video-phase`
+ * was absent — e.g. local dev — which clipped top/bottom.)
+ */
 .home-landing__video--focus-feet {
-  object-fit: cover;
-  object-position: center 62%;
+  object-fit: contain;
+  object-position: center center;
   top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
-  bottom: auto;
   transform: none;
-  transform-origin: center top;
+  transform-origin: center center;
 }
 
-/*
- * UAT/PROD marketing hero: letterbox the full frame and anchor slightly lower so the
- * Weirdling stays centered while the matte dissolves into the shell background.
- */
+/* Marketing phase: optional slight vertical bias; still no crop */
 .home-landing--marketing-video-phase
   .home-landing__video.home-landing__video--focus-feet {
-  object-fit: contain;
-  object-position: center 56%;
+  object-position: center 52%;
 }
 
-/* Mobile: hero video reads huge at full bleed — cap frame size and letterbox in the matte */
+/* Mobile: smaller stage than desktop; extra vertical room so portrait footage fits */
 @media (max-width: 767.98px) {
   .home-landing__hero-backdrop
     .home-landing__video.home-landing__video--focus-feet {
-    /* Slightly below vertical center so headline/CTA breathe above the Weirdling */
-    top: 54%;
+    top: 56%;
     left: 50%;
     right: auto;
     bottom: auto;
-    width: min(88vw, 380px);
-    height: min(42dvh, 320px);
-    max-height: 46dvh;
+    width: min(86vw, 360px);
+    height: min(54dvh, 420px);
+    max-height: 58dvh;
     transform: translate(-50%, -50%);
     object-fit: contain;
-    object-position: center 56%;
+    object-position: center center;
   }
 }
 
@@ -250,8 +253,8 @@
 .home-landing__video-overlay {
   z-index: 1;
   pointer-events: none;
-  /* Keep the video itself fully visible; the backdrop behind it handles the fade. */
-  background: rgba(0, 0, 0, 0);
+  /* Darken footage behind copy (no panel); compact phase clears via .home-landing__hero--compact */
+  background: rgba(0, 0, 0, 0.38);
   transition: background-color var(--hero-reveal-video-duration)
     var(--hero-reveal-video-ease);
 }
@@ -320,6 +323,8 @@
   justify-items: center;
   width: min(640px, 100%);
   margin: 0 auto;
+  transition: gap var(--hero-compact-spacing-duration)
+    var(--hero-compact-spacing-ease);
 }
 
 .home-landing__headline {
@@ -630,6 +635,124 @@
 .home-landing__link-button--secondary:hover {
   border-color: rgba(203, 143, 219, 0.82);
   background: rgba(167, 68, 194, 0.14);
+}
+
+/*
+ * Hero CTAs (GuestView buttonsOnly): no outer tray — buttons only; Join stays solid;
+ * Sign In uses outline style (no dark fill) over the video.
+ */
+.home-landing__cta-stack--hero {
+  gap: 0.75rem;
+}
+
+.home-landing__button--hero-primary {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border: 2px solid #7dd3fc;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  text-shadow: none;
+}
+
+.home-landing__button--hero-primary:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #bae6fd;
+  color: #ffffff;
+  box-shadow:
+    0 4px 18px rgba(37, 99, 235, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.home-landing__button--hero-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.home-landing__button--hero-primary:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.home-landing__link-button--hero-secondary {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65);
+  box-shadow: none;
+}
+
+.home-landing__link-button--hero-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.home-landing__link-button--hero-secondary:active {
+  transform: translateY(0);
+}
+
+.home-landing__link-button--hero-secondary:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 3px;
+}
+
+/*
+ * Post-intro (compact hero): Join glass blue; Sign In purple outline/text.
+ */
+.home-landing--hero-compact .home-landing__cta-stack--hero {
+  gap: 1rem;
+}
+
+.home-landing--hero-compact .home-landing__button--hero-primary {
+  background: rgba(56, 132, 210, 0.2);
+  border: 2px solid rgba(141, 188, 229, 0.6);
+  color: var(--color-text-primary);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.home-landing--hero-compact .home-landing__button--hero-primary:hover {
+  background: rgba(45, 111, 173, 0.36);
+  border-color: rgba(141, 188, 229, 0.9);
+  color: var(--color-text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.home-landing--hero-compact .home-landing__button--hero-primary:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.home-landing--hero-compact .home-landing__link-button--hero-secondary {
+  background: transparent;
+  border-width: 1px;
+  border-color: rgba(167, 68, 194, 0.5);
+  color: #cb8fdb;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.home-landing--hero-compact .home-landing__link-button--hero-secondary:hover {
+  border-color: rgba(203, 143, 219, 0.82);
+  background: rgba(167, 68, 194, 0.14);
+  color: #e9d5ff;
+  box-shadow: none;
+}
+
+.home-landing--hero-compact
+  .home-landing__link-button--hero-secondary:focus-visible {
+  outline: 2px solid #cb8fdb;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-landing__button--hero-primary:hover,
+  .home-landing__link-button--hero-secondary:hover {
+    transform: none;
+  }
 }
 
 .home-landing__skeleton {

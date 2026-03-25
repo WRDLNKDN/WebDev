@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FOOTER_DONATE_QR_ASSET,
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
 } from '../../components/layout/footerConfig';
+import { buildPayQrCodeImageUrl, PAY_PATH } from '../../lib/marketing/payLink';
 
 describe('footerConfig', () => {
   it('keeps footer sections limited to company and legal notices', () => {
@@ -27,17 +27,14 @@ describe('footerConfig', () => {
     expect(footerLabels).not.toContain('Directory');
   });
 
-  it('keeps the donate call-to-action pointed at the production payment URL', () => {
-    expect(FOOTER_DONATE_URL).toBe(
-      'https://0ce9348c-39fb-4c78-88f3-cde23f784fad.paylinks.godaddy.com/d43df879-0ba0-4c34-9de0-878',
-    );
+  it('keeps the donate call-to-action on /pay (edge redirect in production)', () => {
+    expect(FOOTER_DONATE_URL).toBe(PAY_PATH);
   });
 
-  it('points the donate modal QR image at a URL that encodes the donate link', () => {
-    expect(FOOTER_DONATE_QR_ASSET).toContain('create-qr-code');
-    expect(FOOTER_DONATE_QR_ASSET).toContain(
-      encodeURIComponent(FOOTER_DONATE_URL),
-    );
+  it('builds donate QR to encode an absolute /pay URL', () => {
+    const qr = buildPayQrCodeImageUrl('https://wrdlnkdn.com/pay');
+    expect(qr).toContain('create-qr-code');
+    expect(qr).toContain(encodeURIComponent('https://wrdlnkdn.com/pay'));
   });
 
   it('keeps github as the rightmost social link', () => {

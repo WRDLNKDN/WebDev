@@ -36,8 +36,9 @@ export function getStoreExternalUrl(env?: StorefrontEnv): string {
 }
 
 /**
- * True when the legacy GoDaddy storefront responds (HEAD, opaque / no-cors).
- * Used to prefer wrdlnkdn.com/store-1 when the cart is still live; otherwise Ecwid / VITE_STORE_URL.
+ * True when the legacy GoDaddy storefront returns a successful HTTP response.
+ * Uses CORS-capable fetch so we inspect `response.ok` (unlike `no-cors`, which always looked “up”).
+ * Same-origin on wrdlnkdn.com: reliable. Cross-origin (e.g. local/UAT): may fail CORS → false → Ecwid.
  */
 export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
   if (typeof fetch !== 'function') return false;
@@ -48,13 +49,25 @@ export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
   }, GODADDY_STORE_PROBE_TIMEOUT_MS);
 
   try {
-    await fetch(GODADDY_STOREFRONT_URL, {
+    let res = await fetch(GODADDY_STOREFRONT_URL, {
       method: 'HEAD',
-      mode: 'no-cors',
       cache: 'no-store',
       signal: ctrl.signal,
+      credentials: 'omit',
+      redirect: 'follow',
     });
-    return true;
+    if (res.ok) return true;
+    if (res.status === 405 || res.status === 501) {
+      res = await fetch(GODADDY_STOREFRONT_URL, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: ctrl.signal,
+        credentials: 'omit',
+        redirect: 'follow',
+      });
+      return res.ok;
+    }
+    return false;
   } catch {
     return false;
   } finally {

@@ -454,7 +454,7 @@ export const Home = () => {
           onPointerDown={handleHeroSkip}
           aria-hidden="true"
         >
-          {showMarketingHeroPoster ? (
+          {showMarketingHeroPoster && heroMode === 'video' ? (
             <img
               className="home-landing__video home-landing__video--focus-feet"
               src="/assets/video/hero-bg-poster.jpg"

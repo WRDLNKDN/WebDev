@@ -64,7 +64,8 @@ export const AttachmentPreview = ({
           muted
           loop
           playsInline
-          controls
+          preload="auto"
+          aria-label="Video attachment (loops like a GIF)"
           sx={{
             width: '100%',
             height: 'auto',

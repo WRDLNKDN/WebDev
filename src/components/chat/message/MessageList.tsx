@@ -35,6 +35,12 @@ import { AttachmentPreview } from './AttachmentPreview';
 
 const CHAT_PANEL_BG = '#282C34';
 
+/**
+ * Message row actions use the kebab menu only (no inline action bars).
+ * Menu order: Reply → Forward → Copy → Edit (own) → Delete (own) → Report.
+ * Moderator/admin delete is not shown here; backend policies remain unchanged.
+ */
+
 type MessageListProps = {
   messages: MessageWithExtras[];
   currentUserId: string;
@@ -280,56 +286,51 @@ export const MessageList = ({
         const canAct = isOwn && !msg.is_system_message && !msg.is_deleted;
         const showKebabMenu = !msg.is_system_message && !msg.is_deleted;
 
-        const kebabItems: PostActionMenuItem[] = showKebabMenu
-          ? [
+        const kebabItems: PostActionMenuItem[] = (() => {
+          if (!showKebabMenu) return [];
+          const items: PostActionMenuItem[] = [
+            {
+              label: 'Reply',
+              icon: <ReplyIcon fontSize="small" />,
+              onClick: () => onStartReply?.(msg),
+            },
+            {
+              label: 'Forward',
+              icon: <ForwardIcon fontSize="small" />,
+              onClick: () => onForward?.(msg),
+            },
+            {
+              label: 'Copy',
+              icon: <ContentCopyIcon fontSize="small" />,
+              onClick: () => void handleCopyMessage(msg),
+            },
+          ];
+          if (isOwn) {
+            items.push(
               {
-                label: 'Reply',
-                icon: <ReplyIcon fontSize="small" />,
-                onClick: () => onStartReply?.(msg),
+                label: 'Edit',
+                icon: <EditOutlinedIcon fontSize="small" />,
+                onClick: () => {
+                  setEditingId(msg.id);
+                  setEditText(msg.content || '');
+                },
               },
               {
-                label: 'Forward',
-                icon: <ForwardIcon fontSize="small" />,
-                onClick: () => onForward?.(msg),
+                label: 'Delete',
+                icon: <DeleteOutlineIcon fontSize="small" />,
+                danger: true,
+                onClick: () => onDelete?.(msg.id),
               },
-              {
-                label: 'Copy',
-                icon: <ContentCopyIcon fontSize="small" />,
-                onClick: () => void handleCopyMessage(msg),
-              },
-              ...(isOwn
-                ? ([
-                    {
-                      label: 'Edit',
-                      icon: <EditOutlinedIcon fontSize="small" />,
-                      onClick: () => {
-                        setEditingId(msg.id);
-                        setEditText(msg.content || '');
-                      },
-                    },
-                    {
-                      label: 'Delete',
-                      icon: <DeleteOutlineIcon fontSize="small" />,
-                      danger: true,
-                      onClick: () => onDelete?.(msg.id),
-                    },
-                    {
-                      label: 'Report',
-                      icon: <FlagOutlinedIcon fontSize="small" />,
-                      danger: true,
-                      onClick: () => onReport?.(msg.id, msg.sender_id),
-                    },
-                  ] satisfies PostActionMenuItem[])
-                : [
-                    {
-                      label: 'Report',
-                      icon: <FlagOutlinedIcon fontSize="small" />,
-                      danger: true,
-                      onClick: () => onReport?.(msg.id, msg.sender_id),
-                    },
-                  ]),
-            ]
-          : [];
+            );
+          }
+          items.push({
+            label: 'Report',
+            icon: <FlagOutlinedIcon fontSize="small" />,
+            danger: true,
+            onClick: () => onReport?.(msg.id, msg.sender_id),
+          });
+          return items;
+        })();
 
         if (msg.is_system_message) {
           return (

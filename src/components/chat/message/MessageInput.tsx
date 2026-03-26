@@ -492,6 +492,19 @@ export const MessageInput = ({
           {processingMessage}
         </Box>
       ) : null}
+      <Typography
+        component="p"
+        variant="caption"
+        sx={{
+          fontSize: '0.65rem',
+          opacity: 0.88,
+          color: 'text.secondary',
+          m: 0,
+          lineHeight: 1.35,
+        }}
+      >
+        GIFs over 2MB are optimized for faster delivery when you send.
+      </Typography>
       {pendingFiles.length > 0 && (
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {pendingFiles.map((f, i) => (

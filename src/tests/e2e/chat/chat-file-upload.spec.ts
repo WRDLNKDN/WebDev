@@ -18,7 +18,8 @@ const MID_SIZED_GIF = {
 const TOO_LARGE_GIF = {
   name: 'too-large.gif',
   mimeType: 'image/gif',
-  buffer: Buffer.alloc(10 * 1024 * 1024, 1),
+  /** Above CHAT_GIF_PROCESSING_MAX_FILE_BYTES (16MB). */
+  buffer: Buffer.alloc(18 * 1024 * 1024, 1),
 };
 
 const E2E_ROOM_ID = 'e2e-room-1111-4111-8111-111111111111';
@@ -176,7 +177,9 @@ test.describe('Chat file upload', () => {
     const fileInput = page.locator('input[type=file]').first();
     await fileInput.setInputFiles(MID_SIZED_GIF);
 
-    await expect(page.getByText(/large gif detected/i)).toBeVisible();
+    await expect(
+      page.getByText(/large gif.*optimized for faster delivery/i),
+    ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Send message' }),
     ).toBeEnabled();

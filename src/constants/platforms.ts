@@ -16,6 +16,7 @@ export const PLATFORM_OPTIONS = [
   { label: 'Behance', value: 'Behance', category: 'Professional' }, // New
   { label: 'Dribbble', value: 'Dribbble', category: 'Professional' }, // New
   { label: 'Figma', value: 'Figma', category: 'Professional' }, // New
+  { label: 'Vercel', value: 'Vercel', category: 'Professional' },
 
   // --- SOCIAL / COMMUNITY ---
   { label: 'X (Twitter)', value: 'X', category: 'Social' },

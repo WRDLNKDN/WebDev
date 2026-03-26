@@ -80,7 +80,8 @@ export function getChatAttachmentProcessingPlan(file: {
       accepted: true,
       mode: 'gif_processing',
       uploadLabel: 'Optimizing GIF...',
-      helperText: 'Large GIF detected. It will be optimized before attaching.',
+      helperText:
+        'Large GIF — will be optimized for faster delivery when you send.',
     };
   }
 

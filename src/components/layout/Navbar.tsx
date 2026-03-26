@@ -130,7 +130,7 @@ export const Navbar = () => {
     !forcePublicHeader &&
     (!productionComingSoon || isAdminActive);
 
-  // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
+  // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Sign in + Join
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
   // retry getSession when null to avoid "stuck on Sign in" after returning from OAuth.
   useEffect(() => {
@@ -458,7 +458,7 @@ export const Navbar = () => {
             </Tooltip>
           )}
 
-          {/* Left: logo (home) + search — shrink on mobile so Join/Sign in stay visible */}
+          {/* Left: logo (home) + search — shrink on mobile so Sign in / Join stay visible */}
           <Stack
             direction="row"
             alignItems="center"
@@ -743,7 +743,7 @@ export const Navbar = () => {
               )}
           </Stack>
 
-          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store + Admin */}
+          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store; Admin is under the avatar menu only */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
               <GlobalNavAuthenticatedPrimary
@@ -775,20 +775,6 @@ export const Navbar = () => {
                   Store
                 </Button>
               )}
-              {isAdmin ? (
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  sx={{
-                    color: 'warning.main',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    px: isCompactDesktop ? 1 : 1.5,
-                  }}
-                >
-                  Admin
-                </Button>
-              ) : null}
             </Box>
           )}
 
@@ -806,7 +792,26 @@ export const Navbar = () => {
                 />
               ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
-                  {/* Guest: Join + Sign in — only when signed out (never show if session exists) */}
+                  {/* Guest: Sign in + Join — only when signed out (never show if session exists) */}
+                  <Button
+                    component="button"
+                    type="button"
+                    onClick={() => void openSignIn()}
+                    sx={{
+                      color: 'rgba(255,255,255,0.96)',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      minWidth: 0,
+                      px: 1,
+                      '&:hover': {
+                        bgcolor: 'rgba(56,132,210,0.14)',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
                   {!isJoinActive && (
                     <Button
                       component="button"
@@ -828,25 +833,6 @@ export const Navbar = () => {
                       Join
                     </Button>
                   )}
-                  <Button
-                    component="button"
-                    type="button"
-                    onClick={() => void openSignIn()}
-                    sx={{
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      minWidth: 0,
-                      px: 1,
-                      '&:hover': {
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                        color: 'white',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
                 </>
               ) : (
                 <>
@@ -955,7 +941,7 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile: Join/Sign in — real links + touch-action so iOS doesn't eat taps */}
+          {/* Mobile: Sign in / Join — real links + touch-action so iOS doesn't eat taps */}
           {isMobile && !minimalComingSoonHomeNavbar && (
             <Stack
               direction="row"
@@ -978,6 +964,30 @@ export const Navbar = () => {
                 />
               ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    aria-label="Sign in"
+                    size="small"
+                    sx={{
+                      minHeight: 40,
+                      minWidth: 'auto',
+                      px: 1.25,
+                      color: 'rgba(255,255,255,0.96)',
+                      textTransform: 'none',
+                      fontSize: '0.9375rem',
+                      fontWeight: 600,
+                      touchAction: 'manipulation',
+                      pointerEvents: 'auto',
+                      '&:hover': {
+                        color: 'white',
+                        bgcolor: 'rgba(56,132,210,0.14)',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
                   {!isJoinActive && (
                     <Button
                       component={RouterLink}
@@ -1004,30 +1014,6 @@ export const Navbar = () => {
                       Join
                     </Button>
                   )}
-                  <Button
-                    component={RouterLink}
-                    to="/signin"
-                    onClick={() => setDrawerOpen(false)}
-                    aria-label="Sign in"
-                    size="small"
-                    sx={{
-                      minHeight: 40,
-                      minWidth: 'auto',
-                      px: 1.25,
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '0.9375rem',
-                      fontWeight: 600,
-                      touchAction: 'manipulation',
-                      pointerEvents: 'auto',
-                      '&:hover': {
-                        color: 'white',
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
                 </>
               ) : (
                 <>
@@ -1220,7 +1206,6 @@ export const Navbar = () => {
       <NavbarMobileDrawer
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
-        isAdmin={isAdmin}
         showAuthedHeader={showAuthedHeader}
         session={session}
         productionComingSoon={productionComingSoon}

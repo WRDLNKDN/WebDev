@@ -115,9 +115,8 @@ export const MessengerOverlay = () => {
     [messenger],
   );
 
-  const handleRemoveChat = useCallback(
-    async (e: React.MouseEvent, targetRoomId: string) => {
-      e.stopPropagation();
+  const handleRemoveRoom = useCallback(
+    async (targetRoomId: string) => {
       await removeChat(targetRoomId);
       await fetchRooms();
     },
@@ -158,7 +157,7 @@ export const MessengerOverlay = () => {
             rooms={rooms}
             getRoomLabel={getRoomLabel}
             onOpenRoom={handleOpenRoom}
-            onRemoveChat={handleRemoveChat}
+            onRemoveRoom={handleRemoveRoom}
             onToggleFavorite={toggleFavorite}
             onBackdropClick={messenger.closeOverlay}
             onClose={messenger.closeOverlay}
@@ -194,10 +193,10 @@ export const MessengerOverlay = () => {
           onClick={() => {
             setMenuAnchor(null);
             messenger?.closeOverlay();
-            navigate('/chat');
+            navigate('/chat-full');
           }}
         >
-          Open full Messages
+          Open messages
         </MenuItem>
       </Menu>
 

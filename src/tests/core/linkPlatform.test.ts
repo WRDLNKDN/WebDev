@@ -36,6 +36,8 @@ describe('detectPlatformFromUrl', () => {
     expect(detectPlatformFromUrl('https://mega.nz/folder/abc')).toBe('Mega');
     expect(detectPlatformFromUrl('https://1drv.ms/u/s!abc')).toBe('OneDrive');
     expect(detectPlatformFromUrl('https://app.box.com/folder/123')).toBe('Box');
+    expect(detectPlatformFromUrl('https://vercel.com/myteam')).toBe('Vercel');
+    expect(detectPlatformFromUrl('https://my-app.vercel.app/')).toBe('Vercel');
   });
 
   it('returns Custom for unrecognized hosts', () => {
@@ -112,6 +114,10 @@ describe('detectPlatformFromUrl', () => {
     expect(detectPlatformFromUrl('https://music.amazon.com/artists/B001')).toBe(
       'Amazon Music',
     );
+  });
+
+  it('maps Vercel to Professional', () => {
+    expect(getCategoryForPlatform('Vercel')).toBe('Professional');
   });
 
   it('maps music platforms to Music category', () => {

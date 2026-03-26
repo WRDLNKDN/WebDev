@@ -227,6 +227,17 @@
   object-position: center 52%;
 }
 
+/* Wide viewports: fill hero width during marketing intro (avoid pillarboxed strip).
+   Compact / post-intro and mobile stay on `contain` rules below. */
+@media (min-width: 768px) {
+  .home-landing--marketing-video-phase
+    .home-landing__hero-backdrop
+    .home-landing__video.home-landing__video--focus-feet {
+    object-fit: cover;
+    object-position: center center;
+  }
+}
+
 /* Mobile: full-bleed inside backdrop (same framing as desktop) — avoid the previous
    “postage stamp” box that read as a shrunk video on UAT/PROD marketing hero. */
 @media (max-width: 767.98px) {

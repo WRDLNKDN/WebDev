@@ -1,4 +1,4 @@
-import { Box, useTheme } from '@mui/material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import {
   lazy,
@@ -50,6 +50,8 @@ const HOME_SHELL_REVEAL_TRANSITION =
 const LayoutContent = () => {
   const theme = useTheme();
   const { pathname } = useLocation();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const hideFooterForDockedChat = pathname.startsWith('/chat-full') && isMdUp;
   const messenger = useMessenger();
   const [session, setSession] = useState<Session | null>(null);
   const isJoin = pathname.startsWith('/join');
@@ -227,7 +229,7 @@ const LayoutContent = () => {
           </ErrorBoundary>
         </Box>
       </Box>
-      {!isJoin && !isAdmin && (
+      {!isJoin && !isAdmin && !hideFooterForDockedChat && (
         <Box
           component="footer"
           sx={{

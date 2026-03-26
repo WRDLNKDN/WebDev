@@ -212,8 +212,8 @@ const errorMessage = (e, fallback) => {
   return fallback;
 };
 // Keep in sync with WebDev `CHAT_GIF_PROCESSING_MAX_FILE_BYTES` (src/types/chat.ts).
-const CHAT_GIF_PROCESSING_MAX_BYTES = 8 * 1024 * 1024;
-const CHAT_PROCESSED_MEDIA_MAX_BYTES = CHAT_GIF_PROCESSING_MAX_BYTES;
+const CHAT_GIF_PROCESSING_MAX_BYTES = 16 * 1024 * 1024;
+const CHAT_PROCESSED_MEDIA_MAX_BYTES = 16 * 1024 * 1024;
 const FFMPEG_BINARY = process.env.FFMPEG_PATH || 'ffmpeg';
 const FFMPEG_EXEC_MAX_BUFFER = 64 * 1024 * 1024;
 

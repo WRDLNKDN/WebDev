@@ -1,13 +1,18 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
   CircularProgress,
+  IconButton,
+  Stack,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppToast } from '../../context/AppToastContext';
 import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
@@ -34,10 +39,14 @@ import {
 import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { truncateSnippet } from '../../lib/chat/messageSnippet';
+import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { getGlassCard } from '../../theme/candyStyles';
+import { ChatPageEmptyState } from './ChatPageEmptyState';
 
 export const ChatPage = () => {
   const theme = useTheme();
+  const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
+  const bannerOffsetPx = useUatBannerOffset();
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -148,6 +157,15 @@ export const ChatPage = () => {
     setForwardSource(null);
   }, [roomId]);
 
+  useEffect(() => {
+    if (isMobileLayout) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') navigate('/feed');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobileLayout, navigate]);
+
   const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
     return (
       m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
@@ -237,235 +255,213 @@ export const ChatPage = () => {
 
   if (!session || !uid) return null;
 
-  return (
+  const closeDockedChat = () => {
+    navigate('/feed');
+  };
+
+  const dockTopPx = 64 + bannerOffsetPx;
+
+  const listColumn = (
+    <Box
+      sx={{
+        display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
+        width: { xs: '100%', md: 300, lg: 328 },
+        minWidth: { xs: 0, md: 300, lg: 328 },
+        maxWidth: '100%',
+        flexShrink: 0,
+        borderRight: {
+          xs: 'none',
+          md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+        },
+        flexDirection: 'column',
+        minHeight: 0,
+        bgcolor: isMobileLayout
+          ? 'transparent'
+          : alpha(theme.palette.background.default, 0.65),
+      }}
+    >
+      <ChatRoomList
+        rooms={rooms}
+        loading={roomsLoading}
+        currentUserId={uid}
+        onStartDm={() => setStartDmOpen(true)}
+        onCreateGroup={() => setCreateGroupOpen(true)}
+        onRemoveChat={handleRemoveChat}
+        onToggleFavorite={toggleFavorite}
+        chatPathPrefix="/chat-full"
+        showMessagesHeading={isMobileLayout}
+      />
+    </Box>
+  );
+
+  const threadColumn = (
     <Box
       sx={{
         flex: 1,
-        minHeight: 0,
-        height: '100%',
-        maxHeight: '100%',
-        minWidth: 0,
-        width: '100%',
-        display: 'flex',
+        display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
         flexDirection: 'column',
-        backgroundImage: {
-          xs: 'url("/assets/background-mobile.png")',
-          md: 'url("/assets/background-desktop.png")',
-        },
-        backgroundSize: 'cover',
+        minHeight: 0,
+        minWidth: 0,
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        overflowY: 'hidden',
+        background: isMobileLayout
+          ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
+          : alpha(theme.palette.background.paper, 0.92),
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          minWidth: 0,
-          maxWidth: '100%',
-          ...getGlassCard(theme),
-          m: { xs: 0.75, sm: 1.25, md: 2 },
-          overflow: 'hidden',
-          borderRadius: { xs: 2.5, md: 3 },
-        }}
-      >
-        <Box
-          sx={{
-            display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-            width: { xs: '100%', md: 320, lg: 340 },
-            minWidth: { xs: 0, md: 320, lg: 340 },
-            maxWidth: '100%',
-            flexShrink: 0,
-            borderRight: {
-              xs: 'none',
-              md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
-            },
-            flexDirection: 'column',
-          }}
-        >
-          <ChatRoomList
-            rooms={rooms}
-            loading={roomsLoading}
+      {roomId ? (
+        <>
+          <ChatRoomHeader
+            room={room}
             currentUserId={uid}
-            onStartDm={() => setStartDmOpen(true)}
-            onCreateGroup={() => setCreateGroupOpen(true)}
-            onRemoveChat={handleRemoveChat}
-            onToggleFavorite={toggleFavorite}
-            chatPathPrefix="/chat-full"
-          />
-        </Box>
-
-        <Box
-          sx={{
-            flex: 1,
-            display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
-            flexDirection: 'column',
-            minHeight: 0,
-            minWidth: 0,
-            maxWidth: '100%',
-            overflowX: 'hidden',
-            overflowY: 'hidden',
-            background:
-              'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)',
-          }}
-        >
-          {roomId ? (
-            <>
-              <ChatRoomHeader
-                room={room}
-                currentUserId={uid}
-                onlineUsers={onlineUsers}
-                typingUsers={typingUsers}
-                isRoomAdmin={isRoomAdmin ?? false}
-                onLeave={handleLeave}
-                onBlock={() => setBlockDialogOpen(true)}
-                onInvite={() => {
-                  setGroupDialogMode('invite');
-                  setGroupDialogOpen(true);
-                }}
-                onRename={() => {
-                  setGroupDialogMode('rename');
-                  setGroupDialogOpen(true);
-                }}
-                onManageMembers={() => {
-                  setGroupDialogMode('manage');
-                  setGroupDialogOpen(true);
-                }}
-                isFavorite={Boolean(activeRoom?.is_favorite)}
-                onToggleFavorite={
-                  roomId
-                    ? () =>
-                        void toggleFavorite(
-                          roomId,
-                          Boolean(activeRoom?.is_favorite),
-                        )
-                    : undefined
-                }
-                onBack={() => navigate('/chat-full')}
-              />
-
-              {error && (
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Typography color="error" variant="body2">
-                    {error}
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => void refresh()}
-                  >
-                    Try again
-                  </Button>
-                </Box>
-              )}
-
-              {chatLoading ? (
-                <Box
-                  sx={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <MessageList
-                  messages={messages}
-                  currentUserId={uid}
-                  roomType={room?.room_type ?? 'dm'}
-                  otherUserId={otherMember?.user_id}
-                  onLoadOlder={() => void loadOlderMessages()}
-                  hasOlderMessages={hasOlderMessages}
-                  loadingOlder={loadingOlder}
-                  onEdit={editMessage}
-                  onDelete={deleteMessage}
-                  onReaction={toggleReaction}
-                  onReport={(msgId, senderUserId) =>
-                    handleReport(msgId, senderUserId ?? undefined)
-                  }
-                  onStartReply={(msg) =>
-                    setReplyTarget({
-                      id: msg.id,
-                      authorLabel: forwardAuthorLabel(msg),
-                      contentSnippet: truncateSnippet(msg.content ?? ''),
-                    })
-                  }
-                  onForward={(msg) => setForwardSource(msg)}
-                  onMessagesViewed={markAsRead}
-                  scrollToMessageId={searchParams.get('message')}
-                  typingAvatarUrl={
-                    room?.room_type === 'dm'
-                      ? (otherMember?.profile?.avatar ?? null)
-                      : undefined
-                  }
-                  showTyping={
-                    !!(
-                      room?.room_type === 'dm' &&
-                      otherMember?.user_id &&
-                      typingUsers.has(otherMember.user_id)
+            onlineUsers={onlineUsers}
+            typingUsers={typingUsers}
+            isRoomAdmin={isRoomAdmin ?? false}
+            onLeave={handleLeave}
+            onBlock={() => setBlockDialogOpen(true)}
+            onInvite={() => {
+              setGroupDialogMode('invite');
+              setGroupDialogOpen(true);
+            }}
+            onRename={() => {
+              setGroupDialogMode('rename');
+              setGroupDialogOpen(true);
+            }}
+            onManageMembers={() => {
+              setGroupDialogMode('manage');
+              setGroupDialogOpen(true);
+            }}
+            isFavorite={Boolean(activeRoom?.is_favorite)}
+            onToggleFavorite={
+              roomId
+                ? () =>
+                    void toggleFavorite(
+                      roomId,
+                      Boolean(activeRoom?.is_favorite),
                     )
-                  }
-                />
-              )}
+                : undefined
+            }
+            onBack={() => navigate('/chat-full')}
+          />
 
-              <MessageInput
-                onSend={sendMessage}
-                onTyping={startTyping}
-                onStopTyping={stopTyping}
-                disabled={chatLoading}
-                sending={sending}
-                roomType={room?.room_type ?? 'dm'}
-                roomId={roomId ?? null}
-                groupMembers={roomMembersToMentionable(room)}
-                currentUserId={uid}
-                replyTo={replyTarget}
-                onCancelReply={() => setReplyTarget(null)}
-              />
-            </>
-          ) : (
+          {error && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Typography color="error" variant="body2">
+                {error}
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => void refresh()}
+              >
+                Try again
+              </Button>
+            </Box>
+          )}
+
+          {chatLoading ? (
             <Box
               sx={{
                 flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 2,
               }}
             >
-              <Typography variant="h6" color="text.secondary">
-                Select a conversation or start a new chat
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => setStartDmOpen(true)}
-                >
-                  New 1:1 chat
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => setCreateGroupOpen(true)}
-                >
-                  New group
-                </Button>
-              </Box>
+              <CircularProgress />
             </Box>
+          ) : (
+            <MessageList
+              messages={messages}
+              currentUserId={uid}
+              roomType={room?.room_type ?? 'dm'}
+              otherUserId={otherMember?.user_id}
+              onLoadOlder={() => void loadOlderMessages()}
+              hasOlderMessages={hasOlderMessages}
+              loadingOlder={loadingOlder}
+              onEdit={editMessage}
+              onDelete={deleteMessage}
+              onReaction={toggleReaction}
+              onReport={(msgId, senderUserId) =>
+                handleReport(msgId, senderUserId ?? undefined)
+              }
+              onStartReply={(msg) =>
+                setReplyTarget({
+                  id: msg.id,
+                  authorLabel: forwardAuthorLabel(msg),
+                  contentSnippet: truncateSnippet(msg.content ?? ''),
+                })
+              }
+              onForward={(msg) => setForwardSource(msg)}
+              onMessagesViewed={markAsRead}
+              scrollToMessageId={searchParams.get('message')}
+              typingAvatarUrl={
+                room?.room_type === 'dm'
+                  ? (otherMember?.profile?.avatar ?? null)
+                  : undefined
+              }
+              showTyping={
+                !!(
+                  room?.room_type === 'dm' &&
+                  otherMember?.user_id &&
+                  typingUsers.has(otherMember.user_id)
+                )
+              }
+            />
           )}
-        </Box>
-      </Box>
 
+          <MessageInput
+            onSend={sendMessage}
+            onTyping={startTyping}
+            onStopTyping={stopTyping}
+            disabled={chatLoading}
+            sending={sending}
+            roomType={room?.room_type ?? 'dm'}
+            roomId={roomId ?? null}
+            groupMembers={roomMembersToMentionable(room)}
+            currentUserId={uid}
+            replyTo={replyTarget}
+            onCancelReply={() => setReplyTarget(null)}
+          />
+        </>
+      ) : (
+        <ChatPageEmptyState
+          variant={isMobileLayout ? 'page' : 'docked'}
+          onStartDm={() => setStartDmOpen(true)}
+          onCreateGroup={() => setCreateGroupOpen(true)}
+        />
+      )}
+    </Box>
+  );
+
+  const splitWorkspace = (
+    <Box
+      sx={{
+        display: 'flex',
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      {listColumn}
+      {threadColumn}
+    </Box>
+  );
+
+  const dialogs = (
+    <>
       <StartDmDialog
         open={startDmOpen}
         onClose={() => {
@@ -527,6 +523,144 @@ export const ChatPage = () => {
         reportedMessageId={reportTarget?.messageId ?? null}
         reportedUserId={reportTarget?.userId ?? null}
       />
+    </>
+  );
+
+  if (!isMobileLayout) {
+    return (
+      <>
+        <Box
+          aria-hidden
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            width: '100%',
+            pointerEvents: 'none',
+          }}
+        />
+        {createPortal(
+          <>
+            <Box
+              role="presentation"
+              aria-hidden
+              onClick={closeDockedChat}
+              sx={{
+                position: 'fixed',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                top: dockTopPx,
+                zIndex: 1250,
+                bgcolor: 'rgba(2, 6, 18, 0.58)',
+                backdropFilter: 'blur(3px)',
+              }}
+            />
+            <Box
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="chat-dock-title"
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                position: 'fixed',
+                zIndex: 1300,
+                top: `calc(${dockTopPx}px + 12px)`,
+                right: { xs: 12, md: 20 },
+                bottom: { xs: 12, md: 20 },
+                left: { xs: 12, md: 'auto' },
+                width: {
+                  xs: 'calc(100vw - 24px)',
+                  md: 'min(1080px, calc(100vw - 48px))',
+                },
+                maxWidth: 'calc(100vw - 24px)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.paper',
+                boxShadow: 24,
+                border: `1px solid ${alpha(theme.palette.divider, 0.25)}`,
+              }}
+            >
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{
+                  px: 2,
+                  py: 1.25,
+                  flexShrink: 0,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                  bgcolor: alpha(theme.palette.background.default, 0.55),
+                }}
+              >
+                <Typography
+                  id="chat-dock-title"
+                  variant="subtitle1"
+                  fontWeight={700}
+                >
+                  Messages
+                </Typography>
+                <IconButton
+                  aria-label="Close messages"
+                  onClick={closeDockedChat}
+                  size="small"
+                  edge="end"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Stack>
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  bgcolor: 'background.default',
+                }}
+              >
+                {splitWorkspace}
+              </Box>
+            </Box>
+          </>,
+          document.body,
+        )}
+        {dialogs}
+      </>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        maxHeight: '100%',
+        minWidth: 0,
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundImage: 'url("/assets/background-mobile.png")',
+        backgroundSize: 'cover',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
+          minWidth: 0,
+          maxWidth: '100%',
+          ...getGlassCard(theme),
+          m: { xs: 0.75, sm: 1.25 },
+          overflow: 'hidden',
+          borderRadius: { xs: 2.5, md: 3 },
+        }}
+      >
+        {splitWorkspace}
+      </Box>
+      {dialogs}
     </Box>
   );
 };

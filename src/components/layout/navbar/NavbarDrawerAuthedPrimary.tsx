@@ -1,6 +1,5 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 
 export type NavbarDrawerAuthedPrimaryProps = {
@@ -16,7 +15,6 @@ export type NavbarDrawerAuthedPrimaryProps = {
   drawerActiveNavSx: SxProps<Theme>;
   onDrawerNavigate: () => void;
   storeEnabled: boolean;
-  isAdmin: boolean;
 };
 
 /** Primary authenticated links inside the mobile nav drawer (shared by `Navbar` and `NavbarMobileDrawer`). */
@@ -33,7 +31,6 @@ export const NavbarDrawerAuthedPrimary = ({
   drawerActiveNavSx,
   onDrawerNavigate,
   storeEnabled,
-  isAdmin,
 }: NavbarDrawerAuthedPrimaryProps) => {
   return (
     <>
@@ -68,21 +65,6 @@ export const NavbarDrawerAuthedPrimary = ({
           Store
         </Button>
       )}
-      {isAdmin ? (
-        <Button
-          component={RouterLink}
-          to="/admin"
-          onClick={onDrawerNavigate}
-          sx={{
-            justifyContent: 'flex-start',
-            color: 'warning.main',
-            textTransform: 'none',
-            py: 1.5,
-          }}
-        >
-          Admin
-        </Button>
-      ) : null}
     </>
   );
 };

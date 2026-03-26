@@ -9,7 +9,6 @@ import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
-  isAdmin: boolean;
   showAuthedHeader: boolean;
   session: Session | null;
   productionComingSoon: boolean;
@@ -35,7 +34,6 @@ export type NavbarMobileDrawerProps = {
 export const NavbarMobileDrawer = ({
   drawerOpen,
   setDrawerOpen,
-  isAdmin,
   showAuthedHeader,
   session,
   productionComingSoon,
@@ -71,6 +69,22 @@ export const NavbarMobileDrawer = ({
             <>
               {(!productionComingSoon || isAdminActive) && (
                 <>
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Sign in
+                  </Button>
                   {!isJoinActive && (
                     <Button
                       component={RouterLink}
@@ -89,22 +103,6 @@ export const NavbarMobileDrawer = ({
                       Join
                     </Button>
                   )}
-                  <Button
-                    component={RouterLink}
-                    to="/signin"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      py: 1.5,
-                      minHeight: 44,
-                      touchAction: 'manipulation',
-                    }}
-                  >
-                    Sign in
-                  </Button>
                 </>
               )}
               {storeEnabled && (
@@ -140,7 +138,6 @@ export const NavbarMobileDrawer = ({
               drawerActiveNavSx={drawerActiveNavSx}
               onDrawerNavigate={() => setDrawerOpen(false)}
               storeEnabled={storeEnabled}
-              isAdmin={isAdmin}
             />
           )}
         </Stack>

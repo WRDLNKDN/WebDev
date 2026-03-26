@@ -1,4 +1,4 @@
-import { Box, Button, Drawer, Stack } from '@mui/material';
+import { Box, Button, Drawer, Link, Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
 import { Link as RouterLink, type Location } from 'react-router-dom';
@@ -106,21 +106,28 @@ export const NavbarMobileDrawer = ({
                 </>
               )}
               {storeEnabled && (
-                <Button
-                  component="a"
+                <Link
                   href="/store"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setDrawerOpen(false)}
+                  underline="none"
+                  onClick={() => {
+                    window.setTimeout(() => setDrawerOpen(false), 0);
+                  }}
                   sx={{
+                    display: 'flex',
                     justifyContent: 'flex-start',
+                    alignItems: 'center',
                     color: drawerLinkColor,
                     textTransform: 'none',
                     py: 1.5,
+                    px: 1,
+                    minHeight: 44,
+                    touchAction: 'manipulation',
                   }}
                 >
                   Store
-                </Button>
+                </Link>
               )}
             </>
           )}

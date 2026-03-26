@@ -559,7 +559,6 @@ export const Dashboard = () => {
         {/* Identity: avatar + summary; interests & profile menu live with skills row. */}
         <IdentityHeader
           layoutVariant="three-column"
-          paperMaxWidth={900}
           displayName={displayName}
           memberHandle={profile?.handle?.trim() || undefined}
           tagline={profile?.tagline ?? undefined}

@@ -13,6 +13,7 @@ import {
   Divider,
   IconButton,
   InputBase,
+  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -46,7 +47,7 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-/** Store: plain `<a href="/store" target="_blank">` so the browser always opens a new tab (RouterLink can steal the navigation). */
+/** Store: MUI `Link` with `target="_blank"` (not `RouterLink`) so `/store` opens in a new tab. */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -510,12 +511,11 @@ export const Navbar = () => {
             </Box>
             {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
             {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
-              <Button
-                component="a"
+              <Link
                 href="/store"
                 target="_blank"
                 rel="noopener noreferrer"
-                size="small"
+                underline="none"
                 sx={{
                   flexShrink: 0,
                   ml: 0.75,
@@ -530,7 +530,9 @@ export const Navbar = () => {
                   borderRadius: 1,
                   bgcolor: 'rgba(0,0,0,0.35)',
                   border: '1px solid rgba(156,187,217,0.22)',
-                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
                   boxSizing: 'border-box',
@@ -542,7 +544,7 @@ export const Navbar = () => {
                 }}
               >
                 Store
-              </Button>
+              </Link>
             ) : null}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&
@@ -759,21 +761,25 @@ export const Navbar = () => {
                 isCompactDesktop={isCompactDesktop}
               />
               {storeEnabled && (
-                <Button
-                  component="a"
+                <Link
                   href="/store"
                   target="_blank"
                   rel="noopener noreferrer"
+                  underline="none"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
-                    textDecoration: 'none',
                     textTransform: 'none',
                     fontSize: isCompactDesktop ? '0.92rem' : '1rem',
                     px: isCompactDesktop ? 1 : 1.5,
+                    py: 0.5,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    borderRadius: 1,
+                    '&:hover': { color: 'white' },
                   }}
                 >
                   Store
-                </Button>
+                </Link>
               )}
             </Box>
           )}

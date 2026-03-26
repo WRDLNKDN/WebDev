@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Link } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 
@@ -49,21 +49,28 @@ export const NavbarDrawerAuthedPrimary = ({
         onDrawerNavigate={onDrawerNavigate}
       />
       {storeEnabled && (
-        <Button
-          component="a"
+        <Link
           href="/store"
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onDrawerNavigate}
+          underline="none"
+          onClick={() => {
+            window.setTimeout(onDrawerNavigate, 0);
+          }}
           sx={{
+            display: 'flex',
             justifyContent: 'flex-start',
+            alignItems: 'center',
             color: drawerLinkColor,
             textTransform: 'none',
             py: 1.5,
+            px: 1,
+            minHeight: 44,
+            touchAction: 'manipulation',
           }}
         >
           Store
-        </Button>
+        </Link>
       )}
     </>
   );

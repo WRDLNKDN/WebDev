@@ -1568,23 +1568,46 @@ create table if not exists public.chat_message_attachments (
   id uuid primary key default gen_random_uuid(),
   message_id uuid not null references public.chat_messages(id) on delete cascade,
   storage_path text not null,
-  mime_type text not null check (mime_type in (
+  mime_type text not null,
+  file_size bigint not null,
+  created_at timestamptz not null default now(),
+  constraint chat_message_attachments_mime_type_check check (mime_type in (
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm',
     'application/pdf', 'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
   )),
-  file_size bigint not null check (file_size > 0 and file_size <= 2097152),
-  created_at timestamptz not null default now()
+  -- 2MB direct uploads; up to 8MB for server-optimized GIF-as-video (see CHAT_GIF_PROCESSING_MAX_FILE_BYTES)
+  constraint chat_message_attachments_file_size_check check (
+    file_size > 0 and (
+      (mime_type in ('video/mp4', 'video/webm') and file_size <= 8388608)
+      or (mime_type not in ('video/mp4', 'video/webm') and file_size <= 2097152)
+    )
+  )
 );
 
 create index if not exists idx_chat_message_attachments_message_id on public.chat_message_attachments(message_id);
 
-comment on table public.chat_message_attachments is 'Attachments: max 2MB per file, 1 per message (MVP); allowlist enforced in app and DB.';
+comment on table public.chat_message_attachments is 'Attachments: 2MB max for images/docs; optimized GIF-as-video up to 8MB; 1 per message; allowlist in app and DB.';
 
--- Enforce 2MB cap on existing deployments (idempotent)
+-- Idempotent: align mime allowlist and size rules with GIF transcode pipeline (video/mp4 output)
+alter table public.chat_message_attachments drop constraint if exists chat_message_attachments_mime_type_check;
+alter table public.chat_message_attachments add constraint chat_message_attachments_mime_type_check check (mime_type in (
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/webm',
+  'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain'
+));
+
 alter table public.chat_message_attachments drop constraint if exists chat_message_attachments_file_size_check;
-alter table public.chat_message_attachments add constraint chat_message_attachments_file_size_check check (file_size > 0 and file_size <= 2097152);
+alter table public.chat_message_attachments add constraint chat_message_attachments_file_size_check check (
+  file_size > 0 and (
+    (mime_type in ('video/mp4', 'video/webm') and file_size <= 8388608)
+    or (mime_type not in ('video/mp4', 'video/webm') and file_size <= 2097152)
+  )
+);
 
 create table if not exists public.chat_read_receipts (
   message_id uuid not null references public.chat_messages(id) on delete cascade,
@@ -2229,15 +2252,16 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- chat-attachments (2MB MVP cap, allowlist: jpg, png, webp, gif, pdf, doc, docx, txt)
+-- chat-attachments: 8MB bucket cap so service-role GIF→MP4 uploads succeed; app/DB still cap docs/images at 2MB
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'chat-attachments',
   'chat-attachments',
   false,
-  2097152,
+  8388608,
   array[
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm',
     'application/pdf', 'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
@@ -6728,3 +6752,25 @@ create index if not exists idx_feed_items_scheduled_at
   on public.feed_items(scheduled_at)
   where scheduled_at is not null
     and parent_id is null;
+
+-- Chat messages: optional reply reference (same-room replies; FK cleared if parent deleted)
+alter table public.chat_messages
+  add column if not exists reply_to_message_id uuid null;
+
+do $chat_reply_fk$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'chat_messages_reply_to_message_id_fkey'
+  ) then
+    alter table public.chat_messages
+      add constraint chat_messages_reply_to_message_id_fkey
+      foreign key (reply_to_message_id) references public.chat_messages(id) on delete set null;
+  end if;
+end;
+$chat_reply_fk$;
+
+create index if not exists idx_chat_messages_reply_to_message_id
+  on public.chat_messages(reply_to_message_id)
+  where reply_to_message_id is not null;

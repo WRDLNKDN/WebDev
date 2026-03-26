@@ -46,13 +46,7 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-import {
-  GODADDY_STOREFRONT_URL,
-  getStoreExternalUrl,
-  resolveStoreExternalUrl,
-} from '../../lib/marketing/storefront';
-
-/** Store: resolved URL (GoDaddy when live, else Ecwid / VITE_STORE_URL); opens in a new tab. */
+/** Store: in-app Ecwid embed at `/store` (see `pages/marketing/Store.tsx`). */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -83,8 +77,6 @@ export const Navbar = () => {
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
-  const [storeHref, setStoreHref] = useState(GODADDY_STOREFRONT_URL);
-
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -425,22 +417,6 @@ export const Navbar = () => {
     }
   }, [path]);
 
-  useEffect(() => {
-    if (!storeEnabled) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const url = await resolveStoreExternalUrl();
-        if (!cancelled) setStoreHref(url);
-      } catch {
-        if (!cancelled) setStoreHref(getStoreExternalUrl());
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [storeEnabled]);
-
   return (
     <>
       <AppBar
@@ -535,11 +511,9 @@ export const Navbar = () => {
             {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
             {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
               <Button
-                component="a"
-                href={storeHref}
-                target="_blank"
-                rel="noopener noreferrer"
+                type="button"
                 size="small"
+                onClick={() => navigate('/store')}
                 sx={{
                   flexShrink: 0,
                   ml: 0.75,
@@ -784,10 +758,8 @@ export const Navbar = () => {
               />
               {storeEnabled && (
                 <Button
-                  component="a"
-                  href={storeHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  type="button"
+                  onClick={() => navigate('/store')}
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
@@ -1260,7 +1232,6 @@ export const Navbar = () => {
         gamesEnabled={gamesEnabled}
         isGroupsActive={isGroupsActive}
         path={path}
-        storeUrl={storeHref}
         location={location}
         drawerPaperSx={drawerPaperSx}
         drawerLinkColor={drawerLinkColor}

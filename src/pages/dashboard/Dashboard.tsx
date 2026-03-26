@@ -739,14 +739,14 @@ export const Dashboard = () => {
         >
           {profile?.handle && (
             <MenuItem
-              component="a"
-              href={`/p/h~${encodeURIComponent(profile.handle)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setProfileMenuAnchor(null)}
+              onClick={() => {
+                setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
+              }}
               onTouchStart={(e: React.TouchEvent) => {
                 e.preventDefault();
                 setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
               }}
               sx={{
                 py: 1.5,

@@ -34,7 +34,7 @@ export type ProfileData = {
   tagline?: string;
   avatar?: string;
   marketingOptIn?: boolean;
-  /** Up to 8 interests (two-tier taxonomy + custom Other). Persisted to nerd_creds.interests. */
+  /** Up to 16 interests (two-tier taxonomy + custom Other). Persisted to nerd_creds.interests. */
   interests?: string[];
 };
 

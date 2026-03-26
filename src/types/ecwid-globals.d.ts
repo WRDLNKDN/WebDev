@@ -13,6 +13,8 @@ declare global {
       init?: () => void;
     };
     ecwid_onBodyDone?: () => void;
+    /** Product browser widget initializer (loaded with Ecwid script.js). */
+    xProductBrowser?: (...args: string[]) => void;
   }
 }
 

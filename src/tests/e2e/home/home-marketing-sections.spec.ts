@@ -13,23 +13,15 @@ async function expectMarketingSectionHeadingsVisible(page: Page) {
     name: 'How It Works',
     exact: true,
   });
-  const community = page.getByRole('heading', {
-    name: 'Community in Motion',
-    exact: true,
-  });
-
   await whatDifferent.scrollIntoViewIfNeeded();
   await expect(whatDifferent).toBeVisible({ timeout: 15_000 });
 
   await howItWorks.scrollIntoViewIfNeeded();
   await expect(howItWorks).toBeVisible({ timeout: 10_000 });
-
-  await community.scrollIntoViewIfNeeded();
-  await expect(community).toBeVisible({ timeout: 10_000 });
 }
 
 test.describe('Home marketing sections', () => {
-  test('shows What Makes This Different, How It Works, and Community in Motion below the hero', async ({
+  test('shows What Makes This Different and How It Works below the hero', async ({
     page,
   }) => {
     test.setTimeout(60_000);

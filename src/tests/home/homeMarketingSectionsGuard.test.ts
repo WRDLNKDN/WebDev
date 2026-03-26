@@ -11,17 +11,16 @@ const cssPath = path.resolve(
 );
 
 describe('Home marketing sections (source contract)', () => {
-  it('renders WhatMakesDifferent / HowItWorks / SocialProof outside productionComingSoon gate', () => {
+  it('renders WhatMakesDifferent / HowItWorks outside productionComingSoon gate', () => {
     const src = readFileSync(homeSourcePath, 'utf8');
     expect(src).toContain('<WhatMakesDifferent />');
     expect(src).toContain('<HowItWorks />');
-    expect(src).toContain('<SocialProof />');
     /* Sections must not be wrapped in productionComingSoon ? null — only hero Join vs COMING SOON is gated. */
     expect(src).not.toContain(`productionComingSoon ? null : (
         <>
           <WhatMakesDifferent`);
     expect(src).toMatch(
-      /Marketing sections:[\s\S]*<WhatMakesDifferent \/>[\s\S]*<HowItWorks \/>[\s\S]*<SocialProof \/>/,
+      /Marketing sections:[\s\S]*<WhatMakesDifferent \/>[\s\S]*<HowItWorks \/>/,
     );
   });
 });

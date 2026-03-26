@@ -1,4 +1,10 @@
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import ForwardIcon from '@mui/icons-material/Forward';
+import ReplyIcon from '@mui/icons-material/Reply';
 import {
   Box,
   Button,
@@ -10,15 +16,18 @@ import {
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
+import { useAppToast } from '../../../context/AppToastContext';
 import { PostCard } from '../../post';
+import type { PostActionMenuItem } from '../../post/PostActionMenu';
 import { CHAT_REACTION_OPTIONS } from '../../post/sharedReactions';
 import {
   fetchChatLinkPreview,
   getFirstUrlFromText,
   type ChatLinkPreview,
 } from '../../../lib/chat/linkPreview';
-import type { MessageWithExtras } from '../../../hooks/useChat';
+import { truncateSnippet } from '../../../lib/chat/messageSnippet';
+import type { MessageWithExtras } from '../../../hooks/chatTypes';
 import type { ChatRoomType } from '../../../types/chat';
 import { getGlassCard } from '../../../theme/candyStyles';
 import { MessageContent } from './MessageContent';
@@ -34,12 +43,13 @@ type MessageListProps = {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  onReport?: (messageId: string) => void;
+  onReport?: (messageId: string, senderUserId?: string | null) => void;
+  onStartReply?: (message: MessageWithExtras) => void;
+  onForward?: (message: MessageWithExtras) => void;
   onMessagesViewed?: (messageIds: string[]) => void;
   onLoadOlder?: () => void;
   hasOlderMessages?: boolean;
   loadingOlder?: boolean;
-  isAdmin?: boolean;
   compact?: boolean;
   /** When true, show typing/presence avatar at bottom right (chat panel style) */
   typingAvatarUrl?: string | null;
@@ -62,16 +72,18 @@ export const MessageList = ({
   onDelete,
   onReaction,
   onReport,
+  onStartReply,
+  onForward,
   onMessagesViewed,
   onLoadOlder,
   hasOlderMessages = false,
   loadingOlder = false,
-  isAdmin,
   compact = false,
   typingAvatarUrl,
   showTyping = false,
   scrollToMessageId,
 }: MessageListProps) => {
+  const { showToast } = useAppToast();
   const theme = useTheme();
   const isLightChrome = theme.palette.mode === 'light';
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -94,6 +106,23 @@ export const MessageList = ({
   >({});
   const fetchedPreviewIds = useRef<Set<string>>(new Set());
   const hasScrolledToMessage = useRef<string | null>(null);
+
+  const handleCopyMessage = useCallback(
+    async (msg: MessageWithExtras) => {
+      const text = (msg.content ?? '').trim();
+      if (!text) {
+        showToast({ message: 'Nothing to copy.', severity: 'info' });
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast({ message: 'Message copied.', severity: 'success' });
+      } catch {
+        showToast({ message: 'Could not copy.', severity: 'error' });
+      }
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     const nextFirst = messages[0]?.id ?? null;
@@ -249,6 +278,58 @@ export const MessageList = ({
       {messages.map((msg) => {
         const isOwn = msg.sender_id === currentUserId;
         const canAct = isOwn && !msg.is_system_message && !msg.is_deleted;
+        const showKebabMenu = !msg.is_system_message && !msg.is_deleted;
+
+        const kebabItems: PostActionMenuItem[] = showKebabMenu
+          ? [
+              {
+                label: 'Reply',
+                icon: <ReplyIcon fontSize="small" />,
+                onClick: () => onStartReply?.(msg),
+              },
+              {
+                label: 'Forward',
+                icon: <ForwardIcon fontSize="small" />,
+                onClick: () => onForward?.(msg),
+              },
+              {
+                label: 'Copy',
+                icon: <ContentCopyIcon fontSize="small" />,
+                onClick: () => void handleCopyMessage(msg),
+              },
+              ...(isOwn
+                ? ([
+                    {
+                      label: 'Edit',
+                      icon: <EditOutlinedIcon fontSize="small" />,
+                      onClick: () => {
+                        setEditingId(msg.id);
+                        setEditText(msg.content || '');
+                      },
+                    },
+                    {
+                      label: 'Delete',
+                      icon: <DeleteOutlineIcon fontSize="small" />,
+                      danger: true,
+                      onClick: () => onDelete?.(msg.id),
+                    },
+                    {
+                      label: 'Report',
+                      icon: <FlagOutlinedIcon fontSize="small" />,
+                      danger: true,
+                      onClick: () => onReport?.(msg.id, msg.sender_id),
+                    },
+                  ] satisfies PostActionMenuItem[])
+                : [
+                    {
+                      label: 'Report',
+                      icon: <FlagOutlinedIcon fontSize="small" />,
+                      danger: true,
+                      onClick: () => onReport?.(msg.id, msg.sender_id),
+                    },
+                  ]),
+            ]
+          : [];
 
         if (msg.is_system_message) {
           return (
@@ -310,38 +391,11 @@ export const MessageList = ({
                 inIcon: true,
               }}
               actionMenu={
-                canAct
+                showKebabMenu && kebabItems.length > 0
                   ? {
                       visible: true,
                       ariaLabel: 'Message options',
-                      items: [
-                        {
-                          label: 'Edit',
-                          onClick: () => {
-                            setEditingId(msg.id);
-                            setEditText(msg.content || '');
-                          },
-                        },
-                        {
-                          label: 'Delete',
-                          onClick: () => onDelete?.(msg.id),
-                          danger: true,
-                        },
-                        {
-                          label: 'Report',
-                          onClick: () => onReport?.(msg.id),
-                          danger: true,
-                        },
-                        ...(isAdmin
-                          ? [
-                              {
-                                label: 'Delete (moderate)',
-                                onClick: () => onDelete?.(msg.id),
-                                danger: true,
-                              },
-                            ]
-                          : []),
-                      ],
+                      items: kebabItems,
                     }
                   : null
               }
@@ -369,6 +423,37 @@ export const MessageList = ({
               }}
               contentSx={{ pt: 1.5, pb: 1, px: 1.5 }}
             >
+              {msg.reply_preview && editingId !== msg.id ? (
+                <Box
+                  sx={{
+                    mb: 0.75,
+                    pl: 1,
+                    borderLeft: '3px solid',
+                    borderColor: 'primary.light',
+                    opacity: msg.reply_preview.is_deleted ? 0.72 : 1,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    {msg.reply_preview.is_deleted
+                      ? 'Replying to deleted message'
+                      : `Replying to ${msg.reply_preview.sender_profile?.display_name || msg.reply_preview.sender_profile?.handle || 'Member'}`}
+                  </Typography>
+                  {!msg.reply_preview.is_deleted ? (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {truncateSnippet(msg.reply_preview.content ?? '')}
+                    </Typography>
+                  ) : null}
+                </Box>
+              ) : null}
               {editingId === msg.id ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <input

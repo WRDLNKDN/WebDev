@@ -1,14 +1,4 @@
-import MessageIcon from '@mui/icons-material/Message';
-import {
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Menu, MenuItem, useMediaQuery, useTheme } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useState } from 'react';
@@ -52,7 +42,6 @@ export const MessengerOverlay = () => {
   const drawerTopMobile = 56 + bannerOffsetPx;
   const chatEnabled = useFeatureFlag('chat');
   const productionComingSoon = useProductionComingSoonMode();
-  const isLightChrome = theme.palette.mode === 'light';
 
   const {
     rooms,
@@ -135,7 +124,6 @@ export const MessengerOverlay = () => {
     [removeChat, fetchRooms],
   );
 
-  const openOverlay = messenger?.openOverlay;
   const getRoomLabel = useCallback(
     (r: ChatRoomWithMembers) => getChatRoomLabel(r, session?.user?.id),
     [session?.user?.id],
@@ -145,66 +133,8 @@ export const MessengerOverlay = () => {
     return null;
   if (!session?.user) return null;
 
-  const showFloatingChat = Boolean(messenger && !messenger.overlayOpen);
-  const floatingChatButton = showFloatingChat ? (
-    <Tooltip title="Open messages">
-      {/*
-        Fixed anchor on a plain Box so position isn’t affected by Tooltip’s child wrapper,
-        and generous inset + full border so nothing clips against the viewport edge.
-      */}
-      <Box
-        component="span"
-        sx={{
-          position: 'fixed',
-          zIndex: 1200,
-          top: mobile ? 56 + bannerOffsetPx : 80 + bannerOffsetPx,
-          insetInlineEnd: {
-            xs: 'max(20px, calc(12px + env(safe-area-inset-right, 0px)))',
-            sm: 'max(32px, calc(20px + env(safe-area-inset-right, 0px)))',
-            md: 'max(48px, calc(28px + env(safe-area-inset-right, 0px)))',
-            lg: 'max(56px, calc(32px + env(safe-area-inset-right, 0px)))',
-          },
-          display: 'inline-flex',
-          lineHeight: 0,
-        }}
-      >
-        <IconButton
-          onClick={openOverlay}
-          aria-label="Open messages"
-          data-testid="messenger-open-button"
-          size="medium"
-          sx={{
-            bgcolor: isLightChrome
-              ? alpha(theme.palette.background.paper, 0.98)
-              : 'rgba(12, 18, 29, 0.96)',
-            border: `1px solid ${alpha(
-              theme.palette.primary.main,
-              isLightChrome ? 0.32 : 0.34,
-            )}`,
-            borderRadius: 2,
-            boxShadow: isLightChrome
-              ? '0 14px 28px rgba(0,0,0,0.12)'
-              : '0 14px 28px rgba(0,0,0,0.35)',
-            color: isLightChrome
-              ? theme.palette.primary.main
-              : 'rgba(255,255,255,0.96)',
-            '&:hover': {
-              bgcolor: isLightChrome
-                ? alpha(theme.palette.primary.main, 0.1)
-                : 'rgba(20, 29, 45, 0.98)',
-            },
-          }}
-        >
-          <MessageIcon />
-        </IconButton>
-      </Box>
-    </Tooltip>
-  ) : null;
-
   return (
     <>
-      {floatingChatButton && createPortal(floatingChatButton, document.body)}
-
       {messenger?.overlayOpen &&
         createPortal(
           <MessengerOverlayPanel

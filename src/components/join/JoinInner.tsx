@@ -65,7 +65,6 @@ export const JoinInner = () => {
 
   const showProgress =
     state.currentStep !== 'welcome' && state.currentStep !== 'complete';
-  // ProfileStep gets a wider layout since it's a full-page hero design
   const isProfileStep = state.currentStep === 'profile';
 
   return (
@@ -73,14 +72,13 @@ export const JoinInner = () => {
       component="main"
       sx={{
         ...signupMain,
-        // Give profile step room to breathe with a wider max constraint on the progress bar
       }}
     >
       {showProgress && (
         <Box
           sx={{
             ...signupProgressWrapper,
-            maxWidth: isProfileStep ? 560 : 640,
+            maxWidth: isProfileStep ? 500 : 640,
           }}
         >
           <JoinProgress
@@ -90,7 +88,7 @@ export const JoinInner = () => {
         </Box>
       )}
 
-      <Box sx={{ width: '100%', maxWidth: isProfileStep ? 560 : 640 }}>
+      <Box sx={{ width: '100%', maxWidth: isProfileStep ? 500 : 640 }}>
         {renderStep()}
       </Box>
     </Box>

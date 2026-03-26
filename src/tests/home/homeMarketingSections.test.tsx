@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { StaticRouter } from 'react-router-dom';
 import { HowItWorks } from '../../components/home/HowItWorks';
-import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 
 void React;
@@ -30,13 +29,5 @@ describe('Home marketing sections (static copy)', () => {
     expect(markup).toContain('href="/join"');
     expect(markup).toContain('href="/directory"');
     expect(markup).toContain('href="/feed"');
-  });
-
-  it('SocialProof renders community motion cards', () => {
-    const markup = renderToStaticMarkup(<SocialProof />);
-    expect(markup).toContain('Community in Motion');
-    expect(markup).toContain('Featured posts');
-    expect(markup).toContain('Highlighted members');
-    expect(markup).toContain('Community stats');
   });
 });

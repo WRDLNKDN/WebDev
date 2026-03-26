@@ -32,7 +32,7 @@ export interface NerdCreds {
   theme_song_url?: string;
   app_theme?: 'light' | 'dark';
   bio?: string;
-  /** Up to 8 interests (two-tier taxonomy + custom Other). Used for profile display and directory search. */
+  /** Up to 16 interests (two-tier taxonomy + custom Other). Used for profile display and directory search. */
   interests?: string[];
   portfolio?: PortfolioItem[];
   resume_file_name?: string | null;

@@ -6,7 +6,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
-  Chip,
   Box,
   Button,
   FormControl,
@@ -108,32 +107,14 @@ export const ChatRoomList = ({
           backdropFilter: isLightChrome ? 'none' : 'blur(14px)',
         }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          spacing={1}
+        <Typography
+          id="chat-room-list-heading"
+          variant="h6"
+          component="h2"
           sx={{ mb: 1.25 }}
         >
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h6">Messages</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Keep up with DMs and group threads
-            </Typography>
-          </Box>
-          <Chip
-            size="small"
-            label={`${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'}`}
-            sx={{
-              borderRadius: 999,
-              bgcolor: isLightChrome
-                ? alpha(theme.palette.common.black, 0.06)
-                : 'rgba(255,255,255,0.08)',
-              color: 'text.secondary',
-              fontWeight: 700,
-            }}
-          />
-        </Stack>
+          Messages
+        </Typography>
         <Stack
           direction={{ xs: 'column', lg: 'row' }}
           spacing={1}
@@ -264,6 +245,7 @@ export const ChatRoomList = ({
         )}
       </Box>
       <List
+        aria-labelledby="chat-room-list-heading"
         sx={{
           flex: 1,
           overflow: 'auto',

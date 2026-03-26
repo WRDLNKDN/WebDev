@@ -37,6 +37,7 @@ export const useChatActions = ({
       content: string,
       attachmentPaths?: string[],
       attachmentMeta?: ChatAttachmentMeta[],
+      options?: { replyToMessageId?: string | null },
     ) => {
       const {
         data: { session },
@@ -49,6 +50,15 @@ export const useChatActions = ({
       if (!content.trim() && (!attachmentPaths || attachmentPaths.length === 0))
         return;
 
+      const replyToMessageId = options?.replyToMessageId ?? null;
+      if (replyToMessageId) {
+        const parent = messages.find((m) => m.id === replyToMessageId);
+        if (!parent || parent.room_id !== roomId) {
+          setError('That message is no longer available to reply to.');
+          return;
+        }
+      }
+
       setSending(true);
       setError(null);
       try {
@@ -60,6 +70,9 @@ export const useChatActions = ({
             content: content.trim() || null,
             is_system_message: false,
             is_deleted: false,
+            ...(replyToMessageId
+              ? { reply_to_message_id: replyToMessageId }
+              : {}),
           })
           .select()
           .single();
@@ -117,7 +130,53 @@ export const useChatActions = ({
         startTransition(() => setSending(false));
       }
     },
-    [fetchMessages, room?.members, roomId, setError, setMessages, setSending],
+    [
+      fetchMessages,
+      messages,
+      room?.members,
+      roomId,
+      setError,
+      setMessages,
+      setSending,
+    ],
+  );
+
+  const forwardMessage = useCallback(
+    async (targetRoomId: string, content: string): Promise<boolean> => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setError('You need to sign in to forward messages.');
+        return false;
+      }
+      if (!content.trim()) return false;
+
+      setSending(true);
+      setError(null);
+      try {
+        const { error: insertErr } = await supabase
+          .from('chat_messages')
+          .insert({
+            room_id: targetRoomId,
+            sender_id: session.user.id,
+            content: content.trim(),
+            is_system_message: false,
+            is_deleted: false,
+          });
+        if (insertErr) throw insertErr;
+        if (targetRoomId === roomId && roomId) {
+          await fetchMessages(roomId);
+        }
+        return true;
+      } catch (cause) {
+        setError(toMessage(cause) || 'Could not forward message.');
+        return false;
+      } finally {
+        setSending(false);
+      }
+    },
+    [fetchMessages, roomId, setError, setSending],
   );
 
   const editMessage = useCallback(
@@ -324,6 +383,7 @@ export const useChatActions = ({
 
   return {
     sendMessage,
+    forwardMessage,
     editMessage,
     deleteMessage,
     markAsRead,

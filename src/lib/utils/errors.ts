@@ -135,6 +135,12 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
       "You don't have permission to access that. Sign in again or check with an administrator.",
   },
   {
+    pattern:
+      /lock\s+"lock:[^"]+"\s+was\s+released\s+because\s+another\s+request\s+stole\s+it/i,
+    friendly:
+      'Sign-in status was slow to update. Refresh the page if something looks wrong.',
+  },
+  {
     pattern: /jwt expired|session expired/i,
     friendly: 'Your session has expired. Please sign in again.',
   },

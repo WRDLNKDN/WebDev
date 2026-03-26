@@ -25,7 +25,6 @@ type ChatPageContentPaneProps = {
   sending: boolean;
   hasOlderMessages: boolean;
   loadingOlder: boolean;
-  isAdmin: boolean;
   onLeave: () => Promise<void>;
   onOpenBlock: () => void;
   onOpenInvite: () => void;
@@ -37,7 +36,7 @@ type ChatPageContentPaneProps = {
   onEditMessage: (id: string, text: string) => Promise<void>;
   onDeleteMessage: (id: string) => Promise<void>;
   onToggleReaction: (messageId: string, emoji: string) => Promise<void>;
-  onReport: (messageId?: string, userId?: string) => void;
+  onReport: (messageId?: string, senderUserId?: string | null) => void;
   onMessagesViewed: (messageIds: string[]) => Promise<void>;
   onSendMessage: (text: string) => Promise<void>;
   onTyping: () => void;
@@ -62,7 +61,6 @@ export const ChatPageContentPane = ({
   sending,
   hasOlderMessages,
   loadingOlder,
-  isAdmin,
   onLeave,
   onOpenBlock,
   onOpenInvite,
@@ -150,9 +148,10 @@ export const ChatPageContentPane = ({
             onEdit={onEditMessage}
             onDelete={onDeleteMessage}
             onReaction={onToggleReaction}
-            onReport={(msgId) => onReport(msgId)}
+            onReport={(msgId, senderUserId) =>
+              onReport(msgId, senderUserId ?? undefined)
+            }
             onMessagesViewed={onMessagesViewed}
-            isAdmin={isAdmin}
             typingAvatarUrl={
               room?.room_type === 'dm'
                 ? (otherMember?.profile?.avatar ?? null)

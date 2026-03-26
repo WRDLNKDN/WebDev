@@ -5,6 +5,7 @@ import {
   Button,
   Popover,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -47,9 +48,7 @@ export const InterestsDropdown = ({
 }: InterestsDropdownProps) => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
-  const triggerAriaLabel =
-    ariaLabelProp ??
-    (value.length === 0 ? 'Interests' : `Interests (${value.length})`);
+  const triggerAriaLabel = ariaLabelProp ?? 'Interests';
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [selected, setSelected] = useState<string[]>(value);
   const [saving, setSaving] = useState(false);
@@ -113,7 +112,7 @@ export const InterestsDropdown = ({
           },
         }}
       >
-        {value.length === 0 ? 'Interests' : `Interests (${value.length})`}
+        Interests
       </Button>
       <Popover
         open={open}
@@ -146,79 +145,101 @@ export const InterestsDropdown = ({
               mb: 1,
             }}
           >
-            Add or remove interests (max {INTERESTS_MAX})
+            Add or remove interests
           </Typography>
-          <Autocomplete
-            id={listboxId}
-            multiple
-            freeSolo
-            size="small"
-            disabled={saving}
-            openOnFocus
-            options={TAXONOMY_LABELS}
-            value={selected}
-            onChange={(_, next) => {
-              setSelected(next.slice(0, INTERESTS_MAX));
-            }}
-            groupBy={(option) => getCategoryForLabel(option)}
-            getOptionLabel={(option) =>
-              typeof option === 'string' ? option : option
+          <Tooltip
+            title={
+              atMax
+                ? 'Maximum interests reached. Remove one from your list to add another.'
+                : ''
             }
-            filterOptions={(options, state) => {
-              const raw = (state.inputValue?.trim() ?? '').slice(
-                0,
-                INTEREST_CUSTOM_OTHER_MAX_LENGTH,
-              );
-              const inputLower = raw.toLowerCase();
-              if (!inputLower) return options;
-              const filtered = options.filter((opt) =>
-                opt.toLowerCase().includes(inputLower),
-              );
-              const customNotInList =
-                raw &&
-                !TAXONOMY_LABELS.some(
-                  (l: string) => l.toLowerCase() === inputLower,
-                ) &&
-                !selected.some((s) => s.toLowerCase() === inputLower);
-              if (customNotInList && selected.length < INTERESTS_MAX) {
-                return [...filtered, raw];
-              }
-              return filtered;
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder={atMax ? 'Max reached' : 'Search or type custom…'}
-                inputProps={{
-                  ...params.inputProps,
-                  'aria-label': 'Search or add interest',
-                  maxLength: INTEREST_CUSTOM_OTHER_MAX_LENGTH,
+            disableHoverListener={!atMax}
+            enterTouchDelay={0}
+          >
+            <Box>
+              <Autocomplete
+                id={listboxId}
+                multiple
+                freeSolo
+                size="small"
+                disabled={saving}
+                openOnFocus
+                options={TAXONOMY_LABELS}
+                value={selected}
+                onChange={(_, next) => {
+                  setSelected(next.slice(0, INTERESTS_MAX));
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: isLight
-                      ? alpha(theme.palette.common.black, 0.04)
-                      : 'rgba(255,255,255,0.06)',
-                    borderRadius: 1,
-                    '& fieldset': {
-                      borderColor: isLight
-                        ? theme.palette.divider
-                        : 'rgba(156,187,217,0.3)',
-                    },
+                groupBy={(option) => getCategoryForLabel(option)}
+                getOptionLabel={(option) =>
+                  typeof option === 'string' ? option : option
+                }
+                getOptionDisabled={(option) =>
+                  atMax &&
+                  !selected.some(
+                    (s) => s.toLowerCase() === String(option).toLowerCase(),
+                  )
+                }
+                filterOptions={(options, state) => {
+                  const raw = (state.inputValue?.trim() ?? '').slice(
+                    0,
+                    INTEREST_CUSTOM_OTHER_MAX_LENGTH,
+                  );
+                  const inputLower = raw.toLowerCase();
+                  if (!inputLower) return options;
+                  const filtered = options.filter((opt) =>
+                    opt.toLowerCase().includes(inputLower),
+                  );
+                  const customNotInList =
+                    raw &&
+                    !TAXONOMY_LABELS.some(
+                      (l: string) => l.toLowerCase() === inputLower,
+                    ) &&
+                    !selected.some((s) => s.toLowerCase() === inputLower);
+                  if (customNotInList && selected.length < INTERESTS_MAX) {
+                    return [...filtered, raw];
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder={
+                      atMax
+                        ? 'Remove an interest to add another'
+                        : 'Search or type custom…'
+                    }
+                    inputProps={{
+                      ...params.inputProps,
+                      'aria-label': 'Search or add interest',
+                      maxLength: INTEREST_CUSTOM_OTHER_MAX_LENGTH,
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: isLight
+                          ? alpha(theme.palette.common.black, 0.04)
+                          : 'rgba(255,255,255,0.06)',
+                        borderRadius: 1,
+                        '& fieldset': {
+                          borderColor: isLight
+                            ? theme.palette.divider
+                            : 'rgba(156,187,217,0.3)',
+                        },
+                      },
+                    }}
+                  />
+                )}
+                slotProps={{
+                  paper: {
+                    sx: denseMenuPaperSxFromTheme(theme),
                   },
                 }}
+                sx={{
+                  mb: 1.5,
+                  '& .MuiAutocomplete-tag': { my: '2px' },
+                }}
               />
-            )}
-            slotProps={{
-              paper: {
-                sx: denseMenuPaperSxFromTheme(theme),
-              },
-            }}
-            sx={{
-              mb: 1.5,
-              '& .MuiAutocomplete-tag': { my: '2px' },
-            }}
-          />
+            </Box>
+          </Tooltip>
           <Button
             variant="contained"
             size="small"

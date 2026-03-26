@@ -188,9 +188,10 @@ const LayoutContent = () => {
           zIndex: 1,
           flex: 1,
           minHeight: 0,
-          overflowY:
-            isJoin || (isHome && homeHeroShellPhase === 'video')
-              ? 'hidden'
+          overflowY: isJoin
+            ? 'hidden'
+            : isHome && homeHeroShellPhase === 'video'
+              ? { xs: 'hidden', md: 'hidden' }
               : 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
@@ -227,7 +228,15 @@ const LayoutContent = () => {
         </Box>
       </Box>
       {!isJoin && !isAdmin && (
-        <Box component="footer" sx={{ flexShrink: 0 }}>
+        <Box
+          component="footer"
+          sx={{
+            flexShrink: 0,
+            position: 'relative',
+            /* Above `.app-scroll-container` (z-index 1) so footer menus are not covered by main content. */
+            zIndex: 2,
+          }}
+        >
           <Suspense fallback={null}>
             <Footer />
           </Suspense>

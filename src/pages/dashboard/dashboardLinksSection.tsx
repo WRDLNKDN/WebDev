@@ -222,6 +222,10 @@ export const DashboardLinksSection = ({
         ...getGlassCardStrong(theme),
         p: { xs: 2, md: 3 },
         mb: 2.5,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
       }}
     >
       <Stack spacing={2}>

@@ -1,10 +1,11 @@
-import { Box, Button, Drawer, Link, Stack } from '@mui/material';
+import { Box, Button, Drawer, Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
 import { Link as RouterLink, type Location } from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
+import { openSameOriginPathInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
@@ -106,14 +107,14 @@ export const NavbarMobileDrawer = ({
                 </>
               )}
               {storeEnabled && (
-                <Link
-                  href="/store"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="none"
+                <Button
+                  type="button"
+                  variant="text"
                   onClick={() => {
+                    openSameOriginPathInNewTab('/store');
                     window.setTimeout(() => setDrawerOpen(false), 0);
                   }}
+                  aria-label="Store, opens in a new tab"
                   sx={{
                     display: 'flex',
                     justifyContent: 'flex-start',
@@ -127,7 +128,7 @@ export const NavbarMobileDrawer = ({
                   }}
                 >
                   Store
-                </Link>
+                </Button>
               )}
             </>
           )}

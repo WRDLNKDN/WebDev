@@ -13,7 +13,6 @@ import {
   Divider,
   IconButton,
   InputBase,
-  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -41,13 +40,38 @@ import {
 import { EVENTS_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+import { openSameOriginPathInNewTab } from '../../lib/navigation/openSameOriginInNewTab';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-/** Store: MUI `Link` with `target="_blank"` (not `RouterLink`) so `/store` opens in a new tab. */
+
+/** Store chip beside logo — `window.open` so SPA never hijacks the navigation. */
+const NAVBAR_STORE_NEAR_LOGO_SX = {
+  flexShrink: 0,
+  ml: { xs: 0.75, md: 1 },
+  color: 'rgba(255,255,255,0.96)',
+  textTransform: 'none' as const,
+  fontSize: { xs: '0.875rem', md: '0.875rem' },
+  fontWeight: 600,
+  minHeight: { xs: 36, sm: 40 },
+  minWidth: 44,
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 1,
+  bgcolor: 'rgba(0,0,0,0.35)',
+  border: '1px solid rgba(156,187,217,0.22)',
+  touchAction: 'manipulation' as const,
+  WebkitTapHighlightColor: 'transparent',
+  boxSizing: 'border-box' as const,
+  '&:hover': {
+    bgcolor: 'rgba(0,0,0,0.5)',
+    color: 'white',
+    borderColor: 'rgba(156,187,217,0.32)',
+  },
+};
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -509,42 +533,16 @@ export const Navbar = () => {
                 }}
               />
             </Box>
-            {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
-            {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
-              <Link
-                href="/store"
-                target="_blank"
-                rel="noopener noreferrer"
-                underline="none"
-                sx={{
-                  flexShrink: 0,
-                  ml: 0.75,
-                  color: 'rgba(255,255,255,0.96)',
-                  textTransform: 'none',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  minHeight: 40,
-                  minWidth: 44,
-                  px: 1.5,
-                  py: 0.75,
-                  borderRadius: 1,
-                  bgcolor: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(156,187,217,0.22)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                  boxSizing: 'border-box',
-                  '&:hover': {
-                    bgcolor: 'rgba(0,0,0,0.5)',
-                    color: 'white',
-                    borderColor: 'rgba(156,187,217,0.32)',
-                  },
-                }}
+            {storeEnabled ? (
+              <Button
+                type="button"
+                variant="text"
+                onClick={() => openSameOriginPathInNewTab('/store')}
+                aria-label="Store, opens in a new tab"
+                sx={NAVBAR_STORE_NEAR_LOGO_SX}
               >
                 Store
-              </Link>
+              </Button>
             ) : null}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&
@@ -760,27 +758,6 @@ export const Navbar = () => {
                 sessionUserId={session?.user?.id}
                 isCompactDesktop={isCompactDesktop}
               />
-              {storeEnabled && (
-                <Link
-                  href="/store"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="none"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    px: isCompactDesktop ? 1 : 1.5,
-                    py: 0.5,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    borderRadius: 1,
-                    '&:hover': { color: 'white' },
-                  }}
-                >
-                  Store
-                </Link>
-              )}
             </Box>
           )}
 

@@ -53,8 +53,8 @@ export const NavbarDrawerAuthedPrimary = ({
       />
       {storeEnabled && (
         <Button
-          component={RouterLink}
-          to="/store"
+          component="a"
+          href="/store"
           target="_blank"
           rel="noopener noreferrer"
           onClick={onDrawerNavigate}

@@ -46,7 +46,7 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-/** Store: opens `/store` (Ecwid embed) in a new tab (see `pages/marketing/Store.tsx`). */
+/** Store: plain `<a href="/store" target="_blank">` so the browser always opens a new tab (RouterLink can steal the navigation). */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -511,8 +511,8 @@ export const Navbar = () => {
             {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
             {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
               <Button
-                component={RouterLink}
-                to="/store"
+                component="a"
+                href="/store"
                 target="_blank"
                 rel="noopener noreferrer"
                 size="small"
@@ -760,8 +760,8 @@ export const Navbar = () => {
               />
               {storeEnabled && (
                 <Button
-                  component={RouterLink}
-                  to="/store"
+                  component="a"
+                  href="/store"
                   target="_blank"
                   rel="noopener noreferrer"
                   sx={{

@@ -109,8 +109,8 @@ export const NavbarMobileDrawer = ({
               )}
               {storeEnabled && (
                 <Button
-                  component={RouterLink}
-                  to="/store"
+                  component="a"
+                  href="/store"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setDrawerOpen(false)}

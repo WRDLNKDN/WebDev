@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignup } from '../../context/useSignup';
+import { joinFlowPrimaryButtonSx } from '../../theme/joinStyles';
 
 export const CompleteStep = () => {
   const navigate = useNavigate();
@@ -90,10 +91,12 @@ export const CompleteStep = () => {
 
           <Button
             variant="contained"
+            disableElevation
             size="large"
             onClick={handleGoHome}
             fullWidth
             disabled={!bumperFinished}
+            sx={joinFlowPrimaryButtonSx}
           >
             {bumperFinished ? 'Continue to Feed' : 'Playing bumper...'}
           </Button>

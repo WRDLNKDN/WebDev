@@ -1,3 +1,4 @@
+import { INTERESTS_MAX } from '../constants/interestTaxonomy';
 import { supabase } from '../lib/auth/supabaseClient';
 import { validateProfanityAsync } from '../lib/validation/profanity';
 import {
@@ -232,7 +233,7 @@ export const submitJoinRegistration = async ({
       .eq('id', state.identity.userId)
       .maybeSingle();
 
-    const interests = (profile.interests ?? []).slice(0, 8);
+    const interests = (profile.interests ?? []).slice(0, INTERESTS_MAX);
 
     if (existing) {
       const currentCreds =

@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  buildEcwidEmbedScriptSrc,
   buildEcwidProductBrowserInit,
+  DEFAULT_ECWID_EMBED_STORE_ID,
   getAlternateStorefrontUrl,
+  getEcwidEmbedStoreId,
   getEcwidScriptId,
   getEcwidStoreDivId,
   getEcwidStoreId,
@@ -21,6 +24,23 @@ describe('storefront helpers', () => {
   it('builds stable DOM ids for the Ecwid embed', () => {
     expect(getEcwidScriptId('123')).toBe('ecwid-script-123');
     expect(getEcwidStoreDivId('123')).toBe('my-store-123');
+  });
+
+  it('uses default embed store id when env id is empty', () => {
+    expect(getEcwidEmbedStoreId({ VITE_ECWID_STORE_ID: '' })).toBe(
+      DEFAULT_ECWID_EMBED_STORE_ID,
+    );
+  });
+
+  it('uses env Ecwid id for embed when set', () => {
+    expect(getEcwidEmbedStoreId({ VITE_ECWID_STORE_ID: ' 888 ' })).toBe('888');
+  });
+
+  it('builds Ecwid script.js URL for code embed', () => {
+    const src = buildEcwidEmbedScriptSrc('129462253');
+    expect(src).toContain('129462253');
+    expect(src).toContain('data_platform=code');
+    expect(src).toContain('app.ecwid.com/script.js');
   });
 
   it('builds the deferred Ecwid product browser init payload', () => {

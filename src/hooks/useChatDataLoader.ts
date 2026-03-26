@@ -1,7 +1,11 @@
 import { startTransition, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
 import type { ChatMessage, ChatRoom } from '../types/chat';
-import type { ChatRoomWithMembers, MessageWithExtras } from './chatTypes';
+import type {
+  ChatRoomWithMembers,
+  MessageReplyPreview,
+  MessageWithExtras,
+} from './chatTypes';
 
 const CHAT_MESSAGES_PAGE_SIZE = 60;
 
@@ -138,6 +142,55 @@ export const useChatDataLoader = ({
       ]),
     );
 
+    const replyPreviewById = new Map<string, MessageReplyPreview>();
+    const replyToIds = [
+      ...new Set(
+        msgData
+          .map((m) => m.reply_to_message_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (replyToIds.length > 0) {
+      const { data: parentRows } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .in('id', replyToIds);
+      const parents = parentRows ?? [];
+      const replySenderIds = [
+        ...new Set(
+          parents
+            .map((p) => p.sender_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const missingProfileIds = replySenderIds.filter(
+        (id) => !senderMap.has(id),
+      );
+      if (missingProfileIds.length > 0) {
+        const { data: moreProfiles } = await supabase
+          .from('profiles')
+          .select('id, handle, display_name, avatar')
+          .in('id', missingProfileIds);
+        for (const profile of moreProfiles ?? []) {
+          senderMap.set(profile.id, {
+            handle: profile.handle,
+            display_name: profile.display_name,
+            avatar: profile.avatar,
+          });
+        }
+      }
+      for (const parent of parents) {
+        replyPreviewById.set(parent.id, {
+          id: parent.id,
+          content: parent.content,
+          is_deleted: parent.is_deleted,
+          sender_profile: parent.sender_id
+            ? (senderMap.get(parent.sender_id) ?? null)
+            : null,
+        });
+      }
+    }
+
     const messageIds = msgData.map((message) => message.id);
     const [reactionsRes, attachmentsRes, receiptsRes] = await Promise.all([
       messageIds.length > 0
@@ -203,6 +256,9 @@ export const useChatDataLoader = ({
       reactions: reactionsByMessage[message.id],
       attachments: attachmentsByMessage[message.id],
       read_by: readByMessage[message.id],
+      reply_preview: message.reply_to_message_id
+        ? (replyPreviewById.get(message.reply_to_message_id) ?? null)
+        : null,
     })) as unknown as MessageWithExtras[];
   }, []);
 

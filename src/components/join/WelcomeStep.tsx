@@ -1,5 +1,6 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import {
+  joinFlowPrimaryButtonSx,
   signupPaper,
   welcomeStepDescription,
   welcomeStepSubtext,
@@ -36,11 +37,14 @@ export const WelcomeStep = () => {
 
           <Button
             variant="contained"
+            disableElevation
+            fullWidth
             size="large"
             onClick={() => {
               markComplete('welcome');
               goToStep('identity');
             }}
+            sx={joinFlowPrimaryButtonSx}
           >
             Create your profile
           </Button>

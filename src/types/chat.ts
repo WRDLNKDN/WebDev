@@ -38,6 +38,8 @@ export type ChatMessage = {
   is_deleted: boolean;
   edited_at: string | null;
   created_at: string;
+  /** Same-room message this one replies to (optional). */
+  reply_to_message_id?: string | null;
 };
 
 export type ChatMessageReaction = {

@@ -5,7 +5,7 @@ export type EditProfileFormData = {
   pronouns: string;
   bio: string;
   skills: string;
-  /** Up to 8 interests (taxonomy + custom Other). Persisted to nerd_creds.interests. */
+  /** Up to 16 interests (taxonomy + custom Other). Persisted to nerd_creds.interests. */
   interests: string[];
   industries: IndustryGroup[];
   niche_field: string;

@@ -253,7 +253,7 @@ export const IdentityStep = () => {
           mx: 'auto',
         }}
       >
-        <Stack spacing={{ xs: 1.5, sm: 2 }}>
+        <Stack spacing={{ xs: 1, sm: 2 }}>
           <Box>
             <Typography component="h1" variant="h5" sx={signupStepLabel}>
               Sign in with intent

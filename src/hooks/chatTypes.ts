@@ -22,6 +22,17 @@ export type ChatRoomWithMembers = ChatRoom & {
   is_favorite?: boolean;
 };
 
+export type MessageReplyPreview = {
+  id: string;
+  content: string | null;
+  is_deleted: boolean;
+  sender_profile: {
+    handle: string;
+    display_name: string | null;
+    avatar: string | null;
+  } | null;
+};
+
 export type MessageWithExtras = ChatMessage & {
   reactions?: Array<ChatMessageReaction & { profiles?: { handle: string }[] }>;
   attachments?: ChatMessageAttachment[];
@@ -31,4 +42,6 @@ export type MessageWithExtras = ChatMessage & {
     avatar: string | null;
   } | null;
   read_by?: string[];
+  /** Populated client-side from `reply_to_message_id`. */
+  reply_preview?: MessageReplyPreview | null;
 };

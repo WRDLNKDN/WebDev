@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures';
 
 test.describe('Storefront', () => {
-  test('/store opens external shop in a new tab and returns to home', async ({
+  test('/store shows in-app Ecwid embed target when flag is on', async ({
     page,
   }) => {
     await page.route('**/rest/v1/feature_flags*', async (route) => {
@@ -18,21 +18,22 @@ test.describe('Storefront', () => {
       });
     });
 
-    const popupPromise = page.waitForEvent('popup');
     await page.goto('/store', { waitUntil: 'domcontentloaded' });
 
-    const popup = await popupPromise;
-    try {
-      await expect(popup).toHaveURL(
-        /wrdlnkdn\.com\/store-1|company\.site|ecwid/i,
-        {
-          timeout: 15_000,
-        },
-      );
-    } finally {
-      await popup.close().catch(() => {});
-    }
+    await expect(page).toHaveURL(/\/store$/);
+    await expect(
+      page.getByRole('heading', { name: 'Store', level: 1 }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#my-store-129462253')).toBeAttached();
 
-    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
+    await expect
+      .poll(async () =>
+        page.evaluate(() =>
+          Boolean(
+            document.querySelector('script[src*="app.ecwid.com/script.js"]'),
+          ),
+        ),
+      )
+      .toBeTruthy();
   });
 });

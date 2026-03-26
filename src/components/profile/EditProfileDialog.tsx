@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
+import { INTERESTS_MAX } from '../../constants/interestTaxonomy';
 import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
@@ -81,7 +82,7 @@ function buildProfileDraftSnapshot(params: {
     pronouns: params.formData.pronouns.trim(),
     bio: params.formData.bio,
     skills: params.formData.skills,
-    interests: params.formData.interests.slice(0, 8),
+    interests: params.formData.interests.slice(0, INTERESTS_MAX),
     industries: params.formData.industries.map((group) => ({
       industry: group.industry.trim(),
       sub_industries: group.sub_industries.map((value) => value.trim()),
@@ -211,7 +212,7 @@ export const EditProfileDialog = ({
             ? creds.skills
             : '',
       ),
-      interests: interests.slice(0, 8),
+      interests: interests.slice(0, INTERESTS_MAX),
       industries,
       niche_field: serializeNicheValues(
         parseNicheValues(safeStr(prof.niche_field)),
@@ -296,7 +297,7 @@ export const EditProfileDialog = ({
       for (const value of parseNicheValues(formData.niche_field)) {
         validateProfanity(value, blocklist, allowlist);
       }
-      const interestsToSave = formData.interests.slice(0, 8);
+      const interestsToSave = formData.interests.slice(0, INTERESTS_MAX);
       for (const value of interestsToSave) {
         validateProfanity(
           value,
@@ -567,7 +568,7 @@ export const EditProfileDialog = ({
                   onChange={(next) =>
                     setFormData((prev) => ({
                       ...prev,
-                      interests: next.slice(0, 8),
+                      interests: next.slice(0, INTERESTS_MAX),
                     }))
                   }
                   disabled={busy}

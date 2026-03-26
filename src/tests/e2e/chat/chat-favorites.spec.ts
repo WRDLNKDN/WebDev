@@ -381,10 +381,8 @@ test.describe('Chat favorites', () => {
     await page.keyboard.press('Escape');
     await expect(overlayPanel).toHaveCount(0);
 
-    const openMessagesButton = page.getByTestId('messenger-open-button');
-    await expect(openMessagesButton).toBeVisible({ timeout: 10_000 });
-
-    await openMessagesButton.click();
+    // Desktop: no floating messenger button — reopen overlay via /chat (ChatRedirect → feed + openOverlay).
+    await page.goto('/chat', { waitUntil: 'domcontentloaded' });
     await expect(overlayPanel).toBeVisible({ timeout: 10_000 });
 
     const favoriteButton = page.getByTestId(

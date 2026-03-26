@@ -1,6 +1,6 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 
 export type NavbarDrawerAuthedPrimaryProps = {
@@ -16,7 +16,6 @@ export type NavbarDrawerAuthedPrimaryProps = {
   drawerActiveNavSx: SxProps<Theme>;
   onDrawerNavigate: () => void;
   storeEnabled: boolean;
-  storeHref: string;
   isAdmin: boolean;
 };
 
@@ -34,55 +33,58 @@ export const NavbarDrawerAuthedPrimary = ({
   drawerActiveNavSx,
   onDrawerNavigate,
   storeEnabled,
-  storeHref,
   isAdmin,
-}: NavbarDrawerAuthedPrimaryProps) => (
-  <>
-    <GlobalNavAuthenticatedPrimary
-      variant="drawer"
-      path={path}
-      showAuthedHeader={showAuthedHeader}
-      feedEnabled={feedEnabled}
-      directoryEnabled={directoryEnabled}
-      chatEnabled={chatEnabled}
-      dashboardEnabled={dashboardEnabled}
-      eventsEnabled={eventsEnabled}
-      sessionUserId={sessionUserId}
-      drawerLinkColor={drawerLinkColor}
-      drawerActiveNavSx={drawerActiveNavSx}
-      onDrawerNavigate={onDrawerNavigate}
-    />
-    {storeEnabled && (
-      <Button
-        component="a"
-        href={storeHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onDrawerNavigate}
-        sx={{
-          justifyContent: 'flex-start',
-          color: drawerLinkColor,
-          textTransform: 'none',
-          py: 1.5,
-        }}
-      >
-        Store
-      </Button>
-    )}
-    {isAdmin ? (
-      <Button
-        component={RouterLink}
-        to="/admin"
-        onClick={onDrawerNavigate}
-        sx={{
-          justifyContent: 'flex-start',
-          color: 'warning.main',
-          textTransform: 'none',
-          py: 1.5,
-        }}
-      >
-        Admin
-      </Button>
-    ) : null}
-  </>
-);
+}: NavbarDrawerAuthedPrimaryProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <GlobalNavAuthenticatedPrimary
+        variant="drawer"
+        path={path}
+        showAuthedHeader={showAuthedHeader}
+        feedEnabled={feedEnabled}
+        directoryEnabled={directoryEnabled}
+        chatEnabled={chatEnabled}
+        dashboardEnabled={dashboardEnabled}
+        eventsEnabled={eventsEnabled}
+        sessionUserId={sessionUserId}
+        drawerLinkColor={drawerLinkColor}
+        drawerActiveNavSx={drawerActiveNavSx}
+        onDrawerNavigate={onDrawerNavigate}
+      />
+      {storeEnabled && (
+        <Button
+          type="button"
+          onClick={() => {
+            onDrawerNavigate();
+            navigate('/store');
+          }}
+          sx={{
+            justifyContent: 'flex-start',
+            color: drawerLinkColor,
+            textTransform: 'none',
+            py: 1.5,
+          }}
+        >
+          Store
+        </Button>
+      )}
+      {isAdmin ? (
+        <Button
+          component={RouterLink}
+          to="/admin"
+          onClick={onDrawerNavigate}
+          sx={{
+            justifyContent: 'flex-start',
+            color: 'warning.main',
+            textTransform: 'none',
+            py: 1.5,
+          }}
+        >
+          Admin
+        </Button>
+      ) : null}
+    </>
+  );
+};

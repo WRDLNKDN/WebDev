@@ -14,6 +14,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useMemo } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
 import { parseNicheValues } from '../../lib/profile/nicheValues';
@@ -279,10 +280,8 @@ export const DashboardIdentitySection = ({
             </MenuItem>
             {onViewProfile ? (
               <MenuItem
-                component="a"
-                href={onViewProfile}
-                target="_blank"
-                rel="noopener noreferrer"
+                component={RouterLink}
+                to={onViewProfile}
                 onClick={onCloseProfileMenu}
                 sx={{ py: 1.25 }}
               >

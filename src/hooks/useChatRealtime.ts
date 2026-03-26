@@ -1,5 +1,6 @@
 import { startTransition, useEffect } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import { fetchMessageReplyPreview } from '../lib/chat/replyPreview';
 import type { ChatMessage } from '../types/chat';
 import type { MessageWithExtras } from './chatTypes';
 
@@ -43,22 +44,27 @@ export const useChatRealtime = ({ roomId, setMessages }: Params) => {
                 senderProfile = profile ?? null;
               }
 
-              const [reactionsRes, attachmentsRes] = await Promise.all([
-                supabase
-                  .from('chat_message_reactions')
-                  .select('message_id, user_id, emoji')
-                  .eq('message_id', fullMsg.id),
-                supabase
-                  .from('chat_message_attachments')
-                  .select('id, message_id, storage_path, mime_type, file_size')
-                  .eq('message_id', fullMsg.id),
-              ]);
+              const [reactionsRes, attachmentsRes, replyPreview] =
+                await Promise.all([
+                  supabase
+                    .from('chat_message_reactions')
+                    .select('message_id, user_id, emoji')
+                    .eq('message_id', fullMsg.id),
+                  supabase
+                    .from('chat_message_attachments')
+                    .select(
+                      'id, message_id, storage_path, mime_type, file_size',
+                    )
+                    .eq('message_id', fullMsg.id),
+                  fetchMessageReplyPreview(fullMsg.reply_to_message_id),
+                ]);
 
               const next = {
                 ...fullMsg,
                 sender_profile: senderProfile,
                 reactions: reactionsRes.data ?? [],
                 attachments: attachmentsRes.data ?? [],
+                reply_preview: replyPreview,
               } as unknown as MessageWithExtras;
 
               startTransition(() => {

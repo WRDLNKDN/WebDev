@@ -1,7 +1,11 @@
 import { Box, Button, Drawer, Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
-import { Link as RouterLink, type Location } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  useNavigate,
+  type Location,
+} from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
@@ -25,7 +29,6 @@ export type NavbarMobileDrawerProps = {
   gamesEnabled: boolean;
   isGroupsActive: boolean;
   path: string;
-  storeUrl: string;
   location: Location;
   drawerPaperSx: SxProps<Theme>;
   drawerLinkColor: string;
@@ -52,12 +55,13 @@ export const NavbarMobileDrawer = ({
   gamesEnabled,
   isGroupsActive,
   path,
-  storeUrl,
   location,
   drawerPaperSx,
   drawerLinkColor,
   drawerActiveNavSx,
 }: NavbarMobileDrawerProps) => {
+  const navigate = useNavigate();
+
   return (
     <Drawer
       anchor="left"
@@ -111,11 +115,11 @@ export const NavbarMobileDrawer = ({
               )}
               {storeEnabled && (
                 <Button
-                  component="a"
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setDrawerOpen(false)}
+                  type="button"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    navigate('/store');
+                  }}
                   sx={{
                     justifyContent: 'flex-start',
                     color: drawerLinkColor,
@@ -142,7 +146,6 @@ export const NavbarMobileDrawer = ({
               drawerActiveNavSx={drawerActiveNavSx}
               onDrawerNavigate={() => setDrawerOpen(false)}
               storeEnabled={storeEnabled}
-              storeHref={storeUrl}
               isAdmin={isAdmin}
             />
           )}

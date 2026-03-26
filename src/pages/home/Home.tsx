@@ -483,7 +483,14 @@ export const Home = () => {
               onLoadedData={ensureVideoPlayback}
               onEnded={handleVideoEnded}
               onError={(e) => {
-                console.error('Video error:', e);
+                const el = e.currentTarget;
+                const mediaError = el.error;
+                console.error('Video error:', {
+                  code: mediaError?.code,
+                  message: mediaError?.message,
+                  currentSrc: el.currentSrc,
+                  networkState: el.networkState,
+                });
                 setVideoFailed(true);
                 finishHomeHeroTransition();
               }}

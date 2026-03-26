@@ -190,24 +190,12 @@ const LayoutContent = () => {
           zIndex: 1,
           flex: 1,
           minHeight: 0,
-          overflowY: isJoin
-            ? 'hidden'
-            : isHome && homeHeroShellPhase === 'video'
-              ? { xs: 'hidden', md: 'hidden' }
-              : 'auto',
+          overflowY: isJoin ? 'hidden' : 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
-          // Hide scrollbar on home page
-          ...(isHome && {
-            '&::-webkit-scrollbar': {
-              display: 'none',
-            },
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }),
         }}
       >
         <UatBanner />

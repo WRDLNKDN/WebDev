@@ -338,8 +338,6 @@ export const Home = () => {
     };
   }, [session?.id, onboarded]);
 
-  // Scroll tracking removed - no scrolling on home page
-
   const handleVideoEnded = () => {
     finishHomeHeroTransition();
   };

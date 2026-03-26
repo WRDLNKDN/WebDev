@@ -35,9 +35,6 @@
   overflow-x: hidden;
   overflow-y: visible;
   position: relative;
-  /* Hide scrollbar */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
 /*
@@ -54,10 +51,6 @@
   flex-direction: column;
   background: #000000;
   overflow: hidden;
-}
-
-.home-landing::-webkit-scrollbar {
-  display: none;
 }
 
 /* Post-intro (heroMode compact): main column hugs content so sections below enter the viewport sooner */
@@ -881,18 +874,4 @@ html[data-footer-visible='true'] footer {
   transition:
     opacity 0.8s ease-out,
     visibility 0s;
-}
-
-/* Hide scrollbars completely on home page */
-.home-landing,
-.home-landing * {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.home-landing::-webkit-scrollbar,
-.home-landing *::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
 }

@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
-import { openExternalUrlInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
 export type GlobalNavAuthenticatedPrimaryProps = {
@@ -252,9 +251,12 @@ function renderGlobalNavStoreButton({
   return (
     <Button
       key="global-nav-store"
-      type="button"
+      component="a"
+      href={getStoreExternalUrl()}
+      target="_blank"
+      rel="noopener noreferrer"
       onClick={() => {
-        openExternalUrlInNewTab(getStoreExternalUrl());
+        // Close drawer after navigation when rendering inside the mobile drawer
         if (variant === 'drawer' && onDrawerNavigate) {
           window.setTimeout(onDrawerNavigate, 0);
         }

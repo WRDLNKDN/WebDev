@@ -6,7 +6,6 @@ import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
-import { openExternalUrlInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
@@ -113,11 +112,13 @@ export const NavbarMobileDrawer = ({
               )}
               {storeEnabled && (
                 <Button
-                  type="button"
-                  onClick={() => {
-                    openExternalUrlInNewTab(getStoreExternalUrl());
-                    window.setTimeout(() => setDrawerOpen(false), 0);
-                  }}
+                  component="a"
+                  href={getStoreExternalUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    window.setTimeout(() => setDrawerOpen(false), 0)
+                  }
                   aria-label="Store, opens storefront in a new tab"
                   sx={{
                     justifyContent: 'flex-start',

@@ -762,7 +762,7 @@
 }
 
 .home-landing__skeleton {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 2rem 1rem;
   background: var(--color-bg-default);
 }

@@ -147,7 +147,7 @@ export const Dashboard = () => {
       borderRadius: 2,
       ...denseMenuPaperSxFromTheme(theme),
       zIndex: 1300,
-      maxHeight: 'calc(100vh - 100px)',
+      maxHeight: 'calc(100dvh - 100px)',
       overflowX: 'hidden',
       overflowY: 'auto',
       boxShadow:

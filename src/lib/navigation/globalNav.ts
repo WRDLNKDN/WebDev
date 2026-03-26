@@ -18,7 +18,8 @@ export const GLOBAL_NAV_PRIMARY_FLAG = {
 
 /**
  * Deterministic order for authenticated primary links in the top nav / drawer.
- * Implementations must render in this sequence only. `store` opens in a new tab.
+ * Implementations must render in this sequence only. `store` opens the external
+ * storefront URL in a new tab (not the in-app `/store` embed).
  */
 export const GLOBAL_NAV_AUTHENTICATED_PRIMARY_ORDER = [
   'feed',

@@ -5,7 +5,8 @@ import { Link as RouterLink, type Location } from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
-import { openSameOriginPathInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
+import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
+import { openExternalUrlInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
@@ -55,6 +56,10 @@ export const NavbarMobileDrawer = ({
   drawerLinkColor,
   drawerActiveNavSx,
 }: NavbarMobileDrawerProps) => {
+  const isStoreRoute = path === '/store' || path.startsWith('/store/');
+  const drawerActiveWrap = (active: boolean) =>
+    active && drawerActiveNavSx ? drawerActiveNavSx : {};
+
   return (
     <Drawer
       anchor="left"
@@ -109,22 +114,19 @@ export const NavbarMobileDrawer = ({
               {storeEnabled && (
                 <Button
                   type="button"
-                  variant="text"
                   onClick={() => {
-                    openSameOriginPathInNewTab('/store');
+                    openExternalUrlInNewTab(getStoreExternalUrl());
                     window.setTimeout(() => setDrawerOpen(false), 0);
                   }}
-                  aria-label="Store, opens in a new tab"
+                  aria-label="Store, opens storefront in a new tab"
                   sx={{
-                    display: 'flex',
                     justifyContent: 'flex-start',
-                    alignItems: 'center',
                     color: drawerLinkColor,
                     textTransform: 'none',
                     py: 1.5,
-                    px: 1,
                     minHeight: 44,
                     touchAction: 'manipulation',
+                    ...drawerActiveWrap(isStoreRoute),
                   }}
                 >
                   Store

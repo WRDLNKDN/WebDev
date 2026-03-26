@@ -79,7 +79,8 @@ export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
 }
 
 /**
- * Legacy helper for external storefront URL resolution (e.g. probes). Navbar Store uses `openSameOriginPathInNewTab('/store')`.
+ * Legacy helper for external storefront URL resolution (e.g. probes). Navbar Store
+ * uses `getStoreExternalUrl()` + `openExternalUrlInNewTab` (full storefront tab).
  * Optional `env` matches `getAlternateStorefrontUrl` (useful in tests).
  */
 export async function resolveStoreExternalUrl(

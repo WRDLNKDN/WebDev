@@ -2,8 +2,9 @@ import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
-import { openSameOriginPathInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
+import { openExternalUrlInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
 export type GlobalNavAuthenticatedPrimaryProps = {
@@ -37,7 +38,8 @@ type StoreNavParams = {
 };
 
 /**
- * Authenticated primary nav: Feed → Directory → Chat → Profile → Events → Store (new tab).
+ * Authenticated primary nav: Feed → Directory → Chat → Profile → Events → Store
+ * (external storefront in a new tab, not the in-app embed).
  * Renders nothing when unauthenticated. Omitted flags produce no nodes (no placeholders).
  */
 export const GlobalNavAuthenticatedPrimary = ({
@@ -252,12 +254,12 @@ function renderGlobalNavStoreButton({
       key="global-nav-store"
       type="button"
       onClick={() => {
-        openSameOriginPathInNewTab('/store');
+        openExternalUrlInNewTab(getStoreExternalUrl());
         if (variant === 'drawer' && onDrawerNavigate) {
           window.setTimeout(onDrawerNavigate, 0);
         }
       }}
-      aria-label="Store, opens in a new tab"
+      aria-label="Store, opens storefront in a new tab"
       sx={{
         color: 'rgba(255,255,255,0.85)',
         textTransform: 'none',

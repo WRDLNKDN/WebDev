@@ -32,6 +32,7 @@ export function useChat(roomId: string | null) {
 
   const {
     sendMessage,
+    forwardMessage,
     editMessage,
     deleteMessage,
     markAsRead,
@@ -65,6 +66,7 @@ export function useChat(roomId: string | null) {
     loadingOlder,
     loadOlderMessages,
     sendMessage,
+    forwardMessage,
     editMessage,
     deleteMessage,
     markAsRead,

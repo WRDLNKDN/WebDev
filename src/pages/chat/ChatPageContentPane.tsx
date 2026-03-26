@@ -1,15 +1,26 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
+import { useAppToast } from '../../context/AppToastContext';
+import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
-import { MessageInput } from '../../components/chat/message/MessageInput';
+import {
+  MessageInput,
+  type MessageReplyDraft,
+} from '../../components/chat/message/MessageInput';
 import { MessageList } from '../../components/chat/message/MessageList';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
+import type { MessageWithExtras } from '../../hooks/chatTypes';
+import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
+import { truncateSnippet } from '../../lib/chat/messageSnippet';
 import { ChatPageEmptyState } from './ChatPageEmptyState';
 
 type ChatPageContentPaneProps = {
   roomId?: string;
   uid: string;
   room: ChatRoomWithMembers | null;
+  /** Sidebar room list — used to pick a destination when forwarding. */
+  rooms: ChatRoomWithMembers[];
   onlineUsers: Set<string>;
   typingUsers: Set<string>;
   isRoomAdmin: boolean;
@@ -25,7 +36,6 @@ type ChatPageContentPaneProps = {
   sending: boolean;
   hasOlderMessages: boolean;
   loadingOlder: boolean;
-  isAdmin: boolean;
   onLeave: () => Promise<void>;
   onOpenBlock: () => void;
   onOpenInvite: () => void;
@@ -37,9 +47,10 @@ type ChatPageContentPaneProps = {
   onEditMessage: (id: string, text: string) => Promise<void>;
   onDeleteMessage: (id: string) => Promise<void>;
   onToggleReaction: (messageId: string, emoji: string) => Promise<void>;
-  onReport: (messageId?: string, userId?: string) => void;
+  onReport: (messageId?: string, senderUserId?: string | null) => void;
   onMessagesViewed: (messageIds: string[]) => Promise<void>;
-  onSendMessage: (text: string) => Promise<void>;
+  onSendMessage: Parameters<typeof MessageInput>[0]['onSend'];
+  onForwardMessage: (targetRoomId: string, content: string) => Promise<boolean>;
   onTyping: () => void;
   onStopTyping: () => void;
   onStartDm: () => void;
@@ -52,6 +63,7 @@ export const ChatPageContentPane = ({
   roomId,
   uid,
   room,
+  rooms,
   onlineUsers,
   typingUsers,
   isRoomAdmin,
@@ -62,7 +74,6 @@ export const ChatPageContentPane = ({
   sending,
   hasOlderMessages,
   loadingOlder,
-  isAdmin,
   onLeave,
   onOpenBlock,
   onOpenInvite,
@@ -77,112 +88,174 @@ export const ChatPageContentPane = ({
   onReport,
   onMessagesViewed,
   onSendMessage,
+  onForwardMessage,
   onTyping,
   onStopTyping,
   onStartDm,
   onCreateGroup,
   scrollToMessageId = null,
-}: ChatPageContentPaneProps) => (
-  <Box
-    sx={{
-      flex: 1,
-      display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
-      flexDirection: 'column',
-      minWidth: 0,
-    }}
-  >
-    {roomId ? (
-      <>
-        <ChatRoomHeader
-          room={room}
-          currentUserId={uid}
-          onlineUsers={onlineUsers}
-          typingUsers={typingUsers}
-          isRoomAdmin={isRoomAdmin}
-          onLeave={onLeave}
-          onBlock={onOpenBlock}
-          onInvite={onOpenInvite}
-          onRename={onOpenRename}
-          onManageMembers={onOpenManage}
-          onBack={onBack}
-        />
+}: ChatPageContentPaneProps) => {
+  const { showToast } = useAppToast();
+  const [replyTarget, setReplyTarget] = useState<MessageReplyDraft | null>(
+    null,
+  );
+  const [forwardSource, setForwardSource] = useState<MessageWithExtras | null>(
+    null,
+  );
 
-        {error && (
-          <Box
-            sx={{
-              px: 2,
-              py: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Typography color="error" variant="body2">
-              {error}
-            </Typography>
-            <Button size="small" variant="outlined" onClick={onRefresh}>
-              Try again
-            </Button>
-          </Box>
-        )}
+  useEffect(() => {
+    setReplyTarget(null);
+    setForwardSource(null);
+  }, [roomId]);
 
-        {chatLoading ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : (
-          <MessageList
-            messages={messages}
+  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
+    return (
+      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
+    );
+  }, []);
+
+  const handleForwardToRoom = useCallback(
+    async (targetRoomId: string) => {
+      if (!forwardSource) return;
+      const body = formatForwardedChatText(
+        forwardSource.content,
+        forwardAuthorLabel(forwardSource),
+      );
+      const ok = await onForwardMessage(targetRoomId, body);
+      if (ok) {
+        setForwardSource(null);
+        showToast({ message: 'Message forwarded.', severity: 'success' });
+      }
+    },
+    [forwardAuthorLabel, forwardSource, onForwardMessage, showToast],
+  );
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
+        flexDirection: 'column',
+        minWidth: 0,
+      }}
+    >
+      {roomId ? (
+        <>
+          <ChatRoomHeader
+            room={room}
             currentUserId={uid}
-            roomType={room?.room_type ?? 'dm'}
-            otherUserId={otherMember?.user_id}
-            onLoadOlder={onLoadOlder}
-            hasOlderMessages={hasOlderMessages}
-            loadingOlder={loadingOlder}
-            onEdit={onEditMessage}
-            onDelete={onDeleteMessage}
-            onReaction={onToggleReaction}
-            onReport={(msgId) => onReport(msgId)}
-            onMessagesViewed={onMessagesViewed}
-            isAdmin={isAdmin}
-            typingAvatarUrl={
-              room?.room_type === 'dm'
-                ? (otherMember?.profile?.avatar ?? null)
-                : undefined
-            }
-            showTyping={
-              !!(
-                room?.room_type === 'dm' &&
-                otherMember?.user_id &&
-                typingUsers.has(otherMember.user_id)
-              )
-            }
-            scrollToMessageId={scrollToMessageId}
+            onlineUsers={onlineUsers}
+            typingUsers={typingUsers}
+            isRoomAdmin={isRoomAdmin}
+            onLeave={onLeave}
+            onBlock={onOpenBlock}
+            onInvite={onOpenInvite}
+            onRename={onOpenRename}
+            onManageMembers={onOpenManage}
+            onBack={onBack}
           />
-        )}
 
-        <MessageInput
-          onSend={onSendMessage}
-          onTyping={onTyping}
-          onStopTyping={onStopTyping}
-          disabled={chatLoading}
-          sending={sending}
-          roomId={roomId ?? null}
-          roomType={room?.room_type ?? 'dm'}
-          groupMembers={roomMembersToMentionable(room)}
-          currentUserId={uid}
+          {error && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Typography color="error" variant="body2">
+                {error}
+              </Typography>
+              <Button size="small" variant="outlined" onClick={onRefresh}>
+                Try again
+              </Button>
+            </Box>
+          )}
+
+          {chatLoading ? (
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : (
+            <MessageList
+              messages={messages}
+              currentUserId={uid}
+              roomType={room?.room_type ?? 'dm'}
+              otherUserId={otherMember?.user_id}
+              onLoadOlder={onLoadOlder}
+              hasOlderMessages={hasOlderMessages}
+              loadingOlder={loadingOlder}
+              onEdit={onEditMessage}
+              onDelete={onDeleteMessage}
+              onReaction={onToggleReaction}
+              onReport={(msgId, senderUserId) =>
+                onReport(msgId, senderUserId ?? undefined)
+              }
+              onStartReply={(msg) =>
+                setReplyTarget({
+                  id: msg.id,
+                  authorLabel: forwardAuthorLabel(msg),
+                  contentSnippet: truncateSnippet(msg.content ?? ''),
+                })
+              }
+              onForward={(msg) => setForwardSource(msg)}
+              onMessagesViewed={onMessagesViewed}
+              typingAvatarUrl={
+                room?.room_type === 'dm'
+                  ? (otherMember?.profile?.avatar ?? null)
+                  : undefined
+              }
+              showTyping={
+                !!(
+                  room?.room_type === 'dm' &&
+                  otherMember?.user_id &&
+                  typingUsers.has(otherMember.user_id)
+                )
+              }
+              scrollToMessageId={scrollToMessageId}
+            />
+          )}
+
+          <MessageInput
+            onSend={onSendMessage}
+            onTyping={onTyping}
+            onStopTyping={onStopTyping}
+            disabled={chatLoading}
+            sending={sending}
+            roomId={roomId ?? null}
+            roomType={room?.room_type ?? 'dm'}
+            groupMembers={roomMembersToMentionable(room)}
+            currentUserId={uid}
+            replyTo={replyTarget}
+            onCancelReply={() => setReplyTarget(null)}
+          />
+
+          <ForwardMessageDialog
+            open={Boolean(forwardSource)}
+            onClose={() => setForwardSource(null)}
+            rooms={rooms}
+            excludeRoomId={roomId}
+            currentUserId={uid}
+            onSelectRoom={handleForwardToRoom}
+            busy={sending}
+          />
+        </>
+      ) : (
+        <ChatPageEmptyState
+          onStartDm={onStartDm}
+          onCreateGroup={onCreateGroup}
         />
-      </>
-    ) : (
-      <ChatPageEmptyState onStartDm={onStartDm} onCreateGroup={onCreateGroup} />
-    )}
-  </Box>
-);
+      )}
+    </Box>
+  );
+};

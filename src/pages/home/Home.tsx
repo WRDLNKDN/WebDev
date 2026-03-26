@@ -3,13 +3,13 @@ import { Link, Navigate } from 'react-router-dom';
 
 import { GuestView } from '../../components/home/GuestView';
 import { HowItWorks } from '../../components/home/HowItWorks';
-import { SocialProof } from '../../components/home/SocialProof';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
 import '../../components/home/homeLanding.css';
 import {
   useMarketingHomeMode,
   useProductionComingSoonMode,
 } from '../../context/FeatureFlagsContext';
+import { isBenignSupabaseAuthLockContentionError } from '../../lib/auth/supabaseAuthLockErrors';
 import { AUTH_STORAGE_KEY } from '../../lib/auth/supabaseClient';
 import { getSessionWithTimeout } from '../../lib/auth/getSessionWithTimeout';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
@@ -224,7 +224,14 @@ export const Home = () => {
         setOnboarded(profile ? isProfileOnboarded(profile) : false);
       } catch (err) {
         if (mounted) {
-          setError(toMessage(err));
+          if (isBenignSupabaseAuthLockContentionError(err)) {
+            console.warn(
+              '[Home] Supabase auth lock contention (ignored on public landing):',
+              err,
+            );
+          } else {
+            setError(toMessage(err));
+          }
           setOnboarded(null);
         }
       } finally {
@@ -447,7 +454,7 @@ export const Home = () => {
           onPointerDown={handleHeroSkip}
           aria-hidden="true"
         >
-          {showMarketingHeroPoster ? (
+          {showMarketingHeroPoster && heroMode === 'video' ? (
             <img
               className="home-landing__video home-landing__video--focus-feet"
               src="/assets/video/hero-bg-poster.jpg"
@@ -476,7 +483,14 @@ export const Home = () => {
               onLoadedData={ensureVideoPlayback}
               onEnded={handleVideoEnded}
               onError={(e) => {
-                console.error('Video error:', e);
+                const el = e.currentTarget;
+                const mediaError = el.error;
+                console.error('Video error:', {
+                  code: mediaError?.code,
+                  message: mediaError?.message,
+                  currentSrc: el.currentSrc,
+                  networkState: el.networkState,
+                });
                 setVideoFailed(true);
                 finishHomeHeroTransition();
               }}
@@ -594,7 +608,6 @@ export const Home = () => {
       {/* Marketing sections: same on UAT and PROD (coming-soon still hides Join in hero only). */}
       <WhatMakesDifferent />
       <HowItWorks />
-      <SocialProof />
     </main>
   );
 };

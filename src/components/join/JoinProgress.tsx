@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { BRAND_COLORS } from '../../theme/themeConstants';
 import type { JoinStep } from '../../types/join';
 
 interface JoinProgressProps {
@@ -17,6 +18,12 @@ const STEP_LABELS: Record<JoinStep, string> = {
   complete: 'Complete',
 };
 
+/** Signup stepper: one accent (brand purple) for completed + active ring. */
+const STEPPER_PURPLE = BRAND_COLORS.purple;
+const STEPPER_PURPLE_LINE = 'rgba(167, 68, 194, 0.5)';
+const STEPPER_TRACK_MUTED = 'rgba(156,187,217,0.22)';
+const STEPPER_PURPLE_ACTIVE_FILL = 'rgba(167, 68, 194, 0.2)';
+
 export const JoinProgress = ({
   currentStep,
   completedSteps,
@@ -32,7 +39,7 @@ export const JoinProgress = ({
         flexDirection: 'column',
         alignItems: 'center',
         gap: 0.5,
-        mb: { xs: 1, sm: 1.5 },
+        mb: { xs: 0.35, sm: 0.5, md: 0.4 },
       }}
     >
       <Box
@@ -40,7 +47,7 @@ export const JoinProgress = ({
           display: 'flex',
           alignItems: 'flex-start',
           width: '100%',
-          maxWidth: 560,
+          maxWidth: 500,
           minWidth: 0,
         }}
       >
@@ -68,21 +75,21 @@ export const JoinProgress = ({
                 {isCompleted ? (
                   <CheckCircleIcon
                     sx={{
-                      fontSize: { xs: 22, sm: 28 },
-                      color: '#4ade80',
+                      fontSize: { xs: 20, sm: 24 },
+                      color: STEPPER_PURPLE,
                     }}
                   />
                 ) : (
                   <Box
                     sx={{
-                      width: { xs: 22, sm: 28 },
-                      height: { xs: 22, sm: 28 },
+                      width: { xs: 20, sm: 24 },
+                      height: { xs: 20, sm: 24 },
                       borderRadius: '50%',
                       border: isActive
-                        ? '2.5px solid #3884D2'
+                        ? `2.5px solid ${STEPPER_PURPLE}`
                         : '2px solid rgba(255,255,255,0.22)',
                       bgcolor: isActive
-                        ? 'rgba(59,130,246,0.15)'
+                        ? STEPPER_PURPLE_ACTIVE_FILL
                         : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
@@ -95,7 +102,7 @@ export const JoinProgress = ({
                           width: 10,
                           height: 10,
                           borderRadius: '50%',
-                          bgcolor: '#3884D2',
+                          bgcolor: STEPPER_PURPLE,
                         }}
                       />
                     )}
@@ -109,7 +116,7 @@ export const JoinProgress = ({
                     fontWeight: isActive ? 700 : 500,
                     whiteSpace: 'nowrap',
                     color: isCompleted
-                      ? '#4ade80'
+                      ? STEPPER_PURPLE
                       : isActive
                         ? '#FFFFFF'
                         : 'rgba(255,255,255,0.4)',
@@ -125,10 +132,10 @@ export const JoinProgress = ({
                     flex: 1,
                     height: '1.5px',
                     mx: { xs: 0.25, sm: 0.75 },
-                    mt: { xs: '11px', sm: '13px' },
+                    mt: { xs: '10px', sm: '12px' },
                     bgcolor: completedSteps.includes(step)
-                      ? 'rgba(74,222,128,0.45)'
-                      : 'rgba(156,187,217,0.22)',
+                      ? STEPPER_PURPLE_LINE
+                      : STEPPER_TRACK_MUTED,
                     alignSelf: 'flex-start',
                   }}
                 />
@@ -140,7 +147,10 @@ export const JoinProgress = ({
 
       <Typography
         variant="caption"
-        sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}
+        sx={{
+          color: 'rgba(211, 176, 220, 0.72)',
+          fontSize: '0.72rem',
+        }}
       >
         Step {activeIndex + 1} of {STEP_ORDER.length}
       </Typography>

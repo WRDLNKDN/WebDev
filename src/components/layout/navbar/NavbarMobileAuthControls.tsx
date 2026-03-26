@@ -76,6 +76,30 @@ export const NavbarMobileAuthControls = ({
         />
       ) : showGuestJoinSignIn ? (
         <>
+          <Button
+            component={RouterLink}
+            to="/signin"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Sign in"
+            size="small"
+            sx={{
+              minHeight: 40,
+              minWidth: 'auto',
+              px: 1.25,
+              color: 'rgba(255,255,255,0.96)',
+              textTransform: 'none',
+              fontSize: '0.9375rem',
+              fontWeight: 600,
+              touchAction: 'manipulation',
+              pointerEvents: 'auto',
+              '&:hover': {
+                color: 'white',
+                bgcolor: 'rgba(56,132,210,0.14)',
+              },
+            }}
+          >
+            Sign in
+          </Button>
           {!isJoinActive && (
             <Button
               component={RouterLink}
@@ -102,30 +126,6 @@ export const NavbarMobileAuthControls = ({
               Join
             </Button>
           )}
-          <Button
-            component={RouterLink}
-            to="/signin"
-            onClick={() => setDrawerOpen(false)}
-            aria-label="Sign in"
-            size="small"
-            sx={{
-              minHeight: 40,
-              minWidth: 'auto',
-              px: 1.25,
-              color: 'rgba(255,255,255,0.96)',
-              textTransform: 'none',
-              fontSize: '0.9375rem',
-              fontWeight: 600,
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              '&:hover': {
-                color: 'white',
-                bgcolor: 'rgba(56,132,210,0.14)',
-              },
-            }}
-          >
-            Sign in
-          </Button>
         </>
       ) : session ? (
         <>

@@ -23,13 +23,20 @@ import { useState } from 'react';
 import { useJoin } from '../../context/useJoin';
 import type { ValuesData } from '../../types/join';
 import { JOIN_REASONS, PARTICIPATION_STYLES } from '../../types/join';
+import { BRAND_COLORS } from '../../theme/themeConstants';
 import {
+  joinFlowPrimaryButtonSx,
+  joinFlowSecondaryButtonSx,
   signupPaper,
   valuesStepButtonRow,
-  valuesStepContinueButton,
   valuesStepSectionSubtext,
   valuesStepSectionTitle,
 } from '../../theme/joinStyles';
+
+const joinValuesCheckboxSx = {
+  color: 'rgba(255,255,255,0.5)',
+  '&.Mui-checked': { color: BRAND_COLORS.purple },
+} as const;
 
 const toggleSet = (arr: string[], item: string): string[] =>
   arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
@@ -73,7 +80,7 @@ export const ValuesStep = () => {
           mx: 'auto',
         }}
       >
-        <Stack spacing={{ xs: 1.5, sm: 2 }}>
+        <Stack spacing={{ xs: 1, sm: 2 }}>
           <Typography variant="h5" sx={valuesStepSectionTitle}>
             Your intent
           </Typography>
@@ -104,7 +111,7 @@ export const ValuesStep = () => {
                     onChange={() =>
                       setJoinReason((prev) => toggleSet(prev, reason))
                     }
-                    sx={{ color: 'rgba(255,255,255,0.5)' }}
+                    sx={joinValuesCheckboxSx}
                   />
                 }
                 label={reason}
@@ -140,7 +147,7 @@ export const ValuesStep = () => {
                     onChange={() =>
                       setParticipationStyle((prev) => toggleSet(prev, style))
                     }
-                    sx={{ color: 'rgba(255,255,255,0.5)' }}
+                    sx={joinValuesCheckboxSx}
                   />
                 }
                 label={style}
@@ -172,7 +179,7 @@ export const ValuesStep = () => {
               },
               '& .MuiInputLabel-root': {
                 color: 'rgba(255,255,255,0.6)',
-                '&.Mui-focused': { color: '#3884D2' },
+                '&.Mui-focused': { color: BRAND_COLORS.purple },
               },
             }}
           />
@@ -180,33 +187,21 @@ export const ValuesStep = () => {
           <Stack direction="row" sx={{ ...valuesStepButtonRow, width: '100%' }}>
             <Button
               type="button"
-              variant="outlined"
+              variant="contained"
               size="medium"
+              disableElevation
               onClick={() => handleBack()}
-              sx={{
-                borderWidth: 1.5,
-                borderColor: 'rgba(255,255,255,0.6)',
-                color: '#FFFFFF',
-                textTransform: 'none',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: 'rgba(255,255,255,0.85)',
-                  bgcolor: 'rgba(156,187,217,0.18)',
-                },
-                '&.Mui-disabled': {
-                  borderColor: 'rgba(255,255,255,0.35)',
-                  color: 'rgba(255,255,255,0.6)',
-                },
-              }}
+              sx={joinFlowSecondaryButtonSx}
             >
               ← Back
             </Button>
             <Box sx={{ flex: 1 }} />
             <Button
               variant="contained"
+              disableElevation
               onClick={handleContinue}
               disabled={!canContinue}
-              sx={valuesStepContinueButton}
+              sx={{ ...joinFlowPrimaryButtonSx, flex: '0 1 auto' }}
             >
               Continue
             </Button>

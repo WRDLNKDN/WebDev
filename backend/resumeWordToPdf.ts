@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 
-import { extractResumePlainText } from './resumeThumbnail.ts';
+import { extractResumePlainText } from './resumeThumbnail.js';
 
 /** Avoid multi-minute pdfkit runs / huge PDFs when mammoth returns very large extracts. */
 export const RESUME_PDF_BODY_MAX_CHARS = 200_000;

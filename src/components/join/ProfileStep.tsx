@@ -5,7 +5,7 @@ import {
   CircularProgress,
   Stack,
   TextField,
-  Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -13,12 +13,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJoin } from '../../context/useJoin';
 import {
-  FORM_SECTION_HEADING_SX,
   FORM_SECTION_PANEL_SX,
   outlinedFieldSxFromTheme,
 } from '../../lib/ui/formSurface';
 import { setJoinCompletionFlash } from '../../lib/profile/joinCompletionFlash';
 import { setProfileValidated } from '../../lib/profile/profileValidatedCache';
+import { INTERESTS_MAX } from '../../constants/interestTaxonomy';
+import {
+  joinFlowPrimaryButtonSx,
+  joinFlowSecondaryButtonSx,
+} from '../../theme/joinStyles';
+import { BRAND_COLORS } from '../../theme/themeConstants';
 import { POLICY_VERSION } from '../../types/join';
 import { JoinInterestsSelector } from './profile/JoinInterestsSelector';
 import { ProfileStepHero } from './profile/ProfileStepHero';
@@ -27,6 +32,7 @@ import { ProfileStepPreviewCard } from './profile/ProfileStepPreviewCard';
 
 const ProfileStep = () => {
   const theme = useTheme();
+  const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
   const navigate = useNavigate();
   const {
     state,
@@ -73,7 +79,7 @@ const ProfileStep = () => {
     const profileData = {
       displayName: displayName.trim(),
       marketingOptIn,
-      interests: interests.slice(0, 8),
+      interests: interests.slice(0, INTERESTS_MAX),
     };
     setProfile(profileData);
 
@@ -106,13 +112,38 @@ const ProfileStep = () => {
     setProfile({
       displayName: displayName.trim(),
       marketingOptIn,
-      interests: interests.slice(0, 8),
+      interests: interests.slice(0, INTERESTS_MAX),
     });
     goToStep('values');
   };
 
-  // Preview name: what the card will show
   const previewName = displayName.trim() || 'Your Name';
+
+  const panelPad = { xs: 0.5, sm: 1, md: 1.2 } as const;
+
+  const panelWrapSx = {
+    ...FORM_SECTION_PANEL_SX,
+    width: '100%',
+    p: panelPad,
+  } as const;
+
+  const profileFinalSectionSx = {
+    width: '100%',
+    mt: { xs: 0, sm: 0.5 },
+    pt: { xs: 1, sm: 2 },
+    borderTop: '1px solid rgba(156,187,217,0.16)',
+  } as const;
+
+  const actionRowSx = {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    gap: { xs: 1, sm: 2 },
+    flexShrink: 0,
+    pt: { xs: 0.25, sm: 0.75 },
+  } as const;
 
   return (
     <Box
@@ -122,170 +153,134 @@ const ProfileStep = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        px: { xs: 2, sm: 3 },
-        py: { xs: 2, md: 2.5 },
+        px: { xs: 0.5, sm: 1.5 },
+        py: { xs: 0, sm: 0.75, md: 1 },
       }}
     >
       <Stack
-        spacing={3}
-        sx={{ width: '100%', maxWidth: 520, alignItems: 'center' }}
+        spacing={{ xs: 0.5, sm: 0.75, md: 1 }}
+        sx={{ width: '100%', maxWidth: { xs: 520, md: '100%' }, mx: 'auto' }}
       >
-        <ProfileStepHero />
-        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
-          <Typography
-            variant="caption"
-            sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
-          >
-            Profile Basics
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Set the name members will see across your profile, directory, and
-            feed.
-          </Typography>
-        </Box>
+        <ProfileStepHero compact />
 
-        {/* Error */}
-        {combinedError && (
-          <Alert
-            severity="error"
-            onClose={handleDismissError}
-            sx={{
-              width: '100%',
-              bgcolor: 'rgba(239,68,68,0.12)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              color: 'rgba(255,255,255,0.9)',
-              '& .MuiAlert-icon': { color: '#ef4444' },
-            }}
-          >
-            {combinedError}
-          </Alert>
-        )}
+        <Stack spacing={{ xs: 0.65, sm: 1, md: 1.15 }}>
+          {combinedError && (
+            <Alert
+              severity="error"
+              onClose={handleDismissError}
+              sx={{
+                width: '100%',
+                bgcolor: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                color: 'rgba(255,255,255,0.9)',
+                '& .MuiAlert-icon': { color: '#ef4444' },
+              }}
+            >
+              {combinedError}
+            </Alert>
+          )}
 
-        {/* Name input */}
-        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
-          <TextField
-            label="Your display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            fullWidth
-            placeholder="How should we call you?"
-            required
-            error={!displayName.trim() && displayName.length > 0}
-            helperText={
-              !displayName.trim() && displayName.length > 0
-                ? 'Name is required'
-                : 'Visible across the community'
-            }
-            sx={outlinedFieldSxFromTheme(theme)}
-          />
-        </Box>
+          <Box sx={panelWrapSx}>
+            <TextField
+              label="Your display name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              fullWidth
+              placeholder="How should we call you?"
+              required
+              error={!displayName.trim() && displayName.length > 0}
+              helperText={
+                !displayName.trim() && displayName.length > 0
+                  ? 'Name is required'
+                  : 'Visible across the community'
+              }
+              sx={{
+                ...outlinedFieldSxFromTheme(theme),
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: BRAND_COLORS.purple,
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: BRAND_COLORS.purple,
+                },
+              }}
+            />
+          </Box>
 
-        {/* Interests */}
-        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
-          <JoinInterestsSelector
-            value={interests}
-            onChange={(next) => {
-              setInterestsError(null);
-              setInterests(next);
-            }}
-            disabled={submitting}
-            error={interestsError ?? undefined}
-            onValidationError={(msg) => setInterestsError(msg || null)}
-          />
-        </Box>
+          <Box sx={panelWrapSx}>
+            <JoinInterestsSelector
+              value={interests}
+              onChange={(next) => {
+                setInterestsError(null);
+                setInterests(next);
+              }}
+              disabled={submitting}
+              error={interestsError ?? undefined}
+              onValidationError={(msg) => setInterestsError(msg || null)}
+            />
+          </Box>
 
-        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
-          <ProfileStepPreviewCard previewName={previewName} />
-        </Box>
-
-        <Box sx={{ ...FORM_SECTION_PANEL_SX, width: '100%' }}>
-          <ProfileStepMarketingOptIn
-            checked={marketingOptIn}
-            disabled={submitting}
-            onChange={(checked) => {
-              setMarketingOptIn(checked);
-              setLocalError(null);
-            }}
-          />
-        </Box>
-
-        {/* Back (left) + Launch (right) */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            gap: 2,
-          }}
-        >
-          <Button
-            type="button"
-            variant="outlined"
-            size="medium"
-            onClick={() => handleBack()}
-            disabled={submitting}
-            sx={{
-              borderWidth: 1.5,
-              borderColor: 'rgba(255,255,255,0.6)',
-              color: '#FFFFFF',
-              textTransform: 'none',
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: 'rgba(255,255,255,0.85)',
-                bgcolor: 'rgba(156,187,217,0.18)',
-              },
-              '&.Mui-disabled': {
-                borderColor: 'rgba(255,255,255,0.35)',
-                color: 'rgba(255,255,255,0.6)',
-              },
-            }}
-          >
-            ← Back
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => void handleLaunch()}
-            disabled={submitting || !displayName.trim()}
-            endIcon={
-              submitting ? (
-                <CircularProgress
-                  size={18}
-                  sx={{ color: 'rgba(255,255,255,0.7)' }}
+          <Box sx={profileFinalSectionSx}>
+            <Stack spacing={{ xs: 1.15, sm: 2 }}>
+              <Box sx={panelWrapSx}>
+                <ProfileStepPreviewCard
+                  previewName={previewName}
+                  compact={!isSmUp}
                 />
-              ) : (
-                <ArrowForwardIcon />
-              )
-            }
-            sx={{
-              py: 1.6,
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '1rem',
-              letterSpacing: '0.01em',
-              bgcolor: 'transparent',
-              border: '1.5px solid rgba(56,189,248,0.55)',
-              color: '#FFFFFF',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 0 20px rgba(56,189,248,0.08)',
-              transition: 'all 0.2s ease',
-              '&:hover:not(:disabled)': {
-                bgcolor: 'rgba(56,189,248,0.1)',
-                borderColor: 'rgba(56,189,248,0.8)',
-                boxShadow: '0 0 28px rgba(56,189,248,0.2)',
-              },
-              '&.Mui-disabled': {
-                borderColor: 'rgba(156,187,217,0.26)',
-                color: 'rgba(141,188,229,0.50)',
-              },
-            }}
-          >
-            {submitting ? 'Launching…' : 'Launch your feed'}
-          </Button>
-        </Box>
+              </Box>
+
+              <ProfileStepMarketingOptIn
+                checked={marketingOptIn}
+                disabled={submitting}
+                onChange={(checked) => {
+                  setMarketingOptIn(checked);
+                  setLocalError(null);
+                }}
+              />
+
+              <Box sx={actionRowSx}>
+                <Button
+                  type="button"
+                  variant="contained"
+                  size="medium"
+                  disableElevation
+                  onClick={() => handleBack()}
+                  disabled={submitting}
+                  sx={{
+                    ...joinFlowSecondaryButtonSx,
+                    flexShrink: 0,
+                  }}
+                >
+                  ← Back
+                </Button>
+                <Button
+                  variant="contained"
+                  size="medium"
+                  onClick={() => void handleLaunch()}
+                  disableElevation
+                  disabled={submitting || !displayName.trim()}
+                  endIcon={
+                    submitting ? (
+                      <CircularProgress
+                        size={18}
+                        sx={{ color: 'rgba(255,255,255,0.85)' }}
+                      />
+                    ) : (
+                      <ArrowForwardIcon />
+                    )
+                  }
+                  sx={{
+                    ...joinFlowPrimaryButtonSx,
+                    flex: { xs: '1 1 auto', sm: '0 1 auto' },
+                  }}
+                >
+                  {submitting ? 'Launching…' : 'Launch your feed'}
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        </Stack>
       </Stack>
     </Box>
   );

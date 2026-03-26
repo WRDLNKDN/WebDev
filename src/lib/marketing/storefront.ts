@@ -1,5 +1,8 @@
 export const GODADDY_STOREFRONT_URL = 'https://wrdlnkdn.com/store-1';
 
+/** Default Ecwid store ID for the in-app `/store` embed (override with `VITE_ECWID_STORE_ID`). */
+export const DEFAULT_ECWID_EMBED_STORE_ID = '129462253';
+
 const GODADDY_STORE_PROBE_TIMEOUT_MS = 3500;
 
 type StorefrontEnv = {
@@ -76,7 +79,7 @@ export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
 }
 
 /**
- * Navbar Store and /store: prefer GoDaddy when reachable; else Ecwid / VITE_STORE_URL; else GoDaddy.
+ * Legacy helper for external storefront URL resolution (e.g. probes). Navbar Store uses `openSameOriginPathInNewTab('/store')`.
  * Optional `env` matches `getAlternateStorefrontUrl` (useful in tests).
  */
 export async function resolveStoreExternalUrl(
@@ -95,6 +98,23 @@ export function getEcwidStoreId(
   if (typeof raw !== 'string') return undefined;
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/** Store ID for the embedded shop at `/store` (env wins, else production default). */
+export function getEcwidEmbedStoreId(env?: StorefrontEnv): string {
+  return (
+    getEcwidStoreId(
+      env?.VITE_ECWID_STORE_ID ?? import.meta.env.VITE_ECWID_STORE_ID,
+    ) ?? DEFAULT_ECWID_EMBED_STORE_ID
+  );
+}
+
+/** Ecwid `script.js` URL for code platform embeds. */
+export function buildEcwidEmbedScriptSrc(
+  storeId: string,
+  dataDate = '2026-03-25',
+): string {
+  return `https://app.ecwid.com/script.js?${encodeURIComponent(storeId)}&data_platform=code&data_date=${encodeURIComponent(dataDate)}`;
 }
 
 export function getEcwidScriptId(storeId: string): string {

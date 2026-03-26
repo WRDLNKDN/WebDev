@@ -1,7 +1,7 @@
 name: 🚀 Vercel Deploy UAT then PROD
 
-# Redeploy from main: Actions → "🚀 Vercel Deploy UAT then PROD" → "Run workflow" → leave branch as main → Run.
-# Re-run a completed run: open the run → "Re-run all jobs" (uses same ref as that run, e.g. main).
+# Push to main → UAT then PROD (sequential). Manual run: Actions → this workflow → Run workflow
+# (optional ref, default main). Re-run a completed run uses the same ref as that run.
 
 on:
   push:
@@ -10,16 +10,11 @@ on:
     inputs:
       ref:
         description:
-          'Branch to deploy (default main — redeploy latest main to UAT)'
+          'Git ref to build and deploy to UAT and PROD (e.g. main or a branch
+          name)'
         required: true
         type: string
         default: 'main'
-      deploy_prod:
-        description:
-          'Deploy to PRODUCTION (check this to deploy prod after UAT)'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: vercel-deploy-${{ github.ref }}
@@ -104,10 +99,6 @@ jobs:
     name: 🚀 Vercel PROD (Production)
     runs-on: ubuntu-latest
     needs: deploy-uat
-
-    # Prod deploys only when you explicitly request it via workflow_dispatch with "Also deploy production" checked.
-    # Push to main deploys UAT only; no automatic prod publish.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_prod }}
 
     env:
       # Opt into Node.js 24 for JavaScript actions (actions/checkout, actions/setup-node)

@@ -45,15 +45,11 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co; frame-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.ecwid.com https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net; script-src-elem 'self' 'unsafe-inline' https://app.ecwid.com https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net; style-src 'self' 'unsafe-inline' https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net; img-src 'self' data: https: blob:; font-src 'self' data: https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net https://storefront.ecwid.dev:16088; frame-src 'self' https://*.supabase.co https://*.ecwid.com; worker-src 'self' blob: https://*.ecwid.com https://*.ecwcdn.com https://d34ikvsdm2rlij.cloudfront.net; object-src 'none'; base-uri 'self'; form-action 'self';"
         },
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains; preload"
-        },
-        {
-          "key": "Require-Trusted-Types-For",
-          "value": "'script'"
         }
       ]
     }

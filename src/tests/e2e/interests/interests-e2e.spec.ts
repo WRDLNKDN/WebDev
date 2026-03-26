@@ -11,7 +11,19 @@ import {
   INTEREST_CUSTOM_OTHER_MAX_LENGTH,
   INTEREST_CATEGORIES,
   INTEREST_OPTIONS_BY_CATEGORY,
+  INTERESTS_MAX,
 } from '../../../constants/interestTaxonomy';
+import type { Page } from '@playwright/test';
+
+/** Browse dialog section `data-testid`s (same strings as joinInterestCategoryAccordionTestId). */
+function joinInterestBrowseDialogSectionTestId(category: string): string {
+  const slug = category
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `join-interests-dialog-section-${slug}`;
+}
 
 const JOIN_STORAGE_KEY = 'wrdlnkdn-join-state';
 
@@ -83,6 +95,13 @@ function buildProfileWithInterests(interests: string[]) {
     ...BASE_PROFILE,
     nerd_creds: { ...BASE_PROFILE.nerd_creds, interests },
   };
+}
+
+async function openJoinInterestsBrowseAll(page: Page) {
+  await page.getByTestId('join-interests-browse-all').click();
+  await expect(
+    page.getByRole('dialog', { name: /all interests/i }),
+  ).toBeVisible();
 }
 
 async function stubProfanityTables(
@@ -174,15 +193,19 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
-      await expect(page.getByText(/select up to 8 interests/i)).toBeVisible();
+      await expect(
+        page.getByText(new RegExp(`up to ${INTERESTS_MAX}`, 'i')),
+      ).toBeVisible();
+      await openJoinInterestsBrowseAll(page);
       for (const cat of INTEREST_CATEGORIES) {
-        if (cat !== 'Other') {
-          await expect(page.getByText(cat, { exact: true })).toBeVisible();
-        }
+        await expect(
+          page.getByTestId(joinInterestBrowseDialogSectionTestId(cat)),
+        ).toBeVisible();
       }
+      await page.getByRole('button', { name: 'Close' }).click();
     });
 
-    test('user can select taxonomy interests and hits max 8', async ({
+    test('user can select taxonomy interests and hits max', async ({
       page,
     }) => {
       test.setTimeout(60_000);
@@ -197,19 +220,20 @@ test.describe('Interests E2E', () => {
       });
       const techOptions = INTEREST_OPTIONS_BY_CATEGORY['Tech & Games'];
       const creativeOptions = INTEREST_OPTIONS_BY_CATEGORY['Creative'];
+      const sportsOptions = INTEREST_OPTIONS_BY_CATEGORY['Sports & Fitness'];
       const toSelect = [
-        ...techOptions.slice(0, 6),
-        creativeOptions[0],
-        creativeOptions[1],
+        ...techOptions,
+        ...creativeOptions,
+        ...sportsOptions.slice(0, 2),
       ];
+      expect(toSelect.length).toBe(INTERESTS_MAX);
+      await openJoinInterestsBrowseAll(page);
       for (const label of toSelect) {
         await page.getByRole('button', { name: `Add ${label}` }).click();
       }
-      await expect(page.getByText(/Selected \(8\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      await page.getByRole('button', { name: 'Done' }).click();
       await expect(
-        page.getByRole('button', { name: 'Add Theater' }),
+        page.getByRole('button', { name: 'Add Cycling' }),
       ).toBeDisabled();
     });
 
@@ -228,14 +252,23 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
-      await page.getByRole('button', { name: 'Remove Coding' }).click();
-      await expect(page.getByText(/Selected \(1\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      await page
+        .getByTestId('join-interests-selected')
+        .locator('[aria-label="Remove Coding"]')
+        .click();
+      await expect(
+        page
+          .getByTestId('join-interests-selected')
+          .locator('[aria-label^="Remove "]'),
+      ).toHaveCount(1);
+      await openJoinInterestsBrowseAll(page);
       await page.getByRole('button', { name: 'Add Chess' }).click();
-      await expect(page.getByText(/Selected \(2\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      await page.getByRole('button', { name: 'Done' }).click();
+      await expect(
+        page
+          .getByTestId('join-interests-selected')
+          .locator('[aria-label^="Remove "]'),
+      ).toHaveCount(2);
     });
   });
 
@@ -253,22 +286,25 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
-      await expect(page.getByText('Creative', { exact: true })).toBeVisible();
       await expect(
-        page.getByRole('button', { name: /Music/i }).first(),
+        page.getByRole('button', { name: 'Add Music' }),
+      ).toBeVisible();
+      await openJoinInterestsBrowseAll(page);
+      await expect(
+        page.getByTestId(joinInterestBrowseDialogSectionTestId('Creative')),
       ).toBeVisible();
       await expect(
-        page.getByText('Tech & Games', { exact: true }),
+        page.getByRole('button', { name: 'Add Chess' }),
       ).toBeVisible();
       await expect(
-        page.getByRole('button', { name: /Coding/i }).first(),
+        page.getByTestId(joinInterestBrowseDialogSectionTestId('Other')),
       ).toBeVisible();
-      await expect(page.getByText('Other', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Close' }).click();
     });
   });
 
   test.describe('Custom Other', () => {
-    test('custom interest limited to 40 characters and counts toward 8', async ({
+    test('custom interest limited to 40 characters and counts toward max', async ({
       page,
     }) => {
       test.setTimeout(60_000);
@@ -281,23 +317,31 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
-      const input = page.getByPlaceholder(/Type a custom interest/i);
+      await openJoinInterestsBrowseAll(page);
+      const input = page.getByTestId('join-interests-custom-other-input');
       await input.fill('A'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH));
       await expect(input).toHaveValue(
         'A'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH),
       );
       await page.getByRole('button', { name: 'Add custom interest' }).click();
-      await expect(page.getByText(/Selected \(1\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      const fortyAs = 'A'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH);
+      await expect(
+        page
+          .getByTestId('join-interests-selector')
+          .getByText(fortyAs, { exact: true }),
+      ).toBeVisible({ timeout: 5_000 });
       await input.fill('B'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH + 1));
       await expect(input).toHaveValue(
         'B'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH),
       );
       await page.getByRole('button', { name: 'Add custom interest' }).click();
-      await expect(page.getByText(/Selected \(2\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      const fortyBs = 'B'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH);
+      await expect(
+        page
+          .getByTestId('join-interests-selector')
+          .getByText(fortyBs, { exact: true }),
+      ).toBeVisible({ timeout: 5_000 });
+      await page.getByRole('button', { name: 'Done' }).click();
     });
 
     test('custom interest input limited to 40 characters and shows count', async ({
@@ -313,7 +357,8 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
-      const input = page.getByPlaceholder(/Type a custom interest/i);
+      await openJoinInterestsBrowseAll(page);
+      const input = page.getByTestId('join-interests-custom-other-input');
       await expect(input).toHaveAttribute(
         'maxlength',
         String(INTEREST_CUSTOM_OTHER_MAX_LENGTH),
@@ -321,9 +366,13 @@ test.describe('Interests E2E', () => {
       await input.fill('a'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH));
       await expect(page.getByText(/40\/40/)).toBeVisible({ timeout: 5_000 });
       await page.getByRole('button', { name: 'Add custom interest' }).click();
-      await expect(page.getByText(/Selected \(1\/8\)/)).toBeVisible({
-        timeout: 5_000,
-      });
+      const fortyLower = 'a'.repeat(INTEREST_CUSTOM_OTHER_MAX_LENGTH);
+      await expect(
+        page
+          .getByTestId('join-interests-selector')
+          .getByText(fortyLower, { exact: true }),
+      ).toBeVisible({ timeout: 5_000 });
+      await page.getByRole('button', { name: 'Done' }).click();
     });
   });
 
@@ -342,8 +391,9 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('join-interests-selector')).toBeVisible({
         timeout: 15_000,
       });
+      await openJoinInterestsBrowseAll(page);
       await page
-        .getByPlaceholder(/Type a custom interest/i)
+        .getByTestId('join-interests-custom-other-input')
         .fill('blockedword');
       await page.getByRole('button', { name: 'Add custom interest' }).click();
       await expect(
@@ -406,7 +456,7 @@ test.describe('Interests E2E', () => {
         timeout: 10_000,
       });
       await expect(
-        page.getByRole('button', { name: /Interests \(2\)/i }),
+        page.getByRole('button', { name: /^Interests$/i }),
       ).toBeVisible();
       await page.getByTestId('dashboard-interests-dropdown').click();
       await expect(
@@ -423,7 +473,7 @@ test.describe('Interests E2E', () => {
         .click({ timeout: 5_000 });
       await page.getByRole('button', { name: 'Save interests' }).click();
       await expect(
-        page.getByRole('button', { name: /Interests \(3\)/i }),
+        page.getByTestId('dashboard-pill').filter({ hasText: 'Chess' }).first(),
       ).toBeVisible({
         timeout: 15_000,
       });
@@ -456,13 +506,13 @@ test.describe('Interests E2E', () => {
         timeout: 25_000,
       });
       await expect(
-        page.getByRole('button', { name: /Interests \(2\)/i }),
+        page.getByTestId('dashboard-interests-dropdown'),
       ).toBeVisible({
         timeout: 10_000,
       });
       await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(
-        page.getByRole('button', { name: /Interests \(2\)/i }),
+        page.getByTestId('dashboard-interests-dropdown'),
       ).toBeVisible({
         timeout: 15_000,
       });

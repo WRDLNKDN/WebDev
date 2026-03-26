@@ -1,4 +1,5 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import CloseIcon from '@mui/icons-material/Close';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import ImageIcon from '@mui/icons-material/Image';
@@ -55,6 +56,12 @@ const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
 
 const STRIP_EXIF_TIMEOUT_MS = 10_000;
 
+export type MessageReplyDraft = {
+  id: string;
+  authorLabel: string;
+  contentSnippet: string;
+};
+
 const EmojiPicker = lazy(async () => {
   const mod = await import('emoji-picker-react');
   return { default: mod.default };
@@ -103,6 +110,7 @@ type MessageInputProps = {
     content: string,
     attachmentPaths?: string[],
     attachmentMeta?: ChatAttachmentMeta[],
+    options?: { replyToMessageId?: string | null },
   ) => void;
   onTyping?: () => void;
   onStopTyping?: () => void;
@@ -116,6 +124,9 @@ type MessageInputProps = {
   roomType?: 'dm' | 'group';
   /** Room ID - used to clear draft state when switching threads */
   roomId?: string | null;
+  /** When set, composer is in reply mode (Discord-style thread reply). */
+  replyTo?: MessageReplyDraft | null;
+  onCancelReply?: () => void;
 };
 
 export const MessageInput = ({
@@ -128,6 +139,8 @@ export const MessageInput = ({
   currentUserId,
   roomType = 'dm',
   roomId,
+  replyTo = null,
+  onCancelReply,
 }: MessageInputProps) => {
   const theme = useTheme();
   const isNarrowViewport = useMediaQuery(theme.breakpoints.down('sm'));
@@ -195,6 +208,16 @@ export const MessageInput = ({
       }
     }
   }, [roomId]);
+
+  useEffect(() => {
+    if (replyTo) {
+      requestAnimationFrame(() => {
+        const el = messageInputRef.current;
+        if (el && 'focus' in el) (el as HTMLTextAreaElement).focus();
+      });
+    }
+  }, [replyTo]);
+
   const submitBlocked =
     disabled ||
     sending ||
@@ -336,8 +359,10 @@ export const MessageInput = ({
       text.trim(),
       paths.length > 0 ? paths : undefined,
       meta.length > 0 ? meta : undefined,
+      { replyToMessageId: replyTo?.id ?? null },
     );
     setText('');
+    onCancelReply?.();
     setProcessingMessage(null);
     requestAnimationFrame(() => {
       messageInputRef.current?.focus();
@@ -416,12 +441,70 @@ export const MessageInput = ({
         overflowX: 'hidden',
       }}
     >
+      {replyTo ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 1,
+            pl: 1,
+            pr: 0.5,
+            py: 0.75,
+            borderRadius: 1,
+            borderLeft: '3px solid',
+            borderColor: 'primary.light',
+            bgcolor: 'rgba(56,132,210,0.12)',
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="caption" color="text.secondary" component="p">
+              Replying to {replyTo.authorLabel}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.primary"
+              sx={{
+                opacity: 0.9,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {replyTo.contentSnippet}
+            </Typography>
+          </Box>
+          <Tooltip title="Cancel reply">
+            <IconButton
+              type="button"
+              size="small"
+              aria-label="Cancel reply"
+              onClick={() => onCancelReply?.()}
+              sx={{ color: 'rgba(255,255,255,0.85)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ) : null}
       {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
       {processingMessage && !error ? (
         <Box sx={{ fontSize: 12, color: 'rgba(141,188,229,0.88)' }}>
           {processingMessage}
         </Box>
       ) : null}
+      <Typography
+        component="p"
+        variant="caption"
+        sx={{
+          fontSize: '0.65rem',
+          opacity: 0.88,
+          color: 'text.secondary',
+          m: 0,
+          lineHeight: 1.35,
+        }}
+      >
+        GIFs over 2MB are optimized for faster delivery when you send.
+      </Typography>
       {pendingFiles.length > 0 && (
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {pendingFiles.map((f, i) => (

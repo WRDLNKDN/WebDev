@@ -227,18 +227,31 @@
   object-position: center 52%;
 }
 
-/* Mobile: smaller stage than desktop; extra vertical room so portrait footage fits */
+/* Wide viewports: fill hero width during marketing intro (avoid pillarboxed strip).
+   Compact / post-intro and mobile stay on `contain` rules below. */
+@media (min-width: 768px) {
+  .home-landing--marketing-video-phase
+    .home-landing__hero-backdrop
+    .home-landing__video.home-landing__video--focus-feet {
+    object-fit: cover;
+    object-position: center center;
+  }
+}
+
+/* Mobile: full-bleed inside backdrop (same framing as desktop) — avoid the previous
+   “postage stamp” box that read as a shrunk video on UAT/PROD marketing hero. */
 @media (max-width: 767.98px) {
   .home-landing__hero-backdrop
     .home-landing__video.home-landing__video--focus-feet {
-    top: 56%;
-    left: 50%;
-    right: auto;
-    bottom: auto;
-    width: min(86vw, 360px);
-    height: min(54dvh, 420px);
-    max-height: 58dvh;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    transform: none;
     object-fit: contain;
     object-position: center center;
   }
@@ -388,7 +401,7 @@
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
 }
 
-/* Mobile: smaller hero type so copy + scaled video share the viewport without crowding */
+/* Mobile: smaller hero type so copy fits the viewport without crowding */
 @media (max-width: 767.98px) {
   .home-landing__title {
     font-size: clamp(2rem, 9vw, 2.75rem);

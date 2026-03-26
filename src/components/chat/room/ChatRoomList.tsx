@@ -1,28 +1,32 @@
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonIcon from '@mui/icons-material/Person';
+import SearchIcon from '@mui/icons-material/Search';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
+import TuneIcon from '@mui/icons-material/Tune';
 import {
-  Chip,
   Box,
   Button,
   FormControl,
   IconButton,
+  InputAdornment,
   InputLabel,
   List,
   ListItemButton,
   MenuItem,
+  Popover,
   Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import {
@@ -33,8 +37,8 @@ import {
   type ChatRoomFilter,
   type ChatRoomSort,
 } from '../../../lib/chat/roomListState';
+import { RemoveChatConfirmDialog } from '../dialogs/RemoveChatConfirmDialog';
 import { getGlassCard } from '../../../theme/candyStyles';
-import { compactGlassDangerIconButtonSx } from '../../../theme/iconActionStyles';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
   CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
@@ -52,6 +56,8 @@ type ChatRoomListProps = {
   onToggleFavorite?: (roomId: string, isFavorite: boolean) => void;
   /** Base path for room links (e.g. /chat-full so room clicks stay on full chat page). Default /chat. */
   chatPathPrefix?: string;
+  /** When false, hide the top “Messages” heading (e.g. docked shell has its own title). */
+  showMessagesHeading?: boolean;
 };
 
 const DEFAULT_CHAT_PREFIX = '/chat';
@@ -66,6 +72,7 @@ export const ChatRoomList = ({
   onRemoveChat,
   onToggleFavorite,
   chatPathPrefix = DEFAULT_CHAT_PREFIX,
+  showMessagesHeading = true,
 }: ChatRoomListProps) => {
   const theme = useTheme();
   const isLightChrome = theme.palette.mode === 'light';
@@ -73,6 +80,15 @@ export const ChatRoomList = ({
   const { roomId } = useParams<{ roomId?: string }>();
   const [filter, setFilter] = useState<ChatRoomFilter>('all');
   const [sort, setSort] = useState<ChatRoomSort>('favorites');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMenuAnchor, setViewMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
+  const [removeTarget, setRemoveTarget] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
+  const viewMenuId = useId();
   const base = chatPathPrefix.replace(/\/$/, '');
 
   const visibleRooms = useMemo(
@@ -85,10 +101,20 @@ export const ChatRoomList = ({
     [currentUserId, filter, rooms, sort],
   );
 
+  const filteredRooms = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return visibleRooms;
+    return visibleRooms.filter((room) => {
+      const label = getChatRoomLabel(room, currentUserId).toLowerCase();
+      const preview = (room.last_message_preview ?? '').toLowerCase();
+      return label.includes(q) || preview.includes(q);
+    });
+  }, [visibleRooms, searchQuery, currentUserId]);
+
   return (
     <Box
       sx={{
-        width: { xs: '100%', md: 320, lg: 340 },
+        width: '100%',
         minWidth: 0,
         borderRight: {
           xs: 'none',
@@ -100,7 +126,7 @@ export const ChatRoomList = ({
     >
       <Box
         sx={{
-          p: { xs: 1.5, sm: 2 },
+          p: { xs: 1.25, sm: 1.5 },
           borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.2 : 0.14)}`,
           background: isLightChrome
             ? alpha(theme.palette.background.paper, 0.92)
@@ -113,66 +139,124 @@ export const ChatRoomList = ({
           alignItems="center"
           justifyContent="space-between"
           spacing={1}
-          sx={{ mb: 1.25 }}
+          sx={{ mb: 1 }}
         >
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h6">Messages</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Keep up with DMs and group threads
+          {showMessagesHeading ? (
+            <Typography
+              id="chat-room-list-heading"
+              variant="subtitle1"
+              component="h2"
+              fontWeight={700}
+            >
+              Messages
             </Typography>
-          </Box>
-          <Chip
-            size="small"
-            label={`${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'}`}
-            sx={{
-              borderRadius: 999,
-              bgcolor: isLightChrome
-                ? alpha(theme.palette.common.black, 0.06)
-                : 'rgba(255,255,255,0.08)',
-              color: 'text.secondary',
-              fontWeight: 700,
-            }}
-          />
+          ) : (
+            <>
+              <Typography
+                id="chat-room-list-heading"
+                variant="subtitle2"
+                component="h2"
+                sx={{
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  p: 0,
+                  m: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                Conversations
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+            </>
+          )}
+          <Tooltip title="Filter & sort">
+            <IconButton
+              size="small"
+              aria-label="Filter and sort conversations"
+              aria-expanded={Boolean(viewMenuAnchor)}
+              aria-controls={viewMenuAnchor ? viewMenuId : undefined}
+              onClick={(e) => setViewMenuAnchor(e.currentTarget)}
+              sx={{
+                color: 'text.secondary',
+                border: `1px solid ${alpha(theme.palette.divider, 0.35)}`,
+              }}
+            >
+              <TuneIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
-        <Stack
-          direction={{ xs: 'column', lg: 'row' }}
-          spacing={1}
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="Search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          inputProps={{
+            'aria-label': 'Search conversations',
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" sx={{ opacity: 0.7 }} />
+              </InputAdornment>
+            ),
+          }}
           sx={{ mb: 1.25 }}
-          data-testid="chat-room-list-controls"
+        />
+        <Popover
+          id={viewMenuId}
+          open={Boolean(viewMenuAnchor)}
+          anchorEl={viewMenuAnchor}
+          onClose={() => setViewMenuAnchor(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: { p: 2, minWidth: 260 },
+            },
+          }}
         >
-          <FormControl size="small" fullWidth>
-            <InputLabel id="chat-room-filter-label">Filter</InputLabel>
-            <Select
-              labelId="chat-room-filter-label"
-              value={filter}
-              label="Filter"
-              onChange={(event) =>
-                setFilter(event.target.value as ChatRoomFilter)
-              }
-            >
-              {CHAT_ROOM_FILTER_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" fullWidth>
-            <InputLabel id="chat-room-sort-label">Sort</InputLabel>
-            <Select
-              labelId="chat-room-sort-label"
-              value={sort}
-              label="Sort"
-              onChange={(event) => setSort(event.target.value as ChatRoomSort)}
-            >
-              {CHAT_ROOM_SORT_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
+          <Stack spacing={1.5} data-testid="chat-room-list-controls">
+            <FormControl size="small" fullWidth>
+              <InputLabel id="chat-room-filter-label">Filter</InputLabel>
+              <Select
+                labelId="chat-room-filter-label"
+                value={filter}
+                label="Filter"
+                onChange={(event) =>
+                  setFilter(event.target.value as ChatRoomFilter)
+                }
+              >
+                {CHAT_ROOM_FILTER_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth>
+              <InputLabel id="chat-room-sort-label">Sort</InputLabel>
+              <Select
+                labelId="chat-room-sort-label"
+                value={sort}
+                label="Sort"
+                onChange={(event) =>
+                  setSort(event.target.value as ChatRoomSort)
+                }
+              >
+                {CHAT_ROOM_SORT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Popover>
         {(onStartDm || onCreateGroup) && (
           <Stack
             direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
@@ -264,6 +348,7 @@ export const ChatRoomList = ({
         )}
       </Box>
       <List
+        aria-labelledby="chat-room-list-heading"
         sx={{
           flex: 1,
           overflow: 'auto',
@@ -283,14 +368,16 @@ export const ChatRoomList = ({
               No conversations yet
             </Typography>
           </ListItemButton>
-        ) : visibleRooms.length === 0 ? (
+        ) : filteredRooms.length === 0 ? (
           <ListItemButton disabled>
             <Typography variant="body2" color="text.secondary">
-              No conversations match this view
+              {searchQuery.trim()
+                ? 'No matches for your search'
+                : 'No conversations match this view'}
             </Typography>
           </ListItemButton>
         ) : (
-          visibleRooms.map((room) => (
+          filteredRooms.map((room) => (
             <ListItemButton
               key={room.id}
               selected={roomId === room.id}
@@ -305,6 +392,15 @@ export const ChatRoomList = ({
                 px: { xs: 1.25, sm: 1.5 },
                 borderRadius: 1.5,
                 my: 0.25,
+                '& .chat-room-row-actions': {
+                  opacity: { xs: 1, md: 0 },
+                  transition: 'opacity 140ms ease',
+                },
+                '@media (hover: hover)': {
+                  '&:hover .chat-room-row-actions': {
+                    opacity: 1,
+                  },
+                },
               }}
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -407,28 +503,54 @@ export const ChatRoomList = ({
                 </Tooltip>
               )}
               {onRemoveChat && (
-                <Tooltip title="Remove chat">
-                  <IconButton
-                    aria-label="Remove chat"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveChat(room.id);
-                    }}
-                    sx={{
-                      ...compactGlassDangerIconButtonSx,
-                      ml: 'auto',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Box
+                  className="chat-room-row-actions"
+                  sx={{ ml: 'auto', flexShrink: 0, display: 'flex' }}
+                >
+                  <Tooltip title="Remove conversation">
+                    <IconButton
+                      aria-label="Remove conversation"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRemoveTarget({
+                          id: room.id,
+                          label: getChatRoomLabel(room, currentUserId),
+                        });
+                      }}
+                      sx={{
+                        color: isLightChrome
+                          ? 'text.secondary'
+                          : 'rgba(255,255,255,0.75)',
+                        borderRadius: 1,
+                        '&:hover': {
+                          bgcolor: isLightChrome
+                            ? 'action.hover'
+                            : 'rgba(255,255,255,0.08)',
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               )}
             </ListItemButton>
           ))
         )}
       </List>
+      {onRemoveChat && (
+        <RemoveChatConfirmDialog
+          open={Boolean(removeTarget)}
+          roomLabel={removeTarget?.label ?? ''}
+          onClose={() => setRemoveTarget(null)}
+          onConfirm={() => {
+            const id = removeTarget?.id;
+            if (!id) return undefined;
+            return Promise.resolve(onRemoveChat(id));
+          }}
+        />
+      )}
     </Box>
   );
 };

@@ -107,7 +107,6 @@ describe('Home (production coming-soon + marketing flags)', () => {
     expect(container.textContent).toContain('COMING SOON!!');
     expect(container.textContent).toContain('What Makes This Different');
     expect(container.textContent).toContain('How It Works');
-    expect(container.textContent).toContain('Community in Motion');
     expect(container.textContent).not.toContain('Join Us');
   });
 });

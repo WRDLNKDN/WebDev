@@ -1,4 +1,3 @@
-import DeleteIcon from '@mui/icons-material/Delete';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -28,7 +27,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import {
   CHAT_ROOM_FILTER_OPTIONS,
@@ -37,8 +36,8 @@ import {
   type ChatRoomFilter,
   type ChatRoomSort,
 } from '../../lib/chat/roomListState';
+import { RemoveChatConfirmDialog } from '../chat/dialogs/RemoveChatConfirmDialog';
 import { getGlassCard } from '../../theme/candyStyles';
-import { compactGlassDangerIconButtonSx } from '../../theme/iconActionStyles';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
   CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
@@ -70,7 +69,7 @@ type Props = {
   rooms: ChatRoomWithMembers[];
   getRoomLabel: (room: ChatRoomWithMembers) => string;
   onOpenRoom: (roomId: string) => void;
-  onRemoveChat: (e: React.MouseEvent, roomId: string) => void;
+  onRemoveRoom: (roomId: string) => void | Promise<void>;
   onToggleFavorite: (roomId: string, isFavorite: boolean) => void;
   onBackdropClick: () => void;
   onClose: () => void;
@@ -202,12 +201,16 @@ export const MessengerOverlayPanel = ({
   rooms,
   getRoomLabel,
   onOpenRoom,
-  onRemoveChat,
+  onRemoveRoom,
   onToggleFavorite,
   onBackdropClick,
   onClose,
 }: Props) => {
   const theme = useTheme();
+  const [removeTarget, setRemoveTarget] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
   const headerIconSx = useMemo(
     () => ({
       color: alpha(theme.palette.text.primary, 0.72),
@@ -620,19 +623,27 @@ export const MessengerOverlayPanel = ({
                         />
                       )}
                     </IconButton>
-                    <IconButton
-                      aria-label="Remove chat"
-                      data-testid={`messenger-overlay-remove-${r.id}`}
-                      size="small"
-                      onClick={(e) => onRemoveChat(e, r.id)}
-                      sx={{
-                        ...compactGlassDangerIconButtonSx,
-                        ml: 'auto',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Remove conversation">
+                      <IconButton
+                        aria-label="Remove conversation"
+                        data-testid={`messenger-overlay-remove-${r.id}`}
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRemoveTarget({
+                            id: r.id,
+                            label: getRoomLabel(r),
+                          });
+                        }}
+                        sx={{
+                          ...headerIconSx,
+                          ml: 'auto',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </ListItemButton>
                 ))}
               </List>
@@ -640,6 +651,16 @@ export const MessengerOverlayPanel = ({
           </Box>
         </Box>
       </Box>
+      <RemoveChatConfirmDialog
+        open={Boolean(removeTarget)}
+        roomLabel={removeTarget?.label ?? ''}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          const id = removeTarget?.id;
+          if (!id) return undefined;
+          return Promise.resolve(onRemoveRoom(id));
+        }}
+      />
     </>
   );
 };

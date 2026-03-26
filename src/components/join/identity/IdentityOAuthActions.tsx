@@ -7,27 +7,18 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { identityStepOAuthNote } from '../../../theme/joinStyles';
+import {
+  identityStepOAuthNote,
+  joinFlowSecondaryButtonSx,
+} from '../../../theme/joinStyles';
 
 const oauthButtonSx = {
-  textTransform: 'none' as const,
-  fontWeight: 600,
-  py: 1.5,
+  ...joinFlowSecondaryButtonSx,
+  py: 1.35,
   px: 2,
   minWidth: 200,
-  whiteSpace: 'nowrap',
-  borderWidth: 2,
-  borderColor: 'rgba(255,255,255,0.5)',
-  color: '#FFFFFF',
-  bgcolor: 'rgba(56,132,210,0.14)',
-  '&:hover': {
-    borderColor: 'rgba(255,255,255,0.8)',
-    bgcolor: 'rgba(156,187,217,0.26)',
-  },
-  '&.Mui-disabled': {
-    borderColor: 'rgba(141,188,229,0.42)',
-    color: 'rgba(255,255,255,0.72)',
-  },
+  whiteSpace: 'nowrap' as const,
+  justifyContent: 'center',
 };
 
 type IdentityOAuthActionsProps = {
@@ -54,7 +45,7 @@ export const IdentityOAuthActions = ({
         px: 1.5,
         bgcolor: 'rgba(0, 200, 255, 0.06)',
         border: '1px solid rgba(156,187,217,0.22)',
-        borderLeft: '4px solid #4ade80',
+        borderLeft: '4px solid #A744C2',
         borderRadius: '8px',
       }}
     >
@@ -63,7 +54,7 @@ export const IdentityOAuthActions = ({
           width: 32,
           height: 32,
           borderRadius: '50%',
-          bgcolor: 'rgba(74, 222, 128, 0.18)',
+          bgcolor: 'rgba(167, 68, 194, 0.22)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -103,7 +94,8 @@ export const IdentityOAuthActions = ({
 
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
       <Button
-        variant="outlined"
+        variant="contained"
+        disableElevation
         size="large"
         fullWidth
         onClick={() => onSignIn('google')}
@@ -120,7 +112,8 @@ export const IdentityOAuthActions = ({
         {loadingProvider === 'google' ? 'Signing in…' : 'Sign in with Google'}
       </Button>
       <Button
-        variant="outlined"
+        variant="contained"
+        disableElevation
         size="large"
         fullWidth
         onClick={() => onSignIn('azure')}

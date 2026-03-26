@@ -1,6 +1,6 @@
 /**
- * PostActionMenu — three-dot menu for post/message actions (edit, delete, report).
- * Shared by FeedCard and MessageList.
+ * PostActionMenu — kebab menu for feed posts and chat messages.
+ * Chat message order is defined in MessageList (reply, forward, copy, edit, delete, report).
  */
 import {
   IconButton,

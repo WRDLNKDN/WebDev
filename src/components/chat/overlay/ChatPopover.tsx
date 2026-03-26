@@ -1,19 +1,28 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from '../room/ChatRoomHeader';
-import { MessageInput } from '../message/MessageInput';
+import { MessageInput, type MessageReplyDraft } from '../message/MessageInput';
 import { MessageList } from '../message/MessageList';
 import { BlockConfirmDialog } from '../dialogs/BlockConfirmDialog';
 import { GroupActionsDialog } from '../dialogs/GroupActionsDialog';
+import { ForwardMessageDialog } from '../dialogs/ForwardMessageDialog';
 import { ReportDialog } from '../dialogs/ReportDialog';
-import { useChat, useReportMessage } from '../../../hooks/useChat';
+import type { MessageWithExtras } from '../../../hooks/chatTypes';
+import {
+  useChat,
+  useChatRooms,
+  useReportMessage,
+} from '../../../hooks/useChat';
 import { useChatPresence } from '../../../hooks/useChatPresence';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
+import { useAppToast } from '../../../context/AppToastContext';
+import { formatForwardedChatText } from '../../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
+import { truncateSnippet } from '../../../lib/chat/messageSnippet';
 import { getGlassCard } from '../../../theme/candyStyles';
 
 const POPOVER_WIDTH = 460;
@@ -47,10 +56,17 @@ export const ChatPopover = ({
     messageId?: string;
     userId?: string;
   } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<MessageReplyDraft | null>(
+    null,
+  );
+  const [forwardSource, setForwardSource] = useState<MessageWithExtras | null>(
+    null,
+  );
   const topOffsetPx = 80 + useUatBannerOffset();
 
   const uid = session?.user?.id ?? undefined;
+  const { showToast } = useAppToast();
+  const { rooms } = useChatRooms();
 
   const {
     room,
@@ -62,6 +78,7 @@ export const ChatPopover = ({
     loadingOlder,
     loadOlderMessages,
     sendMessage,
+    forwardMessage,
     editMessage,
     deleteMessage,
     toggleReaction,
@@ -85,6 +102,11 @@ export const ChatPopover = ({
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
   useEffect(() => {
+    setReplyTarget(null);
+    setForwardSource(null);
+  }, [roomId]);
+
+  useEffect(() => {
     if (sessionProp != null) return;
     let cancelled = false;
     const init = async () => {
@@ -101,13 +123,27 @@ export const ChatPopover = ({
     };
   }, [sessionProp]);
 
-  useEffect(() => {
-    if (!session) return;
-    void (async () => {
-      const { data } = await supabase.rpc('is_admin');
-      setIsAdmin(data === true);
-    })();
-  }, [session]);
+  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
+    return (
+      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
+    );
+  }, []);
+
+  const handleForwardToRoom = useCallback(
+    async (targetRoomId: string) => {
+      if (!forwardSource) return;
+      const body = formatForwardedChatText(
+        forwardSource.content,
+        forwardAuthorLabel(forwardSource),
+      );
+      const ok = await forwardMessage(targetRoomId, body);
+      if (ok) {
+        setForwardSource(null);
+        showToast({ message: 'Message forwarded.', severity: 'success' });
+      }
+    },
+    [forwardAuthorLabel, forwardMessage, forwardSource, showToast],
+  );
 
   const handleLeave = async () => {
     await leaveRoom();
@@ -233,9 +269,18 @@ export const ChatPopover = ({
               onEdit={editMessage}
               onDelete={deleteMessage}
               onReaction={toggleReaction}
-              onReport={handleReport}
+              onReport={(msgId, senderUserId) =>
+                handleReport(msgId, senderUserId ?? undefined)
+              }
+              onStartReply={(msg) =>
+                setReplyTarget({
+                  id: msg.id,
+                  authorLabel: forwardAuthorLabel(msg),
+                  contentSnippet: truncateSnippet(msg.content ?? ''),
+                })
+              }
+              onForward={(msg) => setForwardSource(msg)}
               onMessagesViewed={markAsRead}
-              isAdmin={isAdmin}
               compact
               typingAvatarUrl={
                 room?.room_type === 'dm'
@@ -263,6 +308,8 @@ export const ChatPopover = ({
               roomId={roomId}
               groupMembers={roomMembersToMentionable(room)}
               currentUserId={session?.user?.id}
+              replyTo={replyTarget}
+              onCancelReply={() => setReplyTarget(null)}
             />
           </Box>
         )}
@@ -298,6 +345,15 @@ export const ChatPopover = ({
           onTransferAdmin={transferAdmin}
         />
       )}
+      <ForwardMessageDialog
+        open={Boolean(forwardSource)}
+        onClose={() => setForwardSource(null)}
+        rooms={rooms}
+        excludeRoomId={roomId}
+        currentUserId={uid}
+        onSelectRoom={handleForwardToRoom}
+        busy={sending}
+      />
       <ReportDialog
         open={reportOpen}
         onClose={() => {

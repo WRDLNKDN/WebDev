@@ -2,8 +2,10 @@
  * Shared join flow styles (MUI sx). Replaces join.css and step-specific CSS.
  */
 
+import { BRAND_COLORS } from './themeConstants';
+
 export const signupPaper = {
-  p: { xs: 1.5, sm: 1.75, md: 2.5 },
+  p: { xs: 1, sm: 1.75, md: 2.5 },
   borderRadius: 2,
   border: '1px solid',
   borderColor: 'divider',
@@ -34,7 +36,7 @@ export const signupStepSubtext = {
 } as const;
 
 export const signupLink = {
-  color: 'primary.main',
+  color: BRAND_COLORS.purple,
   textDecoration: 'underline',
 } as const;
 
@@ -98,7 +100,7 @@ export const identityStepOAuthNote = {
   px: 0,
   bgcolor: 'transparent',
   border: 'none',
-  color: 'rgb(80, 200, 160)',
+  color: 'rgba(220, 186, 238, 0.96)',
   fontWeight: 700,
   fontSize: '0.8125rem',
 } as const;
@@ -161,14 +163,14 @@ export const profileStepTextField = {
     bgcolor: 'rgba(0,0,0,0.3)',
     '& fieldset': { borderColor: 'rgba(141,188,229,0.38)' },
     '&:hover fieldset': { borderColor: 'rgba(141,188,229,0.50)' },
-    '&.Mui-focused fieldset': { borderColor: '#4caf50' },
+    '&.Mui-focused fieldset': { borderColor: '#A744C2' },
     '&.Mui-error fieldset': { borderColor: '#f44336' },
   },
   '& .MuiInputLabel-root': {
     color: 'rgba(255,255,255,0.96)',
     fontWeight: 600,
     fontSize: '0.9375rem',
-    '&.Mui-focused': { color: '#4caf50' },
+    '&.Mui-focused': { color: '#A744C2' },
     '&.Mui-error': { color: '#f44336' },
     '& .MuiFormLabel-asterisk': {
       color: '#f44336',
@@ -216,11 +218,11 @@ export const profileStepSubmitButton = {
   px: 3,
   fontSize: '1rem',
   fontWeight: 600,
-  bgcolor: '#4caf50',
+  bgcolor: '#A744C2',
   color: '#FFFFFF',
-  '&:hover': { bgcolor: '#45a049' },
+  '&:hover': { bgcolor: '#8C39A3' },
   '&:disabled': {
-    bgcolor: 'rgba(76, 175, 80, 0.35)',
+    bgcolor: 'rgba(167, 68, 194, 0.35)',
     color: 'rgba(255,255,255,0.78)', // AAA: readable disabled
   },
 } as const;
@@ -245,6 +247,92 @@ export const valuesStepButtonRow = {
 
 export const valuesStepContinueButton = {
   flex: '0 1 auto',
+} as const;
+
+/** Primary CTA (Launch, Continue, Create profile, Browse all, OAuth-adjacent). */
+export const joinFlowPrimaryButtonSx = {
+  minHeight: 44,
+  textTransform: 'none' as const,
+  fontWeight: 700,
+  fontSize: { xs: '0.9375rem', sm: '0.95rem' },
+  px: { xs: 2, sm: 2.5 },
+  py: { xs: 0.85, sm: 1.125 },
+  borderRadius: 2,
+  bgcolor: BRAND_COLORS.purple,
+  color: '#FFFFFF',
+  border: 'none',
+  boxShadow: '0 2px 12px rgba(167,68,194,0.38)',
+  '&:hover:not(:disabled)': {
+    bgcolor: '#9534b0',
+    boxShadow: '0 4px 16px rgba(167,68,194,0.48)',
+  },
+  '&.Mui-disabled': {
+    bgcolor: 'rgba(90,90,110,0.4)',
+    color: 'rgba(255,255,255,0.5)',
+    boxShadow: 'none',
+  },
+} as const;
+
+/** Secondary / Back — same visual family as primary, outlined purple. */
+export const joinFlowSecondaryButtonSx = {
+  minHeight: 44,
+  textTransform: 'none' as const,
+  fontWeight: 600,
+  fontSize: '0.875rem',
+  px: { xs: 1.5, sm: 2 },
+  py: { xs: 0.85, sm: 1.125 },
+  borderRadius: 2,
+  color: '#FFFFFF',
+  border: '2px solid rgba(167,68,194,0.85)',
+  bgcolor: 'rgba(167,68,194,0.12)',
+  '&:hover': {
+    bgcolor: 'rgba(167,68,194,0.22)',
+    borderColor: BRAND_COLORS.purple,
+  },
+  '&.Mui-disabled': {
+    borderColor: 'rgba(156,187,217,0.28)',
+    color: 'rgba(255,255,255,0.38)',
+    bgcolor: 'rgba(255,255,255,0.04)',
+  },
+} as const;
+
+/** Interest toggle pills on Join profile (compact Launch-style toggles). */
+export const joinFlowInterestPillIdleSx = {
+  minHeight: 36,
+  minWidth: 36,
+  textTransform: 'none' as const,
+  fontWeight: 600,
+  fontSize: '0.8125rem',
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 99,
+  flexShrink: 0,
+  border: '2px solid rgba(167,68,194,0.7)',
+  color: 'rgba(255,255,255,0.95)',
+  bgcolor: 'rgba(167,68,194,0.1)',
+  '&:hover:not(:disabled)': {
+    bgcolor: 'rgba(167,68,194,0.2)',
+    borderColor: BRAND_COLORS.purple,
+  },
+} as const;
+
+export const joinFlowInterestPillSelectedSx = {
+  minHeight: 36,
+  minWidth: 36,
+  textTransform: 'none' as const,
+  fontWeight: 600,
+  fontSize: '0.8125rem',
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 99,
+  flexShrink: 0,
+  border: 'none',
+  color: '#FFFFFF',
+  bgcolor: BRAND_COLORS.purple,
+  boxShadow: '0 2px 8px rgba(167,68,194,0.35)',
+  '&:hover:not(:disabled)': {
+    bgcolor: '#9534b0',
+  },
 } as const;
 
 // ReviewStep

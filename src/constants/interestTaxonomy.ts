@@ -96,8 +96,22 @@ export const INTEREST_OPTIONS_FLAT: InterestOption[] = flattenOptions();
 /** Display label for "Other" when used as category (custom value follows). */
 export const INTEREST_OTHER_LABEL = 'Other';
 
-/** Max interests a member can select. */
-export const INTERESTS_MAX = 8;
+/** Max interests a member can select (Dashboard, Edit Profile, Join). */
+export const INTERESTS_MAX = 16;
+
+/**
+ * Curated suggestions on the Join profile step (search-first UI). Every label must exist in the taxonomy.
+ */
+export const JOIN_SUGGESTED_INTEREST_LABELS: readonly string[] = [
+  'Music',
+  'Design',
+  'Gaming',
+  'Cycling',
+  'Podcasts',
+  'Cooking',
+  'Travel',
+  'Photography',
+];
 
 /** Max length for custom "Other" interest text (e.g. Join flow). */
 export const INTEREST_CUSTOM_OTHER_MAX_LENGTH = 40;

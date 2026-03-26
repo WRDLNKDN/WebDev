@@ -416,40 +416,70 @@ export const EditLinksDialog = ({
         aria-label="Manage Links"
         slotProps={{
           paper: {
-            sx: { overflow: 'hidden' },
+            sx: {
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: 'min(90dvh, 900px)',
+              // Contain scroll in content only so the header close control is never clipped.
+              overflow: 'hidden',
+            },
           },
         }}
       >
         <DialogTitle
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 2,
-            pr: 1,
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            width: '100%',
             pl: 2,
-            py: 2,
+            pr: 2,
+            pt: 2,
+            pb: 2,
             fontWeight: 700,
           }}
         >
-          <Typography component="span" variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography
+            component="span"
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              flex: '1 1 auto',
+              minWidth: 0,
+              textAlign: 'start',
+              pt: 0.25,
+            }}
+          >
             Manage Links
           </Typography>
           <Tooltip title="Close">
             <IconButton
               aria-label="Close"
               onClick={handleRequestClose}
-              edge="end"
               color="inherit"
-              size="small"
-              sx={{ flexShrink: 0 }}
+              size="medium"
+              sx={{
+                flexShrink: 0,
+                // Avoid edge="end" negative margins — they extend past padded area and clip when paper overflow is hidden.
+                minWidth: 44,
+                minHeight: 44,
+                alignSelf: 'flex-start',
+              }}
             >
               <CloseIcon />
             </IconButton>
           </Tooltip>
         </DialogTitle>
         <DialogContent
-          sx={{ pt: 2.5 }}
+          sx={{
+            pt: 2.5,
+            flex: '1 1 auto',
+            minHeight: 0,
+            overflowY: 'auto',
+          }}
           onKeyDown={(event) => {
             if (!shouldSubmitWithModifier(event) || isSubmitting) return;
             event.preventDefault();
@@ -900,7 +930,7 @@ export const EditLinksDialog = ({
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={{ p: 3, flexShrink: 0 }}>
           <Typography
             variant="caption"
             color="text.secondary"

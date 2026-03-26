@@ -1,5 +1,11 @@
 import { Box, Checkbox, FormControlLabel, Typography } from '@mui/material';
 import { signupLink } from '../../../theme/joinStyles';
+import { BRAND_COLORS } from '../../../theme/themeConstants';
+
+const consentCheckboxSx = {
+  color: 'rgba(255,255,255,0.55)',
+  '&.Mui-checked': { color: BRAND_COLORS.purple },
+} as const;
 
 type IdentityConsentSectionProps = {
   termsAccepted: boolean;
@@ -30,6 +36,7 @@ export const IdentityConsentSection = ({
             checked={termsAccepted}
             onChange={(e) => onTermsAcceptedChange(e.target.checked)}
             disabled={loading}
+            sx={consentCheckboxSx}
           />
         }
         label={
@@ -53,6 +60,7 @@ export const IdentityConsentSection = ({
             checked={guidelinesAccepted}
             onChange={(e) => onGuidelinesAcceptedChange(e.target.checked)}
             disabled={loading}
+            sx={consentCheckboxSx}
           />
         }
         label={

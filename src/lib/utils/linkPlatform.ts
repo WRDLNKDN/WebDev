@@ -15,6 +15,7 @@ export type DetectablePlatform =
   | 'Behance'
   | 'Dribbble'
   | 'Figma'
+  | 'Vercel'
   | 'X'
   | 'Facebook'
   | 'Instagram'
@@ -68,6 +69,8 @@ const DOMAIN_TO_PLATFORM: [string | RegExp, DetectablePlatform][] = [
   ['behance.net', 'Behance'],
   ['dribbble.com', 'Dribbble'],
   ['figma.com', 'Figma'],
+  ['vercel.com', 'Vercel'],
+  ['vercel.app', 'Vercel'],
   // Social
   ['twitter.com', 'X'],
   ['x.com', 'X'],

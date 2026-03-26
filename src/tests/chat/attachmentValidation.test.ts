@@ -61,7 +61,7 @@ describe('chat attachment validation', () => {
       getChatAttachmentRejectionReason({
         name: 'too-big.gif',
         type: 'image/gif',
-        size: 10 * 1024 * 1024,
+        size: 18 * 1024 * 1024,
       }),
     ).toBe('This GIF is too large to process. Try a smaller file.');
   });

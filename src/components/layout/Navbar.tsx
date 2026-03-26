@@ -40,19 +40,38 @@ import {
 import { EVENTS_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
 import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
 import { toMessage } from '../../lib/utils/errors';
+import { openSameOriginPathInNewTab } from '../../lib/navigation/openSameOriginInNewTab';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-import {
-  GODADDY_STOREFRONT_URL,
-  getStoreExternalUrl,
-  resolveStoreExternalUrl,
-} from '../../lib/marketing/storefront';
 
-/** Store: resolved URL (GoDaddy when live, else Ecwid / VITE_STORE_URL); opens in a new tab. */
+/** Store chip beside logo — `window.open` so SPA never hijacks the navigation. */
+const NAVBAR_STORE_NEAR_LOGO_SX = {
+  flexShrink: 0,
+  ml: { xs: 0.75, md: 1 },
+  color: 'rgba(255,255,255,0.96)',
+  textTransform: 'none' as const,
+  fontSize: { xs: '0.875rem', md: '0.875rem' },
+  fontWeight: 600,
+  minHeight: { xs: 36, sm: 40 },
+  minWidth: 44,
+  px: 1.25,
+  py: 0.5,
+  borderRadius: 1,
+  bgcolor: 'rgba(0,0,0,0.35)',
+  border: '1px solid rgba(156,187,217,0.22)',
+  touchAction: 'manipulation' as const,
+  WebkitTapHighlightColor: 'transparent',
+  boxSizing: 'border-box' as const,
+  '&:hover': {
+    bgcolor: 'rgba(0,0,0,0.5)',
+    color: 'white',
+    borderColor: 'rgba(156,187,217,0.32)',
+  },
+};
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -83,8 +102,6 @@ export const Navbar = () => {
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
-  const [storeHref, setStoreHref] = useState(GODADDY_STOREFRONT_URL);
-
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -138,7 +155,7 @@ export const Navbar = () => {
     !forcePublicHeader &&
     (!productionComingSoon || isAdminActive);
 
-  // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Join + Sign in
+  // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Sign in + Join
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
   // retry getSession when null to avoid "stuck on Sign in" after returning from OAuth.
   useEffect(() => {
@@ -425,22 +442,6 @@ export const Navbar = () => {
     }
   }, [path]);
 
-  useEffect(() => {
-    if (!storeEnabled) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const url = await resolveStoreExternalUrl();
-        if (!cancelled) setStoreHref(url);
-      } catch {
-        if (!cancelled) setStoreHref(getStoreExternalUrl());
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [storeEnabled]);
-
   return (
     <>
       <AppBar
@@ -482,7 +483,7 @@ export const Navbar = () => {
             </Tooltip>
           )}
 
-          {/* Left: logo (home) + search — shrink on mobile so Join/Sign in stay visible */}
+          {/* Left: logo (home) + search — shrink on mobile so Sign in / Join stay visible */}
           <Stack
             direction="row"
             alignItems="center"
@@ -532,38 +533,13 @@ export const Navbar = () => {
                 }}
               />
             </Box>
-            {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
-            {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
+            {storeEnabled ? (
               <Button
-                component="a"
-                href={storeHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                size="small"
-                sx={{
-                  flexShrink: 0,
-                  ml: 0.75,
-                  color: 'rgba(255,255,255,0.96)',
-                  textTransform: 'none',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  minHeight: 40,
-                  minWidth: 44,
-                  px: 1.5,
-                  py: 0.75,
-                  borderRadius: 1,
-                  bgcolor: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(156,187,217,0.22)',
-                  textDecoration: 'none',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                  boxSizing: 'border-box',
-                  '&:hover': {
-                    bgcolor: 'rgba(0,0,0,0.5)',
-                    color: 'white',
-                    borderColor: 'rgba(156,187,217,0.32)',
-                  },
-                }}
+                type="button"
+                variant="text"
+                onClick={() => openSameOriginPathInNewTab('/store')}
+                aria-label="Store, opens in a new tab"
+                sx={NAVBAR_STORE_NEAR_LOGO_SX}
               >
                 Store
               </Button>
@@ -767,7 +743,7 @@ export const Navbar = () => {
               )}
           </Stack>
 
-          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store + Admin */}
+          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store; Admin is under the avatar menu only */}
           {!isMobile && (
             <Box component="span" sx={{ display: 'contents' }}>
               <GlobalNavAuthenticatedPrimary
@@ -782,37 +758,6 @@ export const Navbar = () => {
                 sessionUserId={session?.user?.id}
                 isCompactDesktop={isCompactDesktop}
               />
-              {storeEnabled && (
-                <Button
-                  component="a"
-                  href={storeHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    textDecoration: 'none',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    px: isCompactDesktop ? 1 : 1.5,
-                  }}
-                >
-                  Store
-                </Button>
-              )}
-              {isAdmin ? (
-                <Button
-                  component={RouterLink}
-                  to="/admin"
-                  sx={{
-                    color: 'warning.main',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    px: isCompactDesktop ? 1 : 1.5,
-                  }}
-                >
-                  Admin
-                </Button>
-              ) : null}
             </Box>
           )}
 
@@ -830,7 +775,26 @@ export const Navbar = () => {
                 />
               ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
-                  {/* Guest: Join + Sign in — only when signed out (never show if session exists) */}
+                  {/* Guest: Sign in + Join — only when signed out (never show if session exists) */}
+                  <Button
+                    component="button"
+                    type="button"
+                    onClick={() => void openSignIn()}
+                    sx={{
+                      color: 'rgba(255,255,255,0.96)',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      minWidth: 0,
+                      px: 1,
+                      '&:hover': {
+                        bgcolor: 'rgba(56,132,210,0.14)',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
                   {!isJoinActive && (
                     <Button
                       component="button"
@@ -852,25 +816,6 @@ export const Navbar = () => {
                       Join
                     </Button>
                   )}
-                  <Button
-                    component="button"
-                    type="button"
-                    onClick={() => void openSignIn()}
-                    sx={{
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      minWidth: 0,
-                      px: 1,
-                      '&:hover': {
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                        color: 'white',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
                 </>
               ) : (
                 <>
@@ -979,7 +924,7 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile: Join/Sign in — real links + touch-action so iOS doesn't eat taps */}
+          {/* Mobile: Sign in / Join — real links + touch-action so iOS doesn't eat taps */}
           {isMobile && !minimalComingSoonHomeNavbar && (
             <Stack
               direction="row"
@@ -1002,6 +947,30 @@ export const Navbar = () => {
                 />
               ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    aria-label="Sign in"
+                    size="small"
+                    sx={{
+                      minHeight: 40,
+                      minWidth: 'auto',
+                      px: 1.25,
+                      color: 'rgba(255,255,255,0.96)',
+                      textTransform: 'none',
+                      fontSize: '0.9375rem',
+                      fontWeight: 600,
+                      touchAction: 'manipulation',
+                      pointerEvents: 'auto',
+                      '&:hover': {
+                        color: 'white',
+                        bgcolor: 'rgba(56,132,210,0.14)',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
                   {!isJoinActive && (
                     <Button
                       component={RouterLink}
@@ -1028,30 +997,6 @@ export const Navbar = () => {
                       Join
                     </Button>
                   )}
-                  <Button
-                    component={RouterLink}
-                    to="/signin"
-                    onClick={() => setDrawerOpen(false)}
-                    aria-label="Sign in"
-                    size="small"
-                    sx={{
-                      minHeight: 40,
-                      minWidth: 'auto',
-                      px: 1.25,
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '0.9375rem',
-                      fontWeight: 600,
-                      touchAction: 'manipulation',
-                      pointerEvents: 'auto',
-                      '&:hover': {
-                        color: 'white',
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
                 </>
               ) : (
                 <>
@@ -1244,7 +1189,6 @@ export const Navbar = () => {
       <NavbarMobileDrawer
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
-        isAdmin={isAdmin}
         showAuthedHeader={showAuthedHeader}
         session={session}
         productionComingSoon={productionComingSoon}
@@ -1260,7 +1204,6 @@ export const Navbar = () => {
         gamesEnabled={gamesEnabled}
         isGroupsActive={isGroupsActive}
         path={path}
-        storeUrl={storeHref}
         location={location}
         drawerPaperSx={drawerPaperSx}
         drawerLinkColor={drawerLinkColor}

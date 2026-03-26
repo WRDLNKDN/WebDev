@@ -248,6 +248,21 @@ function renderGlobalNavStoreButton({
   drawerActiveWrap,
 }: StoreNavParams): ReactNode {
   if (!storeEnabled) return null;
+
+  const sharedButtonSx =
+    variant === 'desktop'
+      ? {
+          fontSize: desktopFontSize,
+          px: desktopPx,
+          ...desktopActiveSx(isStoreRoute),
+        }
+      : {
+          justifyContent: 'flex-start',
+          color: drawerLinkColor,
+          py: 1.5,
+          ...drawerActiveWrap(isStoreRoute),
+        };
+
   return (
     <Button
       key="global-nav-store"
@@ -265,18 +280,14 @@ function renderGlobalNavStoreButton({
       sx={{
         color: 'rgba(255,255,255,0.85)',
         textTransform: 'none',
-        ...(variant === 'desktop'
-          ? {
-              fontSize: desktopFontSize,
-              px: desktopPx,
-              ...desktopActiveSx(isStoreRoute),
-            }
-          : {
-              justifyContent: 'flex-start',
-              color: drawerLinkColor,
-              py: 1.5,
-              ...drawerActiveWrap(isStoreRoute),
-            }),
+        minWidth: 0,
+        whiteSpace: 'nowrap',
+        textDecoration: 'none',
+        ...sharedButtonSx,
+        '&:visited': {
+          color:
+            variant === 'desktop' ? 'rgba(255,255,255,0.85)' : drawerLinkColor,
+        },
       }}
     >
       Store

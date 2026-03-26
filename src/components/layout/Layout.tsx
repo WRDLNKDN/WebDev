@@ -190,7 +190,7 @@ const LayoutContent = () => {
           zIndex: 1,
           flex: 1,
           minHeight: 0,
-          overflowY: isJoin ? 'hidden' : 'auto',
+          overflowY: isJoin ? 'hidden' : isHome ? 'scroll' : 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           // Mobile performance optimizations

@@ -294,7 +294,7 @@ export const DASHED_CARD_NEUTRAL = {
 
 export const SIGNUP_BG = {
   position: 'relative',
-  minHeight: '100vh',
+  minHeight: '100dvh',
   display: 'grid',
   placeItems: 'center',
   px: 2,

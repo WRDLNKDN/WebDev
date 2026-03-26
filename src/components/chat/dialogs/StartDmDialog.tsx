@@ -226,8 +226,8 @@ export const StartDmDialog = ({
             sx={{
               mb: 1,
               '& .MuiInputBase-root': {
-                minHeight: 40,
-                height: 40,
+                minHeight: 44,
+                height: 44,
                 alignItems: 'center',
               },
             }}

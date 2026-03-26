@@ -15,7 +15,7 @@ const Loading = () => (
   <main
     data-testid="app-main"
     style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',

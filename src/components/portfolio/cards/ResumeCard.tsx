@@ -411,7 +411,7 @@ const ResumeCardUrlFooter = ({
         px: 1.25,
         pt: 1.25,
         pb: 0.75,
-        minHeight: 40,
+        minHeight: 44,
         borderTop: '1px solid rgba(156,187,217,0.18)',
       }}
     >

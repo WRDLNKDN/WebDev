@@ -3182,7 +3182,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       component={RouterLink}
                       to="/events"
                       sx={{
-                        minHeight: 40,
+                        minHeight: 44,
                         py: 0.5,
                         borderRadius: 0,
                         '&:hover': { bgcolor: 'action.hover' },
@@ -3204,7 +3204,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       component={RouterLink}
                       to="/groups"
                       sx={{
-                        minHeight: 40,
+                        minHeight: 44,
                         py: 0.5,
                         borderRadius: 0,
                         '&:hover': { bgcolor: 'action.hover' },
@@ -3239,7 +3239,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     component={RouterLink}
                     to="/saved"
                     sx={{
-                      minHeight: 40,
+                      minHeight: 44,
                       py: 0.5,
                       borderRadius: 0,
                       '&:hover': { bgcolor: 'action.hover' },
@@ -3260,7 +3260,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       component={RouterLink}
                       to="/chat-full"
                       sx={{
-                        minHeight: 40,
+                        minHeight: 44,
                         py: 0.5,
                         borderRadius: 0,
                         '&:hover': { bgcolor: 'action.hover' },
@@ -3296,7 +3296,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     to="/advertise"
                     state={{ backgroundLocation: location }}
                     sx={{
-                      minHeight: 40,
+                      minHeight: 44,
                       py: 0.5,
                       borderRadius: 0,
                       '&:hover': { bgcolor: 'action.hover' },
@@ -3319,7 +3319,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
-                        minHeight: 40,
+                        minHeight: 44,
                         py: 0.5,
                         borderRadius: 0,
                         '&:hover': { bgcolor: 'action.hover' },
@@ -3354,7 +3354,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                     component={RouterLink}
                     to="/help"
                     sx={{
-                      minHeight: 40,
+                      minHeight: 44,
                       py: 0.5,
                       borderRadius: 0,
                       '&:hover': { bgcolor: 'action.hover' },

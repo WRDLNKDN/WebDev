@@ -139,7 +139,7 @@ const IdentityBioBlock = ({
         sx={{
           mt: 0.5,
           my: 1,
-          minHeight: 40,
+          minHeight: 44,
           px: 1.75,
           borderColor: 'rgba(45, 212, 191, 0.55)',
           color: isLight ? 'primary.main' : '#e0f7fa',

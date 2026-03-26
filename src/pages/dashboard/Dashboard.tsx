@@ -722,7 +722,7 @@ export const Dashboard = () => {
                 bgcolor: theme.palette.background.paper,
                 border: '1px solid rgba(156,187,217,0.26)',
                 zIndex: 1300,
-                maxHeight: 'calc(100vh - 100px)',
+                maxHeight: 'calc(100dvh - 100px)',
                 overflowX: 'hidden',
                 overflowY: 'auto',
                 boxShadow:

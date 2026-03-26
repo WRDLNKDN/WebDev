@@ -53,6 +53,21 @@ export const NavbarMobileAuthControls = ({
 
   const showGuestJoinSignIn =
     !session && (!productionComingSoon || isAdminActive);
+  const mobileActionButtonSx = {
+    minHeight: 44,
+    minWidth: 'auto',
+    px: 1.25,
+    color: 'rgba(255,255,255,0.96)',
+    textTransform: 'none',
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    touchAction: 'manipulation' as const,
+    pointerEvents: 'auto' as const,
+    '&:hover': {
+      color: 'white',
+      bgcolor: 'rgba(56,132,210,0.14)',
+    },
+  };
 
   return (
     <Stack
@@ -82,21 +97,7 @@ export const NavbarMobileAuthControls = ({
             onClick={() => setDrawerOpen(false)}
             aria-label="Sign in"
             size="small"
-            sx={{
-              minHeight: 40,
-              minWidth: 'auto',
-              px: 1.25,
-              color: 'rgba(255,255,255,0.96)',
-              textTransform: 'none',
-              fontSize: '0.9375rem',
-              fontWeight: 600,
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              '&:hover': {
-                color: 'white',
-                bgcolor: 'rgba(56,132,210,0.14)',
-              },
-            }}
+            sx={mobileActionButtonSx}
           >
             Sign in
           </Button>
@@ -107,21 +108,7 @@ export const NavbarMobileAuthControls = ({
               onClick={() => setDrawerOpen(false)}
               aria-label="Join"
               size="small"
-              sx={{
-                minHeight: 40,
-                minWidth: 'auto',
-                px: 1.25,
-                color: 'rgba(255,255,255,0.96)',
-                textTransform: 'none',
-                fontSize: '0.9375rem',
-                fontWeight: 600,
-                touchAction: 'manipulation',
-                pointerEvents: 'auto',
-                '&:hover': {
-                  color: 'white',
-                  bgcolor: 'rgba(56,132,210,0.14)',
-                },
-              }}
+              sx={mobileActionButtonSx}
             >
               Join
             </Button>

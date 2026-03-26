@@ -4,7 +4,7 @@ const CARD_BG = 'rgba(30, 30, 30, 0.65)';
 
 export const LandingPageSkeleton = () => {
   return (
-    <Box sx={{ minHeight: '100vh', py: 8 }}>
+    <Box sx={{ minHeight: '100dvh', py: 8 }}>
       <Container maxWidth="lg">
         {/* 1. IDENTITY HEADER SKELETON */}
         <Paper

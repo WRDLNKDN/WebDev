@@ -538,7 +538,7 @@ export const JoinInterestsSelector = ({
                           alignSelf: 'center',
                           py: 0.75,
                           px: 2,
-                          minHeight: 40,
+                          minHeight: 44,
                           fontSize: '0.875rem',
                         }}
                       >

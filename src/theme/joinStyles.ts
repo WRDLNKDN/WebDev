@@ -12,7 +12,7 @@ export const signupPaper = {
 } as const;
 
 export const signupMain = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   py: 2,
   px: 2,
   display: 'flex',

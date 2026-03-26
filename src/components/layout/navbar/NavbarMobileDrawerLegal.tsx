@@ -36,7 +36,7 @@ export const NavbarMobileDrawerLegal = ({
         component={RouterLink}
         to="/terms"
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <GavelIcon fontSize="small" />
@@ -50,7 +50,7 @@ export const NavbarMobileDrawerLegal = ({
         component={RouterLink}
         to="/privacy"
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <GavelIcon fontSize="small" />
@@ -64,7 +64,7 @@ export const NavbarMobileDrawerLegal = ({
         component={RouterLink}
         to="/guidelines"
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <GavelIcon fontSize="small" />

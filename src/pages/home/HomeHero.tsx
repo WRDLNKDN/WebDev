@@ -34,7 +34,7 @@ export const HomeHero = ({
     data-testid="signed-out-landing"
     sx={{
       position: 'relative',
-      minHeight: 'calc(100vh - 64px)',
+      minHeight: 'calc(100dvh - 64px)',
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'center',

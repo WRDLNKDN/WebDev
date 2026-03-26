@@ -98,7 +98,7 @@ export const DashboardPortfolioSection = ({
       mt: 1.5,
       minWidth: 200,
       borderRadius: 2,
-      maxHeight: 'calc(100vh - 100px)',
+      maxHeight: 'calc(100dvh - 100px)',
       overflowX: 'hidden',
       overflowY: 'auto',
       ...denseMenuPaperSxFromTheme(theme),

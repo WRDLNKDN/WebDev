@@ -38,7 +38,7 @@ export class RootErrorBoundary extends Component<Props, State> {
         <main
           data-testid="error-boundary-fallback"
           style={{
-            minHeight: '100vh',
+            minHeight: '100dvh',
             display: 'grid',
             placeItems: 'center',
             padding: '2rem',

@@ -91,8 +91,8 @@ export const NotFoundPage = () => {
           zIndex: 1,
           maxWidth: 'min(1120px, calc(100vw - 32px))',
           minHeight: {
-            xs: 'calc(100vh - 180px)',
-            sm: 'calc(100vh - 220px)',
+            xs: 'calc(100dvh - 180px)',
+            sm: 'calc(100dvh - 220px)',
           },
           display: 'flex',
           alignItems: 'center',

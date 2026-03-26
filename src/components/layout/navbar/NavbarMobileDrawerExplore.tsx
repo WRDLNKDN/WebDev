@@ -76,7 +76,7 @@ export const NavbarMobileDrawerExplore = ({
           to="/groups"
           onClick={onNavigate}
           sx={{
-            minHeight: 40,
+            minHeight: 44,
             py: 0.5,
             ...(isGroupsActive
               ? (drawerActiveNavSx ?? groupsActiveFallbackSx)
@@ -110,7 +110,7 @@ export const NavbarMobileDrawerExplore = ({
         component={RouterLink}
         to="/saved"
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <BookmarkBorderIcon fontSize="small" />
@@ -140,7 +140,7 @@ export const NavbarMobileDrawerExplore = ({
             component={RouterLink}
             to="/dashboard/games"
             onClick={onNavigate}
-            sx={{ minHeight: 40, py: 0.5 }}
+            sx={{ minHeight: 44, py: 0.5 }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
               <SportsEsportsIcon fontSize="small" />
@@ -193,7 +193,7 @@ export const NavbarMobileDrawerExplore = ({
         to="/advertise"
         state={{ backgroundLocation: location }}
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <CampaignIcon fontSize="small" />
@@ -221,7 +221,7 @@ export const NavbarMobileDrawerExplore = ({
         component={RouterLink}
         to="/help"
         onClick={onNavigate}
-        sx={{ minHeight: 40, py: 0.5 }}
+        sx={{ minHeight: 44, py: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <HelpOutlineIcon fontSize="small" />

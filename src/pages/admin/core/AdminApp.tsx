@@ -71,7 +71,7 @@ export const AdminApp = () => {
       <AdminGate>
         <Box
           sx={{
-            minHeight: '100vh',
+            minHeight: '100dvh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -97,7 +97,7 @@ export const AdminApp = () => {
         {!session ? (
           <Box
             sx={{
-              minHeight: '100vh',
+              minHeight: '100dvh',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

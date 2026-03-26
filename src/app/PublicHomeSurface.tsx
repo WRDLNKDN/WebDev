@@ -5,7 +5,8 @@ export const PublicHomeSurface = () => {
     <div
       data-testid="app-main"
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
+        height: 'auto',
         overflowX: 'hidden',
         backgroundColor: '#05070f',
       }}

@@ -68,7 +68,12 @@ export const PublicProfileContent = ({
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
       <Box
-        sx={{ minHeight: '100vh', bgcolor: 'background.default', py: 3, px: 2 }}
+        sx={{
+          minHeight: '100dvh',
+          bgcolor: 'background.default',
+          py: 3,
+          px: 2,
+        }}
       >
         <Container maxWidth="lg" disableGutters>
           <IdentityHeader

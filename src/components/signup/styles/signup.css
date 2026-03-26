@@ -13,7 +13,7 @@
 }
 
 .signupMain {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 48px 16px;
   display: flex;
   flex-direction: column;

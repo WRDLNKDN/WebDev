@@ -45,6 +45,7 @@ import { getNavbarGlass } from '../../theme/candyStyles';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
+import { NavbarMobileAuthControls } from './navbar/NavbarMobileAuthControls';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
 
 /** One row in the navbar search dropdown (approved profiles only). */
@@ -888,187 +889,25 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile: Sign in / Join — real links + touch-action so iOS doesn't eat taps */}
+          {/* Mobile auth controls stay in a shared component so they don't drift from desktop auth rules. */}
           {isMobile && !minimalComingSoonHomeNavbar && (
-            <Stack
-              direction="row"
-              spacing={0.5}
-              alignItems="center"
-              sx={{
-                flexShrink: 0,
-                position: 'relative',
-                zIndex: 1,
-                pointerEvents: 'auto',
-                touchAction: 'manipulation',
-              }}
-            >
-              {path === '/auth/callback' ? null : !sessionLoaded ||
-                (session && !onboardingLoaded) ? (
-                <CircularProgress
-                  size={16}
-                  sx={{ color: 'text.secondary' }}
-                  aria-label="Loading"
-                />
-              ) : !session && (!productionComingSoon || isAdminActive) ? (
-                <>
-                  <Button
-                    component={RouterLink}
-                    to="/signin"
-                    onClick={() => setDrawerOpen(false)}
-                    aria-label="Sign in"
-                    size="small"
-                    sx={{
-                      minHeight: 40,
-                      minWidth: 'auto',
-                      px: 1.25,
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '0.9375rem',
-                      fontWeight: 600,
-                      touchAction: 'manipulation',
-                      pointerEvents: 'auto',
-                      '&:hover': {
-                        color: 'white',
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
-                  {!isJoinActive && (
-                    <Button
-                      component={RouterLink}
-                      to="/join"
-                      onClick={() => setDrawerOpen(false)}
-                      aria-label="Join"
-                      size="small"
-                      sx={{
-                        minHeight: 40,
-                        minWidth: 'auto',
-                        px: 1.25,
-                        color: 'rgba(255,255,255,0.96)',
-                        textTransform: 'none',
-                        fontSize: '0.9375rem',
-                        fontWeight: 600,
-                        touchAction: 'manipulation',
-                        pointerEvents: 'auto',
-                        '&:hover': {
-                          color: 'white',
-                          bgcolor: 'rgba(56,132,210,0.14)',
-                        },
-                      }}
-                    >
-                      Join
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Match desktop: hide notifications + avatar in coming soon unless /admin */}
-                  {(!productionComingSoon || isAdminActive) && (
-                    <>
-                      {showAuthedHeader && dashboardEnabled && (
-                        <Tooltip
-                          title={
-                            notificationsUnread > 0
-                              ? `${notificationsUnread} unread notifications`
-                              : 'Notifications'
-                          }
-                        >
-                          <IconButton
-                            component={RouterLink}
-                            to="/dashboard/notifications"
-                            aria-label={
-                              notificationsUnread > 0
-                                ? `${notificationsUnread} unread notifications`
-                                : 'Notifications'
-                            }
-                            sx={{
-                              color: 'white',
-                              ...(path === '/dashboard/notifications' && {
-                                bgcolor: 'rgba(156,187,217,0.26)',
-                                '&:hover': {
-                                  bgcolor: 'rgba(141,188,229,0.34)',
-                                },
-                              }),
-                            }}
-                          >
-                            <Badge
-                              badgeContent={
-                                notificationsUnread > 0
-                                  ? notificationsUnread
-                                  : undefined
-                              }
-                              color="error"
-                            >
-                              <NotificationsIcon sx={{ fontSize: 22 }} />
-                            </Badge>
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      <Tooltip title="Account menu" disableInteractive>
-                        <Box
-                          component="span"
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            lineHeight: 0,
-                          }}
-                        >
-                          <IconButton
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAvatarMenuAnchor(e.currentTarget);
-                            }}
-                            aria-label="Account menu"
-                            aria-haspopup="true"
-                            aria-expanded={Boolean(avatarMenuAnchor)}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.25,
-                              p: 0.25,
-                              color: 'inherit',
-                              borderRadius: 9999,
-                              '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: '50%',
-                                border: '2px solid rgba(255,255,255,0.4)',
-                                p: '1px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              <ProfileAvatar
-                                src={avatarUrl ?? undefined}
-                                alt={
-                                  session?.user?.user_metadata?.full_name ||
-                                  'User'
-                                }
-                                size="small"
-                                sx={{ width: 24, height: 24 }}
-                              />
-                            </Box>
-                            <KeyboardArrowDownIcon
-                              sx={{
-                                fontSize: 16,
-                                color: 'rgba(255,255,255,0.8)',
-                              }}
-                            />
-                          </IconButton>
-                        </Box>
-                      </Tooltip>
-                    </>
-                  )}
-                </>
-              )}
-            </Stack>
+            <NavbarMobileAuthControls
+              isMobile={isMobile}
+              path={path}
+              session={session}
+              sessionLoaded={sessionLoaded}
+              onboardingLoaded={onboardingLoaded}
+              showAuthedHeader={showAuthedHeader}
+              productionComingSoon={productionComingSoon}
+              isAdminActive={isAdminActive}
+              isJoinActive={isJoinActive}
+              dashboardEnabled={dashboardEnabled}
+              notificationsUnread={notificationsUnread}
+              avatarUrl={avatarUrl}
+              setDrawerOpen={setDrawerOpen}
+              setAvatarMenuAnchor={setAvatarMenuAnchor}
+              avatarMenuOpen={Boolean(avatarMenuAnchor)}
+            />
           )}
         </Toolbar>
         {showHeaderAccountDropdown ? (

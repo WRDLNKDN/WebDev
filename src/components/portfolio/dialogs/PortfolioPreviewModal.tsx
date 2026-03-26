@@ -76,7 +76,7 @@ export const PortfolioPreviewModal = ({
           ? `0 24px 48px ${alpha(theme.palette.common.black, 0.12)}`
           : '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(56,132,210,0.14)',
       margin: '32px auto',
-      maxHeight: 'calc(100vh - 64px)',
+      maxHeight: 'calc(100dvh - 64px)',
       display: 'flex',
       flexDirection: 'column' as const,
     }),

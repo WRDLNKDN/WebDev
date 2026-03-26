@@ -299,8 +299,8 @@ export const MessengerOverlayPanel = ({
           top: mobile ? drawerTopMobile : drawerTopDesktop,
           width: mobile ? '100%' : drawerWidth,
           height: mobile
-            ? `calc(100vh - ${drawerTopMobile}px)`
-            : `calc(100vh - ${drawerTopDesktop}px)`,
+            ? `calc(100dvh - ${drawerTopMobile}px)`
+            : `calc(100dvh - ${drawerTopDesktop}px)`,
           zIndex: 1300,
           borderLeft: `1px solid ${alpha(
             theme.palette.divider,

@@ -380,7 +380,7 @@ export const WordSearchPlayPage = () => {
                     aria-label={`Cell ${r + 1} ${c + 1}, letter ${(letter ?? '').toUpperCase()}${selected ? `, position ${indexInPath + 1} in word` : ''}`}
                     sx={{
                       minWidth: 40,
-                      minHeight: 40,
+                      minHeight: 44,
                       fontWeight: 600,
                       fontSize: '1rem',
                     }}

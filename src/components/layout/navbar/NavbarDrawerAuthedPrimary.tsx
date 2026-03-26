@@ -1,6 +1,6 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 
 export type NavbarDrawerAuthedPrimaryProps = {
@@ -35,8 +35,6 @@ export const NavbarDrawerAuthedPrimary = ({
   storeEnabled,
   isAdmin,
 }: NavbarDrawerAuthedPrimaryProps) => {
-  const navigate = useNavigate();
-
   return (
     <>
       <GlobalNavAuthenticatedPrimary
@@ -55,11 +53,11 @@ export const NavbarDrawerAuthedPrimary = ({
       />
       {storeEnabled && (
         <Button
-          type="button"
-          onClick={() => {
-            onDrawerNavigate();
-            navigate('/store');
-          }}
+          component={RouterLink}
+          to="/store"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onDrawerNavigate}
           sx={{
             justifyContent: 'flex-start',
             color: drawerLinkColor,

@@ -1,11 +1,7 @@
 import { Box, Button, Drawer, Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
-import {
-  Link as RouterLink,
-  useNavigate,
-  type Location,
-} from 'react-router-dom';
+import { Link as RouterLink, type Location } from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
@@ -60,8 +56,6 @@ export const NavbarMobileDrawer = ({
   drawerLinkColor,
   drawerActiveNavSx,
 }: NavbarMobileDrawerProps) => {
-  const navigate = useNavigate();
-
   return (
     <Drawer
       anchor="left"
@@ -115,11 +109,11 @@ export const NavbarMobileDrawer = ({
               )}
               {storeEnabled && (
                 <Button
-                  type="button"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    navigate('/store');
-                  }}
+                  component={RouterLink}
+                  to="/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDrawerOpen(false)}
                   sx={{
                     justifyContent: 'flex-start',
                     color: drawerLinkColor,

@@ -46,7 +46,7 @@ import { ProfileAvatar } from '../avatar/ProfileAvatar';
 import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
 import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
-/** Store: in-app Ecwid embed at `/store` (see `pages/marketing/Store.tsx`). */
+/** Store: opens `/store` (Ecwid embed) in a new tab (see `pages/marketing/Store.tsx`). */
 
 /** One row in the navbar search dropdown (approved profiles only). */
 type SearchMatch = {
@@ -511,9 +511,11 @@ export const Navbar = () => {
             {/* Coming-soon mobile: Store in flow with logo (left), same chip treatment as logo — avoids absolute hit-area issues */}
             {isMobile && minimalComingSoonHomeNavbar && storeEnabled ? (
               <Button
-                type="button"
+                component={RouterLink}
+                to="/store"
+                target="_blank"
+                rel="noopener noreferrer"
                 size="small"
-                onClick={() => navigate('/store')}
                 sx={{
                   flexShrink: 0,
                   ml: 0.75,
@@ -758,8 +760,10 @@ export const Navbar = () => {
               />
               {storeEnabled && (
                 <Button
-                  type="button"
-                  onClick={() => navigate('/store')}
+                  component={RouterLink}
+                  to="/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   sx={{
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',

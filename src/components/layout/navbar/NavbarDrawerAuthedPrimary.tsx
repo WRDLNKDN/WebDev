@@ -1,6 +1,4 @@
-import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { openSameOriginPathInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 import { GlobalNavAuthenticatedPrimary } from './GlobalNavAuthenticatedPrimary';
 
 export type NavbarDrawerAuthedPrimaryProps = {
@@ -48,31 +46,8 @@ export const NavbarDrawerAuthedPrimary = ({
         drawerLinkColor={drawerLinkColor}
         drawerActiveNavSx={drawerActiveNavSx}
         onDrawerNavigate={onDrawerNavigate}
+        storeEnabled={storeEnabled}
       />
-      {storeEnabled && (
-        <Button
-          type="button"
-          variant="text"
-          onClick={() => {
-            openSameOriginPathInNewTab('/store');
-            window.setTimeout(onDrawerNavigate, 0);
-          }}
-          aria-label="Store, opens in a new tab"
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            color: drawerLinkColor,
-            textTransform: 'none',
-            py: 1.5,
-            px: 1,
-            minHeight: 44,
-            touchAction: 'manipulation',
-          }}
-        >
-          Store
-        </Button>
-      )}
     </>
   );
 };

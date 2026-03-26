@@ -11,7 +11,6 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
-  Button,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -71,6 +70,8 @@ export const ChatRoomHeader = ({
 }: ChatRoomHeaderProps) => {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const headerIconMuted = 'rgba(255,255,255,0.52)';
+  const headerIconHover = 'rgba(255,255,255,0.88)';
 
   const otherMember = room?.members?.find((m) => m.user_id !== currentUserId);
   const otherUserId = otherMember?.user_id;
@@ -186,9 +187,9 @@ export const ChatRoomHeader = ({
   return (
     <Box
       sx={{
-        px: { xs: 0.75, sm: 1.5 },
-        py: { xs: 0.85, sm: 1.5 },
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        px: { xs: 0.75, sm: 1.25 },
+        py: { xs: 0.75, sm: 1.1 },
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
         display: 'flex',
         alignItems: 'center',
         gap: { xs: 0.35, sm: 1 },
@@ -199,23 +200,24 @@ export const ChatRoomHeader = ({
       }}
     >
       {!closeIcon && (
-        <Button
-          size="small"
-          startIcon={<ArrowBackIcon />}
-          onClick={onBack ?? (() => navigate('/chat-full'))}
-          sx={{
-            color: 'white',
-            minWidth: 0,
-            mr: { xs: 0, sm: 0.5 },
-            px: { xs: 0.35, sm: 1 },
-            flexShrink: 0,
-            '& .MuiButton-startIcon': { mr: { xs: 0, sm: 0.5 } },
-          }}
-        >
-          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-            Back
-          </Box>
-        </Button>
+        <Tooltip title="Back to conversations">
+          <IconButton
+            size="small"
+            onClick={onBack ?? (() => navigate('/chat-full'))}
+            aria-label="Back to conversations"
+            sx={{
+              color: headerIconMuted,
+              flexShrink: 0,
+              mr: { xs: 0, sm: 0.25 },
+              '&:hover': {
+                color: headerIconHover,
+                bgcolor: 'rgba(255,255,255,0.06)',
+              },
+            }}
+          >
+            <ArrowBackIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       )}
       <Box
         sx={{
@@ -235,7 +237,12 @@ export const ChatRoomHeader = ({
           sx={{ flexShrink: 0 }}
         />
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={600} noWrap>
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            noWrap
+            sx={{ fontSize: '1rem' }}
+          >
             {displayName}
           </Typography>
           {room?.room_type === 'dm' && otherUserId && (
@@ -263,6 +270,7 @@ export const ChatRoomHeader = ({
           >
             <IconButton
               type="button"
+              size="small"
               onClick={() => {
                 Promise.resolve(onToggleFavorite()).catch(() => {});
               }}
@@ -270,15 +278,16 @@ export const ChatRoomHeader = ({
                 isFavorite ? 'Remove from favorites' : 'Add to favorites'
               }
               sx={{
-                minWidth: 40,
-                minHeight: 40,
+                minWidth: 36,
+                minHeight: 36,
                 transition:
                   'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
                 ...(isFavorite
                   ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
                   : {
                       ...CHAT_FAVORITE_IDLE_BUTTON_SX,
-                      color: 'rgba(255,255,255,0.72)',
+                      color: headerIconMuted,
+                      '&:hover': { color: headerIconHover },
                     }),
               }}
             >
@@ -296,21 +305,37 @@ export const ChatRoomHeader = ({
             </IconButton>
           </Tooltip>
         )}
-        <Tooltip title="Chat options">
-          <IconButton
-            onClick={(e) => setMenuAnchor(e.currentTarget)}
-            aria-label="Chat options"
-            sx={{ color: 'rgba(255,255,255,0.75)' }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        {menuItems.length > 0 ? (
+          <Tooltip title="Chat options">
+            <IconButton
+              size="small"
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+              aria-label="Chat options"
+              sx={{
+                color: headerIconMuted,
+                '&:hover': {
+                  color: headerIconHover,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
+              }}
+            >
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : null}
         {onPopOut && (
           <Tooltip title="Open in new window">
             <IconButton
+              size="small"
               onClick={onPopOut}
               aria-label="Open in new window"
-              sx={{ color: 'rgba(255,255,255,0.75)' }}
+              sx={{
+                color: headerIconMuted,
+                '&:hover': {
+                  color: headerIconHover,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
+              }}
             >
               <OpenInNewIcon fontSize="small" />
             </IconButton>
@@ -319,9 +344,16 @@ export const ChatRoomHeader = ({
         {closeIcon && (
           <Tooltip title="Close">
             <IconButton
+              size="small"
               onClick={onBack}
               aria-label="Close"
-              sx={{ color: 'rgba(255,255,255,0.75)' }}
+              sx={{
+                color: headerIconMuted,
+                '&:hover': {
+                  color: headerIconHover,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
+              }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>

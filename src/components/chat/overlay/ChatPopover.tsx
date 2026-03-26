@@ -176,8 +176,8 @@ export const ChatPopover = ({
           borderRadius: 3,
           boxShadow:
             t.palette.mode === 'light'
-              ? `0 16px 40px ${alpha(t.palette.common.black, 0.12)}, 0 0 0 1px ${alpha(t.palette.primary.main, 0.1)}`
-              : '0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(56,132,210,0.12)',
+              ? `0 12px 32px ${alpha(t.palette.common.black, 0.08)}, 0 0 0 1px ${alpha(t.palette.divider, 0.2)}`
+              : `0 14px 40px ${alpha(t.palette.common.black, 0.28)}, 0 0 0 1px ${alpha(t.palette.primary.main, 0.08)}`,
           animation: 'popoverIn 0.25s cubic-bezier(0.32, 0, 0.37, 1)',
           '@keyframes popoverIn': {
             from: {
@@ -257,7 +257,15 @@ export const ChatPopover = ({
             <CircularProgress />
           </Box>
         ) : error ? null : (
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             <MessageList
               messages={messages}
               currentUserId={uid}

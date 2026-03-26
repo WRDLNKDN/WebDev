@@ -304,9 +304,9 @@ export const MessengerOverlayPanel = ({
           zIndex: 1300,
           borderLeft: `1px solid ${alpha(
             theme.palette.divider,
-            theme.palette.mode === 'light' ? 0.55 : 0.22,
+            theme.palette.mode === 'light' ? 0.4 : 0.12,
           )}`,
-          borderRadius: '8px 0 0 8px',
+          borderRadius: '10px 0 0 10px',
           boxSizing: 'border-box',
           overflow: 'hidden',
           display: 'flex',
@@ -331,8 +331,8 @@ export const MessengerOverlayPanel = ({
           <Box
             sx={{
               px: 1.5,
-              py: 1.15,
-              borderBottom: `1px solid ${alpha(theme.palette.divider, 0.14)}`,
+              py: 1.25,
+              borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
             }}
           >
             <Stack direction="row" alignItems="center" spacing={1.25}>
@@ -376,8 +376,8 @@ export const MessengerOverlayPanel = ({
             }}
             sx={{
               mx: 1.5,
-              mt: 1,
-              mb: 0.75,
+              mt: 1.1,
+              mb: 1,
               '& .MuiOutlinedInput-root': {
                 minHeight: 38,
                 bgcolor:
@@ -511,9 +511,29 @@ export const MessengerOverlayPanel = ({
                     key={r.id}
                     onClick={() => onOpenRoom(r.id)}
                     sx={{
-                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.06)}`,
                       display: 'flex',
                       alignItems: 'center',
+                      py: 1.35,
+                      px: 1.35,
+                      '& .messenger-row-actions': {
+                        opacity: { xs: 1, md: 0 },
+                        transition: 'opacity 140ms ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        ml: 'auto',
+                        flexShrink: 0,
+                        gap: 0.15,
+                      },
+                      '@media (hover: hover)': {
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.06),
+                        },
+                        '&:hover .messenger-row-actions, &:focus-within .messenger-row-actions':
+                          {
+                            opacity: 1,
+                          },
+                      },
                     }}
                   >
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -573,6 +593,9 @@ export const MessengerOverlayPanel = ({
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
+                          mt: 0.15,
+                          lineHeight: 1.35,
+                          opacity: 0.92,
                         }}
                       >
                         {r.last_message_preview ??
@@ -581,69 +604,70 @@ export const MessengerOverlayPanel = ({
                             : '1:1')}
                       </Typography>
                     </Box>
-                    <IconButton
-                      type="button"
-                      aria-label={
-                        r.is_favorite
-                          ? 'Remove from favorites'
-                          : 'Add to favorites'
-                      }
-                      data-testid={`messenger-overlay-favorite-${r.id}`}
-                      size="small"
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        Promise.resolve(
-                          onToggleFavorite(r.id, Boolean(r.is_favorite)),
-                        ).catch(() => {});
-                      }}
-                      sx={{
-                        borderRadius: 1.25,
-                        minWidth: 40,
-                        minHeight: 40,
-                        transition:
-                          'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
-                        ...(r.is_favorite
-                          ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
-                          : CHAT_FAVORITE_IDLE_BUTTON_SX),
-                        ml: 0.25,
-                      }}
-                    >
-                      {r.is_favorite ? (
-                        <StarIcon
-                          sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
-                          data-testid={`messenger-overlay-favorite-icon-filled-${r.id}`}
-                        />
-                      ) : (
-                        <StarBorderIcon
-                          fontSize="small"
-                          data-testid={`messenger-overlay-favorite-icon-outline-${r.id}`}
-                        />
-                      )}
-                    </IconButton>
-                    <Tooltip title="Remove conversation">
+                    <Box className="messenger-row-actions">
                       <IconButton
-                        aria-label="Remove conversation"
-                        data-testid={`messenger-overlay-remove-${r.id}`}
+                        type="button"
+                        aria-label={
+                          r.is_favorite
+                            ? 'Remove from favorites'
+                            : 'Add to favorites'
+                        }
+                        data-testid={`messenger-overlay-favorite-${r.id}`}
                         size="small"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setRemoveTarget({
-                            id: r.id,
-                            label: getRoomLabel(r),
-                          });
+                          Promise.resolve(
+                            onToggleFavorite(r.id, Boolean(r.is_favorite)),
+                          ).catch(() => {});
                         }}
                         sx={{
-                          ...headerIconSx,
-                          ml: 'auto',
-                          flexShrink: 0,
+                          borderRadius: 1.25,
+                          minWidth: 36,
+                          minHeight: 36,
+                          transition:
+                            'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
+                          ...(r.is_favorite
+                            ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                            : CHAT_FAVORITE_IDLE_BUTTON_SX),
                         }}
                       >
-                        <CloseIcon fontSize="small" />
+                        {r.is_favorite ? (
+                          <StarIcon
+                            sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
+                            data-testid={`messenger-overlay-favorite-icon-filled-${r.id}`}
+                          />
+                        ) : (
+                          <StarBorderIcon
+                            fontSize="small"
+                            data-testid={`messenger-overlay-favorite-icon-outline-${r.id}`}
+                          />
+                        )}
                       </IconButton>
-                    </Tooltip>
+                      <Tooltip title="Remove conversation">
+                        <IconButton
+                          aria-label="Remove conversation"
+                          data-testid={`messenger-overlay-remove-${r.id}`}
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRemoveTarget({
+                              id: r.id,
+                              label: getRoomLabel(r),
+                            });
+                          }}
+                          sx={{
+                            ...headerIconSx,
+                            minWidth: 34,
+                            minHeight: 34,
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </ListItemButton>
                 ))}
               </List>

@@ -271,7 +271,7 @@ export const ChatPage = () => {
         flexShrink: 0,
         borderRight: {
           xs: 'none',
-          md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+          md: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.2 : 0.12)}`,
         },
         flexDirection: 'column',
         minHeight: 0,
@@ -307,7 +307,7 @@ export const ChatPage = () => {
         overflowY: 'hidden',
         background: isMobileLayout
           ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
-          : alpha(theme.palette.background.paper, 0.92),
+          : alpha(theme.palette.background.default, 0.55),
       }}
     >
       {roomId ? (
@@ -577,8 +577,11 @@ export const ChatPage = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 bgcolor: 'background.paper',
-                boxShadow: 24,
-                border: `1px solid ${alpha(theme.palette.divider, 0.25)}`,
+                boxShadow:
+                  theme.palette.mode === 'light'
+                    ? `0 8px 32px ${alpha(theme.palette.common.black, 0.08)}`
+                    : `0 12px 40px ${alpha(theme.palette.common.black, 0.35)}`,
+                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
               }}
             >
               <Stack
@@ -589,8 +592,8 @@ export const ChatPage = () => {
                   px: 2,
                   py: 1.25,
                   flexShrink: 0,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                  bgcolor: alpha(theme.palette.background.default, 0.55),
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  bgcolor: alpha(theme.palette.background.default, 0.4),
                 }}
               >
                 <Typography

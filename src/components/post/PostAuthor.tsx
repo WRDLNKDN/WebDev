@@ -30,6 +30,8 @@ export type PostAuthorProps = {
   children?: React.ReactNode;
   /** Optional profile description shown under the author line */
   description?: string | null;
+  /** Chat: consecutive message from same sender — omit avatar/header row */
+  continuation?: boolean;
 };
 
 export const PostAuthor = ({
@@ -44,12 +46,17 @@ export const PostAuthor = ({
   inIcon = false,
   children,
   description,
+  continuation = false,
 }: PostAuthorProps) => {
   const timeStr = formatTime(createdAt);
   const trimmedDescription =
     typeof description === 'string' && description.trim()
       ? description.trim()
       : null;
+
+  if (continuation) {
+    return null;
+  }
 
   if (compact) {
     return (

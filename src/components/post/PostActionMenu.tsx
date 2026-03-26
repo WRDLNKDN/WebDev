@@ -9,6 +9,7 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  useTheme,
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import type { ReactNode } from 'react';
@@ -28,13 +29,17 @@ export type PostActionMenuProps = {
   ariaLabel?: string;
   /** Only render button when this is true (e.g. isOwner && !deleted) */
   visible?: boolean;
+  /** Chat messages: smaller, lower-contrast trigger */
+  density?: 'default' | 'subtle';
 };
 
 export const PostActionMenu = ({
   items,
   ariaLabel = 'Options',
   visible = true,
+  density = 'default',
 }: PostActionMenuProps) => {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
   const menuId = open ? 'post-action-menu' : undefined;
@@ -48,6 +53,9 @@ export const PostActionMenu = ({
 
   if (!visible || items.length === 0) return null;
 
+  const subtle = density === 'subtle';
+  const subtleLight = subtle && theme.palette.mode === 'light';
+
   return (
     <>
       <Tooltip title={ariaLabel}>
@@ -59,32 +67,61 @@ export const PostActionMenu = ({
           aria-haspopup="true"
           aria-expanded={open}
           sx={{
-            width: 44,
-            height: 44,
-            color: 'rgba(255,255,255,0.82)',
+            width: subtle ? 32 : 44,
+            height: subtle ? 32 : 44,
             position: 'relative',
             overflow: 'hidden',
-            borderRadius: '18px',
-            bgcolor: 'rgba(132,154,214,0.14)',
-            border: '1px solid rgba(173,203,255,0.18)',
-            boxShadow:
-              '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
+            borderRadius: subtle ? 1.25 : '18px',
+            color: subtleLight
+              ? 'rgba(0,0,0,0.45)'
+              : subtle
+                ? 'rgba(255,255,255,0.5)'
+                : 'rgba(255,255,255,0.82)',
+            bgcolor: subtleLight
+              ? 'rgba(0,0,0,0.05)'
+              : subtle
+                ? 'rgba(255,255,255,0.06)'
+                : 'rgba(132,154,214,0.14)',
+            border: subtleLight
+              ? '1px solid rgba(0,0,0,0.1)'
+              : subtle
+                ? '1px solid rgba(255,255,255,0.1)'
+                : '1px solid rgba(173,203,255,0.18)',
+            boxShadow: subtle
+              ? 'none'
+              : '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
             transition:
               'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: 1,
-              borderRadius: '16px',
-              background:
-                'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
-              pointerEvents: 'none',
-            },
+            ...(!subtle
+              ? {
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: 1,
+                    borderRadius: '16px',
+                    background:
+                      'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
+                    pointerEvents: 'none',
+                  },
+                }
+              : {}),
             '&:hover': {
-              bgcolor: 'rgba(148,175,232,0.18)',
-              borderColor: 'rgba(191,219,254,0.32)',
-              color: '#FFFFFF',
-              transform: 'scale(1.04)',
+              bgcolor: subtleLight
+                ? 'rgba(0,0,0,0.08)'
+                : subtle
+                  ? 'rgba(255,255,255,0.1)'
+                  : 'rgba(148,175,232,0.18)',
+              borderColor: subtleLight
+                ? 'rgba(0,0,0,0.16)'
+                : subtle
+                  ? 'rgba(255,255,255,0.18)'
+                  : 'rgba(191,219,254,0.32)',
+              color: subtleLight
+                ? 'rgba(0,0,0,0.78)'
+                : subtle
+                  ? 'rgba(255,255,255,0.92)'
+                  : '#FFFFFF',
+              transform: subtle ? 'none' : 'scale(1.04)',
             },
             '&:focus-visible': {
               outline: '2px solid rgba(191,219,254,0.78)',
@@ -92,7 +129,7 @@ export const PostActionMenu = ({
             },
           }}
         >
-          <MoreVertIcon fontSize="small" />
+          <MoreVertIcon sx={{ fontSize: subtle ? 18 : undefined }} />
         </IconButton>
       </Tooltip>
       <Menu

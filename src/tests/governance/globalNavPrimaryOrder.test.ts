@@ -18,6 +18,7 @@ describe('global navigation governance (IA)', () => {
       'chat',
       'profile',
       'events',
+      'store',
     ]);
   });
 
@@ -28,6 +29,7 @@ describe('global navigation governance (IA)', () => {
     const chat = src.indexOf('key="global-nav-chat"');
     const profile = src.indexOf('key="global-nav-profile"');
     const events = src.indexOf('key="global-nav-events"');
+    const store = src.indexOf('key="global-nav-store"');
     expect(feed).toBeGreaterThan(-1);
     expect(directory).toBeGreaterThan(-1);
     expect(chat).toBeGreaterThan(-1);
@@ -37,5 +39,6 @@ describe('global navigation governance (IA)', () => {
     expect(directory).toBeLessThan(chat);
     expect(chat).toBeLessThan(profile);
     expect(profile).toBeLessThan(events);
+    expect(events).toBeLessThan(store);
   });
 });

@@ -1,7 +1,9 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
+import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
+import { openSameOriginPathInNewTab } from '../../../lib/navigation/openSameOriginInNewTab';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
 export type GlobalNavAuthenticatedPrimaryProps = {
@@ -19,10 +21,23 @@ export type GlobalNavAuthenticatedPrimaryProps = {
   drawerLinkColor?: string;
   drawerActiveNavSx?: SxProps<Theme>;
   onDrawerNavigate?: () => void;
+  storeEnabled: boolean;
+};
+
+type StoreNavParams = {
+  storeEnabled: boolean;
+  variant: 'desktop' | 'drawer';
+  isStoreRoute: boolean;
+  desktopFontSize: string;
+  desktopPx: number;
+  drawerLinkColor: string;
+  onDrawerNavigate?: () => void;
+  desktopActiveSx: (active: boolean) => Record<string, unknown>;
+  drawerActiveWrap: (active: boolean) => SxProps<Theme> | Record<string, never>;
 };
 
 /**
- * Authenticated primary nav: Feed → Directory → Chat → Profile → Events.
+ * Authenticated primary nav: Feed → Directory → Chat → Profile → Events → Store (new tab).
  * Renders nothing when unauthenticated. Omitted flags produce no nodes (no placeholders).
  */
 export const GlobalNavAuthenticatedPrimary = ({
@@ -39,9 +54,8 @@ export const GlobalNavAuthenticatedPrimary = ({
   drawerLinkColor = 'white',
   drawerActiveNavSx,
   onDrawerNavigate,
+  storeEnabled,
 }: GlobalNavAuthenticatedPrimaryProps) => {
-  if (!showAuthedHeader) return null;
-
   const isFeedActive = path === '/feed';
   const isDirectoryActive =
     path === '/directory' || path.startsWith('/directory');
@@ -49,6 +63,7 @@ export const GlobalNavAuthenticatedPrimary = ({
   const isDashboardActive =
     path === '/dashboard' || path.startsWith('/dashboard/');
   const isEventsActive = path === '/events' || path.startsWith('/events/');
+  const isStoreRoute = path === '/store' || path.startsWith('/store/');
   const showChat = chatUiForMember(chatEnabled, sessionUserId);
 
   const desktopFontSize = isCompactDesktop ? '0.92rem' : '1rem';
@@ -64,6 +79,24 @@ export const GlobalNavAuthenticatedPrimary = ({
 
   const drawerActiveWrap = (active: boolean) =>
     active && drawerActiveNavSx ? drawerActiveNavSx : {};
+
+  const storeButton = renderGlobalNavStoreButton({
+    storeEnabled,
+    variant,
+    isStoreRoute,
+    desktopFontSize,
+    desktopPx,
+    drawerLinkColor,
+    onDrawerNavigate,
+    desktopActiveSx,
+    drawerActiveWrap,
+  });
+
+  if (!showAuthedHeader) {
+    if (!storeEnabled) return null;
+    if (variant === 'drawer') return null;
+    return <>{storeButton}</>;
+  }
 
   return (
     <>
@@ -197,6 +230,52 @@ export const GlobalNavAuthenticatedPrimary = ({
           Events
         </Button>
       ) : null}
+      {storeButton}
     </>
   );
 };
+
+function renderGlobalNavStoreButton({
+  storeEnabled,
+  variant,
+  isStoreRoute,
+  desktopFontSize,
+  desktopPx,
+  drawerLinkColor,
+  onDrawerNavigate,
+  desktopActiveSx,
+  drawerActiveWrap,
+}: StoreNavParams): ReactNode {
+  if (!storeEnabled) return null;
+  return (
+    <Button
+      key="global-nav-store"
+      type="button"
+      onClick={() => {
+        openSameOriginPathInNewTab('/store');
+        if (variant === 'drawer' && onDrawerNavigate) {
+          window.setTimeout(onDrawerNavigate, 0);
+        }
+      }}
+      aria-label="Store, opens in a new tab"
+      sx={{
+        color: 'rgba(255,255,255,0.85)',
+        textTransform: 'none',
+        ...(variant === 'desktop'
+          ? {
+              fontSize: desktopFontSize,
+              px: desktopPx,
+              ...desktopActiveSx(isStoreRoute),
+            }
+          : {
+              justifyContent: 'flex-start',
+              color: drawerLinkColor,
+              py: 1.5,
+              ...drawerActiveWrap(isStoreRoute),
+            }),
+      }}
+    >
+      Store
+    </Button>
+  );
+}

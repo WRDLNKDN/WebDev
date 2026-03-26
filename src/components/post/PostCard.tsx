@@ -19,6 +19,9 @@ export type PostCardProps = {
     items: PostActionMenuItem[];
     ariaLabel?: string;
     visible: boolean;
+    /** Chat: hide trigger until card hover/focus (fine pointer + wide layout). */
+    reveal?: 'always' | 'hover-focus';
+    menuDensity?: 'default' | 'subtle';
   } | null;
   /** Body, link preview, images, reactions, etc. */
   children: React.ReactNode;
@@ -34,55 +37,91 @@ const PostCardComponent = ({
   children,
   sx,
   contentSx,
-}: PostCardProps) => (
-  <Card
-    variant="outlined"
-    sx={[
-      {
-        borderRadius: 2.75,
-        minWidth: 0,
-        position: 'relative' as const,
-        borderColor: 'rgba(156,187,217,0.22)',
-        bgcolor: 'rgba(24,28,35,0.96)',
-        boxShadow:
-          '0 20px 38px rgba(0,0,0,0.18), 0 0 0 1px rgba(56,132,210,0.06) inset',
-        overflow: 'hidden',
-      },
-      ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-    ]}
-  >
-    {actionMenu?.visible && actionMenu.items.length > 0 && (
-      <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
-        <PostActionMenu
-          ariaLabel={actionMenu.ariaLabel}
-          visible
-          items={actionMenu.items}
-        />
-      </Box>
-    )}
-    <CardContent
+}: PostCardProps) => {
+  const menuReveal = actionMenu?.reveal ?? 'always';
+  const hoverRevealMenu =
+    Boolean(actionMenu?.visible && actionMenu.items.length > 0) &&
+    menuReveal === 'hover-focus';
+
+  return (
+    <Card
+      variant="outlined"
       sx={[
         {
-          pt: { xs: 1.35, sm: 1.65 },
-          pb: { xs: 0.75, sm: 0.95 },
-          '&:last-child': { pb: { xs: 1.25, sm: 2 } },
-          px: { xs: 1.35, sm: 1.65 },
-          pr: { xs: 6.25, sm: 6.75 },
+          borderRadius: 2.75,
+          minWidth: 0,
+          position: 'relative' as const,
+          borderColor: 'rgba(156,187,217,0.22)',
+          bgcolor: 'rgba(24,28,35,0.96)',
+          boxShadow:
+            '0 20px 38px rgba(0,0,0,0.18), 0 0 0 1px rgba(56,132,210,0.06) inset',
+          overflow: 'hidden',
+          ...(hoverRevealMenu
+            ? {
+                '@media (hover: hover)': {
+                  '& .chat-message-reveal-actions': {
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    transition: 'opacity 0.15s ease',
+                  },
+                  '&:hover .chat-message-reveal-actions, &:focus-within .chat-message-reveal-actions':
+                    {
+                      opacity: 1,
+                      pointerEvents: 'auto',
+                    },
+                },
+              }
+            : {}),
         },
-        ...(Array.isArray(contentSx)
-          ? contentSx
-          : contentSx
-            ? [contentSx]
-            : []),
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
     >
-      <Box sx={{ minWidth: 0 }}>
-        <PostAuthor {...author} />
-        {/* Align body/actions with right edge of avatar */}
-        <Box sx={{ minWidth: 0, ml: { xs: 5.75, sm: 6.5 } }}>{children}</Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
+      {actionMenu?.visible && actionMenu.items.length > 0 && (
+        <Box
+          className={
+            hoverRevealMenu ? 'chat-message-reveal-actions' : undefined
+          }
+          sx={{
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            zIndex: 1,
+          }}
+        >
+          <PostActionMenu
+            ariaLabel={actionMenu.ariaLabel}
+            visible
+            items={actionMenu.items}
+            density={actionMenu.menuDensity ?? 'default'}
+          />
+        </Box>
+      )}
+      <CardContent
+        sx={[
+          {
+            pt: { xs: 1.35, sm: 1.65 },
+            pb: { xs: 0.75, sm: 0.95 },
+            '&:last-child': { pb: { xs: 1.25, sm: 2 } },
+            px: { xs: 1.35, sm: 1.65 },
+            pr: hoverRevealMenu
+              ? { xs: 1.35, sm: 1.65 }
+              : { xs: 6.25, sm: 6.75 },
+          },
+          ...(Array.isArray(contentSx)
+            ? contentSx
+            : contentSx
+              ? [contentSx]
+              : []),
+        ]}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <PostAuthor {...author} />
+          {/* Align body/actions with right edge of avatar */}
+          <Box sx={{ minWidth: 0, ml: { xs: 5.75, sm: 6.5 } }}>{children}</Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const PostCard = memo(PostCardComponent);

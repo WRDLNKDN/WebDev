@@ -13,6 +13,7 @@ import {
   MenuItem,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -29,7 +30,6 @@ import {
 import { truncateSnippet } from '../../../lib/chat/messageSnippet';
 import type { MessageWithExtras } from '../../../hooks/chatTypes';
 import type { ChatRoomType } from '../../../types/chat';
-import { getGlassCard } from '../../../theme/candyStyles';
 import { MessageContent } from './MessageContent';
 import { AttachmentPreview } from './AttachmentPreview';
 
@@ -62,6 +62,11 @@ type MessageListProps = {
   showTyping?: boolean;
   /** Message ID to scroll to when loaded (from URL query param) */
   scrollToMessageId?: string | null;
+  /**
+   * When `auto` (default), message kebab / add-reaction stay visible on narrow viewports
+   * and coarse pointers; hidden until row hover on desktop with fine pointer.
+   */
+  messageActionsReveal?: 'auto' | 'always' | 'hover-focus';
 };
 
 function formatMessageTime(iso: string): string {
@@ -88,10 +93,18 @@ export const MessageList = ({
   typingAvatarUrl,
   showTyping = false,
   scrollToMessageId,
+  messageActionsReveal = 'auto',
 }: MessageListProps) => {
   const { showToast } = useAppToast();
   const theme = useTheme();
   const isLightChrome = theme.palette.mode === 'light';
+  const canFinePointerHover = useMediaQuery('(hover: hover)');
+  const isNarrowViewport = useMediaQuery(theme.breakpoints.down('md'));
+  const useHoverRevealActions =
+    messageActionsReveal === 'hover-focus' ||
+    (messageActionsReveal === 'auto' &&
+      canFinePointerHover &&
+      !isNarrowViewport);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const previousBoundaryRef = useRef<{
@@ -249,8 +262,9 @@ export const MessageList = ({
         overflowX: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        gap: compact ? 1 : 1.5,
-        p: compact ? 1.25 : 2,
+        gap: compact ? 0.75 : 1,
+        px: compact ? 1.25 : 2,
+        py: compact ? 1 : 1.75,
         bgcolor: isLightChrome
           ? theme.palette.background.default
           : CHAT_PANEL_BG,
@@ -264,24 +278,35 @@ export const MessageList = ({
           <Button
             data-testid="chat-load-older"
             size="small"
-            variant="outlined"
+            variant="text"
             onClick={onLoadOlder}
             disabled={loadingOlder}
             sx={{
-              border: `1px solid ${alpha(theme.palette.primary.main, isLightChrome ? 0.35 : 0.38)}`,
-              bgcolor: alpha(
-                theme.palette.primary.main,
-                isLightChrome ? 0.08 : 0.1,
-              ),
               color: 'text.secondary',
               textTransform: 'none',
+              fontWeight: 500,
+              '&:hover': {
+                bgcolor: alpha(
+                  theme.palette.primary.main,
+                  isLightChrome ? 0.06 : 0.1,
+                ),
+              },
             }}
           >
             {loadingOlder ? 'Loading older…' : 'Load older messages'}
           </Button>
         </Box>
       )}
-      {messages.map((msg) => {
+      {messages.map((msg, msgIndex) => {
+        const prev = msgIndex > 0 ? messages[msgIndex - 1] : null;
+        const isContinuation =
+          Boolean(prev) &&
+          !msg.is_system_message &&
+          !msg.is_deleted &&
+          !prev!.is_system_message &&
+          !prev!.is_deleted &&
+          prev!.sender_id === msg.sender_id;
+
         const isOwn = msg.sender_id === currentUserId;
         const canAct = isOwn && !msg.is_system_message && !msg.is_deleted;
         const showKebabMenu = !msg.is_system_message && !msg.is_deleted;
@@ -362,6 +387,9 @@ export const MessageList = ({
           'Deleted user';
         const handle = msg.sender_profile?.handle;
 
+        const revealMenu =
+          useHoverRevealActions && showKebabMenu && kebabItems.length > 0;
+
         return (
           <Box
             key={msg.id}
@@ -376,9 +404,10 @@ export const MessageList = ({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
-              maxWidth: { xs: '100%', sm: '85%' },
+              maxWidth: { xs: '100%', sm: '88%' },
               minWidth: 0,
               position: 'relative',
+              mt: isContinuation ? (compact ? -0.25 : -0.5) : 0,
             }}
           >
             <PostCard
@@ -390,6 +419,7 @@ export const MessageList = ({
                 editedAt: msg.edited_at ?? null,
                 formatTime: formatMessageTime,
                 inIcon: true,
+                continuation: isContinuation,
               }}
               actionMenu={
                 showKebabMenu && kebabItems.length > 0
@@ -397,32 +427,37 @@ export const MessageList = ({
                       visible: true,
                       ariaLabel: 'Message options',
                       items: kebabItems,
+                      reveal: revealMenu ? 'hover-focus' : 'always',
+                      menuDensity: 'subtle',
                     }
                   : null
               }
               sx={{
-                ...getGlassCard(theme),
                 borderRadius: 2,
+                boxShadow: 'none',
                 bgcolor: isOwn
                   ? isLightChrome
-                    ? alpha(theme.palette.primary.main, 0.16)
-                    : 'rgba(37, 99, 235, 0.34)'
+                    ? alpha(theme.palette.primary.main, 0.12)
+                    : 'rgba(56, 132, 210, 0.22)'
                   : isLightChrome
-                    ? alpha(theme.palette.common.black, 0.05)
-                    : 'rgba(17, 24, 39, 0.6)',
+                    ? alpha(theme.palette.common.black, 0.04)
+                    : 'rgba(255, 255, 255, 0.04)',
                 borderColor: isOwn
                   ? isLightChrome
-                    ? alpha(theme.palette.primary.main, 0.42)
-                    : 'rgba(147,197,253,0.55)'
-                  : alpha(
-                      theme.palette.primary.light,
-                      isLightChrome ? 0.28 : 0.26,
-                    ),
+                    ? alpha(theme.palette.primary.main, 0.22)
+                    : 'rgba(147, 197, 253, 0.2)'
+                  : alpha(theme.palette.divider, isLightChrome ? 0.22 : 0.12),
+                borderWidth: 1,
                 minWidth: 0,
                 width: '100%',
                 maxWidth: '100%',
               }}
-              contentSx={{ pt: 1.5, pb: 1, px: 1.5 }}
+              contentSx={{
+                pt: isContinuation ? 0.65 : 1.25,
+                pb: 0.85,
+                px: 1.35,
+                '&:last-child': { pb: 1 },
+              }}
             >
               {msg.reply_preview && editingId !== msg.id ? (
                 <Box
@@ -606,12 +641,19 @@ export const MessageList = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 0.5,
-                  mt: 0.25,
+                  mt: 0.35,
                   flexWrap: 'wrap',
                 }}
               >
                 {msg.reactions && msg.reactions.length > 0 && (
-                  <Box sx={{ display: 'flex', gap: 0.25, flexWrap: 'wrap' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 0.35,
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                    }}
+                  >
                     {Object.entries(
                       msg.reactions.reduce<Record<string, number>>((acc, r) => {
                         acc[r.emoji] = (acc[r.emoji] ?? 0) + 1;
@@ -625,15 +667,15 @@ export const MessageList = ({
                         onClick={() => onReaction?.(msg.id, emoji)}
                         sx={{
                           cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          lineHeight: 1.2,
-                          px: 0.5,
-                          py: 0.15,
-                          borderRadius: 1,
-                          bgcolor: alpha(theme.palette.primary.main, 0.12),
-                          border: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
+                          fontSize: '0.8125rem',
+                          lineHeight: 1.25,
+                          px: 0.65,
+                          py: 0.2,
+                          borderRadius: 10,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          border: 'none',
                           '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.light, 0.18),
+                            bgcolor: alpha(theme.palette.primary.main, 0.16),
                           },
                         }}
                       >
@@ -645,28 +687,40 @@ export const MessageList = ({
                 )}
                 {canAct && (
                   <Tooltip title="Add reaction">
-                    <IconButton
-                      size="small"
-                      onClick={(e) =>
-                        setReactionMenuAnchor({
-                          el: e.currentTarget,
-                          messageId: msg.id,
-                        })
+                    <Box
+                      component="span"
+                      className={
+                        useHoverRevealActions && showKebabMenu
+                          ? 'chat-message-reveal-actions'
+                          : undefined
                       }
-                      aria-label="Add reaction"
-                      aria-haspopup="true"
-                      aria-expanded={reactionMenuAnchor?.messageId === msg.id}
-                      sx={{
-                        p: 0.25,
-                        color: alpha(theme.palette.text.primary, 0.55),
-                        '&:hover': {
-                          color: theme.palette.text.primary,
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        },
-                      }}
+                      sx={{ display: 'inline-flex', verticalAlign: 'middle' }}
                     >
-                      <EmojiEmotionsOutlinedIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) =>
+                          setReactionMenuAnchor({
+                            el: e.currentTarget,
+                            messageId: msg.id,
+                          })
+                        }
+                        aria-label="Add reaction"
+                        aria-haspopup="true"
+                        aria-expanded={reactionMenuAnchor?.messageId === msg.id}
+                        sx={{
+                          p: 0.35,
+                          color: alpha(theme.palette.text.primary, 0.42),
+                          '&:hover': {
+                            color: theme.palette.text.primary,
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          },
+                        }}
+                      >
+                        <EmojiEmotionsOutlinedIcon
+                          sx={{ fontSize: '1.05rem' }}
+                        />
+                      </IconButton>
+                    </Box>
                   </Tooltip>
                 )}
               </Box>

@@ -4,7 +4,6 @@ import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import ImageIcon from '@mui/icons-material/Image';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SendIcon from '@mui/icons-material/Send';
 import {
   Box,
@@ -18,6 +17,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Suspense,
   lazy,
@@ -431,11 +431,15 @@ export const MessageInput = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 0.75,
-        borderTop: `2px solid ${INPUT_SEPARATOR_GREEN}`,
-        p: 1.25,
+        gap: 0.65,
+        borderTop: (t) =>
+          `1px solid ${alpha(t.palette.primary.main, t.palette.mode === 'light' ? 0.22 : 0.35)}`,
+        p: { xs: 1.1, sm: 1.2 },
         pb: `max(10px, calc(0.625rem + env(safe-area-inset-bottom, 0px)))`,
-        bgcolor: 'rgba(54,58,66,0.95)',
+        bgcolor: (t) =>
+          t.palette.mode === 'light'
+            ? alpha(t.palette.background.paper, 0.97)
+            : 'rgba(40,44,52,0.97)',
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
@@ -488,23 +492,20 @@ export const MessageInput = ({
       ) : null}
       {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
       {processingMessage && !error ? (
-        <Box sx={{ fontSize: 12, color: 'rgba(141,188,229,0.88)' }}>
+        <Box
+          sx={{
+            fontSize: 11,
+            lineHeight: 1.4,
+            color: (t) =>
+              alpha(
+                t.palette.text.secondary,
+                t.palette.mode === 'light' ? 0.95 : 0.85,
+              ),
+          }}
+        >
           {processingMessage}
         </Box>
       ) : null}
-      <Typography
-        component="p"
-        variant="caption"
-        sx={{
-          fontSize: '0.65rem',
-          opacity: 0.88,
-          color: 'text.secondary',
-          m: 0,
-          lineHeight: 1.35,
-        }}
-      >
-        GIFs over 2MB are optimized for faster delivery when you send.
-      </Typography>
       {pendingFiles.length > 0 && (
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {pendingFiles.map((f, i) => (
@@ -625,13 +626,28 @@ export const MessageInput = ({
             flex: 1,
             minWidth: 0,
             '& .MuiOutlinedInput-root': {
-              bgcolor: 'rgba(40,44,52,0.9)',
-              color: 'white',
-              borderRadius: 1.5,
+              bgcolor: (t) =>
+                t.palette.mode === 'light'
+                  ? alpha(t.palette.common.black, 0.04)
+                  : 'rgba(40,44,52,0.9)',
+              color: 'text.primary',
+              borderRadius: 1.75,
               minHeight: { xs: 48, sm: 40 },
               alignItems: expanded ? 'flex-start' : 'center',
-              '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
+              '& fieldset': {
+                borderColor: (t) =>
+                  alpha(
+                    t.palette.divider,
+                    t.palette.mode === 'light' ? 0.9 : 1,
+                  ),
+              },
+              '&:hover fieldset': {
+                borderColor: (t) =>
+                  alpha(
+                    t.palette.primary.main,
+                    t.palette.mode === 'light' ? 0.35 : 0.45,
+                  ),
+              },
             },
             /* 16px on narrow viewports avoids iOS Safari zoom-on-focus */
             '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
@@ -648,7 +664,11 @@ export const MessageInput = ({
             onClick={() => setExpanded((e) => !e)}
             aria-label={expanded ? 'Collapse input' : 'Expand input'}
             sx={{
-              color: 'rgba(255,255,255,0.7)',
+              color: (t) =>
+                alpha(
+                  t.palette.text.primary,
+                  t.palette.mode === 'light' ? 0.55 : 0.7,
+                ),
               flexShrink: 0,
               alignSelf: { xs: 'flex-end', sm: 'auto' },
             }}
@@ -693,7 +713,14 @@ export const MessageInput = ({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || sending || uploading}
                 aria-label="Attach image or GIF"
-                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+                sx={{
+                  color: (t) =>
+                    alpha(
+                      t.palette.text.primary,
+                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                    ),
+                  p: 0.75,
+                }}
               >
                 <ImageIcon fontSize="small" />
               </IconButton>
@@ -706,13 +733,20 @@ export const MessageInput = ({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || sending || uploading}
                 aria-label="Attach document or file"
-                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+                sx={{
+                  color: (t) =>
+                    alpha(
+                      t.palette.text.primary,
+                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                    ),
+                  p: 0.75,
+                }}
               >
                 <AttachFileIcon fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Add GIF">
+          <Tooltip title="Add GIF. Files over 2MB are optimized when you send.">
             <span>
               <IconButton
                 type="button"
@@ -721,7 +755,14 @@ export const MessageInput = ({
                   disabled || sending || uploading || pendingFiles.length >= 1
                 }
                 aria-label="Add GIF"
-                sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+                sx={{
+                  color: (t) =>
+                    alpha(
+                      t.palette.text.primary,
+                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                    ),
+                  p: 0.75,
+                }}
               >
                 <GifBoxIcon fontSize="small" />
               </IconButton>
@@ -733,7 +774,14 @@ export const MessageInput = ({
               onClick={(e) => setEmojiAnchor(e.currentTarget)}
               disabled={disabled || sending || uploading}
               aria-label="Add emoji"
-              sx={{ color: 'rgba(255,255,255,0.75)', p: 0.75 }}
+              sx={{
+                color: (t) =>
+                  alpha(
+                    t.palette.text.primary,
+                    t.palette.mode === 'light' ? 0.62 : 0.75,
+                  ),
+                p: 0.75,
+              }}
             >
               <EmojiEmotionsOutlinedIcon fontSize="small" />
             </IconButton>
@@ -755,8 +803,8 @@ export const MessageInput = ({
             variant="caption"
             color="text.secondary"
             sx={{
-              fontSize: '0.7rem',
-              opacity: 0.85,
+              fontSize: '0.68rem',
+              opacity: 0.72,
               display: 'inline',
               maxWidth: { xs: '42%', sm: 'none' },
               lineHeight: 1.35,
@@ -764,17 +812,8 @@ export const MessageInput = ({
           >
             {isNarrowViewport
               ? 'Tap send — Enter adds a line'
-              : 'Press Enter to send · Shift+Enter for new line'}
+              : 'Enter to send · Shift+Enter newline'}
           </Typography>
-          <Tooltip title="More options">
-            <IconButton
-              type="button"
-              aria-label="More options"
-              sx={{ color: 'rgba(255,255,255,0.65)', p: 0.5 }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="Send message">
             <span>
               <IconButton

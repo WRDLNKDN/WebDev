@@ -126,8 +126,8 @@
     "tsx": "4.21.0",
     "typescript": "6.0.2",
     "typescript-eslint": "8.57.2",
-    "vite": "8.0.3",
-    "vitest": "4.1.1",
+    "vite": "8.0.2",
+    "vitest": "4.1.2",
     "wait-on": "9.0.4"
   },
   "overrides": {

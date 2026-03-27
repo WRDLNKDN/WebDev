@@ -1,4 +1,6 @@
 export const GODADDY_STOREFRONT_URL = 'https://www.wrdlnkdn.com/store';
+export const DEFAULT_ECWID_STOREFRONT_URL =
+  'https://store129462253.company.site/';
 
 /** Default Ecwid store ID for the in-app `/store` embed (override with `VITE_ECWID_STORE_ID`). */
 export const DEFAULT_ECWID_EMBED_STORE_ID = '129462253';
@@ -68,9 +70,10 @@ export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
 
   const explicitRaw = typeof viteStoreUrl === 'string' ? viteStoreUrl : '';
   const explicit = normalizeExplicitStorefrontUrl(explicitRaw);
-  if (explicit.length > 0) return explicit;
+  if (explicit.length > 0 && explicit !== GODADDY_STOREFRONT_URL)
+    return explicit;
 
-  return buildEcwidInstantSiteUrl(DEFAULT_ECWID_EMBED_STORE_ID);
+  return DEFAULT_ECWID_STOREFRONT_URL;
 }
 
 /**

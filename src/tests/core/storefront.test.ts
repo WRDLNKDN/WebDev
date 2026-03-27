@@ -4,6 +4,7 @@ import {
   buildEcwidEmbedScriptSrc,
   buildEcwidProductBrowserInit,
   DEFAULT_ECWID_EMBED_STORE_ID,
+  DEFAULT_ECWID_STOREFRONT_URL,
   getAlternateStorefrontUrl,
   getEcwidEmbedStoreId,
   getEcwidScriptId,
@@ -89,13 +90,13 @@ describe('storefront helpers', () => {
     ).toBe('https://shop.example/');
   });
 
-  it('prepends https to scheme-less VITE_STORE_URL (legacy GoDaddy-style env)', () => {
+  it('ignores the legacy godaddy env URL and falls back to Ecwid', () => {
     expect(
       getStoreExternalUrl({
         VITE_STORE_URL: 'www.wrdlnkdn.com/store',
         VITE_ECWID_STORE_ID: '',
       }),
-    ).toBe('https://www.wrdlnkdn.com/store');
+    ).toBe(DEFAULT_ECWID_STOREFRONT_URL);
   });
 
   it('resolves protocol-relative VITE_STORE_URL', () => {
@@ -128,15 +129,11 @@ describe('storefront helpers', () => {
   });
 
   it('falls back to the default Ecwid instant site when no storefront env is set', () => {
-    expect(getStoreExternalUrl({})).toBe(
-      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
-    );
+    expect(getStoreExternalUrl({})).toBe(DEFAULT_ECWID_STOREFRONT_URL);
   });
 
   it('exposes Ecwid instant site or VITE_STORE_URL by priority', () => {
-    expect(getAlternateStorefrontUrl({})).toBe(
-      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
-    );
+    expect(getAlternateStorefrontUrl({})).toBe(DEFAULT_ECWID_STOREFRONT_URL);
     expect(
       getAlternateStorefrontUrl({ VITE_STORE_URL: 'https://shop.example/' }),
     ).toBe('https://shop.example/');
@@ -174,8 +171,15 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '',
       }),
-    ).resolves.toBe(
-      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
-    );
+    ).resolves.toBe(DEFAULT_ECWID_STOREFRONT_URL);
+  });
+
+  it('ignores the legacy godaddy storefront URL and falls back to Ecwid', async () => {
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: GODADDY_STOREFRONT_URL,
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).resolves.toBe(DEFAULT_ECWID_STOREFRONT_URL);
   });
 });

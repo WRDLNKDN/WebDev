@@ -33,7 +33,10 @@ import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { getStoreExternalUrl } from '../../lib/marketing/storefront';
+import {
+  getStoreExternalUrl,
+  resolveStoreExternalUrl,
+} from '../../lib/marketing/storefront';
 import {
   useFeatureFlag,
   useProductionComingSoonMode,
@@ -78,7 +81,13 @@ export const Navbar = () => {
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
-  const storeExternalUrl = getStoreExternalUrl();
+  const [storeExternalUrl, setStoreExternalUrl] = useState(() =>
+    getStoreExternalUrl(),
+  );
+  useEffect(() => {
+    if (!storeEnabled) return;
+    void resolveStoreExternalUrl().then(setStoreExternalUrl);
+  }, [storeEnabled]);
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);

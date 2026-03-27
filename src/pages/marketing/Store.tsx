@@ -1,19 +1,26 @@
 import { Box, Button, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { getStoreExternalUrl } from '../../lib/marketing/storefront';
+import {
+  getStoreExternalUrl,
+  resolveStoreExternalUrl,
+} from '../../lib/marketing/storefront';
 
 /**
- * `/store` is a handoff route. When a merch URL is configured, redirect there.
- * If not configured, show a small fallback state instead of looping back here.
+ * `/store` is a handoff route. Resolves the live storefront URL (probes GoDaddy /
+ * `VITE_STORE_URL` when needed) and redirects to Ecwid Instant Site if those are down.
  */
 export const Store = () => {
-  const storefrontUrl = getStoreExternalUrl();
+  const [storefrontUrl, setStorefrontUrl] = useState(() =>
+    getStoreExternalUrl(),
+  );
 
   useEffect(() => {
-    if (!storefrontUrl) return;
-    window.location.replace(storefrontUrl);
-  }, [storefrontUrl]);
+    void resolveStoreExternalUrl().then((url) => {
+      setStorefrontUrl(url);
+      window.location.replace(url);
+    });
+  }, []);
 
   if (storefrontUrl) {
     return (

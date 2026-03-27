@@ -1,9 +1,13 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
-import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
+import {
+  getStoreExternalUrl,
+  resolveStoreExternalUrl,
+} from '../../../lib/marketing/storefront';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
 export type GlobalNavAuthenticatedPrimaryProps = {
@@ -28,6 +32,7 @@ type StoreNavParams = {
   storeEnabled: boolean;
   variant: 'desktop' | 'drawer';
   isStoreRoute: boolean;
+  storeHref: string;
   desktopFontSize: string;
   desktopPx: number;
   drawerLinkColor: string;
@@ -81,10 +86,17 @@ export const GlobalNavAuthenticatedPrimary = ({
   const drawerActiveWrap = (active: boolean) =>
     active && drawerActiveNavSx ? drawerActiveNavSx : {};
 
+  const [storeHref, setStoreHref] = useState(() => getStoreExternalUrl());
+  useEffect(() => {
+    if (!storeEnabled) return;
+    void resolveStoreExternalUrl().then(setStoreHref);
+  }, [storeEnabled]);
+
   const storeButton = renderGlobalNavStoreButton({
     storeEnabled,
     variant,
     isStoreRoute,
+    storeHref,
     desktopFontSize,
     desktopPx,
     drawerLinkColor,
@@ -238,6 +250,7 @@ function renderGlobalNavStoreButton({
   storeEnabled,
   variant,
   isStoreRoute,
+  storeHref,
   desktopFontSize,
   desktopPx,
   drawerLinkColor,
@@ -246,7 +259,6 @@ function renderGlobalNavStoreButton({
   drawerActiveWrap,
 }: StoreNavParams): ReactNode {
   if (!storeEnabled) return null;
-  const storeExternalUrl = getStoreExternalUrl();
 
   const sharedButtonSx =
     variant === 'desktop'
@@ -266,7 +278,7 @@ function renderGlobalNavStoreButton({
     <Button
       key="global-nav-store"
       component="a"
-      href={storeExternalUrl}
+      href={storeHref}
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {

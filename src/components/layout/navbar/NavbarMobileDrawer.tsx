@@ -1,8 +1,12 @@
 import { Box, Button, Drawer, Stack } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink, type Location } from 'react-router-dom';
-import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
+import {
+  getStoreExternalUrl,
+  resolveStoreExternalUrl,
+} from '../../../lib/marketing/storefront';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
@@ -56,7 +60,13 @@ export const NavbarMobileDrawer = ({
   drawerActiveNavSx,
 }: NavbarMobileDrawerProps) => {
   const isStoreRoute = path === '/store' || path.startsWith('/store/');
-  const storeExternalUrl = getStoreExternalUrl();
+  const [storeExternalUrl, setStoreExternalUrl] = useState(() =>
+    getStoreExternalUrl(),
+  );
+  useEffect(() => {
+    if (!storeEnabled) return;
+    void resolveStoreExternalUrl().then(setStoreExternalUrl);
+  }, [storeEnabled]);
   const drawerActiveWrap = (active: boolean) =>
     active && drawerActiveNavSx ? drawerActiveNavSx : {};
 

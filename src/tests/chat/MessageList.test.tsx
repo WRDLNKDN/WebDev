@@ -14,7 +14,7 @@ import type { MessageWithExtras } from '../../hooks/chatTypes';
 const linkPreviewMocks = vi.hoisted(() => ({
   fetchChatLinkPreview: vi.fn(),
   getFirstUrlFromText: vi.fn((text: string) => {
-    const match = text.match(/https?:\/\/\S+/);
+    const match = /https?:\/\/\S+/.exec(text);
     return match ? match[0] : null;
   }),
 }));

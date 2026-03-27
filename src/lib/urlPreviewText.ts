@@ -1,5 +1,5 @@
 export const LINK_PREVIEW_URL_REGEX =
-  /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
+  /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]+\)|[^\s<>[\]()])*/gi;
 
 export function extractUrlsFromText(text: string): string[] {
   if (!text.trim()) return [];

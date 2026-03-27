@@ -112,14 +112,14 @@ export const GifPickerDialog = ({
 
   const handleSearch = useCallback(
     (q: string, filter?: GifContentFilter) => {
-      void loadGifs(q, filter ?? contentFilter);
+      loadGifs(q, filter ?? contentFilter).catch(() => {});
     },
     [loadGifs, contentFilter],
   );
 
   const handleRetry = useCallback(() => {
     const { query: lastQuery, filter: lastFilter } = lastAttemptRef.current;
-    void loadGifs(lastQuery, lastFilter);
+    loadGifs(lastQuery, lastFilter).catch(() => {});
   }, [loadGifs]);
 
   const handlePick = useCallback(

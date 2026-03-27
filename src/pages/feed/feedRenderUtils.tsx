@@ -16,14 +16,17 @@ import {
 import type { ReactNode } from 'react';
 import type { FeedItem } from '../../lib/api/feedsApi';
 import type { LinkPreviewData } from '../../lib/linkPreview';
-import { extractUrlsFromText } from '../../lib/urlPreviewText';
+import {
+  extractUrlsFromText,
+  LINK_PREVIEW_URL_REGEX,
+} from '../../lib/urlPreviewText';
 
 export function linkifyBody(body: string): ReactNode {
   if (!body.trim()) return null;
   const parts: ReactNode[] = [];
   let lastIndex = 0;
   let m: RegExpExecArray | null;
-  const re = /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
+  const re = new RegExp(LINK_PREVIEW_URL_REGEX.source, 'gi');
   while ((m = re.exec(body)) !== null) {
     if (m.index > lastIndex) {
       parts.push(body.slice(lastIndex, m.index));

@@ -122,7 +122,7 @@ export const NavbarMobileDrawer = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
-                      window.setTimeout(() => setDrawerOpen(false), 0)
+                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
                     }
                     aria-label="Store, opens storefront in a new tab"
                     sx={{
@@ -143,7 +143,7 @@ export const NavbarMobileDrawer = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
-                      window.setTimeout(() => setDrawerOpen(false), 0)
+                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
                     }
                     aria-label="Kickstarter, opens in a new tab"
                     sx={{

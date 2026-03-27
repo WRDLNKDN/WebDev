@@ -28,6 +28,16 @@ async function runReassignInReviewToCreator({ github, context, core }) {
 module.exports = runReassignInReviewToCreator;
 module.exports.syncProjectItemAssignment = syncProjectItemAssignment;
 
+function toErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error';
+}
+
 async function handleProjectBackfill({ github, context, core }) {
   const config = getProjectBackfillConfig(context, core);
   if (!config) {
@@ -109,10 +119,8 @@ async function syncProjectItemAssignment(github, core, itemNodeId) {
       assignees: [creatorLogin],
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error ?? 'Unknown error');
     core.warning(
-      `Could not assign ${owner}/${repo}#${issueNumber} to @${creatorLogin}: ${message}`,
+      `Could not assign ${owner}/${repo}#${issueNumber} to @${creatorLogin}: ${toErrorMessage(error)}`,
     );
     return false;
   }

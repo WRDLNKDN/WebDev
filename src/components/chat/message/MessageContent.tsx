@@ -41,13 +41,13 @@ export const MessageContent = ({ content }: MessageContentProps) => {
         });
       }
 
-      if (urlMatch && nextMatch.index === urlMatch.index) {
+      if (nextMatch.index === urlMatch?.index) {
         parts.push({
           type: 'url',
           text: urlMatch[0],
           href: urlMatch[0],
         });
-      } else if (mentionMatch && nextMatch.index === mentionMatch.index) {
+      } else if (nextMatch.index === mentionMatch?.index) {
         parts.push({
           type: 'mention',
           text: mentionMatch[0],
@@ -86,15 +86,17 @@ export const MessageContent = ({ content }: MessageContentProps) => {
       sx={{ whiteSpace: 'pre-wrap', display: 'block' }}
     >
       {parts.map((part, index) => {
+        let partKey = `${part.type}:${part.text}:${index}`;
         if (part.type === 'mention') {
           const mentionPart = part as {
             type: 'mention';
             text: string;
             handle: string;
           };
+          partKey = `${mentionPart.type}:${mentionPart.handle}:${mentionPart.text}:${index}`;
           return (
             <Link
-              key={index}
+              key={partKey}
               component={RouterLink}
               to={`/p/h~${encodeURIComponent(mentionPart.handle)}`}
               sx={{
@@ -126,7 +128,7 @@ export const MessageContent = ({ content }: MessageContentProps) => {
           const urlPart = part as { type: 'url'; text: string; href: string };
           return (
             <Link
-              key={index}
+              key={partKey}
               href={urlPart.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -140,7 +142,7 @@ export const MessageContent = ({ content }: MessageContentProps) => {
             </Link>
           );
         }
-        return <span key={index}>{part.text}</span>;
+        return <span key={partKey}>{part.text}</span>;
       })}
     </Typography>
   );

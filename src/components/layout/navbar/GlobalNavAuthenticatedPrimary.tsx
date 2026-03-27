@@ -285,7 +285,7 @@ function renderGlobalNavStoreButton({
       onClick={() => {
         // Close drawer after navigation when rendering inside the mobile drawer
         if (variant === 'drawer' && onDrawerNavigate) {
-          window.setTimeout(onDrawerNavigate, 0);
+          globalThis.setTimeout(onDrawerNavigate, 0);
         }
       }}
       aria-label="Store, opens storefront in a new tab"
@@ -339,7 +339,7 @@ function renderGlobalNavKickstarterButton({
       rel="noopener noreferrer"
       onClick={() => {
         if (variant === 'drawer' && onDrawerNavigate) {
-          window.setTimeout(onDrawerNavigate, 0);
+          globalThis.setTimeout(onDrawerNavigate, 0);
         }
       }}
       aria-label="Kickstarter, opens in a new tab"

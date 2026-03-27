@@ -10,11 +10,11 @@ export const Store = () => {
 
   useEffect(() => {
     (
-      window as typeof window & {
+      globalThis as typeof globalThis & {
         __storeRedirectTarget?: string;
       }
     ).__storeRedirectTarget = storefrontUrl;
-    window.location.replace(storefrontUrl);
+    globalThis.location.replace(storefrontUrl);
   }, [storefrontUrl]);
 
   return (

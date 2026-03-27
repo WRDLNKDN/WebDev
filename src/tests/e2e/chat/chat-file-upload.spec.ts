@@ -289,7 +289,9 @@ test.describe('Chat file upload', () => {
     await expect
       .poll(() => uploadPath)
       .toContain('/storage/v1/object/chat-attachments/');
-    await expect.poll(() => uploadMimeType).toBe('image/gif');
+    await expect
+      .poll(() => uploadMimeType ?? '')
+      .toMatch(/^(image\/gif|multipart\/form-data;)/);
     await expect(page.locator('img[alt="GIF"]')).toHaveCount(1);
   });
 

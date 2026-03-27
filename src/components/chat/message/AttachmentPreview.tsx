@@ -12,6 +12,8 @@ export const AttachmentPreview = ({
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const isImage = mimeType.startsWith('image/');
   const isVideo = mimeType.startsWith('video/');
+  const imageAlt =
+    mimeType.toLowerCase() === 'image/gif' ? 'GIF' : 'Attachment';
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +47,7 @@ export const AttachmentPreview = ({
         <Box
           component="img"
           src={signedUrl}
-          alt="Attachment"
+          alt={imageAlt}
           width={220}
           height={220}
           sx={{

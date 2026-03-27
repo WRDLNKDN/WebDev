@@ -160,7 +160,27 @@ export const ChatPage = () => {
   useEffect(() => {
     if (isMobileLayout) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') navigate('/feed');
+      if (e.key !== 'Escape') return;
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (
+        document.querySelector('[role="alert"], [role="status"]') ||
+        document.querySelector(
+          '[role="dialog"][aria-modal="true"], [role="listbox"]',
+        )
+      ) {
+        return;
+      }
+
+      navigate('/feed');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -33,10 +33,7 @@ import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import { signOut } from '../../lib/auth/signOut';
 import { supabase } from '../../lib/auth/supabaseClient';
-import {
-  getStoreExternalUrl,
-  resolveStoreExternalUrl,
-} from '../../lib/marketing/storefront';
+import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 import {
   useFeatureFlag,
   useProductionComingSoonMode,
@@ -75,19 +72,13 @@ export const Navbar = () => {
   const isAdminActive = path.startsWith('/admin');
   const eventsEnabled = useFeatureFlag(EVENTS_FLAG);
   const directoryEnabled = useFeatureFlag('directory');
-  const storeEnabled = true;
+  const storeEnabled = useFeatureFlag('store');
   const chatEnabled = useFeatureFlag('chat');
   const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
   const gamesEnabled = useFeatureFlag('games');
   const feedEnabled = useFeatureFlag('feed');
   const dashboardEnabled = useFeatureFlag('dashboard');
-  const [storeExternalUrl, setStoreExternalUrl] = useState(() =>
-    getStoreExternalUrl(),
-  );
-  useEffect(() => {
-    if (!storeEnabled) return;
-    void resolveStoreExternalUrl().then(setStoreExternalUrl);
-  }, [storeEnabled]);
+  const storeExternalUrl = getStoreExternalUrl();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);

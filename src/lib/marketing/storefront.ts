@@ -3,8 +3,6 @@ export const GODADDY_STOREFRONT_URL = 'https://www.wrdlnkdn.com/store';
 /** Default Ecwid store ID for the in-app `/store` embed (override with `VITE_ECWID_STORE_ID`). */
 export const DEFAULT_ECWID_EMBED_STORE_ID = '129462253';
 
-const STOREFRONT_PROBE_TIMEOUT_MS = 3500;
-
 type StorefrontEnv = {
   VITE_STORE_URL?: string;
   VITE_ECWID_STORE_ID?: string;
@@ -43,16 +41,18 @@ export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
 }
 
 /**
- * Sync URL for first paint (nav `href` before probe completes). After mount, UI should
- * call `resolveStoreExternalUrl()` so GoDaddy / `VITE_STORE_URL` can fall back to Ecwid when down.
+ * Canonical storefront URL for nav links and `/store` redirect (sync, env-driven).
  */
 export function getStoreExternalUrl(env?: StorefrontEnv): string {
   return getAlternateStorefrontUrl(env);
 }
 
+const STOREFRONT_PROBE_TIMEOUT_MS = 3500;
+
 /**
  * True when `url` returns a successful HTTP response (HEAD, or GET if HEAD is 405/501).
- * CORS must allow the browser to read status; cross-origin without CORS → false (caller may fall back).
+ * **Browser caveat:** cross-origin requests usually fail CORS, so this is only reliable for
+ * same-origin checks or server-side use — not for picking the live shop URL in the SPA.
  */
 export async function probeHttpReachable(url: string): Promise<boolean> {
   if (typeof fetch !== 'function') return false;
@@ -89,46 +89,18 @@ export async function probeHttpReachable(url: string): Promise<boolean> {
   }
 }
 
-/** @deprecated Prefer `probeHttpReachable(GODADDY_STOREFRONT_URL)`; kept for callers/tests. */
 export async function probeGodaddyStorefrontReachable(): Promise<boolean> {
   return probeHttpReachable(GODADDY_STOREFRONT_URL);
 }
 
-const ecwidInstantFallback = () =>
-  buildEcwidInstantSiteUrl(DEFAULT_ECWID_EMBED_STORE_ID);
-
 /**
- * Resolves the storefront URL with reachability checks. Use after mount so nav `/store`
- * links can fall back when GoDaddy or `VITE_STORE_URL` is down.
- *
- * 1. `VITE_ECWID_STORE_ID` set → Ecwid Instant Site (no probe).
- * 2. `VITE_STORE_URL` set → use it if reachable, else Ecwid fallback.
- * 3. Else probe default GoDaddy URL; if reachable use it, else Ecwid fallback.
- *
- * Sync `getStoreExternalUrl()` stays best-effort for first paint; prefer this for real navigation.
+ * Async alias of `getAlternateStorefrontUrl` (no browser probes — CORS makes them unreliable).
+ * Kept for callers/tests that already await a Promise.
  */
 export async function resolveStoreExternalUrl(
   env?: StorefrontEnv,
 ): Promise<string> {
-  const viteStoreUrl = env?.VITE_STORE_URL ?? import.meta.env.VITE_STORE_URL;
-  const viteEcwidId =
-    env?.VITE_ECWID_STORE_ID ?? import.meta.env.VITE_ECWID_STORE_ID;
-
-  const ecwidId = getEcwidStoreId(viteEcwidId);
-  if (ecwidId) {
-    return buildEcwidInstantSiteUrl(ecwidId);
-  }
-
-  const explicit = typeof viteStoreUrl === 'string' ? viteStoreUrl.trim() : '';
-  if (explicit.length > 0) {
-    const ok = await probeHttpReachable(explicit);
-    if (ok) return explicit;
-    return ecwidInstantFallback();
-  }
-
-  const godaddyOk = await probeHttpReachable(GODADDY_STOREFRONT_URL);
-  if (godaddyOk) return GODADDY_STOREFRONT_URL;
-  return ecwidInstantFallback();
+  return getAlternateStorefrontUrl(env);
 }
 
 export function getEcwidStoreId(

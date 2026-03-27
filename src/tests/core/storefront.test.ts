@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   buildEcwidInstantSiteUrl,
   buildEcwidEmbedScriptSrc,
@@ -114,63 +114,21 @@ describe('storefront helpers', () => {
 });
 
 describe('resolveStoreExternalUrl', () => {
-  const originalFetch = globalThis.fetch;
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
-  it('returns Ecwid Instant Site when VITE_ECWID_STORE_ID is set (no probe)', async () => {
+  it('matches getAlternateStorefrontUrl (no browser probes)', async () => {
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: 'https://legacy.example/',
         VITE_ECWID_STORE_ID: '129462253',
       }),
     ).resolves.toBe('https://store129462253.company.site/');
-  });
 
-  it('uses VITE_STORE_URL when HEAD returns ok', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValue({ ok: true, status: 200 }) as typeof fetch;
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: 'https://shop.example/',
         VITE_ECWID_STORE_ID: '',
       }),
     ).resolves.toBe('https://shop.example/');
-  });
 
-  it('falls back to Ecwid when VITE_STORE_URL is not reachable', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValue({ ok: false, status: 404 }) as typeof fetch;
-    await expect(
-      resolveStoreExternalUrl({
-        VITE_STORE_URL: 'https://dead.example/',
-        VITE_ECWID_STORE_ID: '',
-      }),
-    ).resolves.toBe(
-      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
-    );
-  });
-
-  it('uses GoDaddy when no env URLs and probe succeeds', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValue({ ok: true, status: 200 }) as typeof fetch;
-    await expect(
-      resolveStoreExternalUrl({
-        VITE_STORE_URL: '',
-        VITE_ECWID_STORE_ID: '',
-      }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
-  });
-
-  it('falls back to Ecwid when GoDaddy is not reachable and no env', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValue({ ok: false, status: 404 }) as typeof fetch;
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: '',
@@ -179,18 +137,5 @@ describe('resolveStoreExternalUrl', () => {
     ).resolves.toBe(
       `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
     );
-  });
-
-  it('retries GET when HEAD is 405 (GoDaddy path)', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 405 })
-      .mockResolvedValueOnce({ ok: true, status: 200 }) as typeof fetch;
-    await expect(
-      resolveStoreExternalUrl({
-        VITE_STORE_URL: '',
-        VITE_ECWID_STORE_ID: '',
-      }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 });

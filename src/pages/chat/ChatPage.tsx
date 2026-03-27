@@ -584,12 +584,13 @@ export const ChatPage = () => {
                 position: 'fixed',
                 zIndex: 1300,
                 top: `calc(${dockTopPx}px + 12px)`,
-                right: { xs: 12, md: 20 },
+                right: { xs: 12, md: 24 },
                 bottom: { xs: 12, md: 20 },
-                left: { xs: 12, md: 'auto' },
+                left: { xs: 12, md: 24 },
+                mx: 'auto',
                 width: {
                   xs: 'calc(100vw - 24px)',
-                  md: 'min(1080px, calc(100vw - 48px))',
+                  md: 'min(1240px, calc(100vw - 48px))',
                 },
                 maxWidth: 'calc(100vw - 24px)',
                 borderRadius: 2,
@@ -614,12 +615,22 @@ export const ChatPage = () => {
                   flexShrink: 0,
                   borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                   bgcolor: alpha(theme.palette.background.default, 0.4),
+                  color:
+                    theme.palette.mode === 'light'
+                      ? theme.palette.text.primary
+                      : 'rgba(252,250,255,0.96)',
                 }}
               >
                 <Typography
                   id="chat-dock-title"
                   variant="subtitle1"
                   fontWeight={700}
+                  sx={{
+                    color:
+                      theme.palette.mode === 'light'
+                        ? theme.palette.text.primary
+                        : 'rgba(252,250,255,0.96)',
+                  }}
                 >
                   Messages
                 </Typography>
@@ -628,6 +639,12 @@ export const ChatPage = () => {
                   onClick={closeDockedChat}
                   size="small"
                   edge="end"
+                  sx={{
+                    color:
+                      theme.palette.mode === 'light'
+                        ? theme.palette.text.primary
+                        : 'rgba(220,207,248,0.9)',
+                  }}
                 >
                   <CloseIcon />
                 </IconButton>

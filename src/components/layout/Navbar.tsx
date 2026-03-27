@@ -568,203 +568,6 @@ export const Navbar = () => {
                 </Button>
               </>
             )}
-            {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
-            {!isMobile &&
-              !isCompactDesktop &&
-              !forcePublicHeader &&
-              showAuthedHeader && (
-                <Box
-                  ref={setSearchAnchorEl}
-                  sx={{ position: 'relative', minWidth: 240 }}
-                >
-                  <Box
-                    component="form"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const query = searchQuery.trim();
-                      closeSearchDropdown();
-                      navigate(
-                        query
-                          ? `/directory?q=${encodeURIComponent(query)}`
-                          : '/directory',
-                      );
-                    }}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      height: 40,
-                      minWidth: 220,
-                      maxWidth: 320,
-                      bgcolor: 'rgba(56,132,210,0.14)',
-                      borderRadius: '999px',
-                      border: '1px solid rgba(156,187,217,0.18)',
-                      transition: 'border-color 0.2s, background-color 0.2s',
-                      '&:focus-within': {
-                        bgcolor: 'rgba(156,187,217,0.18)',
-                        borderColor: 'rgba(141,188,229,0.34)',
-                      },
-                    }}
-                  >
-                    <SearchIcon
-                      sx={{
-                        ml: 1.5,
-                        mr: 1,
-                        fontSize: 22,
-                        color: 'rgba(255,255,255,0.5)',
-                      }}
-                      aria-hidden
-                    />
-                    <InputBase
-                      placeholder="I'm looking for..."
-                      value={searchQuery}
-                      onChange={(e) =>
-                        setSearchQuery(
-                          e.target.value.slice(0, SEARCH_MAX_QUERY_CHARS),
-                        )
-                      }
-                      onFocus={() =>
-                        searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                        setSearchOpen(true)
-                      }
-                      inputProps={{
-                        'aria-label': 'Search for members',
-                        'aria-expanded': searchOpen,
-                        maxLength: SEARCH_MAX_QUERY_CHARS,
-                      }}
-                      fullWidth
-                      sx={{
-                        color: 'white',
-                        fontSize: '1rem',
-                        '& .MuiInputBase-input': {
-                          py: 1,
-                          px: 0,
-                          '&::placeholder': {
-                            color: 'rgba(255,255,255,0.5)',
-                            opacity: 1,
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Popper
-                    open={
-                      searchOpen &&
-                      (searchMatches.length > 0 ||
-                        searchLoading ||
-                        (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
-                          !searchLoading))
-                    }
-                    anchorEl={searchAnchorEl}
-                    placement="bottom-start"
-                    sx={{ zIndex: 1300 }}
-                    modifiers={[
-                      { name: 'offset', options: { offset: [0, 4] } },
-                    ]}
-                  >
-                    <Paper
-                      ref={searchPopperRef}
-                      elevation={8}
-                      sx={{
-                        minWidth: searchAnchorEl?.offsetWidth ?? 280,
-                        maxWidth: 360,
-                        maxHeight: 320,
-                        overflow: 'auto',
-                        ...denseMenuPaperSxFromTheme(theme),
-                      }}
-                    >
-                      {searchLoading ? (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            py: 2,
-                          }}
-                        >
-                          <CircularProgress
-                            size={24}
-                            sx={{
-                              color: isLightNav ? 'primary.main' : 'white',
-                            }}
-                            aria-label="Loading search"
-                          />
-                        </Box>
-                      ) : searchMatches.length === 0 ? (
-                        <Box sx={{ px: 2, py: 2 }}>
-                          <Box
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '1rem',
-                              mb: 1,
-                            }}
-                          >
-                            No matches for &quot;{searchQuery.trim()}&quot;
-                          </Box>
-                          <Button
-                            component={RouterLink}
-                            to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
-                            size="small"
-                            onClick={closeSearchDropdown}
-                            sx={{
-                              color: 'primary.light',
-                              textTransform: 'none',
-                            }}
-                          >
-                            View all in Directory
-                          </Button>
-                        </Box>
-                      ) : (
-                        <Stack
-                          component="ul"
-                          sx={{ listStyle: 'none', m: 0, p: 0.5 }}
-                        >
-                          {searchMatches.map((p) => {
-                            const handle = p.handle || p.id;
-                            const label = p.display_name || p.handle || handle;
-                            return (
-                              <MenuItem
-                                key={p.id}
-                                component={RouterLink}
-                                to={`/profile/${handle}`}
-                                onClick={() => {
-                                  setSearchQuery('');
-                                  closeSearchDropdown();
-                                }}
-                                sx={{
-                                  color: 'text.primary',
-                                  '&:hover': {
-                                    bgcolor: 'action.hover',
-                                  },
-                                }}
-                              >
-                                <ListItemIcon sx={{ minWidth: 36 }}>
-                                  <PersonIcon
-                                    sx={{
-                                      color: 'text.secondary',
-                                      fontSize: 20,
-                                    }}
-                                  />
-                                </ListItemIcon>
-                                <ListItemText
-                                  primary={label}
-                                  secondary={
-                                    p.handle && p.handle !== label
-                                      ? `@${p.handle}`
-                                      : null
-                                  }
-                                  primaryTypographyProps={{ fontWeight: 600 }}
-                                  secondaryTypographyProps={{
-                                    variant: 'caption',
-                                  }}
-                                />
-                              </MenuItem>
-                            );
-                          })}
-                        </Stack>
-                      )}
-                    </Paper>
-                  </Popper>
-                </Box>
-              )}
           </Stack>
 
           {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store; Admin is under the avatar menu only */}
@@ -785,6 +588,202 @@ export const Navbar = () => {
               />
             </Box>
           )}
+
+          {/* Search: recessed bar, placeholder "I'm looking for..." — on desktop authed nav, after top links */}
+          {!isMobile &&
+            !isCompactDesktop &&
+            !forcePublicHeader &&
+            showAuthedHeader && (
+              <Box
+                ref={setSearchAnchorEl}
+                sx={{ position: 'relative', minWidth: 240, ml: 1.5 }}
+              >
+                <Box
+                  component="form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const query = searchQuery.trim();
+                    closeSearchDropdown();
+                    navigate(
+                      query
+                        ? `/directory?q=${encodeURIComponent(query)}`
+                        : '/directory',
+                    );
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: 40,
+                    minWidth: 220,
+                    maxWidth: 320,
+                    bgcolor: 'rgba(56,132,210,0.14)',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(156,187,217,0.18)',
+                    transition: 'border-color 0.2s, background-color 0.2s',
+                    '&:focus-within': {
+                      bgcolor: 'rgba(156,187,217,0.18)',
+                      borderColor: 'rgba(141,188,229,0.34)',
+                    },
+                  }}
+                >
+                  <SearchIcon
+                    sx={{
+                      ml: 1.5,
+                      mr: 1,
+                      fontSize: 22,
+                      color: 'rgba(255,255,255,0.5)',
+                    }}
+                    aria-hidden
+                  />
+                  <InputBase
+                    placeholder="I'm looking for..."
+                    value={searchQuery}
+                    onChange={(e) =>
+                      setSearchQuery(
+                        e.target.value.slice(0, SEARCH_MAX_QUERY_CHARS),
+                      )
+                    }
+                    onFocus={() =>
+                      searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                      setSearchOpen(true)
+                    }
+                    inputProps={{
+                      'aria-label': 'Search for members',
+                      'aria-expanded': searchOpen,
+                      maxLength: SEARCH_MAX_QUERY_CHARS,
+                    }}
+                    fullWidth
+                    sx={{
+                      color: 'white',
+                      fontSize: '1rem',
+                      '& .MuiInputBase-input': {
+                        py: 1,
+                        px: 0,
+                        '&::placeholder': {
+                          color: 'rgba(255,255,255,0.5)',
+                          opacity: 1,
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+                <Popper
+                  open={
+                    searchOpen &&
+                    (searchMatches.length > 0 ||
+                      searchLoading ||
+                      (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                        !searchLoading))
+                  }
+                  anchorEl={searchAnchorEl}
+                  placement="bottom-start"
+                  sx={{ zIndex: 1300 }}
+                  modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
+                >
+                  <Paper
+                    ref={searchPopperRef}
+                    elevation={8}
+                    sx={{
+                      minWidth: searchAnchorEl?.offsetWidth ?? 280,
+                      maxWidth: 360,
+                      maxHeight: 320,
+                      overflow: 'auto',
+                      ...denseMenuPaperSxFromTheme(theme),
+                    }}
+                  >
+                    {searchLoading ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          py: 2,
+                        }}
+                      >
+                        <CircularProgress
+                          size={24}
+                          sx={{
+                            color: isLightNav ? 'primary.main' : 'white',
+                          }}
+                          aria-label="Loading search"
+                        />
+                      </Box>
+                    ) : searchMatches.length === 0 ? (
+                      <Box sx={{ px: 2, py: 2 }}>
+                        <Box
+                          sx={{
+                            color: 'text.secondary',
+                            fontSize: '1rem',
+                            mb: 1,
+                          }}
+                        >
+                          No matches for &quot;{searchQuery.trim()}&quot;
+                        </Box>
+                        <Button
+                          component={RouterLink}
+                          to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
+                          size="small"
+                          onClick={closeSearchDropdown}
+                          sx={{
+                            color: 'primary.light',
+                            textTransform: 'none',
+                          }}
+                        >
+                          View all in Directory
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Stack
+                        component="ul"
+                        sx={{ listStyle: 'none', m: 0, p: 0.5 }}
+                      >
+                        {searchMatches.map((p) => {
+                          const handle = p.handle || p.id;
+                          const label = p.display_name || p.handle || handle;
+                          return (
+                            <MenuItem
+                              key={p.id}
+                              component={RouterLink}
+                              to={`/profile/${handle}`}
+                              onClick={() => {
+                                setSearchQuery('');
+                                closeSearchDropdown();
+                              }}
+                              sx={{
+                                color: 'text.primary',
+                                '&:hover': {
+                                  bgcolor: 'action.hover',
+                                },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 36 }}>
+                                <PersonIcon
+                                  sx={{
+                                    color: 'text.secondary',
+                                    fontSize: 20,
+                                  }}
+                                />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={label}
+                                secondary={
+                                  p.handle && p.handle !== label
+                                    ? `@${p.handle}`
+                                    : null
+                                }
+                                primaryTypographyProps={{ fontWeight: 600 }}
+                                secondaryTypographyProps={{
+                                  variant: 'caption',
+                                }}
+                              />
+                            </MenuItem>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </Paper>
+                </Popper>
+              </Box>
+            )}
 
           <Box sx={{ flexGrow: 1 }} />
 

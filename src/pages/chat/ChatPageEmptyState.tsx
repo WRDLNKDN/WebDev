@@ -16,6 +16,12 @@ export const ChatPageEmptyState = ({
 }: ChatPageEmptyStateProps) => {
   const theme = useTheme();
   const docked = variant === 'docked';
+  const primaryText = docked
+    ? 'rgba(252,250,255,0.96)'
+    : theme.palette.text.primary;
+  const secondaryText = docked
+    ? 'rgba(220,207,248,0.82)'
+    : theme.palette.text.secondary;
 
   return (
     <Box
@@ -59,17 +65,21 @@ export const ChatPageEmptyState = ({
           variant="overline"
           sx={{
             letterSpacing: 2,
-            color: 'text.secondary',
+            color: secondaryText,
             display: 'block',
             mb: 0.75,
           }}
         >
           Your inbox
         </Typography>
-        <Typography variant="h5" component="p" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography
+          variant="h5"
+          component="p"
+          sx={{ fontWeight: 700, mb: 1, color: primaryText }}
+        >
           Pick a conversation or start one that actually matters.
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Typography variant="body2" sx={{ mb: 0.5, color: secondaryText }}>
           Direct messages stay quick; groups help when you need more weirdlings
           in the loop.
         </Typography>

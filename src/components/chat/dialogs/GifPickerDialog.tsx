@@ -137,6 +137,15 @@ export const GifPickerDialog = ({
       fullWidth
       maxWidth="sm"
       fullScreen={false}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            bgcolor: 'rgba(3, 8, 20, 0.52)',
+          },
+        },
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
           e.preventDefault();

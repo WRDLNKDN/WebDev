@@ -1,4 +1,32 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"]
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "dependencyDashboard": true,
+  "platformAutomerge": true,
+  "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "description": "Auto-merge low-risk GitHub Action maintenance once CI passes.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "addLabels": ["renovate:automerge-safe", "github-actions"]
+    },
+    {
+      "description": "Auto-merge low-risk npm patch maintenance once CI passes.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "addLabels": ["renovate:automerge-safe", "npm"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "renovate:automerge-safe"],
+    "automerge": true,
+    "automergeType": "pr"
+  }
 }

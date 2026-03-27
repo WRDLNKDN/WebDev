@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  repository-projects: read
 
 concurrency:
   group: sync-estimate-from-size
@@ -36,6 +37,10 @@ jobs:
 
       - name: Sync Estimate from Size
         uses: actions/github-script@v8
+        env:
+          GH_PROJECT_OWNER_TYPE: ${{ vars.GH_PROJECT_OWNER_TYPE }}
+          GH_PROJECT_OWNER_LOGIN: ${{ vars.GH_PROJECT_OWNER_LOGIN }}
+          GH_PROJECT_NUMBER: ${{ vars.GH_PROJECT_NUMBER }}
         with:
           github-token: ${{ secrets.GITHUBACTION || github.token }}
           script: |

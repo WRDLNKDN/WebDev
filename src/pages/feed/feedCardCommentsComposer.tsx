@@ -90,10 +90,15 @@ export const FeedCardCommentsComposer = ({
           value={commentDraft}
           onChange={(e) => setCommentDraft(e.target.value)}
           onKeyDown={(e) => {
-            /* Enter = newline only; submit via Post button only. */
-            if (e.key === 'Enter') {
+            /* Conversational input: Enter sends; Shift+Enter inserts a newline. */
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
               e.stopPropagation();
+              if (!canSubmit) return;
+              void onSubmit();
+              return;
             }
+            if (e.key === 'Enter') e.stopPropagation();
           }}
           inputProps={{ spellCheck: false }}
           sx={{

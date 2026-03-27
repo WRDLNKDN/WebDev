@@ -15,7 +15,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AVATAR_PRESETS, DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
+import { DEFAULT_AVATAR_URL } from '../../config/avatarPresets';
 import { INTERESTS_MAX } from '../../constants/interestTaxonomy';
 import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -61,12 +61,10 @@ type EditProfileDialogProps = {
   profile: DashboardProfile | null;
   hasWeirdling?: boolean;
   avatarFallback?: string | null;
-  currentResolvedAvatarUrl?: string | null;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
   ) => Promise<void>;
   onUpload: (file: File) => Promise<string | undefined>;
-  onManageLinks?: () => void;
   onAvatarChanged?: () => void;
   /** Optional: refetch profile/projects after a successful save (e.g. dashboard). */
   onProfileSaved?: () => void;
@@ -102,10 +100,8 @@ export const EditProfileDialog = ({
   profile,
   hasWeirdling: _hasWeirdling = false,
   avatarFallback,
-  currentResolvedAvatarUrl,
   onUpdate,
   onUpload,
-  onManageLinks,
   onAvatarChanged,
   onProfileSaved,
   focusBioOnOpen = false,
@@ -380,35 +376,6 @@ export const EditProfileDialog = ({
     DEFAULT_AVATAR_URL ||
     null;
   const previewURL = `http://localhost:5173/profile/${formData.handle}`;
-  const presetUrls = AVATAR_PRESETS.map((preset) => preset.image_url);
-  const resolvedForPreset =
-    currentResolvedAvatarUrl ?? uploadedAvatarUrl ?? profile?.avatar ?? '';
-  const selectedPresetUrl = presetUrls.includes(resolvedForPreset)
-    ? resolvedForPreset
-    : DEFAULT_AVATAR_URL;
-  const handlePresetSelect = async (preset: {
-    preset_id: string;
-    name: string;
-    image_url: string;
-    description?: string;
-  }) => {
-    try {
-      setBusy(true);
-      await onUpdate({
-        avatar: preset.image_url,
-        avatar_type: 'preset',
-        use_weirdling_avatar: false,
-      } as Partial<DashboardProfile>);
-      setUploadedAvatarUrl(preset.image_url);
-      showToast({ message: 'Avatar updated.', severity: 'success' });
-      onAvatarChanged?.();
-    } catch (cause) {
-      console.error(cause);
-      showToast({ message: toMessage(cause), severity: 'error' });
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleRequestClose = (nextAction?: () => void) => {
     if (busy) return;
@@ -510,11 +477,6 @@ export const EditProfileDialog = ({
             </Box>
           ) : (
             <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Keep your public identity, directory discoverability, and
-                profile details aligned across the platform.
-              </Typography>
-
               <Box sx={sectionPanelSx}>
                 <EditProfileBasicSection
                   busy={busy}
@@ -524,13 +486,7 @@ export const EditProfileDialog = ({
                   handleAvailable={handleAvailable}
                   fileInputRef={fileInputRef}
                   currentAvatar={currentAvatar}
-                  currentResolvedAvatarUrl={currentResolvedAvatarUrl}
-                  uploadedAvatarUrl={uploadedAvatarUrl}
-                  profile={profile}
-                  selectedPresetUrl={selectedPresetUrl}
                   onFileChange={(e) => void handleFileChange(e)}
-                  onPresetSelect={(preset) => void handlePresetSelect(preset)}
-                  onAvatarChanged={onAvatarChanged}
                   onHandleChange={(value) => {
                     const normalized = value
                       .toLowerCase()
@@ -572,6 +528,7 @@ export const EditProfileDialog = ({
                     }))
                   }
                   disabled={busy}
+                  showDescription={false}
                 />
               </Box>
 
@@ -581,11 +538,6 @@ export const EditProfileDialog = ({
                   checkingHandle={checkingHandle}
                   canSave={
                     !busy && handleAvailable !== false && !checkingHandle
-                  }
-                  onManageLinks={
-                    onManageLinks
-                      ? () => handleRequestClose(onManageLinks)
-                      : undefined
                   }
                   onClose={handleRequestClose}
                   onSave={() => void handleSave()}

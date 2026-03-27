@@ -56,6 +56,7 @@ export const ChatRedirect = () => {
 
   useEffect(() => {
     if (loading) return;
+    if (!mobile && !messenger) return;
     // ?with= needs session id for canonical room lookup; avoid async createDm-only path until then
     // (Strict Mode + null currentUserId otherwise skips popout and still navigates to /feed).
     if (withUserId && !currentUserId) return;

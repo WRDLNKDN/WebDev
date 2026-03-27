@@ -61,6 +61,8 @@ const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 const SEARCH_MAX_QUERY_CHARS = 500;
+const KICKSTARTER_URL =
+  'https://www.kickstarter.com/projects/wrdlnkdn/wrdlnkdn-business-but-weirder-0';
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -511,32 +513,60 @@ export const Navbar = () => {
               />
             </Box>
             {storeEnabled && (
-              <Button
-                component="a"
-                href={storeExternalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Store, opens storefront in a new tab"
-                sx={{
-                  color: 'rgba(255,255,255,0.85)',
-                  textTransform: 'none',
-                  fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                  minWidth: 0,
-                  px: isCompactDesktop ? 1 : 1.5,
-                  py: 0.625,
-                  whiteSpace: 'nowrap',
-                  borderRadius: 1,
-                  '&:hover': {
-                    bgcolor: 'rgba(56,132,210,0.14)',
-                    color: 'white',
-                  },
-                  '&:visited': {
+              <>
+                <Button
+                  component="a"
+                  href={storeExternalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Store, opens storefront in a new tab"
+                  sx={{
                     color: 'rgba(255,255,255,0.85)',
-                  },
-                }}
-              >
-                Store
-              </Button>
+                    textTransform: 'none',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    minWidth: 0,
+                    px: isCompactDesktop ? 1 : 1.5,
+                    py: 0.625,
+                    whiteSpace: 'nowrap',
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: 'rgba(56,132,210,0.14)',
+                      color: 'white',
+                    },
+                    '&:visited': {
+                      color: 'rgba(255,255,255,0.85)',
+                    },
+                  }}
+                >
+                  Store
+                </Button>
+                <Button
+                  component="a"
+                  href={KICKSTARTER_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Kickstarter, opens in a new tab"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    textTransform: 'none',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    minWidth: 0,
+                    px: isCompactDesktop ? 1 : 1.5,
+                    py: 0.625,
+                    whiteSpace: 'nowrap',
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: 'rgba(56,132,210,0.14)',
+                      color: 'white',
+                    },
+                    '&:visited': {
+                      color: 'rgba(255,255,255,0.85)',
+                    },
+                  }}
+                >
+                  Kickstarter
+                </Button>
+              </>
             )}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&

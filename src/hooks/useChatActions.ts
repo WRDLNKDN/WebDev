@@ -32,6 +32,35 @@ export const useChatActions = ({
   fetchRoom,
   fetchMessages,
 }: Params) => {
+  const insertChatMessage = useCallback(
+    async ({
+      content,
+      roomId,
+      senderId,
+      replyToMessageId,
+    }: {
+      content: string;
+      roomId: string;
+      senderId: string;
+      replyToMessageId?: string | null;
+    }) =>
+      supabase
+        .from('chat_messages')
+        .insert({
+          room_id: roomId,
+          sender_id: senderId,
+          content: content.trim() || null,
+          is_system_message: false,
+          is_deleted: false,
+          ...(replyToMessageId
+            ? { reply_to_message_id: replyToMessageId }
+            : {}),
+        })
+        .select()
+        .single(),
+    [],
+  );
+
   const sendMessage = useCallback(
     async (
       content: string,
@@ -62,20 +91,28 @@ export const useChatActions = ({
       setSending(true);
       setError(null);
       try {
-        const { data: msg, error: insertErr } = await supabase
-          .from('chat_messages')
-          .insert({
-            room_id: roomId,
-            sender_id: session.user.id,
-            content: content.trim() || null,
-            is_system_message: false,
-            is_deleted: false,
-            ...(replyToMessageId
-              ? { reply_to_message_id: replyToMessageId }
-              : {}),
-          })
-          .select()
-          .single();
+        let { data: msg, error: insertErr } = await insertChatMessage({
+          content,
+          roomId,
+          senderId: session.user.id,
+          replyToMessageId,
+        });
+        const insertErrMessage = toMessage(insertErr ?? '');
+        const shouldRetryWithoutReplyLink =
+          Boolean(replyToMessageId) &&
+          Boolean(insertErr) &&
+          /reply_to_message_id|schema cache|column of ['"]?chat_messages/i.test(
+            insertErrMessage,
+          );
+        if (shouldRetryWithoutReplyLink) {
+          const retry = await insertChatMessage({
+            content,
+            roomId,
+            senderId: session.user.id,
+          });
+          msg = retry.data;
+          insertErr = retry.error;
+        }
         if (insertErr) throw insertErr;
 
         const currentProfile = room?.members?.find(
@@ -132,6 +169,7 @@ export const useChatActions = ({
     },
     [
       fetchMessages,
+      insertChatMessage,
       messages,
       room?.members,
       roomId,

@@ -7,6 +7,9 @@ import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
 
+const KICKSTARTER_URL =
+  'https://www.kickstarter.com/projects/wrdlnkdn/wrdlnkdn-business-but-weirder-0';
+
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
@@ -112,27 +115,49 @@ export const NavbarMobileDrawer = ({
                 </>
               )}
               {storeEnabled && (
-                <Button
-                  component="a"
-                  href={storeExternalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    window.setTimeout(() => setDrawerOpen(false), 0)
-                  }
-                  aria-label="Store, opens storefront in a new tab"
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: drawerLinkColor,
-                    textTransform: 'none',
-                    py: 1.5,
-                    minHeight: 44,
-                    touchAction: 'manipulation',
-                    ...drawerActiveWrap(isStoreRoute),
-                  }}
-                >
-                  Store
-                </Button>
+                <>
+                  <Button
+                    component="a"
+                    href={storeExternalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
+                    }
+                    aria-label="Store, opens storefront in a new tab"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                      ...drawerActiveWrap(isStoreRoute),
+                    }}
+                  >
+                    Store
+                  </Button>
+                  <Button
+                    component="a"
+                    href={KICKSTARTER_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
+                    }
+                    aria-label="Kickstarter, opens in a new tab"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Kickstarter
+                  </Button>
+                </>
               )}
             </>
           )}

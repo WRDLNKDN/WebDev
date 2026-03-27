@@ -1,7 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import EmailIcon from '@mui/icons-material/Email';
-import LinkIcon from '@mui/icons-material/Link';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +24,6 @@ export type SettingsDialogProps = {
   open: boolean;
   onClose: () => void;
   onEditProfile: () => void;
-  onManageLinks: () => void;
   onEmailPreferences?: () => void;
 };
 
@@ -33,7 +31,6 @@ export const SettingsDialog = ({
   open,
   onClose,
   onEditProfile,
-  onManageLinks,
   onEmailPreferences,
 }: SettingsDialogProps) => {
   const theme = useTheme();
@@ -51,11 +48,6 @@ export const SettingsDialog = ({
 
   const handleEditProfile = () => {
     onEditProfile();
-    onClose();
-  };
-
-  const handleManageLinks = () => {
-    onManageLinks();
     onClose();
   };
 
@@ -126,21 +118,6 @@ export const SettingsDialog = ({
             <ListItemText
               primary="Edit profile"
               secondary="Handle, tagline, bio, avatar"
-            />
-          </ListItemButton>
-          <ListItemButton
-            onClick={handleManageLinks}
-            sx={{
-              py: 2,
-              borderBottom: `1px solid ${isLight ? theme.palette.divider : 'rgba(56,132,210,0.14)'}`,
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <LinkIcon sx={{ color: 'primary.main' }} />
-            </ListItemIcon>
-            <ListItemText
-              primary="Manage links"
-              secondary="Social and professional links"
             />
           </ListItemButton>
           {onEmailPreferences && (

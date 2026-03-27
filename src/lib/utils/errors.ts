@@ -112,6 +112,11 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
     friendly: "We couldn't add that GIF. Please try another one.",
   },
   {
+    pattern: /reply_to_message_id|schema cache/i,
+    friendly:
+      "Replying isn't fully available right now. Please refresh and try again.",
+  },
+  {
     pattern: /new row violates row-level security|rls policy/i,
     friendly: "You don't have permission to do that. Try signing in again.",
   },

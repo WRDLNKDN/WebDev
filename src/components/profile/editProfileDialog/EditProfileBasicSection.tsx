@@ -12,8 +12,6 @@ import {
   useTheme,
 } from '@mui/material';
 import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
-import type { DashboardProfile } from '../../../types/profile';
-import { AvatarReplacementBox } from '../../avatar/AvatarReplacementBox';
 import { AVATAR_GRADIENT, INPUT_BG, getInputStyles } from './constants';
 import type { EditProfileFormData } from './types';
 
@@ -25,20 +23,9 @@ type Props = {
   handleAvailable: boolean | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   currentAvatar: string | null;
-  currentResolvedAvatarUrl?: string | null;
-  uploadedAvatarUrl: string | null;
-  profile: DashboardProfile | null;
-  selectedPresetUrl: string;
   onHandleChange: (value: string) => void;
   onPronounsChange: (value: string) => void;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onPresetSelect: (preset: {
-    preset_id: string;
-    name: string;
-    image_url: string;
-    description?: string;
-  }) => void;
-  onAvatarChanged?: () => void;
 };
 
 export const EditProfileBasicSection = ({
@@ -49,15 +36,9 @@ export const EditProfileBasicSection = ({
   handleAvailable,
   fileInputRef,
   currentAvatar,
-  currentResolvedAvatarUrl,
-  uploadedAvatarUrl,
-  profile,
-  selectedPresetUrl,
   onHandleChange,
   onPronounsChange,
   onFileChange,
-  onPresetSelect,
-  onAvatarChanged,
 }: Props) => {
   const theme = useTheme();
   const inputStyles = getInputStyles(theme);
@@ -69,10 +50,6 @@ export const EditProfileBasicSection = ({
           sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
         >
           Identity
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Control how your name, handle, avatar, and pronouns appear across the
-          platform.
         </Typography>
       </Box>
 
@@ -121,19 +98,6 @@ export const EditProfileBasicSection = ({
         </Box>
       </Box>
 
-      <AvatarReplacementBox
-        currentAvatarUrl={
-          currentResolvedAvatarUrl ??
-          uploadedAvatarUrl ??
-          profile?.avatar ??
-          null
-        }
-        selectedPresetUrl={selectedPresetUrl}
-        onSelectPreset={onPresetSelect}
-        onAvatarChanged={onAvatarChanged}
-        disabled={busy}
-      />
-
       <Box>
         <Typography
           variant="caption"
@@ -143,7 +107,7 @@ export const EditProfileBasicSection = ({
             mb: 0.5,
           }}
         >
-          Handle
+          User Name
         </Typography>
         <TextField
           fullWidth

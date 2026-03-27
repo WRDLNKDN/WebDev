@@ -46,7 +46,7 @@ describe('chat attachment validation', () => {
     ).toBe('File must be 2MB or smaller.');
   });
 
-  it('allows larger GIFs within the processing ceiling', () => {
+  it('allows GIFs under the 6MB upload ceiling', () => {
     expect(
       getChatAttachmentRejectionReason({
         name: 'party.gif',
@@ -56,12 +56,12 @@ describe('chat attachment validation', () => {
     ).toBeNull();
   });
 
-  it('rejects GIFs above the processing ceiling with a helpful message', () => {
+  it('rejects GIFs above the 6MB upload ceiling with a helpful message', () => {
     expect(
       getChatAttachmentRejectionReason({
         name: 'too-big.gif',
         type: 'image/gif',
-        size: 18 * 1024 * 1024,
+        size: 7 * 1024 * 1024,
       }),
     ).toBe('This GIF is too large to process. Try a smaller file.');
   });

@@ -27,6 +27,7 @@ import {
   getFirstUrlFromText,
   type ChatLinkPreview,
 } from '../../../lib/chat/linkPreview';
+import { LinkPreviewCard } from '../../../pages/feed/feedRenderUtils';
 import { truncateSnippet } from '../../../lib/chat/messageSnippet';
 import type { MessageWithExtras } from '../../../hooks/chatTypes';
 import type { ChatRoomType } from '../../../types/chat';
@@ -123,7 +124,8 @@ export const MessageList = ({
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
-  const fetchedPreviewIds = useRef<Set<string>>(new Set());
+  const linkPreviewsRef = useRef<Record<string, ChatLinkPreview | null>>({});
+  const previewUrlByMessageIdRef = useRef<Record<string, string>>({});
   const hasScrolledToMessage = useRef<string | null>(null);
 
   const handleCopyMessage = useCallback(
@@ -220,30 +222,75 @@ export const MessageList = ({
   }, [roomType, messages, currentUserId, onMessagesViewed]);
 
   useEffect(() => {
-    const nextTargets = messages
+    const nextPreviewTargets = messages
       .filter(
         (m) => !m.is_deleted && typeof m.content === 'string' && m.content,
       )
       .map((m) => ({ id: m.id, url: getFirstUrlFromText(m.content ?? '') }))
-      .filter((x): x is { id: string; url: string } => Boolean(x.url))
-      .filter((x) => !fetchedPreviewIds.current.has(x.id));
+      .filter((x): x is { id: string; url: string | null } => Boolean(x.id));
 
-    if (nextTargets.length === 0) return;
-    // Mark as in-flight before the first await so concurrent renders don't re-queue them
-    nextTargets.forEach((t) => fetchedPreviewIds.current.add(t.id));
+    const nextPreviewUrlByMessageId: Record<string, string> = {};
+    for (const target of nextPreviewTargets) {
+      if (target.url) {
+        nextPreviewUrlByMessageId[target.id] = target.url;
+      }
+    }
+
+    const previousPreviewUrlByMessageId = previewUrlByMessageIdRef.current;
+    previewUrlByMessageIdRef.current = nextPreviewUrlByMessageId;
+
+    setLinkPreviews((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [messageId, previousUrl] of Object.entries(
+        previousPreviewUrlByMessageId,
+      )) {
+        if (nextPreviewUrlByMessageId[messageId] !== previousUrl) {
+          if (messageId in next) {
+            delete next[messageId];
+            changed = true;
+          }
+        }
+      }
+      for (const [messageId] of Object.entries(prev)) {
+        if (!nextPreviewUrlByMessageId[messageId]) {
+          if (messageId in next) {
+            delete next[messageId];
+            changed = true;
+          }
+        }
+      }
+      const resolved = changed ? next : prev;
+      linkPreviewsRef.current = resolved;
+      return resolved;
+    });
+
+    const targetsToFetch = Object.entries(nextPreviewUrlByMessageId)
+      .filter(
+        ([messageId, url]) =>
+          previousPreviewUrlByMessageId[messageId] !== url ||
+          !(messageId in linkPreviewsRef.current),
+      )
+      .map(([id, url]) => ({ id, url }));
+
+    if (targetsToFetch.length === 0) return;
     let cancelled = false;
     void (async () => {
-      for (const target of nextTargets) {
+      for (const target of targetsToFetch) {
         const preview = await fetchChatLinkPreview(target.url);
         if (cancelled) return;
-        setLinkPreviews((prev) => ({ ...prev, [target.id]: preview }));
+        if (previewUrlByMessageIdRef.current[target.id] !== target.url)
+          continue;
+        setLinkPreviews((prev) => {
+          const next = { ...prev, [target.id]: preview };
+          linkPreviewsRef.current = next;
+          return next;
+        });
       }
     })();
     return () => {
       cancelled = true;
     };
-    // linkPreviews intentionally omitted from deps — fetchedPreviewIds ref deduplicates
-    // without causing this effect to re-run every time a preview resolves.
   }, [messages]);
 
   const handleEditSubmit = () => {
@@ -568,73 +615,15 @@ export const MessageList = ({
                   )}
                 </Box>
               )}
-              {linkPreviews[msg.id] && (
-                <Box
-                  component="a"
-                  href={linkPreviews[msg.id]?.url ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    mt: 0.6,
-                    display: 'block',
-                    width: '100%',
-                    maxWidth: 340,
-                    textDecoration: 'none',
-                    borderRadius: 1.5,
-                    overflow: 'hidden',
-                    border: `1px solid ${alpha(theme.palette.primary.light, 0.28)}`,
-                    bgcolor: isLightChrome
-                      ? alpha(theme.palette.common.black, 0.04)
-                      : 'rgba(0,0,0,0.25)',
-                  }}
-                >
-                  {linkPreviews[msg.id]?.image && (
-                    <Box
-                      component="img"
-                      src={linkPreviews[msg.id]?.image}
-                      alt={linkPreviews[msg.id]?.title || 'Link preview'}
-                      width={400}
-                      height={140}
-                      sx={{
-                        width: '100%',
-                        height: 140,
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                  )}
-                  <Box sx={{ p: 1 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mb: 0.25 }}
-                    >
-                      {linkPreviews[msg.id]?.siteName || 'Link'}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      sx={{ lineHeight: 1.3, mb: 0.25 }}
-                    >
-                      {linkPreviews[msg.id]?.title || linkPreviews[msg.id]?.url}
-                    </Typography>
-                    {linkPreviews[msg.id]?.description && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          display: '-webkit-box',
-                          overflow: 'hidden',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {linkPreviews[msg.id]?.description}
-                      </Typography>
-                    )}
+              {(() => {
+                const preview = linkPreviews[msg.id];
+                if (!preview) return null;
+                return (
+                  <Box sx={{ mt: 0.6, width: '100%', maxWidth: 340 }}>
+                    <LinkPreviewCard preview={preview} />
                   </Box>
-                </Box>
-              )}
+                );
+              })()}
               {/* Reactions: existing pills + one emoji icon that opens popup menu (like message input) */}
               <Box
                 sx={{

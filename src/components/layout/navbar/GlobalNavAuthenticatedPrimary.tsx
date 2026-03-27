@@ -6,6 +6,9 @@ import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
 import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
+const KICKSTARTER_URL =
+  'https://www.kickstarter.com/projects/wrdlnkdn/wrdlnkdn-business-but-weirder-0';
+
 export type GlobalNavAuthenticatedPrimaryProps = {
   variant: 'desktop' | 'drawer';
   path: string;
@@ -90,6 +93,15 @@ export const GlobalNavAuthenticatedPrimary = ({
     drawerLinkColor,
     onDrawerNavigate,
     desktopActiveSx,
+    drawerActiveWrap,
+  });
+  const kickstarterButton = renderGlobalNavKickstarterButton({
+    storeEnabled,
+    variant,
+    desktopFontSize,
+    desktopPx,
+    drawerLinkColor,
+    onDrawerNavigate,
     drawerActiveWrap,
   });
 
@@ -230,6 +242,7 @@ export const GlobalNavAuthenticatedPrimary = ({
         </Button>
       ) : null}
       {variant === 'drawer' ? storeButton : null}
+      {variant === 'drawer' ? kickstarterButton : null}
     </>
   );
 };
@@ -272,7 +285,7 @@ function renderGlobalNavStoreButton({
       onClick={() => {
         // Close drawer after navigation when rendering inside the mobile drawer
         if (variant === 'drawer' && onDrawerNavigate) {
-          window.setTimeout(onDrawerNavigate, 0);
+          globalThis.setTimeout(onDrawerNavigate, 0);
         }
       }}
       aria-label="Store, opens storefront in a new tab"
@@ -289,6 +302,60 @@ function renderGlobalNavStoreButton({
       }}
     >
       Store
+    </Button>
+  );
+}
+
+function renderGlobalNavKickstarterButton({
+  storeEnabled,
+  variant,
+  desktopFontSize,
+  desktopPx,
+  drawerLinkColor,
+  onDrawerNavigate,
+  drawerActiveWrap,
+}: Omit<StoreNavParams, 'isStoreRoute' | 'desktopActiveSx'>): ReactNode {
+  if (!storeEnabled) return null;
+
+  const sharedButtonSx =
+    variant === 'desktop'
+      ? {
+          fontSize: desktopFontSize,
+          px: desktopPx,
+        }
+      : {
+          justifyContent: 'flex-start',
+          color: drawerLinkColor,
+          py: 1.5,
+          ...drawerActiveWrap(false),
+        };
+
+  return (
+    <Button
+      key="global-nav-kickstarter"
+      component="a"
+      href={KICKSTARTER_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => {
+        if (variant === 'drawer' && onDrawerNavigate) {
+          globalThis.setTimeout(onDrawerNavigate, 0);
+        }
+      }}
+      aria-label="Kickstarter, opens in a new tab"
+      sx={{
+        color: 'rgba(255,255,255,0.85)',
+        textTransform: 'none',
+        minWidth: 0,
+        whiteSpace: 'nowrap',
+        ...sharedButtonSx,
+        '&:visited': {
+          color:
+            variant === 'desktop' ? 'rgba(255,255,255,0.85)' : drawerLinkColor,
+        },
+      }}
+    >
+      Kickstarter
     </Button>
   );
 }

@@ -135,7 +135,7 @@ const IdentityBioBlock = ({
         size="small"
         startIcon={<EditOutlinedIcon sx={{ fontSize: 18 }} />}
         onClick={() => onAddBio()}
-        aria-label="Add bio to your profile"
+        aria-label="Add bio"
         sx={{
           mt: 0.5,
           my: 1,

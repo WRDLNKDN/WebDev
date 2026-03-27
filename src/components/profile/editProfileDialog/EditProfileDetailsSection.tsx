@@ -26,7 +26,6 @@ type Props = {
   busy: boolean;
   checkingHandle: boolean;
   canSave: boolean;
-  onManageLinks?: () => void;
   onClose: () => void;
   onSave: () => void;
   bioInputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
@@ -52,7 +51,6 @@ export const EditProfileDetailsSection = ({
   busy,
   checkingHandle,
   canSave,
-  onManageLinks,
   onClose,
   onSave,
   bioInputRef,
@@ -72,10 +70,6 @@ export const EditProfileDetailsSection = ({
         >
           Directory And Profile Details
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
-          Keep your discovery settings, skills, and bio aligned across profile
-          and directory surfaces.
-        </Typography>
       </Box>
 
       <Box>
@@ -88,7 +82,6 @@ export const EditProfileDetailsSection = ({
           disabled={busy}
           variant="filled"
           sx={inputStyles}
-          helperText="Shown in Directory. E.g. San Francisco, CA."
         />
       </Box>
 
@@ -129,45 +122,7 @@ export const EditProfileDetailsSection = ({
             <MenuItem value="connections_only">Only my connections</MenuItem>
           </Select>
         </FormControl>
-        <Typography
-          variant="caption"
-          sx={{
-            display: 'block',
-            mt: 0.5,
-            color: 'text.secondary',
-          }}
-        >
-          Controls who can find you in the Directory.
-        </Typography>
       </Box>
-
-      {onManageLinks ? (
-        <Box>
-          <FieldHeading>DIRECTORY LINKS</FieldHeading>
-          <Typography
-            variant="caption"
-            sx={{ display: 'block', mb: 1, color: 'text.secondary' }}
-          >
-            Add links shown on your profile and in Directory views.
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={onManageLinks}
-            disabled={busy}
-            sx={{
-              textTransform: 'none',
-              borderColor: isLight ? 'primary.main' : 'rgba(141,188,229,0.38)',
-              color: isLight ? 'primary.main' : 'white',
-              '&:hover': {
-                borderColor: PURPLE_ACCENT,
-                bgcolor: isLight ? 'action.hover' : 'rgba(56,132,210,0.10)',
-              },
-            }}
-          >
-            Add or Edit Links
-          </Button>
-        </Box>
-      ) : null}
 
       <Box>
         <FieldHeading>SKILLS</FieldHeading>
@@ -179,7 +134,6 @@ export const EditProfileDetailsSection = ({
           disabled={busy}
           variant="filled"
           sx={inputStyles}
-          helperText="List skills or tags for your profile."
         />
       </Box>
 

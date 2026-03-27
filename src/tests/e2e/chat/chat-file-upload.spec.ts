@@ -18,8 +18,8 @@ const MID_SIZED_GIF = {
 const TOO_LARGE_GIF = {
   name: 'too-large.gif',
   mimeType: 'image/gif',
-  /** Above CHAT_GIF_PROCESSING_MAX_FILE_BYTES (16MB). */
-  buffer: Buffer.alloc(18 * 1024 * 1024, 1),
+  /** Above the 6MB manual GIF upload ceiling. */
+  buffer: Buffer.alloc(7 * 1024 * 1024, 1),
 };
 
 const E2E_ROOM_ID = 'e2e-room-1111-4111-8111-111111111111';
@@ -158,7 +158,7 @@ test.describe('Chat file upload', () => {
     ).toBeEnabled({ timeout: 15_000 });
   });
 
-  test('allows a larger gif within the processing ceiling and shows preparation feedback', async ({
+  test('allows a larger gif within the 6MB upload ceiling', async ({
     page,
   }) => {
     test.setTimeout(90_000);
@@ -178,14 +178,14 @@ test.describe('Chat file upload', () => {
     await fileInput.setInputFiles(MID_SIZED_GIF);
 
     await expect(
-      page.getByText(/large gif.*optimized for faster delivery/i),
-    ).toBeVisible();
+      page.getByText('This GIF is too large to process. Try a smaller file.'),
+    ).not.toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Send message' }),
     ).toBeEnabled();
   });
 
-  test('processes a larger gif through the backend flow and saves it as video media', async ({
+  test('uploads a gif under 6MB directly without the optimizer flow', async ({
     page,
   }) => {
     test.setTimeout(90_000);
@@ -195,23 +195,31 @@ test.describe('Chat file upload', () => {
     await stubChatRoom(page);
 
     let processedGifRequested = false;
+    let uploadPath: string | null = null;
+    let uploadMimeType: string | null = null;
     let attachmentInsertMime: string | null = null;
 
     await page.route('**/api/chat/attachments/process-gif', async (route) => {
       processedGifRequested = true;
       await route.fulfill({
-        status: 200,
+        status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({
-          ok: true,
-          data: {
-            path: `${USER_ID}/processed-party.mp4`,
-            mime: 'video/mp4',
-            size: 1_024_000,
-          },
-        }),
+        body: JSON.stringify({ error: 'should not be called' }),
       });
     });
+
+    await page.route(
+      '**/storage/v1/object/chat-attachments/**',
+      async (route) => {
+        uploadPath = route.request().url();
+        uploadMimeType = await route.request().headerValue('content-type');
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ Key: `${USER_ID}/party.gif` }),
+        });
+      },
+    );
 
     await page.route('**/rest/v1/chat_message_attachments*', async (route) => {
       if (route.request().method() === 'POST') {
@@ -223,9 +231,9 @@ test.describe('Chat file upload', () => {
           body: JSON.stringify({
             id: 'attachment-1',
             message_id: 'msg-e2e-1',
-            storage_path: `${USER_ID}/processed-party.mp4`,
-            mime_type: body.mime_type ?? 'video/mp4',
-            file_size: 1_024_000,
+            storage_path: `${USER_ID}/party.gif`,
+            mime_type: body.mime_type ?? 'image/gif',
+            file_size: MID_SIZED_GIF.buffer.length,
             created_at: new Date().toISOString(),
           }),
         });
@@ -239,9 +247,9 @@ test.describe('Chat file upload', () => {
           {
             id: 'attachment-1',
             message_id: 'msg-e2e-1',
-            storage_path: `${USER_ID}/processed-party.mp4`,
-            mime_type: 'video/mp4',
-            file_size: 1_024_000,
+            storage_path: `${USER_ID}/party.gif`,
+            mime_type: 'image/gif',
+            file_size: MID_SIZED_GIF.buffer.length,
             created_at: new Date().toISOString(),
           },
         ]),
@@ -256,9 +264,9 @@ test.describe('Chat file upload', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             signedUrl:
-              'https://example.supabase.co/storage/v1/object/sign/chat-attachments/fake.mp4?token=e2e',
+              'https://example.supabase.co/storage/v1/object/sign/chat-attachments/fake.gif?token=e2e',
             signedURL:
-              '/storage/v1/object/sign/chat-attachments/fake.mp4?token=e2e',
+              '/storage/v1/object/sign/chat-attachments/fake.gif?token=e2e',
           }),
         });
       },
@@ -276,12 +284,18 @@ test.describe('Chat file upload', () => {
     await page.getByRole('textbox', { name: 'Message' }).fill('processed gif');
     await page.getByRole('button', { name: 'Send message' }).click();
 
-    await expect.poll(() => processedGifRequested).toBe(true);
-    await expect.poll(() => attachmentInsertMime).toBe('video/mp4');
-    await expect(page.locator('video')).toHaveCount(1);
+    await expect.poll(() => processedGifRequested).toBe(false);
+    await expect.poll(() => attachmentInsertMime).toBe('image/gif');
+    await expect
+      .poll(() => uploadPath)
+      .toContain('/storage/v1/object/chat-attachments/');
+    await expect
+      .poll(() => uploadMimeType ?? '')
+      .toMatch(/^(image\/gif|multipart\/form-data;)/);
+    await expect(page.locator('img[alt="GIF"]')).toHaveCount(1);
   });
 
-  test('rejects a gif above the processing ceiling with a clear message', async ({
+  test('rejects a gif above the 6MB upload ceiling with a clear message', async ({
     page,
   }) => {
     test.setTimeout(90_000);

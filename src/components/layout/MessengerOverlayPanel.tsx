@@ -256,7 +256,7 @@ export const MessengerOverlayPanel = ({
       </Tooltip>
       <Tooltip title="Close">
         <IconButton
-          aria-label="Dismiss messaging panel"
+          aria-label="Close messages"
           onClick={onClose}
           size="small"
           sx={headerIconSx}

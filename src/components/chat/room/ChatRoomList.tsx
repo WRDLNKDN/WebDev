@@ -89,6 +89,12 @@ export const ChatRoomList = ({
   } | null>(null);
   const viewMenuId = useId();
   const base = chatPathPrefix.replace(/\/$/, '');
+  const panelPrimaryText = isLightChrome
+    ? theme.palette.text.primary
+    : 'rgba(252,250,255,0.96)';
+  const panelSecondaryText = isLightChrome
+    ? theme.palette.text.secondary
+    : 'rgba(220,207,248,0.9)';
 
   const visibleRooms = useMemo(
     () =>
@@ -131,6 +137,7 @@ export const ChatRoomList = ({
             ? alpha(theme.palette.background.paper, 0.92)
             : 'linear-gradient(180deg, rgba(10,16,34,0.88) 0%, rgba(10,16,34,0.62) 100%)',
           backdropFilter: isLightChrome ? 'none' : 'blur(14px)',
+          color: panelPrimaryText,
         }}
       >
         <Stack
@@ -146,6 +153,7 @@ export const ChatRoomList = ({
               variant="subtitle1"
               component="h2"
               fontWeight={700}
+              sx={{ color: panelPrimaryText }}
             >
               Messages
             </Typography>
@@ -180,7 +188,7 @@ export const ChatRoomList = ({
               aria-controls={viewMenuAnchor ? viewMenuId : undefined}
               onClick={(e) => setViewMenuAnchor(e.currentTarget)}
               sx={{
-                color: 'text.secondary',
+                color: panelSecondaryText,
                 '&:hover': {
                   bgcolor: isLightChrome
                     ? alpha(theme.palette.primary.main, 0.06)
@@ -204,11 +212,23 @@ export const ChatRoomList = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ opacity: 0.7 }} />
+                <SearchIcon
+                  fontSize="small"
+                  sx={{ opacity: 0.7, color: panelSecondaryText }}
+                />
               </InputAdornment>
             ),
           }}
-          sx={{ mb: 1.35 }}
+          sx={{
+            mb: 1.35,
+            '& .MuiInputBase-root': {
+              color: panelPrimaryText,
+            },
+            '& .MuiInputBase-input::placeholder': {
+              color: panelSecondaryText,
+              opacity: 1,
+            },
+          }}
         />
         <Popover
           id={viewMenuId}
@@ -233,6 +253,13 @@ export const ChatRoomList = ({
                 onChange={(event) =>
                   setFilter(event.target.value as ChatRoomFilter)
                 }
+                sx={
+                  isLightChrome
+                    ? undefined
+                    : {
+                        color: panelPrimaryText,
+                      }
+                }
               >
                 {CHAT_ROOM_FILTER_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -249,6 +276,13 @@ export const ChatRoomList = ({
                 label="Sort"
                 onChange={(event) =>
                   setSort(event.target.value as ChatRoomSort)
+                }
+                sx={
+                  isLightChrome
+                    ? undefined
+                    : {
+                        color: panelPrimaryText,
+                      }
                 }
               >
                 {CHAT_ROOM_SORT_OPTIONS.map((option) => (
@@ -357,23 +391,24 @@ export const ChatRoomList = ({
           overflow: 'auto',
           py: 0,
           px: 0.5,
+          color: panelPrimaryText,
         }}
       >
         {loading ? (
           <ListItemButton disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color={panelSecondaryText}>
               Loading…
             </Typography>
           </ListItemButton>
         ) : rooms.length === 0 ? (
           <ListItemButton disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color={panelSecondaryText}>
               No conversations yet
             </Typography>
           </ListItemButton>
         ) : filteredRooms.length === 0 ? (
           <ListItemButton disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color={panelSecondaryText}>
               {searchQuery.trim()
                 ? 'No matches for your search'
                 : 'No conversations match this view'}
@@ -401,6 +436,7 @@ export const ChatRoomList = ({
                 px: { xs: 1.15, sm: 1.35 },
                 borderRadius: 0,
                 my: 0,
+                color: panelPrimaryText,
                 '& .chat-room-row-actions': {
                   opacity: { xs: 1, md: 0 },
                   transition: 'opacity 140ms ease',
@@ -448,7 +484,12 @@ export const ChatRoomList = ({
                       }}
                     />
                   )}
-                  <Typography variant="body2" fontWeight={600} noWrap>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    noWrap
+                    sx={{ color: panelPrimaryText }}
+                  >
                     {getChatRoomLabel(room, currentUserId)}
                   </Typography>
                   {room.is_favorite ? (
@@ -461,7 +502,7 @@ export const ChatRoomList = ({
                 </Stack>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
+                  color={panelSecondaryText}
                   sx={{
                     display: 'block',
                     overflow: 'hidden',

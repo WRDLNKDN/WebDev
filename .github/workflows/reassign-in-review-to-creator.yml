@@ -1,10 +1,8 @@
-name: 📅 Set Phase 1 Target Date
+name: 👀 Reassign In Review to Creator
 
 on:
-  issues:
-    types: [opened, edited, milestoned]
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       owner_type:
@@ -25,20 +23,20 @@ on:
 
 permissions:
   contents: read
-  issues: read
+  issues: write
   repository-projects: read
 
 concurrency:
-  group: set-phase1-target-date
+  group: reassign-in-review-to-creator
   cancel-in-progress: false
 
 jobs:
-  set-target-date:
+  reassign:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set Target Date for Phase 1 when blank
+      - name: Reassign In Review items to their original creator
         uses: actions/github-script@v8
         env:
           GH_PROJECT_OWNER_TYPE: ${{ vars.GH_PROJECT_OWNER_TYPE }}
@@ -47,5 +45,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUBACTION || github.token }}
           script: |
-            const run = require('./scripts/github-projects/set-phase1-target-date.cjs');
+            const run = require('./scripts/github-projects/reassign-in-review-to-creator.cjs');
             await run({ github, context, core });

@@ -7,9 +7,10 @@ import LinkIcon from '@mui/icons-material/Link';
 import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
 import ThumbDownOffAltOutlinedIcon from '@mui/icons-material/ThumbDownOffAltOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import { PostCard } from '../../components/post';
+import { fetchLinkPreview, type LinkPreviewData } from '../../lib/linkPreview';
 import {
   extractBodyUrls,
   isGifUrl,
@@ -105,8 +106,15 @@ export const FeedCard = ({
   const linkPreview = item.payload?.link_preview as
     | LinkPreviewPayload
     | undefined;
+  const [fallbackLinkPreview, setFallbackLinkPreview] =
+    useState<LinkPreviewData | null>(null);
   const bodyGifUrls = useMemo(
     () => extractBodyUrls(body).filter(isGifUrl),
+    [body],
+  );
+  const previewTargetUrl = useMemo(
+    () =>
+      extractBodyUrls(body).find((candidate) => !isGifUrl(candidate)) ?? null,
     [body],
   );
   const bodyGifUrlSet = useMemo(() => new Set(bodyGifUrls), [bodyGifUrls]);
@@ -135,6 +143,7 @@ export const FeedCard = ({
     return ordered;
   }, [bodyGifUrls, postAttachmentImages]);
   const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
+  const resolvedLinkPreview = linkPreview ?? fallbackLinkPreview ?? undefined;
   const canonicalPostUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/feed?post=${item.id}`
@@ -188,6 +197,21 @@ export const FeedCard = ({
       setSavingPostEdit,
       setIsEditingPost,
     });
+
+  useEffect(() => {
+    if (linkPreview?.url || !previewTargetUrl) {
+      setFallbackLinkPreview(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const preview = await fetchLinkPreview(previewTargetUrl);
+      if (!cancelled) setFallbackLinkPreview(preview);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [linkPreview?.url, previewTargetUrl]);
 
   return (
     <>
@@ -308,7 +332,7 @@ export const FeedCard = ({
           bodyTextWithoutGifUrls={bodyTextWithoutGifUrls}
           bodyGifUrls={bodyGifUrls}
           openImageLightbox={openImageLightbox}
-          linkPreview={linkPreview}
+          linkPreview={resolvedLinkPreview}
           isLinkPreviewDismissed={isLinkPreviewDismissed}
           onDismissLinkPreview={onDismissLinkPreview}
           postAttachmentImages={postAttachmentImages}

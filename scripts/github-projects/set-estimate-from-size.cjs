@@ -4,69 +4,24 @@
  * Loaded via require(); github-script passes { github, context, core }.
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
+const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
+const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
 const SIZE_TO_ESTIMATE = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
 
-async function handleProjectV2ItemEstimate({ github, context, core }) {
-  const itemNodeId = context.payload.projects_v2_item?.node_id;
-  if (!itemNodeId) {
-    core.info('No projects_v2_item.node_id; skipping.');
-    return;
-  }
-  await syncEstimateFromSize(github, core, itemNodeId, null, SIZE_TO_ESTIMATE);
-}
-
 async function handleWorkflowDispatchEstimate({ github, context, core }) {
-  const inputs = context.payload.inputs || {};
-  const ownerType = inputs.owner_type;
-  const ownerLogin = inputs.owner_login;
-  const projectNumber = Number(inputs.project_number);
-
-  if (!ownerLogin || !Number.isFinite(projectNumber)) {
-    core.setFailed('owner_login and project_number are required.');
+  const config = getProjectBackfillConfig(context, core);
+  if (!config) {
     return;
   }
-
-  const projectQuery =
-    ownerType === 'user'
-      ? `query($login: String!, $number: Int!) {
-            user(login: $login) {
-              projectV2(number: $number) {
-                id
-                fields(first: 50) {
-                  nodes {
-                    __typename
-                    ... on ProjectV2FieldCommon { id name }
-                  }
-                }
-              }
-            }
-          }`
-      : `query($login: String!, $number: Int!) {
-            organization(login: $login) {
-              projectV2(number: $number) {
-                id
-                fields(first: 50) {
-                  nodes {
-                    __typename
-                    ... on ProjectV2FieldCommon { id name }
-                  }
-                }
-              }
-            }
-          }`;
-
-  const root = await github.graphql(projectQuery, {
-    login: ownerLogin,
-    number: projectNumber,
+  const project = await resolveProjectV2(github, {
+    ...config,
+    includeFields: true,
   });
-
-  const project =
-    ownerType === 'user' ? root.user?.projectV2 : root.organization?.projectV2;
 
   if (!project?.id) {
     core.setFailed(
-      `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
+      `Project not found for ${config.ownerType} ${config.ownerLogin} #${config.projectNumber}`,
     );
     return;
   }
@@ -101,12 +56,10 @@ async function handleWorkflowDispatchEstimate({ github, context, core }) {
 }
 
 async function runSetEstimateFromSize({ github, context, core }) {
-  if (context.eventName === 'projects_v2_item') {
-    await handleProjectV2ItemEstimate({ github, context, core });
-    return;
-  }
-
-  if (context.eventName === 'workflow_dispatch') {
+  if (
+    context.eventName === 'workflow_dispatch' ||
+    context.eventName === 'schedule'
+  ) {
     await handleWorkflowDispatchEstimate({ github, context, core });
     return;
   }

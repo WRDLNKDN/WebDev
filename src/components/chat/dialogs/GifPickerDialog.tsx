@@ -19,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getTrendingChatGifs,
   normalizeGifErrorMessage,
@@ -55,23 +55,39 @@ export const GifPickerDialog = ({
   const [results, setResults] = useState<
     Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
   >([]);
+  const latestRequestIdRef = useRef(0);
+  const lastAttemptRef = useRef<{
+    query: string;
+    filter: GifContentFilter;
+  }>({
+    query: '',
+    filter: 'medium',
+  });
 
   const loadGifs = useCallback(
     async (q: string, filter: GifContentFilter = contentFilter) => {
+      const trimmedQuery = q.trim();
+      const requestId = latestRequestIdRef.current + 1;
+      latestRequestIdRef.current = requestId;
+      lastAttemptRef.current = { query: trimmedQuery, filter };
       setLoading(true);
       setError(null);
       try {
-        const gifs = q.trim()
-          ? await searchChatGifs(q.trim(), 24, filter)
+        const gifs = trimmedQuery
+          ? await searchChatGifs(trimmedQuery, 24, filter)
           : await getTrendingChatGifs(24, filter);
+        if (latestRequestIdRef.current !== requestId) return;
         setResults(gifs);
       } catch (e) {
+        if (latestRequestIdRef.current !== requestId) return;
         setResults([]);
         const raw =
           e instanceof Error ? e.message : 'Could not load GIFs. Try again.';
         setError(normalizeGifErrorMessage(raw));
       } finally {
-        setLoading(false);
+        if (latestRequestIdRef.current === requestId) {
+          setLoading(false);
+        }
       }
     },
     [contentFilter],
@@ -83,12 +99,28 @@ export const GifPickerDialog = ({
     }
   }, [open, loadGifs, results.length]);
 
+  useEffect(() => {
+    if (open) return;
+    latestRequestIdRef.current += 1;
+    setQuery('');
+    setLoading(false);
+    setError(null);
+    setResults([]);
+    setContentFilter('medium');
+    lastAttemptRef.current = { query: '', filter: 'medium' };
+  }, [open]);
+
   const handleSearch = useCallback(
     (q: string, filter?: GifContentFilter) => {
-      void loadGifs(q, filter ?? contentFilter);
+      loadGifs(q, filter ?? contentFilter).catch(() => {});
     },
     [loadGifs, contentFilter],
   );
+
+  const handleRetry = useCallback(() => {
+    const { query: lastQuery, filter: lastFilter } = lastAttemptRef.current;
+    loadGifs(lastQuery, lastFilter).catch(() => {});
+  }, [loadGifs]);
 
   const handlePick = useCallback(
     (gifUrl: string, title?: string) => {
@@ -232,11 +264,7 @@ export const GifPickerDialog = ({
             <Typography variant="body2" color="error" sx={{ mb: 1 }}>
               {error}
             </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleSearch(query)}
-            >
+            <Button size="small" variant="outlined" onClick={handleRetry}>
               Try again
             </Button>
           </Box>

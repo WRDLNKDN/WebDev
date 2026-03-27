@@ -177,10 +177,6 @@ export const EditProfileIndustrySection = ({
       >
         Industry Coverage
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Choose the primary industries and sub-industries members can use to
-        discover you.
-      </Typography>
       <Stack spacing={2.25}>
         {formData.industries.map((group, idx) => (
           <Box
@@ -253,31 +249,6 @@ export const EditProfileIndustrySection = ({
                 ))}
               </Select>
             </FormControl>
-
-            {idx === 0 ? (
-              <Stack spacing={0.6} sx={{ mt: 0.75, mb: 1.25, px: 0.25 }}>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    color: 'text.secondary',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  Used for Directory filtering.
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    color: 'text.secondary',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  Add up to 5 industries. Each can have up to 8 sub-industries.
-                </Typography>
-              </Stack>
-            ) : null}
 
             <Autocomplete
               multiple
@@ -451,10 +422,6 @@ export const EditProfileIndustrySection = ({
         >
           Other
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Add niche or cross-industry labels. Type and press Enter, or paste
-          comma-separated values.
-        </Typography>
         {otherValues.length > 0 ? (
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.25 }}>
             {otherValues.map((value) => (
@@ -483,7 +450,6 @@ export const EditProfileIndustrySection = ({
           value={otherInputValue}
           onChange={(e) => setOtherInputValue(e.target.value)}
           placeholder="e.g. FinTech, DevSecOps"
-          helperText="Enter adds typed text; commas split multiple entries."
           aria-label="Other industries"
           onKeyDown={(event) => {
             if (

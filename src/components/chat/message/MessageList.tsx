@@ -27,6 +27,7 @@ import {
   getFirstUrlFromText,
   type ChatLinkPreview,
 } from '../../../lib/chat/linkPreview';
+import { LinkPreviewCard } from '../../../pages/feed/feedRenderUtils';
 import { truncateSnippet } from '../../../lib/chat/messageSnippet';
 import type { MessageWithExtras } from '../../../hooks/chatTypes';
 import type { ChatRoomType } from '../../../types/chat';
@@ -568,73 +569,15 @@ export const MessageList = ({
                   )}
                 </Box>
               )}
-              {linkPreviews[msg.id] && (
-                <Box
-                  component="a"
-                  href={linkPreviews[msg.id]?.url ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    mt: 0.6,
-                    display: 'block',
-                    width: '100%',
-                    maxWidth: 340,
-                    textDecoration: 'none',
-                    borderRadius: 1.5,
-                    overflow: 'hidden',
-                    border: `1px solid ${alpha(theme.palette.primary.light, 0.28)}`,
-                    bgcolor: isLightChrome
-                      ? alpha(theme.palette.common.black, 0.04)
-                      : 'rgba(0,0,0,0.25)',
-                  }}
-                >
-                  {linkPreviews[msg.id]?.image && (
-                    <Box
-                      component="img"
-                      src={linkPreviews[msg.id]?.image}
-                      alt={linkPreviews[msg.id]?.title || 'Link preview'}
-                      width={400}
-                      height={140}
-                      sx={{
-                        width: '100%',
-                        height: 140,
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                  )}
-                  <Box sx={{ p: 1 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mb: 0.25 }}
-                    >
-                      {linkPreviews[msg.id]?.siteName || 'Link'}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      sx={{ lineHeight: 1.3, mb: 0.25 }}
-                    >
-                      {linkPreviews[msg.id]?.title || linkPreviews[msg.id]?.url}
-                    </Typography>
-                    {linkPreviews[msg.id]?.description && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          display: '-webkit-box',
-                          overflow: 'hidden',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {linkPreviews[msg.id]?.description}
-                      </Typography>
-                    )}
+              {(() => {
+                const preview = linkPreviews[msg.id];
+                if (!preview) return null;
+                return (
+                  <Box sx={{ mt: 0.6, width: '100%', maxWidth: 340 }}>
+                    <LinkPreviewCard preview={preview} />
                   </Box>
-                </Box>
-              )}
+                );
+              })()}
               {/* Reactions: existing pills + one emoji icon that opens popup menu (like message input) */}
               <Box
                 sx={{

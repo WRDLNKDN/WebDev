@@ -1,0 +1,54 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+describe('renovate config', () => {
+  const configPath = resolve(process.cwd(), 'renovate.json');
+  const config = JSON.parse(readFileSync(configPath, 'utf8')) as {
+    platformAutomerge?: boolean;
+    packageRules?: Array<Record<string, unknown>>;
+    vulnerabilityAlerts?: Record<string, unknown>;
+  };
+
+  it('enables platform automerge for safe Renovate PRs', () => {
+    expect(config.platformAutomerge).toBe(true);
+  });
+
+  it('marks low-risk github-actions and npm updates as safe to automerge', () => {
+    const packageRules = config.packageRules ?? [];
+    const safeRules = packageRules.filter(
+      (rule) =>
+        Array.isArray(rule.addLabels) &&
+        rule.addLabels.includes('renovate:automerge-safe'),
+    );
+
+    expect(
+      safeRules.some(
+        (rule) =>
+          JSON.stringify(rule.matchManagers) ===
+            JSON.stringify(['github-actions']) &&
+          JSON.stringify(rule.matchUpdateTypes) ===
+            JSON.stringify(['patch', 'pin', 'digest']) &&
+          rule.automerge === true,
+      ),
+    ).toBe(true);
+
+    expect(
+      safeRules.some(
+        (rule) =>
+          JSON.stringify(rule.matchManagers) === JSON.stringify(['npm']) &&
+          JSON.stringify(rule.matchUpdateTypes) ===
+            JSON.stringify(['patch', 'pin', 'digest']) &&
+          rule.automerge === true,
+      ),
+    ).toBe(true);
+  });
+
+  it('auto-merges Renovate vulnerability alert PRs', () => {
+    expect(config.vulnerabilityAlerts).toMatchObject({
+      enabled: true,
+      automerge: true,
+      automergeType: 'pr',
+    });
+  });
+});

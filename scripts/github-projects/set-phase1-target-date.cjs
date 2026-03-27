@@ -9,6 +9,8 @@
  * secret PROJECT_PHASE1_TARGET_DATE_TOKEN (same pattern as set-estimate-from-size).
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
+const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
+const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
 const PHASE1_TITLE = 'Phase 1';
 const TARGET_FIELD = 'Target Date';
@@ -48,42 +50,16 @@ async function handleProjectsV2ItemPhase1Target({ github, context, core }) {
 }
 
 async function handleWorkflowDispatchPhase1Backfill({ github, context, core }) {
-  const inputs = context.payload.inputs || {};
-  const ownerType = inputs.owner_type;
-  const ownerLogin = inputs.owner_login;
-  const projectNumber = Number(inputs.project_number);
-
-  if (!ownerLogin || !Number.isFinite(projectNumber)) {
-    core.setFailed('owner_login and project_number are required.');
+  const config = getProjectBackfillConfig(context, core);
+  if (!config) {
     return;
   }
-
-  const projectQuery =
-    ownerType === 'user'
-      ? `query($login: String!, $number: Int!) {
-            user(login: $login) {
-              projectV2(number: $number) { id }
-            }
-          }`
-      : `query($login: String!, $number: Int!) {
-            organization(login: $login) {
-              projectV2(number: $number) { id }
-            }
-          }`;
-
-  const root = await github.graphql(projectQuery, {
-    login: ownerLogin,
-    number: projectNumber,
-  });
-
-  const projectId =
-    ownerType === 'user'
-      ? root.user?.projectV2?.id
-      : root.organization?.projectV2?.id;
+  const project = await resolveProjectV2(github, config);
+  const projectId = project?.id;
 
   if (!projectId) {
     core.setFailed(
-      `Project not found for ${ownerType} ${ownerLogin} #${projectNumber}`,
+      `Project not found for ${config.ownerType} ${config.ownerLogin} #${config.projectNumber}`,
     );
     return;
   }
@@ -113,7 +89,10 @@ async function runSetPhase1TargetDate({ github, context, core }) {
     return;
   }
 
-  if (context.eventName === 'workflow_dispatch') {
+  if (
+    context.eventName === 'workflow_dispatch' ||
+    context.eventName === 'schedule'
+  ) {
     await handleWorkflowDispatchPhase1Backfill({ github, context, core });
     return;
   }

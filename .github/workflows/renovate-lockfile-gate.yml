@@ -9,14 +9,41 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
+  statuses: read
 
 jobs:
+  classify:
+    name: 🏷️ Classify Renovate PR
+    if:
+      github.actor == 'renovate[bot]' && github.event.pull_request.draft ==
+      false
+    runs-on: ubuntu-latest
+    outputs:
+      is_lockfile_maintenance:
+        ${{ steps.flags.outputs.is_lockfile_maintenance }}
+      is_safe_automerge: ${{ steps.flags.outputs.is_safe_automerge }}
+    steps:
+      - name: Determine Renovate labels
+        id: flags
+        run: |
+          labels="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+          if echo "$labels" | grep -q 'lockfile-maintenance'; then
+            echo "is_lockfile_maintenance=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_lockfile_maintenance=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$labels" | grep -q 'renovate:automerge-safe'; then
+            echo "is_safe_automerge=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_safe_automerge=false" >> "$GITHUB_OUTPUT"
+          fi
+
   gate:
     name: 🔒 Validate Renovate Lockfile Maintenance PR
+    needs: classify
     if: >
-      github.actor == 'renovate[bot]' && github.event.pull_request.draft ==
-      false && contains(join(github.event.pull_request.labels.*.name, ' '),
-      'lockfile-maintenance')
+      needs.classify.outputs.is_lockfile_maintenance == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: 🔍 Check PR files
@@ -39,8 +66,15 @@ jobs:
 
   approve:
     name: ✅ Auto-approve
-    needs: gate
-    if: needs.gate.result == 'success'
+    needs: [classify, gate]
+    if: >
+      always() && needs.classify.result == 'success' && (
+        needs.classify.outputs.is_safe_automerge == 'true' ||
+        needs.classify.outputs.is_lockfile_maintenance == 'true'
+      ) && (
+        needs.classify.outputs.is_lockfile_maintenance != 'true' ||
+        needs.gate.result == 'success'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: hmarr/auto-approve-action@v3

@@ -112,43 +112,55 @@ const NotificationRowItem = ({
           width: '100%',
           py: 1.5,
           px: 2,
-          position: 'relative',
           bgcolor: row.read_at ? undefined : 'action.hover',
           display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: 2,
+          flexDirection: 'column',
+          gap: 1.5,
         }}
       >
-        <IconButton
-          size="small"
-          aria-label="Dismiss notification"
-          disabled={dismissingId === row.id}
-          onClick={() => dismissRow(row.id)}
+        <Box
           sx={{
-            position: 'absolute',
-            top: 4,
-            right: 4,
-            color: 'text.secondary',
-            p: 0.25,
-            '&:hover': { color: 'error.main', bgcolor: 'transparent' },
+            display: 'flex',
+            justifyContent: 'flex-end',
+            minHeight: 24,
           }}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-        <ProfileAvatar
-          src={row.actor_avatar ?? undefined}
-          alt={row.actor_display_name || row.actor_handle || '?'}
-          size="small"
-        />
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <ListItemText
-            primary={getNotificationLabel(row)}
-            secondary="Approve or decline this connection request"
-            primaryTypographyProps={{ fontWeight: row.read_at ? 400 : 600 }}
-            secondaryTypographyProps={{ variant: 'caption' }}
-            sx={{ m: 0 }}
+          <IconButton
+            size="small"
+            aria-label="Dismiss notification"
+            disabled={dismissingId === row.id}
+            onClick={() => dismissRow(row.id)}
+            sx={{
+              color: 'text.secondary',
+              p: 0.25,
+              '&:hover': { color: 'error.main', bgcolor: 'transparent' },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+            width: '100%',
+          }}
+        >
+          <ProfileAvatar
+            src={row.actor_avatar ?? undefined}
+            alt={row.actor_display_name || row.actor_handle || '?'}
+            size="small"
           />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <ListItemText
+              primary={getNotificationLabel(row)}
+              secondary="Approve or decline this connection request"
+              primaryTypographyProps={{ fontWeight: row.read_at ? 400 : 600 }}
+              secondaryTypographyProps={{ variant: 'caption' }}
+              sx={{ m: 0 }}
+            />
+          </Box>
         </Box>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -203,7 +215,6 @@ const NotificationRowItem = ({
         to={getNotificationLink(row)}
         sx={{
           py: 1.5,
-          position: 'relative',
           bgcolor: row.read_at ? undefined : 'action.hover',
           flexDirection: 'column',
           alignItems: 'stretch',
@@ -212,26 +223,33 @@ const NotificationRowItem = ({
           if (!row.read_at) markAsRead(row.id);
         }}
       >
-        <IconButton
-          size="small"
-          aria-label="Dismiss notification"
-          disabled={dismissingId === row.id}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dismissRow(row.id);
-          }}
+        <Box
           sx={{
-            position: 'absolute',
-            top: 4,
-            right: 4,
-            color: 'text.secondary',
-            p: 0.25,
-            '&:hover': { color: 'error.main', bgcolor: 'transparent' },
+            display: 'flex',
+            justifyContent: 'flex-end',
+            width: '100%',
+            minHeight: 24,
+            mb: 0.25,
           }}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Dismiss notification"
+            disabled={dismissingId === row.id}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              dismissRow(row.id);
+            }}
+            sx={{
+              color: 'text.secondary',
+              p: 0.25,
+              '&:hover': { color: 'error.main', bgcolor: 'transparent' },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
           <ProfileAvatar
             src={row.actor_avatar ?? undefined}

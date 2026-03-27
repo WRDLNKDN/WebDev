@@ -96,6 +96,11 @@ passes our local "System Audits" before pushing:
 - **Commit Messages**: Use clear, descriptive messages. We recommend **Signed
   Commits** (GPG/SSH) for verification.
 
+- **Renovate**: Low-risk dependency updates may auto-merge after CI passes.
+  Patch, pin, and digest updates for `npm` and `github-actions`, plus verified
+  vulnerability alert PRs, are treated as safe-by-default. Review is still
+  expected for majors and anything outside those rules.
+
 _Note: This repo uses **Husky**. Pre-commit hooks will automatically block
 commits that fail linting or formatting checks._
 

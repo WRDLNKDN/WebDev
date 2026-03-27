@@ -40,10 +40,8 @@ type DashboardDialogsProps = {
   profile: DashboardProfile | null;
   editFocusBio: boolean;
   avatarFallback?: string;
-  currentResolvedAvatarUrl?: string;
   onUpdateProfile: (updates: ProfileUpdatePayload) => Promise<void>;
   onUploadAvatar: (file: File) => Promise<string | undefined>;
-  onOpenLinksFromEdit: () => void;
   onAvatarChanged: () => void;
   isLinksOpen: boolean;
   onCloseLinks: () => void;
@@ -79,10 +77,8 @@ export const DashboardDialogs = ({
   profile,
   editFocusBio,
   avatarFallback,
-  currentResolvedAvatarUrl,
   onUpdateProfile,
   onUploadAvatar,
-  onOpenLinksFromEdit,
   onAvatarChanged,
   isLinksOpen,
   onCloseLinks,
@@ -162,10 +158,8 @@ export const DashboardDialogs = ({
       profile={profile}
       focusBioOnOpen={editFocusBio}
       avatarFallback={avatarFallback}
-      currentResolvedAvatarUrl={currentResolvedAvatarUrl}
       onUpdate={onUpdateProfile}
       onUpload={onUploadAvatar}
-      onManageLinks={onOpenLinksFromEdit}
       onAvatarChanged={onAvatarChanged}
     />
 

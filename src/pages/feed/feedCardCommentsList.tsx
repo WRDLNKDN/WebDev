@@ -16,7 +16,11 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import React from 'react';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { REACTION_OPTIONS } from '../../components/post';
-import { getFeedReactionCount } from '../../components/post/sharedReactions';
+import {
+  buildFeedReactionSummary,
+  getFeedReactionCount,
+  getFeedTotalReactionCount,
+} from '../../components/post/sharedReactions';
 import type { FeedComment } from '../../lib/api/feedsApi';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import {
@@ -61,6 +65,9 @@ export const FeedCardCommentsList = ({
     el: HTMLElement;
     commentId: string;
   } | null>(null);
+  const [reactionPickerCommentId, setReactionPickerCommentId] = React.useState<
+    string | null
+  >(null);
 
   return (
     <List dense disablePadding>
@@ -293,36 +300,137 @@ export const FeedCardCommentsList = ({
                             justifyContent: 'flex-start',
                           }}
                         >
-                          {REACTION_OPTIONS.map(({ type, emoji, color }) => {
-                            const active = c.viewer_reaction === type;
-                            const count = getFeedReactionCount(c, type);
-                            return (
+                          {reactionPickerCommentId === c.id ? (
+                            <>
+                              {REACTION_OPTIONS.map(
+                                ({ type, emoji, color, label }) => {
+                                  const active = c.viewer_reaction === type;
+                                  const count = getFeedReactionCount(c, type);
+                                  return (
+                                    <Button
+                                      key={`${c.id}-${type}`}
+                                      size="small"
+                                      onClick={() => {
+                                        if (active) {
+                                          actions.onCommentRemoveReaction(
+                                            c.id,
+                                            c.viewer_reaction ?? undefined,
+                                          );
+                                        } else {
+                                          actions.onCommentReaction(c.id, type);
+                                        }
+                                        setReactionPickerCommentId(null);
+                                      }}
+                                      sx={{
+                                        textTransform: 'none',
+                                        minWidth: 0,
+                                        px: { xs: 0.5, sm: 0.25 },
+                                        minHeight: { xs: 36, sm: 30 },
+                                        gap: 0.4,
+                                        color: active
+                                          ? color
+                                          : 'text.secondary',
+                                        borderRadius: 999,
+                                      }}
+                                    >
+                                      <span aria-hidden="true">{emoji}</span>
+                                      <Box
+                                        component="span"
+                                        sx={{
+                                          position: 'absolute',
+                                          width: 1,
+                                          height: 1,
+                                          p: 0,
+                                          m: -1,
+                                          overflow: 'hidden',
+                                          clip: 'rect(0, 0, 0, 0)',
+                                          whiteSpace: 'nowrap',
+                                          border: 0,
+                                        }}
+                                      >
+                                        {label}
+                                      </Box>
+                                      {count > 0 ? count : ''}
+                                    </Button>
+                                  );
+                                },
+                              )}
+                            </>
+                          ) : (
+                            <>
                               <Button
-                                key={`${c.id}-${type}`}
                                 size="small"
-                                onClick={() => {
-                                  if (active)
-                                    actions.onCommentRemoveReaction(
-                                      c.id,
-                                      c.viewer_reaction ?? undefined,
-                                    );
-                                  else actions.onCommentReaction(c.id, type);
-                                }}
+                                onClick={() => setReactionPickerCommentId(c.id)}
                                 sx={{
                                   textTransform: 'none',
                                   minWidth: 0,
                                   px: { xs: 0.5, sm: 0.25 },
                                   minHeight: { xs: 36, sm: 30 },
-                                  gap: 0.4,
-                                  color: active ? color : 'text.secondary',
+                                  color: 'text.secondary',
                                   borderRadius: 999,
                                 }}
                               >
-                                <span aria-hidden="true">{emoji}</span>
-                                {count > 0 ? count : ''}
+                                React
                               </Button>
-                            );
-                          })}
+                              {buildFeedReactionSummary(
+                                c,
+                                c.viewer_reaction ?? null,
+                                6,
+                              ).map(({ value, emoji, color, count }) => (
+                                <Button
+                                  key={`${c.id}-summary-${value}`}
+                                  size="small"
+                                  onClick={() => {
+                                    if (c.viewer_reaction === value) {
+                                      actions.onCommentRemoveReaction(
+                                        c.id,
+                                        c.viewer_reaction ?? undefined,
+                                      );
+                                    } else {
+                                      actions.onCommentReaction(c.id, value);
+                                    }
+                                  }}
+                                  sx={{
+                                    textTransform: 'none',
+                                    minWidth: 0,
+                                    px: { xs: 0.5, sm: 0.25 },
+                                    minHeight: { xs: 36, sm: 30 },
+                                    gap: 0.4,
+                                    color:
+                                      c.viewer_reaction === value
+                                        ? color
+                                        : 'text.secondary',
+                                    borderRadius: 999,
+                                  }}
+                                >
+                                  <span aria-hidden="true">{emoji}</span>
+                                  {count > 0 ? count : ''}
+                                </Button>
+                              ))}
+                              {getFeedTotalReactionCount(
+                                c,
+                                c.viewer_reaction ?? null,
+                              ) === 0 ? null : (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ alignSelf: 'center' }}
+                                >
+                                  {getFeedTotalReactionCount(
+                                    c,
+                                    c.viewer_reaction ?? null,
+                                  )}{' '}
+                                  reaction
+                                  {getFeedTotalReactionCount(
+                                    c,
+                                    c.viewer_reaction ?? null,
+                                  ) !== 1
+                                    ? 's'
+                                    : ''}
+                                </Typography>
+                              )}
+                            </>
+                          )}
                         </Stack>
                       </>
                     }

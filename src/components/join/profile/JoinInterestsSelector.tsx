@@ -47,6 +47,7 @@ export interface JoinInterestsSelectorProps {
   onChange: (interests: string[]) => void;
   disabled?: boolean;
   error?: string;
+  showDescription?: boolean;
   /** Called when custom "Other" fails validation (profanity or length). */
   onValidationError?: (message: string) => void;
 }
@@ -107,6 +108,7 @@ export const JoinInterestsSelector = ({
   onChange,
   disabled = false,
   error,
+  showDescription = true,
   onValidationError,
 }: JoinInterestsSelectorProps) => {
   const theme = useTheme();
@@ -265,18 +267,20 @@ export const JoinInterestsSelector = ({
       >
         Interests
       </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{
-          mb: { xs: 0.45, sm: 0.75 },
-          fontSize: { xs: '0.78rem', sm: '0.8125rem' },
-          lineHeight: 1.4,
-        }}
-      >
-        How do you want to show up? Search or tap a suggestion — up to{' '}
-        {INTERESTS_MAX}, all optional.
-      </Typography>
+      {showDescription ? (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            mb: { xs: 0.45, sm: 0.75 },
+            fontSize: { xs: '0.78rem', sm: '0.8125rem' },
+            lineHeight: 1.4,
+          }}
+        >
+          How do you want to show up? Search or tap a suggestion — up to{' '}
+          {INTERESTS_MAX}, all optional.
+        </Typography>
+      ) : null}
 
       {error && (
         <Typography

@@ -1,6 +1,7 @@
 import { Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useMemo } from 'react';
+import { LINK_PREVIEW_URL_REGEX } from '../../../lib/urlPreviewText';
 
 type MessageContentProps = {
   content: string;
@@ -8,7 +9,8 @@ type MessageContentProps = {
 
 type MessagePart =
   | { type: 'text'; text: string }
-  | { type: 'mention'; text: string; handle: string };
+  | { type: 'mention'; text: string; handle: string }
+  | { type: 'url'; text: string; href: string };
 
 /**
  * Parses message content to extract @mentions and render them as styled links.
@@ -18,30 +20,44 @@ export const MessageContent = ({ content }: MessageContentProps) => {
   const parts = useMemo(() => {
     if (!content) return [];
     const mentionRegex = /@([a-zA-Z0-9_]+)/g;
+    const urlRegex = new RegExp(LINK_PREVIEW_URL_REGEX.source, 'gi');
     const parts: MessagePart[] = [];
     let lastIndex = 0;
-    let match: RegExpExecArray | null;
+    while (lastIndex < content.length) {
+      mentionRegex.lastIndex = lastIndex;
+      urlRegex.lastIndex = lastIndex;
+      const mentionMatch = mentionRegex.exec(content);
+      const urlMatch = urlRegex.exec(content);
+      const nextMatch = [mentionMatch, urlMatch]
+        .filter((match): match is RegExpExecArray => Boolean(match))
+        .sort((a, b) => a.index - b.index)[0];
 
-    while ((match = mentionRegex.exec(content)) !== null) {
-      // Add text before mention
-      if (match.index > lastIndex) {
+      if (!nextMatch) break;
+
+      if (nextMatch.index > lastIndex) {
         parts.push({
           type: 'text',
-          text: content.slice(lastIndex, match.index),
+          text: content.slice(lastIndex, nextMatch.index),
         });
       }
 
-      // Add mention
-      parts.push({
-        type: 'mention',
-        text: match[0],
-        handle: match[1],
-      });
+      if (urlMatch && nextMatch.index === urlMatch.index) {
+        parts.push({
+          type: 'url',
+          text: urlMatch[0],
+          href: urlMatch[0],
+        });
+      } else if (mentionMatch && nextMatch.index === mentionMatch.index) {
+        parts.push({
+          type: 'mention',
+          text: mentionMatch[0],
+          handle: mentionMatch[1],
+        });
+      }
 
-      lastIndex = match.index + match[0].length;
+      lastIndex = nextMatch.index + nextMatch[0].length;
     }
 
-    // Add remaining text
     if (lastIndex < content.length) {
       parts.push({
         type: 'text',
@@ -103,6 +119,24 @@ export const MessageContent = ({ content }: MessageContentProps) => {
               }}
             >
               {mentionPart.text}
+            </Link>
+          );
+        }
+        if (part.type === 'url') {
+          const urlPart = part as { type: 'url'; text: string; href: string };
+          return (
+            <Link
+              key={index}
+              href={urlPart.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: 'primary.main',
+                textDecorationColor: 'currentColor',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {urlPart.text}
             </Link>
           );
         }

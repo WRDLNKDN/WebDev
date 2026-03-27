@@ -310,12 +310,7 @@ export const MessageInput = ({
           } catch (gifError) {
             setProcessingMessage(null);
             const errorMsg = toMessage(gifError);
-            // Provide more specific error message for GIF processing failures
-            if (
-              errorMsg.includes('GIF processing failed') ||
-              errorMsg.includes('too large') ||
-              errorMsg.includes('413')
-            ) {
+            if (errorMsg.includes('too large') || errorMsg.includes('413')) {
               setError('This GIF is too large to process. Try a smaller file.');
             } else {
               setError(errorMsg || 'Failed to optimize GIF. Please try again.');
@@ -746,7 +741,7 @@ export const MessageInput = ({
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Add GIF. Files over 2MB are optimized when you send.">
+          <Tooltip title="Add GIF. GIF files up to 6MB are supported.">
             <span>
               <IconButton
                 type="button"

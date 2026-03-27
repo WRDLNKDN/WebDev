@@ -1,6 +1,6 @@
 import {
   CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
-  CHAT_GIF_PROCESSING_MAX_FILE_BYTES,
+  CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
   CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
 } from '../../types/chat';
 
@@ -66,22 +66,12 @@ export function getChatAttachmentProcessingPlan(file: {
     };
   }
 
-  if (file.size <= CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
+  if (file.size <= CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES) {
     return {
       accepted: true,
       mode: 'direct',
       uploadLabel: 'Uploading GIF...',
       helperText: null,
-    };
-  }
-
-  if (file.size <= CHAT_GIF_PROCESSING_MAX_FILE_BYTES) {
-    return {
-      accepted: true,
-      mode: 'gif_processing',
-      uploadLabel: 'Optimizing GIF...',
-      helperText:
-        'Large GIF — will be optimized for faster delivery when you send.',
     };
   }
 

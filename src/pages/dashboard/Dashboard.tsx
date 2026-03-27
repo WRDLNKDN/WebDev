@@ -1429,14 +1429,8 @@ export const Dashboard = () => {
           avatarFallback={
             session?.user?.user_metadata?.avatar_url as string | undefined
           }
-          currentResolvedAvatarUrl={resolvedAvatarUrl ?? undefined}
           onUpdate={updateProfile}
           onUpload={uploadAvatar}
-          onManageLinks={() => {
-            setEditFocusBio(false);
-            setIsEditOpen(false);
-            setIsLinksOpen(true);
-          }}
           onAvatarChanged={() => {
             refresh().catch(() => {});
             refreshAvatar().catch(() => {});

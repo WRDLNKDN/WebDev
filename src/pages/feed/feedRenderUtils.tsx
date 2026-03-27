@@ -15,16 +15,15 @@ import {
 } from '@mui/material';
 import type { ReactNode } from 'react';
 import type { FeedItem } from '../../lib/api/feedsApi';
-
-/** Match URLs so we can render them as clickable links in post body. */
-const URL_REGEX = /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
+import type { LinkPreviewData } from '../../lib/linkPreview';
+import { extractUrlsFromText } from '../../lib/urlPreviewText';
 
 export function linkifyBody(body: string): ReactNode {
   if (!body.trim()) return null;
   const parts: ReactNode[] = [];
   let lastIndex = 0;
   let m: RegExpExecArray | null;
-  const re = new RegExp(URL_REGEX.source, 'gi');
+  const re = /https?:\/\/[^\s<>[\]()]+(?:\([^\s)]*\)|[^\s<>[\]()]*)?/gi;
   while ((m = re.exec(body)) !== null) {
     if (m.index > lastIndex) {
       parts.push(body.slice(lastIndex, m.index));
@@ -47,14 +46,7 @@ export function linkifyBody(body: string): ReactNode {
 }
 
 export function extractBodyUrls(body: string): string[] {
-  if (!body.trim()) return [];
-  const urls: string[] = [];
-  let m: RegExpExecArray | null;
-  const re = new RegExp(URL_REGEX.source, 'gi');
-  while ((m = re.exec(body)) !== null) {
-    urls.push(m[0]);
-  }
-  return urls;
+  return extractUrlsFromText(body);
 }
 
 export function isGifUrl(url: string): boolean {
@@ -114,13 +106,7 @@ export function isSupportedImageFile(file: File): boolean {
   return SUPPORTED_IMAGE_EXTENSIONS.has(fileExtension(file.name));
 }
 
-export type LinkPreviewPayload = {
-  url: string;
-  title?: string;
-  description?: string;
-  image?: string;
-  siteName?: string;
-};
+export type LinkPreviewPayload = LinkPreviewData;
 
 function linkPreviewDomain(url: string): string {
   try {

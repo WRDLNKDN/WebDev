@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  buildEcwidInstantSiteUrl,
   buildEcwidEmbedScriptSrc,
   buildEcwidProductBrowserInit,
   DEFAULT_ECWID_EMBED_STORE_ID,
@@ -24,6 +25,12 @@ describe('storefront helpers', () => {
   it('builds stable DOM ids for the Ecwid embed', () => {
     expect(getEcwidScriptId('123')).toBe('ecwid-script-123');
     expect(getEcwidStoreDivId('123')).toBe('my-store-123');
+  });
+
+  it('builds the Ecwid instant site URL with the store prefix', () => {
+    expect(buildEcwidInstantSiteUrl('123')).toBe(
+      'https://store123.company.site/',
+    );
   });
 
   it('uses default embed store id when env id is empty', () => {
@@ -72,24 +79,28 @@ describe('storefront helpers', () => {
     ).toBe('https://shop.example/');
   });
 
-  it('falls back to GoDaddy when VITE_STORE_URL is not set', () => {
+  it('falls back to Ecwid instant site when VITE_STORE_URL is not set', () => {
     expect(getStoreExternalUrl({ VITE_ECWID_STORE_ID: '12345' })).toBe(
-      GODADDY_STOREFRONT_URL,
+      'https://store12345.company.site/',
     );
   });
 
-  it('falls back to GoDaddy when no storefront env is set', () => {
-    expect(getStoreExternalUrl({})).toBe(GODADDY_STOREFRONT_URL);
+  it('falls back to the default Ecwid instant site when no storefront env is set', () => {
+    expect(getStoreExternalUrl({})).toBe(
+      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
+    );
   });
 
-  it('exposes alternate URL only when VITE_STORE_URL is configured', () => {
-    expect(getAlternateStorefrontUrl({})).toBeUndefined();
+  it('prefers VITE_STORE_URL but otherwise exposes the Ecwid instant site URL', () => {
+    expect(getAlternateStorefrontUrl({})).toBe(
+      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
+    );
     expect(
       getAlternateStorefrontUrl({ VITE_STORE_URL: 'https://shop.example/' }),
     ).toBe('https://shop.example/');
-    expect(
-      getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' }),
-    ).toBeUndefined();
+    expect(getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' })).toBe(
+      'https://store9.company.site/',
+    );
   });
 });
 
@@ -114,10 +125,10 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: 'https://alt.example/',
         VITE_ECWID_STORE_ID: '1',
       }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+    ).resolves.toBe('https://alt.example/');
   });
 
-  it('uses alternate when probe returns not ok (e.g. storefront gone)', async () => {
+  it('uses Ecwid instant site when probe returns not ok', async () => {
     globalThis.fetch = vi
       .fn()
       .mockResolvedValue({ ok: false, status: 404 }) as typeof fetch;
@@ -126,7 +137,7 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '222',
       }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+    ).resolves.toBe('https://store222.company.site/');
   });
 
   it('retries GET when HEAD is 405', async () => {
@@ -139,7 +150,7 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '1',
       }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+    ).resolves.toBe('https://store1.company.site/');
   });
 
   it('uses alternate URL when probe fails and env has Ecwid', async () => {
@@ -151,10 +162,10 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '111',
       }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+    ).resolves.toBe('https://store111.company.site/');
   });
 
-  it('still returns GoDaddy when probe fails and no alternate is configured', async () => {
+  it('returns the default Ecwid instant site when probe fails and no env is configured', async () => {
     globalThis.fetch = vi
       .fn()
       .mockRejectedValue(new Error('network')) as typeof fetch;
@@ -163,6 +174,8 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '',
       }),
-    ).resolves.toBe(GODADDY_STOREFRONT_URL);
+    ).resolves.toBe(
+      `https://store${DEFAULT_ECWID_EMBED_STORE_ID}.company.site/`,
+    );
   });
 });

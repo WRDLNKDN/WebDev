@@ -1,9 +1,37 @@
 import { expect, test } from '../fixtures';
 
+type StorefrontTestWindow = Window &
+  typeof globalThis & {
+    __storeRedirectTarget?: string;
+    __restoreStoreReplace?: () => void;
+  };
+
 test.describe('Storefront', () => {
-  test('/store shows fallback copy when no merch URL is configured', async ({
+  test('/store redirects to the default Ecwid storefront when no merch URL is configured', async ({
     page,
   }) => {
+    await page.addInitScript(() => {
+      const testWindow = window as unknown as StorefrontTestWindow;
+
+      Object.defineProperty(window, '__storeRedirectTarget', {
+        configurable: true,
+        writable: true,
+        value: '',
+      });
+
+      const originalReplace = Location.prototype.replace;
+      Location.prototype.replace = function replace(url: string | URL) {
+        testWindow.__storeRedirectTarget = String(url);
+      };
+
+      Object.defineProperty(window, '__restoreStoreReplace', {
+        configurable: true,
+        value: () => {
+          Location.prototype.replace = originalReplace;
+        },
+      });
+    });
+
     await page.route('**/rest/v1/feature_flags*', async (route) => {
       await route.fulfill({
         status: 200,
@@ -21,13 +49,14 @@ test.describe('Storefront', () => {
     await page.goto('/store', { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveURL(/\/store$/);
-    await expect(
-      page.getByRole('heading', { name: 'Store unavailable', level: 1 }),
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(
-      page.getByText(
-        'The merch site URL is not configured yet for this environment.',
-      ),
-    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as StorefrontTestWindow).__storeRedirectTarget ??
+            '',
+        ),
+      )
+      .toBe('https://store129462253.company.site/');
   });
 });

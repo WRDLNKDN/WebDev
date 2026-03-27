@@ -1,14 +1,14 @@
 import { Box, Button, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { getAlternateStorefrontUrl } from '../../lib/marketing/storefront';
+import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 
 /**
  * `/store` is a handoff route. When a merch URL is configured, redirect there.
  * If not configured, show a small fallback state instead of looping back here.
  */
 export const Store = () => {
-  const storefrontUrl = getAlternateStorefrontUrl();
+  const storefrontUrl = getStoreExternalUrl();
 
   useEffect(() => {
     if (!storefrontUrl) return;

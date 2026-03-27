@@ -156,14 +156,7 @@ export const AppRouteTree = ({
           </RequireFeatureFlag>
         }
       />
-      <Route
-        path="/store"
-        element={
-          <RequireFeatureFlag flagKey="store">
-            <Store />
-          </RequireFeatureFlag>
-        }
-      />
+      <Route path="/store" element={<Store />} />
       <Route path="/about" element={<About />} />
       <Route path="/community" element={<Community />} />
       <Route path="/platform" element={<Platform />} />

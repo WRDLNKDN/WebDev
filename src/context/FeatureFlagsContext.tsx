@@ -16,6 +16,7 @@ import { isProduction, isUat, isUatHostname } from '../lib/utils/env';
 export type FeatureFlagsMap = Record<string, boolean>;
 const DEFAULT_FLAG_VALUES: FeatureFlagsMap = {
   [COMING_SOON_FLAG]: true,
+  store: true,
 };
 
 export interface FeatureFlagsContextValue {

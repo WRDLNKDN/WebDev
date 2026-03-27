@@ -10,25 +10,30 @@ type StorefrontEnv = {
   VITE_ECWID_STORE_ID?: string;
 };
 
+export function buildEcwidInstantSiteUrl(storeId: string): string {
+  return `https://store${encodeURIComponent(storeId)}.company.site/`;
+}
+
 /**
  * Ecwid / explicit shop URL when configured (no GoDaddy fallback).
  */
-export function getAlternateStorefrontUrl(
-  env?: StorefrontEnv,
-): string | undefined {
+export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
   const viteStoreUrl = env?.VITE_STORE_URL ?? import.meta.env.VITE_STORE_URL;
+  const viteEcwidId =
+    env?.VITE_ECWID_STORE_ID ?? import.meta.env.VITE_ECWID_STORE_ID;
 
   const explicit = typeof viteStoreUrl === 'string' ? viteStoreUrl.trim() : '';
   if (explicit.length > 0) return explicit;
 
-  return undefined;
+  const storeId = getEcwidStoreId(viteEcwidId) ?? DEFAULT_ECWID_EMBED_STORE_ID;
+  return buildEcwidInstantSiteUrl(storeId);
 }
 
 /**
- * Sync URL for first paint: configured storefront when present, else legacy fallback.
+ * Sync URL for first paint: configured storefront when present, else Ecwid instant site.
  */
 export function getStoreExternalUrl(env?: StorefrontEnv): string {
-  return getAlternateStorefrontUrl(env) ?? GODADDY_STOREFRONT_URL;
+  return getAlternateStorefrontUrl(env);
 }
 
 /**
@@ -80,9 +85,9 @@ export async function resolveStoreExternalUrl(
   env?: StorefrontEnv,
 ): Promise<string> {
   const alternate = getAlternateStorefrontUrl(env);
+  if (alternate) return alternate;
   const godaddyOk = await probeGodaddyStorefrontReachable();
   if (godaddyOk) return GODADDY_STOREFRONT_URL;
-  if (alternate) return alternate;
   return GODADDY_STOREFRONT_URL;
 }
 

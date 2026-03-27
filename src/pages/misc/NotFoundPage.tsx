@@ -7,7 +7,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGlassCard, SIGNUP_BG } from '../../theme/candyStyles';
 
@@ -60,10 +60,13 @@ const NOT_FOUND_WEIRDLINGS: NotFoundWeirdling[] = [
 export const NotFoundPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [selectedIndex, setSelectedIndex] = useState(() =>
-    Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length),
+  const selectedWeirdling = useMemo(
+    () =>
+      NOT_FOUND_WEIRDLINGS[
+        Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length)
+      ],
+    [],
   );
-  const selectedWeirdling = NOT_FOUND_WEIRDLINGS[selectedIndex];
 
   return (
     <Box
@@ -258,53 +261,6 @@ export const NotFoundPage = () => {
                     }}
                   />
                 </Box>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  flexWrap="wrap"
-                  justifyContent="center"
-                  sx={{ maxWidth: 440 }}
-                >
-                  {NOT_FOUND_WEIRDLINGS.map((weirdling, index) => {
-                    const isSelected = index === selectedIndex;
-                    return (
-                      <Button
-                        key={weirdling.name}
-                        type="button"
-                        variant={isSelected ? 'contained' : 'outlined'}
-                        size="small"
-                        onClick={() => setSelectedIndex(index)}
-                        aria-pressed={isSelected}
-                        sx={{
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          borderRadius: 999,
-                          px: 1.5,
-                          py: 0.65,
-                          bgcolor: isSelected
-                            ? weirdling.accent
-                            : 'rgba(255,255,255,0.02)',
-                          color: isSelected ? '#08111f' : '#fff',
-                          borderColor: isSelected
-                            ? weirdling.accent
-                            : 'rgba(141,188,229,0.3)',
-                          boxShadow: isSelected
-                            ? `0 10px 24px ${weirdling.glow}`
-                            : 'none',
-                          '&:hover': {
-                            borderColor: weirdling.accent,
-                            bgcolor: isSelected
-                              ? weirdling.accent
-                              : 'rgba(255,255,255,0.06)',
-                          },
-                        }}
-                      >
-                        {weirdling.name}
-                      </Button>
-                    );
-                  })}
-                </Stack>
               </Stack>
             </Box>
           </Stack>

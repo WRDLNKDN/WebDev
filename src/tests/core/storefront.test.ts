@@ -48,13 +48,19 @@ describe('storefront helpers', () => {
       {
         widgetType: 'ProductBrowser',
         id: 'my-store-123',
-        arg: ['id=my-store-123', 'views=grid(1,60)'],
+        arg: [
+          'categoriesPerRow=3',
+          'views=grid(20,3) list(60) table(60)',
+          'categoryView=grid',
+          'searchView=list',
+          'id=my-store-123',
+        ],
       },
     ]);
   });
 
   it('keeps the backup storefront URL available for rollback', () => {
-    expect(GODADDY_STOREFRONT_URL).toBe('https://wrdlnkdn.com/store-1');
+    expect(GODADDY_STOREFRONT_URL).toBe('https://www.wrdlnkdn.com/store');
   });
 
   it('uses VITE_STORE_URL when set for external store link', () => {
@@ -66,9 +72,9 @@ describe('storefront helpers', () => {
     ).toBe('https://shop.example/');
   });
 
-  it('uses Ecwid instant-site style host from store id when URL unset', () => {
+  it('falls back to GoDaddy when VITE_STORE_URL is not set', () => {
     expect(getStoreExternalUrl({ VITE_ECWID_STORE_ID: '12345' })).toBe(
-      'https://12345.company.site',
+      GODADDY_STOREFRONT_URL,
     );
   });
 
@@ -76,14 +82,14 @@ describe('storefront helpers', () => {
     expect(getStoreExternalUrl({})).toBe(GODADDY_STOREFRONT_URL);
   });
 
-  it('exposes alternate URL only when env configures Ecwid or VITE_STORE_URL', () => {
+  it('exposes alternate URL only when VITE_STORE_URL is configured', () => {
     expect(getAlternateStorefrontUrl({})).toBeUndefined();
     expect(
       getAlternateStorefrontUrl({ VITE_STORE_URL: 'https://shop.example/' }),
     ).toBe('https://shop.example/');
-    expect(getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' })).toBe(
-      'https://9.company.site',
-    );
+    expect(
+      getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' }),
+    ).toBeUndefined();
   });
 });
 
@@ -120,7 +126,7 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '222',
       }),
-    ).resolves.toBe('https://222.company.site');
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 
   it('retries GET when HEAD is 405', async () => {
@@ -145,7 +151,7 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: '',
         VITE_ECWID_STORE_ID: '111',
       }),
-    ).resolves.toBe('https://111.company.site');
+    ).resolves.toBe(GODADDY_STOREFRONT_URL);
   });
 
   it('still returns GoDaddy when probe fails and no alternate is configured', async () => {

@@ -1,4 +1,4 @@
-export const GODADDY_STOREFRONT_URL = 'https://wrdlnkdn.com/store-1';
+export const GODADDY_STOREFRONT_URL = 'https://www.wrdlnkdn.com/store';
 
 /** Default Ecwid store ID for the in-app `/store` embed (override with `VITE_ECWID_STORE_ID`). */
 export const DEFAULT_ECWID_EMBED_STORE_ID = '129462253';
@@ -17,22 +17,15 @@ export function getAlternateStorefrontUrl(
   env?: StorefrontEnv,
 ): string | undefined {
   const viteStoreUrl = env?.VITE_STORE_URL ?? import.meta.env.VITE_STORE_URL;
-  const viteEcwidId =
-    env?.VITE_ECWID_STORE_ID ?? import.meta.env.VITE_ECWID_STORE_ID;
 
   const explicit = typeof viteStoreUrl === 'string' ? viteStoreUrl.trim() : '';
   if (explicit.length > 0) return explicit;
-
-  const storeId = getEcwidStoreId(viteEcwidId);
-  if (storeId) {
-    return `https://${storeId}.company.site`;
-  }
 
   return undefined;
 }
 
 /**
- * Sync URL for tests and first paint: alternate storefront when env is set, else GoDaddy.
+ * Sync URL for first paint: configured storefront when present, else legacy fallback.
  */
 export function getStoreExternalUrl(env?: StorefrontEnv): string {
   return getAlternateStorefrontUrl(env) ?? GODADDY_STOREFRONT_URL;
@@ -131,7 +124,13 @@ export function buildEcwidProductBrowserInit(storeDivId: string) {
     {
       widgetType: 'ProductBrowser',
       id: storeDivId,
-      arg: [`id=${storeDivId}`, 'views=grid(1,60)'],
+      arg: [
+        'categoriesPerRow=3',
+        'views=grid(20,3) list(60) table(60)',
+        'categoryView=grid',
+        'searchView=list',
+        `id=${storeDivId}`,
+      ],
     },
   ];
 }

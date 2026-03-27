@@ -1,96 +1,82 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { useEffect } from 'react';
-import {
-  buildEcwidEmbedScriptSrc,
-  getEcwidEmbedStoreId,
-  getEcwidScriptId,
-  getEcwidStoreDivId,
-} from '../../lib/marketing/storefront';
+import { Link as RouterLink } from 'react-router-dom';
+import { getAlternateStorefrontUrl } from '../../lib/marketing/storefront';
 
 /**
- * In-app Ecwid storefront at `/store` (full-width embed; no external redirect).
- * Script and `xProductBrowser` args match Ecwid “code” platform embed for this shop.
+ * `/store` is a handoff route. When a merch URL is configured, redirect there.
+ * If not configured, show a small fallback state instead of looping back here.
  */
 export const Store = () => {
-  const storeId = getEcwidEmbedStoreId();
-  const storeDivId = getEcwidStoreDivId(storeId);
-  const scriptId = getEcwidScriptId(storeId);
+  const storefrontUrl = getAlternateStorefrontUrl();
 
   useEffect(() => {
-    const runProductBrowser = () => {
-      const fn = window.xProductBrowser;
-      if (typeof fn !== 'function') return;
-      fn(
-        'categoriesPerRow=3',
-        'views=grid(20,3) list(60) table(60)',
-        'categoryView=grid',
-        'searchView=list',
-        `id=${storeDivId}`,
-      );
-    };
+    if (!storefrontUrl) return;
+    window.location.replace(storefrontUrl);
+  }, [storefrontUrl]);
 
-    const existing = document.getElementById(
-      scriptId,
-    ) as HTMLScriptElement | null;
-    if (existing) {
-      runProductBrowser();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.type = 'text/javascript';
-    script.async = true;
-    script.charset = 'utf-8';
-    script.setAttribute('data-cfasync', 'false');
-    script.src = buildEcwidEmbedScriptSrc(storeId);
-    script.onload = () => {
-      runProductBrowser();
-    };
-    document.body.appendChild(script);
-  }, [scriptId, storeDivId, storeId]);
+  if (storefrontUrl) {
+    return (
+      <Box
+        component="main"
+        sx={{
+          width: '100%',
+          minHeight: '50vh',
+          px: { xs: 2, sm: 3 },
+          py: { xs: 4, md: 6 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          gap: 2,
+        }}
+      >
+        <Typography component="h1" variant="h4" sx={{ fontWeight: 800 }}>
+          Redirecting to the store...
+        </Typography>
+        <Typography sx={{ color: 'text.secondary', maxWidth: 560 }}>
+          If nothing happens, use the button below to open the merch site.
+        </Typography>
+        <Button
+          component="a"
+          href={storefrontUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="contained"
+          size="large"
+        >
+          Open Store
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box
       component="main"
       sx={{
         width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        boxSizing: 'border-box',
-        px: { xs: 1, sm: 1.5, md: 2 },
-        py: { xs: 1.5, md: 2 },
-        flex: 1,
+        minHeight: '50vh',
+        px: { xs: 2, sm: 3 },
+        py: { xs: 4, md: 6 },
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'stretch',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: 2,
       }}
     >
-      <Typography
-        component="h1"
-        variant="h5"
-        sx={{
-          fontWeight: 800,
-          color: 'text.primary',
-          mb: 1.5,
-          flexShrink: 0,
-        }}
-      >
-        Store
+      <Typography component="h1" variant="h4" sx={{ fontWeight: 800 }}>
+        Store unavailable
       </Typography>
-      <Box
-        id={storeDivId}
-        sx={{
-          width: '100%',
-          maxWidth: '100%',
-          minWidth: 0,
-          flex: '1 1 auto',
-          minHeight: { xs: '50vh', md: '60vh' },
-          '& .ecwid, & .ec-size, & iframe': {
-            maxWidth: '100% !important',
-          },
-        }}
-      />
+      <Typography sx={{ color: 'text.secondary', maxWidth: 560 }}>
+        The merch site URL is not configured yet for this environment.
+      </Typography>
+      <Button component={RouterLink} to="/" variant="outlined" size="large">
+        Back to Home
+      </Button>
     </Box>
   );
 };

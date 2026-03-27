@@ -5,7 +5,6 @@ import { Link as RouterLink, type Location } from 'react-router-dom';
 import { NavbarDrawerAuthedPrimary } from './NavbarDrawerAuthedPrimary';
 import { NavbarMobileDrawerExplore } from './NavbarMobileDrawerExplore';
 import { NavbarMobileDrawerLegal } from './NavbarMobileDrawerLegal';
-import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 
 export type NavbarMobileDrawerProps = {
   drawerOpen: boolean;
@@ -113,7 +112,7 @@ export const NavbarMobileDrawer = ({
               {storeEnabled && (
                 <Button
                   component="a"
-                  href={getStoreExternalUrl()}
+                  href="/store"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() =>

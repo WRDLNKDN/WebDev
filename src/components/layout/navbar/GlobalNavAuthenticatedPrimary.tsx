@@ -2,7 +2,6 @@ import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
 
@@ -37,8 +36,8 @@ type StoreNavParams = {
 };
 
 /**
- * Authenticated primary nav: Feed → Directory → Chat → Profile → Events → Store
- * (external storefront in a new tab, not the in-app embed).
+ * Authenticated primary nav: Feed → Directory → Chat → Profile → Events.
+ * Store is rendered beside the brand in the main navbar, and in the mobile drawer.
  * Renders nothing when unauthenticated. Omitted flags produce no nodes (no placeholders).
  */
 export const GlobalNavAuthenticatedPrimary = ({
@@ -94,9 +93,7 @@ export const GlobalNavAuthenticatedPrimary = ({
   });
 
   if (!showAuthedHeader) {
-    if (!storeEnabled) return null;
-    if (variant === 'drawer') return null;
-    return <>{storeButton}</>;
+    return null;
   }
 
   return (
@@ -231,7 +228,7 @@ export const GlobalNavAuthenticatedPrimary = ({
           Events
         </Button>
       ) : null}
-      {storeButton}
+      {variant === 'drawer' ? storeButton : null}
     </>
   );
 };
@@ -267,7 +264,7 @@ function renderGlobalNavStoreButton({
     <Button
       key="global-nav-store"
       component="a"
-      href={getStoreExternalUrl()}
+      href="/store"
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {
@@ -282,7 +279,6 @@ function renderGlobalNavStoreButton({
         textTransform: 'none',
         minWidth: 0,
         whiteSpace: 'nowrap',
-        textDecoration: 'none',
         ...sharedButtonSx,
         '&:visited': {
           color:

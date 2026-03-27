@@ -508,6 +508,34 @@ export const Navbar = () => {
                 }}
               />
             </Box>
+            {storeEnabled && !minimalComingSoonHomeNavbar && (
+              <Button
+                component="a"
+                href="/store"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Store, opens storefront in a new tab"
+                sx={{
+                  color: 'rgba(255,255,255,0.85)',
+                  textTransform: 'none',
+                  fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                  minWidth: 0,
+                  px: isCompactDesktop ? 1 : 1.5,
+                  py: 0.625,
+                  whiteSpace: 'nowrap',
+                  borderRadius: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(56,132,210,0.14)',
+                    color: 'white',
+                  },
+                  '&:visited': {
+                    color: 'rgba(255,255,255,0.85)',
+                  },
+                }}
+              >
+                Store
+              </Button>
+            )}
             {/* Search: recessed bar, placeholder "I'm looking for..." — only when logged in; hidden on /join (public header) */}
             {!isMobile &&
               !isCompactDesktop &&

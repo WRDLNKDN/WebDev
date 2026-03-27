@@ -3,8 +3,7 @@ import { useEffect } from 'react';
 import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 
 /**
- * `/store` redirects to the configured storefront URL (Ecwid Instant Site from
- * `VITE_ECWID_STORE_ID`, or `VITE_STORE_URL`, or default Ecwid id).
+ * `/store` redirects to the configured storefront URL.
  */
 export const Store = () => {
   const storefrontUrl = getStoreExternalUrl();
@@ -33,7 +32,8 @@ export const Store = () => {
         Redirecting to the store...
       </Typography>
       <Typography sx={{ color: 'text.secondary', maxWidth: 560 }}>
-        If nothing happens, use the button below to open the merch site.
+        If nothing happens, use the button below to open the storefront in a new
+        tab.
       </Typography>
       <Button
         component="a"

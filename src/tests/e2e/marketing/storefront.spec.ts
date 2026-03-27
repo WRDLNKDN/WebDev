@@ -7,7 +7,7 @@ type StorefrontTestWindow = Window &
   };
 
 test.describe('Storefront', () => {
-  test('/store redirects to the default Ecwid storefront when no merch URL is configured', async ({
+  test('/store redirects to the canonical storefront when no merch URL is configured', async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -57,6 +57,6 @@ test.describe('Storefront', () => {
             '',
         ),
       )
-      .toBe('https://store129462253.company.site/');
+      .toBe('https://wrdlnkdn.company.site/');
   });
 });

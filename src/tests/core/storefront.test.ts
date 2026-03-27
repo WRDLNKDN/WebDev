@@ -72,13 +72,13 @@ describe('storefront helpers', () => {
     expect(GODADDY_STOREFRONT_URL).toBe('https://www.wrdlnkdn.com/store');
   });
 
-  it('prefers Ecwid instant site when VITE_ECWID_STORE_ID is set (over VITE_STORE_URL)', () => {
+  it('prefers an explicit storefront URL when set', () => {
     expect(
       getStoreExternalUrl({
         VITE_STORE_URL: ' https://shop.example/ ',
         VITE_ECWID_STORE_ID: '99',
       }),
-    ).toBe('https://store99.company.site/');
+    ).toBe('https://shop.example/');
   });
 
   it('uses VITE_STORE_URL when VITE_ECWID_STORE_ID is empty', () => {
@@ -122,23 +122,23 @@ describe('storefront helpers', () => {
     );
   });
 
-  it('falls back to Ecwid instant site when VITE_STORE_URL is not set', () => {
+  it('falls back to the canonical storefront URL when VITE_STORE_URL is not set', () => {
     expect(getStoreExternalUrl({ VITE_ECWID_STORE_ID: '12345' })).toBe(
-      'https://store12345.company.site/',
+      DEFAULT_ECWID_STOREFRONT_URL,
     );
   });
 
-  it('falls back to the default Ecwid instant site when no storefront env is set', () => {
+  it('falls back to the default storefront URL when no storefront env is set', () => {
     expect(getStoreExternalUrl({})).toBe(DEFAULT_ECWID_STOREFRONT_URL);
   });
 
-  it('exposes Ecwid instant site or VITE_STORE_URL by priority', () => {
+  it('exposes the canonical storefront URL or VITE_STORE_URL by priority', () => {
     expect(getAlternateStorefrontUrl({})).toBe(DEFAULT_ECWID_STOREFRONT_URL);
     expect(
       getAlternateStorefrontUrl({ VITE_STORE_URL: 'https://shop.example/' }),
     ).toBe('https://shop.example/');
     expect(getAlternateStorefrontUrl({ VITE_ECWID_STORE_ID: '9' })).toBe(
-      'https://store9.company.site/',
+      DEFAULT_ECWID_STOREFRONT_URL,
     );
   });
 });
@@ -150,7 +150,7 @@ describe('resolveStoreExternalUrl', () => {
         VITE_STORE_URL: 'https://legacy.example/',
         VITE_ECWID_STORE_ID: '129462253',
       }),
-    ).resolves.toBe('https://store129462253.company.site/');
+    ).resolves.toBe('https://legacy.example/');
 
     await expect(
       resolveStoreExternalUrl({
@@ -174,7 +174,7 @@ describe('resolveStoreExternalUrl', () => {
     ).resolves.toBe(DEFAULT_ECWID_STOREFRONT_URL);
   });
 
-  it('ignores the legacy godaddy storefront URL and falls back to Ecwid', async () => {
+  it('ignores the legacy godaddy storefront URL and falls back to the canonical storefront', async () => {
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: GODADDY_STOREFRONT_URL,

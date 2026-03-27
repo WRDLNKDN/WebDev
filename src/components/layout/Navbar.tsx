@@ -510,7 +510,7 @@ export const Navbar = () => {
                 }}
               />
             </Box>
-            {storeEnabled && !minimalComingSoonHomeNavbar && (
+            {storeEnabled && (
               <Button
                 component="a"
                 href={storeExternalUrl}
@@ -919,7 +919,7 @@ export const Navbar = () => {
             </Stack>
           )}
 
-          {/* Mobile auth controls stay in a shared component so they don't drift from desktop auth rules. */}
+          {/* Mobile auth controls stay shared, but Store still renders beside the logo on minimal home chrome. */}
           {isMobile && !minimalComingSoonHomeNavbar && (
             <NavbarMobileAuthControls
               isMobile={isMobile}

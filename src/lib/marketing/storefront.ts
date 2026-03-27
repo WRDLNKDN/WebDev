@@ -1,6 +1,7 @@
+import type { EcwidProductBrowserWidget } from '../../types/ecwid-globals';
+
 export const GODADDY_STOREFRONT_URL = 'https://www.wrdlnkdn.com/store';
-export const DEFAULT_ECWID_STOREFRONT_URL =
-  'https://store129462253.company.site/';
+export const DEFAULT_ECWID_STOREFRONT_URL = 'https://wrdlnkdn.company.site/';
 
 /** Default Ecwid store ID for the in-app `/store` embed (override with `VITE_ECWID_STORE_ID`). */
 export const DEFAULT_ECWID_EMBED_STORE_ID = '129462253';
@@ -49,24 +50,16 @@ export function normalizeExplicitStorefrontUrl(raw: string): string {
 }
 
 /**
- * Public storefront URL for nav + `/store` redirect.
+ * Public storefront URL for nav links and `/store` redirects.
  *
- * **Priority:** non-empty `VITE_ECWID_STORE_ID` → Ecwid Instant Site
- * (`store{id}.company.site`). Otherwise `VITE_STORE_URL` if set. Otherwise default
- * embed store id → same Instant Site pattern.
+ * **Priority:** non-empty `VITE_STORE_URL` → explicit custom storefront URL.
+ * Otherwise fall back to the canonical production storefront URL.
  *
- * Ecwid ID wins so Vercel can keep a legacy `VITE_STORE_URL` without overriding
- * the live company.site shop.
+ * `VITE_ECWID_STORE_ID` is used only by the embedded `/store` page and should
+ * not override the public storefront domain used in the navbar.
  */
 export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
   const viteStoreUrl = env?.VITE_STORE_URL ?? import.meta.env.VITE_STORE_URL;
-  const viteEcwidId =
-    env?.VITE_ECWID_STORE_ID ?? import.meta.env.VITE_ECWID_STORE_ID;
-
-  const ecwidId = getEcwidStoreId(viteEcwidId);
-  if (ecwidId) {
-    return buildEcwidInstantSiteUrl(ecwidId);
-  }
 
   const explicitRaw = typeof viteStoreUrl === 'string' ? viteStoreUrl : '';
   const explicit = normalizeExplicitStorefrontUrl(explicitRaw);
@@ -141,7 +134,7 @@ export async function resolveStoreExternalUrl(
 }
 
 export function getEcwidStoreId(
-  raw: string | null | undefined = import.meta.env.VITE_ECWID_STORE_ID,
+  raw: string | null | undefined,
 ): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const trimmed = raw.trim();
@@ -173,7 +166,9 @@ export function getEcwidStoreDivId(storeId: string): string {
   return `my-store-${storeId}`;
 }
 
-export function buildEcwidProductBrowserInit(storeDivId: string) {
+export function buildEcwidProductBrowserInit(
+  storeDivId: string,
+): EcwidProductBrowserWidget[] {
   return [
     {
       widgetType: 'ProductBrowser',

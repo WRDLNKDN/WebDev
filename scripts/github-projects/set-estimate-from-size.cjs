@@ -9,15 +9,6 @@ const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
 const SIZE_TO_ESTIMATE = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
 
-async function handleProjectV2ItemEstimate({ github, context, core }) {
-  const itemNodeId = context.payload.projects_v2_item?.node_id;
-  if (!itemNodeId) {
-    core.info('No projects_v2_item.node_id; skipping.');
-    return;
-  }
-  await syncEstimateFromSize(github, core, itemNodeId, null, SIZE_TO_ESTIMATE);
-}
-
 async function handleWorkflowDispatchEstimate({ github, context, core }) {
   const config = getProjectBackfillConfig(context, core);
   if (!config) {
@@ -65,11 +56,6 @@ async function handleWorkflowDispatchEstimate({ github, context, core }) {
 }
 
 async function runSetEstimateFromSize({ github, context, core }) {
-  if (context.eventName === 'projects_v2_item') {
-    await handleProjectV2ItemEstimate({ github, context, core });
-    return;
-  }
-
   if (
     context.eventName === 'workflow_dispatch' ||
     context.eventName === 'schedule'

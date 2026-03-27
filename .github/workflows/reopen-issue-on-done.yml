@@ -24,6 +24,7 @@ on:
 permissions:
   contents: read
   issues: write
+  repository-projects: read
 
 concurrency:
   group: reopen-issue-on-done-sync
@@ -37,6 +38,10 @@ jobs:
 
       - name: Reopen closed issue if project Status is Done
         uses: actions/github-script@v8
+        env:
+          GH_PROJECT_OWNER_TYPE: ${{ vars.GH_PROJECT_OWNER_TYPE }}
+          GH_PROJECT_OWNER_LOGIN: ${{ vars.GH_PROJECT_OWNER_LOGIN }}
+          GH_PROJECT_NUMBER: ${{ vars.GH_PROJECT_NUMBER }}
         with:
           github-token: ${{ secrets.GITHUBACTION || github.token }}
           script: |

@@ -1,8 +1,6 @@
 name: 👀 Reassign In Review to Creator
 
 on:
-  projects_v2_item:
-    types: [edited]
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:

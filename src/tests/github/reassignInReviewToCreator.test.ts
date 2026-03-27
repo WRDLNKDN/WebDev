@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const runReassignInReviewToCreator = require('../../../scripts/github-projects/reassign-in-review-to-creator.cjs');
+const { syncProjectItemAssignment } = runReassignInReviewToCreator;
 
 function makeCore() {
   return {
@@ -59,16 +60,8 @@ describe('reassign-in-review-to-creator', () => {
   it('reassigns an in-review issue to the original creator only', async () => {
     const github = makeGithubForItem(makeProjectIssueItem());
     const core = makeCore();
-    const context = {
-      eventName: 'projects_v2_item',
-      payload: {
-        projects_v2_item: {
-          node_id: 'PVT_item_123',
-        },
-      },
-    };
 
-    await runReassignInReviewToCreator({ github, context, core });
+    await syncProjectItemAssignment(github, core, 'PVT_item_123');
 
     expect(github.rest.issues.update).toHaveBeenCalledWith({
       owner: 'WRDLNKDN',
@@ -94,16 +87,8 @@ describe('reassign-in-review-to-creator', () => {
       }),
     );
     const core = makeCore();
-    const context = {
-      eventName: 'projects_v2_item',
-      payload: {
-        projects_v2_item: {
-          node_id: 'PVT_item_123',
-        },
-      },
-    };
 
-    await runReassignInReviewToCreator({ github, context, core });
+    await syncProjectItemAssignment(github, core, 'PVT_item_123');
 
     expect(github.rest.issues.update).not.toHaveBeenCalled();
     expect(core.info).toHaveBeenCalledWith(
@@ -129,16 +114,8 @@ describe('reassign-in-review-to-creator', () => {
       }),
     );
     const core = makeCore();
-    const context = {
-      eventName: 'projects_v2_item',
-      payload: {
-        projects_v2_item: {
-          node_id: 'PVT_item_123',
-        },
-      },
-    };
 
-    await runReassignInReviewToCreator({ github, context, core });
+    await syncProjectItemAssignment(github, core, 'PVT_item_123');
 
     expect(github.rest.issues.update).not.toHaveBeenCalled();
     expect(core.info).toHaveBeenCalledWith(
@@ -152,16 +129,8 @@ describe('reassign-in-review-to-creator', () => {
       new Error('Could not resolve to a User with the login of "originator".'),
     );
     const core = makeCore();
-    const context = {
-      eventName: 'projects_v2_item',
-      payload: {
-        projects_v2_item: {
-          node_id: 'PVT_item_123',
-        },
-      },
-    };
 
-    await runReassignInReviewToCreator({ github, context, core });
+    await syncProjectItemAssignment(github, core, 'PVT_item_123');
 
     expect(core.warning).toHaveBeenCalledWith(
       'Could not assign WRDLNKDN/WebDev#42 to @originator: Could not resolve to a User with the login of "originator".',

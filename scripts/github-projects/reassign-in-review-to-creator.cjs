@@ -4,9 +4,8 @@
  * update so a non-assignable creator does not partially clear ownership.
  *
  * Triggers:
- * - projects_v2_item (edited)
- * - schedule (backfill all items in a project)
- * - workflow_dispatch (backfill all items in a project)
+ * - schedule (scan all items in a project)
+ * - workflow_dispatch (scan all items in a project)
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
@@ -15,11 +14,6 @@ const resolveProjectV2 = require('./resolveProjectV2.cjs');
 const IN_REVIEW_STATUS = 'in review';
 
 async function runReassignInReviewToCreator({ github, context, core }) {
-  if (context.eventName === 'projects_v2_item') {
-    await handleProjectsV2ItemEvent({ github, context, core });
-    return;
-  }
-
   if (
     context.eventName === 'schedule' ||
     context.eventName === 'workflow_dispatch'
@@ -32,16 +26,7 @@ async function runReassignInReviewToCreator({ github, context, core }) {
 }
 
 module.exports = runReassignInReviewToCreator;
-
-async function handleProjectsV2ItemEvent({ github, context, core }) {
-  const itemNodeId = context.payload.projects_v2_item?.node_id;
-  if (!itemNodeId) {
-    core.info('No projects_v2_item.node_id; skipping.');
-    return;
-  }
-
-  await syncProjectItemAssignment(github, core, itemNodeId);
-}
+module.exports.syncProjectItemAssignment = syncProjectItemAssignment;
 
 async function handleProjectBackfill({ github, context, core }) {
   const config = getProjectBackfillConfig(context, core);

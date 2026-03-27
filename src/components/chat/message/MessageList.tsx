@@ -124,7 +124,8 @@ export const MessageList = ({
   const [linkPreviews, setLinkPreviews] = useState<
     Record<string, ChatLinkPreview | null>
   >({});
-  const fetchedPreviewIds = useRef<Set<string>>(new Set());
+  const linkPreviewsRef = useRef<Record<string, ChatLinkPreview | null>>({});
+  const previewUrlByMessageIdRef = useRef<Record<string, string>>({});
   const hasScrolledToMessage = useRef<string | null>(null);
 
   const handleCopyMessage = useCallback(
@@ -221,30 +222,75 @@ export const MessageList = ({
   }, [roomType, messages, currentUserId, onMessagesViewed]);
 
   useEffect(() => {
-    const nextTargets = messages
+    const nextPreviewTargets = messages
       .filter(
         (m) => !m.is_deleted && typeof m.content === 'string' && m.content,
       )
       .map((m) => ({ id: m.id, url: getFirstUrlFromText(m.content ?? '') }))
-      .filter((x): x is { id: string; url: string } => Boolean(x.url))
-      .filter((x) => !fetchedPreviewIds.current.has(x.id));
+      .filter((x): x is { id: string; url: string | null } => Boolean(x.id));
 
-    if (nextTargets.length === 0) return;
-    // Mark as in-flight before the first await so concurrent renders don't re-queue them
-    nextTargets.forEach((t) => fetchedPreviewIds.current.add(t.id));
+    const nextPreviewUrlByMessageId: Record<string, string> = {};
+    for (const target of nextPreviewTargets) {
+      if (target.url) {
+        nextPreviewUrlByMessageId[target.id] = target.url;
+      }
+    }
+
+    const previousPreviewUrlByMessageId = previewUrlByMessageIdRef.current;
+    previewUrlByMessageIdRef.current = nextPreviewUrlByMessageId;
+
+    setLinkPreviews((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [messageId, previousUrl] of Object.entries(
+        previousPreviewUrlByMessageId,
+      )) {
+        if (nextPreviewUrlByMessageId[messageId] !== previousUrl) {
+          if (messageId in next) {
+            delete next[messageId];
+            changed = true;
+          }
+        }
+      }
+      for (const [messageId] of Object.entries(prev)) {
+        if (!nextPreviewUrlByMessageId[messageId]) {
+          if (messageId in next) {
+            delete next[messageId];
+            changed = true;
+          }
+        }
+      }
+      const resolved = changed ? next : prev;
+      linkPreviewsRef.current = resolved;
+      return resolved;
+    });
+
+    const targetsToFetch = Object.entries(nextPreviewUrlByMessageId)
+      .filter(
+        ([messageId, url]) =>
+          previousPreviewUrlByMessageId[messageId] !== url ||
+          !(messageId in linkPreviewsRef.current),
+      )
+      .map(([id, url]) => ({ id, url }));
+
+    if (targetsToFetch.length === 0) return;
     let cancelled = false;
     void (async () => {
-      for (const target of nextTargets) {
+      for (const target of targetsToFetch) {
         const preview = await fetchChatLinkPreview(target.url);
         if (cancelled) return;
-        setLinkPreviews((prev) => ({ ...prev, [target.id]: preview }));
+        if (previewUrlByMessageIdRef.current[target.id] !== target.url)
+          continue;
+        setLinkPreviews((prev) => {
+          const next = { ...prev, [target.id]: preview };
+          linkPreviewsRef.current = next;
+          return next;
+        });
       }
     })();
     return () => {
       cancelled = true;
     };
-    // linkPreviews intentionally omitted from deps — fetchedPreviewIds ref deduplicates
-    // without causing this effect to re-run every time a preview resolves.
   }, [messages]);
 
   const handleEditSubmit = () => {

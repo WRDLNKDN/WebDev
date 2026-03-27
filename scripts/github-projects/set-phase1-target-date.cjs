@@ -2,8 +2,10 @@
  * Sets Project v2 "Target Date" to 2026-04-27 when the linked Issue milestone is "Phase 1"
  * and Target Date is blank. Does not overwrite an existing Target Date.
  *
- * Triggers: issues (opened, edited, milestoned), projects_v2_item (created, edited),
- * workflow_dispatch (backfill all items in a project).
+ * Triggers:
+ * - issues (opened, edited, milestoned)
+ * - schedule (scan all items in a project)
+ * - workflow_dispatch (scan all items in a project)
  *
  * If GITHUB_TOKEN cannot write the project, add a fine-grained PAT with project write as
  * secret PROJECT_PHASE1_TARGET_DATE_TOKEN (same pattern as set-estimate-from-size).
@@ -30,19 +32,6 @@ async function handleIssuesPhase1Target({ github, context, core }) {
     return;
   }
   await syncFromIssueNode(github, core, issue.node_id, {
-    targetField: TARGET_FIELD,
-    dateIso: DATE_ISO,
-    phase1Title: PHASE1_TITLE,
-  });
-}
-
-async function handleProjectsV2ItemPhase1Target({ github, context, core }) {
-  const itemNodeId = context.payload.projects_v2_item?.node_id;
-  if (!itemNodeId) {
-    core.info('No projects_v2_item.node_id; skipping.');
-    return;
-  }
-  await syncFromProjectItemNode(github, core, itemNodeId, {
     targetField: TARGET_FIELD,
     dateIso: DATE_ISO,
     phase1Title: PHASE1_TITLE,
@@ -81,11 +70,6 @@ async function handleWorkflowDispatchPhase1Backfill({ github, context, core }) {
 async function runSetPhase1TargetDate({ github, context, core }) {
   if (context.eventName === 'issues') {
     await handleIssuesPhase1Target({ github, context, core });
-    return;
-  }
-
-  if (context.eventName === 'projects_v2_item') {
-    await handleProjectsV2ItemPhase1Target({ github, context, core });
     return;
   }
 

@@ -1,3 +1,5 @@
+import { ACTION_COLORS } from '../../../theme/themeConstants';
+
 export const GRADIENT_START = '#00C4CC';
 export const GRADIENT_END = '#FF22C9';
 export const AVATAR_GRADIENT = `linear-gradient(135deg, ${GRADIENT_START} 0%, ${GRADIENT_END} 100%)`;
@@ -42,7 +44,7 @@ export const INPUT_STYLES = {
     color: 'rgba(255,255,255,0.6)',
     fontSize: '0.9rem',
     '& .MuiFormLabel-asterisk': {
-      color: '#f44336',
+      color: ACTION_COLORS.error,
     },
   },
   '& .MuiInputBase-input': { color: 'white', fontSize: '0.95rem' },

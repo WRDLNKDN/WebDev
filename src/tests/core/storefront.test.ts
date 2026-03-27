@@ -11,6 +11,7 @@ import {
   getEcwidStoreId,
   getStoreExternalUrl,
   GODADDY_STOREFRONT_URL,
+  normalizeExplicitStorefrontUrl,
   resolveStoreExternalUrl,
 } from '../../lib/marketing/storefront';
 
@@ -88,6 +89,38 @@ describe('storefront helpers', () => {
     ).toBe('https://shop.example/');
   });
 
+  it('prepends https to scheme-less VITE_STORE_URL (legacy GoDaddy-style env)', () => {
+    expect(
+      getStoreExternalUrl({
+        VITE_STORE_URL: 'www.wrdlnkdn.com/store',
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).toBe('https://www.wrdlnkdn.com/store');
+  });
+
+  it('resolves protocol-relative VITE_STORE_URL', () => {
+    expect(
+      getStoreExternalUrl({
+        VITE_STORE_URL: '//shop.example/path',
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).toBe('https://shop.example/path');
+  });
+
+  it('normalizes explicit storefront URLs (trim, scheme, protocol-relative)', () => {
+    expect(normalizeExplicitStorefrontUrl('')).toBe('');
+    expect(normalizeExplicitStorefrontUrl('   ')).toBe('');
+    expect(normalizeExplicitStorefrontUrl(' https://a.example/x ')).toBe(
+      'https://a.example/x',
+    );
+    expect(normalizeExplicitStorefrontUrl('b.example/y')).toBe(
+      'https://b.example/y',
+    );
+    expect(normalizeExplicitStorefrontUrl('//c.example/z')).toBe(
+      'https://c.example/z',
+    );
+  });
+
   it('falls back to Ecwid instant site when VITE_STORE_URL is not set', () => {
     expect(getStoreExternalUrl({ VITE_ECWID_STORE_ID: '12345' })).toBe(
       'https://store12345.company.site/',
@@ -125,6 +158,13 @@ describe('resolveStoreExternalUrl', () => {
     await expect(
       resolveStoreExternalUrl({
         VITE_STORE_URL: 'https://shop.example/',
+        VITE_ECWID_STORE_ID: '',
+      }),
+    ).resolves.toBe('https://shop.example/');
+
+    await expect(
+      resolveStoreExternalUrl({
+        VITE_STORE_URL: 'shop.example/',
         VITE_ECWID_STORE_ID: '',
       }),
     ).resolves.toBe('https://shop.example/');

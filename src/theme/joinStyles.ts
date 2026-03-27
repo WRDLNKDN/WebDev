@@ -2,7 +2,7 @@
  * Shared join flow styles (MUI sx). Replaces join.css and step-specific CSS.
  */
 
-import { BRAND_COLORS } from './themeConstants';
+import { ACTION_COLORS, BRAND_COLORS } from './themeConstants';
 
 export const signupPaper = {
   p: { xs: 1, sm: 1.75, md: 2.5 },
@@ -173,7 +173,7 @@ export const profileStepTextField = {
     '&.Mui-focused': { color: '#A744C2' },
     '&.Mui-error': { color: '#f44336' },
     '& .MuiFormLabel-asterisk': {
-      color: '#f44336',
+      color: ACTION_COLORS.error,
     },
   },
   '& .MuiInputBase-input::placeholder': {

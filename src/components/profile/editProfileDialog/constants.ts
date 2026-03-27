@@ -5,6 +5,7 @@ import {
   FORM_SECTION_PANEL_SX,
   dialogPaperSxFromTheme,
 } from '../../../lib/ui/formSurface';
+import { ACTION_COLORS } from '../../../theme/themeConstants';
 
 // Brand colors matching the profile editor visual system.
 export const GRADIENT_START = '#00C4CC';
@@ -66,7 +67,7 @@ export const INPUT_STYLES = {
     color: 'rgba(255,255,255,0.6)',
     fontSize: '0.9rem',
     '& .MuiFormLabel-asterisk': {
-      color: '#f44336',
+      color: ACTION_COLORS.error,
     },
   },
   '& .MuiInputBase-input': {

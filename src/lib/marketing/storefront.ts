@@ -15,6 +15,38 @@ export function buildEcwidInstantSiteUrl(storeId: string): string {
 }
 
 /**
+ * Normalize `VITE_STORE_URL`: trim, add `https:` when the value has no scheme,
+ * and resolve protocol-relative URLs (`//host/...`). Keeps GoDaddy-style env
+ * entries like `www.example.com/store` usable without a broken `href`.
+ */
+export function normalizeExplicitStorefrontUrl(raw: string): string {
+  const t = raw.trim();
+  if (!t) return '';
+
+  if (/^https?:\/\//i.test(t)) {
+    try {
+      return new URL(t).href;
+    } catch {
+      return t;
+    }
+  }
+
+  if (t.startsWith('//')) {
+    try {
+      return new URL(`https:${t}`).href;
+    } catch {
+      return `https:${t}`;
+    }
+  }
+
+  try {
+    return new URL(`https://${t}`).href;
+  } catch {
+    return t;
+  }
+}
+
+/**
  * Public storefront URL for nav + `/store` redirect.
  *
  * **Priority:** non-empty `VITE_ECWID_STORE_ID` → Ecwid Instant Site
@@ -34,7 +66,8 @@ export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
     return buildEcwidInstantSiteUrl(ecwidId);
   }
 
-  const explicit = typeof viteStoreUrl === 'string' ? viteStoreUrl.trim() : '';
+  const explicitRaw = typeof viteStoreUrl === 'string' ? viteStoreUrl : '';
+  const explicit = normalizeExplicitStorefrontUrl(explicitRaw);
   if (explicit.length > 0) return explicit;
 
   return buildEcwidInstantSiteUrl(DEFAULT_ECWID_EMBED_STORE_ID);
@@ -42,6 +75,7 @@ export function getAlternateStorefrontUrl(env?: StorefrontEnv): string {
 
 /**
  * Canonical storefront URL for nav links and `/store` redirect (sync, env-driven).
+ * Always returns a non-empty `http:` or `https:` URL string suitable for `href` / `location`.
  */
 export function getStoreExternalUrl(env?: StorefrontEnv): string {
   return getAlternateStorefrontUrl(env);

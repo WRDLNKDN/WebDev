@@ -18,6 +18,14 @@ const DEFAULT_FLAG_VALUES: FeatureFlagsMap = {
   [COMING_SOON_FLAG]: true,
   store: true,
 };
+let cachedFlags: FeatureFlagsMap | null = null;
+
+function hasJwtShape(token: string | null | undefined): boolean {
+  if (!token) {
+    return false;
+  }
+  return token.split('.').length === 3;
+}
 
 export interface FeatureFlagsContextValue {
   flags: FeatureFlagsMap;
@@ -35,32 +43,59 @@ export const FeatureFlagsProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [flags, setFlags] = useState<FeatureFlagsMap>({});
-  const [loading, setLoading] = useState(true);
+  const [flags, setFlags] = useState<FeatureFlagsMap>(cachedFlags ?? {});
+  const [loading, setLoading] = useState(cachedFlags === null);
 
   const fetchFlags = useCallback(async () => {
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token?.trim() ?? '';
+
+      if (session && !hasJwtShape(accessToken)) {
+        setFlags(cachedFlags ?? {});
+        return;
+      }
+
       const { data, error } = await supabase
         .from('feature_flags')
         .select('key, enabled');
       if (error) {
-        console.warn('[FeatureFlags] fetch error:', error.message);
-        setFlags({});
+        if (!/Expected 3 parts in JWT/i.test(error.message ?? '')) {
+          console.warn('[FeatureFlags] fetch error:', error.message);
+        }
+        setFlags(cachedFlags ?? {});
         return;
       }
       const map: FeatureFlagsMap = {};
       for (const row of data ?? []) {
         map[row.key] = row.enabled === true;
       }
+      cachedFlags = map;
       setFlags(map);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void fetchFlags();
+  const refreshFlags = useCallback(() => {
+    fetchFlags().catch((error) => {
+      console.warn('[FeatureFlags] refresh failed:', error);
+      setLoading(false);
+    });
   }, [fetchFlags]);
+
+  useEffect(() => {
+    refreshFlags();
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      setLoading(true);
+      refreshFlags();
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, [refreshFlags]);
 
   const setFlag = useCallback(async (key: string, enabled: boolean) => {
     // Upsert ensures missing keys are created (important for newly introduced flags).
@@ -71,7 +106,11 @@ export const FeatureFlagsProvider = ({
       .single();
     if (error) throw error;
     if (!data) throw new Error('No feature flag row returned after save.');
-    setFlags((prev) => ({ ...prev, [data.key]: data.enabled === true }));
+    setFlags((prev) => {
+      const next = { ...prev, [data.key]: data.enabled === true };
+      cachedFlags = next;
+      return next;
+    });
   }, []);
 
   const value: FeatureFlagsContextValue = {

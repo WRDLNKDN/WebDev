@@ -37,7 +37,6 @@ type Props = {
   onOpenProfileMenu: (anchor: HTMLElement) => void;
   onCloseProfileMenu: () => void;
   onOpenSettings: () => void;
-  onOpenLinks: () => void;
   onOpenEditProfile: () => void;
   onOpenShare: () => void;
   onViewProfile?: string;
@@ -133,7 +132,6 @@ export const DashboardIdentitySection = ({
   onOpenProfileMenu,
   onCloseProfileMenu,
   onOpenSettings,
-  onOpenLinks,
   onOpenEditProfile,
   onOpenShare,
   onViewProfile,
@@ -272,9 +270,6 @@ export const DashboardIdentitySection = ({
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             slotProps={{ paper: { sx: menuPaperSx } }}
           >
-            <MenuItem onClick={onOpenLinks} sx={{ py: 1.25 }}>
-              Add or Edit Links
-            </MenuItem>
             <MenuItem onClick={onOpenEditProfile} sx={{ py: 1.25 }}>
               Edit Profile
             </MenuItem>

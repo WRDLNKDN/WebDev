@@ -23,8 +23,9 @@ import { acceptWantsPgrstObjectJson } from './postgrestFulfill';
 
 export const USER_ID = FIXTURE_USER_ID;
 
-const ACCESS_TOKEN = 'stub-access-token';
-const REFRESH_TOKEN = 'stub-refresh-token';
+// Deliberately synthetic test fixtures, not real JWTs or reusable credentials.
+const E2E_FAKE_ACCESS_TOKEN = 'e2e-fake-access-token';
+const E2E_FAKE_REFRESH_TOKEN = 'e2e-fake-refresh-token';
 
 function resolveAuthStorageKey(): string {
   const appEnv = (process.env.VITE_APP_ENV ?? '').trim().toLowerCase();
@@ -43,8 +44,8 @@ function resolveAuthStorageKey(): string {
 
 export function getStubSession(overrides?: Record<string, unknown>) {
   return {
-    access_token: ACCESS_TOKEN,
-    refresh_token: REFRESH_TOKEN,
+    access_token: E2E_FAKE_ACCESS_TOKEN,
+    refresh_token: E2E_FAKE_REFRESH_TOKEN,
     token_type: 'bearer',
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,

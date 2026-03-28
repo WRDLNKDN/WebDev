@@ -25,19 +25,36 @@ export const MiniGameLoadingNotFound = ({
   loadingAriaLabel?: string;
 }) => {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+    <Box
+      sx={{ display: 'flex', justifyContent: 'center', py: { xs: 2.5, sm: 3 } }}
+    >
       {loading && <CircularProgress aria-label={loadingAriaLabel} />}
       {notFound && (
-        <Stack spacing={2} alignItems="center">
-          <Typography color="text.secondary">{notFoundMessage}</Typography>
-          <Button
-            component={RouterLink}
-            to={DASHBOARD_GAMES_HUB}
-            variant="contained"
-          >
-            Back to Games
-          </Button>
-        </Stack>
+        <Paper
+          variant="outlined"
+          sx={{
+            width: '100%',
+            maxWidth: 420,
+            px: { xs: 2.25, sm: 3 },
+            py: { xs: 2.5, sm: 3 },
+            borderRadius: 3,
+            textAlign: 'center',
+          }}
+        >
+          <Stack spacing={1.75} alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              404
+            </Typography>
+            <Typography color="text.secondary">{notFoundMessage}</Typography>
+            <Button
+              component={RouterLink}
+              to={DASHBOARD_GAMES_HUB}
+              variant="contained"
+            >
+              Back to Games
+            </Button>
+          </Stack>
+        </Paper>
       )}
     </Box>
   );

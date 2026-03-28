@@ -141,16 +141,29 @@ export const ProjectPage = () => {
 
   if (!project) {
     return (
-      <Container maxWidth="md" sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h5" gutterBottom>
-          Project not found
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          This project may have been removed or the link might be wrong.
-        </Typography>
-        <Button component={RouterLink} to="/dashboard" variant="contained">
-          Back to Dashboard
-        </Button>
+      <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 5 } }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2.5, sm: 3 },
+            borderRadius: 3,
+            border: '1px solid rgba(156,187,217,0.22)',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            404
+          </Typography>
+          <Typography variant="h5" gutterBottom>
+            Project not found
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+            This project may have been removed or the link might be wrong.
+          </Typography>
+          <Button component={RouterLink} to="/dashboard" variant="contained">
+            Back to Dashboard
+          </Button>
+        </Paper>
       </Container>
     );
   }

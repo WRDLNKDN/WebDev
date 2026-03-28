@@ -25,6 +25,16 @@ export const test = base.extend({
         body: JSON.stringify({ ok: true, data: [] }),
       });
     });
+    await page.route('**/rest/v1/feature_flags*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { key: 'coming_soon', enabled: true },
+          { key: 'store', enabled: true },
+        ]),
+      });
+    });
     await runWithPage(page);
   },
 });

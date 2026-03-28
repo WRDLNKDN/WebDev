@@ -59,7 +59,6 @@ type EditProfileDialogProps = {
   open: boolean;
   onClose: () => void;
   profile: DashboardProfile | null;
-  hasWeirdling?: boolean;
   avatarFallback?: string | null;
   onUpdate: (
     updates: Partial<DashboardProfile> & { nerd_creds?: Partial<NerdCreds> },
@@ -98,7 +97,6 @@ export const EditProfileDialog = ({
   open,
   onClose,
   profile,
-  hasWeirdling: _hasWeirdling = false,
   avatarFallback,
   onUpdate,
   onUpload,

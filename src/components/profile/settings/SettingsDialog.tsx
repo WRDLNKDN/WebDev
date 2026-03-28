@@ -117,7 +117,7 @@ export const SettingsDialog = ({
             </ListItemIcon>
             <ListItemText
               primary="Edit profile"
-              secondary="Handle, tagline, bio, avatar"
+              secondary="User name, bio, pronouns, avatar"
             />
           </ListItemButton>
           {onEmailPreferences && (

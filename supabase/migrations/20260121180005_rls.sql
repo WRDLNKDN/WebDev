@@ -1,13 +1,13 @@
 -- supabase/migrations/20260121180005_rls.sql
--- All RLS policies and privileges (tables/functions defined in 20260121180000_tables.sql).
+-- All RLS policies, grants, and security hardening (tables/functions defined in 20260121180000_tables.sql).
 -- Additive/safe only: no TRUNCATE, no DELETE without WHERE, no DROP TABLE; table data never cleared.
--- This file contains ONLY RLS policies, grants, and security settings - no table modifications.
+-- This file contains ONLY RLS policies, grants, and security settings/hardening - no schema or data modifications.
 --
 -- If you see "duplicate key" or migration repair needed for 20260214140000, 20260214160000, 20260214170000:
 --   supabase migration repair <id> --status reverted
 -- Then run db push again. (Those were consolidated into these two files only.)
 --
--- HOW TO FORCE RLS RECONFIGURE (when db push says "up to date" but schema is wrong):
+-- HOW TO FORCE RLS / SECURITY RECONFIGURE (when db push says "up to date" but security config is wrong):
 --
 -- OPTION A: Run manually in Supabase Dashboard → SQL Editor
 -- 1. Open project (UAT: lgxwseyzoefxggxijatp, PROD: rpcaazmxymymqdejevtb)
@@ -19,111 +19,6 @@
 --   supabase link --project-ref lgxwseyzoefxggxijatp
 --   supabase migration repair 20260121180005 --status reverted
 --   supabase db push --linked --include-all --include-seed
-
--- -----------------------------
--- Optional: feed_advertisers.image_url (idempotent for existing DBs)
--- -----------------------------
-alter table public.feed_advertisers add column if not exists image_url text;
-alter table public.feed_items add column if not exists edited_at timestamptz;
-
--- Optional: community_partners table (idempotent for existing DBs)
--- -----------------------------
-create table if not exists public.community_partners (
-  id uuid primary key default gen_random_uuid(),
-  company_name text not null,
-  title text,
-  description text,
-  url text not null,
-  logo_url text,
-  image_url text,
-  links jsonb default '[]'::jsonb,
-  active boolean not null default true,
-  featured boolean not null default false,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists idx_community_partners_active_order
-  on public.community_partners(active, featured desc, sort_order)
-  where active = true;
-
-drop trigger if exists trg_community_partners_updated_at on public.community_partners;
-create trigger trg_community_partners_updated_at
-  before update on public.community_partners
-  for each row execute function public.set_updated_at();
-
-insert into public.community_partners (
-  company_name, title, description, url, logo_url, image_url, active, featured, sort_order
-)
-select
-  'Nettica',
-  'Secure networking partner',
-  'Nettica helps teams run secure private networking with simple WireGuard management.',
-  'https://nettica.com/',
-  null,
-  null,
-  true,
-  true,
-  0
-where not exists (select 1 from public.community_partners limit 1);
-
--- Optional: feed_ad_events table (idempotent for existing DBs)
--- -----------------------------
-create table if not exists public.feed_ad_events (
-  id uuid primary key default gen_random_uuid(),
-  advertiser_id uuid not null references public.feed_advertisers(id) on delete cascade,
-  member_id uuid references auth.users(id) on delete set null,
-  event_name text not null check (event_name in ('feed_ad_impression', 'feed_ad_click')),
-  slot_index int,
-  target text,
-  url text,
-  page_path text,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists idx_feed_ad_events_advertiser_created
-  on public.feed_ad_events(advertiser_id, created_at desc);
-create index if not exists idx_feed_ad_events_name_created
-  on public.feed_ad_events(event_name, created_at desc);
-
--- Optional: feed-ad-images bucket (idempotent; 50MB; null = no MIME restriction)
--- -----------------------------
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('feed-ad-images', 'feed-ad-images', true, 52428800, null)
-on conflict (id) do update set public = excluded.public, file_size_limit = 52428800, allowed_mime_types = null;
-
--- Optional: advertiser-inquiry-assets bucket (idempotent; 5MB; PNG/SVG only; private)
--- -----------------------------
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'advertiser-inquiry-assets',
-  'advertiser-inquiry-assets',
-  false,
-  5242880,
-  array['image/png', 'image/svg+xml']
-)
-on conflict (id) do update set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
-
--- Optional: profiles status default + backfill (remove moderation)
--- -----------------------------
-update public.profiles set status = 'approved' where status = 'pending';
-alter table public.profiles alter column status set default 'approved';
-
--- Optional: add use_weirdling_avatar if missing (idempotent for existing DBs)
--- -----------------------------
-do $$
-begin
-  if not exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'profiles' and column_name = 'use_weirdling_avatar'
-  ) then
-    alter table public.profiles add column use_weirdling_avatar boolean not null default false;
-  end if;
-end $$;
 
 -- -----------------------------
 -- Consolidated follow-up migrations
@@ -150,150 +45,31 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
+do $$
+declare
+  project_sources_bucket constant text := 'project-sources';
+begin
 drop policy if exists "Authenticated can upload project-sources" on storage.objects;
 create policy "Authenticated can upload project-sources"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'project-sources');
+  with check (bucket_id = project_sources_bucket);
 
 drop policy if exists "Public read project-sources" on storage.objects;
 create policy "Public read project-sources"
   on storage.objects for select
   to public
-  using (bucket_id = 'project-sources');
+  using (bucket_id = project_sources_bucket);
 
 drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
 create policy "Authenticated can delete own project-sources"
   on storage.objects for delete
   to authenticated
   using (
-    bucket_id = 'project-sources'
+    bucket_id = project_sources_bucket
     and owner = auth.uid()
   );
-
--- -----------------------------
--- Optional: add directory columns to profiles if missing (idempotent for existing DBs)
--- -----------------------------
-do $$
-begin
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'industry') then
-    alter table public.profiles add column industry text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'location') then
-    alter table public.profiles add column location text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_visibility') then
-    alter table public.profiles add column profile_visibility text not null default 'members_only'
-      check (profile_visibility in ('members_only', 'connections_only'));
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_active_at') then
-    alter table public.profiles add column last_active_at timestamptz default now();
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'feed_view_preference') then
-    alter table public.profiles add column feed_view_preference text not null default 'anyone' check (feed_view_preference in ('anyone', 'connections'));
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_email_enabled') then
-    alter table public.profiles add column marketing_email_enabled boolean not null default false;
-    -- Backfill only this newly added column from legacy consent field.
-    update public.profiles
-    set marketing_email_enabled = coalesce(marketing_opt_in, false);
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in') then
-    alter table public.profiles add column marketing_opt_in boolean not null default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in_timestamp') then
-    alter table public.profiles add column marketing_opt_in_timestamp timestamptz;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_opt_in_ip') then
-    alter table public.profiles add column marketing_opt_in_ip text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_source') then
-    alter table public.profiles add column marketing_source text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_product_updates') then
-    alter table public.profiles add column marketing_product_updates boolean not null default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_events') then
-    alter table public.profiles add column marketing_events boolean not null default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'secondary_industry') then
-    alter table public.profiles add column secondary_industry text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'niche_field') then
-    alter table public.profiles add column niche_field text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_share_token') then
-    alter table public.profiles add column profile_share_token text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'profile_share_token_created_at') then
-    alter table public.profiles add column profile_share_token_created_at timestamptz;
-  end if;
-  -- Settings: notification and marketing preferences
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'push_enabled') then
-    alter table public.profiles add column push_enabled boolean not null default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'email_notifications_enabled') then
-    alter table public.profiles add column email_notifications_enabled boolean not null default true;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_push_enabled') then
-    alter table public.profiles add column marketing_push_enabled boolean not null default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'consent_updated_at') then
-    alter table public.profiles add column consent_updated_at timestamptz;
-  end if;
 end $$;
-
-create unique index if not exists idx_profiles_profile_share_token on public.profiles(profile_share_token) where profile_share_token is not null;
-
--- Directory indexes (idempotent)
-create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
-create index if not exists idx_profiles_secondary_industry on public.profiles(secondary_industry) where secondary_industry is not null;
-create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
-create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
-
--- Reaction index (idempotent)
-create unique index if not exists idx_feed_items_reaction_user_post
-  on public.feed_items (parent_id, user_id)
-  where kind = 'reaction'
-    and payload->>'type' in ('like', 'love', 'inspiration', 'care');
-
--- -----------------------------
--- Profile required fields (data integrity, idempotent)
--- -----------------------------
-update public.profiles
-set display_name = coalesce(nullif(trim(display_name), ''), handle, 'User')
-where status = 'approved'
-  and (display_name is null or length(trim(display_name)) = 0);
-
-update public.profiles
-set handle = 'user_' || substr(replace(id::text, '-', ''), 1, 8)
-where length(trim(handle)) = 0;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'profiles_handle_not_blank' and conrelid = 'public.profiles'::regclass
-  ) then
-    alter table public.profiles add constraint profiles_handle_not_blank
-      check (length(trim(handle)) > 0);
-  end if;
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'profiles_approved_has_display_name' and conrelid = 'public.profiles'::regclass
-  ) then
-    alter table public.profiles add constraint profiles_approved_has_display_name
-      check (
-        status != 'approved'
-        or (display_name is not null and length(trim(display_name)) >= 1)
-      );
-  end if;
-end $$;
-
-comment on constraint profiles_handle_not_blank on public.profiles is
-  'Handle cannot be blank.';
-comment on constraint profiles_approved_has_display_name on public.profiles is
-  'Approved profiles must have non-empty display_name for directory.';
 
 -- -----------------------------
 -- RLS replay safety: clear policies before re-create
@@ -302,6 +78,7 @@ comment on constraint profiles_approved_has_display_name on public.profiles is
 do $$
 declare
   p record;
+  public_schema constant text := 'public';
   managed_tables constant text[] := array[
     'admin_allowlist',
     'feature_flags',
@@ -347,7 +124,7 @@ begin
   for p in
     select schemaname, tablename, policyname
     from pg_policies
-    where schemaname = 'public'
+    where schemaname = public_schema
       and tablename = any(managed_tables)
   loop
     execute format(
@@ -379,25 +156,6 @@ grant select, insert, update, delete on table public.admin_allowlist to authenti
 -- -----------------------------
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
-
--- -----------------------------
--- Profanity tables (idempotent; mirrors tables.sql for partial / legacy DBs)
--- -----------------------------
-create table if not exists public.profanity_overrides (
-  id uuid primary key default gen_random_uuid(),
-  word text not null,
-  created_at timestamptz not null default now()
-);
-create unique index if not exists idx_profanity_overrides_word_lower
-  on public.profanity_overrides (lower(trim(word)));
-
-create table if not exists public.profanity_allowlist (
-  id uuid primary key default gen_random_uuid(),
-  word text not null,
-  created_at timestamptz not null default now()
-);
-create unique index if not exists idx_profanity_allowlist_word_lower
-  on public.profanity_allowlist (lower(trim(word)));
 
 -- -----------------------------
 -- profanity_overrides: read by all (for client-side validation), write by admin
@@ -530,36 +288,24 @@ grant execute on function public.get_directory_page(uuid, text, text, text, text
 -- -----------------------------
 alter table public.profiles enable row level security;
 
-create policy profiles_anon_read_approved
-  on public.profiles for select
-  to anon
-  using (status = 'approved');
-
-create policy profiles_authenticated_read
-  on public.profiles for select
-  to authenticated
-  using (
-    status = 'approved'
-    or (select auth.uid()) = id
-    or (select public.is_admin())
+do $$
+declare
+  approved_status constant text := 'approved';
+begin
+  execute format(
+    'create policy profiles_anon_read_approved on public.profiles for select to anon using (status = %L)',
+    approved_status
   );
 
-create policy profiles_authenticated_insert
-  on public.profiles for insert
-  to authenticated
-  with check ((select auth.uid()) = id);
-
-create policy profiles_authenticated_update
-  on public.profiles for update
-  to authenticated
-  using (
-    (select auth.uid()) = id
-    or (select public.is_admin())
-  )
-  with check (
-    (select auth.uid()) = id
-    or (select public.is_admin())
+  execute format(
+    'create policy profiles_authenticated_read on public.profiles for select to authenticated using (status = %L or (select auth.uid()) = id or (select public.is_admin()))',
+    approved_status
   );
+
+  execute 'create policy profiles_authenticated_insert on public.profiles for insert to authenticated with check ((select auth.uid()) = id)';
+
+  execute 'create policy profiles_authenticated_update on public.profiles for update to authenticated using ((select auth.uid()) = id or (select public.is_admin())) with check ((select auth.uid()) = id or (select public.is_admin()))';
+end $$;
 
 revoke all on table public.profiles from anon, authenticated;
 
@@ -935,35 +681,29 @@ create policy "Authenticated can delete own portfolio-thumbnails"
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
--- resumes: allow API/client + server-generated preview images (PNG/JPEG) alongside PDF/Word; idempotent for DBs created before image types were added
-update storage.buckets
-set allowed_mime_types = array[
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/png',
-  'image/jpeg'
-]::text[]
-where id = 'resumes';
-
 -- resumes: authenticated upload (own path), public read
-drop policy if exists "Authenticated can upload resumes" on storage.objects;
-create policy "Authenticated can upload resumes"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'resumes');
+do $$
+declare
+  resumes_bucket constant text := 'resumes';
+begin
+  execute 'drop policy if exists "Authenticated can upload resumes" on storage.objects';
+  execute format(
+    'create policy "Authenticated can upload resumes" on storage.objects for insert to authenticated with check (bucket_id = %L)',
+    resumes_bucket
+  );
 
-drop policy if exists "Authenticated can update resumes" on storage.objects;
-create policy "Authenticated can update resumes"
-  on storage.objects for update
-  to authenticated
-  using (bucket_id = 'resumes');
+  execute 'drop policy if exists "Authenticated can update resumes" on storage.objects';
+  execute format(
+    'create policy "Authenticated can update resumes" on storage.objects for update to authenticated using (bucket_id = %L)',
+    resumes_bucket
+  );
 
-drop policy if exists "Public read resumes" on storage.objects;
-create policy "Public read resumes"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'resumes');
+  execute 'drop policy if exists "Public read resumes" on storage.objects';
+  execute format(
+    'create policy "Public read resumes" on storage.objects for select to public using (bucket_id = %L)',
+    resumes_bucket
+  );
+end $$;
 
 -- -----------------------------
 -- chat_rooms: RLS

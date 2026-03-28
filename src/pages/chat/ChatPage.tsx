@@ -161,9 +161,24 @@ export const ChatPage = () => {
     if (isMobileLayout) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (e.defaultPrevented) return;
 
       const target = e.target as HTMLElement | null;
+      const activeElement = document.activeElement as HTMLElement | null;
+      const appMain = document.querySelector<HTMLElement>(
+        '[data-testid="app-main"]',
+      );
+      const interactiveTarget = target?.closest(
+        'button, a, input, textarea, select, [role="button"], [role="link"], [role="textbox"], [role="combobox"], [tabindex]',
+      );
+      const pageShortcutFocusTarget =
+        !activeElement ||
+        activeElement === document.body ||
+        activeElement === document.documentElement ||
+        activeElement === appMain;
       if (
+        !pageShortcutFocusTarget ||
+        interactiveTarget ||
         target?.tagName === 'INPUT' ||
         target?.tagName === 'TEXTAREA' ||
         target?.isContentEditable
@@ -285,19 +300,19 @@ export const ChatPage = () => {
     <Box
       sx={{
         display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-        width: { xs: '100%', md: 300, lg: 328 },
-        minWidth: { xs: 0, md: 300, lg: 328 },
-        maxWidth: '100%',
+        width: { xs: '100%', md: '34%' },
+        minWidth: { xs: 0, md: 150 },
+        maxWidth: { xs: '100%', md: 172 },
         flexShrink: 0,
         borderRight: {
           xs: 'none',
-          md: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.2 : 0.12)}`,
+          md: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.18 : 0.12)}`,
         },
         flexDirection: 'column',
         minHeight: 0,
         bgcolor: isMobileLayout
           ? 'transparent'
-          : alpha(theme.palette.background.default, 0.65),
+          : alpha(theme.palette.background.paper, 0.88),
       }}
     >
       <ChatRoomList
@@ -327,7 +342,7 @@ export const ChatPage = () => {
         overflowY: 'hidden',
         background: isMobileLayout
           ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
-          : alpha(theme.palette.background.default, 0.55),
+          : alpha(theme.palette.background.default, 0.96),
       }}
     >
       {roomId ? (
@@ -559,92 +574,98 @@ export const ChatPage = () => {
           }}
         />
         {createPortal(
-          <>
-            <Box
-              role="presentation"
-              aria-hidden
-              onClick={closeDockedChat}
-              sx={{
-                position: 'fixed',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                top: dockTopPx,
-                zIndex: 1250,
-                bgcolor: 'rgba(2, 6, 18, 0.58)',
-                backdropFilter: 'blur(3px)',
-              }}
-            />
-            <Box
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="chat-dock-title"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                position: 'fixed',
-                zIndex: 1300,
-                top: `calc(${dockTopPx}px + 12px)`,
-                right: { xs: 12, md: 20 },
-                bottom: { xs: 12, md: 20 },
-                left: { xs: 12, md: 'auto' },
-                width: {
-                  xs: 'calc(100vw - 24px)',
-                  md: 'min(1080px, calc(100vw - 48px))',
+          <Box
+            role="region"
+            aria-labelledby="chat-dock-title"
+            onClick={(e) => e.stopPropagation()}
+            sx={{
+              position: 'fixed',
+              zIndex: 1300,
+              top: `${dockTopPx}px`,
+              right: 0,
+              bottom: 0,
+              width: 'clamp(380px, 29vw, 420px)',
+              maxWidth: 'calc(100vw - 12px)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              bgcolor: alpha(theme.palette.background.default, 0.96),
+              borderLeft: `1px solid ${alpha(theme.palette.divider, 0.16)}`,
+              boxShadow:
+                theme.palette.mode === 'light'
+                  ? `-8px 0 24px ${alpha(theme.palette.common.black, 0.08)}`
+                  : `-10px 0 28px ${alpha(theme.palette.common.black, 0.32)}`,
+              transform: 'translateX(0)',
+              opacity: 1,
+              animation: 'chatDockSlideIn 220ms ease-out',
+              '@keyframes chatDockSlideIn': {
+                '0%': {
+                  transform: 'translateX(24px)',
+                  opacity: 0,
                 },
-                maxWidth: 'calc(100vw - 24px)',
-                borderRadius: 2,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: 'background.paper',
-                boxShadow:
+                '100%': {
+                  transform: 'translateX(0)',
+                  opacity: 1,
+                },
+              },
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{
+                px: 1.75,
+                py: 1,
+                flexShrink: 0,
+                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                bgcolor: alpha(theme.palette.background.paper, 0.88),
+                color:
                   theme.palette.mode === 'light'
-                    ? `0 8px 32px ${alpha(theme.palette.common.black, 0.08)}`
-                    : `0 12px 40px ${alpha(theme.palette.common.black, 0.35)}`,
-                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                    ? theme.palette.text.primary
+                    : 'rgba(252,250,255,0.96)',
               }}
             >
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
+              <Typography
+                id="chat-dock-title"
+                variant="subtitle2"
+                fontWeight={700}
                 sx={{
-                  px: 2,
-                  py: 1.25,
-                  flexShrink: 0,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                  bgcolor: alpha(theme.palette.background.default, 0.4),
+                  color:
+                    theme.palette.mode === 'light'
+                      ? theme.palette.text.primary
+                      : 'rgba(252,250,255,0.96)',
                 }}
               >
-                <Typography
-                  id="chat-dock-title"
-                  variant="subtitle1"
-                  fontWeight={700}
-                >
-                  Messages
-                </Typography>
-                <IconButton
-                  aria-label="Close messages"
-                  onClick={closeDockedChat}
-                  size="small"
-                  edge="end"
-                >
-                  <CloseIcon />
-                </IconButton>
-              </Stack>
-              <Box
+                Messages
+              </Typography>
+              <IconButton
+                aria-label="Close messages"
+                onClick={closeDockedChat}
+                size="small"
+                edge="end"
                 sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  bgcolor: 'background.default',
+                  color:
+                    theme.palette.mode === 'light'
+                      ? theme.palette.text.primary
+                      : 'rgba(220,207,248,0.9)',
                 }}
               >
-                {splitWorkspace}
-              </Box>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.default',
+              }}
+            >
+              {splitWorkspace}
             </Box>
-          </>,
+          </Box>,
           document.body,
         )}
         {dialogs}

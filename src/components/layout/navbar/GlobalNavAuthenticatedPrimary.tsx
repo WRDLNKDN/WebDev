@@ -71,7 +71,15 @@ export const GlobalNavAuthenticatedPrimary = ({
   const showChat = chatUiForMember(chatEnabled, sessionUserId);
 
   const desktopFontSize = isCompactDesktop ? '0.92rem' : '1rem';
-  const desktopPx = isCompactDesktop ? 1 : 1.5;
+  const desktopPx = isCompactDesktop ? 1 : 1.25;
+  const desktopButtonSx = {
+    fontSize: desktopFontSize,
+    px: desktopPx,
+    py: 0.625,
+    minWidth: 0,
+    whiteSpace: 'nowrap' as const,
+    borderRadius: 1,
+  };
 
   const desktopActiveSx = (active: boolean) =>
     active
@@ -122,8 +130,7 @@ export const GlobalNavAuthenticatedPrimary = ({
             textTransform: 'none',
             ...(variant === 'desktop'
               ? {
-                  fontSize: desktopFontSize,
-                  px: desktopPx,
+                  ...desktopButtonSx,
                   ...desktopActiveSx(isFeedActive),
                 }
               : {
@@ -148,8 +155,7 @@ export const GlobalNavAuthenticatedPrimary = ({
             textTransform: 'none',
             ...(variant === 'desktop'
               ? {
-                  fontSize: desktopFontSize,
-                  px: desktopPx,
+                  ...desktopButtonSx,
                   ...desktopActiveSx(isDirectoryActive),
                 }
               : {
@@ -174,8 +180,7 @@ export const GlobalNavAuthenticatedPrimary = ({
             textTransform: 'none',
             ...(variant === 'desktop'
               ? {
-                  fontSize: desktopFontSize,
-                  px: desktopPx,
+                  ...desktopButtonSx,
                   ...desktopActiveSx(isChatActive),
                 }
               : {
@@ -200,8 +205,7 @@ export const GlobalNavAuthenticatedPrimary = ({
             textTransform: 'none',
             ...(variant === 'desktop'
               ? {
-                  fontSize: desktopFontSize,
-                  px: desktopPx,
+                  ...desktopButtonSx,
                   ...desktopActiveSx(isDashboardActive),
                 }
               : {
@@ -226,8 +230,7 @@ export const GlobalNavAuthenticatedPrimary = ({
             textTransform: 'none',
             ...(variant === 'desktop'
               ? {
-                  fontSize: desktopFontSize,
-                  px: desktopPx,
+                  ...desktopButtonSx,
                   ...desktopActiveSx(isEventsActive),
                 }
               : {

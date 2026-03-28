@@ -137,6 +137,9 @@ export const AppToastProvider = ({ children }: { children: ReactNode }) => {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       dismissCurrentToast();
     };
 

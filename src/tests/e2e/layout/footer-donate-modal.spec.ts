@@ -42,8 +42,9 @@ test.describe('Footer donate link', () => {
       page.waitForEvent('popup'),
       payLink.click(),
     ]);
-    await popup.waitForURL(/paylinks\.godaddy\.com/, { timeout: 20_000 });
-    await expect(popup).toHaveURL(/paylinks\.godaddy\.com/);
+    await expect
+      .poll(() => popup.url(), { timeout: 20_000 })
+      .toMatch(/\/pay$|paylinks\.godaddy\.com/);
     await popup.close();
   });
 

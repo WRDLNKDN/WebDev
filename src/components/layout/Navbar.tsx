@@ -133,6 +133,23 @@ export const Navbar = () => {
     (profileOnboarded || !onboardingLoaded) &&
     !forcePublicHeader &&
     (!productionComingSoon || isAdminActive);
+  const desktopNavButtonSx = {
+    color: 'rgba(255,255,255,0.85)',
+    textTransform: 'none',
+    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+    minWidth: 0,
+    px: isCompactDesktop ? 1 : 1.25,
+    py: 0.625,
+    whiteSpace: 'nowrap' as const,
+    borderRadius: 1,
+    '&:hover': {
+      bgcolor: 'rgba(56,132,210,0.14)',
+      color: 'white',
+    },
+    '&:visited': {
+      color: 'rgba(255,255,255,0.85)',
+    },
+  };
 
   // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Sign in + Join
   // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
@@ -470,7 +487,7 @@ export const Navbar = () => {
             sx={{
               mr: isMobile ? 0.5 : 2,
               minHeight: { xs: 40, sm: 48 },
-              gap: isCompactDesktop ? 1.25 : 3,
+              gap: isCompactDesktop ? 1 : 2,
               overflow: 'visible',
               flexShrink: isMobile ? 1 : 0,
               minWidth: 0,
@@ -520,23 +537,7 @@ export const Navbar = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Store, opens storefront in a new tab"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    minWidth: 0,
-                    px: isCompactDesktop ? 1 : 1.5,
-                    py: 0.625,
-                    whiteSpace: 'nowrap',
-                    borderRadius: 1,
-                    '&:hover': {
-                      bgcolor: 'rgba(56,132,210,0.14)',
-                      color: 'white',
-                    },
-                    '&:visited': {
-                      color: 'rgba(255,255,255,0.85)',
-                    },
-                  }}
+                  sx={desktopNavButtonSx}
                 >
                   Store
                 </Button>
@@ -546,23 +547,7 @@ export const Navbar = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Kickstarter, opens in a new tab"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    textTransform: 'none',
-                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-                    minWidth: 0,
-                    px: isCompactDesktop ? 1 : 1.5,
-                    py: 0.625,
-                    whiteSpace: 'nowrap',
-                    borderRadius: 1,
-                    '&:hover': {
-                      bgcolor: 'rgba(56,132,210,0.14)',
-                      color: 'white',
-                    },
-                    '&:visited': {
-                      color: 'rgba(255,255,255,0.85)',
-                    },
-                  }}
+                  sx={desktopNavButtonSx}
                 >
                   Kickstarter
                 </Button>
@@ -596,7 +581,7 @@ export const Navbar = () => {
             showAuthedHeader && (
               <Box
                 ref={setSearchAnchorEl}
-                sx={{ position: 'relative', minWidth: 240, ml: 1.5 }}
+                sx={{ position: 'relative', minWidth: 240, ml: 0.75 }}
               >
                 <Box
                   component="form"

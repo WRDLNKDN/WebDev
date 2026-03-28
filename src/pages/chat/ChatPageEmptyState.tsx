@@ -5,7 +5,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 type ChatPageEmptyStateProps = {
   onStartDm: () => void;
   onCreateGroup: () => void;
-  /** `docked` = inside floating desktop panel; `page` = full mobile shell */
+  /** `docked` = inside desktop dock; `page` = full mobile shell */
   variant?: 'docked' | 'page';
 };
 
@@ -28,27 +28,27 @@ export const ChatPageEmptyState = ({
       sx={{
         flex: 1,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: docked ? 'flex-start' : 'center',
+        justifyContent: docked ? 'flex-start' : 'center',
         flexDirection: 'column',
-        gap: 2.5,
-        px: 3,
-        py: 4,
-        textAlign: 'center',
+        gap: docked ? 1.5 : 2.5,
+        px: docked ? 2 : 3,
+        py: docked ? 2.5 : 4,
+        textAlign: docked ? 'left' : 'center',
         minHeight: 0,
         ...(docked
           ? {
               borderLeft: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-              background: `linear-gradient(165deg, ${alpha(theme.palette.primary.dark, 0.12)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 45%, ${alpha(theme.palette.background.default, 0.9)} 100%)`,
+              background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.2)} 0%, ${alpha(theme.palette.background.default, 0.92)} 100%)`,
             }
           : {}),
       }}
     >
       <Box
         sx={{
-          width: 72,
-          height: 72,
-          borderRadius: 2.5,
+          width: docked ? 48 : 72,
+          height: docked ? 48 : 72,
+          borderRadius: docked ? 1.75 : 2.5,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -58,42 +58,48 @@ export const ChatPageEmptyState = ({
         }}
         aria-hidden
       >
-        <ForumOutlinedIcon sx={{ fontSize: 36 }} />
+        <ForumOutlinedIcon sx={{ fontSize: docked ? 24 : 36 }} />
       </Box>
-      <Box sx={{ maxWidth: 420 }}>
+      <Box sx={{ maxWidth: docked ? 280 : 420 }}>
+        {!docked ? (
+          <Typography
+            variant="overline"
+            sx={{
+              letterSpacing: 2,
+              color: secondaryText,
+              display: 'block',
+              mb: 0.75,
+            }}
+          >
+            Your inbox
+          </Typography>
+        ) : null}
         <Typography
-          variant="overline"
-          sx={{
-            letterSpacing: 2,
-            color: secondaryText,
-            display: 'block',
-            mb: 0.75,
-          }}
-        >
-          Your inbox
-        </Typography>
-        <Typography
-          variant="h5"
+          variant={docked ? 'subtitle1' : 'h5'}
           component="p"
-          sx={{ fontWeight: 700, mb: 1, color: primaryText }}
+          sx={{ fontWeight: 700, mb: 0.75, color: primaryText }}
         >
-          Pick a conversation or start one that actually matters.
+          {docked
+            ? 'Choose a chat to jump back in.'
+            : 'Pick a conversation or start one that actually matters.'}
         </Typography>
         <Typography variant="body2" sx={{ mb: 0.5, color: secondaryText }}>
-          Direct messages stay quick; groups help when you need more weirdlings
-          in the loop.
+          {docked
+            ? 'Your active thread will stay here while the rest of the app remains visible.'
+            : 'Direct messages stay quick; groups help when you need more weirdlings in the loop.'}
         </Typography>
       </Box>
       <Box
         sx={{
           display: 'flex',
-          gap: 1.25,
+          gap: 1,
           flexDirection: { xs: 'column', sm: 'row' },
           width: { xs: '100%', sm: 'auto' },
-          maxWidth: 400,
+          maxWidth: docked ? 280 : 400,
         }}
       >
         <Button
+          size={docked ? 'small' : 'medium'}
           variant="contained"
           onClick={onStartDm}
           sx={{ width: { xs: '100%', sm: 'auto' }, textTransform: 'none' }}
@@ -101,6 +107,7 @@ export const ChatPageEmptyState = ({
           New 1:1 chat
         </Button>
         <Button
+          size={docked ? 'small' : 'medium'}
           variant="outlined"
           onClick={onCreateGroup}
           sx={{ width: { xs: '100%', sm: 'auto' }, textTransform: 'none' }}

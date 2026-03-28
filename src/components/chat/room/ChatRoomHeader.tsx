@@ -1,6 +1,10 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloseIcon from '@mui/icons-material/Close';
+import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
 import BlockIcon from '@mui/icons-material/Block';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import MarkChatUnreadOutlinedIcon from '@mui/icons-material/MarkChatUnreadOutlined';
+import NotificationsOffOutlinedIcon from '@mui/icons-material/NotificationsOffOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -11,6 +15,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
+  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -24,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
+import { RemoveChatConfirmDialog } from '../dialogs/RemoveChatConfirmDialog';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
   CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
@@ -49,6 +55,8 @@ type ChatRoomHeaderProps = {
   onPopOut?: () => void;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  showBackButton?: boolean;
+  onRemoveConversation?: () => void;
 };
 
 export const ChatRoomHeader = ({
@@ -67,9 +75,12 @@ export const ChatRoomHeader = ({
   onPopOut,
   isFavorite,
   onToggleFavorite,
+  showBackButton = true,
+  onRemoveConversation,
 }: ChatRoomHeaderProps) => {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const headerIconMuted = 'rgba(255,255,255,0.52)';
   const headerIconHover = 'rgba(255,255,255,0.88)';
 
@@ -87,22 +98,61 @@ export const ChatRoomHeader = ({
       ? (otherMember?.profile?.avatar ?? undefined)
       : undefined;
   const avatarAlt = displayName || 'Chat';
+  const secondaryLabel =
+    room?.room_type === 'group'
+      ? `${room.members?.length ?? 0} members`
+      : otherUserId
+        ? undefined
+        : 'Direct message';
 
   const menuItems = useMemo(() => {
-    if (room?.room_type === 'dm') {
-      return [
+    const items = [
+      <MenuItem key="mark-unread" disabled>
+        <ListItemIcon>
+          <MarkChatUnreadOutlinedIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText primary="Mark as unread" secondary="Coming soon" />
+      </MenuItem>,
+      <MenuItem key="mute" disabled>
+        <ListItemIcon>
+          <NotificationsOffOutlinedIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText primary="Mute conversation" secondary="Coming soon" />
+      </MenuItem>,
+      <MenuItem key="archive" disabled>
+        <ListItemIcon>
+          <ArchiveOutlinedIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText primary="Archive" secondary="Coming soon" />
+      </MenuItem>,
+      <Divider key="divider-utilities" />,
+    ];
+
+    if (onToggleFavorite) {
+      items.push(
         <MenuItem
-          key="leave-dm"
+          key="favorite"
           onClick={() => {
-            void onLeave();
+            Promise.resolve(onToggleFavorite()).catch(() => {});
             setMenuAnchor(null);
           }}
         >
           <ListItemIcon>
-            <LogoutIcon fontSize="small" />
+            {isFavorite ? (
+              <StarIcon fontSize="small" />
+            ) : (
+              <StarBorderIcon fontSize="small" />
+            )}
           </ListItemIcon>
-          <ListItemText>Leave conversation</ListItemText>
+          <ListItemText
+            primary={isFavorite ? 'Unstar conversation' : 'Star conversation'}
+          />
         </MenuItem>,
+      );
+    }
+
+    if (room?.room_type === 'dm') {
+      items.push(
         <MenuItem
           key="block"
           onClick={() => {
@@ -113,68 +163,93 @@ export const ChatRoomHeader = ({
           <ListItemIcon>
             <BlockIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Block</ListItemText>
+          <ListItemText primary="Block member" />
         </MenuItem>,
-      ];
+      );
     }
-    if (room?.room_type === 'group') {
-      return [
-        ...(isRoomAdmin
-          ? [
-              <MenuItem
-                key="invite"
-                onClick={() => {
-                  onInvite();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <PersonAddIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Invite members</ListItemText>
-              </MenuItem>,
-              <MenuItem
-                key="rename"
-                onClick={() => {
-                  onRename();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <EditIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Rename group</ListItemText>
-              </MenuItem>,
-              <MenuItem
-                key="manage"
-                onClick={() => {
-                  onManageMembers();
-                  setMenuAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <GroupAddIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Manage members</ListItemText>
-              </MenuItem>,
-            ]
-          : []),
+
+    if (room?.room_type === 'group' && isRoomAdmin) {
+      items.push(
         <MenuItem
-          key="leave-group"
+          key="invite"
           onClick={() => {
-            void onLeave();
+            onInvite();
             setMenuAnchor(null);
           }}
         >
           <ListItemIcon>
-            <LogoutIcon fontSize="small" />
+            <PersonAddIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Leave group</ListItemText>
+          <ListItemText primary="Invite members" />
         </MenuItem>,
-      ];
+        <MenuItem
+          key="rename"
+          onClick={() => {
+            onRename();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Rename group" />
+        </MenuItem>,
+        <MenuItem
+          key="manage"
+          onClick={() => {
+            onManageMembers();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <GroupAddIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Manage members" />
+        </MenuItem>,
+      );
     }
-    return [];
+
+    items.push(
+      <Divider key="divider-danger" />,
+      <MenuItem
+        key="leave"
+        onClick={() => {
+          void onLeave();
+          setMenuAnchor(null);
+        }}
+      >
+        <ListItemIcon>
+          <LogoutIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText
+          primary={
+            room?.room_type === 'group' ? 'Leave group' : 'Leave conversation'
+          }
+        />
+      </MenuItem>,
+    );
+
+    if (onRemoveConversation) {
+      items.push(
+        <MenuItem
+          key="delete"
+          onClick={() => {
+            setConfirmRemoveOpen(true);
+            setMenuAnchor(null);
+          }}
+          sx={{ color: 'error.main' }}
+        >
+          <ListItemIcon sx={{ color: 'inherit' }}>
+            <DeleteOutlineIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Delete conversation" />
+        </MenuItem>,
+      );
+    }
+
+    return items;
   }, [
+    isFavorite,
     room?.room_type,
     isRoomAdmin,
     onLeave,
@@ -182,13 +257,15 @@ export const ChatRoomHeader = ({
     onInvite,
     onRename,
     onManageMembers,
+    onToggleFavorite,
+    onRemoveConversation,
   ]);
 
   return (
     <Box
       sx={{
-        px: { xs: 0.75, sm: 1.25 },
-        py: { xs: 0.75, sm: 1.1 },
+        px: { xs: 0.9, sm: 1.2 },
+        py: { xs: 0.75, sm: 0.95 },
         borderBottom: '1px solid rgba(255,255,255,0.06)',
         display: 'flex',
         alignItems: 'center',
@@ -199,7 +276,7 @@ export const ChatRoomHeader = ({
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
-      {!closeIcon && (
+      {!closeIcon && showBackButton && (
         <Tooltip title="Back to conversations">
           <IconButton
             size="small"
@@ -234,14 +311,14 @@ export const ChatRoomHeader = ({
           src={avatarUrl}
           alt={avatarAlt}
           size="small"
-          sx={{ flexShrink: 0 }}
+          sx={{ flexShrink: 0, width: 36, height: 36 }}
         />
         <Box sx={{ minWidth: 0 }}>
           <Typography
-            variant="subtitle1"
-            fontWeight={600}
+            variant="subtitle2"
+            fontWeight={700}
             noWrap
-            sx={{ fontSize: '1rem' }}
+            sx={{ fontSize: '0.98rem', lineHeight: 1.2 }}
           >
             {displayName}
           </Typography>
@@ -252,6 +329,15 @@ export const ChatRoomHeader = ({
               typingUsers={typingUsers}
             />
           )}
+          {secondaryLabel ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.15 }}
+            >
+              {secondaryLabel}
+            </Typography>
+          ) : null}
         </Box>
       </Box>
       <Box
@@ -373,11 +459,25 @@ export const ChatRoomHeader = ({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         slotProps={{
           root: { sx: { zIndex: 1500 } },
-          paper: { sx: { zIndex: 1500 } },
+          paper: {
+            sx: {
+              zIndex: 1500,
+              minWidth: 220,
+              mt: 0.75,
+            },
+          },
         }}
       >
         {...menuItems}
       </Menu>
+      {onRemoveConversation ? (
+        <RemoveChatConfirmDialog
+          open={confirmRemoveOpen}
+          roomLabel={displayName || 'this conversation'}
+          onClose={() => setConfirmRemoveOpen(false)}
+          onConfirm={() => Promise.resolve(onRemoveConversation())}
+        />
+      ) : null}
     </Box>
   );
 };

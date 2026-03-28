@@ -41,7 +41,6 @@ import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { truncateSnippet } from '../../lib/chat/messageSnippet';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { getGlassCard } from '../../theme/candyStyles';
-import { ChatPageEmptyState } from './ChatPageEmptyState';
 
 export const ChatPage = () => {
   const theme = useTheme();
@@ -295,18 +294,24 @@ export const ChatPage = () => {
   };
 
   const dockTopPx = 64 + bannerOffsetPx;
+  const showThread = Boolean(roomId);
+  const dockWidth = showThread
+    ? 'clamp(860px, 66vw, 1120px)'
+    : 'clamp(420px, 34vw, 480px)';
 
   const listColumn = (
     <Box
       sx={{
         display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-        width: { xs: '100%', md: '34%' },
-        minWidth: { xs: 0, md: 150 },
-        maxWidth: { xs: '100%', md: 172 },
+        width: { xs: '100%', md: showThread ? '33%' : '100%' },
+        minWidth: { xs: 0, md: showThread ? 280 : 0 },
+        maxWidth: { xs: '100%', md: showThread ? 360 : '100%' },
         flexShrink: 0,
         borderRight: {
           xs: 'none',
-          md: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.18 : 0.12)}`,
+          md: showThread
+            ? `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.18 : 0.12)}`
+            : 'none',
         },
         flexDirection: 'column',
         minHeight: 0,
@@ -329,11 +334,11 @@ export const ChatPage = () => {
     </Box>
   );
 
-  const threadColumn = (
+  const threadColumn = showThread ? (
     <Box
       sx={{
         flex: 1,
-        display: { xs: roomId ? 'flex' : 'none', md: 'flex' },
+        display: { xs: 'flex', md: 'flex' },
         flexDirection: 'column',
         minHeight: 0,
         minWidth: 0,
@@ -342,142 +347,133 @@ export const ChatPage = () => {
         overflowY: 'hidden',
         background: isMobileLayout
           ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
-          : alpha(theme.palette.background.default, 0.96),
+          : alpha(theme.palette.background.default, 0.985),
       }}
     >
-      {roomId ? (
-        <>
-          <ChatRoomHeader
-            room={room}
-            currentUserId={uid}
-            onlineUsers={onlineUsers}
-            typingUsers={typingUsers}
-            isRoomAdmin={isRoomAdmin ?? false}
-            onLeave={handleLeave}
-            onBlock={() => setBlockDialogOpen(true)}
-            onInvite={() => {
-              setGroupDialogMode('invite');
-              setGroupDialogOpen(true);
-            }}
-            onRename={() => {
-              setGroupDialogMode('rename');
-              setGroupDialogOpen(true);
-            }}
-            onManageMembers={() => {
-              setGroupDialogMode('manage');
-              setGroupDialogOpen(true);
-            }}
-            isFavorite={Boolean(activeRoom?.is_favorite)}
-            onToggleFavorite={
-              roomId
-                ? () =>
-                    void toggleFavorite(
-                      roomId,
-                      Boolean(activeRoom?.is_favorite),
-                    )
-                : undefined
-            }
-            onBack={() => navigate('/chat-full')}
-          />
+      <ChatRoomHeader
+        room={room}
+        currentUserId={uid}
+        onlineUsers={onlineUsers}
+        typingUsers={typingUsers}
+        isRoomAdmin={isRoomAdmin ?? false}
+        onLeave={handleLeave}
+        onBlock={() => setBlockDialogOpen(true)}
+        onInvite={() => {
+          setGroupDialogMode('invite');
+          setGroupDialogOpen(true);
+        }}
+        onRename={() => {
+          setGroupDialogMode('rename');
+          setGroupDialogOpen(true);
+        }}
+        onManageMembers={() => {
+          setGroupDialogMode('manage');
+          setGroupDialogOpen(true);
+        }}
+        isFavorite={Boolean(activeRoom?.is_favorite)}
+        onToggleFavorite={
+          roomId
+            ? () =>
+                void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+            : undefined
+        }
+        onBack={() => navigate('/chat-full')}
+        showBackButton={isMobileLayout}
+        onRemoveConversation={
+          roomId ? () => handleRemoveChat(roomId) : undefined
+        }
+      />
 
-          {error && (
-            <Box
-              sx={{
-                px: 2,
-                py: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                flexWrap: 'wrap',
-              }}
-            >
-              <Typography color="error" variant="body2">
-                {error}
-              </Typography>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => void refresh()}
-              >
-                Try again
-              </Button>
-            </Box>
-          )}
+      {error && (
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Typography color="error" variant="body2">
+            {error}
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void refresh()}
+          >
+            Try again
+          </Button>
+        </Box>
+      )}
 
-          {chatLoading ? (
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : (
-            <MessageList
-              messages={messages}
-              currentUserId={uid}
-              roomType={room?.room_type ?? 'dm'}
-              otherUserId={otherMember?.user_id}
-              onLoadOlder={() => void loadOlderMessages()}
-              hasOlderMessages={hasOlderMessages}
-              loadingOlder={loadingOlder}
-              onEdit={editMessage}
-              onDelete={deleteMessage}
-              onReaction={toggleReaction}
-              onReport={(msgId, senderUserId) =>
-                handleReport(msgId, senderUserId ?? undefined)
-              }
-              onStartReply={(msg) =>
-                setReplyTarget({
-                  id: msg.id,
-                  authorLabel: forwardAuthorLabel(msg),
-                  contentSnippet: truncateSnippet(msg.content ?? ''),
-                })
-              }
-              onForward={(msg) => setForwardSource(msg)}
-              onMessagesViewed={markAsRead}
-              scrollToMessageId={searchParams.get('message')}
-              typingAvatarUrl={
-                room?.room_type === 'dm'
-                  ? (otherMember?.profile?.avatar ?? null)
-                  : undefined
-              }
-              showTyping={
-                !!(
-                  room?.room_type === 'dm' &&
-                  otherMember?.user_id &&
-                  typingUsers.has(otherMember.user_id)
-                )
-              }
-            />
-          )}
-
-          <MessageInput
-            onSend={sendMessage}
-            onTyping={startTyping}
-            onStopTyping={stopTyping}
-            disabled={chatLoading}
-            sending={sending}
-            roomType={room?.room_type ?? 'dm'}
-            roomId={roomId ?? null}
-            groupMembers={roomMembersToMentionable(room)}
-            currentUserId={uid}
-            replyTo={replyTarget}
-            onCancelReply={() => setReplyTarget(null)}
-          />
-        </>
+      {chatLoading ? (
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CircularProgress />
+        </Box>
       ) : (
-        <ChatPageEmptyState
-          variant={isMobileLayout ? 'page' : 'docked'}
-          onStartDm={() => setStartDmOpen(true)}
-          onCreateGroup={() => setCreateGroupOpen(true)}
+        <MessageList
+          messages={messages}
+          currentUserId={uid}
+          roomType={room?.room_type ?? 'dm'}
+          otherUserId={otherMember?.user_id}
+          onLoadOlder={() => void loadOlderMessages()}
+          hasOlderMessages={hasOlderMessages}
+          loadingOlder={loadingOlder}
+          onEdit={editMessage}
+          onDelete={deleteMessage}
+          onReaction={toggleReaction}
+          onReport={(msgId, senderUserId) =>
+            handleReport(msgId, senderUserId ?? undefined)
+          }
+          onStartReply={(msg) =>
+            setReplyTarget({
+              id: msg.id,
+              authorLabel: forwardAuthorLabel(msg),
+              contentSnippet: truncateSnippet(msg.content ?? ''),
+            })
+          }
+          onForward={(msg) => setForwardSource(msg)}
+          onMessagesViewed={markAsRead}
+          scrollToMessageId={searchParams.get('message')}
+          typingAvatarUrl={
+            room?.room_type === 'dm'
+              ? (otherMember?.profile?.avatar ?? null)
+              : undefined
+          }
+          showTyping={
+            !!(
+              room?.room_type === 'dm' &&
+              otherMember?.user_id &&
+              typingUsers.has(otherMember.user_id)
+            )
+          }
         />
       )}
+
+      <MessageInput
+        onSend={sendMessage}
+        onTyping={startTyping}
+        onStopTyping={stopTyping}
+        disabled={chatLoading}
+        sending={sending}
+        roomType={room?.room_type ?? 'dm'}
+        roomId={roomId ?? null}
+        groupMembers={roomMembersToMentionable(room)}
+        currentUserId={uid}
+        replyTo={replyTarget}
+        onCancelReply={() => setReplyTarget(null)}
+      />
     </Box>
-  );
+  ) : null;
 
   const splitWorkspace = (
     <Box
@@ -584,7 +580,7 @@ export const ChatPage = () => {
               top: `${dockTopPx}px`,
               right: 0,
               bottom: 0,
-              width: 'clamp(380px, 29vw, 420px)',
+              width: dockWidth,
               maxWidth: 'calc(100vw - 12px)',
               display: 'flex',
               flexDirection: 'column',

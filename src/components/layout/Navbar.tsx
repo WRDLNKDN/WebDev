@@ -485,9 +485,9 @@ export const Navbar = () => {
             alignItems="center"
             spacing={0}
             sx={{
-              mr: isMobile ? 0.5 : 2,
+              mr: isMobile ? 0.5 : 0.5,
               minHeight: { xs: 40, sm: 48 },
-              gap: isCompactDesktop ? 1 : 2,
+              gap: isCompactDesktop ? 0.75 : 1.25,
               overflow: 'visible',
               flexShrink: isMobile ? 1 : 0,
               minWidth: 0,
@@ -530,7 +530,12 @@ export const Navbar = () => {
               />
             </Box>
             {storeEnabled && (
-              <>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={0}
+                sx={{ gap: isCompactDesktop ? 0.25 : 0.5 }}
+              >
                 <Button
                   component="a"
                   href={storeExternalUrl}
@@ -551,13 +556,20 @@ export const Navbar = () => {
                 >
                   Kickstarter
                 </Button>
-              </>
+              </Stack>
             )}
           </Stack>
 
           {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store; Admin is under the avatar menu only */}
           {!isMobile && (
-            <Box component="span" sx={{ display: 'contents' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0,
+                gap: isCompactDesktop ? 0.25 : 0.5,
+              }}
+            >
               <GlobalNavAuthenticatedPrimary
                 variant="desktop"
                 path={path}
@@ -581,7 +593,7 @@ export const Navbar = () => {
             showAuthedHeader && (
               <Box
                 ref={setSearchAnchorEl}
-                sx={{ position: 'relative', minWidth: 240, ml: 0.75 }}
+                sx={{ position: 'relative', minWidth: 240, ml: 0.5 }}
               >
                 <Box
                   component="form"

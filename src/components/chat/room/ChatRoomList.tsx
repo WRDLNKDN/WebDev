@@ -1,24 +1,16 @@
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
-import GroupsIcon from '@mui/icons-material/Groups';
-import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
-import TuneIcon from '@mui/icons-material/Tune';
 import {
   Box,
   Button,
-  FormControl,
   IconButton,
   InputAdornment,
-  InputLabel,
   List,
   ListItemButton,
-  MenuItem,
-  Popover,
-  Select,
   Stack,
   TextField,
   Tooltip,
@@ -26,18 +18,15 @@ import {
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import {
-  CHAT_ROOM_FILTER_OPTIONS,
-  CHAT_ROOM_SORT_OPTIONS,
   deriveVisibleChatRooms,
   getChatRoomLabel,
-  type ChatRoomFilter,
-  type ChatRoomSort,
 } from '../../../lib/chat/roomListState';
 import { RemoveChatConfirmDialog } from '../dialogs/RemoveChatConfirmDialog';
+import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
   CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
@@ -60,8 +49,18 @@ type ChatRoomListProps = {
 };
 
 const DEFAULT_CHAT_PREFIX = '/chat';
-const DM_ICON_COLOR = '#3884D2';
-const GROUP_ICON_COLOR = '#4DD166';
+
+function formatConversationTime(value?: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 export const ChatRoomList = ({
   rooms,
   loading,
@@ -77,17 +76,11 @@ export const ChatRoomList = ({
   const isLightChrome = theme.palette.mode === 'light';
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
-  const [filter, setFilter] = useState<ChatRoomFilter>('all');
-  const [sort, setSort] = useState<ChatRoomSort>('favorites');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMenuAnchor, setViewMenuAnchor] = useState<HTMLElement | null>(
-    null,
-  );
   const [removeTarget, setRemoveTarget] = useState<{
     id: string;
     label: string;
   } | null>(null);
-  const viewMenuId = useId();
   const base = chatPathPrefix.replace(/\/$/, '');
   const panelPrimaryText = isLightChrome
     ? theme.palette.text.primary
@@ -100,10 +93,10 @@ export const ChatRoomList = ({
     () =>
       deriveVisibleChatRooms(rooms, {
         currentUserId,
-        filter,
-        sort,
+        filter: 'all',
+        sort: 'favorites',
       }),
-    [currentUserId, filter, rooms, sort],
+    [currentUserId, rooms],
   );
 
   const filteredRooms = useMemo(() => {
@@ -131,7 +124,7 @@ export const ChatRoomList = ({
     >
       <Box
         sx={{
-          p: { xs: 1.35, sm: 1.65 },
+          p: { xs: 1.2, sm: 1.35 },
           borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.14 : 0.08)}`,
           background: isLightChrome
             ? alpha(theme.palette.background.paper, 0.92)
@@ -140,74 +133,44 @@ export const ChatRoomList = ({
           color: panelPrimaryText,
         }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          spacing={1}
-          sx={{ mb: 1.25 }}
-        >
-          {showMessagesHeading ? (
-            <Typography
-              id="chat-room-list-heading"
-              variant="subtitle1"
-              component="h2"
-              fontWeight={700}
-              sx={{ color: panelPrimaryText }}
-            >
-              Messages
-            </Typography>
-          ) : (
-            <>
-              <Typography
-                id="chat-room-list-heading"
-                variant="subtitle2"
-                component="h2"
-                sx={{
-                  position: 'absolute',
-                  width: 1,
-                  height: 1,
-                  p: 0,
-                  m: -1,
-                  overflow: 'hidden',
-                  clip: 'rect(0, 0, 0, 0)',
-                  whiteSpace: 'nowrap',
-                  border: 0,
-                }}
-              >
-                Conversations
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-            </>
-          )}
-          <Tooltip title="Filter & sort">
-            <IconButton
-              size="small"
-              aria-label="Filter and sort conversations"
-              aria-expanded={Boolean(viewMenuAnchor)}
-              aria-controls={viewMenuAnchor ? viewMenuId : undefined}
-              onClick={(e) => setViewMenuAnchor(e.currentTarget)}
-              sx={{
-                color: panelSecondaryText,
-                '&:hover': {
-                  bgcolor: isLightChrome
-                    ? alpha(theme.palette.primary.main, 0.06)
-                    : 'rgba(255,255,255,0.06)',
-                },
-              }}
-            >
-              <TuneIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
+        {showMessagesHeading ? (
+          <Typography
+            id="chat-room-list-heading"
+            variant="subtitle1"
+            component="h2"
+            fontWeight={700}
+            sx={{ color: panelPrimaryText, mb: 1 }}
+          >
+            Messages
+          </Typography>
+        ) : (
+          <Typography
+            id="chat-room-list-heading"
+            variant="subtitle2"
+            component="h2"
+            sx={{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              p: 0,
+              m: -1,
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              border: 0,
+            }}
+          >
+            Conversations
+          </Typography>
+        )}
         <TextField
           size="small"
           fullWidth
-          placeholder="Search"
+          placeholder="Search messages"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           inputProps={{
-            'aria-label': 'Search conversations',
+            'aria-label': 'Search messages',
           }}
           InputProps={{
             startAdornment: (
@@ -221,6 +184,14 @@ export const ChatRoomList = ({
           }}
           sx={{
             mb: 1.35,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: isLightChrome
+                ? alpha(theme.palette.common.black, 0.025)
+                : 'rgba(255,255,255,0.035)',
+              border: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.65 : 0.18)}`,
+              boxShadow: 'none',
+            },
             '& .MuiInputBase-root': {
               color: panelPrimaryText,
             },
@@ -230,76 +201,12 @@ export const ChatRoomList = ({
             },
           }}
         />
-        <Popover
-          id={viewMenuId}
-          open={Boolean(viewMenuAnchor)}
-          anchorEl={viewMenuAnchor}
-          onClose={() => setViewMenuAnchor(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          slotProps={{
-            paper: {
-              sx: { p: 2, minWidth: 260 },
-            },
-          }}
-        >
-          <Stack spacing={1.5} data-testid="chat-room-list-controls">
-            <FormControl size="small" fullWidth>
-              <InputLabel id="chat-room-filter-label">Filter</InputLabel>
-              <Select
-                labelId="chat-room-filter-label"
-                value={filter}
-                label="Filter"
-                onChange={(event) =>
-                  setFilter(event.target.value as ChatRoomFilter)
-                }
-                sx={
-                  isLightChrome
-                    ? undefined
-                    : {
-                        color: panelPrimaryText,
-                      }
-                }
-              >
-                {CHAT_ROOM_FILTER_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" fullWidth>
-              <InputLabel id="chat-room-sort-label">Sort</InputLabel>
-              <Select
-                labelId="chat-room-sort-label"
-                value={sort}
-                label="Sort"
-                onChange={(event) =>
-                  setSort(event.target.value as ChatRoomSort)
-                }
-                sx={
-                  isLightChrome
-                    ? undefined
-                    : {
-                        color: panelPrimaryText,
-                      }
-                }
-              >
-                {CHAT_ROOM_SORT_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </Popover>
         {(onStartDm || onCreateGroup) && (
           <Stack
-            direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
+            direction="row"
             spacing={1}
             sx={{
-              pt: 0.25,
+              pt: 0.1,
             }}
           >
             {onStartDm && (
@@ -309,12 +216,12 @@ export const ChatRoomList = ({
                 onClick={onStartDm}
                 startIcon={<AddCommentOutlinedIcon />}
                 sx={{
-                  justifyContent: 'flex-start',
+                  justifyContent: 'center',
                   textTransform: 'none',
                   fontWeight: 700,
                   borderRadius: 1.5,
-                  px: 1.35,
-                  py: 0.95,
+                  px: 1.1,
+                  py: 0.8,
                   ...(isLightChrome
                     ? {
                         color: theme.palette.primary.contrastText,
@@ -346,11 +253,11 @@ export const ChatRoomList = ({
                 onClick={onCreateGroup}
                 startIcon={<GroupOutlinedIcon />}
                 sx={{
-                  justifyContent: 'flex-start',
+                  justifyContent: 'center',
                   textTransform: 'none',
                   borderRadius: 1.5,
-                  px: 1.25,
-                  py: 0.95,
+                  px: 1.1,
+                  py: 0.8,
                   ...(isLightChrome
                     ? {
                         color: theme.palette.primary.main,
@@ -390,7 +297,7 @@ export const ChatRoomList = ({
           flex: 1,
           overflow: 'auto',
           py: 0,
-          px: 0.5,
+          px: 0,
           color: panelPrimaryText,
         }}
       >
@@ -424,16 +331,17 @@ export const ChatRoomList = ({
                 ...(roomId === room.id
                   ? {
                       bgcolor: isLightChrome
-                        ? alpha(theme.palette.primary.main, 0.1)
-                        : alpha(theme.palette.primary.main, 0.14),
+                        ? alpha(theme.palette.primary.main, 0.11)
+                        : alpha(theme.palette.primary.main, 0.16),
+                      boxShadow: `inset 3px 0 0 ${alpha(theme.palette.primary.main, 0.9)}`,
                     }
                   : {}),
                 borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.08 : 0.06)}`,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.75,
-                py: 1.35,
-                px: { xs: 1.15, sm: 1.35 },
+                gap: 1,
+                py: 1,
+                px: { xs: 1.1, sm: 1.25 },
                 borderRadius: 0,
                 my: 0,
                 color: panelPrimaryText,
@@ -450,11 +358,11 @@ export const ChatRoomList = ({
                     bgcolor:
                       roomId === room.id
                         ? isLightChrome
-                          ? alpha(theme.palette.primary.main, 0.12)
-                          : alpha(theme.palette.primary.main, 0.18)
+                          ? alpha(theme.palette.primary.main, 0.14)
+                          : alpha(theme.palette.primary.main, 0.2)
                         : isLightChrome
-                          ? alpha(theme.palette.action.hover, 0.5)
-                          : 'rgba(255,255,255,0.04)',
+                          ? alpha(theme.palette.action.hover, 0.55)
+                          : 'rgba(255,255,255,0.045)',
                   },
                 },
                 '&:focus-visible': {
@@ -463,34 +371,42 @@ export const ChatRoomList = ({
                 },
               }}
             >
+              <ProfileAvatar
+                src={
+                  room.room_type === 'dm'
+                    ? (room.members?.find(
+                        (member) => member.user_id !== currentUserId,
+                      )?.profile?.avatar ?? undefined)
+                    : undefined
+                }
+                alt={getChatRoomLabel(room, currentUserId)}
+                size="small"
+                sx={{ width: 40, height: 40, flexShrink: 0 }}
+              />
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Stack direction="row" alignItems="center" spacing={0.75}>
-                  {room.room_type === 'group' ? (
-                    <GroupsIcon
-                      aria-hidden
-                      sx={{
-                        fontSize: 18,
-                        color: GROUP_ICON_COLOR,
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <PersonIcon
-                      aria-hidden
-                      sx={{
-                        fontSize: 18,
-                        color: DM_ICON_COLOR,
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={0.75}
+                  sx={{ minWidth: 0 }}
+                >
                   <Typography
                     variant="body2"
-                    fontWeight={600}
+                    fontWeight={roomId === room.id ? 700 : 600}
                     noWrap
-                    sx={{ color: panelPrimaryText }}
+                    sx={{ color: panelPrimaryText, flex: 1, minWidth: 0 }}
                   >
                     {getChatRoomLabel(room, currentUserId)}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: panelSecondaryText,
+                      flexShrink: 0,
+                      fontSize: '0.7rem',
+                    }}
+                  >
+                    {formatConversationTime(room.last_message_at)}
                   </Typography>
                   {room.is_favorite ? (
                     <StarIcon
@@ -508,7 +424,7 @@ export const ChatRoomList = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    mt: 0.15,
+                    mt: 0.2,
                     lineHeight: 1.35,
                     opacity: 0.92,
                   }}
@@ -516,14 +432,13 @@ export const ChatRoomList = ({
                   {room.last_message_preview ||
                     (room.room_type === 'group'
                       ? `${room.members?.length ?? 0} members`
-                      : '1:1')}
+                      : 'No messages yet')}
                 </Typography>
               </Box>
               {(onToggleFavorite || onRemoveChat) && (
                 <Box
                   className="chat-room-row-actions"
                   sx={{
-                    ml: 'auto',
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
@@ -561,8 +476,8 @@ export const ChatRoomList = ({
                         }}
                         sx={{
                           borderRadius: 1.25,
-                          minWidth: 36,
-                          minHeight: 36,
+                          minWidth: 32,
+                          minHeight: 32,
                           transition:
                             'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
                           ...(room.is_favorite
@@ -601,8 +516,8 @@ export const ChatRoomList = ({
                             ? 'text.secondary'
                             : 'rgba(255,255,255,0.65)',
                           borderRadius: 1,
-                          minWidth: 34,
-                          minHeight: 34,
+                          minWidth: 30,
+                          minHeight: 30,
                           '&:hover': {
                             bgcolor: isLightChrome
                               ? 'action.hover'

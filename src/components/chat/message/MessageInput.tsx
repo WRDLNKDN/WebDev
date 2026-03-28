@@ -425,18 +425,23 @@ export const MessageInput = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 0.65,
+        gap: 0.5,
         borderTop: (t) =>
-          `1px solid ${alpha(t.palette.primary.main, t.palette.mode === 'light' ? 0.22 : 0.35)}`,
-        p: { xs: 1.1, sm: 1.2 },
-        pb: `max(10px, calc(0.625rem + env(safe-area-inset-bottom, 0px)))`,
+          `1px solid ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.85 : 0.28)}`,
+        p: { xs: 0.9, sm: 1 },
+        pb: `max(8px, calc(0.5rem + env(safe-area-inset-bottom, 0px)))`,
         bgcolor: (t) =>
           t.palette.mode === 'light'
-            ? alpha(t.palette.background.paper, 0.97)
-            : 'rgba(40,44,52,0.97)',
+            ? alpha(t.palette.background.paper, 0.985)
+            : 'rgba(32,36,44,0.98)',
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
+        flexShrink: 0,
+        position: 'sticky',
+        bottom: 0,
+        zIndex: 1,
+        backdropFilter: 'blur(10px)',
       }}
     >
       {replyTo ? (
@@ -527,7 +532,7 @@ export const MessageInput = ({
         sx={{
           display: 'flex',
           alignItems: { xs: 'stretch', sm: 'flex-end' },
-          gap: 0.5,
+          gap: 0.35,
           minWidth: 0,
           width: '100%',
           flexDirection: { xs: 'column', sm: 'row' },
@@ -620,10 +625,10 @@ export const MessageInput = ({
               bgcolor: (t) =>
                 t.palette.mode === 'light'
                   ? alpha(t.palette.common.black, 0.04)
-                  : 'rgba(40,44,52,0.9)',
+                  : 'rgba(24,28,35,0.9)',
               color: 'text.primary',
-              borderRadius: 1.75,
-              minHeight: { xs: 48, sm: 40 },
+              borderRadius: 1.4,
+              minHeight: { xs: 46, sm: 38 },
               alignItems: expanded ? 'flex-start' : 'center',
               '& fieldset': {
                 borderColor: (t) =>
@@ -639,6 +644,9 @@ export const MessageInput = ({
                     t.palette.mode === 'light' ? 0.35 : 0.45,
                   ),
               },
+            },
+            '& .MuiInputBase-inputMultiline': {
+              py: 0.85,
             },
             /* 16px on narrow viewports avoids iOS Safari zoom-on-focus */
             '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
@@ -662,6 +670,7 @@ export const MessageInput = ({
                 ),
               flexShrink: 0,
               alignSelf: { xs: 'flex-end', sm: 'auto' },
+              p: 0.5,
             }}
           >
             <KeyboardArrowUpIcon fontSize="small" />

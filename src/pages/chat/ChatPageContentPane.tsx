@@ -13,7 +13,6 @@ import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { truncateSnippet } from '../../lib/chat/messageSnippet';
-import { ChatPageEmptyState } from './ChatPageEmptyState';
 
 type ChatPageContentPaneProps = {
   roomId?: string;
@@ -53,8 +52,6 @@ type ChatPageContentPaneProps = {
   onForwardMessage: (targetRoomId: string, content: string) => Promise<boolean>;
   onTyping: () => void;
   onStopTyping: () => void;
-  onStartDm: () => void;
-  onCreateGroup: () => void;
   /** Deep-link scroll target (e.g. from notification `?message=`). */
   scrollToMessageId?: string | null;
 };
@@ -91,8 +88,6 @@ export const ChatPageContentPane = ({
   onForwardMessage,
   onTyping,
   onStopTyping,
-  onStartDm,
-  onCreateGroup,
   scrollToMessageId = null,
 }: ChatPageContentPaneProps) => {
   const { showToast } = useAppToast();
@@ -250,12 +245,7 @@ export const ChatPageContentPane = ({
             busy={sending}
           />
         </>
-      ) : (
-        <ChatPageEmptyState
-          onStartDm={onStartDm}
-          onCreateGroup={onCreateGroup}
-        />
-      )}
+      ) : null}
     </Box>
   );
 };

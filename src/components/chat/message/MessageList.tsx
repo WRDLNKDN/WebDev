@@ -75,6 +75,14 @@ function formatMessageTime(iso: string): string {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+function formatMessageDay(iso: string): string {
+  return new Date(iso).toLocaleDateString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export const MessageList = ({
   messages,
   currentUserId,
@@ -346,6 +354,10 @@ export const MessageList = ({
       )}
       {messages.map((msg, msgIndex) => {
         const prev = msgIndex > 0 ? messages[msgIndex - 1] : null;
+        const showDaySeparator =
+          !prev ||
+          new Date(prev.created_at).toDateString() !==
+            new Date(msg.created_at).toDateString();
         const isContinuation =
           Boolean(prev) &&
           !msg.is_system_message &&
@@ -438,282 +450,323 @@ export const MessageList = ({
           useHoverRevealActions && showKebabMenu && kebabItems.length > 0;
 
         return (
-          <Box
-            key={msg.id}
-            ref={(el: HTMLDivElement | null) => {
-              if (el) {
-                messageRefs.current.set(msg.id, el);
-              } else {
-                messageRefs.current.delete(msg.id);
-              }
-            }}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              maxWidth: { xs: '100%', sm: '88%' },
-              minWidth: 0,
-              position: 'relative',
-              mt: isContinuation ? (compact ? -0.25 : -0.5) : 0,
-            }}
-          >
-            <PostCard
-              author={{
-                avatarUrl: msg.sender_profile?.avatar ?? null,
-                displayName,
-                handle: handle ?? null,
-                createdAt: msg.created_at,
-                editedAt: msg.edited_at ?? null,
-                formatTime: formatMessageTime,
-                inIcon: true,
-                continuation: isContinuation,
-              }}
-              actionMenu={
-                showKebabMenu && kebabItems.length > 0
-                  ? {
-                      visible: true,
-                      ariaLabel: 'Message options',
-                      items: kebabItems,
-                      reveal: revealMenu ? 'hover-focus' : 'always',
-                      menuDensity: 'subtle',
-                    }
-                  : null
-              }
-              sx={{
-                borderRadius: 2,
-                boxShadow: 'none',
-                bgcolor: isOwn
-                  ? isLightChrome
-                    ? alpha(theme.palette.primary.main, 0.12)
-                    : 'rgba(56, 132, 210, 0.22)'
-                  : isLightChrome
-                    ? alpha(theme.palette.common.black, 0.04)
-                    : 'rgba(255, 255, 255, 0.04)',
-                borderColor: isOwn
-                  ? isLightChrome
-                    ? alpha(theme.palette.primary.main, 0.22)
-                    : 'rgba(147, 197, 253, 0.2)'
-                  : alpha(theme.palette.divider, isLightChrome ? 0.22 : 0.12),
-                borderWidth: 1,
-                minWidth: 0,
-                width: '100%',
-                maxWidth: '100%',
-              }}
-              contentSx={{
-                pt: isContinuation ? 0.65 : 1.25,
-                pb: 0.85,
-                px: 1.35,
-                '&:last-child': { pb: 1 },
-              }}
-            >
-              {msg.reply_preview && editingId !== msg.id ? (
-                <Box
-                  sx={{
-                    mb: 0.75,
-                    pl: 1,
-                    borderLeft: '3px solid',
-                    borderColor: 'primary.light',
-                    opacity: msg.reply_preview.is_deleted ? 0.72 : 1,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    {msg.reply_preview.is_deleted
-                      ? 'Replying to deleted message'
-                      : `Replying to ${msg.reply_preview.sender_profile?.display_name || msg.reply_preview.sender_profile?.handle || 'Member'}`}
-                  </Typography>
-                  {!msg.reply_preview.is_deleted ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {truncateSnippet(msg.reply_preview.content ?? '')}
-                    </Typography>
-                  ) : null}
-                </Box>
-              ) : null}
-              {editingId === msg.id ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <input
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) handleEditSubmit();
-                      if (e.key === 'Escape') setEditingId(null);
-                    }}
-                    style={{
-                      padding: '8px',
-                      borderRadius: 8,
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.38)}`,
-                      background: isLightChrome
-                        ? theme.palette.background.paper
-                        : 'rgba(0,0,0,0.2)',
-                      color: isLightChrome
-                        ? theme.palette.text.primary
-                        : '#ffffff',
-                      width: '100%',
-                      minWidth: 0,
-                      boxSizing: 'border-box',
-                    }}
-                    aria-label="Edit message"
-                  />
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Typography
-                      component="button"
-                      variant="caption"
-                      onClick={handleEditSubmit}
-                      sx={{ cursor: 'pointer', color: 'primary.main' }}
-                    >
-                      Save
-                    </Typography>
-                    <Typography
-                      component="button"
-                      variant="caption"
-                      onClick={() => setEditingId(null)}
-                      sx={{ cursor: 'pointer', color: 'text.secondary' }}
-                    >
-                      Cancel
-                    </Typography>
-                  </Box>
-                </Box>
-              ) : (
-                <MessageContent content={msg.content || ''} />
-              )}
-              {roomType === 'dm' &&
-                isOwn &&
-                otherUserId &&
-                msg.read_by?.includes(otherUserId) && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 0.25, display: 'block' }}
-                  >
-                    Read
-                  </Typography>
-                )}
-              {msg.attachments && msg.attachments.length > 0 && (
-                <Box
-                  sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}
-                >
-                  {msg.attachments.map(
-                    (a: {
-                      id: string;
-                      storage_path: string;
-                      mime_type: string;
-                    }) => (
-                      <AttachmentPreview
-                        key={a.id}
-                        path={a.storage_path}
-                        mimeType={a.mime_type}
-                      />
-                    ),
-                  )}
-                </Box>
-              )}
-              {(() => {
-                const preview = linkPreviews[msg.id];
-                if (!preview) return null;
-                return (
-                  <Box sx={{ mt: 0.6, width: '100%', maxWidth: 340 }}>
-                    <LinkPreviewCard preview={preview} />
-                  </Box>
-                );
-              })()}
-              {/* Reactions: existing pills + one emoji icon that opens popup menu (like message input) */}
+          <Box key={msg.id}>
+            {showDaySeparator ? (
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 0.5,
-                  mt: 0.35,
-                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  py: 0.5,
                 }}
               >
-                {msg.reactions && msg.reactions.length > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    px: 1.1,
+                    py: 0.35,
+                    borderRadius: 999,
+                    color: 'text.secondary',
+                    bgcolor: alpha(
+                      theme.palette.common.black,
+                      isLightChrome ? 0.045 : 0.18,
+                    ),
+                  }}
+                >
+                  {formatMessageDay(msg.created_at)}
+                </Typography>
+              </Box>
+            ) : null}
+            <Box
+              ref={(el: HTMLDivElement | null) => {
+                if (el) {
+                  messageRefs.current.set(msg.id, el);
+                } else {
+                  messageRefs.current.delete(msg.id);
+                }
+              }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isOwn ? 'flex-end' : 'flex-start',
+                maxWidth: { xs: '100%', sm: '86%' },
+                minWidth: 0,
+                position: 'relative',
+                mt: isContinuation ? (compact ? -0.1 : -0.2) : 0,
+                ml: isOwn ? 'auto' : 0,
+              }}
+            >
+              <PostCard
+                author={{
+                  avatarUrl: msg.sender_profile?.avatar ?? null,
+                  displayName,
+                  handle: handle ?? null,
+                  createdAt: msg.created_at,
+                  editedAt: msg.edited_at ?? null,
+                  formatTime: formatMessageTime,
+                  inIcon: true,
+                  continuation: isContinuation,
+                }}
+                actionMenu={
+                  showKebabMenu && kebabItems.length > 0
+                    ? {
+                        visible: true,
+                        ariaLabel: 'Message options',
+                        items: kebabItems,
+                        reveal: revealMenu ? 'hover-focus' : 'always',
+                        menuDensity: 'subtle',
+                      }
+                    : null
+                }
+                sx={{
+                  borderRadius: 1.75,
+                  boxShadow: 'none',
+                  bgcolor: isOwn
+                    ? isLightChrome
+                      ? alpha(theme.palette.primary.main, 0.12)
+                      : 'rgba(56, 132, 210, 0.24)'
+                    : isLightChrome
+                      ? alpha(theme.palette.common.black, 0.035)
+                      : 'rgba(255, 255, 255, 0.035)',
+                  borderColor: isOwn
+                    ? isLightChrome
+                      ? alpha(theme.palette.primary.main, 0.18)
+                      : 'rgba(147, 197, 253, 0.14)'
+                    : alpha(theme.palette.divider, isLightChrome ? 0.16 : 0.1),
+                  borderWidth: 1,
+                  minWidth: 0,
+                  width: '100%',
+                  maxWidth: '100%',
+                }}
+                contentSx={{
+                  pt: isContinuation ? 0.45 : 0.95,
+                  pb: 0.7,
+                  px: 1.1,
+                  '&:last-child': { pb: 0.8 },
+                }}
+              >
+                {msg.reply_preview && editingId !== msg.id ? (
+                  <Box
+                    sx={{
+                      mb: 0.75,
+                      pl: 1,
+                      borderLeft: '3px solid',
+                      borderColor: 'primary.light',
+                      opacity: msg.reply_preview.is_deleted ? 0.72 : 1,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {msg.reply_preview.is_deleted
+                        ? 'Replying to deleted message'
+                        : `Replying to ${msg.reply_preview.sender_profile?.display_name || msg.reply_preview.sender_profile?.handle || 'Member'}`}
+                    </Typography>
+                    {!msg.reply_preview.is_deleted ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {truncateSnippet(msg.reply_preview.content ?? '')}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                ) : null}
+                {editingId === msg.id ? (
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                  >
+                    <input
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey)
+                          handleEditSubmit();
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      style={{
+                        padding: '8px',
+                        borderRadius: 8,
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.38)}`,
+                        background: isLightChrome
+                          ? theme.palette.background.paper
+                          : 'rgba(0,0,0,0.2)',
+                        color: isLightChrome
+                          ? theme.palette.text.primary
+                          : '#ffffff',
+                        width: '100%',
+                        minWidth: 0,
+                        boxSizing: 'border-box',
+                      }}
+                      aria-label="Edit message"
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography
+                        component="button"
+                        variant="caption"
+                        onClick={handleEditSubmit}
+                        sx={{ cursor: 'pointer', color: 'primary.main' }}
+                      >
+                        Save
+                      </Typography>
+                      <Typography
+                        component="button"
+                        variant="caption"
+                        onClick={() => setEditingId(null)}
+                        sx={{ cursor: 'pointer', color: 'text.secondary' }}
+                      >
+                        Cancel
+                      </Typography>
+                    </Box>
+                  </Box>
+                ) : (
+                  <MessageContent content={msg.content || ''} />
+                )}
+                {roomType === 'dm' &&
+                  isOwn &&
+                  otherUserId &&
+                  msg.read_by?.includes(otherUserId) && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.25, display: 'block' }}
+                    >
+                      Read
+                    </Typography>
+                  )}
+                {msg.attachments && msg.attachments.length > 0 && (
                   <Box
                     sx={{
                       display: 'flex',
-                      gap: 0.35,
+                      gap: 0.5,
+                      mt: 0.5,
                       flexWrap: 'wrap',
-                      alignItems: 'center',
                     }}
                   >
-                    {Object.entries(
-                      msg.reactions.reduce<Record<string, number>>((acc, r) => {
-                        acc[r.emoji] = (acc[r.emoji] ?? 0) + 1;
-                        return acc;
-                      }, {}),
-                    ).map(([emoji, count]: [string, number]) => (
-                      <Typography
-                        key={emoji}
-                        component="button"
-                        variant="caption"
-                        onClick={() => onReaction?.(msg.id, emoji)}
-                        sx={{
-                          cursor: 'pointer',
-                          fontSize: '0.8125rem',
-                          lineHeight: 1.25,
-                          px: 0.65,
-                          py: 0.2,
-                          borderRadius: 10,
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
-                          border: 'none',
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.16),
-                          },
-                        }}
-                      >
-                        {emoji}
-                        {count > 0 ? ` ${count}` : ''}
-                      </Typography>
-                    ))}
+                    {msg.attachments.map(
+                      (a: {
+                        id: string;
+                        storage_path: string;
+                        mime_type: string;
+                      }) => (
+                        <AttachmentPreview
+                          key={a.id}
+                          path={a.storage_path}
+                          mimeType={a.mime_type}
+                        />
+                      ),
+                    )}
                   </Box>
                 )}
-                {canAct && (
-                  <Tooltip title="Add reaction">
-                    <Box
-                      component="span"
-                      className={
-                        useHoverRevealActions && showKebabMenu
-                          ? 'chat-message-reveal-actions'
-                          : undefined
-                      }
-                      sx={{ display: 'inline-flex', verticalAlign: 'middle' }}
-                    >
-                      <IconButton
-                        size="small"
-                        onClick={(e) =>
-                          setReactionMenuAnchor({
-                            el: e.currentTarget,
-                            messageId: msg.id,
-                          })
-                        }
-                        aria-label="Add reaction"
-                        aria-haspopup="true"
-                        aria-expanded={reactionMenuAnchor?.messageId === msg.id}
-                        sx={{
-                          p: 0.35,
-                          color: alpha(theme.palette.text.primary, 0.42),
-                          '&:hover': {
-                            color: theme.palette.text.primary,
-                            bgcolor: alpha(theme.palette.primary.main, 0.08),
-                          },
-                        }}
-                      >
-                        <EmojiEmotionsOutlinedIcon
-                          sx={{ fontSize: '1.05rem' }}
-                        />
-                      </IconButton>
+                {(() => {
+                  const preview = linkPreviews[msg.id];
+                  if (!preview) return null;
+                  return (
+                    <Box sx={{ mt: 0.6, width: '100%', maxWidth: 340 }}>
+                      <LinkPreviewCard preview={preview} />
                     </Box>
-                  </Tooltip>
-                )}
-              </Box>
-            </PostCard>
+                  );
+                })()}
+                {/* Reactions: existing pills + one emoji icon that opens popup menu (like message input) */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    mt: 0.35,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 0.35,
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {Object.entries(
+                        msg.reactions.reduce<Record<string, number>>(
+                          (acc, r) => {
+                            acc[r.emoji] = (acc[r.emoji] ?? 0) + 1;
+                            return acc;
+                          },
+                          {},
+                        ),
+                      ).map(([emoji, count]: [string, number]) => (
+                        <Typography
+                          key={emoji}
+                          component="button"
+                          variant="caption"
+                          onClick={() => onReaction?.(msg.id, emoji)}
+                          sx={{
+                            cursor: 'pointer',
+                            fontSize: '0.8125rem',
+                            lineHeight: 1.25,
+                            px: 0.65,
+                            py: 0.2,
+                            borderRadius: 10,
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            border: 'none',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.16),
+                            },
+                          }}
+                        >
+                          {emoji}
+                          {count > 0 ? ` ${count}` : ''}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+                  {canAct && (
+                    <Tooltip title="Add reaction">
+                      <Box
+                        component="span"
+                        className={
+                          useHoverRevealActions && showKebabMenu
+                            ? 'chat-message-reveal-actions'
+                            : undefined
+                        }
+                        sx={{ display: 'inline-flex', verticalAlign: 'middle' }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={(e) =>
+                            setReactionMenuAnchor({
+                              el: e.currentTarget,
+                              messageId: msg.id,
+                            })
+                          }
+                          aria-label="Add reaction"
+                          aria-haspopup="true"
+                          aria-expanded={
+                            reactionMenuAnchor?.messageId === msg.id
+                          }
+                          sx={{
+                            p: 0.35,
+                            color: alpha(theme.palette.text.primary, 0.42),
+                            '&:hover': {
+                              color: theme.palette.text.primary,
+                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            },
+                          }}
+                        >
+                          <EmojiEmotionsOutlinedIcon
+                            sx={{ fontSize: '1.05rem' }}
+                          />
+                        </IconButton>
+                      </Box>
+                    </Tooltip>
+                  )}
+                </Box>
+              </PostCard>
+            </Box>
           </Box>
         );
       })}

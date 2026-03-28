@@ -45,26 +45,31 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
+do $$
+declare
+  project_sources_bucket constant text := 'project-sources';
+begin
 drop policy if exists "Authenticated can upload project-sources" on storage.objects;
 create policy "Authenticated can upload project-sources"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'project-sources');
+  with check (bucket_id = project_sources_bucket);
 
 drop policy if exists "Public read project-sources" on storage.objects;
 create policy "Public read project-sources"
   on storage.objects for select
   to public
-  using (bucket_id = 'project-sources');
+  using (bucket_id = project_sources_bucket);
 
 drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
 create policy "Authenticated can delete own project-sources"
   on storage.objects for delete
   to authenticated
   using (
-    bucket_id = 'project-sources'
+    bucket_id = project_sources_bucket
     and owner = auth.uid()
   );
+end $$;
 
 -- -----------------------------
 -- RLS replay safety: clear policies before re-create
@@ -73,6 +78,7 @@ create policy "Authenticated can delete own project-sources"
 do $$
 declare
   p record;
+  public_schema constant text := 'public';
   managed_tables constant text[] := array[
     'admin_allowlist',
     'feature_flags',
@@ -118,7 +124,7 @@ begin
   for p in
     select schemaname, tablename, policyname
     from pg_policies
-    where schemaname = 'public'
+    where schemaname = public_schema
       and tablename = any(managed_tables)
   loop
     execute format(
@@ -282,36 +288,24 @@ grant execute on function public.get_directory_page(uuid, text, text, text, text
 -- -----------------------------
 alter table public.profiles enable row level security;
 
-create policy profiles_anon_read_approved
-  on public.profiles for select
-  to anon
-  using (status = 'approved');
-
-create policy profiles_authenticated_read
-  on public.profiles for select
-  to authenticated
-  using (
-    status = 'approved'
-    or (select auth.uid()) = id
-    or (select public.is_admin())
+do $$
+declare
+  approved_status constant text := 'approved';
+begin
+  execute format(
+    'create policy profiles_anon_read_approved on public.profiles for select to anon using (status = %L)',
+    approved_status
   );
 
-create policy profiles_authenticated_insert
-  on public.profiles for insert
-  to authenticated
-  with check ((select auth.uid()) = id);
-
-create policy profiles_authenticated_update
-  on public.profiles for update
-  to authenticated
-  using (
-    (select auth.uid()) = id
-    or (select public.is_admin())
-  )
-  with check (
-    (select auth.uid()) = id
-    or (select public.is_admin())
+  execute format(
+    'create policy profiles_authenticated_read on public.profiles for select to authenticated using (status = %L or (select auth.uid()) = id or (select public.is_admin()))',
+    approved_status
   );
+
+  execute 'create policy profiles_authenticated_insert on public.profiles for insert to authenticated with check ((select auth.uid()) = id)';
+
+  execute 'create policy profiles_authenticated_update on public.profiles for update to authenticated using ((select auth.uid()) = id or (select public.is_admin())) with check ((select auth.uid()) = id or (select public.is_admin()))';
+end $$;
 
 revoke all on table public.profiles from anon, authenticated;
 
@@ -688,23 +682,28 @@ create policy "Authenticated can delete own portfolio-thumbnails"
   );
 
 -- resumes: authenticated upload (own path), public read
-drop policy if exists "Authenticated can upload resumes" on storage.objects;
-create policy "Authenticated can upload resumes"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'resumes');
+do $$
+declare
+  resumes_bucket constant text := 'resumes';
+begin
+  execute 'drop policy if exists "Authenticated can upload resumes" on storage.objects';
+  execute format(
+    'create policy "Authenticated can upload resumes" on storage.objects for insert to authenticated with check (bucket_id = %L)',
+    resumes_bucket
+  );
 
-drop policy if exists "Authenticated can update resumes" on storage.objects;
-create policy "Authenticated can update resumes"
-  on storage.objects for update
-  to authenticated
-  using (bucket_id = 'resumes');
+  execute 'drop policy if exists "Authenticated can update resumes" on storage.objects';
+  execute format(
+    'create policy "Authenticated can update resumes" on storage.objects for update to authenticated using (bucket_id = %L)',
+    resumes_bucket
+  );
 
-drop policy if exists "Public read resumes" on storage.objects;
-create policy "Public read resumes"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'resumes');
+  execute 'drop policy if exists "Public read resumes" on storage.objects';
+  execute format(
+    'create policy "Public read resumes" on storage.objects for select to public using (bucket_id = %L)',
+    resumes_bucket
+  );
+end $$;
 
 -- -----------------------------
 -- chat_rooms: RLS

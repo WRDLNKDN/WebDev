@@ -79,16 +79,23 @@ export const FeatureFlagsProvider = ({
     }
   }, []);
 
+  const refreshFlags = useCallback(() => {
+    fetchFlags().catch((error) => {
+      console.warn('[FeatureFlags] refresh failed:', error);
+      setLoading(false);
+    });
+  }, [fetchFlags]);
+
   useEffect(() => {
-    void fetchFlags();
+    refreshFlags();
     const { data } = supabase.auth.onAuthStateChange(() => {
       setLoading(true);
-      void fetchFlags();
+      refreshFlags();
     });
     return () => {
       data.subscription.unsubscribe();
     };
-  }, [fetchFlags]);
+  }, [refreshFlags]);
 
   const setFlag = useCallback(async (key: string, enabled: boolean) => {
     // Upsert ensures missing keys are created (important for newly introduced flags).

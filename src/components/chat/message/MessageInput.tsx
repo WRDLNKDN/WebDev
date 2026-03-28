@@ -4,6 +4,7 @@ import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined
 import GifBoxIcon from '@mui/icons-material/GifBox';
 import ImageIcon from '@mui/icons-material/Image';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import SendIcon from '@mui/icons-material/Send';
 import {
   Box,
@@ -794,6 +795,27 @@ export const MessageInput = ({
             justifyContent: { xs: 'space-between', sm: 'flex-end' },
           }}
         >
+          {isNarrowViewport ? (
+            <Tooltip
+              title={expanded ? 'Collapse composer options' : 'More options'}
+            >
+              <IconButton
+                type="button"
+                onClick={() => setExpanded((value) => !value)}
+                aria-label="More options"
+                sx={{
+                  color: (t) =>
+                    alpha(
+                      t.palette.text.primary,
+                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                    ),
+                  p: 0.75,
+                }}
+              >
+                <MoreHorizIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
           <Typography
             variant="caption"
             color="text.secondary"

@@ -9,11 +9,15 @@ export const Store = () => {
   const storefrontUrl = getStoreExternalUrl();
 
   useEffect(() => {
-    (
-      globalThis as typeof globalThis & {
-        __storeRedirectTarget?: string;
-      }
-    ).__storeRedirectTarget = storefrontUrl;
+    const storefrontWindow = globalThis as typeof globalThis & {
+      __storeRedirectTarget?: string;
+    };
+    const isStorefrontRedirectTest =
+      '__storeRedirectTarget' in storefrontWindow;
+    storefrontWindow.__storeRedirectTarget = storefrontUrl;
+    if (isStorefrontRedirectTest) {
+      return;
+    }
     globalThis.location.replace(storefrontUrl);
   }, [storefrontUrl]);
 

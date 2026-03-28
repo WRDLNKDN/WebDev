@@ -7,7 +7,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGlassCard, SIGNUP_BG } from '../../theme/candyStyles';
 
@@ -60,12 +60,8 @@ const NOT_FOUND_WEIRDLINGS: NotFoundWeirdling[] = [
 export const NotFoundPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const selectedWeirdling = useMemo(
-    () =>
-      NOT_FOUND_WEIRDLINGS[
-        Math.floor(Math.random() * NOT_FOUND_WEIRDLINGS.length)
-      ],
-    [],
+  const [selectedWeirdling, setSelectedWeirdling] = useState(
+    NOT_FOUND_WEIRDLINGS[0],
   );
 
   return (
@@ -206,6 +202,48 @@ export const NotFoundPage = () => {
                     },
                   }}
                 >
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    flexWrap="wrap"
+                    sx={{
+                      width: '100%',
+                      mb: 0.5,
+                      justifyContent: { xs: 'center', md: 'flex-start' },
+                    }}
+                  >
+                    {NOT_FOUND_WEIRDLINGS.map((weirdling) => {
+                      const active = weirdling.name === selectedWeirdling.name;
+                      return (
+                        <Button
+                          key={weirdling.name}
+                          type="button"
+                          variant={active ? 'contained' : 'outlined'}
+                          size="small"
+                          onClick={() => setSelectedWeirdling(weirdling)}
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            borderRadius: 999,
+                            color: active ? '#08101f' : '#fff',
+                            bgcolor: active ? weirdling.accent : 'transparent',
+                            borderColor: active
+                              ? weirdling.accent
+                              : 'rgba(141,188,229,0.28)',
+                            '&:hover': {
+                              borderColor: weirdling.accent,
+                              bgcolor: active
+                                ? weirdling.accent
+                                : 'rgba(255,255,255,0.05)',
+                            },
+                          }}
+                        >
+                          {weirdling.name}
+                        </Button>
+                      );
+                    })}
+                  </Stack>
                   <Button
                     variant="contained"
                     size="large"

@@ -491,17 +491,33 @@ test.describe('Chat file upload', () => {
     expect(metrics.bodyOverflowX).toBe(false);
     expect(metrics.shellBottomWithinViewport).toBe(true);
 
+    const activeComposerLabel = async () =>
+      page.evaluate(() => {
+        const active = document.activeElement as HTMLElement | null;
+        return (
+          active?.getAttribute('aria-label') ??
+          active?.getAttribute('title') ??
+          active?.textContent ??
+          ''
+        ).trim();
+      });
+
     await messageInput.focus();
     await page.keyboard.press('Tab');
-    const firstComposerFocus = await page.evaluate(() => {
-      const active = document.activeElement as HTMLElement | null;
-      return (
-        active?.getAttribute('aria-label') ??
-        active?.getAttribute('title') ??
-        active?.textContent ??
-        ''
-      );
-    });
+    await expect
+      .poll(async () => {
+        const label = await activeComposerLabel();
+        return [
+          'Expand input',
+          'Attach image',
+          'Attach image or GIF',
+          'Open menu',
+        ].includes(label)
+          ? label
+          : '';
+      })
+      .not.toBe('');
+    const firstComposerFocus = await activeComposerLabel();
     expect([
       'Expand input',
       'Attach image',
@@ -513,26 +529,18 @@ test.describe('Chat file upload', () => {
       firstComposerFocus === 'Open menu'
     ) {
       await page.keyboard.press('Tab');
-      await expect(
-        page.getByRole('button', { name: 'Attach image or GIF' }),
-      ).toBeFocused();
+      await expect.poll(activeComposerLabel).toBe('Attach image or GIF');
     } else {
-      await expect(
-        page.getByRole('button', { name: 'Attach image or GIF' }),
-      ).toBeFocused();
+      await expect.poll(activeComposerLabel).toBe('Attach image or GIF');
     }
     await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'Attach document or file' }),
-    ).toBeFocused();
+    await expect.poll(activeComposerLabel).toBe('Attach document or file');
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Add GIF' })).toBeFocused();
+    await expect.poll(activeComposerLabel).toBe('Add GIF');
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Add emoji' })).toBeFocused();
+    await expect.poll(activeComposerLabel).toBe('Add emoji');
     await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'More options' }),
-    ).toBeFocused();
+    await expect.poll(activeComposerLabel).toBe('More options');
 
     await messageInput.fill('hello');
     await page.keyboard.press('Tab');
@@ -542,8 +550,6 @@ test.describe('Chat file upload', () => {
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await expect(
-      page.getByRole('button', { name: 'Send message' }),
-    ).toBeFocused();
+    await expect.poll(activeComposerLabel).toBe('Send message');
   });
 });

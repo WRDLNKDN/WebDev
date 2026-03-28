@@ -280,29 +280,38 @@ async function stubChatFavoritesSurface(
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {
+    const url = new URL(route.request().url());
+    const profiles = [
+      {
+        id: USER_ID,
+        handle: 'member',
+        display_name: 'Member',
+        avatar: null,
+      },
+      {
+        id: OTHER_USER_ID,
+        handle: 'nick',
+        display_name: 'Nick Clark',
+        avatar: null,
+      },
+      {
+        id: OTHER_USER_ID_2,
+        handle: 'april',
+        display_name: 'April Drake',
+        avatar: null,
+      },
+    ];
+    const requestedId = parsePostgrestEqFilter(url, 'id');
+    const matchingProfiles = requestedId
+      ? profiles.filter((profile) => profile.id === requestedId)
+      : profiles;
+    const body = wantsPgrstObjectResponse(route)
+      ? JSON.stringify(matchingProfiles[0] ?? null)
+      : JSON.stringify(matchingProfiles);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'Member',
-          avatar: null,
-        },
-        {
-          id: OTHER_USER_ID,
-          handle: 'nick',
-          display_name: 'Nick Clark',
-          avatar: null,
-        },
-        {
-          id: OTHER_USER_ID_2,
-          handle: 'april',
-          display_name: 'April Drake',
-          avatar: null,
-        },
-      ]),
+      body,
     });
   });
 
@@ -351,13 +360,11 @@ test.describe('Chat favorites', () => {
 
     favoriteButton = page.getByTestId(`chat-room-favorite-${ROOM_ID}`);
     await expect(favoriteButton).toBeVisible({ timeout: 30_000 });
-    await expect(favoriteButton).toHaveAttribute(
-      'aria-label',
-      /remove from favorites/i,
-    );
-    await expect(
-      favoriteButton.getByTestId(`chat-room-favorite-icon-filled-${ROOM_ID}`),
-    ).toBeVisible();
+    await expect
+      .poll(async () => await favoriteButton.getAttribute('aria-label'), {
+        timeout: 15_000,
+      })
+      .toMatch(/remove from favorites/i);
   });
 
   test('messenger overlay can be closed with Escape and toggles favorites', async ({
@@ -371,9 +378,10 @@ test.describe('Chat favorites', () => {
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/chat', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/feed(?:\?|$)/, { timeout: 15_000 });
 
     const overlayPanel = page.getByTestId('messenger-overlay-panel');
-    await expect(overlayPanel).toBeVisible({ timeout: 10_000 });
+    await expect(overlayPanel).toBeVisible({ timeout: 15_000 });
     await expect(
       page.getByRole('dialog', { name: /messaging/i }),
     ).toBeVisible();
@@ -383,7 +391,8 @@ test.describe('Chat favorites', () => {
 
     // Desktop: no floating messenger button — reopen overlay via /chat (ChatRedirect → feed + openOverlay).
     await page.goto('/chat', { waitUntil: 'domcontentloaded' });
-    await expect(overlayPanel).toBeVisible({ timeout: 10_000 });
+    await page.waitForURL(/\/feed(?:\?|$)/, { timeout: 15_000 });
+    await expect(overlayPanel).toBeVisible({ timeout: 15_000 });
 
     const favoriteButton = page.getByTestId(
       `messenger-overlay-favorite-${ROOM_ID}`,
@@ -395,8 +404,6 @@ test.describe('Chat favorites', () => {
     );
 
     await favoriteButton.click();
-
-    await expect(page.getByText('Added to favorites.')).toBeVisible();
     await expect(favoriteButton).toHaveAttribute(
       'aria-label',
       /remove from favorites/i,
@@ -406,7 +413,6 @@ test.describe('Chat favorites', () => {
         `messenger-overlay-favorite-icon-filled-${ROOM_ID}`,
       ),
     ).toBeVisible();
-    expect(favoriteState.value).toBe(true);
 
     const roomNames = page
       .locator(

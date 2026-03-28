@@ -631,24 +631,36 @@ test.describe('Interests E2E', () => {
       await expect(page.getByTestId('app-main')).toBeVisible({
         timeout: 25_000,
       });
-      for (const i of interests) {
-        await expect(
-          page.getByTestId('dashboard-pill').filter({ hasText: i }).first(),
-        ).toBeVisible({
-          timeout: 10_000,
-        });
-      }
+      await expect
+        .poll(
+          async () => {
+            const pillTexts = await page
+              .getByTestId('dashboard-pill')
+              .allTextContents();
+            return interests.every((interest) =>
+              pillTexts.some((text) => text.includes(interest)),
+            );
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(page.getByTestId('app-main')).toBeVisible({
         timeout: 25_000,
       });
-      for (const i of interests) {
-        await expect(
-          page.getByTestId('dashboard-pill').filter({ hasText: i }).first(),
-        ).toBeVisible({
-          timeout: 10_000,
-        });
-      }
+      await expect
+        .poll(
+          async () => {
+            const pillTexts = await page
+              .getByTestId('dashboard-pill')
+              .allTextContents();
+            return interests.every((interest) =>
+              pillTexts.some((text) => text.includes(interest)),
+            );
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
     });
   });
 

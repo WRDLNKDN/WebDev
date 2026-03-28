@@ -10,6 +10,7 @@ import { fetchSessionById, makeCheckersMove } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 import {
   MiniGameLoadingNotFound,
@@ -273,6 +274,7 @@ export const CheckersPlayPage = () => {
   const refreshSession = useCallback(() => {
     if (sessionId?.trim()) void loadSession(sessionId.trim());
   }, [sessionId, loadSession]);
+  useGameSessionRealtime(sessionId, refreshSession, Boolean(sessionId?.trim()));
 
   const board = useMemo(() => (session ? getBoard(session) : []), [session]);
   const turnPosition = session ? getCurrentTurnPosition(session) : 0;

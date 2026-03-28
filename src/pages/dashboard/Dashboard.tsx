@@ -81,6 +81,7 @@ const ShareProfileDialog = lazy(
     ),
 );
 import { DashboardLinksSection } from './dashboardLinksSection';
+import { GameRewardsPanel } from './GameRewardsPanel';
 
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
@@ -578,6 +579,7 @@ export const Dashboard = () => {
                 skills={selectedSkills}
                 interests={selectedInterests}
               />
+              <GameRewardsPanel />
               <Box
                 sx={{
                   pt: 1.5,

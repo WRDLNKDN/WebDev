@@ -26,6 +26,7 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 
 function getState(session: GameSession): CaptionGameStatePayload {
@@ -108,13 +109,10 @@ export const CaptionGamePlayPage = () => {
     setLoading(true);
     void loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
-
-  const pollInterval = session?.id && session.status === 'active' ? 4000 : 0;
-  useEffect(() => {
-    if (!pollInterval || !sessionId) return;
-    const t = setInterval(() => void loadSession(sessionId), pollInterval);
-    return () => clearInterval(t);
-  }, [pollInterval, sessionId, loadSession]);
+  const refreshSession = useCallback(() => {
+    if (sessionId?.trim()) void loadSession(sessionId.trim());
+  }, [sessionId, loadSession]);
+  useGameSessionRealtime(sessionId, refreshSession, Boolean(sessionId?.trim()));
 
   const state = session ? getState(session) : null;
   const participants = useMemo(

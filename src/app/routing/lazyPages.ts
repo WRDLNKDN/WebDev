@@ -258,6 +258,11 @@ export const BlackjackPlayPage = lazy(async () => {
   return { default: m.BlackjackPlayPage };
 });
 
+export const PoolPlayPage = lazy(async () => {
+  const m = await import('../../pages/dashboard/PoolPlayPage');
+  return { default: m.PoolPlayPage };
+});
+
 export const DailyWordPlayPage = lazy(async () => {
   const m = await import('../../pages/dashboard/DailyWordPlayPage');
   return { default: m.DailyWordPlayPage };

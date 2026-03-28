@@ -10,6 +10,7 @@ export const AttachmentPreview = ({
   mimeType: string;
 }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const isImage = mimeType.startsWith('image/');
   const isVideo = mimeType.startsWith('video/');
   const imageAlt =
@@ -17,11 +18,18 @@ export const AttachmentPreview = ({
 
   useEffect(() => {
     let cancelled = false;
+    setSignedUrl(null);
+    setLoadFailed(false);
     void (async () => {
-      const { data } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('chat-attachments')
         .createSignedUrl(path, 3600);
-      if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+      if (cancelled) return;
+      if (error || !data?.signedUrl) {
+        setLoadFailed(true);
+        return;
+      }
+      setSignedUrl(data.signedUrl);
     })();
     return () => {
       cancelled = true;
@@ -30,17 +38,25 @@ export const AttachmentPreview = ({
 
   return (
     <Box
-      component="a"
-      href={signedUrl ?? '#'}
-      target="_blank"
-      rel="noopener noreferrer"
+      component={signedUrl ? 'a' : 'div'}
+      {...(signedUrl
+        ? {
+            href: signedUrl,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+          }
+        : {})}
+      aria-disabled={!signedUrl}
       sx={{
         display: 'block',
+        width: 'min(100%, 220px)',
         maxWidth: 220,
         maxHeight: 220,
         borderRadius: 1,
         overflow: 'hidden',
         border: '1px solid rgba(141,188,229,0.38)',
+        textDecoration: 'none',
+        cursor: signedUrl ? 'pointer' : 'default',
       }}
     >
       {isImage && signedUrl ? (
@@ -78,8 +94,21 @@ export const AttachmentPreview = ({
           }}
         />
       ) : (
-        <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', fontSize: 12 }}>
-          {signedUrl ? 'File' : '…'}
+        <Box
+          sx={{
+            p: 1,
+            bgcolor: 'rgba(0,0,0,0.3)',
+            fontSize: 12,
+            minHeight: 52,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {loadFailed
+            ? 'Attachment unavailable'
+            : signedUrl
+              ? 'File'
+              : 'Loading attachment...'}
         </Box>
       )}
     </Box>

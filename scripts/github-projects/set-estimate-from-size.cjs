@@ -10,7 +10,7 @@ const resolveProjectV2 = require('./resolveProjectV2.cjs');
 const SIZE_TO_ESTIMATE = { XS: 1, S: 2, M: 3, L: 5, XL: 8 };
 
 async function handleWorkflowDispatchEstimate({ github, context, core }) {
-  const config = getProjectBackfillConfig(context, core);
+  const config = await getProjectBackfillConfig(github, context, core);
   if (!config) {
     return;
   }

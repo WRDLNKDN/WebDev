@@ -39,7 +39,7 @@ function toErrorMessage(error) {
 }
 
 async function handleProjectBackfill({ github, context, core }) {
-  const config = getProjectBackfillConfig(context, core);
+  const config = await getProjectBackfillConfig(github, context, core);
   if (!config) {
     return;
   }

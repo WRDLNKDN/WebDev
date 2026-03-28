@@ -13,23 +13,30 @@ export async function signInWithOAuth(
   options: { redirectTo: string; timeoutMs?: number },
 ) {
   const { redirectTo, timeoutMs = OAUTH_START_TIMEOUT_MS } = options;
+  let timeoutHandle: number | null = null;
 
-  return Promise.race([
-    supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-        ...(provider === 'azure' && {
-          scopes: 'email profile offline_access',
-        }),
-      },
-    }),
-    new Promise<never>((_, reject) => {
-      window.setTimeout(() => {
-        reject(
-          new Error('OAuth start timeout: provider redirect took too long'),
-        );
-      }, timeoutMs);
-    }),
-  ]);
+  try {
+    return await Promise.race([
+      supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          ...(provider === 'azure' && {
+            scopes: 'email profile offline_access',
+          }),
+        },
+      }),
+      new Promise<never>((_, reject) => {
+        timeoutHandle = window.setTimeout(() => {
+          reject(
+            new Error('OAuth start timeout: provider redirect took too long'),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutHandle != null) {
+      window.clearTimeout(timeoutHandle);
+    }
+  }
 }

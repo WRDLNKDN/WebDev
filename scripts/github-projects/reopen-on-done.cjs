@@ -20,7 +20,7 @@ async function reopenIssueWhenDoneProjectItem({ github, context, core }) {
     return;
   }
 
-  const config = getProjectBackfillConfig(context, core);
+  const config = await getProjectBackfillConfig(github, context, core);
   if (!config) {
     return;
   }

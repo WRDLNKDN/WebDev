@@ -9,6 +9,7 @@ import {
   completeSession,
   createMazeChaseSession,
   fetchSessionById,
+  updateSessionState,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
@@ -97,6 +98,51 @@ function canWalk(maze: number[][], r: number, c: number): boolean {
   return maze[r][c] !== 1;
 }
 
+type MazeChaseSnapshot = {
+  maze?: number[][];
+  player?: [number, number];
+  playerDir?: Dir;
+  ghosts?: [number, number][];
+  score?: number;
+  lives?: number;
+  powerRemainingMs?: number;
+  status?: 'idle' | 'playing' | 'gameover';
+};
+
+function getPersistedMazeState(session: GameSession): MazeChaseSnapshot {
+  const raw = session.state_payload as MazeChaseSnapshot | undefined;
+  return {
+    maze: Array.isArray(raw?.maze) ? raw.maze : undefined,
+    player:
+      Array.isArray(raw?.player) &&
+      raw.player.length === 2 &&
+      typeof raw.player[0] === 'number' &&
+      typeof raw.player[1] === 'number'
+        ? raw.player
+        : undefined,
+    playerDir:
+      raw?.playerDir === 'up' ||
+      raw?.playerDir === 'down' ||
+      raw?.playerDir === 'left' ||
+      raw?.playerDir === 'right'
+        ? raw.playerDir
+        : undefined,
+    ghosts: Array.isArray(raw?.ghosts) ? raw.ghosts : undefined,
+    score: typeof raw?.score === 'number' ? raw.score : undefined,
+    lives: typeof raw?.lives === 'number' ? raw.lives : undefined,
+    powerRemainingMs:
+      typeof raw?.powerRemainingMs === 'number'
+        ? raw.powerRemainingMs
+        : undefined,
+    status:
+      raw?.status === 'idle' ||
+      raw?.status === 'playing' ||
+      raw?.status === 'gameover'
+        ? raw.status
+        : undefined,
+  };
+}
+
 export const MazeChasePlayPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -126,11 +172,35 @@ export const MazeChasePlayPage = () => {
   const playerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ghostIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const powerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastPersistAtRef = useRef(0);
   mazeRef.current = maze;
   playerRef.current = player;
   playerDirRef.current = playerDir;
   ghostsRef.current = ghosts;
   powerRemainingMsRef.current = powerRemainingMs;
+
+  const persistMazeState = useCallback(
+    async (patch?: Partial<MazeChaseSnapshot>) => {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      try {
+        await updateSessionState(sid, {
+          maze: mazeRef.current,
+          player: playerRef.current,
+          playerDir: playerDirRef.current,
+          ghosts: ghostsRef.current,
+          score: scoreRef.current,
+          lives,
+          powerRemainingMs: powerRemainingMsRef.current,
+          status: status === 'gameover' ? 'gameover' : 'playing',
+          ...patch,
+        });
+      } catch (e) {
+        showToast({ message: toMessage(e), severity: 'error' });
+      }
+    },
+    [lives, showToast, status],
+  );
 
   const loadSession = useCallback(async (id: string) => {
     const s = await fetchSessionById(id);
@@ -148,14 +218,54 @@ export const MazeChasePlayPage = () => {
     setSession(s);
     sessionIdRef.current = s.id;
     setNotFound(false);
-    setMaze(buildMaze());
+    const persisted = getPersistedMazeState(s);
+    if (persisted.maze && persisted.player && persisted.ghosts) {
+      const restoredMaze = persisted.maze.map((row) => [...row]);
+      const restoredPlayer: [number, number] = [
+        persisted.player[0],
+        persisted.player[1],
+      ];
+      const restoredGhosts = persisted.ghosts.map(
+        ([r, c]) => [r, c] as [number, number],
+      );
+      const restoredDirection = persisted.playerDir ?? 'up';
+      const restoredScore = persisted.score ?? 0;
+      const restoredLives = persisted.lives ?? INITIAL_LIVES;
+      const restoredPower = persisted.powerRemainingMs ?? 0;
+      const restoredStatus =
+        s.status === 'completed' ? 'gameover' : (persisted.status ?? 'playing');
+      setMaze(restoredMaze);
+      setPlayer(restoredPlayer);
+      setPlayerDir(restoredDirection);
+      setGhosts(restoredGhosts);
+      setScore(restoredScore);
+      setLives(restoredLives);
+      setPowerRemainingMs(restoredPower);
+      setStatus(restoredStatus);
+      mazeRef.current = restoredMaze;
+      playerRef.current = restoredPlayer;
+      playerDirRef.current = restoredDirection;
+      ghostsRef.current = restoredGhosts;
+      scoreRef.current = restoredScore;
+      powerRemainingMsRef.current = restoredPower;
+      return;
+    }
+    const freshMaze = buildMaze();
+    const freshGhosts = GHOST_STARTS.map((p) => [...p] as [number, number]);
+    setMaze(freshMaze);
     setPlayer(PLAYER_START);
     setPlayerDir('up');
-    setGhosts(GHOST_STARTS.map((p) => [...p] as [number, number]));
+    setGhosts(freshGhosts);
     setScore(0);
     setLives(INITIAL_LIVES);
     setPowerRemainingMs(0);
     setStatus('playing');
+    mazeRef.current = freshMaze;
+    playerRef.current = PLAYER_START;
+    playerDirRef.current = 'up';
+    ghostsRef.current = freshGhosts;
+    scoreRef.current = 0;
+    powerRemainingMsRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -191,6 +301,7 @@ export const MazeChasePlayPage = () => {
         if (ghostIntervalRef.current) clearInterval(ghostIntervalRef.current);
         if (powerIntervalRef.current) clearInterval(powerIntervalRef.current);
         setStatus('gameover');
+        void persistMazeState({ lives: 0, status: 'gameover' });
         recordScoreAndEnd(scoreRef.current);
         return 0;
       }
@@ -202,9 +313,16 @@ export const MazeChasePlayPage = () => {
       playerRef.current = PLAYER_START;
       playerDirRef.current = 'up';
       ghostsRef.current = GHOST_STARTS.map((p) => [...p] as [number, number]);
+      void persistMazeState({
+        player: PLAYER_START,
+        playerDir: 'up',
+        ghosts: GHOST_STARTS.map((p) => [...p] as [number, number]),
+        lives: next,
+        powerRemainingMs: 0,
+      });
       return next;
     });
-  }, [recordScoreAndEnd]);
+  }, [persistMazeState, recordScoreAndEnd]);
 
   const scoreRef = useRef(score);
   scoreRef.current = score;
@@ -241,6 +359,10 @@ export const MazeChasePlayPage = () => {
       });
       setPlayer(next);
       playerRef.current = next;
+      if (Date.now() - lastPersistAtRef.current >= 900) {
+        lastPersistAtRef.current = Date.now();
+        void persistMazeState({ player: next });
+      }
 
       const ghostsNow = ghostsRef.current;
       const powerActive = powerRemainingMsRef.current > 0;
@@ -271,7 +393,7 @@ export const MazeChasePlayPage = () => {
       if (playerIntervalRef.current) clearInterval(playerIntervalRef.current);
       playerIntervalRef.current = null;
     };
-  }, [status, loseLife]);
+  }, [loseLife, persistMazeState, status]);
 
   useEffect(() => {
     if (status !== 'playing') return;
@@ -314,6 +436,10 @@ export const MazeChasePlayPage = () => {
           return [nr, nc];
         });
         ghostsRef.current = next.map((g) => [...g] as [number, number]);
+        if (Date.now() - lastPersistAtRef.current >= 900) {
+          lastPersistAtRef.current = Date.now();
+          void persistMazeState({ ghosts: ghostsRef.current });
+        }
         return next;
       });
 
@@ -348,7 +474,7 @@ export const MazeChasePlayPage = () => {
       if (ghostIntervalRef.current) clearInterval(ghostIntervalRef.current);
       ghostIntervalRef.current = null;
     };
-  }, [status, loseLife]);
+  }, [loseLife, persistMazeState, status]);
 
   useEffect(() => {
     if (status !== 'playing' || powerRemainingMs <= 0) return;
@@ -358,13 +484,19 @@ export const MazeChasePlayPage = () => {
         powerRemainingMsRef.current = next;
         return next;
       });
+      if (Date.now() - lastPersistAtRef.current >= 900) {
+        lastPersistAtRef.current = Date.now();
+        void persistMazeState({
+          powerRemainingMs: powerRemainingMsRef.current,
+        });
+      }
     }, 100);
     powerIntervalRef.current = t;
     return () => {
       clearInterval(t);
       powerIntervalRef.current = null;
     };
-  }, [status, powerRemainingMs]);
+  }, [persistMazeState, powerRemainingMs, status]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -401,11 +533,12 @@ export const MazeChasePlayPage = () => {
       if (d !== null) {
         playerDirRef.current = d;
         setPlayerDir(d);
+        void persistMazeState({ playerDir: d });
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [status]);
+  }, [persistMazeState, status]);
 
   const handlePlayAgain = useCallback(async () => {
     setStartingNew(true);

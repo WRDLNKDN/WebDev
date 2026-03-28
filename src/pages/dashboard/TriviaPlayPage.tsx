@@ -28,6 +28,7 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 
 function getTriviaState(session: GameSession): TriviaStatePayload {
@@ -114,6 +115,10 @@ export const TriviaPlayPage = () => {
     setLoading(true);
     void loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
+  const refreshSession = useCallback(() => {
+    if (sessionId?.trim()) void loadSession(sessionId.trim());
+  }, [sessionId, loadSession]);
+  useGameSessionRealtime(sessionId, refreshSession, Boolean(sessionId?.trim()));
 
   const state = session ? getTriviaState(session) : null;
   const currentIndex = state?.currentQuestionIndex ?? 0;
@@ -151,16 +156,6 @@ export const TriviaPlayPage = () => {
       setLastAnsweredIndex(null);
     }
   }, [currentIndex, lastAnsweredIndex]);
-
-  const pollWhenWaiting =
-    alreadyAnswered && !isSolo && sessionId && session?.status !== 'completed';
-  useEffect(() => {
-    if (!pollWhenWaiting || !sessionId) return;
-    const t = setInterval(() => {
-      void loadSession(sessionId);
-    }, 3000);
-    return () => clearInterval(t);
-  }, [pollWhenWaiting, sessionId, loadSession]);
 
   const handleSubmit = useCallback(
     async (answer: string) => {

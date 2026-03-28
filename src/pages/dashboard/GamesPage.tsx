@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGameSessions } from '../../hooks/useGameSessions';
 import {
   acceptInvitation,
@@ -46,11 +46,18 @@ import {
   createMazeChaseSession,
   createChessSession,
   createBlackjackSession,
+  createPoolSession,
   getOrCreateDailyWordSession,
   declineInvitation,
   fetchSessionById,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
+import {
+  getGameName,
+  getProfileLabel,
+  getResultForUser,
+  getSessionPeerSummary,
+} from '../../lib/games/socialSummary';
 import { toMessage } from '../../lib/utils/errors';
 import type {
   GameDefinition,
@@ -77,13 +84,17 @@ export const GamesPage = () => {
   const navigate = useNavigate();
   const sessionIdFromUrl = searchParams.get('session');
   const {
+    currentUserId,
     definitions,
+    sessions,
+    sessionsById,
     pendingInvitations,
     waitingOnYou,
     waitingOnOthers,
     activeSolo,
     completed,
     connections,
+    profilesById,
     loading,
     error,
     refresh,
@@ -94,6 +105,50 @@ export const GamesPage = () => {
   const [resumeSession, setResumeSession] = useState<GameSession | null>(null);
   const [actingInvitationId, setActingInvitationId] = useState<string | null>(
     null,
+  );
+
+  const getInvitationPrimary = useCallback(
+    (invitation: GameInvitation) => {
+      const session = sessionsById[invitation.session_id];
+      return `${session ? getGameName(session) : 'Game'} invite from ${getProfileLabel(invitation.sender_id, profilesById, currentUserId)}`;
+    },
+    [currentUserId, profilesById, sessionsById],
+  );
+
+  const getInvitationSecondary = useCallback(
+    (invitation: GameInvitation) => {
+      const session = sessionsById[invitation.session_id];
+      if (!session) return `Session ${invitation.session_id.slice(0, 8)}…`;
+      return `${getSessionPeerSummary(session, currentUserId, profilesById)} · Waiting for your response`;
+    },
+    [currentUserId, profilesById, sessionsById],
+  );
+
+  const getSessionSecondary = useCallback(
+    (
+      session: GameSession,
+      mode: 'waiting_you' | 'waiting_others' | 'solo' | 'completed',
+    ) => {
+      const peerSummary = getSessionPeerSummary(
+        session,
+        currentUserId,
+        profilesById,
+      );
+      if (mode === 'waiting_you') {
+        return `${peerSummary} · Your move`;
+      }
+      if (mode === 'waiting_others') {
+        if (session.status === 'waiting_players') {
+          return `${peerSummary} · Waiting for players to join`;
+        }
+        return `${peerSummary} · Waiting on someone else`;
+      }
+      if (mode === 'solo') {
+        return `Started ${new Date(session.created_at).toLocaleDateString()}`;
+      }
+      return `${peerSummary} · Result: ${session.result ?? '—'}`;
+    },
+    [currentUserId, profilesById],
   );
 
   useEffect(() => {
@@ -210,6 +265,11 @@ export const GamesPage = () => {
       }
       if (getGameType(s) === 'blackjack') {
         navigate(`/dashboard/games/blackjack/${s.id}`, { replace: true });
+        setSearchParams({}, { replace: true });
+        return;
+      }
+      if (getGameType(s) === 'pool') {
+        navigate(`/dashboard/games/pool/${s.id}`, { replace: true });
         setSearchParams({}, { replace: true });
         return;
       }
@@ -351,6 +411,14 @@ export const GamesPage = () => {
           navigate(`/dashboard/games/blackjack/${session.id}`);
           return;
         }
+        if (def.game_type === 'pool') {
+          const session = await createPoolSession();
+          showToast({ message: `${def.name} started.`, severity: 'success' });
+          setStartOpen(false);
+          setSelectedDef(null);
+          navigate(`/dashboard/games/pool/${session.id}`);
+          return;
+        }
         if (def.game_type === 'daily_word') {
           const session = await getOrCreateDailyWordSession();
           showToast({ message: `Today's puzzle ready.`, severity: 'success' });
@@ -477,9 +545,6 @@ export const GamesPage = () => {
     [showToast, refresh, navigate],
   );
 
-  const getGameName = (session: GameSession) =>
-    (session.game_definition as { name?: string } | undefined)?.name ?? 'Game';
-
   const openSession = useCallback(
     (s: GameSession) => {
       if (getGameType(s) === 'phuzzle') {
@@ -570,6 +635,10 @@ export const GamesPage = () => {
         navigate(`/dashboard/games/blackjack/${s.id}`);
         return;
       }
+      if (getGameType(s) === 'pool') {
+        navigate(`/dashboard/games/pool/${s.id}`);
+        return;
+      }
       if (getGameType(s) === 'daily_word') {
         navigate(`/dashboard/games/daily-word/${s.id}`);
         return;
@@ -577,6 +646,123 @@ export const GamesPage = () => {
       setSearchParams({ session: s.id });
     },
     [navigate, setSearchParams],
+  );
+
+  const dailyChallengeCards = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const challengeOrder = ['daily_word', 'hangman', '2048'];
+    return challengeOrder
+      .map((gameType) =>
+        definitions.find((definition) => definition.game_type === gameType),
+      )
+      .filter((definition): definition is GameDefinition => Boolean(definition))
+      .map((definition) => {
+        const relevantSessions = sessions.filter(
+          (session) =>
+            (session.game_definition as { game_type?: string } | undefined)
+              ?.game_type === definition.game_type,
+        );
+        const completedToday = relevantSessions.some(
+          (session) =>
+            session.status === 'completed' &&
+            session.updated_at.slice(0, 10) === today,
+        );
+        const activeSession =
+          relevantSessions.find((session) => session.status !== 'completed') ??
+          null;
+        return {
+          definition,
+          completedToday,
+          activeSession,
+        };
+      });
+  }, [definitions, sessions]);
+
+  const rivalryCards = useMemo(() => {
+    const rivalryMap = new Map<
+      string,
+      {
+        opponentId: string;
+        gameType: string;
+        gameName: string;
+        wins: number;
+        losses: number;
+        draws: number;
+        latestSession: GameSession;
+      }
+    >();
+    sessions
+      .filter((session) => session.status === 'completed')
+      .forEach((session) => {
+        const participants = (session.participants ?? []).filter(
+          (participant) => participant.acceptance_state === 'accepted',
+        );
+        if (participants.length !== 2 || !currentUserId) return;
+        const opponent = participants.find(
+          (participant) => participant.user_id !== currentUserId,
+        );
+        if (!opponent) return;
+        const gameType =
+          (session.game_definition as { game_type?: string } | undefined)
+            ?.game_type ?? 'game';
+        const key = `${opponent.user_id}:${gameType}`;
+        const result = getResultForUser(session, currentUserId);
+        const existing = rivalryMap.get(key);
+        const base = existing ?? {
+          opponentId: opponent.user_id,
+          gameType,
+          gameName: getGameName(session),
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          latestSession: session,
+        };
+        if (
+          !existing ||
+          session.updated_at > existing.latestSession.updated_at
+        ) {
+          base.latestSession = session;
+        }
+        if (result === 'win') base.wins += 1;
+        if (result === 'loss') base.losses += 1;
+        if (result === 'draw') base.draws += 1;
+        rivalryMap.set(key, base);
+      });
+    return [...rivalryMap.values()]
+      .sort(
+        (a, b) =>
+          b.wins + b.losses + b.draws - (a.wins + a.losses + a.draws) ||
+          b.latestSession.updated_at.localeCompare(a.latestSession.updated_at),
+      )
+      .slice(0, 4);
+  }, [currentUserId, sessions]);
+
+  const handleDailyChallengeLaunch = useCallback(
+    async (definition: GameDefinition, activeSession: GameSession | null) => {
+      if (activeSession) {
+        openSession(activeSession);
+        return;
+      }
+      await handleStartSolo(definition);
+    },
+    [handleStartSolo, openSession],
+  );
+
+  const handleRematch = useCallback(
+    async (opponentId: string, gameType: string) => {
+      const definition = definitions.find(
+        (item) => item.game_type === gameType && item.is_multiplayer_capable,
+      );
+      if (!definition) {
+        showToast({
+          message: 'That game is not available for rematch yet.',
+          severity: 'info',
+        });
+        return;
+      }
+      await handleStartMultiplayer(definition, opponentId);
+    },
+    [definitions, handleStartMultiplayer, showToast],
   );
 
   if (loading) {
@@ -625,6 +811,132 @@ export const GamesPage = () => {
       </Stack>
 
       <Stack spacing={3}>
+        {waitingOnYou.length > 0 && (
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              background:
+                'linear-gradient(135deg, rgba(24,36,52,0.95) 0%, rgba(14,24,38,0.92) 100%)',
+              borderColor: 'rgba(91, 192, 190, 0.28)',
+            }}
+          >
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography sx={SECTION_TITLE_SX}>Turn inbox</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {waitingOnYou.length === 1
+                    ? 'One friend is waiting on you'
+                    : `${waitingOnYou.length} games are waiting on you`}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Jump back in, make your move, and keep the room alive.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                onClick={() => openSession(waitingOnYou[0])}
+              >
+                Resume next turn
+              </Button>
+            </Stack>
+            <Stack spacing={1.25}>
+              {waitingOnYou.slice(0, 3).map((session) => (
+                <Paper
+                  key={session.id}
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(255,255,255,0.02)',
+                  }}
+                >
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 600 }}>
+                        {getGameName(session)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {getSessionSecondary(session, 'waiting_you')}
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      onClick={() => openSession(session)}
+                    >
+                      Take turn
+                    </Button>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {dailyChallengeCards.length > 0 && (
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography sx={SECTION_TITLE_SX}>Daily challenges</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Fresh reasons to check in every day, whether you have five minutes
+              or fifty.
+            </Typography>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+              {dailyChallengeCards.map(
+                ({ definition, completedToday, activeSession }) => (
+                  <Paper
+                    key={definition.id}
+                    variant="outlined"
+                    sx={{ p: 1.5, flex: 1, minWidth: 0, borderRadius: 2 }}
+                  >
+                    <Typography sx={{ fontWeight: 600 }}>
+                      {definition.name}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ minHeight: 40, mt: 0.5 }}
+                    >
+                      {activeSession
+                        ? 'Your run is in progress and ready to resume.'
+                        : completedToday
+                          ? 'Cleared today. Come back for another warm-up run.'
+                          : 'Ready for today’s first attempt.'}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      sx={{ mt: 1.5 }}
+                      onClick={() =>
+                        void handleDailyChallengeLaunch(
+                          definition,
+                          activeSession,
+                        )
+                      }
+                    >
+                      {activeSession
+                        ? 'Resume'
+                        : completedToday
+                          ? 'Play again'
+                          : 'Start challenge'}
+                    </Button>
+                  </Paper>
+                ),
+              )}
+            </Stack>
+          </Paper>
+        )}
+
         {pendingInvitations.length > 0 && (
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography sx={SECTION_TITLE_SX}>Pending invitations</Typography>
@@ -636,8 +948,8 @@ export const GamesPage = () => {
                   sx={{ borderRadius: 1 }}
                 >
                   <ListItemText
-                    primary={`Game invite (session ${inv.session_id.slice(0, 8)}…)`}
-                    secondary={`Invitation ID: ${inv.id.slice(0, 8)}…`}
+                    primary={getInvitationPrimary(inv)}
+                    secondary={getInvitationSecondary(inv)}
                   />
                   <Stack direction="row" spacing={1}>
                     <Button
@@ -663,26 +975,6 @@ export const GamesPage = () => {
           </Paper>
         )}
 
-        {waitingOnYou.length > 0 && (
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography sx={SECTION_TITLE_SX}>Waiting on you</Typography>
-            <List disablePadding>
-              {waitingOnYou.map((s) => (
-                <ListItemButton
-                  key={s.id}
-                  onClick={() => openSession(s)}
-                  sx={{ borderRadius: 1 }}
-                >
-                  <ListItemText
-                    primary={getGameName(s)}
-                    secondary={`Updated ${new Date(s.updated_at).toLocaleDateString()}`}
-                  />
-                </ListItemButton>
-              ))}
-            </List>
-          </Paper>
-        )}
-
         {waitingOnOthers.length > 0 && (
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography sx={SECTION_TITLE_SX}>Waiting on others</Typography>
@@ -695,7 +987,7 @@ export const GamesPage = () => {
                 >
                   <ListItemText
                     primary={getGameName(s)}
-                    secondary={`Status: ${s.status} · ${new Date(s.updated_at).toLocaleDateString()}`}
+                    secondary={getSessionSecondary(s, 'waiting_others')}
                   />
                 </ListItemButton>
               ))}
@@ -715,11 +1007,70 @@ export const GamesPage = () => {
                 >
                   <ListItemText
                     primary={getGameName(s)}
-                    secondary={`Started ${new Date(s.created_at).toLocaleDateString()}`}
+                    secondary={getSessionSecondary(s, 'solo')}
                   />
                 </ListItemButton>
               ))}
             </List>
+          </Paper>
+        )}
+
+        {completed.length > 0 && (
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography sx={SECTION_TITLE_SX}>Rivalries & rematches</Typography>
+            {rivalryCards.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Finish a few head-to-head games and your rivalry board will
+                start telling the story.
+              </Typography>
+            ) : (
+              <Stack spacing={1.25}>
+                {rivalryCards.map((rivalry) => (
+                  <Paper
+                    key={`${rivalry.opponentId}:${rivalry.gameType}`}
+                    variant="outlined"
+                    sx={{ p: 1.5, borderRadius: 2 }}
+                  >
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1.5}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 600 }}>
+                          {getProfileLabel(
+                            rivalry.opponentId,
+                            profilesById,
+                            currentUserId,
+                          )}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {rivalry.gameName} record {rivalry.wins}-
+                          {rivalry.losses}
+                          {rivalry.draws > 0 ? `-${rivalry.draws}` : ''} · Last
+                          played{' '}
+                          {new Date(
+                            rivalry.latestSession.updated_at,
+                          ).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        onClick={() =>
+                          void handleRematch(
+                            rivalry.opponentId,
+                            rivalry.gameType,
+                          )
+                        }
+                      >
+                        Rematch
+                      </Button>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
           </Paper>
         )}
 
@@ -735,7 +1086,7 @@ export const GamesPage = () => {
                 >
                   <ListItemText
                     primary={getGameName(s)}
-                    secondary={`Result: ${s.result ?? '—'} · ${new Date(s.updated_at).toLocaleDateString()}`}
+                    secondary={getSessionSecondary(s, 'completed')}
                   />
                 </ListItemButton>
               ))}

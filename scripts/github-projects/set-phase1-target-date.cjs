@@ -39,7 +39,7 @@ async function handleIssuesPhase1Target({ github, context, core }) {
 }
 
 async function handleWorkflowDispatchPhase1Backfill({ github, context, core }) {
-  const config = getProjectBackfillConfig(context, core);
+  const config = await getProjectBackfillConfig(github, context, core);
   if (!config) {
     return;
   }

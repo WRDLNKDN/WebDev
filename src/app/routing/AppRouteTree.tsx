@@ -68,6 +68,7 @@ import {
   MazeChasePlayPage,
   ChessPlayPage,
   BlackjackPlayPage,
+  PoolPlayPage,
   DailyWordPlayPage,
   PlaylistDetailPage,
   PlaylistsPage,
@@ -578,6 +579,26 @@ export const AppRouteTree = ({
           <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
             <RequireOnboarded>
               <BlackjackPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/pool/:sessionId"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <PoolPlayPage />
+            </RequireOnboarded>
+          </RequireFeatureFlag>
+        }
+      />
+      <Route
+        path="/dashboard/games/pool"
+        element={
+          <RequireFeatureFlag flagKey={DASHBOARD_FLAG} fallbackTo="/">
+            <RequireOnboarded>
+              <PoolPlayPage />
             </RequireOnboarded>
           </RequireFeatureFlag>
         }

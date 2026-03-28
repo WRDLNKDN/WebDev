@@ -321,6 +321,7 @@ export const Directory = () => {
   }
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const hasInitialDataRef = useRef(false);
+  const activeLoadRequestRef = useRef(0);
   /** When true, skip persisting directory rows (avoids caching empty after a failed fetch). */
   const lastDirectoryFetchFailedRef = useRef(false);
   const connectionsCsvExportEnabled = useFeatureFlag(
@@ -413,6 +414,8 @@ export const Directory = () => {
   const load = useCallback(
     async (append = false, appendOffset?: number) => {
       if (!session?.user?.id) return;
+      const requestId = activeLoadRequestRef.current + 1;
+      activeLoadRequestRef.current = requestId;
       const offset = append ? (appendOffset ?? 0) : 0;
       const showInitialLoader = !append && !hasInitialDataRef.current;
       if (!append && showInitialLoader) setLoading(true);
@@ -440,6 +443,7 @@ export const Directory = () => {
             supabase,
             params,
           );
+          if (requestId !== activeLoadRequestRef.current) return;
           if (append) {
             setRows((prev) => [...prev, ...data]);
           } else {
@@ -451,11 +455,14 @@ export const Directory = () => {
           break;
         } catch (e) {
           lastErr = e;
+          if (requestId !== activeLoadRequestRef.current) return;
           if (attempt === 0) {
             await new Promise((r) => setTimeout(r, 650));
           }
         }
       }
+
+      if (requestId !== activeLoadRequestRef.current) return;
 
       if (lastErr != null) {
         if (!append) {
@@ -503,6 +510,7 @@ export const Directory = () => {
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
       if (!data.session) {
         setSession(null);
         setLoading(false);
@@ -510,7 +518,11 @@ export const Directory = () => {
       }
       setSession(data.session as unknown as { user: { id: string } });
     };
+    let cancelled = false;
     void init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

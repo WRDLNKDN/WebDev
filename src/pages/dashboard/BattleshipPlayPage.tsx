@@ -16,6 +16,7 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 import {
   MiniGameLoadingNotFound,
@@ -135,10 +136,10 @@ export const BattleshipPlayPage = () => {
     setLoading(true);
     loadSession(sessionId.trim()).finally(() => setLoading(false));
   }, [sessionId, loadSession]);
-
   const refreshSession = useCallback(() => {
     if (sessionId?.trim()) void loadSession(sessionId.trim());
   }, [sessionId, loadSession]);
+  useGameSessionRealtime(sessionId, refreshSession, Boolean(sessionId?.trim()));
 
   const currentShipIndex = placingShips.length;
   const currentShipLength = SHIP_LENGTHS[currentShipIndex] ?? 0;

@@ -41,6 +41,9 @@ export type NotificationRow = {
   connection_request_pending?: boolean;
   post_snippet?: string | null;
   post_thumbnail?: string | null;
+  game_name?: string | null;
+  game_peer_summary?: string | null;
+  game_actor_label?: string | null;
 };
 
 export const getNotificationLabel = (row: NotificationRow): string => {
@@ -69,20 +72,34 @@ export const getNotificationLabel = (row: NotificationRow): string => {
     case 'event_rsvp':
       return `${actor} RSVP'd to your event`;
     case 'game_invite':
-      return `${actor} invited you to a game`;
+      return `${actor} invited you to ${row.game_name ?? 'a game'}`;
     case 'game_invite_accepted':
-      return `${actor} accepted your game invitation`;
+      return `${actor} accepted your ${row.game_name ?? 'game'} invitation`;
     case 'game_invite_declined':
-      return `${actor} declined your game invitation`;
+      return `${actor} declined your ${row.game_name ?? 'game'} invitation`;
     case 'game_invite_canceled':
-      return `${actor} canceled the game invitation`;
+      return `${actor} canceled the ${row.game_name ?? 'game'} invitation`;
     case 'game_your_turn':
-      return `Your turn in a game`;
+      return `Your turn in ${row.game_name ?? 'a game'}`;
     case 'game_completed':
-      return `Game completed`;
+      return `${row.game_name ?? 'Game'} completed`;
     default:
       return `${actor} did something`;
   }
+};
+
+const getNotificationSecondary = (row: NotificationRow): string => {
+  if (
+    row.type === 'game_invite' ||
+    row.type === 'game_invite_accepted' ||
+    row.type === 'game_invite_declined' ||
+    row.type === 'game_invite_canceled' ||
+    row.type === 'game_your_turn' ||
+    row.type === 'game_completed'
+  ) {
+    return row.game_peer_summary ?? formatPostTime(row.created_at);
+  }
+  return formatPostTime(row.created_at);
 };
 
 type RowProps = {
@@ -260,7 +277,7 @@ const NotificationRowItem = ({
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <ListItemText
               primary={getNotificationLabel(row)}
-              secondary={formatPostTime(row.created_at)}
+              secondary={getNotificationSecondary(row)}
               primaryTypographyProps={{ fontWeight: row.read_at ? 400 : 600 }}
               secondaryTypographyProps={{ variant: 'caption' }}
               sx={{ m: 0 }}

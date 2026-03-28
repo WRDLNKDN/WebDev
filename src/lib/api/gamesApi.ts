@@ -707,6 +707,70 @@ export async function createBlackjackSession(): Promise<GameSession> {
   return createSoloSession(def.id, {});
 }
 
+export type PoolBallState = {
+  id: string;
+  x: number;
+  y: number;
+  pocketed: boolean;
+};
+
+export type PoolStatePayload = {
+  shots?: number;
+  sunk?: number;
+  cueBall?: { x: number; y: number };
+  balls?: PoolBallState[];
+  status?: 'aiming' | 'shooting' | 'won';
+};
+
+const POOL_CUE_START = { x: 170, y: 210 };
+const POOL_BALL_RADIUS = 12;
+
+function getDefaultPoolBalls(): PoolBallState[] {
+  const startX = 490;
+  const startY = 210;
+  const spacing = POOL_BALL_RADIUS * 2 + 2;
+  return [
+    { id: 'one', x: startX, y: startY, pocketed: false },
+    {
+      id: 'two',
+      x: startX + spacing,
+      y: startY - POOL_BALL_RADIUS - 1,
+      pocketed: false,
+    },
+    {
+      id: 'three',
+      x: startX + spacing,
+      y: startY + POOL_BALL_RADIUS + 1,
+      pocketed: false,
+    },
+    {
+      id: 'four',
+      x: startX + spacing * 2,
+      y: startY - spacing,
+      pocketed: false,
+    },
+    { id: 'five', x: startX + spacing * 2, y: startY, pocketed: false },
+    {
+      id: 'six',
+      x: startX + spacing * 2,
+      y: startY + spacing,
+      pocketed: false,
+    },
+  ];
+}
+
+export async function createPoolSession(): Promise<GameSession> {
+  const def = await fetchGameDefinitionByType('pool');
+  if (!def) throw new Error('Pool is not available');
+  return createSoloSession(def.id, {
+    shots: 0,
+    sunk: 0,
+    cueBall: POOL_CUE_START,
+    balls: getDefaultPoolBalls(),
+    status: 'aiming',
+  });
+}
+
 export type DailyWordStatePayload = {
   puzzleDate?: string;
   guesses?: Array<{

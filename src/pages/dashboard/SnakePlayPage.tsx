@@ -1,7 +1,7 @@
 /**
  * Solo Snake: arcade-style game. Snake moves automatically; player controls direction.
  * Collect targets to grow and score. Game ends on wall or self collision.
- * In-progress state does not persist; score is recorded on game over when session exists.
+ * Active runs are snapshotted so players can refresh and resume.
  */
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,6 +10,7 @@ import {
   completeSession,
   createSnakeSession,
   fetchSessionById,
+  updateSessionState,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
@@ -35,6 +36,42 @@ const DELTA: Record<Direction, [number, number]> = {
   left: [0, -1],
   right: [0, 1],
 };
+
+type SnakeStatePayload = {
+  snake?: number[][];
+  target?: [number, number];
+  score?: number;
+  direction?: Direction;
+  status?: 'idle' | 'playing' | 'gameover';
+};
+
+function getPersistedSnakeState(session: GameSession): SnakeStatePayload {
+  const raw = session.state_payload as SnakeStatePayload | undefined;
+  return {
+    snake: Array.isArray(raw?.snake) ? raw.snake : undefined,
+    target:
+      Array.isArray(raw?.target) &&
+      raw.target.length === 2 &&
+      typeof raw.target[0] === 'number' &&
+      typeof raw.target[1] === 'number'
+        ? raw.target
+        : undefined,
+    score: typeof raw?.score === 'number' ? raw.score : undefined,
+    direction:
+      raw?.direction === 'up' ||
+      raw?.direction === 'down' ||
+      raw?.direction === 'left' ||
+      raw?.direction === 'right'
+        ? raw.direction
+        : undefined,
+    status:
+      raw?.status === 'idle' ||
+      raw?.status === 'playing' ||
+      raw?.status === 'gameover'
+        ? raw.status
+        : undefined,
+  };
+}
 
 const OPPOSITE: Record<Direction, Direction> = {
   up: 'down',
@@ -82,6 +119,7 @@ export const SnakePlayPage = () => {
   const directionRef = useRef<Direction>('right');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const lastPersistAtRef = useRef(0);
   const snakeRef = useRef(snake);
   const targetRef = useRef(target);
   const scoreRef = useRef(0);
@@ -108,6 +146,26 @@ export const SnakePlayPage = () => {
     setGameStatus('playing');
   }, []);
 
+  const persistRunState = useCallback(
+    async (patch?: Partial<SnakeStatePayload>) => {
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      try {
+        await updateSessionState(sid, {
+          snake: snakeRef.current,
+          target: targetRef.current,
+          score: scoreRef.current,
+          direction: directionRef.current,
+          status: gameStatus === 'gameover' ? 'gameover' : 'playing',
+          ...patch,
+        });
+      } catch (e) {
+        showToast({ message: toMessage(e), severity: 'error' });
+      }
+    },
+    [gameStatus, showToast],
+  );
+
   const loadSession = useCallback(
     async (id: string) => {
       const s = await fetchSessionById(id);
@@ -125,7 +183,36 @@ export const SnakePlayPage = () => {
       setSession(s);
       sessionIdRef.current = s.id;
       setNotFound(false);
-      startGame();
+      const persisted = getPersistedSnakeState(s);
+      if (
+        Array.isArray(persisted.snake) &&
+        persisted.snake.length >= 1 &&
+        persisted.target
+      ) {
+        const restoredSnake = persisted.snake.map(([r, c]) => [r, c]);
+        const restoredTarget: [number, number] = [
+          persisted.target[0],
+          persisted.target[1],
+        ];
+        const restoredDirection = persisted.direction ?? 'right';
+        const restoredScore = persisted.score ?? 0;
+        const restoredStatus =
+          s.status === 'completed'
+            ? 'gameover'
+            : persisted.status === 'idle'
+              ? 'playing'
+              : (persisted.status ?? 'playing');
+        setSnake(restoredSnake);
+        setTarget(restoredTarget);
+        setScore(restoredScore);
+        setGameStatus(restoredStatus);
+        snakeRef.current = restoredSnake;
+        targetRef.current = restoredTarget;
+        scoreRef.current = restoredScore;
+        directionRef.current = restoredDirection;
+      } else {
+        startGame();
+      }
     },
     [startGame],
   );
@@ -175,6 +262,7 @@ export const SnakePlayPage = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
         setGameStatus('gameover');
+        void persistRunState({ status: 'gameover' });
         recordScoreAndEnd(scoreRef.current);
         return;
       }
@@ -185,6 +273,7 @@ export const SnakePlayPage = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
         setGameStatus('gameover');
+        void persistRunState({ status: 'gameover' });
         recordScoreAndEnd(scoreRef.current);
         return;
       }
@@ -200,10 +289,19 @@ export const SnakePlayPage = () => {
         setSnake(newBody);
         setTarget(nextTarget);
         setScore(scoreRef.current);
+        void persistRunState({
+          snake: newBody,
+          target: nextTarget,
+          score: scoreRef.current,
+        });
       } else {
         const newBody = [nextHead, ...prevSnake.slice(0, -1)];
         snakeRef.current = newBody;
         setSnake(newBody);
+        if (Date.now() - lastPersistAtRef.current >= 900) {
+          lastPersistAtRef.current = Date.now();
+          void persistRunState({ snake: newBody });
+        }
       }
     };
 
@@ -212,7 +310,7 @@ export const SnakePlayPage = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = null;
     };
-  }, [gameStatus, recordScoreAndEnd]);
+  }, [gameStatus, persistRunState, recordScoreAndEnd]);
 
   const setDirection = useCallback(
     (dir: Direction) => {
@@ -220,8 +318,9 @@ export const SnakePlayPage = () => {
       const current = directionRef.current;
       if (dir === OPPOSITE[current]) return;
       directionRef.current = dir;
+      void persistRunState({ direction: dir });
     },
-    [gameStatus],
+    [gameStatus, persistRunState],
   );
 
   useEffect(() => {

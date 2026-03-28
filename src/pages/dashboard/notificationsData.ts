@@ -1,5 +1,11 @@
 import type { NotificationPayload } from '../../lib/notifications/notificationLinks';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  getGameName,
+  getProfileLabel,
+  getSessionPeerSummary,
+  type GameProfilesById,
+} from '../../lib/games/socialSummary';
 import type { NotificationRow } from './notificationsPageUi';
 
 const POST_PREVIEW_MAX_LENGTH = 180;
@@ -60,6 +66,48 @@ const loadActors = async (actorIds: string[]) => {
       },
     ]),
   ) as Record<string, ActorProfile>;
+};
+
+const loadGameSessions = async (sessionIds: string[]) => {
+  if (sessionIds.length === 0)
+    return [] as Array<{
+      id: string;
+      status: string;
+      result: string | null;
+      game_definition?: { name?: string; game_type?: string } | null;
+      participants?: Array<{
+        user_id: string;
+        turn_order_position: number | null;
+        acceptance_state: string;
+      }> | null;
+      state_payload?: Record<string, unknown> | null;
+    }>;
+
+  const { data } = await supabase
+    .from('game_sessions')
+    .select(
+      `
+      id,
+      status,
+      result,
+      state_payload,
+      game_definition:game_definitions(name, game_type),
+      participants:game_session_participants(user_id, turn_order_position, acceptance_state)
+    `,
+    )
+    .in('id', sessionIds);
+  return (data ?? []) as Array<{
+    id: string;
+    status: string;
+    result: string | null;
+    game_definition?: { name?: string; game_type?: string } | null;
+    participants?: Array<{
+      user_id: string;
+      turn_order_position: number | null;
+      acceptance_state: string;
+    }> | null;
+    state_payload?: Record<string, unknown> | null;
+  }>;
 };
 
 const loadFeedMetadata = async (feedIds: string[]) => {
@@ -177,6 +225,13 @@ export const fetchNotificationRows = async (
   const actorIds = unique(
     rows.map((row) => row.actor_id).filter((id): id is string => id != null),
   );
+  const gameSessionIds = collectIds(
+    rows,
+    (row) =>
+      row.reference_type === 'game_session' &&
+      row.reference_id != null &&
+      row.type.startsWith('game_'),
+  );
 
   const feedRefs = collectIds(
     rows,
@@ -200,13 +255,27 @@ export const fetchNotificationRows = async (
     eventExists,
     roomExists,
     pendingConnectionRequestIds,
+    gameSessions,
   ] = await Promise.all([
     loadActors(actorIds),
     loadFeedMetadata(feedRefs),
     loadExistingIds('events', eventRefs),
     loadExistingIds('chat_rooms', chatRoomIds),
     loadPendingConnectionRequestIds(recipientId, connectionRequestIds),
+    loadGameSessions(gameSessionIds),
   ]);
+
+  const gameParticipantIds = unique(
+    gameSessions.flatMap((session) =>
+      (session.participants ?? []).map((participant) => participant.user_id),
+    ),
+  );
+  const gameProfiles = (await loadActors(
+    gameParticipantIds,
+  )) as GameProfilesById;
+  const gameSessionsById = Object.fromEntries(
+    gameSessions.map((session) => [session.id, session]),
+  );
 
   return rows.map((row) => {
     const actor = row.actor_id ? actors[row.actor_id] : null;
@@ -220,6 +289,18 @@ export const fetchNotificationRows = async (
       row.reference_type === 'feed_item' &&
       row.reference_id != null &&
       POST_RELATED_TYPES.has(row.type);
+    const gameSession =
+      row.reference_type === 'game_session' && row.reference_id
+        ? gameSessionsById[row.reference_id]
+        : null;
+    const gameName = gameSession ? getGameName(gameSession) : null;
+    const gamePeerSummary = gameSession
+      ? getSessionPeerSummary(gameSession, recipientId, gameProfiles)
+      : null;
+    const gameActorLabel =
+      row.actor_id != null
+        ? getProfileLabel(row.actor_id, gameProfiles, recipientId)
+        : null;
 
     return {
       ...row,
@@ -240,6 +321,9 @@ export const fetchNotificationRows = async (
         isPostRelated && row.reference_id
           ? (feedData.feedThumbnails[row.reference_id] ?? null)
           : undefined,
+      game_name: gameName,
+      game_peer_summary: gamePeerSummary,
+      game_actor_label: gameActorLabel,
     };
   });
 };

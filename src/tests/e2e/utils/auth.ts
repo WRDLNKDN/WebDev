@@ -23,8 +23,10 @@ import { acceptWantsPgrstObjectJson } from './postgrestFulfill';
 
 export const USER_ID = FIXTURE_USER_ID;
 
-const ACCESS_TOKEN = 'stub-access-token';
-const REFRESH_TOKEN = 'stub-refresh-token';
+const ACCESS_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdHViLXVzZXIiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImV4cCI6NDA3MDkwODgwMH0.signature';
+const REFRESH_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdHViLXJlZnJlc2giLCJleHAiOjQwNzA5MDg4MDB9.signature';
 
 function resolveAuthStorageKey(): string {
   const appEnv = (process.env.VITE_APP_ENV ?? '').trim().toLowerCase();

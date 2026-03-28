@@ -174,18 +174,25 @@ export const EventDetailPage = () => {
 
   if (!event) {
     return (
-      <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Event not found
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/events"
-          variant="outlined"
-          sx={{ textTransform: 'none' }}
-        >
-          Back to Events
-        </Button>
+      <Box sx={{ py: { xs: 4, sm: 5 }, px: 2, maxWidth: 520, mx: 'auto' }}>
+        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+          <CardContent sx={{ p: { xs: 2.5, sm: 3 }, textAlign: 'center' }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+              404
+            </Typography>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Event not found
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/events"
+              variant="outlined"
+              sx={{ textTransform: 'none', mt: 1 }}
+            >
+              Back to Events
+            </Button>
+          </CardContent>
+        </Card>
       </Box>
     );
   }

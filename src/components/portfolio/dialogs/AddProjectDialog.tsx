@@ -781,40 +781,44 @@ export const AddProjectDialog = ({
                         isOptionEqualToValue={(option, value) =>
                           option === value
                         }
-                        renderOption={(props, option) => (
-                          <Box
-                            component="li"
-                            {...props}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: 1,
-                            }}
-                          >
-                            <Typography component="span" variant="body2">
-                              {option}
-                            </Typography>
-                            {option === PORTFOLIO_OTHER_CATEGORY_OPTION ? (
-                              <Box
-                                component="span"
-                                sx={{
-                                  px: 0.75,
-                                  py: 0.25,
-                                  borderRadius: 999,
-                                  fontSize: '0.68rem',
-                                  letterSpacing: 0.35,
-                                  textTransform: 'uppercase',
-                                  color: '#9FE7FF',
-                                  bgcolor: 'rgba(0, 196, 204, 0.12)',
-                                  border: '1px solid rgba(0, 196, 204, 0.32)',
-                                }}
-                              >
-                                Custom
-                              </Box>
-                            ) : null}
-                          </Box>
-                        )}
+                        renderOption={(props, option) => {
+                          const { key, ...optionProps } = props;
+                          return (
+                            <Box
+                              component="li"
+                              key={key}
+                              {...optionProps}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 1,
+                              }}
+                            >
+                              <Typography component="span" variant="body2">
+                                {option}
+                              </Typography>
+                              {option === PORTFOLIO_OTHER_CATEGORY_OPTION ? (
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    px: 0.75,
+                                    py: 0.25,
+                                    borderRadius: 999,
+                                    fontSize: '0.68rem',
+                                    letterSpacing: 0.35,
+                                    textTransform: 'uppercase',
+                                    color: '#9FE7FF',
+                                    bgcolor: 'rgba(0, 196, 204, 0.12)',
+                                    border: '1px solid rgba(0, 196, 204, 0.32)',
+                                  }}
+                                >
+                                  Custom
+                                </Box>
+                              ) : null}
+                            </Box>
+                          );
+                        }}
                         renderInput={(params) => (
                           <TextField
                             {...params}

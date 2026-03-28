@@ -24,6 +24,15 @@ const TOO_LARGE_GIF = {
 
 const E2E_ROOM_ID = 'e2e-room-1111-4111-8111-111111111111';
 
+function requestWantsSingleObject(route: import('@playwright/test').Route) {
+  return (
+    route
+      .request()
+      .headers()
+      ['accept']?.includes('application/vnd.pgrst.object+json') ?? false
+  );
+}
+
 test.describe('Chat file upload', () => {
   async function stubChatRoom(
     page: import('@playwright/test').Page,
@@ -32,10 +41,7 @@ test.describe('Chat file upload', () => {
     const messages: Array<Record<string, unknown>> = [];
 
     await page.route('**/rest/v1/chat_rooms*', async (route) => {
-      const isSingle = route
-        .request()
-        .headers()
-        ['accept']?.includes('application/vnd.pgrst.object+json');
+      const isSingle = requestWantsSingleObject(route);
       const room = {
         id: E2E_ROOM_ID,
         room_type: 'dm',
@@ -75,23 +81,35 @@ test.describe('Chat file upload', () => {
     });
 
     await page.route('**/rest/v1/profiles*', async (route) => {
+      const requestUrl = new URL(route.request().url());
+      const idFilter = requestUrl.searchParams.get('id');
+      const requestedId = idFilter?.startsWith('eq.')
+        ? idFilter.slice(3)
+        : null;
+      const profiles = [
+        {
+          id: USER_ID,
+          handle: 'member',
+          display_name: 'Member',
+          avatar: null,
+        },
+        {
+          id: 'other-user-1',
+          handle: profileOverride?.handle ?? 'nick',
+          display_name: profileOverride?.display_name ?? 'Nick Clark',
+          avatar: null,
+        },
+      ];
+      const matchedProfiles = requestedId
+        ? profiles.filter((profile) => profile.id === requestedId)
+        : profiles;
+      const isSingle = requestWantsSingleObject(route);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: USER_ID,
-            handle: 'member',
-            display_name: 'Member',
-            avatar: null,
-          },
-          {
-            id: 'other-user-1',
-            handle: profileOverride?.handle ?? 'nick',
-            display_name: profileOverride?.display_name ?? 'Nick Clark',
-            avatar: null,
-          },
-        ]),
+        body: JSON.stringify(
+          isSingle ? (matchedProfiles[0] ?? null) : matchedProfiles,
+        ),
       });
     });
 

@@ -224,6 +224,83 @@ comment on column public.profiles.marketing_product_updates is
 comment on column public.profiles.marketing_events is
   'Receive event/community notifications.';
 
+-- Legacy-safe profile/schema follow-ups for existing databases created before
+-- the consolidated two-file migration layout.
+alter table if exists public.feed_advertisers
+  add column if not exists image_url text;
+alter table if exists public.feed_items
+  add column if not exists edited_at timestamptz;
+
+update public.profiles
+set status = 'approved'
+where status = 'pending';
+
+alter table if exists public.profiles
+  alter column status set default 'approved';
+
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'push_enabled'
+  ) then
+    alter table public.profiles add column push_enabled boolean not null default false;
+  end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'email_notifications_enabled'
+  ) then
+    alter table public.profiles add column email_notifications_enabled boolean not null default true;
+  end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'marketing_push_enabled'
+  ) then
+    alter table public.profiles add column marketing_push_enabled boolean not null default false;
+  end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'consent_updated_at'
+  ) then
+    alter table public.profiles add column consent_updated_at timestamptz;
+  end if;
+end $$;
+
+update public.profiles
+set display_name = coalesce(nullif(trim(display_name), ''), handle, 'User')
+where status = 'approved'
+  and (display_name is null or length(trim(display_name)) = 0);
+
+update public.profiles
+set handle = 'user_' || substr(replace(id::text, '-', ''), 1, 8)
+where length(trim(handle)) = 0;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_handle_not_blank' and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles add constraint profiles_handle_not_blank
+      check (length(trim(handle)) > 0);
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_approved_has_display_name' and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles add constraint profiles_approved_has_display_name
+      check (
+        status != 'approved'
+        or (display_name is not null and length(trim(display_name)) >= 1)
+      );
+  end if;
+end $$;
+
+comment on constraint profiles_handle_not_blank on public.profiles is
+  'Handle cannot be blank.';
+comment on constraint profiles_approved_has_display_name on public.profiles is
+  'Approved profiles must have non-empty display_name for directory.';
+
 create unique index if not exists idx_profiles_handle_lower_unique
   on public.profiles (lower(handle));
 create index if not exists idx_profiles_created_at on public.profiles (created_at);
@@ -232,6 +309,7 @@ create index if not exists idx_profiles_reviewed_by on public.profiles (reviewed
 create index if not exists idx_profiles_handle on public.profiles (handle);
 create index if not exists idx_profiles_email on public.profiles (email);
 create index if not exists idx_profiles_industry on public.profiles(industry) where industry is not null;
+create index if not exists idx_profiles_secondary_industry on public.profiles(secondary_industry) where secondary_industry is not null;
 create index if not exists idx_profiles_location on public.profiles(location) where location is not null;
 create index if not exists idx_profiles_last_active_at on public.profiles(last_active_at desc nulls last);
 create unique index if not exists idx_profiles_profile_share_token
@@ -1549,6 +1627,9 @@ create table if not exists public.chat_messages (
 create index if not exists idx_chat_messages_room_id on public.chat_messages(room_id);
 create index if not exists idx_chat_messages_room_created on public.chat_messages(room_id, created_at desc);
 create index if not exists idx_chat_messages_sender_id on public.chat_messages(sender_id);
+create index if not exists idx_chat_messages_sender_recent_non_system
+  on public.chat_messages(sender_id, created_at desc)
+  where sender_id is not null and is_system_message = false;
 
 comment on table public.chat_messages is 'Chat messages. is_deleted=true shows placeholder. sender_id null when anonymized.';
 
@@ -2708,39 +2789,46 @@ language plpgsql
 security definer
 set search_path = public, pg_catalog
 as $$
-declare
-  r record;
 begin
   if new.sender_id is null or new.is_system_message or new.is_deleted then
     return new;
   end if;
 
-  for r in
-    select crm.user_id
-    from public.chat_room_members crm
-    where crm.room_id = new.room_id
-      and crm.left_at is null
-      and crm.user_id != new.sender_id
-      and crm.user_id is not null
-  loop
-    if exists (
-      select 1 from public.chat_blocks cb
-      where (cb.blocker_id = r.user_id and cb.blocked_user_id = new.sender_id)
-         or (cb.blocker_id = new.sender_id and cb.blocked_user_id = r.user_id)
-    ) then
-      continue;
-    end if;
-
-    insert into public.notifications (recipient_id, actor_id, type, reference_id, reference_type, payload)
-    values (
-      r.user_id,
-      new.sender_id,
-      'chat_message',
-      new.id,
-      'chat_message',
-      jsonb_build_object('room_id', new.room_id, 'message_id', new.id)
+  insert into public.notifications (
+    recipient_id,
+    actor_id,
+    type,
+    reference_id,
+    reference_type,
+    payload
+  )
+  select
+    crm.user_id,
+    new.sender_id,
+    'chat_message',
+    new.id,
+    'chat_message',
+    jsonb_build_object('room_id', new.room_id, 'message_id', new.id)
+  from public.chat_room_members crm
+  where crm.room_id = new.room_id
+    and crm.left_at is null
+    and crm.user_id != new.sender_id
+    and crm.user_id is not null
+    and not exists (
+      select 1
+      from public.chat_blocks cb
+      where (cb.blocker_id = crm.user_id and cb.blocked_user_id = new.sender_id)
+         or (cb.blocker_id = new.sender_id and cb.blocked_user_id = crm.user_id)
+    )
+    and not exists (
+      select 1
+      from public.notifications n
+      where n.recipient_id = crm.user_id
+        and n.actor_id = new.sender_id
+        and n.type = 'chat_message'
+        and n.reference_id = new.id
+        and n.reference_type = 'chat_message'
     );
-  end loop;
 
   return new;
 end;

@@ -15,6 +15,45 @@ import { devLog, devWarn } from '../../lib/utils/devLog';
 
 type State = 'loading' | 'redirect' | 'allowed';
 const ENFORCED_INACTIVE_STATUSES = new Set(['disabled', 'suspended', 'banned']);
+const SESSION_RETRY_DELAYS_MS = [400, 400];
+const FINAL_SESSION_GRACE_DELAY_MS = 900;
+const PROFILE_RETRY_DELAYS_MS = [0, 600, 800];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function loadOnboardingProfile(userId: string) {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select(
+      'display_name, join_reason, participation_style, policy_version, status',
+    )
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    devWarn('❌ RequireOnboarded: Profile fetch error:', error);
+  }
+
+  return { profile, error };
+}
+
+function shouldAllowThroughProfileError(
+  error: {
+    code?: string | null;
+    message?: string | null;
+  } | null,
+) {
+  if (!error) {
+    return false;
+  }
+  return (
+    error.code === 'PGRST116' ||
+    error.code === '42501' ||
+    /permission denied/i.test(error.message ?? '')
+  );
+}
 
 /**
  * Route guard: requires auth AND completed profile (onboarding).
@@ -48,25 +87,24 @@ export const RequireOnboarded = ({
 
     const check = async () => {
       const runId = ++checkRunRef.current;
-      // Retry getSession: after OAuth redirect, session can be briefly unready (Vercel/timing)
+      const isCurrentRun = () => !cancelled && runId === checkRunRef.current;
       let { data } = await getSessionWithTimeout();
-      if (!data.session) {
-        await new Promise((r) => setTimeout(r, 400));
-        if (cancelled) return;
+
+      for (const delayMs of SESSION_RETRY_DELAYS_MS) {
+        if (data.session || !isCurrentRun()) {
+          break;
+        }
+        await sleep(delayMs);
+        if (!isCurrentRun()) return;
         ({ data } = await getSessionWithTimeout());
       }
-      if (!data.session) {
-        await new Promise((r) => setTimeout(r, 400));
-        if (cancelled) return;
-        ({ data } = await getSessionWithTimeout());
-      }
-      if (cancelled || runId !== checkRunRef.current) return;
+      if (!isCurrentRun()) return;
 
       if (!data.session) {
         // Try one explicit refresh before redirecting. UAT can briefly return null
         // sessions while token refresh is in-flight.
         const { data: refreshed } = await supabase.auth.refreshSession();
-        if (cancelled || runId !== checkRunRef.current) return;
+        if (!isCurrentRun()) return;
         if (refreshed.session) {
           data = refreshed;
         }
@@ -80,8 +118,8 @@ export const RequireOnboarded = ({
           return;
         }
         // Final hydration grace pass before redirecting on fresh OAuth landings.
-        await new Promise((r) => setTimeout(r, 900));
-        if (cancelled || runId !== checkRunRef.current) return;
+        await sleep(FINAL_SESSION_GRACE_DELAY_MS);
+        if (!isCurrentRun()) return;
         const { data: recheck } = await getSessionWithTimeout();
         if (recheck.session) {
           data = recheck;
@@ -111,55 +149,32 @@ export const RequireOnboarded = ({
         return;
       }
 
-      const fetchProfile = async () => {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select(
-            'display_name, join_reason, participation_style, policy_version, status',
-          )
-          .eq('id', userId)
-          .maybeSingle();
+      let profile: ProfileOnboardingCheck | null = null;
+      let error: { code?: string | null; message?: string | null } | null =
+        null;
 
-        if (error) {
-          devWarn('❌ RequireOnboarded: Profile fetch error:', error);
+      for (const [attemptIndex, delayMs] of PROFILE_RETRY_DELAYS_MS.entries()) {
+        if (delayMs > 0) {
+          await sleep(delayMs);
+          if (!isCurrentRun()) return;
         }
-
-        return { profile, error };
-      };
-
-      let result = await fetchProfile();
-      let profile = result.profile;
-      let error = result.error;
-
-      devLog('🔍 RequireOnboarded: Fetch attempt 1', { profile, error });
-
-      if (!profile) {
-        await new Promise((r) => setTimeout(r, 600));
-        if (cancelled) return;
-        result = await fetchProfile();
+        const result = await loadOnboardingProfile(userId);
         profile = result.profile;
         error = result.error;
-        devLog('🔍 RequireOnboarded: Fetch attempt 2', { profile, error });
-      }
-      if (!profile) {
-        await new Promise((r) => setTimeout(r, 800));
-        if (cancelled) return;
-        result = await fetchProfile();
-        profile = result.profile;
-        error = result.error;
-        devLog('🔍 RequireOnboarded: Fetch attempt 3', { profile, error });
+        devLog(`🔍 RequireOnboarded: Fetch attempt ${attemptIndex + 1}`, {
+          profile,
+          error,
+        });
+        if (profile) {
+          break;
+        }
       }
 
-      if (cancelled || runId !== checkRunRef.current) return;
+      if (!isCurrentRun()) return;
 
       // If profile reads are blocked during deploy/policy churn, do not trap
       // existing members in a feed->join loop.
-      if (
-        error &&
-        (error.code === 'PGRST116' ||
-          error.code === '42501' ||
-          /permission denied/i.test(error.message ?? ''))
-      ) {
+      if (shouldAllowThroughProfileError(error)) {
         devWarn('⚠️ RequireOnboarded: profile read blocked - allowing through');
         hasEverAllowedRef.current = true;
         setState('allowed');

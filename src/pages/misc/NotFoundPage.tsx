@@ -71,7 +71,7 @@ export const NotFoundPage = () => {
         position: 'relative',
         overflow: 'hidden',
         minHeight: '100%',
-        py: { xs: 3, sm: 4, md: 6 },
+        py: { xs: 2, sm: 2.5, md: 3 },
       }}
     >
       <Box
@@ -89,13 +89,11 @@ export const NotFoundPage = () => {
           position: 'relative',
           zIndex: 1,
           maxWidth: 'min(1120px, calc(100vw - 32px))',
-          minHeight: {
-            xs: 'calc(100dvh - 180px)',
-            sm: 'calc(100dvh - 220px)',
-          },
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
+          pt: { xs: 2, sm: 3, md: 4 },
+          pb: { xs: 2, sm: 3, md: 4 },
           px: { xs: 2, sm: 3, md: 4 },
         }}
       >
@@ -104,9 +102,9 @@ export const NotFoundPage = () => {
           sx={{
             ...getGlassCard(theme),
             width: '100%',
-            maxWidth: 980,
-            px: { xs: 2.5, sm: 4, md: 5.5 },
-            py: { xs: 3.5, sm: 4.5, md: 5.25 },
+            maxWidth: 900,
+            px: { xs: 2.25, sm: 3.25, md: 4.25 },
+            py: { xs: 2.5, sm: 3.25, md: 3.75 },
             borderRadius: { xs: 4, md: 5 },
             textAlign: { xs: 'center', md: 'left' },
             position: 'relative',
@@ -124,11 +122,11 @@ export const NotFoundPage = () => {
             },
           }}
         >
-          <Stack spacing={{ xs: 3, sm: 4, md: 4.5 }}>
+          <Stack spacing={{ xs: 2.25, sm: 3, md: 3.5 }}>
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '4.4rem', sm: '5.8rem', md: '7rem' },
+                fontSize: { xs: '3.8rem', sm: '5rem', md: '6rem' },
                 fontWeight: 900,
                 opacity: 0.18,
                 letterSpacing: { xs: -4, md: -6 },
@@ -144,15 +142,15 @@ export const NotFoundPage = () => {
                 display: 'grid',
                 gridTemplateColumns: {
                   xs: '1fr',
-                  md: 'minmax(0, 1.05fr) minmax(320px, 0.95fr)',
+                  md: 'minmax(0, 1.1fr) minmax(280px, 0.9fr)',
                 },
-                gap: { xs: 3, sm: 4, md: 5 },
+                gap: { xs: 2.25, sm: 3, md: 3.5 },
                 alignItems: 'center',
                 width: '100%',
               }}
             >
               <Stack
-                spacing={{ xs: 2.25, sm: 2.75, md: 3 }}
+                spacing={{ xs: 1.75, sm: 2.25, md: 2.5 }}
                 sx={{ order: { xs: 2, md: 1 }, minWidth: 0 }}
               >
                 <Box>
@@ -161,11 +159,11 @@ export const NotFoundPage = () => {
                     sx={{
                       fontWeight: 900,
                       letterSpacing: -1.2,
-                      mb: 1.25,
+                      mb: 0.9,
                       fontSize: {
-                        xs: '2.1rem',
-                        sm: '2.5rem',
-                        md: '3rem',
+                        xs: '1.85rem',
+                        sm: '2.2rem',
+                        md: '2.55rem',
                       },
                       lineHeight: 1.02,
                       background: `linear-gradient(45deg, #fff 18%, ${selectedWeirdling.accent} 96%)`,
@@ -179,10 +177,10 @@ export const NotFoundPage = () => {
                     variant="body1"
                     sx={{
                       opacity: 0.8,
-                      maxWidth: { xs: 560, md: 460 },
+                      maxWidth: { xs: 520, md: 420 },
                       mx: { xs: 'auto', md: 0 },
-                      fontSize: { xs: '1rem', sm: '1.05rem' },
-                      lineHeight: 1.6,
+                      fontSize: { xs: '0.98rem', sm: '1rem' },
+                      lineHeight: 1.5,
                     }}
                   >
                     This page is missing, moved, or never made it through the
@@ -209,7 +207,7 @@ export const NotFoundPage = () => {
                     flexWrap="wrap"
                     sx={{
                       width: '100%',
-                      mb: 0.5,
+                      mb: 0.25,
                       justifyContent: { xs: 'center', md: 'flex-start' },
                     }}
                   >
@@ -279,8 +277,8 @@ export const NotFoundPage = () => {
                 <Box
                   sx={{
                     width: '100%',
-                    maxWidth: { xs: 320, sm: 360, md: 400 },
-                    p: { xs: 1.5, sm: 1.75, md: 2 },
+                    maxWidth: { xs: 280, sm: 320, md: 350 },
+                    p: { xs: 1.1, sm: 1.3, md: 1.5 },
                     borderRadius: { xs: 5, md: 6 },
                     bgcolor: 'rgba(255,255,255,0.03)',
                     border: '1px solid rgba(255,255,255,0.08)',

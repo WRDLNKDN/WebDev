@@ -306,28 +306,28 @@ export const ChatRoomHeader = ({
           </Tooltip>
         )}
         <Tooltip title="Chat options">
-          <span>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                if (menuItems.length === 0) {
-                  return;
-                }
-                setMenuAnchor(e.currentTarget);
-              }}
-              aria-label="Chat options"
-              disabled={menuItems.length === 0}
-              sx={{
-                color: headerIconMuted,
-                '&:hover': {
-                  color: headerIconHover,
-                  bgcolor: 'rgba(255,255,255,0.06)',
-                },
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          </span>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              if (menuItems.length === 0) {
+                return;
+              }
+              setMenuAnchor(e.currentTarget);
+            }}
+            aria-label="Chat options"
+            aria-disabled={menuItems.length === 0}
+            sx={{
+              color: headerIconMuted,
+              opacity: menuItems.length === 0 ? 0.56 : 1,
+              cursor: menuItems.length === 0 ? 'default' : 'pointer',
+              '&:hover': {
+                color: headerIconHover,
+                bgcolor: 'rgba(255,255,255,0.06)',
+              },
+            }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
         </Tooltip>
         {onPopOut && (
           <Tooltip title="Open in new window">

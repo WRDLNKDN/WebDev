@@ -56,6 +56,14 @@ const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
 ];
 
 const STRIP_EXIF_TIMEOUT_MS = 10_000;
+type PendingAttachment = {
+  file: File;
+  mime: string;
+  plan: Extract<
+    ReturnType<typeof getChatAttachmentProcessingPlan>,
+    { accepted: true }
+  >;
+};
 
 export type MessageReplyDraft = {
   id: string;
@@ -155,16 +163,12 @@ export const MessageInput = ({
   const messageInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
     null,
   );
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const removePendingFileAtIndex = useCallback((indexToRemove: number) => {
-    setPendingFiles((prev) => {
-      const next = prev.filter((_, j) => j !== indexToRemove);
-      if (next.length === 0) {
-        setError(null);
-        setProcessingMessage(null);
-      }
-      return next;
-    });
+  const [pendingAttachment, setPendingAttachment] =
+    useState<PendingAttachment | null>(null);
+  const clearPendingAttachment = useCallback(() => {
+    setPendingAttachment(null);
+    setError(null);
+    setProcessingMessage(null);
   }, []);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
@@ -187,7 +191,7 @@ export const MessageInput = ({
     setText('');
     setError(null);
     setProcessingMessage(null);
-    setPendingFiles([]);
+    setPendingAttachment(null);
     setMentionState({
       open: false,
       query: '',
@@ -220,10 +224,7 @@ export const MessageInput = ({
   }, [replyTo]);
 
   const submitBlocked =
-    disabled ||
-    sending ||
-    uploading ||
-    (!text.trim() && pendingFiles.length === 0);
+    disabled || sending || uploading || (!text.trim() && !pendingAttachment);
 
   const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
@@ -245,7 +246,18 @@ export const MessageInput = ({
       }
       const plan = getChatAttachmentProcessingPlan(file);
       setProcessingMessage(plan.accepted ? plan.helperText : null);
-      setPendingFiles([file]);
+      if (!plan.accepted) {
+        setError(plan.reason);
+        return;
+      }
+      const mime = normalizeChatAttachmentMime(file);
+      if (!mime) {
+        setError(
+          'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
+        );
+        return;
+      }
+      setPendingAttachment({ file, mime, plan });
     } catch {
       setProcessingMessage(null);
       setError("We couldn't add that GIF. Please try another one.");
@@ -260,18 +272,11 @@ export const MessageInput = ({
     const paths: string[] = [];
     const meta: ChatAttachmentMeta[] = [];
 
-    if (pendingFiles.length > 0) {
-      const f = pendingFiles[0];
+    if (pendingAttachment) {
+      const { file: f, mime, plan } = pendingAttachment;
       const rejectionReason = getChatAttachmentRejectionReason(f);
       if (rejectionReason) {
         setError(rejectionReason);
-        return;
-      }
-      const mime = normalizeChatAttachmentMime(f);
-      if (!mime) {
-        setError(
-          'Unsupported attachment type. Please upload PDF, DOC, DOCX, JPG, PNG, GIF, or WEBP.',
-        );
         return;
       }
 
@@ -286,14 +291,6 @@ export const MessageInput = ({
         }
 
         const basePath = `${session.user.id}/${Date.now()}`;
-        const plan = getChatAttachmentProcessingPlan({
-          size: f.size,
-          type: mime,
-        });
-        if (!plan.accepted) {
-          setError(plan.reason);
-          return;
-        }
         if (plan.mode === 'gif_processing') {
           setProcessingMessage('Optimizing GIF...');
           setError(null); // Clear any previous errors when starting processing
@@ -316,7 +313,7 @@ export const MessageInput = ({
             } else {
               setError(errorMsg || 'Failed to optimize GIF. Please try again.');
             }
-            setPendingFiles([]); // Clear pending files on error so user can try again
+            setPendingAttachment(null);
             setUploading(false);
             return;
           }
@@ -333,14 +330,14 @@ export const MessageInput = ({
           if (uploadErr) {
             setProcessingMessage(null);
             setError(toMessage(uploadErr));
-            setPendingFiles([]); // Clear pending files on error
+            setPendingAttachment(null);
             setUploading(false);
             return;
           }
           paths.push(path);
           meta.push({ path, mime, size: blob.size });
         }
-        setPendingFiles([]);
+        setPendingAttachment(null);
         setProcessingMessage(null);
       } catch (cause) {
         setProcessingMessage(null);
@@ -410,13 +407,14 @@ export const MessageInput = ({
     });
 
     // Set helper text if available (e.g., "Large GIF detected. It will be optimized before attaching.")
-    if (plan.accepted && plan.helperText) {
-      setProcessingMessage(plan.helperText);
-    } else {
+    if (!plan.accepted) {
+      setError(plan.reason);
       setProcessingMessage(null);
+      return;
     }
 
-    setPendingFiles([f]);
+    setProcessingMessage(plan.helperText);
+    setPendingAttachment({ file: f, mime, plan });
   };
 
   return (
@@ -502,30 +500,27 @@ export const MessageInput = ({
           {processingMessage}
         </Box>
       ) : null}
-      {pendingFiles.length > 0 && (
+      {pendingAttachment && (
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-          {pendingFiles.map((f, i) => (
+          <Box
+            sx={{
+              fontSize: 12,
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              bgcolor: 'rgba(156,187,217,0.18)',
+            }}
+          >
+            {pendingAttachment.file.name}{' '}
             <Box
-              key={`${f.name}-${i}`}
-              sx={{
-                fontSize: 12,
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
-                bgcolor: 'rgba(156,187,217,0.18)',
-              }}
+              component="button"
+              type="button"
+              onClick={clearPendingAttachment}
+              sx={{ cursor: 'pointer', color: 'error.main', ml: 0.5 }}
             >
-              {f.name}{' '}
-              <Box
-                component="button"
-                type="button"
-                onClick={() => removePendingFileAtIndex(i)}
-                sx={{ cursor: 'pointer', color: 'error.main', ml: 0.5 }}
-              >
-                ×
-              </Box>
+              ×
             </Box>
-          ))}
+          </Box>
         </Box>
       )}
       <Box
@@ -748,7 +743,7 @@ export const MessageInput = ({
                 type="button"
                 onClick={() => setGifPickerOpen(true)}
                 disabled={
-                  disabled || sending || uploading || pendingFiles.length >= 1
+                  disabled || sending || uploading || Boolean(pendingAttachment)
                 }
                 aria-label="Add GIF"
                 sx={{

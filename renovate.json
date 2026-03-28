@@ -3,9 +3,22 @@
   "extends": ["config:recommended"],
   "labels": ["dependencies"],
   "dependencyDashboard": true,
+  "ignoreUnstable": true,
   "platformAutomerge": true,
   "rebaseWhen": "behind-base-branch",
   "packageRules": [
+    {
+      "description": "Only allow stable TypeScript ecosystem releases.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "typescript",
+        "typescript-eslint",
+        "@typescript-eslint/**"
+      ],
+      "ignoreUnstable": true,
+      "respectLatest": true,
+      "allowedVersions": "!/-((alpha|beta|rc|next|canary|dev|insiders?)(\\.|$))/"
+    },
     {
       "description": "Auto-merge low-risk GitHub Action maintenance once CI passes.",
       "matchManagers": ["github-actions"],

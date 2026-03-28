@@ -5,10 +5,15 @@ import { resolve } from 'node:path';
 describe('renovate config', () => {
   const configPath = resolve(process.cwd(), 'renovate.json');
   const config = JSON.parse(readFileSync(configPath, 'utf8')) as {
+    ignoreUnstable?: boolean;
     platformAutomerge?: boolean;
     packageRules?: Array<Record<string, unknown>>;
     vulnerabilityAlerts?: Record<string, unknown>;
   };
+
+  it('ignores unstable releases by default', () => {
+    expect(config.ignoreUnstable).toBe(true);
+  });
 
   it('enables platform automerge for safe Renovate PRs', () => {
     expect(config.platformAutomerge).toBe(true);
@@ -49,6 +54,26 @@ describe('renovate config', () => {
       enabled: true,
       automerge: true,
       automergeType: 'pr',
+    });
+  });
+
+  it('pins the TypeScript ecosystem to stable releases only', () => {
+    const packageRules = config.packageRules ?? [];
+    const typescriptRule = packageRules.find(
+      (rule) =>
+        rule.description === 'Only allow stable TypeScript ecosystem releases.',
+    );
+
+    expect(typescriptRule).toMatchObject({
+      matchManagers: ['npm'],
+      matchPackageNames: [
+        'typescript',
+        'typescript-eslint',
+        '@typescript-eslint/**',
+      ],
+      ignoreUnstable: true,
+      respectLatest: true,
+      allowedVersions: '!/-((alpha|beta|rc|next|canary|dev|insiders?)(\\.|$))/',
     });
   });
 });

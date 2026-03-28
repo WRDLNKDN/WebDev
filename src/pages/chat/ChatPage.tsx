@@ -161,9 +161,24 @@ export const ChatPage = () => {
     if (isMobileLayout) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (e.defaultPrevented) return;
 
       const target = e.target as HTMLElement | null;
+      const activeElement = document.activeElement as HTMLElement | null;
+      const appMain = document.querySelector<HTMLElement>(
+        '[data-testid="app-main"]',
+      );
+      const interactiveTarget = target?.closest(
+        'button, a, input, textarea, select, [role="button"], [role="link"], [role="textbox"], [role="combobox"], [tabindex]',
+      );
+      const pageShortcutFocusTarget =
+        !activeElement ||
+        activeElement === document.body ||
+        activeElement === document.documentElement ||
+        activeElement === appMain;
       if (
+        !pageShortcutFocusTarget ||
+        interactiveTarget ||
         target?.tagName === 'INPUT' ||
         target?.tagName === 'TEXTAREA' ||
         target?.isContentEditable

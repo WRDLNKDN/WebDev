@@ -332,6 +332,21 @@ create index if not exists idx_profiles_location_trgm
   where location is not null;
 create index if not exists idx_profiles_bio_trgm
   on public.profiles using gin (lower(coalesce(nerd_creds->>'bio', '')) extensions.gin_trgm_ops);
+create index if not exists idx_profiles_approved_recent_activity
+  on public.profiles ((coalesce(last_active_at, created_at)) desc, id desc)
+  where status = 'approved';
+create index if not exists idx_profiles_approved_created_at
+  on public.profiles (created_at desc, id desc)
+  where status = 'approved';
+create index if not exists idx_profiles_approved_display_name_handle
+  on public.profiles ((coalesce(display_name, handle)), id)
+  where status = 'approved';
+create index if not exists idx_profiles_secondary_industry_trgm
+  on public.profiles using gin (lower(secondary_industry) extensions.gin_trgm_ops)
+  where secondary_industry is not null;
+create index if not exists idx_profiles_niche_field_trgm
+  on public.profiles using gin (lower(niche_field) extensions.gin_trgm_ops)
+  where niche_field is not null;
 
 -- -----------------------------
 -- updated_at trigger (profiles)
@@ -1583,6 +1598,9 @@ create index if not exists idx_chat_room_members_room_id on public.chat_room_mem
 create index if not exists idx_chat_room_members_room_active
   on public.chat_room_members(room_id)
   where left_at is null;
+create index if not exists idx_chat_room_members_user_active_room
+  on public.chat_room_members(user_id, room_id)
+  where left_at is null;
 
 comment on table public.chat_room_members is 'Membership: admin (creator for groups), member. left_at set when user leaves.';
 
@@ -1626,10 +1644,15 @@ create table if not exists public.chat_messages (
 
 create index if not exists idx_chat_messages_room_id on public.chat_messages(room_id);
 create index if not exists idx_chat_messages_room_created on public.chat_messages(room_id, created_at desc);
+create index if not exists idx_chat_messages_room_recent_page
+  on public.chat_messages(room_id, created_at desc, id desc);
 create index if not exists idx_chat_messages_sender_id on public.chat_messages(sender_id);
 create index if not exists idx_chat_messages_sender_recent_non_system
   on public.chat_messages(sender_id, created_at desc)
   where sender_id is not null and is_system_message = false;
+create index if not exists idx_chat_messages_room_unread
+  on public.chat_messages(room_id, created_at desc)
+  where sender_id is not null and is_deleted = false;
 
 comment on table public.chat_messages is 'Chat messages. is_deleted=true shows placeholder. sender_id null when anonymized.';
 
@@ -3318,7 +3341,8 @@ values
   ('maze_chase', 'Maze Chase', 1, 1, true, false),
   ('chess', 'Chess', 2, 2, false, true),
   ('blackjack', 'Blackjack', 1, 1, true, false),
-  ('daily_word', 'Daily Word', 1, 1, true, false)
+  ('daily_word', 'Daily Word', 1, 1, true, false),
+  ('pool', 'Pool', 1, 1, true, false)
 on conflict (game_type) do nothing;
 
 -- Daily Word (Wordle-style): one puzzle per calendar day for all players; 5-letter word, 6 attempts; hints: correct/present/absent.

@@ -4,10 +4,7 @@
  * Loaded via require(); github-script passes { github, context, core }.
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
-const {
-  fieldConfigSelection,
-  fieldsNodesSelection,
-} = require('./projectV2GraphqlFragments.cjs');
+const { fieldsNodesSelection } = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -72,6 +69,7 @@ async function runSetEstimateFromSize({ github, context, core }) {
 }
 
 module.exports = runSetEstimateFromSize;
+module.exports.syncEstimateFromSize = syncEstimateFromSize;
 
 async function syncEstimateFromSize(
   github,
@@ -92,21 +90,16 @@ async function syncEstimateFromSize(
             }
           }
         }
-        fieldValues(first: 30) {
-          nodes {
-            __typename
-            ... on ProjectV2ItemFieldSingleSelectValue {
-              name
-              field {
-                ${fieldConfigSelection}
-              }
-            }
-            ... on ProjectV2ItemFieldNumberValue {
-              number
-              field {
-                ${fieldConfigSelection}
-              }
-            }
+        sizeValue: fieldValueByName(name: "Size") {
+          __typename
+          ... on ProjectV2ItemFieldSingleSelectValue {
+            name
+          }
+        }
+        estimateValue: fieldValueByName(name: "Estimate") {
+          __typename
+          ... on ProjectV2ItemFieldNumberValue {
+            number
           }
         }
       }
@@ -132,24 +125,14 @@ async function syncEstimateFromSize(
     return false;
   }
 
-  const values = item.fieldValues?.nodes ?? [];
-  let sizeName = null;
-  let currentEstimate = null;
-
-  for (const v of values) {
-    if (
-      v.__typename === 'ProjectV2ItemFieldSingleSelectValue' &&
-      v.field?.name === 'Size'
-    ) {
-      sizeName = v.name;
-    }
-    if (
-      v.__typename === 'ProjectV2ItemFieldNumberValue' &&
-      v.field?.name === 'Estimate'
-    ) {
-      currentEstimate = v.number;
-    }
-  }
+  const sizeName =
+    item.sizeValue?.__typename === 'ProjectV2ItemFieldSingleSelectValue'
+      ? item.sizeValue.name
+      : null;
+  const currentEstimate =
+    item.estimateValue?.__typename === 'ProjectV2ItemFieldNumberValue'
+      ? item.estimateValue.number
+      : null;
 
   if (!sizeName) {
     core.info('Size is empty; nothing to map.');

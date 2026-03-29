@@ -8,7 +8,6 @@
  * - workflow_dispatch (scan all items in a project)
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
-const { fieldConfigSelection } = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -44,21 +43,17 @@ async function reopenIssueWhenDoneProjectItem({ github, context, core }) {
 }
 
 module.exports = reopenIssueWhenDoneProjectItem;
+module.exports.reopenIfDone = reopenIfDone;
 
 async function reopenIfDone(github, core, itemNodeId) {
   const query = `query($id: ID!) {
     node(id: $id) {
       ... on ProjectV2Item {
         id
-        fieldValues(first: 30) {
-          nodes {
-            __typename
-            ... on ProjectV2ItemFieldSingleSelectValue {
-              name
-              field {
-                ${fieldConfigSelection}
-              }
-            }
+        statusValue: fieldValueByName(name: "Status") {
+          __typename
+          ... on ProjectV2ItemFieldSingleSelectValue {
+            name
           }
         }
         content {
@@ -85,17 +80,10 @@ async function reopenIfDone(github, core, itemNodeId) {
     return false;
   }
 
-  const values = projectItem.fieldValues?.nodes ?? [];
-  let statusName = null;
-  for (const value of values) {
-    if (
-      value?.__typename === 'ProjectV2ItemFieldSingleSelectValue' &&
-      value.field?.name === 'Status'
-    ) {
-      statusName = value.name;
-      break;
-    }
-  }
+  const statusName =
+    projectItem.statusValue?.__typename === 'ProjectV2ItemFieldSingleSelectValue'
+      ? projectItem.statusValue.name
+      : null;
 
   if (!statusName) {
     core.info(`Item ${projectItem.id} has no Status value; skipping.`);

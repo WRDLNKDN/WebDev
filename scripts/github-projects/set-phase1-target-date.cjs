@@ -11,10 +11,7 @@
  * secret PROJECT_PHASE1_TARGET_DATE_TOKEN (same pattern as set-estimate-from-size).
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
-const {
-  fieldConfigSelection,
-  fieldsNodesSelection,
-} = require('./projectV2GraphqlFragments.cjs');
+const { fieldsNodesSelection } = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -35,10 +32,24 @@ async function handleIssuesPhase1Target({ github, context, core }) {
     );
     return;
   }
+  const config = await getProjectBackfillConfig(github, context, core);
+  if (!config) {
+    return;
+  }
+  const project = await resolveProjectV2(github, config);
+  const projectId = project?.id ?? null;
+  if (!projectId) {
+    core.setFailed(
+      `Project not found for ${config.ownerType} ${config.ownerLogin} #${config.projectNumber}`,
+    );
+    return;
+  }
+
   await syncFromIssueNode(github, core, issue.node_id, {
     targetField: TARGET_FIELD,
     dateIso: DATE_ISO,
     phase1Title: PHASE1_TITLE,
+    projectId,
   });
 }
 
@@ -89,6 +100,8 @@ async function runSetPhase1TargetDate({ github, context, core }) {
 }
 
 module.exports = runSetPhase1TargetDate;
+module.exports.syncFromIssueNode = syncFromIssueNode;
+module.exports.syncFromProjectItemNode = syncFromProjectItemNode;
 
 /**
  * @returns {Promise<boolean>} true if a field value was written
@@ -97,7 +110,7 @@ async function syncFromIssueNode(github, core, issueNodeId, opts) {
   const query = `query($id: ID!) {
     node(id: $id) {
       ... on Issue {
-        projectItems(first: 30) {
+        projectItems(first: 100) {
           nodes {
             id
             project {
@@ -108,15 +121,10 @@ async function syncFromIssueNode(github, core, issueNodeId, opts) {
                 }
               }
             }
-            fieldValues(first: 40) {
-              nodes {
-                __typename
-                ... on ProjectV2ItemFieldDateValue {
-                  date
-                  field {
-                    ${fieldConfigSelection}
-                  }
-                }
+            targetDateValue: fieldValueByName(name: "Target Date") {
+              __typename
+              ... on ProjectV2ItemFieldDateValue {
+                date
               }
             }
           }
@@ -126,9 +134,11 @@ async function syncFromIssueNode(github, core, issueNodeId, opts) {
   }`;
 
   const { node } = await github.graphql(query, { id: issueNodeId });
-  const items = node?.projectItems?.nodes ?? [];
+  const items = (node?.projectItems?.nodes ?? []).filter(
+    (item) => !opts.projectId || item?.project?.id === opts.projectId,
+  );
   if (items.length === 0) {
-    core.info('Issue has no project items; nothing to update.');
+    core.info('Issue has no matching project items; nothing to update.');
     return false;
   }
 
@@ -156,15 +166,10 @@ async function syncFromProjectItemNode(github, core, itemNodeId, opts) {
             }
           }
         }
-        fieldValues(first: 40) {
-          nodes {
-            __typename
-            ... on ProjectV2ItemFieldDateValue {
-              date
-              field {
-                ${fieldConfigSelection}
-              }
-            }
+        targetDateValue: fieldValueByName(name: "Target Date") {
+          __typename
+          ... on ProjectV2ItemFieldDateValue {
+            date
           }
         }
         content {
@@ -226,20 +231,10 @@ async function maybeSetTargetDateOnItem(github, core, item, opts) {
     return false;
   }
 
-  const values = item.fieldValues?.nodes ?? [];
-  let currentDate = null;
-  let sawDateField = false;
-
-  for (const v of values) {
-    if (
-      v.__typename === 'ProjectV2ItemFieldDateValue' &&
-      v.field?.name === opts.targetField
-    ) {
-      sawDateField = true;
-      currentDate = v.date;
-      break;
-    }
-  }
+  const targetDateValue = item.targetDateValue;
+  const sawDateField =
+    targetDateValue?.__typename === 'ProjectV2ItemFieldDateValue';
+  const currentDate = sawDateField ? targetDateValue.date : null;
 
   if (!targetDateIsBlank(currentDate)) {
     core.info(
@@ -248,7 +243,7 @@ async function maybeSetTargetDateOnItem(github, core, item, opts) {
     return false;
   }
 
-  if (!sawDateField && values.length > 0) {
+  if (!sawDateField) {
     core.info(
       `Item ${item.id}: no ${opts.targetField} value node (treating as blank); setting ${opts.dateIso}.`,
     );

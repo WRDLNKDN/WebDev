@@ -8,12 +8,14 @@ import {
   Typography,
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { Session } from '@supabase/supabase-js';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
+import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { useChatRooms } from '../../hooks/useChat';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { createNormalizedGroupImageAsset } from '../../lib/media/assets';
 
 /**
  * Groups page (route: /groups) – open your active group chats.
@@ -114,7 +116,27 @@ export const GroupsPage = () => {
                 <Paper
                   key={room.id}
                   variant="outlined"
-                  sx={{ p: 1.5, borderRadius: 2 }}
+                  component={RouterLink}
+                  to={`/chat-full/${room.id}`}
+                  sx={(theme) => ({
+                    p: 1.5,
+                    borderRadius: 2,
+                    display: 'block',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition:
+                      'border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease',
+                    '&:hover': {
+                      borderColor: alpha(theme.palette.primary.main, 0.42),
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, 0.12)} inset`,
+                    },
+                    '&:focus-visible': {
+                      outline: `2px solid ${alpha(theme.palette.primary.main, 0.48)}`,
+                      outlineOffset: 2,
+                      borderColor: alpha(theme.palette.primary.main, 0.42),
+                    },
+                  })}
                 >
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
@@ -122,23 +144,48 @@ export const GroupsPage = () => {
                     alignItems={{ xs: 'flex-start', sm: 'center' }}
                     spacing={1}
                   >
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {room.name || 'Untitled group'}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: { xs: '100%', sm: 420 },
-                        }}
-                      >
-                        {room.last_message_preview || 'No messages yet'}
-                      </Typography>
-                    </Box>
+                    <Stack direction="row" spacing={1.5} sx={{ minWidth: 0 }}>
+                      <ProfileAvatar
+                        src={
+                          createNormalizedGroupImageAsset(room)?.displayUrl ??
+                          room.image_url
+                        }
+                        alt={room.name || 'Untitled group'}
+                        size="small"
+                        sx={{ width: 48, height: 48, flexShrink: 0 }}
+                      />
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '0.12em',
+                            textDecorationColor: 'transparent',
+                            transition: 'text-decoration-color 140ms ease',
+                            '.MuiPaper-root:hover &': {
+                              textDecorationColor: 'currentColor',
+                            },
+                          }}
+                        >
+                          {room.name || 'Untitled group'}
+                        </Typography>
+                        {room.description ? (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: { xs: '100%', sm: 420 },
+                            }}
+                          >
+                            {room.description}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                    </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
                       {(room.unread_count ?? 0) > 0 && (
                         <Chip
@@ -147,16 +194,6 @@ export const GroupsPage = () => {
                           label={`${room.unread_count} unread`}
                         />
                       )}
-                      <Button
-                        component={RouterLink}
-                        to={`/chat-full/${room.id}`}
-                        variant="outlined"
-                        size="small"
-                        endIcon={<OpenInNewIcon fontSize="small" />}
-                        sx={actionButtonSx}
-                      >
-                        Open Group
-                      </Button>
                     </Stack>
                   </Stack>
                 </Paper>

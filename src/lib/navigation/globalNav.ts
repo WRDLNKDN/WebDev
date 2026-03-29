@@ -2,7 +2,7 @@
  * Canonical global navigation (IA): authenticated primary surfaces and helpers.
  * Order is stable; feature flags remove items without placeholders or layout holes.
  *
- * @see Epic: Global Navigation — Feed, Directory, Chat, Profile, Events (flag), Admin (role).
+ * @see Epic: Global Navigation — Chat, Directory, Events, Feed, Profile, Store, Admin (role).
  */
 
 import { DASHBOARD_FLAG, EVENTS_FLAG, FEED_FLAG } from '../featureFlags/keys';
@@ -17,16 +17,16 @@ export const GLOBAL_NAV_PRIMARY_FLAG = {
 } as const;
 
 /**
- * Deterministic order for authenticated primary links in the top nav / drawer.
+ * Deterministic alphabetical order for authenticated primary links in the top nav / drawer.
  * Implementations must render in this sequence only. `store` opens the external
  * storefront URL in a new tab (not the in-app `/store` embed).
  */
 export const GLOBAL_NAV_AUTHENTICATED_PRIMARY_ORDER = [
-  'feed',
-  'directory',
   'chat',
-  'profile',
+  'directory',
   'events',
+  'feed',
+  'profile',
   'store',
 ] as const;
 

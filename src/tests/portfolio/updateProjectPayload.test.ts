@@ -241,4 +241,91 @@ describe('useProfile.updateProject payload mapping', () => {
       thumbnail_url: null,
     });
   });
+
+  it('uploads a project source file and stores its public URL as the project source', async () => {
+    const upload = vi.fn(async () => ({ error: null }));
+    const getPublicUrl = vi
+      .fn()
+      .mockReturnValueOnce({
+        data: {
+          publicUrl:
+            'https://cdn.example.com/project-sources/user-1/project-source-123.pdf',
+        },
+      })
+      .mockReturnValue({
+        data: { publicUrl: '' },
+      });
+
+    supabaseMock.storage.from.mockReturnValue({
+      upload,
+      getPublicUrl,
+    });
+
+    const api = useProfile();
+    const sourceFile = new File(['pdf'], 'artifact.pdf', {
+      type: 'application/pdf',
+    });
+
+    await api.updateProject(
+      'project-1',
+      {
+        title: 'Uploaded Source Artifact',
+        description: 'Uses a file upload as the source',
+        image_url: '',
+        project_url: '',
+        tech_stack: ['Web App'],
+        is_highlighted: false,
+      },
+      { sourceFile },
+    );
+
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(state.capturedUpdatePayload).toMatchObject({
+      project_url:
+        'https://cdn.example.com/project-sources/user-1/project-source-123.pdf',
+      resolved_type: 'pdf',
+      normalized_url:
+        'https://cdn.example.com/project-sources/user-1/project-source-123.pdf',
+      thumbnail_status: 'pending',
+    });
+  });
+
+  it('throws when both a project url and source file are provided', async () => {
+    const api = useProfile();
+    const sourceFile = new File(['pdf'], 'artifact.pdf', {
+      type: 'application/pdf',
+    });
+
+    await expect(
+      api.updateProject(
+        'project-1',
+        {
+          title: 'Conflicting Artifact',
+          description: 'Two sources should fail',
+          image_url: '',
+          project_url: 'https://example.com/artifact.pdf',
+          tech_stack: ['Web App'],
+          is_highlighted: false,
+        },
+        { sourceFile },
+      ),
+    ).rejects.toThrow(
+      'Choose either an uploaded file or a project URL, not both.',
+    );
+  });
+
+  it('throws when neither a project url nor source file is provided', async () => {
+    const api = useProfile();
+
+    await expect(
+      api.updateProject('project-1', {
+        title: 'Missing Source Artifact',
+        description: 'No source should fail',
+        image_url: '',
+        project_url: '',
+        tech_stack: ['Web App'],
+        is_highlighted: false,
+      }),
+    ).rejects.toThrow('Add a file or a project URL before saving.');
+  });
 });

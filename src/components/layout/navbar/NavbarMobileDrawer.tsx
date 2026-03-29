@@ -78,22 +78,6 @@ export const NavbarMobileDrawer = ({
             <>
               {(!productionComingSoon || isAdminActive) && (
                 <>
-                  <Button
-                    component={RouterLink}
-                    to="/signin"
-                    onClick={() => setDrawerOpen(false)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      py: 1.5,
-                      minHeight: 44,
-                      touchAction: 'manipulation',
-                    }}
-                  >
-                    Sign in
-                  </Button>
                   {!isJoinActive && (
                     <Button
                       component={RouterLink}
@@ -112,10 +96,46 @@ export const NavbarMobileDrawer = ({
                       Join
                     </Button>
                   )}
+                  <Button
+                    component={RouterLink}
+                    to="/signin"
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Sign in
+                  </Button>
                 </>
               )}
               {storeEnabled && (
                 <>
+                  <Button
+                    component="a"
+                    href={KICKSTARTER_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
+                    }
+                    aria-label="Kickstarter, opens in a new tab"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: drawerLinkColor,
+                      textTransform: 'none',
+                      py: 1.5,
+                      minHeight: 44,
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    Kickstarter
+                  </Button>
                   <Button
                     component="a"
                     href={storeExternalUrl}
@@ -136,26 +156,6 @@ export const NavbarMobileDrawer = ({
                     }}
                   >
                     Store
-                  </Button>
-                  <Button
-                    component="a"
-                    href={KICKSTARTER_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      globalThis.setTimeout(() => setDrawerOpen(false), 0)
-                    }
-                    aria-label="Kickstarter, opens in a new tab"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: drawerLinkColor,
-                      textTransform: 'none',
-                      py: 1.5,
-                      minHeight: 44,
-                      touchAction: 'manipulation',
-                    }}
-                  >
-                    Kickstarter
                   </Button>
                 </>
               )}

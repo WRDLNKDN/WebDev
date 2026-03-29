@@ -1,35 +1,39 @@
 # Portfolio: Links, Thumbnails, and Preview — Product & Technical Spec
 
 **Status:** Canonical spec  
-**Scope:** Portfolio items (URL-based); Resume is separate.  
+**Scope:** Portfolio items (public URL or uploaded project file); Resume is
+separate.  
 **Environment:** UAT and Prod.
 
 ---
 
 ## Thumbnail and Preview Generation Strategy (Overview)
 
-- **Portfolio items are URL-based.** Resume is the only file uploaded directly
-  to WRDLNKDN storage.
-- For Portfolio URLs the system must:
-  1. **Classify** the link type.
-  2. **Normalize** provider-specific URLs.
+- **Portfolio items use exactly one project source.** Each item is backed by
+  either a public URL or an uploaded project file stored in WRDLNKDN.
+- For Portfolio sources the system must:
+  1. **Classify** the source type.
+  2. **Normalize** provider-specific URLs when applicable.
   3. **Generate a thumbnail** (unless the user uploaded a manual image).
   4. **Provide an in-app preview** when supported.
   5. **Fail deterministically** when preview is not possible.
 
 ---
 
-## Step 1: Classify and Normalize the URL
+## Step 1: Classify and Normalize the Project Source
 
-When a Portfolio link is submitted:
+When a Portfolio project source is submitted:
 
-1. **Validate** it is a proper `http` or `https` URL.
+1. **Validate** that exactly one source is provided:
+   - an uploaded project file, or
+   - a proper `http` or `https` URL.
 2. **Detect file type** based on:
    - File extension (`.pdf`, `.docx`, `.pptx`, `.jpg`, etc.).
    - Known provider patterns (Google Docs, Sheets, Slides).
-3. **Normalize** Google Workspace links into canonical preview URLs.
+3. **Normalize** Google Workspace links into canonical preview URLs when the
+   source is an external URL.
 4. **Store:**
-   - `project_url` (original URL)
+   - `project_url` (public source URL; external link or uploaded file URL)
    - `normalized_url` (canonical form, e.g. Google `/preview`)
    - `embed_url` (if applicable, for iframe)
    - `resolved_type` (e.g. `image`, `pdf`, `google_doc`)
@@ -42,7 +46,8 @@ these on insert/update.
 
 ## Step 2: Respect Manual Image Override
 
-If the user uploads a custom image in the optional **“Upload an image”** field:
+If the user uploads a custom image in the optional **“Optional Thumbnail”**
+field:
 
 - Use that image as the **thumbnail**.
 - **Skip** automatic thumbnail generation.
@@ -148,20 +153,21 @@ failed.
 - **Manual image override respected.** Custom image always used as thumbnail;
   auto-generation skipped.
 - **Resume flow remains separate.** No change to Resume upload or storage.
-- **Portfolio links remain URL-based.** No requirement to upload the linked file
-  to WRDLNKDN.
+- **Portfolio source stays singular.** Each item keeps exactly one primary
+  source at a time.
 - **Consistent preview experience** across Profile, Dashboard, and public views.
 
 ---
 
 ## Reference: Principles and Supported Targets
 
-- **Portfolio items are URL-only.** The only file upload in Portfolio is the
-  optional “Upload an image” for the card thumbnail.
-- **Resume is the only artifact uploaded to WRDLNKDN storage.**
+- **Portfolio items support one source only.** Members choose either an uploaded
+  project file or a public project URL.
+- **Uploaded project files live in WRDLNKDN storage.** Resume upload remains a
+  separate flow.
 - **Manual image override always wins.** Auto-thumbnail is skipped when a custom
   image is provided.
-- **Portfolio links never require uploading the linked file to WRDLNKDN.**
+- **External links never require an additional uploaded file.**
 
 ---
 
@@ -228,7 +234,7 @@ failed.
 
 ### 4.1 Priority order
 
-1. **If “Upload an image” is provided**
+1. **If “Optional Thumbnail” is provided**
    - Use the uploaded image as the thumbnail.
    - **Skip** automatic thumbnail generation.
    - No background preview fetch for thumbnail purposes.
@@ -342,12 +348,12 @@ used in validation and thumbnail docs.
 - **Link type & validation:** `linkUtils.getLinkType()`,
   `linkValidation.validatePortfolioUrl()` — used in AddProjectDialog and
   mutations.
-- **URL-only link:** The Add Project flow uses a **project URL** only (no
-  project file upload). Optional “Upload an image” is for the card thumbnail
-  override only. Existing items with a storage `project_url` from before this
-  change remain editable; delete still cleans up `project-sources` when
-  applicable. Thumbnail and preview rules apply (manual image override >
-  auto-thumbnail; preview by resolved type).
+- **One-source project flow:** The Add Project flow requires exactly one primary
+  source: an uploaded file or a public project URL. Optional Thumbnail is for
+  the card thumbnail override only. Storage-backed `project_url` values use the
+  `project-sources` bucket and remain editable; delete/update cleans up
+  `project-sources` when applicable. Thumbnail and preview rules apply (manual
+  image override > auto-thumbnail; preview by resolved type).
 - **Thumbnail worker:** `portfolio-thumbnail-generation.md` and Edge Function
   `generate-portfolio-thumbnail`; optional `THUMBNAIL_SERVICE_URL` for
   PDF/Office/Google.

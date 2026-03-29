@@ -30,6 +30,7 @@ export {
 } from './feedCardTypes';
 import { useFeedCardActions } from './useFeedCardActions';
 import { useFeedCardImagePreview } from './useFeedCardImagePreview';
+import { createNormalizedFeedImageAsset } from '../../lib/media/assets';
 
 export const FeedCard = ({
   item,
@@ -118,12 +119,12 @@ export const FeedCard = ({
     [body],
   );
   const bodyGifUrlSet = useMemo(() => new Set(bodyGifUrls), [bodyGifUrls]);
-  const postAttachmentImages = useMemo(
+  const postAttachmentAssets = useMemo(
     () =>
       Array.isArray(item.payload?.images)
-        ? ((item.payload.images as string[]).filter(
-            (imgUrl) => !bodyGifUrlSet.has(imgUrl),
-          ) as string[])
+        ? (item.payload.images as string[])
+            .filter((imgUrl) => !bodyGifUrlSet.has(imgUrl))
+            .map((imgUrl) => createNormalizedFeedImageAsset(imgUrl))
         : [],
     [bodyGifUrlSet, item.payload?.images],
   );
@@ -135,13 +136,15 @@ export const FeedCard = ({
       seen.add(gifUrl);
       ordered.push({ url: gifUrl, source: 'body_gif' });
     }
-    for (const imageUrl of postAttachmentImages) {
+    for (const asset of postAttachmentAssets) {
+      const imageUrl = asset.displayUrl ?? asset.originalUrl ?? '';
+      if (!imageUrl) continue;
       if (seen.has(imageUrl)) continue;
       seen.add(imageUrl);
       ordered.push({ url: imageUrl, source: 'post_attachment' });
     }
     return ordered;
-  }, [bodyGifUrls, postAttachmentImages]);
+  }, [bodyGifUrls, postAttachmentAssets]);
   const bodyTextWithoutGifUrls = removeGifUrlsFromBody(body);
   const resolvedLinkPreview = linkPreview ?? fallbackLinkPreview ?? undefined;
   const canonicalPostUrl =
@@ -230,7 +233,6 @@ export const FeedCard = ({
                 repostDisplayName={displayName}
                 repostOriginalHandle={repostOriginalHandle}
                 repostOriginalName={repostOriginalName}
-                repostOriginalId={repostOriginalId}
               />
             ) : undefined,
         }}
@@ -335,7 +337,7 @@ export const FeedCard = ({
           linkPreview={resolvedLinkPreview}
           isLinkPreviewDismissed={isLinkPreviewDismissed}
           onDismissLinkPreview={onDismissLinkPreview}
-          postAttachmentImages={postAttachmentImages}
+          postAttachmentAssets={postAttachmentAssets}
           url={url}
           label={label}
         />

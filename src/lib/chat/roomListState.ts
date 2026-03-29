@@ -90,6 +90,7 @@ export function deriveVisibleChatRooms(
 
     const haystack = [
       getChatRoomLabel(room, currentUserId),
+      room.description ?? '',
       room.last_message_preview ?? '',
     ]
       .join(' ')

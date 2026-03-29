@@ -1,8 +1,4 @@
-import AddIcon from '@mui/icons-material/Add';
-import AddLinkIcon from '@mui/icons-material/AddLink';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
@@ -17,7 +13,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Paper,
   Stack,
   Tooltip,
   Typography,
@@ -30,7 +25,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -39,9 +33,6 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
-import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
-import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
-import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { InterestsDropdown } from '../../components/profile/identity/InterestsDropdown';
 
@@ -81,6 +72,7 @@ const ShareProfileDialog = lazy(
     ),
 );
 import { DashboardLinksSection } from './dashboardLinksSection';
+import { DashboardPortfolioSection } from './dashboardPortfolioSection';
 import { GameRewardsPanel } from './GameRewardsPanel';
 
 // LOGIC & TYPES
@@ -90,8 +82,6 @@ import { IndustryGroupBlock } from '../../components/profile/identity/IndustryGr
 import { SkillsInterestsPills } from '../../components/profile/identity/SkillsInterestsPills';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
-import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
-import { RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION } from '../../lib/portfolio/resumeUploadLimits';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { signOut } from '../../lib/auth/signOut';
 import { toMessage } from '../../lib/utils/errors';
@@ -102,10 +92,8 @@ import {
   PROFANITY_ERROR_MESSAGE_INTEREST,
 } from '../../lib/validation/profanity';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
-import { getGlassCardStrong } from '../../theme/candyStyles';
 import type { NerdCreds, SocialLink } from '../../types/profile';
-import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
+import type { PortfolioItem } from '../../types/portfolio';
 import { safeStr } from '../../utils/stringUtils';
 
 export const Dashboard = () => {
@@ -136,28 +124,9 @@ export const Dashboard = () => {
   const profileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const editDialogReturnFocusRef = useRef<HTMLElement | null>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
-  const resumeUploadHintId = useId();
   const { showToast } = useAppToast();
   const theme = useTheme();
   const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
-  const addMenuPaperSx = useMemo(
-    () => ({
-      mt: 1.5,
-      minWidth: 200,
-      maxWidth: 'min(calc(100vw - 24px), 400px)',
-      borderRadius: 2,
-      ...denseMenuPaperSxFromTheme(theme),
-      zIndex: 1300,
-      maxHeight: 'calc(100dvh - 100px)',
-      overflowX: 'hidden',
-      overflowY: 'auto',
-      boxShadow:
-        theme.palette.mode === 'light'
-          ? theme.shadows[12]
-          : '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-    }),
-    [theme],
-  );
 
   useEffect(() => {
     const init = async () => {
@@ -339,24 +308,6 @@ export const Dashboard = () => {
     [profile],
   );
 
-  const resumePreviewProject = useMemo(
-    () =>
-      buildResumePreviewItem({
-        url: profile?.resume_url,
-        fileName: resumeFileName,
-        thumbnailUrl: resumeThumbnailUrl,
-        thumbnailStatus: resumeThumbnailStatus,
-      }),
-    [
-      profile?.resume_url,
-      resumeFileName,
-      resumeThumbnailUrl,
-      resumeThumbnailStatus,
-    ],
-  );
-
-  // Memoize array operations for mobile performance
-  const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
   const projectUrls = useMemo(
     () => projects.map((p) => p.project_url).filter(Boolean),
     [projects],
@@ -365,20 +316,6 @@ export const Dashboard = () => {
     () => socialsArray.map((s) => s.url).filter(Boolean),
     [socialsArray],
   );
-
-  // Memoize orderedIds for PortfolioSortableList (must be before early return)
-  const orderedIds = useMemo(() => {
-    if (!profile?.resume_url) return projectIds;
-    const resumeIndex = Math.min(
-      Math.max(0, safeNerdCreds.resume_display_index ?? 0),
-      projectIds.length,
-    );
-    return [
-      ...projectIds.slice(0, resumeIndex),
-      RESUME_ITEM_ID,
-      ...projectIds.slice(resumeIndex),
-    ];
-  }, [projectIds, profile?.resume_url, safeNerdCreds.resume_display_index]);
 
   // Early return after all hooks
   if (!session) return null;
@@ -565,13 +502,6 @@ export const Dashboard = () => {
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           bioIsPlaceholder={bioIsPlaceholder}
-          onAddBio={
-            bioIsPlaceholder
-              ? () => {
-                  openEditProfileDialog({ focusBio: true });
-                }
-              : undefined
-          }
           avatarUrl={avatarUrl}
           badges={
             <Stack spacing={1.5} sx={{ width: '100%' }}>
@@ -668,11 +598,11 @@ export const Dashboard = () => {
                       }}
                       endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                       disabled={loading}
-                      aria-label="Profile menu"
+                      aria-label="Manage profile"
                       aria-haspopup="true"
                       aria-expanded={Boolean(profileMenuAnchor)}
                     >
-                      Profile
+                      Manage Profile
                     </Button>
                   </Box>
                 </Stack>
@@ -738,46 +668,6 @@ export const Dashboard = () => {
             },
           }}
         >
-          {profile?.handle && (
-            <MenuItem
-              onClick={() => {
-                setProfileMenuAnchor(null);
-                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
-              }}
-              onTouchStart={(e: React.TouchEvent) => {
-                e.preventDefault();
-                setProfileMenuAnchor(null);
-                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
-              }}
-              sx={{
-                py: 1.5,
-                minHeight: 48,
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              View Profile
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              setProfileMenuAnchor(null);
-              openEditProfileDialog();
-            }}
-            onTouchStart={(e: React.TouchEvent) => {
-              e.preventDefault();
-              setProfileMenuAnchor(null);
-              openEditProfileDialog();
-            }}
-            sx={{
-              py: 1.5,
-              minHeight: 48,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            Edit Profile
-          </MenuItem>
           <MenuItem
             onClick={() => {
               setProfileMenuAnchor(null);
@@ -796,6 +686,25 @@ export const Dashboard = () => {
             }}
           >
             Account & settings
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            onTouchStart={(e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Edit Profile
           </MenuItem>
           <MenuItem
             onClick={async () => {
@@ -818,6 +727,27 @@ export const Dashboard = () => {
           >
             Share My Profile
           </MenuItem>
+          {profile?.handle && (
+            <MenuItem
+              onClick={() => {
+                setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
+              }}
+              onTouchStart={(e: React.TouchEvent) => {
+                e.preventDefault();
+                setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
+              }}
+              sx={{
+                py: 1.5,
+                minHeight: 48,
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              View Profile
+            </MenuItem>
+          )}
           <Divider sx={{ my: 0.5 }} />
           <MenuItem
             onClick={async () => {
@@ -849,504 +779,78 @@ export const Dashboard = () => {
           onOpenLinks={() => setIsLinksOpen(true)}
         />
 
-        <Paper
-          elevation={0}
-          data-testid="dashboard-portfolio-showcase-section"
-          sx={(theme) => ({
-            ...getGlassCardStrong(theme),
-            p: { xs: 2, md: 3 },
-            overflowX: 'hidden',
-            width: '100%',
-            maxWidth: '100%',
-          })}
-        >
-          <Box
-            sx={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-            }}
-          >
-            <Typography
-              variant="overline"
-              sx={{
-                display: 'block',
-                mb: 1.25,
-                letterSpacing: 2,
-                color: 'text.secondary',
-                fontWeight: 600,
-                maxWidth: '100%',
-                minWidth: 0,
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-                whiteSpace: 'normal',
-              }}
-            >
-              PORTFOLIO SHOWCASE
-            </Typography>
-            <Typography
-              id={resumeUploadHintId}
-              component="span"
-              variant="body2"
-              sx={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '1px',
-                height: '1px',
-                p: 0,
-                m: '-1px',
-                overflow: 'hidden',
-                clip: 'rect(0,0,0,0)',
-                border: 0,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION}
-            </Typography>
-            <input
-              ref={resumeFileInputRef}
-              type="file"
-              hidden
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              aria-describedby={resumeUploadHintId}
-              onChange={handleResumeInputChange}
-            />
-
-            {!profile?.resume_url && projects.length === 0 ? (
-              <>
-                <Box
-                  sx={{
-                    width: '100%',
-                    borderRadius: 2,
-                    border: '1px solid rgba(156,187,217,0.26)',
-                    bgcolor: 'rgba(7,11,22,0.55)',
-                    p: { xs: 2, sm: 2.5 },
-                    mb: 1,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    component="h3"
-                    sx={{ fontWeight: 700, mb: 0.75 }}
-                  >
-                    Build your public showcase
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2, maxWidth: 640 }}
-                  >
-                    Add a project, upload a resume, and wire up outbound links
-                    so this space tells a complete story—not an empty frame.
-                  </Typography>
-                  <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    flexWrap="wrap"
-                    useFlexGap
-                    spacing={1}
-                    sx={{ mb: 2 }}
-                  >
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<FolderOutlinedIcon sx={{ fontSize: 18 }} />}
-                      disabled={loading}
-                      onClick={() => openNewProjectDialog()}
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        borderColor: 'rgba(156,187,217,0.42)',
-                        minHeight: { xs: 44, sm: 40 },
-                      }}
-                    >
-                      Add project
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<ArticleOutlinedIcon sx={{ fontSize: 18 }} />}
-                      disabled={loading}
-                      onClick={() => openResumePicker()}
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        borderColor: 'rgba(156,187,217,0.42)',
-                        minHeight: { xs: 44, sm: 40 },
-                      }}
-                    >
-                      Add resume
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<AddLinkIcon sx={{ fontSize: 18 }} />}
-                      disabled={loading}
-                      onClick={() => setIsLinksOpen(true)}
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        borderColor: 'rgba(156,187,217,0.42)',
-                        minHeight: { xs: 44, sm: 40 },
-                      }}
-                    >
-                      Add links
-                    </Button>
-                  </Stack>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block', mb: 1, fontWeight: 600 }}
-                  >
-                    Or pick from the menu
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    flexWrap="wrap"
-                    gap={1}
-                    sx={{ justifyContent: 'flex-start' }}
-                  >
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                      endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        setAddMenuAnchor(e.currentTarget);
-                      }}
-                      onTouchStart={(
-                        e: React.TouchEvent<HTMLButtonElement>,
-                      ) => {
-                        e.stopPropagation();
-                        setAddMenuAnchor(e.currentTarget);
-                      }}
-                      disabled={loading}
-                      aria-label="Add resume or project"
-                      aria-haspopup="true"
-                      aria-expanded={Boolean(addMenuAnchor)}
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        color: 'white',
-                        background:
-                          'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                        border: 'none',
-                        minHeight: { xs: 44, sm: 34 },
-                        py: { xs: 1, sm: 0.5 },
-                        px: 1.5,
-                        fontSize: '0.8125rem',
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                        '&:hover': {
-                          background:
-                            'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                        },
-                        '&:active': {
-                          background:
-                            'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
-                        },
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </Stack>
-                  <Menu
-                    anchorEl={addMenuAnchor}
-                    open={Boolean(addMenuAnchor)}
-                    onClose={() => setAddMenuAnchor(null)}
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                    disableScrollLock={false}
-                    disablePortal={false}
-                    MenuListProps={{
-                      onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                      sx: {
-                        py: 0.5,
-                        overflowX: 'hidden',
-                      },
-                    }}
-                    slotProps={{
-                      paper: {
-                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                        sx: addMenuPaperSx,
-                      },
-                      root: {
-                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                      },
-                    }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        setAddMenuAnchor(null);
-                        openResumePicker();
-                      }}
-                      onTouchStart={(e: React.TouchEvent) => {
-                        e.preventDefault();
-                        setAddMenuAnchor(null);
-                        openResumePicker();
-                      }}
-                      sx={{
-                        py: 1.5,
-                        minHeight: 48,
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                    >
-                      + Add Resume
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        setAddMenuAnchor(null);
-                        openNewProjectDialog();
-                      }}
-                      onTouchStart={(e: React.TouchEvent) => {
-                        e.preventDefault();
-                        setAddMenuAnchor(null);
-                        openNewProjectDialog();
-                      }}
-                      sx={{
-                        py: 1.5,
-                        minHeight: 48,
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                    >
-                      + Add Project
-                    </MenuItem>
-                  </Menu>
-                </Box>
-              </>
-            ) : (
-              <>
-                <Stack
-                  direction="row"
-                  flexWrap="wrap"
-                  gap={1}
-                  sx={{ mb: 2, justifyContent: 'flex-start' }}
-                >
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setAddMenuAnchor(e.currentTarget);
-                    }}
-                    onTouchStart={(e: React.TouchEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      setAddMenuAnchor(e.currentTarget);
-                    }}
-                    disabled={loading}
-                    aria-label="Add resume or project"
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(addMenuAnchor)}
-                    sx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      color: 'white',
-                      background:
-                        'linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)',
-                      border: 'none',
-                      minHeight: { xs: 44, sm: 34 },
-                      py: { xs: 1, sm: 0.5 },
-                      px: 1.5,
-                      fontSize: '0.8125rem',
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                      '&:hover': {
-                        background:
-                          'linear-gradient(90deg, #0d5d56 0%, #14b8a6 100%)',
-                      },
-                      '&:active': {
-                        background:
-                          'linear-gradient(90deg, #0a4d47 0%, #0d9488 100%)',
-                      },
-                    }}
-                  >
-                    Add
-                  </Button>
-                  <Menu
-                    anchorEl={addMenuAnchor}
-                    open={Boolean(addMenuAnchor)}
-                    onClose={() => setAddMenuAnchor(null)}
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                    disableScrollLock={false}
-                    disablePortal={false}
-                    MenuListProps={{
-                      onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                      sx: {
-                        py: 0.5,
-                        overflowX: 'hidden',
-                      },
-                    }}
-                    slotProps={{
-                      paper: {
-                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                        sx: addMenuPaperSx,
-                      },
-                      root: {
-                        onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                      },
-                    }}
-                  >
-                    {!profile?.resume_url && (
-                      <MenuItem
-                        onClick={() => {
-                          setAddMenuAnchor(null);
-                          openResumePicker();
-                        }}
-                        onTouchStart={(e: React.TouchEvent) => {
-                          e.preventDefault();
-                          setAddMenuAnchor(null);
-                          openResumePicker();
-                        }}
-                        sx={{
-                          py: 1.5,
-                          minHeight: 48,
-                          touchAction: 'manipulation',
-                          WebkitTapHighlightColor: 'transparent',
-                        }}
-                      >
-                        + Add Resume
-                      </MenuItem>
-                    )}
-                    <MenuItem
-                      onClick={() => {
-                        setAddMenuAnchor(null);
-                        openNewProjectDialog();
-                      }}
-                      onTouchStart={(e: React.TouchEvent) => {
-                        e.preventDefault();
-                        setAddMenuAnchor(null);
-                        openNewProjectDialog();
-                      }}
-                      sx={{
-                        py: 1.5,
-                        minHeight: 48,
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                    >
-                      + Add Project
-                    </MenuItem>
-                  </Menu>
-                </Stack>
-
-                <PortfolioHighlightsCarousel
-                  projects={projects}
-                  onOpenPreview={setPreviewProject}
-                />
-
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gap: { xs: 1, sm: 1.25, md: 1.5 },
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, minmax(280px, 1fr))',
-                      lg: 'repeat(4, minmax(240px, 1fr))',
-                    },
-                    justifyItems: 'stretch',
-                    alignItems: 'start',
-                  }}
-                >
-                  <PortfolioSortableList
-                    orderedIds={orderedIds}
-                    projects={projects}
-                    renderResumeCard={
-                      profile?.resume_url
-                        ? (dragHandle) => (
-                            <ResumeCard
-                              url={profile?.resume_url}
-                              fileName={resumeFileName}
-                              thumbnailUrl={resumeThumbnailUrl}
-                              thumbnailStatus={resumeThumbnailStatus}
-                              thumbnailError={
-                                typeof safeNerdCreds.resume_thumbnail_error ===
-                                'string'
-                                  ? safeNerdCreds.resume_thumbnail_error
-                                  : null
-                              }
-                              onUpload={handleResumeUpload}
-                              onRetryThumbnail={async () => {
-                                try {
-                                  await retryResumeThumbnail();
-                                  // Refresh data after successful retry to update thumbnail status
-                                  await refresh();
-                                } catch (e) {
-                                  showToast({
-                                    message: toMessage(e),
-                                    severity: 'error',
-                                  });
-                                }
-                              }}
-                              retryThumbnailBusy={updating}
-                              onDelete={async () => {
-                                try {
-                                  await deleteResume();
-                                  void refresh();
-                                } catch (e) {
-                                  showToast({
-                                    message: toMessage(e),
-                                    severity: 'error',
-                                  });
-                                }
-                              }}
-                              deleteBusy={updating}
-                              onEditReplaceResume={handleEditReplaceResume}
-                              onEditUploadThumbnail={
-                                handleEditUploadResumeThumbnail
-                              }
-                              onEditRegenerateThumbnail={
-                                handleEditRegenerateResumeThumbnail
-                              }
-                              editBusy={updating}
-                              isOwner
-                              dragHandle={dragHandle}
-                              onOpenPreview={setPreviewProject}
-                              previewProject={resumePreviewProject}
-                            />
-                          )
-                        : undefined
-                    }
-                    isOwner
-                    onReorder={async (orderedIds) => {
-                      try {
-                        await reorderPortfolioItems(orderedIds);
-                      } catch (e) {
-                        showToast({ message: toMessage(e), severity: 'error' });
-                      }
-                    }}
-                    onDelete={async (id) => {
-                      try {
-                        await deleteProject(id);
-                      } catch (e) {
-                        showToast({ message: toMessage(e), severity: 'error' });
-                      }
-                    }}
-                    onToggleHighlight={async (id, isHighlighted) => {
-                      try {
-                        await toggleProjectHighlight(id, isHighlighted);
-                      } catch (e) {
-                        showToast({ message: toMessage(e), severity: 'error' });
-                      }
-                    }}
-                    onEdit={(project) => {
-                      openEditProjectDialog(project);
-                    }}
-                    onOpenPreview={setPreviewProject}
-                  />
-                </Box>
-              </>
-            )}
-          </Box>
-        </Paper>
+        <DashboardPortfolioSection
+          loading={loading}
+          projects={projects}
+          resumeUrl={profile?.resume_url ?? null}
+          resumeFileName={resumeFileName}
+          resumeThumbnailUrl={resumeThumbnailUrl}
+          resumeThumbnailStatus={resumeThumbnailStatus}
+          resumeThumbnailError={
+            typeof safeNerdCreds.resume_thumbnail_error === 'string'
+              ? safeNerdCreds.resume_thumbnail_error
+              : null
+          }
+          resumeDisplayIndex={safeNerdCreds.resume_display_index}
+          addMenuAnchor={addMenuAnchor}
+          resumeFileInputRef={resumeFileInputRef}
+          updating={updating}
+          onOpenAddMenu={(anchor) => setAddMenuAnchor(anchor)}
+          onCloseAddMenu={() => setAddMenuAnchor(null)}
+          onOpenResumePicker={openResumePicker}
+          onOpenNewProjectDialog={openNewProjectDialog}
+          onResumeInputChange={handleResumeInputChange}
+          onResumeUpload={handleResumeUpload}
+          onEditReplaceResume={handleEditReplaceResume}
+          onEditUploadResumeThumbnail={handleEditUploadResumeThumbnail}
+          onEditRegenerateResumeThumbnail={handleEditRegenerateResumeThumbnail}
+          onRetryThumbnail={async () => {
+            try {
+              await retryResumeThumbnail();
+              await refresh();
+            } catch (e) {
+              showToast({
+                message: toMessage(e),
+                severity: 'error',
+              });
+            }
+          }}
+          onDeleteResume={async () => {
+            try {
+              await deleteResume();
+              await refresh();
+            } catch (e) {
+              showToast({
+                message: toMessage(e),
+                severity: 'error',
+              });
+            }
+          }}
+          onReorder={async (orderedIds) => {
+            try {
+              await reorderPortfolioItems(orderedIds);
+            } catch (e) {
+              showToast({ message: toMessage(e), severity: 'error' });
+            }
+          }}
+          onDeleteProject={async (id) => {
+            try {
+              await deleteProject(id);
+            } catch (e) {
+              showToast({ message: toMessage(e), severity: 'error' });
+            }
+          }}
+          onToggleHighlight={async (id, highlighted) => {
+            try {
+              await toggleProjectHighlight(id, highlighted);
+            } catch (e) {
+              showToast({ message: toMessage(e), severity: 'error' });
+            }
+          }}
+          onEditProject={openEditProjectDialog}
+          onOpenPreview={setPreviewProject}
+          testId="dashboard-portfolio-showcase-section"
+        />
       </Container>
 
       <Dialog

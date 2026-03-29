@@ -3,6 +3,7 @@ import { GroupActionsDialog } from '../dialogs/GroupActionsDialog';
 import { ReportDialog } from '../dialogs/ReportDialog';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import type { ChatReportCategory } from '../../../types/chat';
+import type { ChatGroupDetailsInput } from '../../../lib/chat/groupDetails';
 
 type ChatPopoverDialogsProps = {
   room: ChatRoomWithMembers | null;
@@ -10,7 +11,7 @@ type ChatPopoverDialogsProps = {
   uid: string;
   blockDialogOpen: boolean;
   groupDialogOpen: boolean;
-  groupDialogMode: 'invite' | 'rename' | 'manage';
+  groupDialogMode: 'invite' | 'details' | 'manage' | 'members';
   reportOpen: boolean;
   reportTarget: { messageId?: string; userId?: string } | null;
   otherMember: {
@@ -25,7 +26,7 @@ type ChatPopoverDialogsProps = {
     target: { messageId?: string; userId?: string } | null,
   ) => void;
   onBlockUser: (userId: string) => Promise<void>;
-  onRenameRoom: (name: string) => Promise<void>;
+  onSaveGroupDetails: (details: ChatGroupDetailsInput) => Promise<void>;
   onInviteMembers: (memberIds: string[]) => Promise<void>;
   onRemoveMember: (memberId: string) => Promise<void>;
   onTransferAdmin: (memberId: string) => Promise<void>;
@@ -53,7 +54,7 @@ export const ChatPopoverDialogs = ({
   onSetReportOpen,
   onSetReportTarget,
   onBlockUser,
-  onRenameRoom,
+  onSaveGroupDetails,
   onInviteMembers,
   onRemoveMember,
   onTransferAdmin,
@@ -82,9 +83,11 @@ export const ChatPopoverDialogs = ({
         onClose={() => onSetGroupDialogOpen(false)}
         roomId={roomId}
         roomName={room.name ?? ''}
+        roomDescription={room.description}
+        roomImageUrl={room.image_url}
         currentMembers={room.members ?? []}
         currentUserId={uid}
-        onRename={onRenameRoom}
+        onSaveDetails={onSaveGroupDetails}
         onInvite={onInviteMembers}
         onRemove={onRemoveMember}
         onTransferAdmin={onTransferAdmin}

@@ -20,6 +20,10 @@ import {
   extractUrlsFromText,
   LINK_PREVIEW_URL_REGEX,
 } from '../../lib/urlPreviewText';
+import {
+  createNormalizedLinkAsset,
+  getNormalizedAssetThumbnailUrl,
+} from '../../lib/media/assets';
 
 export function linkifyBody(body: string): ReactNode {
   if (!body.trim()) return null;
@@ -125,53 +129,59 @@ export const LinkPreviewCard = ({
 }: {
   preview: LinkPreviewPayload;
   onDismiss?: () => void;
-}) => (
-  <Box sx={{ position: 'relative', display: 'block', mt: 1.5 }}>
-    {onDismiss && (
-      <IconButton
-        size="small"
-        aria-label="Dismiss link preview"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onDismiss();
-        }}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 1,
-          bgcolor: 'background.paper',
-          boxShadow: 1,
-          '&:hover': { bgcolor: 'action.hover' },
-          '&:focus': { bgcolor: 'background.paper' },
-        }}
+}) => {
+  const asset = createNormalizedLinkAsset({
+    url: preview.url,
+    preview,
+  });
+  const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
+
+  return (
+    <Box sx={{ position: 'relative', display: 'block', mt: 1.5 }}>
+      {onDismiss && (
+        <IconButton
+          size="small"
+          aria-label="Dismiss link preview"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDismiss();
+          }}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 1,
+            bgcolor: 'background.paper',
+            boxShadow: 1,
+            '&:hover': { bgcolor: 'action.hover' },
+            '&:focus': { bgcolor: 'background.paper' },
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      )}
+      <Link
+        href={preview.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        underline="none"
+        sx={{ display: 'block' }}
       >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    )}
-    <Link
-      href={preview.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      underline="none"
-      sx={{ display: 'block' }}
-    >
-      <Paper
-        variant="outlined"
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          overflow: 'hidden',
-          borderRadius: 1.5,
-          borderColor: 'divider',
-          '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
-        }}
-      >
-        {preview.image && (
+        <Paper
+          variant="outlined"
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            overflow: 'hidden',
+            borderRadius: 1.5,
+            borderColor: 'divider',
+            '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
+          }}
+        >
           <Box
             component="img"
-            src={preview.image}
+            src={thumbnailUrl}
             alt=""
             sx={{
               width: { xs: '100%', sm: 120 },
@@ -181,44 +191,44 @@ export const LinkPreviewCard = ({
               bgcolor: 'action.hover',
             }}
           />
-        )}
-        <Box sx={{ p: 1.5, flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="subtitle2"
-            fontWeight={600}
-            sx={{
-              color: 'text.primary',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-            }}
-          >
-            {preview.title || linkPreviewDomain(preview.url)}
-          </Typography>
-          {preview.description && (
+          <Box sx={{ p: 1.5, flex: 1, minWidth: 0 }}>
             <Typography
-              variant="body2"
-              color="text.secondary"
+              variant="subtitle2"
+              fontWeight={600}
               sx={{
-                mt: 0.25,
+                color: 'text.primary',
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word',
               }}
             >
-              {preview.description}
+              {asset.title || linkPreviewDomain(preview.url)}
             </Typography>
-          )}
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 0.5, display: 'block' }}
-          >
-            {preview.siteName || linkPreviewDomain(preview.url)}
-          </Typography>
-        </Box>
-      </Paper>
-    </Link>
-  </Box>
-);
+            {asset.description && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  mt: 0.25,
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {asset.description}
+              </Typography>
+            )}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.5, display: 'block' }}
+            >
+              {asset.provider || linkPreviewDomain(preview.url)}
+            </Typography>
+          </Box>
+        </Paper>
+      </Link>
+    </Box>
+  );
+};
 
 /**
  * Share dialog for Feed posts — internal options only: Copy link, Share to Connection, Share to Group.

@@ -1,6 +1,7 @@
 /** Shared star / favorite affordances for chat room lists and overlay (mobile + desktop). */
 export const CHAT_FAVORITE_ACTIVE_BUTTON_SX = {
   color: '#ffc947',
+  opacity: 1,
   bgcolor: 'rgba(255, 201, 71, 0.24)',
   border: '1px solid rgba(255, 201, 71, 0.5)',
   boxShadow:
@@ -32,5 +33,7 @@ export const CHAT_FAVORITE_ROW_BADGE_SX = {
 
 export const CHAT_FAVORITE_ICON_BUTTON_STAR_SX = {
   fontSize: '1.125rem',
+  color: '#ffc947',
   filter: 'drop-shadow(0 0 6px rgba(255, 201, 71, 0.35))',
+  transform: 'scale(1.03)',
 } as const;

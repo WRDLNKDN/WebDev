@@ -6,41 +6,49 @@ const baseRoom = (
   id: string,
   displayName: string,
   options?: Partial<ChatRoomWithMembers>,
-): ChatRoomWithMembers => ({
-  id,
-  room_type: 'dm',
-  name: null,
-  created_by: 'user-1',
-  created_at: '2026-03-12T10:00:00.000Z',
-  updated_at: '2026-03-12T10:00:00.000Z',
-  members: [
-    {
-      room_id: id,
-      user_id: 'user-1',
-      role: 'member',
-      joined_at: '2026-03-12T10:00:00.000Z',
-      left_at: null,
-      profile: { handle: 'me', display_name: 'Me', avatar: null },
-    },
-    {
-      room_id: id,
-      user_id: `${id}-other`,
-      role: 'member',
-      joined_at: '2026-03-12T10:00:00.000Z',
-      left_at: null,
-      profile: {
-        handle: displayName.toLowerCase(),
-        display_name: displayName,
-        avatar: null,
+): ChatRoomWithMembers => {
+  const room: ChatRoomWithMembers = {
+    id,
+    room_type: 'dm',
+    name: null,
+    description: null,
+    image_url: null,
+    created_by: 'user-1',
+    created_at: '2026-03-12T10:00:00.000Z',
+    updated_at: '2026-03-12T10:00:00.000Z',
+    members: [
+      {
+        room_id: id,
+        user_id: 'user-1',
+        role: 'member',
+        joined_at: '2026-03-12T10:00:00.000Z',
+        left_at: null,
+        profile: { handle: 'me', display_name: 'Me', avatar: null },
       },
-    },
-  ],
-  last_message_preview: '',
-  last_message_at: '2026-03-12T10:00:00.000Z',
-  unread_count: 0,
-  is_favorite: false,
-  ...options,
-});
+      {
+        room_id: id,
+        user_id: `${id}-other`,
+        role: 'member',
+        joined_at: '2026-03-12T10:00:00.000Z',
+        left_at: null,
+        profile: {
+          handle: displayName.toLowerCase(),
+          display_name: displayName,
+          avatar: null,
+        },
+      },
+    ],
+    last_message_preview: '',
+    last_message_at: '2026-03-12T10:00:00.000Z',
+    unread_count: 0,
+    is_favorite: false,
+    ...options,
+  };
+
+  room.description = options?.description ?? null;
+  room.image_url = options?.image_url ?? null;
+  return room;
+};
 
 describe('deriveVisibleChatRooms', () => {
   it('keeps favorites grouped above non-favorites for recent sort', () => {

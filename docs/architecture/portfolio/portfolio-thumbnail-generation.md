@@ -2,13 +2,13 @@
 
 **Status:** Implemented. Edge Function `generate-portfolio-thumbnail` + optional
 cron/webhook.  
-**Applies to:** Portfolio URL-based items. Resume upload flow is separate and
-unchanged.
+**Applies to:** Portfolio items backed by a public URL or uploaded project file.
+Resume upload flow is separate and unchanged.
 
 ## Overview
 
-Portfolio items are URL-based. When a member adds a link **without** uploading a
-custom image:
+Portfolio items use exactly one project source. When a member adds a public URL
+or uploads a project file **without** uploading a custom image:
 
 1. The app stores `project_url`, `normalized_url`, `embed_url`, `resolved_type`,
    and sets `thumbnail_status = 'pending'`.
@@ -25,7 +25,7 @@ custom image:
 
 | Column             | Purpose                                                                                                                                      |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `project_url`      | Original link (stored as-is).                                                                                                                |
+| `project_url`      | Public source URL for the project (external link or uploaded file URL).                                                                      |
 | `image_url`        | Manual image override; when set, skip auto thumbnail.                                                                                        |
 | `normalized_url`   | Canonical URL (e.g. Google /preview). Set by app on insert/update.                                                                           |
 | `embed_url`        | URL used for iframe embed when different from project_url. Set by app.                                                                       |
@@ -72,9 +72,9 @@ custom image:
   show it.
 - **Pending:** Show loading skeleton + “Thumbnail generating…”.
 - **Failed / no thumbnail:** Show fallback icon + “Preview unavailable”.
-- **Image links:** If no manual image and no server thumbnail yet, the app may
-  use `project_url` as thumbnail when `resolved_type === 'image'` (client-side);
-  worker can later replace with cached version.
+- **Image-backed sources:** If no manual image and no server thumbnail yet, the
+  app may use `project_url` as thumbnail when `resolved_type === 'image'`
+  (client-side); worker can later replace with cached version.
 
 ## Error Handling (Deterministic Messages)
 

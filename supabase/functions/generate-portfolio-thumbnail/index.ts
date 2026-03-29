@@ -15,6 +15,7 @@ const FETCH_TIMEOUT_MS = 15_000;
 
 type ResolvedType =
   | 'image'
+  | 'video'
   | 'pdf'
   | 'document'
   | 'presentation'

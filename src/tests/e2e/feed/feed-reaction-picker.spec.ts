@@ -61,6 +61,31 @@ const REPOST_ITEM = {
   viewer_saved: false,
 };
 
+const ORIGINAL_POST_ITEM = {
+  id: 'original-post-9',
+  user_id: 'original-user',
+  kind: 'post',
+  payload: { body: 'Original post body for repost preview' },
+  parent_id: null,
+  created_at: '2026-03-05T10:00:00.000Z',
+  edited_at: null,
+  actor: {
+    handle: 'original-author',
+    display_name: 'Original Author',
+    avatar: null,
+    bio: 'Original poster bio',
+  },
+  like_count: 0,
+  love_count: 0,
+  inspiration_count: 0,
+  care_count: 0,
+  laughing_count: 0,
+  rage_count: 0,
+  viewer_reaction: null,
+  comment_count: 0,
+  viewer_saved: false,
+};
+
 // Browser serialization of computed color can differ (e.g. spaces in rgb/rgba).
 const MUTED_COLOR = /rgba?\s*\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0\.65\s*\)/;
 const FOCUS_COLOR = /rgb\s*\(\s*141\s*,\s*188\s*,\s*229\s*\)/;
@@ -113,7 +138,9 @@ test.describe('Feed reaction picker', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: [REPOST_ITEM, FEED_ITEM] }),
+        body: JSON.stringify({
+          data: [REPOST_ITEM, FEED_ITEM, ORIGINAL_POST_ITEM],
+        }),
       });
     };
 
@@ -183,13 +210,20 @@ test.describe('Feed reaction picker', () => {
     const sendButton = originalCard.getByRole('button', { name: 'Send' });
     const saveButton = originalCard.getByRole('button', { name: 'Save' });
     await expect(page.getByText('Senior Engineering Manager')).toBeVisible();
-    await expect(
-      repostCard.locator('span').filter({ hasText: /^Original Post$/ }),
-    ).toBeVisible();
+    await expect(repostCard.getByText(/^Original Post$/)).toHaveCount(0);
     await expect(
       repostCard.getByRole('link', { name: 'Original Author' }).first(),
     ).toBeVisible();
-    await expect(repostCard.getByText('View original post')).toBeVisible();
+    await expect(
+      repostCard.getByRole('button', { name: 'View Original Post' }),
+    ).toBeVisible();
+    await repostCard
+      .getByRole('button', { name: 'View Original Post' })
+      .click();
+    await expect(page.locator('#post-original-post-9')).toHaveAttribute(
+      'data-feed-post-highlighted',
+      'true',
+    );
     await expect(reactButton).toBeVisible();
     await expect(reactButton).toHaveCSS('color', MUTED_COLOR);
     await expect(commentButton).toHaveCSS('color', MUTED_COLOR);

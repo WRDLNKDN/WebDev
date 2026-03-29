@@ -4,9 +4,9 @@
 
 If the log says **`using credential jenkins_bitbucket_ssh`** and
 **`git@bitbucket.org:kdrp/devtools.git`**, the failure is the **job’s Git SCM**
-(the clone that loads the Jenkinsfile), not the `Checkout Devtools` stage inside
-the script. **Change the job to HTTPS + a username/app-password credential** —
-see **[JENKINS_SCM_SSH_TO_HTTPS.md](./JENKINS_SCM_SSH_TO_HTTPS.md)**.
+(the clone that loads the Jenkinsfile), not a later checkout step inside the
+script. **Change the job to HTTPS + a username/app-password credential** — see
+**[JENKINS_SCM_SSH_TO_HTTPS.md](./JENKINS_SCM_SSH_TO_HTTPS.md)**.
 
 Bitbucket over **SSH** (`git@bitbucket.org:…`) requires SSH keys on the
 **Jenkins agent**. If the agent only has **HTTPS credentials** (e.g.
@@ -32,17 +32,18 @@ or token).
 
 The `Jenkinsfile_sandstone` defines:
 
-- **Default:** `origin/develop`
-- **Filter:**
-  `origin/(develop|main|master|release/.*|hotfix/.*|feature/.*|sandbox/.*)`  
-  Widen the regex in the Jenkinsfile if your team uses other naming patterns.
+- **Default:** `develop` (see `defaultValue` on the Git Parameter)
+- **Branch filter in repo:** `origin/(.*)` (all remote branches). Tighten
+  `branchFilter` in the Jenkinsfile if you want to hide branches in the UI.
 
-## In-repo checkout (`Checkout Devtools` stage)
+## Single devtools repository
 
-The pipeline checks out **devtools** again with:
+There is **no separate platform repository**. The Sandstone pipeline uses
+**one** checkout: the same **devtools** URL the job uses for “Pipeline script
+from SCM” (`scm.userRemoteConfigs`). `DEVTOOLS_PATH` is the workspace root
+(`tools/`, `configs/`, etc.), not a nested `devtools/` directory.
 
-- URL: `https://bitbucket.org/kdrp/devtools.git`
-- Credentials: `jenkins-bitbucket.org-rbrunault`
+After checkout, the pipeline re-syncs `DEVTOOLS_PATH` / `ROOT_PATH` /
+`SANDSTONE_PATH` from `env.WORKSPACE` so paths stay correct on the agent.
 
-This matches the Jenkinsfile in this repository; redeploy/update the job script
-from SCM after merging.
+Redeploy/update the job script from SCM after merging Jenkinsfile changes.

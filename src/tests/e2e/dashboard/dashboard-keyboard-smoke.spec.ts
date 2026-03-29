@@ -29,7 +29,7 @@ test.describe('Dashboard keyboard smoke', () => {
     );
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    const menuButton = page.getByRole('button', { name: 'Profile menu' });
+    const menuButton = page.getByRole('button', { name: /manage profile/i });
     await expect(menuButton).toBeVisible({ timeout: 25_000 });
     await expect(menuButton).toBeEnabled({ timeout: 25_000 });
     await menuButton.click();

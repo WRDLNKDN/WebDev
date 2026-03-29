@@ -29,12 +29,12 @@ import {
 } from 'react';
 import type { EmojiClickData, Theme } from 'emoji-picker-react';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import { uploadStructuredChatAttachment } from '../../../lib/media/ingestion';
 import {
   getChatAttachmentRejectionReason,
   normalizeChatAttachmentMime,
 } from '../../../lib/chat/attachmentValidation';
 import { getChatAttachmentProcessingPlan } from '../../../lib/chat/attachmentProcessing';
-import { processChatGifUpload } from '../../../lib/api/chatAttachmentsApi';
 import { GifPickerDialog } from '../dialogs/GifPickerDialog';
 import {
   type ChatAttachmentMeta,
@@ -46,7 +46,6 @@ import {
   type MentionableUser,
 } from './MentionAutocomplete';
 
-const EXIF_STRIP_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const INPUT_SEPARATOR_GREEN = '#1DB954';
 
 const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
@@ -55,7 +54,6 @@ const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
   { content: 'Thank you', label: 'Thank you', ariaLabel: 'Send thank you' },
 ];
 
-const STRIP_EXIF_TIMEOUT_MS = 10_000;
 type PendingAttachment = {
   file: File;
   mime: string;
@@ -75,44 +73,6 @@ const EmojiPicker = lazy(async () => {
   const mod = await import('emoji-picker-react');
   return { default: mod.default };
 });
-
-async function stripExifIfImage(file: File): Promise<Blob> {
-  // Do not canvas-process GIFs; that strips animation.
-  if (!EXIF_STRIP_MIMES.includes(file.type)) return file;
-  return new Promise((resolve) => {
-    let settled = false;
-    const done = (blob: Blob) => {
-      if (settled) return;
-      settled = true;
-      URL.revokeObjectURL(url);
-      resolve(blob);
-    };
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    const timeoutId = window.setTimeout(
-      () => done(file),
-      STRIP_EXIF_TIMEOUT_MS,
-    );
-    img.onload = () => {
-      window.clearTimeout(timeoutId);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        done(file);
-        return;
-      }
-      ctx.drawImage(img, 0, 0);
-      canvas.toBlob((blob) => done(blob ?? file), file.type, 0.92);
-    };
-    img.onerror = () => {
-      window.clearTimeout(timeoutId);
-      done(file);
-    };
-    img.src = url;
-  });
-}
 
 type MessageInputProps = {
   onSend: (
@@ -273,7 +233,7 @@ export const MessageInput = ({
     const meta: ChatAttachmentMeta[] = [];
 
     if (pendingAttachment) {
-      const { file: f, mime, plan } = pendingAttachment;
+      const { file: f, plan } = pendingAttachment;
       const rejectionReason = getChatAttachmentRejectionReason(f);
       if (rejectionReason) {
         setError(rejectionReason);
@@ -290,53 +250,19 @@ export const MessageInput = ({
           return;
         }
 
-        const basePath = `${session.user.id}/${Date.now()}`;
-        if (plan.mode === 'gif_processing') {
-          setProcessingMessage('Optimizing GIF...');
-          setError(null); // Clear any previous errors when starting processing
-          try {
-            const processed = await processChatGifUpload({
-              file: f,
-              accessToken: session.access_token,
-            });
-            paths.push(processed.path);
-            meta.push({
-              path: processed.path,
-              mime: processed.mime,
-              size: processed.size,
-            });
-          } catch (gifError) {
-            setProcessingMessage(null);
-            const errorMsg = toMessage(gifError);
-            if (errorMsg.includes('too large') || errorMsg.includes('413')) {
-              setError('This GIF is too large to process. Try a smaller file.');
-            } else {
-              setError(errorMsg || 'Failed to optimize GIF. Please try again.');
-            }
-            setPendingAttachment(null);
-            setUploading(false);
-            return;
-          }
-        } else {
-          setProcessingMessage(plan.helperText || 'Uploading attachment...');
-          setError(null); // Clear any previous errors when starting upload
-          const blob = await stripExifIfImage(f);
-          const ext = f.name.split('.').pop() || 'bin';
-          const path = `${basePath}_0.${ext}`;
-          const { error: uploadErr } = await supabase.storage
-            .from('chat-attachments')
-            .upload(path, blob, { contentType: mime });
-
-          if (uploadErr) {
-            setProcessingMessage(null);
-            setError(toMessage(uploadErr));
-            setPendingAttachment(null);
-            setUploading(false);
-            return;
-          }
-          paths.push(path);
-          meta.push({ path, mime, size: blob.size });
-        }
+        setProcessingMessage(plan.helperText || plan.uploadLabel);
+        setError(null);
+        const uploaded = await uploadStructuredChatAttachment({
+          ownerId: session.user.id,
+          file: f,
+          accessToken: session.access_token,
+        });
+        paths.push(uploaded.storagePath);
+        meta.push({
+          path: uploaded.storagePath,
+          mime: uploaded.mimeType,
+          size: uploaded.size,
+        });
         setPendingAttachment(null);
         setProcessingMessage(null);
       } catch (cause) {

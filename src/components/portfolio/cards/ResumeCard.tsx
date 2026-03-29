@@ -20,6 +20,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
+import { AssetThumbnail } from '../../media/AssetThumbnail';
+import { createNormalizedResumeAsset } from '../../../lib/media/assets';
 import { RESUME_PREVIEW_UNSUPPORTED_MESSAGE } from '../../../lib/portfolio/resumePreviewSupport';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
@@ -53,18 +55,40 @@ interface ResumeCardProps {
 }
 
 const ResumeCardThumbnailArea = ({
+  url,
   hasThumbnail,
   thumbnailUrl,
   thumbnailStatus,
   isPdf,
   resumeTitle,
 }: {
+  url?: string | null;
   hasThumbnail: boolean;
   thumbnailUrl?: string | null;
   thumbnailStatus?: 'pending' | 'complete' | 'failed' | null;
   isPdf: boolean;
   resumeTitle: string;
 }) => {
+  const asset = createNormalizedResumeAsset({
+    url,
+    fileName: resumeTitle,
+    thumbnailUrl,
+    thumbnailStatus,
+  });
+
+  if (asset) {
+    return (
+      <AssetThumbnail
+        asset={asset}
+        alt={resumeTitle}
+        compact
+        loadingLabel={
+          thumbnailStatus === 'pending' ? 'Generating preview…' : undefined
+        }
+      />
+    );
+  }
+
   if (hasThumbnail) {
     return (
       <Box
@@ -662,6 +686,7 @@ export const ResumeCard = ({
         }}
       >
         <ResumeCardThumbnailArea
+          url={url}
           hasThumbnail={ui.hasThumbnail}
           thumbnailUrl={thumbnailUrl}
           thumbnailStatus={thumbnailStatus}

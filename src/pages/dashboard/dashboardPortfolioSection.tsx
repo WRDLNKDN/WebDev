@@ -10,10 +10,11 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
 import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioSortableList } from '../../components/portfolio/layout/PortfolioSortableList';
+import { RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION } from '../../lib/portfolio/resumeUploadLimits';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getGlassCard } from '../../theme/candyStyles';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
@@ -32,7 +33,6 @@ type Props = {
   updating: boolean;
   onOpenAddMenu: (anchor: HTMLElement) => void;
   onCloseAddMenu: () => void;
-  onOpenLinks: () => void;
   onOpenResumePicker: () => void;
   onOpenNewProjectDialog: () => void;
   onResumeInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -47,6 +47,7 @@ type Props = {
   onToggleHighlight: (id: string, highlighted: boolean) => Promise<void>;
   onEditProject: (project: PortfolioItem) => void;
   onOpenPreview: (project: PortfolioItem) => void;
+  testId?: string;
 };
 
 const addButtonSx = {
@@ -76,7 +77,6 @@ export const DashboardPortfolioSection = ({
   updating,
   onOpenAddMenu,
   onCloseAddMenu,
-  onOpenLinks,
   onOpenResumePicker,
   onOpenNewProjectDialog,
   onResumeInputChange,
@@ -91,8 +91,10 @@ export const DashboardPortfolioSection = ({
   onToggleHighlight,
   onEditProject,
   onOpenPreview,
+  testId,
 }: Props) => {
   const theme = useTheme();
+  const resumeUploadHintId = useId();
   const menuPaperSx = useMemo(
     () => ({
       mt: 1.5,
@@ -106,10 +108,18 @@ export const DashboardPortfolioSection = ({
     [theme],
   );
   const isEmpty = !resumeUrl && projects.length === 0;
+  const handleOpenResumePicker = () => {
+    onCloseAddMenu();
+    onOpenResumePicker();
+  };
+  const handleOpenNewProjectDialog = () => {
+    onCloseAddMenu();
+    onOpenNewProjectDialog();
+  };
 
   return (
     <Paper
-      data-testid="portfolio-section"
+      data-testid={testId ?? 'portfolio-section'}
       elevation={0}
       sx={{
         ...getGlassCard(theme),
@@ -137,20 +147,41 @@ export const DashboardPortfolioSection = ({
             fontWeight: 600,
           }}
         >
-          PORTFOLIO
+          PORTFOLIO SHOWCASE
         </Typography>
         <input
           ref={resumeFileInputRef}
           type="file"
           hidden
           accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          aria-describedby={resumeUploadHintId}
           onChange={onResumeInputChange}
         />
+        <Typography
+          id={resumeUploadHintId}
+          component="span"
+          variant="body2"
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '1px',
+            height: '1px',
+            p: 0,
+            m: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            border: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION}
+        </Typography>
 
         {isEmpty ? (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Start by adding links, a resume, or a project to build your public
-            portfolio showcase.
+            Start by adding a resume or a project to build your public portfolio
+            showcase.
           </Typography>
         ) : null}
 
@@ -167,12 +198,12 @@ export const DashboardPortfolioSection = ({
             endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
             onClick={(e) => onOpenAddMenu(e.currentTarget)}
             disabled={loading}
-            aria-label="Add links, resume, or project"
+            aria-label="Add to portfolio"
             aria-haspopup="true"
             aria-expanded={Boolean(addMenuAnchor)}
             sx={addButtonSx}
           >
-            Add
+            Add to Portfolio
           </Button>
           <Menu
             anchorEl={addMenuAnchor}
@@ -185,16 +216,13 @@ export const DashboardPortfolioSection = ({
             }}
             slotProps={{ paper: { sx: menuPaperSx } }}
           >
-            <MenuItem onClick={onOpenLinks} sx={{ py: 1.25 }}>
-              + Add Links
-            </MenuItem>
             {!resumeUrl ? (
-              <MenuItem onClick={onOpenResumePicker} sx={{ py: 1.25 }}>
-                + Add Resume
+              <MenuItem onClick={handleOpenResumePicker} sx={{ py: 1.25 }}>
+                Add Resume
               </MenuItem>
             ) : null}
-            <MenuItem onClick={onOpenNewProjectDialog} sx={{ py: 1.25 }}>
-              + Add Project
+            <MenuItem onClick={handleOpenNewProjectDialog} sx={{ py: 1.25 }}>
+              Add Project
             </MenuItem>
           </Menu>
         </Stack>

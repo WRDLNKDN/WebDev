@@ -16,6 +16,8 @@ export type ChatRoom = {
   id: string;
   room_type: ChatRoomType;
   name: string | null;
+  description: string | null;
+  image_url: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

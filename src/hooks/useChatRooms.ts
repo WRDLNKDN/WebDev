@@ -15,6 +15,10 @@ import {
 import { useAppToast } from '../context/AppToastContext';
 import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
+import {
+  normalizeChatGroupDescription,
+  type ChatGroupDetailsInput,
+} from '../lib/chat/groupDetails';
 import type { ChatRoom, ChatRoomMember } from '../types/chat';
 import type { ChatRoomWithMembers } from './chatTypes';
 
@@ -24,7 +28,10 @@ export type ChatRoomsContextValue = {
   fetchRooms: () => Promise<void>;
   removeChat: (targetRoomId: string) => Promise<void>;
   createDm: (otherUserId: string) => Promise<string | null>;
-  createGroup: (name: string, memberIds: string[]) => Promise<string | null>;
+  createGroup: (
+    details: ChatGroupDetailsInput,
+    memberIds: string[],
+  ) => Promise<string | null>;
   toggleFavorite: (roomId: string, isFavorite: boolean) => Promise<void>;
 };
 
@@ -35,46 +42,18 @@ async function persistChatRoomFavoriteForMember(
   roomId: string,
   nextFavorite: boolean,
 ): Promise<void> {
-  const { data: existing, error: selectError } = await supabase
-    .from('chat_room_preferences')
-    .select('room_id')
-    .eq('room_id', roomId)
-    .eq('user_id', userId)
-    .maybeSingle();
+  const { error } = await supabase.from('chat_room_preferences').upsert(
+    {
+      room_id: roomId,
+      user_id: userId,
+      is_favorite: nextFavorite,
+    },
+    {
+      onConflict: 'room_id,user_id',
+    },
+  );
 
-  if (selectError) throw selectError;
-
-  const payload = {
-    room_id: roomId,
-    user_id: userId,
-    is_favorite: nextFavorite,
-  };
-
-  if (existing?.room_id) {
-    const { error: updateError } = await supabase
-      .from('chat_room_preferences')
-      .update({ is_favorite: nextFavorite })
-      .eq('room_id', roomId)
-      .eq('user_id', userId);
-    if (updateError) throw updateError;
-    return;
-  }
-
-  const { error: insertError } = await supabase
-    .from('chat_room_preferences')
-    .insert(payload);
-  if (!insertError) return;
-
-  if (insertError.code !== '23505') {
-    throw insertError;
-  }
-
-  const { error: updateError } = await supabase
-    .from('chat_room_preferences')
-    .update({ is_favorite: nextFavorite })
-    .eq('room_id', roomId)
-    .eq('user_id', userId);
-  if (updateError) throw updateError;
+  if (error) throw error;
 }
 
 export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {
@@ -474,16 +453,20 @@ function useChatRoomsState() {
   );
 
   const createGroup = useCallback(
-    async (name: string, memberIds: string[]) => {
+    async (details: ChatGroupDetailsInput, memberIds: string[]) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Sign in to create a group');
       if (memberIds.length >= 100)
         throw new Error('A group can have up to 100 members.');
+      const normalizedName = details.name.trim();
+      const normalizedDescription = normalizeChatGroupDescription(
+        details.description,
+      );
 
       const { data: roomId, error } = await supabase.rpc('chat_create_group', {
-        p_name: name.trim(),
+        p_name: normalizedName,
         p_member_ids: memberIds.length > 0 ? memberIds : [],
       });
 
@@ -506,6 +489,17 @@ function useChatRoomsState() {
             ? raw[0]
             : null;
       if (!id) return null;
+
+      if (normalizedDescription || details.imageUrl) {
+        const { error: roomUpdateError } = await supabase
+          .from('chat_rooms')
+          .update({
+            description: normalizedDescription,
+            image_url: details.imageUrl ?? null,
+          })
+          .eq('id', id);
+        if (roomUpdateError) throw roomUpdateError;
+      }
 
       await fetchRooms();
       showToast({

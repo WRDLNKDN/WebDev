@@ -538,16 +538,6 @@ export const Navbar = () => {
               >
                 <Button
                   component="a"
-                  href={storeExternalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Store, opens storefront in a new tab"
-                  sx={desktopNavButtonSx}
-                >
-                  Store
-                </Button>
-                <Button
-                  component="a"
                   href={KICKSTARTER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -556,11 +546,21 @@ export const Navbar = () => {
                 >
                   Kickstarter
                 </Button>
+                <Button
+                  component="a"
+                  href={storeExternalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Store, opens storefront in a new tab"
+                  sx={desktopNavButtonSx}
+                >
+                  Store
+                </Button>
               </Stack>
             )}
           </Stack>
 
-          {/* Desktop: canonical authenticated primary (Feed→Directory→Chat→Profile→Events) + Store; Admin is under the avatar menu only */}
+          {/* Desktop: canonical authenticated primary in alphabetical order; Admin is under the avatar menu only. */}
           {!isMobile && (
             <Box
               sx={{
@@ -796,26 +796,7 @@ export const Navbar = () => {
                 />
               ) : !session && (!productionComingSoon || isAdminActive) ? (
                 <>
-                  {/* Guest: Sign in + Join — only when signed out (never show if session exists) */}
-                  <Button
-                    component="button"
-                    type="button"
-                    onClick={() => void openSignIn()}
-                    sx={{
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      minWidth: 0,
-                      px: 1,
-                      '&:hover': {
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                        color: 'white',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
+                  {/* Guest auth controls stay alphabetical. */}
                   {!isJoinActive && (
                     <Button
                       component="button"
@@ -837,6 +818,25 @@ export const Navbar = () => {
                       Join
                     </Button>
                   )}
+                  <Button
+                    component="button"
+                    type="button"
+                    onClick={() => void openSignIn()}
+                    sx={{
+                      color: 'rgba(255,255,255,0.96)',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      minWidth: 0,
+                      px: 1,
+                      '&:hover': {
+                        bgcolor: 'rgba(56,132,210,0.14)',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
                 </>
               ) : (
                 <>
@@ -993,6 +993,18 @@ export const Navbar = () => {
               },
             }}
           >
+            {isAdmin && (
+              <MenuItem
+                onClick={() => {
+                  setAvatarMenuAnchor(null);
+                  setDrawerOpen(false);
+                  navigate('/admin');
+                }}
+                sx={{ py: 1.25, color: 'warning.main' }}
+              >
+                Admin
+              </MenuItem>
+            )}
             {dashboardEnabled && (
               <MenuItem
                 onClick={() => {
@@ -1017,19 +1029,7 @@ export const Navbar = () => {
                 Settings
               </MenuItem>
             )}
-            {isAdmin && (
-              <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  setDrawerOpen(false);
-                  navigate('/admin');
-                }}
-                sx={{ py: 1.25, color: 'warning.main' }}
-              >
-                Admin
-              </MenuItem>
-            )}
-            {dashboardEnabled && <Divider sx={{ my: 0.5 }} />}
+            {(dashboardEnabled || isAdmin) && <Divider sx={{ my: 0.5 }} />}
             <MenuItem
               onClick={() => {
                 setAvatarMenuAnchor(null);

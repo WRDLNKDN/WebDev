@@ -16,6 +16,12 @@ export type ChatAttachmentProcessingPlan =
     }
   | {
       accepted: true;
+      mode: 'optimize';
+      uploadLabel: string;
+      helperText: string;
+    }
+  | {
+      accepted: true;
       mode: 'gif_processing';
       uploadLabel: string;
       helperText: string;
@@ -33,6 +39,7 @@ export function getChatAttachmentProcessingPlan(file: {
   const isGif = normalizedType === 'image/gif';
   const isProcessedGifVideo =
     normalizedType === 'video/mp4' || normalizedType === 'video/webm';
+  const isImage = normalizedType.startsWith('image/');
 
   if (isProcessedGifVideo) {
     if (file.size > CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES) {
@@ -51,10 +58,21 @@ export function getChatAttachmentProcessingPlan(file: {
   }
 
   if (!isGif) {
-    if (file.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
+    if (file.size > CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES) {
       return {
         accepted: false,
-        reason: 'File must be 2MB or smaller.',
+        reason: 'This file is too large to process. Try a file under 6 MB.',
+      };
+    }
+
+    if (file.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES || isImage) {
+      return {
+        accepted: true,
+        mode: 'optimize',
+        uploadLabel: 'Optimizing attachment...',
+        helperText: isImage
+          ? 'Optimizing image and generating preview...'
+          : 'Preparing attachment preview...',
       };
     }
 
@@ -66,12 +84,21 @@ export function getChatAttachmentProcessingPlan(file: {
     };
   }
 
-  if (file.size <= CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES) {
+  if (file.size <= CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
     return {
       accepted: true,
       mode: 'direct',
       uploadLabel: 'Uploading GIF...',
       helperText: null,
+    };
+  }
+
+  if (file.size <= CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES) {
+    return {
+      accepted: true,
+      mode: 'gif_processing',
+      uploadLabel: 'Converting GIF...',
+      helperText: 'Converting GIF into lightweight looping playback...',
     };
   }
 

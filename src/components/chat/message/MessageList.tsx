@@ -652,11 +652,16 @@ export const MessageList = ({
                         id: string;
                         storage_path: string;
                         mime_type: string;
+                        file_size?: number;
+                        created_at?: string;
                       }) => (
                         <AttachmentPreview
                           key={a.id}
                           path={a.storage_path}
                           mimeType={a.mime_type}
+                          attachmentId={a.id}
+                          fileSize={a.file_size}
+                          createdAt={a.created_at}
                         />
                       ),
                     )}

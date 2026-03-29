@@ -15,6 +15,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
+  ButtonBase,
   Divider,
   IconButton,
   ListItemIcon,
@@ -24,8 +25,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
@@ -45,8 +48,9 @@ type ChatRoomHeaderProps = {
   onLeave: () => Promise<void>;
   onBlock: () => void;
   onInvite: () => void;
-  onRename: () => void;
+  onEditDetails: () => void;
   onManageMembers: () => void;
+  onShowMembers: () => void;
   /** When provided, used instead of navigate('/chat-full') for Back button */
   onBack?: () => void;
   /** When true, show X icon instead of Back button (for popover) */
@@ -68,8 +72,9 @@ export const ChatRoomHeader = ({
   onLeave,
   onBlock,
   onInvite,
-  onRename,
+  onEditDetails,
   onManageMembers,
+  onShowMembers,
   onBack,
   closeIcon,
   onPopOut,
@@ -93,17 +98,55 @@ export const ChatRoomHeader = ({
         otherMember?.profile?.handle ||
         'Chat';
 
-  const avatarUrl =
-    room?.room_type === 'dm'
-      ? (otherMember?.profile?.avatar ?? undefined)
-      : undefined;
+  let avatarUrl: string | undefined;
+  if (room?.room_type === 'dm') {
+    avatarUrl = otherMember?.profile?.avatar ?? undefined;
+  } else if (room) {
+    avatarUrl =
+      createNormalizedGroupImageAsset(room)?.displayUrl ??
+      room.image_url ??
+      undefined;
+  }
   const avatarAlt = displayName || 'Chat';
-  const secondaryLabel =
-    room?.room_type === 'group'
-      ? `${room.members?.length ?? 0} members`
-      : otherUserId
-        ? undefined
-        : 'Direct message';
+  let secondaryLabel: string | undefined;
+  if (room?.room_type === 'group') {
+    secondaryLabel = `${room.members?.length ?? 0} members`;
+  } else if (!otherUserId) {
+    secondaryLabel = 'Direct message';
+  }
+  let secondaryLabelNode: ReactNode = null;
+  if (secondaryLabel) {
+    if (room?.room_type === 'group') {
+      secondaryLabelNode = (
+        <ButtonBase
+          onClick={onShowMembers}
+          sx={{
+            mt: 0.35,
+            borderRadius: 1,
+            color: 'text.secondary',
+            justifyContent: 'flex-start',
+            '&:hover, &:focus-visible': {
+              color: 'text.primary',
+              textDecoration: 'underline',
+              textUnderlineOffset: '0.14em',
+            },
+          }}
+        >
+          <Typography variant="caption">{secondaryLabel}</Typography>
+        </ButtonBase>
+      );
+    } else {
+      secondaryLabelNode = (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', mt: 0.15 }}
+        >
+          {secondaryLabel}
+        </Typography>
+      );
+    }
+  }
 
   const menuItems = useMemo(() => {
     const items = [
@@ -185,14 +228,14 @@ export const ChatRoomHeader = ({
         <MenuItem
           key="rename"
           onClick={() => {
-            onRename();
+            onEditDetails();
             setMenuAnchor(null);
           }}
         >
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Rename group" />
+          <ListItemText primary="Edit group details" />
         </MenuItem>,
         <MenuItem
           key="manage"
@@ -255,7 +298,7 @@ export const ChatRoomHeader = ({
     onLeave,
     onBlock,
     onInvite,
-    onRename,
+    onEditDetails,
     onManageMembers,
     onToggleFavorite,
     onRemoveConversation,
@@ -317,11 +360,25 @@ export const ChatRoomHeader = ({
           <Typography
             variant="subtitle2"
             fontWeight={700}
-            noWrap
+            noWrap={room?.room_type !== 'group'}
             sx={{ fontSize: '0.98rem', lineHeight: 1.2 }}
           >
             {displayName}
           </Typography>
+          {room?.room_type === 'group' && room.description ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: 'block',
+                mt: 0.25,
+                lineHeight: 1.35,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {room.description}
+            </Typography>
+          ) : null}
           {room?.room_type === 'dm' && otherUserId && (
             <OnlineIndicator
               otherUserId={otherUserId}
@@ -329,15 +386,7 @@ export const ChatRoomHeader = ({
               typingUsers={typingUsers}
             />
           )}
-          {secondaryLabel ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 0.15 }}
-            >
-              {secondaryLabel}
-            </Typography>
-          ) : null}
+          {secondaryLabelNode}
         </Box>
       </Box>
       <Box

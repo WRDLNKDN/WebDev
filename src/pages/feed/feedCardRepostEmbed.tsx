@@ -1,7 +1,7 @@
-import RepeatOutlinedIcon from '@mui/icons-material/RepeatOutlined';
-import { Box, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Link, Stack, Typography } from '@mui/material';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
+import { scrollToFeedPost } from '../../lib/feed/deepLink';
 import { formatPostTime } from '../../lib/post/formatPostTime';
 import { linkifyBody } from './feedRenderUtils';
 
@@ -22,8 +22,17 @@ export const FeedCardRepostEmbed = ({
   originalCreatedAt,
   repostOriginalId,
 }: FeedCardRepostEmbedProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const displayName = originalName || originalHandle || 'Original member';
   const hasBody = Boolean(originalBody.trim());
+  const handleViewOriginalPost = () => {
+    if (!repostOriginalId) return;
+    if (location.pathname === '/feed' && scrollToFeedPost(repostOriginalId)) {
+      return;
+    }
+    navigate(`/feed?post=${encodeURIComponent(repostOriginalId)}`);
+  };
 
   return (
     <Box
@@ -39,27 +48,6 @@ export const FeedCardRepostEmbed = ({
         py: { xs: 1.1, sm: 1.25 },
       }}
     >
-      <Stack
-        direction="row"
-        spacing={0.75}
-        alignItems="center"
-        sx={{ mb: 0.95, color: 'text.secondary' }}
-      >
-        <RepeatOutlinedIcon sx={{ fontSize: 16, color: 'primary.light' }} />
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.76rem',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: 'primary.light',
-          }}
-        >
-          Original Post
-        </Typography>
-      </Stack>
-
       <Stack direction="row" spacing={1} alignItems="flex-start">
         <ProfileAvatar
           src={originalAvatarUrl ?? undefined}
@@ -122,20 +110,33 @@ export const FeedCardRepostEmbed = ({
           )}
 
           {repostOriginalId ? (
-            <Typography
-              component={RouterLink}
-              to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+            <Link
+              component="button"
+              type="button"
               variant="caption"
+              onClick={handleViewOriginalPost}
               sx={{
                 mt: 0.95,
                 display: 'inline-flex',
                 color: 'primary.light',
                 textDecoration: 'none',
                 fontWeight: 600,
+                p: 0,
+                border: 0,
+                background: 'transparent',
+                cursor: 'pointer',
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
-              View original post
+              View Original Post
+            </Link>
+          ) : !repostOriginalId ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.95 }}
+            >
+              Original post unavailable.
             </Typography>
           ) : null}
         </Box>

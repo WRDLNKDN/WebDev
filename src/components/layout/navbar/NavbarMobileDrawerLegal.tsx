@@ -34,7 +34,7 @@ export const NavbarMobileDrawerLegal = ({
       </ListSubheader>
       <ListItemButton
         component={RouterLink}
-        to="/terms"
+        to="/guidelines"
         onClick={onNavigate}
         sx={{ minHeight: 44, py: 0.5 }}
       >
@@ -42,7 +42,7 @@ export const NavbarMobileDrawerLegal = ({
           <GavelIcon fontSize="small" />
         </ListItemIcon>
         <ListItemText
-          primary="Terms of Service"
+          primary="Community Guidelines"
           primaryTypographyProps={{ variant: 'body2' }}
         />
       </ListItemButton>
@@ -62,7 +62,7 @@ export const NavbarMobileDrawerLegal = ({
       </ListItemButton>
       <ListItemButton
         component={RouterLink}
-        to="/guidelines"
+        to="/terms"
         onClick={onNavigate}
         sx={{ minHeight: 44, py: 0.5 }}
       >
@@ -70,7 +70,7 @@ export const NavbarMobileDrawerLegal = ({
           <GavelIcon fontSize="small" />
         </ListItemIcon>
         <ListItemText
-          primary="Community Guidelines"
+          primary="Terms of Service"
           primaryTypographyProps={{ variant: 'body2' }}
         />
       </ListItemButton>

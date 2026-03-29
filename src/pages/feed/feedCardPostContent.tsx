@@ -1,4 +1,6 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { AssetThumbnail } from '../../components/media/AssetThumbnail';
+import type { NormalizedAsset } from '../../lib/media/assets';
 import {
   LinkPreviewCard,
   linkifyBody,
@@ -23,7 +25,7 @@ type FeedCardPostContentProps = {
   linkPreview?: LinkPreviewPayload;
   isLinkPreviewDismissed: boolean;
   onDismissLinkPreview: () => void;
-  postAttachmentImages: string[];
+  postAttachmentAssets: readonly NormalizedAsset[];
   url: string | null;
   label: string | null;
 };
@@ -42,7 +44,7 @@ export const FeedCardPostContent = ({
   linkPreview,
   isLinkPreviewDismissed,
   onDismissLinkPreview,
-  postAttachmentImages,
+  postAttachmentAssets,
   url,
   label,
 }: FeedCardPostContentProps) => (
@@ -132,35 +134,45 @@ export const FeedCardPostContent = ({
     {linkPreview?.url && !isLinkPreviewDismissed && (
       <LinkPreviewCard preview={linkPreview} onDismiss={onDismissLinkPreview} />
     )}
-    {postAttachmentImages.length > 0 && (
+    {postAttachmentAssets.length > 0 && (
       <Stack direction="row" spacing={0.5} sx={{ mt: 1.5 }} flexWrap="wrap">
-        {postAttachmentImages.map((imgUrl) => (
-          <Box
-            key={imgUrl}
-            component="img"
-            src={imgUrl}
-            alt=""
-            width={280}
-            height={280}
-            onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                openImageLightbox(imgUrl, 'post_attachment');
-              }
-            }}
-            tabIndex={0}
-            role="button"
-            aria-label="View image full screen"
-            sx={{
-              maxWidth: 280,
-              maxHeight: 280,
-              objectFit: 'cover',
-              borderRadius: 1,
-              cursor: 'zoom-in',
-            }}
-          />
-        ))}
+        {postAttachmentAssets.map((asset) => {
+          const openUrl = asset.displayUrl ?? asset.originalUrl ?? '';
+          return (
+            <Box
+              key={asset.assetId}
+              onClick={() => openImageLightbox(openUrl, 'post_attachment')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openImageLightbox(openUrl, 'post_attachment');
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label="View image full screen"
+              sx={{
+                width: 280,
+                maxWidth: '100%',
+                borderRadius: 1,
+                overflow: 'hidden',
+                cursor: 'zoom-in',
+              }}
+            >
+              <AssetThumbnail
+                asset={asset}
+                alt=""
+                compact
+                sx={{
+                  minHeight: 0,
+                  maxHeight: 280,
+                  aspectRatio: '1 / 1',
+                  borderBottom: 'none',
+                }}
+              />
+            </Box>
+          );
+        })}
       </Stack>
     )}
     {url && (

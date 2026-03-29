@@ -97,8 +97,15 @@ export const MessengerOverlay = () => {
   );
 
   const handleCreateGroup = useCallback(
-    async (name: string, memberIds: string[]) => {
-      const id = await createGroup(name, memberIds);
+    async (
+      details: {
+        name: string;
+        description?: string | null;
+        imageUrl?: string | null;
+      },
+      memberIds: string[],
+    ) => {
+      const id = await createGroup(details, memberIds);
       if (!id) return;
       setCreateGroupOpen(false);
       messenger?.openPopOut(id);

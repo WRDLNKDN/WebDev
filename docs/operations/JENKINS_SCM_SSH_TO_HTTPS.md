@@ -52,8 +52,7 @@ HTTPS + app password is usually simpler on static agents.
 
 ## Related repo files
 
-- `Jenkinsfile_sandstone` — includes a second checkout of **devtools** under
-  `dir('devtools')` using HTTPS; that part is already aligned with HTTPS once
-  the job can load the script.
+- `Jenkinsfile_sandstone` — one checkout of **devtools** (workspace root =
+  `DEVTOOLS_PATH`; no nested `devtools/` clone).
 - `docs/operations/JENKINS_SANDSTONE.md` — Sandstone-specific notes and Git
   Parameter defaults.

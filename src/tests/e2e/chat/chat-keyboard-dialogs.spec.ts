@@ -191,32 +191,40 @@ async function stubChatKeyboardSurface(page: import('@playwright/test').Page) {
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {
+    const url = new URL(route.request().url());
+    const idFilter = url.searchParams.get('id');
+    const allProfiles = [
+      {
+        id: USER_ID,
+        handle: 'member',
+        display_name: 'Member',
+        avatar: null,
+        status: 'approved',
+      },
+      {
+        id: DM_TARGET_ID,
+        handle: 'dm-target',
+        display_name: 'DM Target',
+        avatar: null,
+        status: 'approved',
+      },
+      {
+        id: GROUP_TARGET_ID,
+        handle: 'group-target',
+        display_name: 'Group Target',
+        avatar: null,
+        status: 'approved',
+      },
+    ];
+
+    const filteredProfiles = idFilter?.startsWith('in.(')
+      ? allProfiles.filter((profile) => idFilter.includes(profile.id))
+      : allProfiles;
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'Member',
-          avatar: null,
-          status: 'approved',
-        },
-        {
-          id: DM_TARGET_ID,
-          handle: 'dm-target',
-          display_name: 'DM Target',
-          avatar: null,
-          status: 'approved',
-        },
-        {
-          id: GROUP_TARGET_ID,
-          handle: 'group-target',
-          display_name: 'Group Target',
-          avatar: null,
-          status: 'approved',
-        },
-      ]),
+      body: JSON.stringify(filteredProfiles),
     });
   });
 
@@ -326,6 +334,11 @@ test.describe('Chat keyboard dialogs', () => {
     await page.getByRole('button', { name: 'New group' }).click();
     const groupDialog = page.getByRole('dialog', { name: /create group/i });
     await expect(groupDialog).toBeVisible();
+    await expect(groupDialog.getByText('DM Target')).toBeVisible();
+    await expect(groupDialog.getByText('Group Target')).toHaveCount(0);
+    await expect(
+      groupDialog.getByRole('textbox', { name: 'Search connections' }),
+    ).toBeVisible();
     const groupNameInput = page.getByRole('textbox', { name: 'Group name' });
     await groupNameInput.fill('Keyboard Group');
     await groupNameInput.press('Enter');

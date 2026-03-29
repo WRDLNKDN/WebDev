@@ -49,7 +49,7 @@ type FallbackInput = {
 function stableAssetId(seed: string): string {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
+    hash = Math.trunc(hash * 31 + seed.charCodeAt(index));
   }
   return `asset-${Math.abs(hash).toString(36)}`;
 }
@@ -253,7 +253,20 @@ export function createNormalizedAsset(input: {
 function replaceTerminalFileName(pathOrUrl: string, fileName: string): string {
   const clean = pathOrUrl.trim();
   if (!clean) return clean;
-  return clean.replace(/[^/]+(?=($|[?#]))/, fileName);
+  const queryIndex = clean.indexOf('?');
+  const hashIndex = clean.indexOf('#');
+  const suffixStart = [queryIndex, hashIndex]
+    .filter((index) => index >= 0)
+    .reduce((earliest, index) => Math.min(earliest, index), clean.length);
+  const base = clean.slice(0, suffixStart);
+  const suffix = clean.slice(suffixStart);
+  const lastSlashIndex = base.lastIndexOf('/');
+
+  if (lastSlashIndex < 0) {
+    return `${fileName}${suffix}`;
+  }
+
+  return `${base.slice(0, lastSlashIndex + 1)}${fileName}${suffix}`;
 }
 
 export function deriveSiblingStoragePath(
@@ -337,27 +350,46 @@ export function createNormalizedPortfolioAsset(
     resolvedType: project.resolved_type,
   });
   const originalUrl = project.project_url?.trim() || null;
-  const displayUrl =
-    project.image_url?.trim() ||
-    (originalUrl && /\/original\./.test(originalUrl)
-      ? deriveSiblingPublicUrl(originalUrl, MEDIA_DISPLAY_FILE_STEM, 'webp')
-      : mediaType === 'image'
-        ? originalUrl
-        : project.thumbnail_url?.trim() || null);
-  const thumbnailUrl =
-    project.image_url?.trim() ||
-    project.thumbnail_url?.trim() ||
-    (originalUrl && /\/original\./.test(originalUrl)
-      ? deriveSiblingPublicUrl(originalUrl, MEDIA_THUMBNAIL_FILE_STEM, 'jpg')
-      : mediaType === 'image'
-        ? originalUrl
-        : null);
-  const processingState: NormalizedAssetProcessingState =
-    project.thumbnail_status === 'pending'
-      ? 'optimizing'
-      : project.thumbnail_status === 'failed'
-        ? 'failed'
-        : 'ready';
+  const preferredImageUrl = project.image_url?.trim() || null;
+  const preferredThumbnailUrl = project.thumbnail_url?.trim() || null;
+  const structuredOriginalUrl =
+    originalUrl && /\/original\./.test(originalUrl) ? originalUrl : null;
+  let displayUrl = preferredImageUrl;
+  if (!displayUrl) {
+    if (structuredOriginalUrl) {
+      displayUrl = deriveSiblingPublicUrl(
+        structuredOriginalUrl,
+        MEDIA_DISPLAY_FILE_STEM,
+        'webp',
+      );
+    } else if (mediaType === 'image') {
+      displayUrl = originalUrl;
+    } else {
+      displayUrl = preferredThumbnailUrl;
+    }
+  }
+
+  let thumbnailUrl = preferredImageUrl || preferredThumbnailUrl;
+  if (!thumbnailUrl) {
+    if (structuredOriginalUrl) {
+      thumbnailUrl = deriveSiblingPublicUrl(
+        structuredOriginalUrl,
+        MEDIA_THUMBNAIL_FILE_STEM,
+        'jpg',
+      );
+    } else if (mediaType === 'image') {
+      thumbnailUrl = originalUrl;
+    } else {
+      thumbnailUrl = null;
+    }
+  }
+
+  let processingState: NormalizedAssetProcessingState = 'ready';
+  if (project.thumbnail_status === 'pending') {
+    processingState = 'optimizing';
+  } else if (project.thumbnail_status === 'failed') {
+    processingState = 'failed';
+  }
 
   return createNormalizedAsset({
     assetId: project.id,
@@ -386,6 +418,12 @@ export function createNormalizedResumeAsset(params: {
 }): NormalizedAsset | null {
   const url = params.url?.trim() ?? '';
   if (!url) return null;
+  let processingState: NormalizedAssetProcessingState = 'ready';
+  if (params.thumbnailStatus === 'pending') {
+    processingState = 'converting';
+  } else if (params.thumbnailStatus === 'failed') {
+    processingState = 'failed';
+  }
   return createNormalizedAsset({
     sourceType: 'upload',
     mediaType: 'doc',
@@ -394,12 +432,7 @@ export function createNormalizedResumeAsset(params: {
     thumbnailUrl: params.thumbnailUrl ?? null,
     title: params.fileName ?? 'Resume',
     originalFilename: params.fileName ?? null,
-    processingState:
-      params.thumbnailStatus === 'pending'
-        ? 'converting'
-        : params.thumbnailStatus === 'failed'
-          ? 'failed'
-          : 'ready',
+    processingState,
   });
 }
 
@@ -408,15 +441,16 @@ export function createNormalizedGroupImageAsset(
 ): NormalizedAsset | null {
   const displayUrl = room.image_url?.trim() ?? '';
   if (!displayUrl) return null;
+  const thumbnailUrl = /\/display\./.test(displayUrl)
+    ? deriveSiblingPublicUrl(displayUrl, MEDIA_THUMBNAIL_FILE_STEM, 'jpg')
+    : displayUrl;
   return createNormalizedAsset({
     assetId: room.id,
     sourceType: 'upload',
     mediaType: 'image',
     originalUrl: null,
     displayUrl,
-    thumbnailUrl: /\/display\./.test(displayUrl)
-      ? deriveSiblingPublicUrl(displayUrl, MEDIA_THUMBNAIL_FILE_STEM, 'jpg')
-      : displayUrl,
+    thumbnailUrl,
     title: room.name ?? 'Group image',
     updatedAt: room.updated_at,
   });
@@ -440,14 +474,18 @@ export function createChatAttachmentStorageDescriptor(
     mimeType: attachment.mime_type,
     url: attachment.storage_path,
   });
-  const displayPath = /\/original\./.test(attachment.storage_path)
+  const hasStructuredOriginalPath = /\/original\./.test(
+    attachment.storage_path,
+  );
+  const displayExtension = mediaType === 'video' ? 'mp4' : 'webp';
+  const displayPath = hasStructuredOriginalPath
     ? deriveSiblingStoragePath(
         attachment.storage_path,
         MEDIA_DISPLAY_FILE_STEM,
-        mediaType === 'video' ? 'mp4' : 'webp',
+        displayExtension,
       )
     : attachment.storage_path;
-  const thumbnailPath = /\/original\./.test(attachment.storage_path)
+  const thumbnailPath = hasStructuredOriginalPath
     ? deriveSiblingStoragePath(
         attachment.storage_path,
         MEDIA_THUMBNAIL_FILE_STEM,

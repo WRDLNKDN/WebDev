@@ -20,6 +20,22 @@ type CanvasRenderResult = {
   height: number;
 };
 
+const FILE_EXTENSION_PATTERN = /\.([a-z0-9]+)(?:$|\?)/i;
+
+function getImageDisplayExtension(mimeType: string): 'gif' | 'png' | 'webp' {
+  if (mimeType === 'image/gif') return 'gif';
+  if (mimeType === 'image/png') return 'png';
+  return 'webp';
+}
+
+function getChatAttachmentDisplayExtension(
+  mediaType: StructuredChatAttachmentUpload['mediaType'],
+  mimeType: string,
+): 'gif' | 'png' | 'webp' | 'svg' {
+  if (mediaType !== 'image') return 'svg';
+  return getImageDisplayExtension(mimeType);
+}
+
 export type StructuredPublicAssetUpload = {
   assetId: string;
   mediaType: 'image' | 'video' | 'doc';
@@ -47,7 +63,7 @@ export type StructuredChatAttachmentUpload = {
 };
 
 function getFileExtension(fileName: string, fallback = 'bin'): string {
-  const match = fileName.toLowerCase().match(/\.([a-z0-9]+)(?:$|\?)/i);
+  const match = FILE_EXTENSION_PATTERN.exec(fileName.toLowerCase());
   return match?.[1] ?? fallback;
 }
 
@@ -279,10 +295,11 @@ export async function uploadStructuredPublicAsset(params: {
 
   if (mediaType === 'image') {
     const isAnimatedGif = mimeType === 'image/gif';
+    const displayExtension = getImageDisplayExtension(mimeType);
     const displayPath = deriveSiblingStoragePath(
       originalPath,
       MEDIA_DISPLAY_FILE_STEM,
-      isAnimatedGif ? 'gif' : mimeType === 'image/png' ? 'png' : 'webp',
+      displayExtension,
     );
     const thumbnailPath = deriveSiblingStoragePath(
       originalPath,
@@ -475,13 +492,7 @@ export async function uploadStructuredChatAttachment(params: {
   const displayPath = deriveSiblingStoragePath(
     originalPath,
     MEDIA_DISPLAY_FILE_STEM,
-    mediaType === 'image'
-      ? mimeType === 'image/gif'
-        ? 'gif'
-        : mimeType === 'image/png'
-          ? 'png'
-          : 'webp'
-      : 'svg',
+    getChatAttachmentDisplayExtension(mediaType, mimeType),
   );
   const thumbnailPath = deriveSiblingStoragePath(
     originalPath,

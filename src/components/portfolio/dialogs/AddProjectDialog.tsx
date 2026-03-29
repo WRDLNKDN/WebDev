@@ -359,30 +359,44 @@ export const AddProjectDialog = ({
   const storedSourceFileLabel = hasExistingStorageUrl
     ? getStoredSourceFileLabel(sourceUrl)
     : null;
-  const sourceModeStatusMessage =
-    sourceMode === 'file'
-      ? selectedSourceFile
-        ? `Project source set to uploaded file ${selectedSourceFile.name}.`
-        : hasExistingStorageUrl
-          ? `Project source set to uploaded file ${storedSourceFileLabel ?? 'already attached file'}.`
-          : 'Project source set to uploaded file.'
-      : hasExternalUrl
-        ? 'Project source set to project URL entry.'
-        : 'Project source set to project URL entry. Enter a public URL to continue.';
+  let sourceFileHelperText =
+    'Supported files should be about 2 MB or smaller. Resize large images, export smaller PDFs, or compress before uploading.';
+  if (selectedSourceFile) {
+    sourceFileHelperText = `${selectedSourceFile.name} selected.`;
+  } else if (hasExistingStorageUrl) {
+    sourceFileHelperText = storedSourceFileLabel
+      ? `Attached file: ${storedSourceFileLabel}.`
+      : 'An uploaded project file is already attached.';
+  }
+  let sourceModeStatusMessage =
+    'Project source set to project URL entry. Enter a public URL to continue.';
+  if (sourceMode === 'file') {
+    if (selectedSourceFile) {
+      sourceModeStatusMessage = `Project source set to uploaded file ${selectedSourceFile.name}.`;
+    } else if (hasExistingStorageUrl) {
+      sourceModeStatusMessage = `Project source set to uploaded file ${storedSourceFileLabel ?? 'already attached file'}.`;
+    } else {
+      sourceModeStatusMessage = 'Project source set to uploaded file.';
+    }
+  } else if (hasExternalUrl) {
+    sourceModeStatusMessage = 'Project source set to project URL entry.';
+  }
   const hasValidProjectSource = hasUrlSource || hasFileSource;
   const hasValidProtocol = !hasExternalUrl || isExternalUrl(sourceUrl);
   const hasTitle = Boolean(formData.title.trim());
   const hasCategories = normalizedCategories.length > 0;
-  const customCategoryError =
-    selectedCategory !== PORTFOLIO_OTHER_CATEGORY_OPTION
-      ? ''
-      : !normalizedCustomCategory
-        ? 'Enter a custom category.'
-        : normalizedCustomCategory.length > MAX_CUSTOM_PROJECT_CATEGORY_LENGTH
-          ? `Custom categories must be ${MAX_CUSTOM_PROJECT_CATEGORY_LENGTH} characters or fewer.`
-          : customCategoryHasProfanity
-            ? 'Custom categories cannot contain profanity.'
-            : '';
+  let customCategoryError = '';
+  if (selectedCategory === PORTFOLIO_OTHER_CATEGORY_OPTION) {
+    if (!normalizedCustomCategory) {
+      customCategoryError = 'Enter a custom category.';
+    } else if (
+      normalizedCustomCategory.length > MAX_CUSTOM_PROJECT_CATEGORY_LENGTH
+    ) {
+      customCategoryError = `Custom categories must be ${MAX_CUSTOM_PROJECT_CATEGORY_LENGTH} characters or fewer.`;
+    } else if (customCategoryHasProfanity) {
+      customCategoryError = 'Custom categories cannot contain profanity.';
+    }
+  }
   const urlSafetyError =
     hasExternalUrl && hasValidProtocol
       ? getPortfolioUrlSafetyError(sourceUrl)
@@ -1149,13 +1163,7 @@ export const AddProjectDialog = ({
                           sx={{ mt: 0.75, display: 'block' }}
                           id="project-source-file-helper"
                         >
-                          {selectedSourceFile
-                            ? `${selectedSourceFile.name} selected.`
-                            : hasExistingStorageUrl
-                              ? storedSourceFileLabel
-                                ? `Attached file: ${storedSourceFileLabel}.`
-                                : 'An uploaded project file is already attached.'
-                              : 'Supported files should be about 2 MB or smaller. Resize large images, export smaller PDFs, or compress before uploading.'}
+                          {sourceFileHelperText}
                         </Typography>
                       </Box>
                     ) : null}

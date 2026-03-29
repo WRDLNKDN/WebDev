@@ -8,16 +8,16 @@ export function scrollToFeedPost(postId: string): boolean {
   if (!el) return false;
 
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  el.setAttribute('tabindex', '-1');
+  el.tabIndex = -1;
   try {
-    (el as HTMLElement).focus({ preventScroll: true });
+    el.focus({ preventScroll: true });
   } catch {
-    (el as HTMLElement).focus();
+    el.focus();
   }
-  el.setAttribute('data-feed-post-highlighted', 'true');
+  el.dataset.feedPostHighlighted = 'true';
   window.setTimeout(() => {
-    if (el.getAttribute('data-feed-post-highlighted') === 'true') {
-      el.removeAttribute('data-feed-post-highlighted');
+    if (el.dataset.feedPostHighlighted === 'true') {
+      delete el.dataset.feedPostHighlighted;
     }
   }, 2200);
 

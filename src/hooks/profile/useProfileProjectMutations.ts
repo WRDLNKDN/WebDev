@@ -1,18 +1,10 @@
 import { supabase } from '../../lib/auth/supabaseClient';
-import { deriveSiblingPublicUrl } from '../../lib/media/assets';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
-import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
   getProjectSourceFileError,
-  invokePortfolioThumbnailGeneration,
-  PROJECT_SOURCE_BUCKET,
-  uploadPublicProjectAsset,
   isProjectSourceStorageUrl,
 } from '../../lib/portfolio/projectMedia';
-import {
-  getPortfolioUrlSafetyError,
-  sanitizePortfolioUrlInput,
-} from '../../lib/portfolio/linkValidation';
+import { sanitizePortfolioUrlInput } from '../../lib/portfolio/linkValidation';
 import {
   getProjectImageStoragePathFromPublicUrl,
   getProjectSourceStoragePathFromPublicUrl,
@@ -24,10 +16,47 @@ import type {
   ProjectUploadFiles,
 } from '../../types/portfolio';
 import { isExternalProjectUrl } from './useProfileHelpers';
+import {
+  assertProjectUrlIsSafe,
+  refreshProjectAfterThumbnailGeneration,
+  resolveProjectLinkFields,
+  resolveProjectThumbnailFields,
+  uploadProjectSourceUrl,
+  uploadProjectThumbnailUrl,
+} from './useProfileProjects';
 
 type Params = {
   setProjects: React.Dispatch<React.SetStateAction<PortfolioItem[]>>;
 };
+
+function assertCanUpdateProject(params: {
+  projectUrlTrimmed: string;
+  sourceFile?: ProjectUploadFiles['sourceFile'];
+  hasExistingStorageUrl: boolean;
+}) {
+  const { projectUrlTrimmed, sourceFile, hasExistingStorageUrl } = params;
+  const hasSourceFile = Boolean(sourceFile);
+  const hasProjectUrl = Boolean(projectUrlTrimmed);
+  if (hasSourceFile && hasProjectUrl) {
+    throw new Error(
+      'Choose either an uploaded file or a project URL, not both.',
+    );
+  }
+  if (!hasSourceFile && !hasProjectUrl) {
+    throw new Error('Add a file or a project URL before saving.');
+  }
+  if (sourceFile) {
+    const sourceError = getProjectSourceFileError(sourceFile);
+    if (sourceError) throw new Error(sourceError);
+    return;
+  }
+
+  const hasValidProjectUrl =
+    hasExistingStorageUrl || isExternalProjectUrl(projectUrlTrimmed);
+  if (!hasValidProjectUrl) {
+    throw new Error('Project URL must be an external URL (e.g. https://...).');
+  }
+}
 
 export const toggleProjectHighlightItem = async ({
   projectId,
@@ -83,23 +112,11 @@ export const updateProjectItem = async ({
 
   const projectUrlTrimmed = sanitizePortfolioUrlInput(updates.project_url);
   const hasExistingStorageUrl = isProjectSourceStorageUrl(projectUrlTrimmed);
-  if (sourceFile && projectUrlTrimmed) {
-    throw new Error(
-      'Choose either an uploaded file or a project URL, not both.',
-    );
-  }
-  if (!sourceFile && !projectUrlTrimmed) {
-    throw new Error('Add a file or a project URL before saving.');
-  }
-  if (sourceFile) {
-    const sourceError = getProjectSourceFileError(sourceFile);
-    if (sourceError) throw new Error(sourceError);
-  } else if (
-    !hasExistingStorageUrl &&
-    !isExternalProjectUrl(projectUrlTrimmed)
-  ) {
-    throw new Error('Project URL must be an external URL (e.g. https://...).');
-  }
+  assertCanUpdateProject({
+    projectUrlTrimmed,
+    sourceFile,
+    hasExistingStorageUrl,
+  });
 
   const { data: existingProject, error: existingProjectError } = await supabase
     .from('portfolio_items')
@@ -120,57 +137,33 @@ export const updateProjectItem = async ({
       : '',
   );
 
-  const projectSourceUrl = sourceFile
-    ? await uploadPublicProjectAsset({
-        userId: session.user.id,
-        file: sourceFile,
-        bucket: PROJECT_SOURCE_BUCKET,
-        prefix: 'project-source',
-        returnVariant: sourceFile.type.toLowerCase().startsWith('image/')
-          ? 'original'
-          : 'display',
-      })
-    : projectUrlTrimmed;
+  const projectSourceUrl = await uploadProjectSourceUrl({
+    userId: session.user.id,
+    projectUrlTrimmed,
+    sourceFile,
+  });
 
-  let finalImageUrl =
+  const initialImageUrl =
     sanitizePortfolioUrlInput(updates.image_url ?? '') || null;
-  if (thumbnailFile) {
-    finalImageUrl = await uploadPublicProjectAsset({
-      userId: session.user.id,
-      file: thumbnailFile,
-      bucket: 'project-images',
-      prefix: 'project-thumbnail',
-      returnVariant: 'display',
-    });
+  const finalImageUrl = await uploadProjectThumbnailUrl({
+    userId: session.user.id,
+    imageUrl: initialImageUrl,
+    thumbnailFile,
+  });
+
+  const usesExternalProjectUrl = !sourceFile && !hasExistingStorageUrl;
+  if (usesExternalProjectUrl) {
+    assertProjectUrlIsSafe(projectUrlTrimmed);
   }
 
-  if (!sourceFile && !hasExistingStorageUrl) {
-    const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
-    if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
-  }
-
-  const linkType = getLinkType(projectSourceUrl);
-  const normalizedUrl =
-    linkType === 'google_doc' ||
-    linkType === 'google_sheet' ||
-    linkType === 'google_slides'
-      ? normalizeGoogleUrl(projectSourceUrl)
-      : projectSourceUrl;
-  const embedUrl =
-    linkType === 'google_doc' ||
-    linkType === 'google_sheet' ||
-    linkType === 'google_slides'
-      ? normalizedUrl !== projectSourceUrl
-        ? normalizedUrl
-        : null
-      : null;
-
-  const sourceFileIsImage = Boolean(sourceFile && linkType === 'image');
-  const derivedThumbnailUrl =
-    sourceFileIsImage && projectSourceUrl.includes('/original.')
-      ? deriveSiblingPublicUrl(projectSourceUrl, 'thumbnail', 'jpg')
-      : null;
-  const thumbnailStatus = finalImageUrl || sourceFileIsImage ? null : 'pending';
+  const { linkType, normalizedUrl, embedUrl } =
+    resolveProjectLinkFields(projectSourceUrl);
+  const { thumbnailStatus, thumbnailUrl } = resolveProjectThumbnailFields({
+    finalImageUrl,
+    linkType,
+    projectSourceUrl,
+    sourceFile,
+  });
 
   const { data, error: updateError } = await supabase
     .from('portfolio_items')
@@ -185,7 +178,7 @@ export const updateProjectItem = async ({
       embed_url: embedUrl ?? undefined,
       resolved_type: linkType,
       thumbnail_status: thumbnailStatus,
-      thumbnail_url: finalImageUrl ? null : derivedThumbnailUrl,
+      thumbnail_url: thumbnailUrl,
     })
     .eq('id', projectId)
     .eq('owner_id', session.user.id)
@@ -210,16 +203,10 @@ export const updateProjectItem = async ({
     await supabase.storage.from('project-sources').remove([existingSourcePath]);
   }
 
-  let finalRow = data as PortfolioItem;
-  if (thumbnailStatus === 'pending') {
-    await invokePortfolioThumbnailGeneration();
-    const { data: refreshed } = await supabase
-      .from('portfolio_items')
-      .select('*')
-      .eq('id', projectId)
-      .maybeSingle();
-    if (refreshed) finalRow = refreshed as PortfolioItem;
-  }
+  const finalRow = await refreshProjectAfterThumbnailGeneration(
+    data as PortfolioItem,
+    thumbnailStatus,
+  );
 
   setProjects((prev) =>
     prev.map((project) => (project.id === projectId ? finalRow : project)),

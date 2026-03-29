@@ -25,6 +25,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
@@ -97,19 +98,55 @@ export const ChatRoomHeader = ({
         otherMember?.profile?.handle ||
         'Chat';
 
-  const avatarUrl =
-    room?.room_type === 'dm'
-      ? (otherMember?.profile?.avatar ?? undefined)
-      : room
-        ? (createNormalizedGroupImageAsset(room)?.displayUrl ?? room.image_url)
-        : undefined;
+  let avatarUrl: string | undefined;
+  if (room?.room_type === 'dm') {
+    avatarUrl = otherMember?.profile?.avatar ?? undefined;
+  } else if (room) {
+    avatarUrl =
+      createNormalizedGroupImageAsset(room)?.displayUrl ??
+      room.image_url ??
+      undefined;
+  }
   const avatarAlt = displayName || 'Chat';
-  const secondaryLabel =
-    room?.room_type === 'group'
-      ? `${room.members?.length ?? 0} members`
-      : otherUserId
-        ? undefined
-        : 'Direct message';
+  let secondaryLabel: string | undefined;
+  if (room?.room_type === 'group') {
+    secondaryLabel = `${room.members?.length ?? 0} members`;
+  } else if (!otherUserId) {
+    secondaryLabel = 'Direct message';
+  }
+  let secondaryLabelNode: ReactNode = null;
+  if (secondaryLabel) {
+    if (room?.room_type === 'group') {
+      secondaryLabelNode = (
+        <ButtonBase
+          onClick={onShowMembers}
+          sx={{
+            mt: 0.35,
+            borderRadius: 1,
+            color: 'text.secondary',
+            justifyContent: 'flex-start',
+            '&:hover, &:focus-visible': {
+              color: 'text.primary',
+              textDecoration: 'underline',
+              textUnderlineOffset: '0.14em',
+            },
+          }}
+        >
+          <Typography variant="caption">{secondaryLabel}</Typography>
+        </ButtonBase>
+      );
+    } else {
+      secondaryLabelNode = (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', mt: 0.15 }}
+        >
+          {secondaryLabel}
+        </Typography>
+      );
+    }
+  }
 
   const menuItems = useMemo(() => {
     const items = [
@@ -349,34 +386,7 @@ export const ChatRoomHeader = ({
               typingUsers={typingUsers}
             />
           )}
-          {secondaryLabel ? (
-            room?.room_type === 'group' ? (
-              <ButtonBase
-                onClick={onShowMembers}
-                sx={{
-                  mt: 0.35,
-                  borderRadius: 1,
-                  color: 'text.secondary',
-                  justifyContent: 'flex-start',
-                  '&:hover, &:focus-visible': {
-                    color: 'text.primary',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: '0.14em',
-                  },
-                }}
-              >
-                <Typography variant="caption">{secondaryLabel}</Typography>
-              </ButtonBase>
-            ) : (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mt: 0.15 }}
-              >
-                {secondaryLabel}
-              </Typography>
-            )
-          ) : null}
+          {secondaryLabelNode}
         </Box>
       </Box>
       <Box

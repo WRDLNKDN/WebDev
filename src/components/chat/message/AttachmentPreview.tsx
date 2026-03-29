@@ -37,11 +37,10 @@ function getStructuredDerivativePaths(
 } {
   const lowerMime = mimeType.toLowerCase();
   const structuredOriginal = /\/original\./.test(storagePath);
+  const isVisualMime =
+    lowerMime.startsWith('video/') || lowerMime.startsWith('image/');
   if (!structuredOriginal) {
-    const thumbExtension =
-      lowerMime.startsWith('video/') || lowerMime.startsWith('image/')
-        ? 'jpg'
-        : 'svg';
+    const thumbExtension = isVisualMime ? 'jpg' : 'svg';
     return {
       originalPath: storagePath,
       displayPath: storagePath,
@@ -53,13 +52,22 @@ function getStructuredDerivativePaths(
     };
   }
 
-  const displayExtension = lowerMime.startsWith('image/gif')
-    ? 'gif'
-    : lowerMime.startsWith('image/png')
-      ? 'png'
-      : lowerMime.startsWith('image/')
-        ? 'webp'
-        : 'svg';
+  let displayExtension = 'svg';
+  if (lowerMime.startsWith('image/gif')) {
+    displayExtension = 'gif';
+  } else if (lowerMime.startsWith('image/png')) {
+    displayExtension = 'png';
+  } else if (lowerMime.startsWith('image/')) {
+    displayExtension = 'webp';
+  }
+  const usesDocumentThumbnail =
+    lowerMime.includes('pdf') ||
+    lowerMime.includes('word') ||
+    lowerMime.includes('document') ||
+    lowerMime.includes('presentation') ||
+    lowerMime.includes('sheet') ||
+    lowerMime.startsWith('text/');
+  const thumbnailExtension = usesDocumentThumbnail ? 'svg' : 'jpg';
 
   return {
     originalPath: storagePath,
@@ -71,14 +79,7 @@ function getStructuredDerivativePaths(
     thumbnailPath: deriveSiblingStoragePath(
       storagePath,
       MEDIA_THUMBNAIL_FILE_STEM,
-      lowerMime.includes('pdf') ||
-        lowerMime.includes('word') ||
-        lowerMime.includes('document') ||
-        lowerMime.includes('presentation') ||
-        lowerMime.includes('sheet') ||
-        lowerMime.startsWith('text/')
-        ? 'svg'
-        : 'jpg',
+      thumbnailExtension,
     ),
   };
 }

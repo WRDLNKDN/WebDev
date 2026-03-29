@@ -640,6 +640,37 @@ const RepostEmbed = ({
     }
     navigate(`/feed?post=${encodeURIComponent(repostOriginalId)}`);
   };
+  let originalPostAction: ReactNode;
+  if (repostOriginalId) {
+    originalPostAction = (
+      <Link
+        component="button"
+        type="button"
+        variant="caption"
+        onClick={handleViewOriginalPost}
+        sx={{
+          mt: 0.95,
+          display: 'inline-flex',
+          color: 'primary.light',
+          textDecoration: 'none',
+          fontWeight: 600,
+          p: 0,
+          border: 0,
+          background: 'transparent',
+          cursor: 'pointer',
+          '&:hover': { textDecoration: 'underline' },
+        }}
+      >
+        View Original Post
+      </Link>
+    );
+  } else {
+    originalPostAction = (
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.95 }}>
+        Original post unavailable.
+      </Typography>
+    );
+  }
 
   return (
     <Box
@@ -714,36 +745,7 @@ const RepostEmbed = ({
             </Typography>
           )}
 
-          {repostOriginalId ? (
-            <Link
-              component="button"
-              type="button"
-              variant="caption"
-              onClick={handleViewOriginalPost}
-              sx={{
-                mt: 0.95,
-                display: 'inline-flex',
-                color: 'primary.light',
-                textDecoration: 'none',
-                fontWeight: 600,
-                p: 0,
-                border: 0,
-                background: 'transparent',
-                cursor: 'pointer',
-                '&:hover': { textDecoration: 'underline' },
-              }}
-            >
-              View Original Post
-            </Link>
-          ) : !repostOriginalId ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 0.95 }}
-            >
-              Original post unavailable.
-            </Typography>
-          ) : null}
+          {originalPostAction}
         </Box>
       </Stack>
     </Box>

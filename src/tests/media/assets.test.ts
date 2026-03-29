@@ -4,6 +4,7 @@ import {
   createNormalizedLinkAsset,
   createNormalizedPortfolioAsset,
   createNormalizedResumeAsset,
+  deriveSiblingPublicUrl,
   getNormalizedAssetThumbnailUrl,
 } from '../../lib/media/assets';
 
@@ -63,5 +64,15 @@ describe('normalized media assets', () => {
 
     expect(asset?.mediaType).toBe('doc');
     expect(asset?.processingState).toBe('converting');
+  });
+
+  it('replaces the terminal file name without disturbing query strings or fragments', () => {
+    expect(
+      deriveSiblingPublicUrl(
+        'https://storage.example.com/path/original.png?token=abc#preview',
+        'thumbnail',
+        'jpg',
+      ),
+    ).toBe('https://storage.example.com/path/thumbnail.jpg?token=abc#preview');
   });
 });

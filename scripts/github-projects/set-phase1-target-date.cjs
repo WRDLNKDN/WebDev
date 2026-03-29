@@ -11,6 +11,10 @@
  * secret PROJECT_PHASE1_TARGET_DATE_TOKEN (same pattern as set-estimate-from-size).
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
+const {
+  fieldConfigSelection,
+  fieldsNodesSelection,
+} = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -100,8 +104,7 @@ async function syncFromIssueNode(github, core, issueNodeId, opts) {
               id
               fields(first: 50) {
                 nodes {
-                  __typename
-                  ... on ProjectV2FieldCommon { id name }
+                  ${fieldsNodesSelection}
                 }
               }
             }
@@ -111,7 +114,7 @@ async function syncFromIssueNode(github, core, issueNodeId, opts) {
                 ... on ProjectV2ItemFieldDateValue {
                   date
                   field {
-                    ... on ProjectV2FieldCommon { id name }
+                    ${fieldConfigSelection}
                   }
                 }
               }
@@ -149,8 +152,7 @@ async function syncFromProjectItemNode(github, core, itemNodeId, opts) {
           id
           fields(first: 50) {
             nodes {
-              __typename
-              ... on ProjectV2FieldCommon { id name }
+              ${fieldsNodesSelection}
             }
           }
         }
@@ -160,7 +162,7 @@ async function syncFromProjectItemNode(github, core, itemNodeId, opts) {
             ... on ProjectV2ItemFieldDateValue {
               date
               field {
-                ... on ProjectV2FieldCommon { id name }
+                ${fieldConfigSelection}
               }
             }
           }

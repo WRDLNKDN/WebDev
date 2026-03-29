@@ -28,6 +28,10 @@ create index if not exists idx_chat_room_members_user_active_room
   on public.chat_room_members(user_id, room_id)
   where left_at is null;
 
+-- Chat history and room summaries sort newest-first with a stable id tie-breaker.
+create index if not exists idx_chat_messages_room_recent_page
+  on public.chat_messages(room_id, created_at desc, id desc);
+
 -- Unread counts and room summaries exclude deleted/system-null sender rows.
 create index if not exists idx_chat_messages_room_unread
   on public.chat_messages(room_id, created_at desc)

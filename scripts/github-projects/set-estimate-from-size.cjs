@@ -4,6 +4,10 @@
  * Loaded via require(); github-script passes { github, context, core }.
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
+const {
+  fieldConfigSelection,
+  fieldsNodesSelection,
+} = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -84,8 +88,7 @@ async function syncEstimateFromSize(
           id
           fields(first: 50) {
             nodes {
-              __typename
-              ... on ProjectV2FieldCommon { id name }
+              ${fieldsNodesSelection}
             }
           }
         }
@@ -95,13 +98,13 @@ async function syncEstimateFromSize(
             ... on ProjectV2ItemFieldSingleSelectValue {
               name
               field {
-                ... on ProjectV2FieldCommon { id name }
+                ${fieldConfigSelection}
               }
             }
             ... on ProjectV2ItemFieldNumberValue {
               number
               field {
-                ... on ProjectV2FieldCommon { id name }
+                ${fieldConfigSelection}
               }
             }
           }

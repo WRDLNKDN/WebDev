@@ -1,6 +1,8 @@
 /**
  * Resolve a Project v2 by owner type/login/number. Optionally include project fields.
  */
+const { fieldsNodesSelection } = require('./projectV2GraphqlFragments.cjs');
+
 module.exports = async function resolveProjectV2(
   github,
   { ownerType, ownerLogin, projectNumber, includeFields = false },
@@ -9,8 +11,7 @@ module.exports = async function resolveProjectV2(
     ? `id
        fields(first: 50) {
          nodes {
-           __typename
-           ... on ProjectV2FieldCommon { id name }
+           ${fieldsNodesSelection}
          }
        }`
     : 'id';

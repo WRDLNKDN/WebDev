@@ -23,7 +23,7 @@ on:
 
 permissions:
   contents: read
-  repository-projects: read
+  repository-projects: write
 
 concurrency:
   group: sync-estimate-from-size
@@ -34,6 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Require Projects API token
+        env:
+          GITHUBACTION: ${{ secrets.GITHUBACTION }}
+          GH_PROJECTS_TOKEN: ${{ secrets.GH_PROJECTS_TOKEN }}
+        run: |
+          if [ -z "$GITHUBACTION" ] && [ -z "$GH_PROJECTS_TOKEN" ]; then
+            echo "::error::Add secret GITHUBACTION or GH_PROJECTS_TOKEN (PAT or GitHub App token with Projects + repo access). GITHUB_TOKEN cannot access GitHub Projects v2 — https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions"
+            exit 1
+          fi
 
       - name: Sync Estimate from Size
         uses: actions/github-script@v8
@@ -46,7 +56,7 @@ jobs:
           GH_PROJECT_NUMBER:
             ${{ github.event.inputs.project_number || vars.GH_PROJECT_NUMBER }}
         with:
-          github-token: ${{ secrets.GITHUBACTION || github.token }}
+          github-token: ${{ secrets.GITHUBACTION || secrets.GH_PROJECTS_TOKEN }}
           script: |
             const run = require('./scripts/github-projects/set-estimate-from-size.cjs');
             await run({ github, context, core });

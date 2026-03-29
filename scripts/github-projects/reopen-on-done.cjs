@@ -8,6 +8,7 @@
  * - workflow_dispatch (scan all items in a project)
  */
 const forEachProjectV2Item = require('./forEachProjectV2Item.cjs');
+const { fieldConfigSelection } = require('./projectV2GraphqlFragments.cjs');
 const getProjectBackfillConfig = require('./projectBackfillConfig.cjs');
 const resolveProjectV2 = require('./resolveProjectV2.cjs');
 
@@ -55,9 +56,7 @@ async function reopenIfDone(github, core, itemNodeId) {
             ... on ProjectV2ItemFieldSingleSelectValue {
               name
               field {
-                ... on ProjectV2FieldCommon {
-                  name
-                }
+                ${fieldConfigSelection}
               }
             }
           }

@@ -1,3 +1,5 @@
+const { fieldConfigSelection } = require('./projectV2GraphqlFragments.cjs');
+
 /**
  * Shared Project v2 item fetch for automations that only need Status plus a
  * linked Issue payload.
@@ -13,9 +15,7 @@ async function fetchProjectItemWithIssue(github, itemNodeId, issueSelection) {
             ... on ProjectV2ItemFieldSingleSelectValue {
               name
               field {
-                ... on ProjectV2FieldCommon {
-                  name
-                }
+                ${fieldConfigSelection}
               }
             }
           }

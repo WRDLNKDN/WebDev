@@ -81,7 +81,8 @@ async function reopenIfDone(github, core, itemNodeId) {
   }
 
   const statusName =
-    projectItem.statusValue?.__typename === 'ProjectV2ItemFieldSingleSelectValue'
+    projectItem.statusValue?.__typename ===
+    'ProjectV2ItemFieldSingleSelectValue'
       ? projectItem.statusValue.name
       : null;
 

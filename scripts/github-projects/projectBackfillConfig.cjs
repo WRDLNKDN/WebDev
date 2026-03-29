@@ -2,7 +2,11 @@
  * Shared config reader for GitHub Project v2 backfill workflows.
  * Supports workflow_dispatch inputs and repository variables for scheduled runs.
  */
-module.exports = async function getProjectBackfillConfig(github, context, core) {
+module.exports = async function getProjectBackfillConfig(
+  github,
+  context,
+  core,
+) {
   const inputs = context.payload.inputs || {};
   const repositoryOwner = context.payload.repository?.owner;
   let inferredOwnerType =

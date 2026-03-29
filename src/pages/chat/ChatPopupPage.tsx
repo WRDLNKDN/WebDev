@@ -36,7 +36,7 @@ export const ChatPopupPage = () => {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'rename' | 'manage'
+    'invite' | 'details' | 'manage' | 'members'
   >('invite');
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
@@ -70,7 +70,7 @@ export const ChatPopupPage = () => {
     toggleReaction,
     markAsRead,
     leaveRoom,
-    renameRoom,
+    updateGroupDetails,
     removeMember,
     transferAdmin,
     inviteMembers,
@@ -214,12 +214,16 @@ export const ChatPopupPage = () => {
             setGroupDialogMode('invite');
             setGroupDialogOpen(true);
           }}
-          onRename={() => {
-            setGroupDialogMode('rename');
+          onEditDetails={() => {
+            setGroupDialogMode('details');
             setGroupDialogOpen(true);
           }}
           onManageMembers={() => {
             setGroupDialogMode('manage');
+            setGroupDialogOpen(true);
+          }}
+          onShowMembers={() => {
+            setGroupDialogMode('members');
             setGroupDialogOpen(true);
           }}
           isFavorite={Boolean(activeRoom?.is_favorite)}
@@ -335,9 +339,11 @@ export const ChatPopupPage = () => {
           onClose={() => setGroupDialogOpen(false)}
           roomId={roomId}
           roomName={room.name ?? ''}
+          roomDescription={room.description}
+          roomImageUrl={room.image_url}
           currentMembers={room.members ?? []}
           currentUserId={uid}
-          onRename={renameRoom}
+          onSaveDetails={updateGroupDetails}
           onInvite={inviteMembers}
           onRemove={removeMember}
           onTransferAdmin={transferAdmin}

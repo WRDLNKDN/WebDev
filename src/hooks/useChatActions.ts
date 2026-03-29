@@ -1,5 +1,9 @@
 import { startTransition, useCallback } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
+import {
+  normalizeChatGroupDescription,
+  type ChatGroupDetailsInput,
+} from '../lib/chat/groupDetails';
 import { resolveAttachmentMetaForSend } from '../lib/chat/attachmentMeta';
 import { normalizeChatAttachmentMime } from '../lib/chat/attachmentValidation';
 import { getChatAttachmentProcessingPlan } from '../lib/chat/attachmentProcessing';
@@ -320,13 +324,18 @@ export const useChatActions = ({
       .eq('user_id', session.user.id);
   }, [roomId]);
 
-  const renameRoom = useCallback(
-    async (newName: string) => {
+  const updateGroupDetails = useCallback(
+    async (details: ChatGroupDetailsInput) => {
       if (!roomId) return;
-      await supabase
+      const { error } = await supabase
         .from('chat_rooms')
-        .update({ name: newName })
+        .update({
+          name: details.name.trim(),
+          description: normalizeChatGroupDescription(details.description),
+          image_url: details.imageUrl ?? null,
+        })
         .eq('id', roomId);
+      if (error) throw error;
       await fetchRoom(roomId);
     },
     [fetchRoom, roomId],
@@ -427,7 +436,7 @@ export const useChatActions = ({
     markAsRead,
     toggleReaction,
     leaveRoom,
-    renameRoom,
+    updateGroupDetails,
     removeMember,
     transferAdmin,
     inviteMembers,

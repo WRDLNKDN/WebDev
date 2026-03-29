@@ -159,9 +159,11 @@ pipeline {
   }
 
   environment {
-    ROOT_PATH      = "${WORKSPACE}"
-    DEVTOOLS_PATH  = "${WORKSPACE}/devtools"
-    SANDSTONE_PATH = "${WORKSPACE}/sandstone"
+    // Use env.WORKSPACE — bare WORKSPACE is not reliably bound in declarative Groovy.
+    ROOT_PATH      = "${env.WORKSPACE}"
+    // Single devtools repo at workspace root (no separate platform repo / nested devtools clone).
+    DEVTOOLS_PATH  = "${env.WORKSPACE}"
+    SANDSTONE_PATH = "${env.WORKSPACE}/sandstone"
     NEXUS_BASE     = 'https://nexus.abu-dev.keurig.com/repository/brewerReleases'
   }
 
@@ -200,10 +202,11 @@ pipeline {
       }
     }
 
-    stage('Checkout Target Branch') {
+    stage('Checkout Devtools') {
       steps {
         deleteDir()
 
+        // Pipeline script from SCM and sources both live in devtools — one checkout only.
         checkout([
           $class: 'GitSCM',
           branches: [[name: "*/${env.EFFECTIVE_BRANCH}"]],
@@ -219,24 +222,11 @@ pipeline {
             url: env.MAIN_REPO_URL
           ]]
         ])
-      }
-    }
 
-    stage('Checkout Devtools') {
-      steps {
-        dir('devtools') {
-          checkout([
-            $class: 'GitSCM',
-            branches: [[name: '*/develop']],
-            doGenerateSubmoduleConfigurations: false,
-            extensions: [[$class: 'CleanBeforeCheckout']],
-            gitTool: 'Default',
-            submoduleCfg: [],
-            userRemoteConfigs: [[
-              credentialsId: 'jenkins-bitbucket.org-rbrunault',
-              url: 'git@bitbucket.org:kdrp/devtools.git'
-            ]]
-          ])
+        script {
+          env.DEVTOOLS_PATH = env.WORKSPACE
+          env.ROOT_PATH = env.WORKSPACE
+          env.SANDSTONE_PATH = "${env.WORKSPACE}/sandstone"
         }
       }
     }
@@ -252,8 +242,8 @@ pipeline {
           mkdir -p out/release_notes
 
           echo "Branches Used*" > BuildEnv.txt
-          if [ -f "${WORKSPACE}/devtools/configs/branches.cfg" ]; then
-            cat "${WORKSPACE}/devtools/configs/branches.cfg" >> BuildEnv.txt
+          if [ -f "${DEVTOOLS_PATH}/configs/branches.cfg" ]; then
+            cat "${DEVTOOLS_PATH}/configs/branches.cfg" >> BuildEnv.txt
           fi
           echo "*********************************************************" >> BuildEnv.txt
           echo "BRANCH_NAME=${EFFECTIVE_BRANCH}" >> BuildEnv.txt
@@ -356,20 +346,56 @@ pipeline {
 
           TAR_FILE="${PRODUCT}_buildroot_${BUILD_NUMBER}.tar.gz"
 
-          tar czf "${TAR_FILE}" \
-            sandstoneEnv.sh \
-            devtools \
-            BuildEnv.txt \
-            renesas \
-            renesas-stream-it \
-            rza1_qspi_flash \
-            opencv \
-            libcorrect \
-            crank \
-            spdlog \
-            makeself \
-            libexif \
-            2>/dev/null || true
+          # Buildroot drops named trees at workspace root; devtools repo content also lives at root.
+          # Old pipeline nested a full devtools clone under devtools/ — include every remaining
+          # top-level directory (except junk) so the archive stays complete.
+          BUILDROOT_DIRS=(
+            renesas
+            renesas-stream-it
+            rza1_qspi_flash
+            opencv
+            libcorrect
+            crank
+            spdlog
+            makeself
+            libexif
+          )
+
+          EXTRA_REPO_DIRS=()
+          shopt -s nullglob
+          for path in "${WORKSPACE}"/*; do
+            [ -e "${path}" ] || continue
+            base=$(basename "${path}")
+            case "${base}" in
+              .git|out|sandstone|tmp|softwareUpdate)
+                continue
+                ;;
+            esac
+            skip=false
+            for known in "${BUILDROOT_DIRS[@]}"; do
+              if [ "${base}" = "${known}" ]; then
+                skip=true
+                break
+              fi
+            done
+            if ${skip}; then
+              continue
+            fi
+            if [ -d "${path}" ]; then
+              EXTRA_REPO_DIRS+=("${base}")
+            fi
+          done
+
+          TAR_PARTS=()
+          [ -f sandstoneEnv.sh ] && TAR_PARTS+=(sandstoneEnv.sh)
+          [ -f BuildEnv.txt ] && TAR_PARTS+=(BuildEnv.txt)
+          for d in "${EXTRA_REPO_DIRS[@]}" "${BUILDROOT_DIRS[@]}"; do
+            [ -e "${d}" ] && TAR_PARTS+=("${d}")
+          done
+
+          if [ "${#TAR_PARTS[@]}" -gt 0 ]; then
+            tar czf "${TAR_FILE}" "${TAR_PARTS[@]}" 2>/dev/null || true
+          fi
 
           cp "${TAR_FILE}" out/packages/ || true
         '''
@@ -418,7 +444,7 @@ pipeline {
           fi
 
           rm -rf sandstone
-          "${WORKSPACE}/devtools/tools/sandstoneRepoSetup.sh" -p "${WORKSPACE}/sandstone"
+          "${DEVTOOLS_PATH}/tools/sandstoneRepoSetup.sh" -p "${WORKSPACE}/sandstone"
           export PATH=$PATH:/usr/local/bin/Eclipse
         '''
       }
@@ -448,29 +474,29 @@ pipeline {
         sh '''#!/usr/bin/env bash
           set -e
 
-          cd "${WORKSPACE}/devtools/tools/applicationPartitionTools"
+          cd "${DEVTOOLS_PATH}/tools/applicationPartitionTools"
           ./mkApplicationPartition.sh -t e -p "${PARTITION_TARGET}" || true
 
           cd "${WORKSPACE}"
           VERSION="${VERSION_OVERRIDE:-$(basename ${EFFECTIVE_BRANCH})}"
 
           if [ "${PRODUCT}" = "Premium" ] && [ -n "${ArenalURL_PREMIUM}" ]; then
-            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_PREMIUM}"
+            "${DEVTOOLS_PATH}/tools/supTools/mksup.sh" -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_PREMIUM}"
           elif [ "${PRODUCT}" = "K3500" ] && [ -n "${ArenalURL_K3500}" ]; then
-            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K3500}"
+            "${DEVTOOLS_PATH}/tools/supTools/mksup.sh" -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K3500}"
           elif [[ "${PRODUCT}" == K2500* ]] && [ -n "${ArenalURL_K2500}" ]; then
-            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K2500}"
+            "${DEVTOOLS_PATH}/tools/supTools/mksup.sh" -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" -u "${ArenalURL_K2500}"
           else
-            devtools/tools/supTools/mksup.sh -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" || true
+            "${DEVTOOLS_PATH}/tools/supTools/mksup.sh" -b "${BUILD_NUMBER}" -t rel -v "${VERSION}" || true
           fi
 
           mkdir -p "${WORKSPACE}/tmp/etc"
           if [ -f "${WORKSPACE}/softwareUpdate/release/metadata.json" ]; then
             cp "${WORKSPACE}/softwareUpdate/release/metadata.json" "${WORKSPACE}/tmp/etc/."
-            cd "${WORKSPACE}/devtools/tools/applicationPartitionTools"
+            cd "${DEVTOOLS_PATH}/tools/applicationPartitionTools"
             ./mkApplicationPartition.sh -t e -p "${PARTITION_TARGET}" -o "${WORKSPACE}/tmp" || true
             cd "${WORKSPACE}"
-            devtools/tools/programmingPackageTools/mkProgrammingPackage.sh || true
+            "${DEVTOOLS_PATH}/tools/programmingPackageTools/mkProgrammingPackage.sh" || true
           fi
 
           zipfile=$(ls -t *.zip 2>/dev/null | head -1 || true)
@@ -535,8 +561,8 @@ EOF
           cp BuildEnv.txt out/ 2>/dev/null || true
           cp sandstoneEnv.sh out/ 2>/dev/null || true
 
-          cp devtools/configs/products/*.cfg out/configs/ 2>/dev/null || true
-          cp devtools/configs/*.cfg out/configs/ 2>/dev/null || true
+          cp "${DEVTOOLS_PATH}/configs/products/"*.cfg out/configs/ 2>/dev/null || true
+          cp "${DEVTOOLS_PATH}/configs/"*.cfg out/configs/ 2>/dev/null || true
 
           cp *.tar out/ 2>/dev/null || true
           cp *.tar.gz out/ 2>/dev/null || true
@@ -568,8 +594,8 @@ EOF
               curl -u "${USERNAME}:${PASSWORD}" --upload-file "$f" "${NEXUS_BASE}/SandStone/" || true
             done
 
-            if [ -f "${WORKSPACE}/devtools/configs/products/${PRODUCT}.cfg" ]; then
-              curl -u "${USERNAME}:${PASSWORD}" --upload-file "${WORKSPACE}/devtools/configs/products/${PRODUCT}.cfg" "${NEXUS_BASE}/SandStone/" || true
+            if [ -f "${DEVTOOLS_PATH}/configs/products/${PRODUCT}.cfg" ]; then
+              curl -u "${USERNAME}:${PASSWORD}" --upload-file "${DEVTOOLS_PATH}/configs/products/${PRODUCT}.cfg" "${NEXUS_BASE}/SandStone/" || true
             fi
 
             if [ -f "${WORKSPACE}/sandstoneEnv.sh" ]; then

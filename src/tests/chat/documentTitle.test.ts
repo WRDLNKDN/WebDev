@@ -5,10 +5,12 @@ import type { ChatRoomWithMembers } from '../../hooks/chatTypes';
 function makeRoom(
   overrides: Partial<ChatRoomWithMembers> = {},
 ): ChatRoomWithMembers {
-  return {
+  const room: ChatRoomWithMembers = {
     id: 'room-1',
     room_type: 'dm',
     name: null,
+    description: null,
+    image_url: null,
     created_by: 'user-a',
     created_at: '2026-03-12T00:00:00.000Z',
     updated_at: '2026-03-12T00:00:00.000Z',
@@ -40,6 +42,10 @@ function makeRoom(
     ],
     ...overrides,
   };
+
+  room.description = overrides.description ?? null;
+  room.image_url = overrides.image_url ?? null;
+  return room;
 }
 
 describe('resolveChatDocumentTitle', () => {

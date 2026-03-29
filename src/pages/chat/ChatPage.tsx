@@ -32,6 +32,7 @@ import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
+import type { ChatGroupDetailsInput } from '../../lib/chat/groupDetails';
 import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
@@ -61,7 +62,7 @@ export const ChatPage = () => {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'rename' | 'manage'
+    'invite' | 'details' | 'manage' | 'members'
   >('invite');
   const [replyTarget, setReplyTarget] = useState<MessageReplyDraft | null>(
     null,
@@ -97,7 +98,7 @@ export const ChatPage = () => {
     toggleReaction,
     markAsRead,
     leaveRoom,
-    renameRoom,
+    updateGroupDetails,
     removeMember,
     transferAdmin,
     inviteMembers,
@@ -241,8 +242,11 @@ export const ChatPage = () => {
     }
   };
 
-  const handleCreateGroup = async (name: string, memberIds: string[]) => {
-    const id = await createGroup(name, memberIds);
+  const handleCreateGroup = async (
+    details: ChatGroupDetailsInput,
+    memberIds: string[],
+  ) => {
+    const id = await createGroup(details, memberIds);
     if (id) navigate(`/chat-full/${id}`);
   };
 
@@ -362,12 +366,16 @@ export const ChatPage = () => {
           setGroupDialogMode('invite');
           setGroupDialogOpen(true);
         }}
-        onRename={() => {
-          setGroupDialogMode('rename');
+        onEditDetails={() => {
+          setGroupDialogMode('details');
           setGroupDialogOpen(true);
         }}
         onManageMembers={() => {
           setGroupDialogMode('manage');
+          setGroupDialogOpen(true);
+        }}
+        onShowMembers={() => {
+          setGroupDialogMode('members');
           setGroupDialogOpen(true);
         }}
         isFavorite={Boolean(activeRoom?.is_favorite)}
@@ -525,9 +533,11 @@ export const ChatPage = () => {
           onClose={() => setGroupDialogOpen(false)}
           roomId={roomId}
           roomName={room.name ?? ''}
+          roomDescription={room.description}
+          roomImageUrl={room.image_url}
           currentMembers={room.members ?? []}
           currentUserId={uid}
-          onRename={renameRoom}
+          onSaveDetails={updateGroupDetails}
           onInvite={inviteMembers}
           onRemove={removeMember}
           onTransferAdmin={transferAdmin}

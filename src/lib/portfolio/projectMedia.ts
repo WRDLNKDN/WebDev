@@ -1,15 +1,42 @@
 import { supabase } from '../auth/supabaseClient';
+import {
+  SUPPORTED_DOCUMENT_EXTENSIONS,
+  SUPPORTED_IMAGE_EXTENSIONS,
+  SUPPORTED_PRESENTATION_EXTENSIONS,
+  SUPPORTED_SPREADSHEET_EXTENSIONS,
+  SUPPORTED_TEXT_EXTENSIONS,
+  SUPPORTED_VIDEO_EXTENSIONS,
+} from './linkUtils';
 
 export const PROJECT_SOURCE_BUCKET = 'project-sources';
 export const PROJECT_THUMBNAIL_BUCKET = 'project-images';
 
 export const PROJECT_THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024;
+export const PROJECT_SOURCE_MAX_BYTES = 2 * 1024 * 1024;
 
 const PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
+]);
+const PROJECT_SOURCE_ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/markdown',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
 ]);
 
 const getExtension = (name: string) =>
@@ -19,7 +46,9 @@ const formatSizeMb = (bytes: number) =>
   `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 const THUMBNAIL_SIZE_GUIDANCE =
-  'Optional thumbnails are limited to 2 MB. Use a smaller image.';
+  'Optional thumbnails are limited to about 2 MB. Resize large images, export as JPG or WEBP, or use image compression before uploading.';
+const SOURCE_SIZE_GUIDANCE =
+  'Project files should be about 2 MB or smaller. Resize large images, export PDFs with reduced-size settings, convert images to JPG or WEBP, or compress the file before uploading.';
 
 export function isProjectSourceStorageUrl(url: string): boolean {
   return url.includes(`/storage/v1/object/public/${PROJECT_SOURCE_BUCKET}/`);
@@ -46,6 +75,29 @@ export function getProjectThumbnailFileError(file: File): string | null {
   }
   if (file.size > PROJECT_THUMBNAIL_MAX_BYTES) {
     return `${file.name} is ${formatSizeMb(file.size)}. ${THUMBNAIL_SIZE_GUIDANCE}`;
+  }
+  return null;
+}
+
+export function getProjectSourceFileError(file: File): string | null {
+  if (
+    !isAllowedFile(
+      file,
+      PROJECT_SOURCE_ALLOWED_MIME_TYPES,
+      new Set([
+        ...SUPPORTED_IMAGE_EXTENSIONS,
+        ...SUPPORTED_DOCUMENT_EXTENSIONS,
+        ...SUPPORTED_PRESENTATION_EXTENSIONS,
+        ...SUPPORTED_SPREADSHEET_EXTENSIONS,
+        ...SUPPORTED_TEXT_EXTENSIONS,
+        ...SUPPORTED_VIDEO_EXTENSIONS,
+      ]),
+    )
+  ) {
+    return 'Project files must be JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, MP4, WEBM, or MOV.';
+  }
+  if (file.size > PROJECT_SOURCE_MAX_BYTES) {
+    return `${file.name} is ${formatSizeMb(file.size)}. ${SOURCE_SIZE_GUIDANCE}`;
   }
   return null;
 }

@@ -4,7 +4,7 @@
  */
 import ReplayIcon from '@mui/icons-material/Replay';
 import { Box, Button, Paper, Slider, Stack, Typography } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
@@ -171,10 +171,9 @@ export const PoolPlayPage = () => {
   const statusRef = useRef<'aiming' | 'shooting' | 'won'>('aiming');
   const completedRef = useRef(false);
 
-  const remainingBalls = useMemo(
-    () => ballsRef.current.filter((ball) => !ball.pocketed).length,
-    [sunk, sessionId],
-  );
+  const remainingBalls = ballsRef.current.filter(
+    (ball) => !ball.pocketed,
+  ).length;
 
   const drawTable = useCallback(() => {
     const canvas = canvasRef.current;

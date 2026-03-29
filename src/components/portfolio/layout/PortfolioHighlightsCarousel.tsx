@@ -152,6 +152,8 @@ export const PortfolioHighlightsCarousel = ({
                 data-testid={`portfolio-highlight-slide-${project.id}`}
                 aria-hidden={index !== activeIndex}
                 sx={{
+                  boxSizing: 'border-box',
+                  width: '100%',
                   minWidth: '100%',
                   p: { xs: 1.25, sm: 2, md: 2.5, lg: 3 },
                 }}
@@ -159,6 +161,7 @@ export const PortfolioHighlightsCarousel = ({
                 <Box
                   sx={{
                     display: 'grid',
+                    minWidth: 0,
                     gap: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
                     gridTemplateColumns: {
                       xs: '1fr',
@@ -189,6 +192,7 @@ export const PortfolioHighlightsCarousel = ({
                     }
                     sx={{
                       position: 'relative',
+                      minWidth: 0,
                       aspectRatio: { xs: '4 / 3', sm: '16 / 9' },
                       borderRadius: 2.5,
                       overflow: 'hidden',
@@ -224,7 +228,7 @@ export const PortfolioHighlightsCarousel = ({
                     )}
                   </Box>
 
-                  <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+                  <Stack spacing={1.5} sx={{ minWidth: 0, width: '100%' }}>
                     <Typography
                       variant="overline"
                       sx={{
@@ -241,6 +245,8 @@ export const PortfolioHighlightsCarousel = ({
                         fontWeight: 700,
                         lineHeight: 1.1,
                         fontSize: { xs: '1.3rem', sm: '1.5rem' },
+                        minWidth: 0,
+                        overflowWrap: 'anywhere',
                       }}
                     >
                       {project.title}

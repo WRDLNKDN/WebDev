@@ -6,14 +6,12 @@ type FeedCardRepostMetaProps = {
   repostDisplayName: string;
   repostOriginalHandle: string | null;
   repostOriginalName: string | null;
-  repostOriginalId: string | null;
 };
 
 export const FeedCardRepostMeta = ({
   repostDisplayName,
   repostOriginalHandle,
   repostOriginalName,
-  repostOriginalId,
 }: FeedCardRepostMetaProps) => (
   <Stack spacing={0.35} sx={{ mt: 0.55 }}>
     <Stack direction="row" spacing={0.55} alignItems="center">
@@ -53,20 +51,6 @@ export const FeedCardRepostMeta = ({
       ) : (
         <Typography variant="caption" color="text.secondary">
           original member
-        </Typography>
-      )}
-      {repostOriginalId && (
-        <Typography
-          component={RouterLink}
-          to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
-          variant="caption"
-          sx={{
-            color: 'primary.light',
-            textDecoration: 'none',
-            '&:hover': { color: 'text.primary' },
-          }}
-        >
-          View original
         </Typography>
       )}
     </Stack>

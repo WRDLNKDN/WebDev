@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { GuestView } from '../../components/home/GuestView';
 import { HowItWorks } from '../../components/home/HowItWorks';
 import { WhatMakesDifferent } from '../../components/home/WhatMakesDifferent';
+import { WhyWrdlnkdnVideo } from '../../components/home/WhyWrdlnkdnVideo';
 import '../../components/home/homeLanding.css';
 import {
   useMarketingHomeMode,
@@ -408,6 +409,8 @@ export const Home = () => {
   const heroMode: HomeHeroUiMode = hasIntroFinished ? 'compact' : 'video';
 
   const storageAuthHint = hasStoredAuthTokensSync();
+  const showSignedOutMarketingVideo =
+    !session && (!storageAuthHint || authInitialCheckDone);
 
   return (
     <main
@@ -605,6 +608,7 @@ export const Home = () => {
       </section>
       {/* Marketing sections: same on UAT and PROD (coming-soon still hides Join in hero only). */}
       <WhatMakesDifferent />
+      {showSignedOutMarketingVideo ? <WhyWrdlnkdnVideo /> : null}
       <HowItWorks />
     </main>
   );

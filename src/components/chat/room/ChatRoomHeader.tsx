@@ -15,6 +15,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
+  ButtonBase,
   Divider,
   IconButton,
   ListItemIcon,
@@ -45,8 +46,9 @@ type ChatRoomHeaderProps = {
   onLeave: () => Promise<void>;
   onBlock: () => void;
   onInvite: () => void;
-  onRename: () => void;
+  onEditDetails: () => void;
   onManageMembers: () => void;
+  onShowMembers: () => void;
   /** When provided, used instead of navigate('/chat-full') for Back button */
   onBack?: () => void;
   /** When true, show X icon instead of Back button (for popover) */
@@ -68,8 +70,9 @@ export const ChatRoomHeader = ({
   onLeave,
   onBlock,
   onInvite,
-  onRename,
+  onEditDetails,
   onManageMembers,
+  onShowMembers,
   onBack,
   closeIcon,
   onPopOut,
@@ -96,7 +99,7 @@ export const ChatRoomHeader = ({
   const avatarUrl =
     room?.room_type === 'dm'
       ? (otherMember?.profile?.avatar ?? undefined)
-      : undefined;
+      : (room?.image_url ?? undefined);
   const avatarAlt = displayName || 'Chat';
   const secondaryLabel =
     room?.room_type === 'group'
@@ -185,14 +188,14 @@ export const ChatRoomHeader = ({
         <MenuItem
           key="rename"
           onClick={() => {
-            onRename();
+            onEditDetails();
             setMenuAnchor(null);
           }}
         >
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Rename group" />
+          <ListItemText primary="Edit group details" />
         </MenuItem>,
         <MenuItem
           key="manage"
@@ -255,7 +258,7 @@ export const ChatRoomHeader = ({
     onLeave,
     onBlock,
     onInvite,
-    onRename,
+    onEditDetails,
     onManageMembers,
     onToggleFavorite,
     onRemoveConversation,
@@ -317,11 +320,25 @@ export const ChatRoomHeader = ({
           <Typography
             variant="subtitle2"
             fontWeight={700}
-            noWrap
+            noWrap={room?.room_type !== 'group'}
             sx={{ fontSize: '0.98rem', lineHeight: 1.2 }}
           >
             {displayName}
           </Typography>
+          {room?.room_type === 'group' && room.description ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: 'block',
+                mt: 0.25,
+                lineHeight: 1.35,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {room.description}
+            </Typography>
+          ) : null}
           {room?.room_type === 'dm' && otherUserId && (
             <OnlineIndicator
               otherUserId={otherUserId}
@@ -330,13 +347,32 @@ export const ChatRoomHeader = ({
             />
           )}
           {secondaryLabel ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 0.15 }}
-            >
-              {secondaryLabel}
-            </Typography>
+            room?.room_type === 'group' ? (
+              <ButtonBase
+                onClick={onShowMembers}
+                sx={{
+                  mt: 0.35,
+                  borderRadius: 1,
+                  color: 'text.secondary',
+                  justifyContent: 'flex-start',
+                  '&:hover, &:focus-visible': {
+                    color: 'text.primary',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '0.14em',
+                  },
+                }}
+              >
+                <Typography variant="caption">{secondaryLabel}</Typography>
+              </ButtonBase>
+            ) : (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mt: 0.15 }}
+              >
+                {secondaryLabel}
+              </Typography>
+            )
           ) : null}
         </Box>
       </Box>

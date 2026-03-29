@@ -105,7 +105,11 @@ import {
   seededShuffle,
   type FeedDisplayItem,
 } from '../../lib/feed/adRotation';
-import { shouldLoadMoreForDeepLink } from '../../lib/feed/deepLink';
+import {
+  getFeedPostElementId,
+  scrollToFeedPost,
+  shouldLoadMoreForDeepLink,
+} from '../../lib/feed/deepLink';
 import {
   createClosedImagePreviewState,
   createOpeningImagePreviewState,
@@ -624,8 +628,17 @@ const RepostEmbed = ({
   originalCreatedAt?: string | null;
   repostOriginalId: string | null;
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const displayName = originalName || originalHandle || 'Original member';
   const hasBody = Boolean(originalBody.trim());
+  const handleViewOriginalPost = () => {
+    if (!repostOriginalId) return;
+    if (location.pathname === '/feed' && scrollToFeedPost(repostOriginalId)) {
+      return;
+    }
+    navigate(`/feed?post=${encodeURIComponent(repostOriginalId)}`);
+  };
 
   return (
     <Box
@@ -639,27 +652,6 @@ const RepostEmbed = ({
         py: { xs: 1.1, sm: 1.25 },
       }}
     >
-      <Stack
-        direction="row"
-        spacing={0.75}
-        alignItems="center"
-        sx={{ mb: 0.95, color: 'text.secondary' }}
-      >
-        <RepeatOutlinedIcon sx={{ fontSize: 16, color: 'primary.light' }} />
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.76rem',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: 'primary.light',
-          }}
-        >
-          Original Post
-        </Typography>
-      </Stack>
-
       <Stack direction="row" spacing={1} alignItems="flex-start">
         <ProfileAvatar
           src={originalAvatarUrl ?? undefined}
@@ -722,20 +714,33 @@ const RepostEmbed = ({
           )}
 
           {repostOriginalId ? (
-            <Typography
-              component={RouterLink}
-              to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
+            <Link
+              component="button"
+              type="button"
               variant="caption"
+              onClick={handleViewOriginalPost}
               sx={{
                 mt: 0.95,
                 display: 'inline-flex',
                 color: 'primary.light',
                 textDecoration: 'none',
                 fontWeight: 600,
+                p: 0,
+                border: 0,
+                background: 'transparent',
+                cursor: 'pointer',
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
-              View original post
+              View Original Post
+            </Link>
+          ) : !repostOriginalId ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.95 }}
+            >
+              Original post unavailable.
             </Typography>
           ) : null}
         </Box>
@@ -1127,20 +1132,6 @@ const FeedCard = ({
                 ) : (
                   <Typography variant="caption" color="text.secondary">
                     original member
-                  </Typography>
-                )}
-                {repostOriginalId && (
-                  <Typography
-                    component={RouterLink}
-                    to={`/feed?post=${encodeURIComponent(repostOriginalId)}`}
-                    variant="caption"
-                    sx={{
-                      color: 'primary.light',
-                      textDecoration: 'underline',
-                      '&:hover': { color: 'text.primary' },
-                    }}
-                  >
-                    original post
                   </Typography>
                 )}
               </Stack>
@@ -3027,12 +3018,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       postParamProcessed.current = postParam;
       postParamLoadAttempts.current = 0;
       requestAnimationFrame(() => {
-        const el = document.getElementById(`post-${postParam}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          if (expandedCommentsPostId !== postParam) {
-            void handleCommentToggle(postParam);
-          }
+        const el = document.getElementById(getFeedPostElementId(postParam));
+        if (el && scrollToFeedPost(postParam)) {
           setSearchParams(
             (prev) => {
               const next = new URLSearchParams(prev);
@@ -3056,16 +3043,32 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     ) {
       postParamLoadAttempts.current += 1;
       void loadPage(nextCursor, true);
+      return;
+    }
+
+    if (!nextCursor) {
+      postParamProcessed.current = postParam;
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('post');
+          return next;
+        },
+        { replace: true },
+      );
+      showToast({
+        message: 'Original post unavailable.',
+        severity: 'info',
+      });
     }
   }, [
     postParam,
     items,
     loading,
     nextCursor,
-    expandedCommentsPostId,
-    handleCommentToggle,
     setSearchParams,
     loadPage,
+    showToast,
   ]);
 
   return (

@@ -5,6 +5,7 @@ import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import { StartDmDialog } from '../../components/chat/dialogs/StartDmDialog';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import type { ChatReportCategory } from '../../types/chat';
+import type { ChatGroupDetailsInput } from '../../lib/chat/groupDetails';
 
 type ChatPageDialogsProps = {
   uid: string;
@@ -24,7 +25,7 @@ type ChatPageDialogsProps = {
   createGroupOpen: boolean;
   blockDialogOpen: boolean;
   groupDialogOpen: boolean;
-  groupDialogMode: 'invite' | 'rename' | 'manage';
+  groupDialogMode: 'invite' | 'details' | 'manage' | 'members';
   reportOpen: boolean;
   reportTarget: { messageId?: string; userId?: string } | null;
   onSetStartDmOpen: (open: boolean) => void;
@@ -37,9 +38,12 @@ type ChatPageDialogsProps = {
     value: { messageId?: string; userId?: string } | null,
   ) => void;
   onStartDm: (userId: string) => Promise<void>;
-  onCreateGroup: (name: string, memberIds: string[]) => Promise<void>;
+  onCreateGroup: (
+    details: ChatGroupDetailsInput,
+    memberIds: string[],
+  ) => Promise<void>;
   onBlock: () => Promise<void>;
-  onRenameRoom: (name: string) => Promise<void>;
+  onSaveGroupDetails: (details: ChatGroupDetailsInput) => Promise<void>;
   onInviteMembers: (ids: string[]) => Promise<void>;
   onRemoveMember: (id: string) => Promise<void>;
   onTransferAdmin: (id: string) => Promise<void>;
@@ -74,7 +78,7 @@ export const ChatPageDialogs = ({
   onStartDm,
   onCreateGroup,
   onBlock,
-  onRenameRoom,
+  onSaveGroupDetails,
   onInviteMembers,
   onRemoveMember,
   onTransferAdmin,
@@ -119,9 +123,11 @@ export const ChatPageDialogs = ({
         onClose={() => onSetGroupDialogOpen(false)}
         roomId={roomId}
         roomName={room.name ?? ''}
+        roomDescription={room.description}
+        roomImageUrl={room.image_url}
         currentMembers={room.members ?? []}
         currentUserId={uid}
-        onRename={onRenameRoom}
+        onSaveDetails={onSaveGroupDetails}
         onInvite={onInviteMembers}
         onRemove={onRemoveMember}
         onTransferAdmin={onTransferAdmin}

@@ -16,14 +16,12 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import {
+  loadEligibleChatConnections,
+  type EligibleChatConnection,
+} from '../../../lib/chat/loadEligibleChatConnections';
 
-type ConnectionProfile = {
-  id: string;
-  handle: string;
-  display_name: string | null;
-  avatar: string | null;
-  email?: string | null;
-};
+type ConnectionProfile = EligibleChatConnection;
 
 type StartDmDialogProps = {
   open: boolean;
@@ -73,66 +71,9 @@ export const StartDmDialog = ({
           setConnections([]);
           return;
         }
-
-        const { data: myConns, error: connErr } = await supabase
-          .from('feed_connections')
-          .select('connected_user_id')
-          .eq('user_id', session.user.id);
-
+        const profileData = await loadEligibleChatConnections(session.user.id);
         if (cancelled) return;
-        if (connErr) {
-          setError('Could not load connections. Try again.');
-          setConnections([]);
-          return;
-        }
-        if (!myConns?.length) {
-          setConnections([]);
-          return;
-        }
-
-        const connIds = myConns.map((c) => c.connected_user_id);
-
-        const { data: mutualConns, error: mutualErr } = await supabase
-          .from('feed_connections')
-          .select('user_id')
-          .eq('connected_user_id', session.user.id)
-          .in('user_id', connIds);
-
-        if (cancelled) return;
-        if (mutualErr) {
-          setError('Could not load connections. Try again.');
-          setConnections([]);
-          return;
-        }
-
-        const mutualIds = new Set((mutualConns ?? []).map((m) => m.user_id));
-
-        const { data: blocks } = await supabase
-          .from('chat_blocks')
-          .select('blocker_id, blocked_user_id')
-          .or(
-            `blocker_id.eq.${session.user.id},blocked_user_id.eq.${session.user.id}`,
-          );
-
-        const blockedSet = new Set<string>();
-        (blocks ?? []).forEach((b) => {
-          if (b.blocker_id === session.user.id)
-            blockedSet.add(b.blocked_user_id);
-          else blockedSet.add(b.blocker_id);
-        });
-
-        const allowedIds = Array.from(mutualIds).filter(
-          (id) => !blockedSet.has(id),
-        );
-
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id, handle, display_name, avatar, email')
-          .in('id', allowedIds);
-
-        if (cancelled) return;
-
-        setConnections((profileData ?? []) as ConnectionProfile[]);
+        setConnections(profileData);
       } catch {
         if (!cancelled) {
           setError('Could not load connections. Try again.');

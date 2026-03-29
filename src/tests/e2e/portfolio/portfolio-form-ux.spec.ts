@@ -1,8 +1,16 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { fulfillPostgrest } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const IMAGE_FIXTURE = path.resolve(
+  __dirname,
+  '../../../../public/assets/logo.png',
+);
 
 test.describe('Add Project dialog UX', () => {
   let portfolioItems: Array<Record<string, unknown>>;
@@ -49,6 +57,17 @@ test.describe('Add Project dialog UX', () => {
     await page.route('**/rest/v1/profiles*', async (route) => {
       await fulfillPostgrest(route, [profile]);
     });
+
+    await page.route(
+      '**/storage/v1/object/project-sources/**',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ Key: 'project-sources-uploaded' }),
+        });
+      },
+    );
 
     await page.route('**/rest/v1/portfolio_items*', async (route) => {
       const method = route.request().method();
@@ -103,20 +122,154 @@ test.describe('Add Project dialog UX', () => {
     return dialog;
   };
 
-  test('uses URL-only source (no upload file or URL toggle)', async ({
+  test('shows a one-source project chooser', async ({ page }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await expect(
+      dialog.getByRole('button', { name: /upload file/i }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: /enter project url/i }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('textbox', { name: 'Project URL' }),
+    ).toBeVisible();
+    await expect(dialog.getByText(/use exactly one source/i)).toBeVisible();
+  });
+
+  test('disables the project url field while file source mode is active', async ({
     page,
   }) => {
     const dialog = await openAddProjectDialog(page);
 
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
     await expect(
       dialog.getByRole('textbox', { name: 'Project URL' }),
+    ).toBeDisabled();
+    await expect(
+      dialog.getByText(
+        /url entry is disabled while a project file is selected/i,
+      ),
+    ).toBeVisible();
+  });
+
+  test('keeps save disabled until exactly one project source is provided', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByLabel('Project Name').fill('Needs Source');
+    await selectResearchCategoryInProjectDialog(page, dialog);
+
+    await expect(
+      dialog.getByRole('button', { name: /add to portfolio/i }),
+    ).toBeDisabled();
+    await expect(dialog.getByText(/add one project source/i)).toBeVisible();
+  });
+
+  test('clears a typed project url when switching to file mode', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    const projectUrlField = dialog.getByRole('textbox', {
+      name: 'Project URL',
+    });
+    await projectUrlField.fill('https://example.com/typed-url');
+    await expect(projectUrlField).toHaveValue('https://example.com/typed-url');
+
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
+    await expect(projectUrlField).toBeDisabled();
+
+    await dialog.getByRole('button', { name: /enter project url/i }).click();
+    await expect(projectUrlField).toHaveValue('');
+  });
+
+  test('rejects unsupported project source files', async ({ page }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
+    await dialog.getByTestId('project-source-file-input').setInputFiles({
+      name: 'artifact.zip',
+      mimeType: 'application/zip',
+      buffer: Buffer.from('zip'),
+    });
+
+    await expect(
+      dialog.getByText(
+        /Project files must be JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, MP4, WEBM, or MOV\./i,
+      ),
     ).toBeVisible();
     await expect(
-      dialog.getByRole('button', { name: /upload file/i }),
-    ).toHaveCount(0);
+      dialog.getByRole('button', { name: /add to portfolio/i }),
+    ).toBeDisabled();
+    expect(postedPortfolioPayloads).toHaveLength(0);
+  });
+
+  test('shows size guidance for oversized project source files', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
+    await dialog.getByTestId('project-source-file-input').setInputFiles({
+      name: 'artifact.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.alloc(2 * 1024 * 1024 + 1, 1),
+    });
+
     await expect(
-      dialog.getByRole('button', { name: /enter project url/i }),
-    ).toHaveCount(0);
+      dialog.getByText(/Project files should be about 2 MB or smaller\./i),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: /add to portfolio/i }),
+    ).toBeDisabled();
+    expect(postedPortfolioPayloads).toHaveLength(0);
+  });
+
+  test('saves a project with an uploaded file as the only source', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByLabel('Project Name').fill('File Source Project');
+    await selectResearchCategoryInProjectDialog(page, dialog);
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
+    await dialog
+      .getByTestId('project-source-file-input')
+      .setInputFiles(IMAGE_FIXTURE);
+
+    await expect(
+      dialog.getByRole('textbox', { name: 'Project URL' }),
+    ).toBeDisabled();
+
+    await dialog.getByRole('button', { name: /add to portfolio/i }).click();
+    await expect.poll(() => postedPortfolioPayloads.length).toBe(1);
+    await expect(dialog).not.toBeVisible({ timeout: 15_000 });
+
+    expect(postedPortfolioPayloads).toHaveLength(1);
+    expect(postedPortfolioPayloads[0]?.project_url).toMatch(/project-sources/i);
+    await expect(page.getByText('File Source Project')).toBeVisible();
+  });
+
+  test('keeps the source chooser usable on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dialog = await openAddProjectDialog(page);
+
+    const uploadButton = dialog.getByRole('button', { name: /^upload file$/i });
+    const urlButton = dialog.getByRole('button', {
+      name: /enter project url/i,
+    });
+
+    await expect(uploadButton).toBeVisible();
+    await expect(urlButton).toBeVisible();
+
+    const uploadBox = await uploadButton.boundingBox();
+    const urlBox = await urlButton.boundingBox();
+
+    expect(uploadBox).not.toBeNull();
+    expect(urlBox).not.toBeNull();
+    expect((urlBox?.y ?? 0) - (uploadBox?.y ?? 0)).toBeGreaterThan(20);
   });
 
   test('shows tooltip text when hovering form fields', async ({ page }) => {
@@ -209,7 +362,8 @@ test.describe('Add Project dialog UX', () => {
       .fill('https://example.com/custom-category-project');
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
-    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+    await expect.poll(() => postedPortfolioPayloads.length).toBe(1);
+    await expect(dialog).not.toBeVisible({ timeout: 15_000 });
 
     expect(postedPortfolioPayloads).toHaveLength(1);
     expect(postedPortfolioPayloads[0]).toMatchObject({

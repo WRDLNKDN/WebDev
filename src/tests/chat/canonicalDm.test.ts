@@ -11,10 +11,12 @@ function makeDmRoom(
   memberIds: string[],
   overrides: Partial<ChatRoomWithMembers> = {},
 ): ChatRoomWithMembers {
-  return {
+  const room: ChatRoomWithMembers = {
     id,
     room_type: 'dm',
     name: null,
+    description: null,
+    image_url: null,
     created_by: memberIds[0] ?? 'user-a',
     created_at: '2026-03-10T10:00:00.000Z',
     updated_at: '2026-03-10T10:00:00.000Z',
@@ -28,6 +30,10 @@ function makeDmRoom(
     })),
     ...overrides,
   };
+
+  room.description = overrides.description ?? null;
+  room.image_url = overrides.image_url ?? null;
+  return room;
 }
 
 describe('canonical DM room helpers', () => {

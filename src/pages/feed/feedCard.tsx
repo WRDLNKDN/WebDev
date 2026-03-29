@@ -230,7 +230,6 @@ export const FeedCard = ({
                 repostDisplayName={displayName}
                 repostOriginalHandle={repostOriginalHandle}
                 repostOriginalName={repostOriginalName}
-                repostOriginalId={repostOriginalId}
               />
             ) : undefined,
         }}

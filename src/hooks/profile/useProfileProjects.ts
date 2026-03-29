@@ -1,8 +1,10 @@
 import { supabase } from '../../lib/auth/supabaseClient';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
+  getProjectSourceFileError,
   invokePortfolioThumbnailGeneration,
   uploadPublicProjectAsset,
+  PROJECT_SOURCE_BUCKET,
 } from '../../lib/portfolio/projectMedia';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import {
@@ -50,14 +52,32 @@ export const addProjectItem = async ({
   );
 
   const thumbnailFile = files?.thumbnailFile;
+  const sourceFile = files?.sourceFile;
 
   const projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
-  if (!projectUrlTrimmed) {
-    throw new Error('Add a project URL.');
+  if (sourceFile && projectUrlTrimmed) {
+    throw new Error(
+      'Choose either an uploaded file or a project URL, not both.',
+    );
   }
-  if (!isExternalProjectUrl(projectUrlTrimmed)) {
+  if (!sourceFile && !projectUrlTrimmed) {
+    throw new Error('Add a file or a project URL before saving.');
+  }
+  if (sourceFile) {
+    const sourceError = getProjectSourceFileError(sourceFile);
+    if (sourceError) throw new Error(sourceError);
+  } else if (!isExternalProjectUrl(projectUrlTrimmed)) {
     throw new Error('Project URL must be an external URL (e.g. https://...).');
   }
+
+  const projectSourceUrl = sourceFile
+    ? await uploadPublicProjectAsset({
+        userId: session.user.id,
+        file: sourceFile,
+        bucket: PROJECT_SOURCE_BUCKET,
+        prefix: 'project-source',
+      })
+    : projectUrlTrimmed;
 
   let finalImageUrl =
     sanitizePortfolioUrlInput(newProject.image_url ?? '') || null;
@@ -70,21 +90,23 @@ export const addProjectItem = async ({
     });
   }
 
-  const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
-  if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  if (!sourceFile) {
+    const projectUrlSafetyError = getPortfolioUrlSafetyError(projectUrlTrimmed);
+    if (projectUrlSafetyError) throw new Error(projectUrlSafetyError);
+  }
 
-  const linkType = getLinkType(projectUrlTrimmed);
+  const linkType = getLinkType(projectSourceUrl);
   const normalizedUrl =
     linkType === 'google_doc' ||
     linkType === 'google_sheet' ||
     linkType === 'google_slides'
-      ? normalizeGoogleUrl(projectUrlTrimmed)
-      : projectUrlTrimmed;
+      ? normalizeGoogleUrl(projectSourceUrl)
+      : projectSourceUrl;
   const embedUrl =
     linkType === 'google_doc' ||
     linkType === 'google_sheet' ||
     linkType === 'google_slides'
-      ? normalizedUrl !== projectUrlTrimmed
+      ? normalizedUrl !== projectSourceUrl
         ? normalizedUrl
         : null
       : null;
@@ -105,7 +127,7 @@ export const addProjectItem = async ({
       owner_id: session.user.id,
       title: newProject.title.trim(),
       description: newProject.description.trim() || null,
-      project_url: projectUrlTrimmed,
+      project_url: projectSourceUrl,
       image_url: finalImageUrl,
       tech_stack: normalizeProjectCategories(newProject.tech_stack, 1),
       is_highlighted: Boolean(newProject.is_highlighted),

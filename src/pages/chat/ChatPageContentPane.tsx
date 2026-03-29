@@ -38,8 +38,9 @@ type ChatPageContentPaneProps = {
   onLeave: () => Promise<void>;
   onOpenBlock: () => void;
   onOpenInvite: () => void;
-  onOpenRename: () => void;
+  onOpenDetails: () => void;
   onOpenManage: () => void;
+  onOpenMembers: () => void;
   onBack: () => void;
   onRefresh: () => void;
   onLoadOlder: () => void;
@@ -74,8 +75,9 @@ export const ChatPageContentPane = ({
   onLeave,
   onOpenBlock,
   onOpenInvite,
-  onOpenRename,
+  onOpenDetails,
   onOpenManage,
+  onOpenMembers,
   onBack,
   onRefresh,
   onLoadOlder,
@@ -145,8 +147,9 @@ export const ChatPageContentPane = ({
             onLeave={onLeave}
             onBlock={onOpenBlock}
             onInvite={onOpenInvite}
-            onRename={onOpenRename}
+            onEditDetails={onOpenDetails}
             onManageMembers={onOpenManage}
+            onShowMembers={onOpenMembers}
             onBack={onBack}
           />
 

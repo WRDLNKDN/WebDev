@@ -36,14 +36,16 @@ describe('chat attachment validation', () => {
     ).toContain('Unsupported type');
   });
 
-  it('rejects file larger than 2MB', () => {
+  it('optimizes non-GIF files before rejecting when they are within the 6MB ceiling', () => {
     expect(
-      getChatAttachmentRejectionReason({
-        name: 'big.pdf',
+      getChatAttachmentProcessingPlan({
         type: 'application/pdf',
         size: 3 * 1024 * 1024,
       }),
-    ).toBe('File must be 2MB or smaller.');
+    ).toMatchObject({
+      accepted: true,
+      mode: 'optimize',
+    });
   });
 
   it('allows GIFs under the 6MB upload ceiling', () => {
@@ -75,6 +77,18 @@ describe('chat attachment validation', () => {
     ).toMatchObject({
       accepted: true,
       mode: 'direct',
+    });
+  });
+
+  it('converts larger GIFs instead of rejecting them when they are within the 6MB ceiling', () => {
+    expect(
+      getChatAttachmentProcessingPlan({
+        type: 'image/gif',
+        size: 5 * 1024 * 1024,
+      }),
+    ).toMatchObject({
+      accepted: true,
+      mode: 'gif_processing',
     });
   });
 

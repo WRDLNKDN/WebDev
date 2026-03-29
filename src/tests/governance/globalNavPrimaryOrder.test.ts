@@ -13,32 +13,32 @@ const componentPath = path.resolve(
 describe('global navigation governance (IA)', () => {
   it('exports canonical authenticated primary order', () => {
     expect([...GLOBAL_NAV_AUTHENTICATED_PRIMARY_ORDER]).toEqual([
-      'feed',
-      'directory',
       'chat',
-      'profile',
+      'directory',
       'events',
+      'feed',
+      'profile',
       'store',
     ]);
   });
 
   it('declares GlobalNavAuthenticatedPrimary blocks in canonical key order', () => {
     const src = readFileSync(componentPath, 'utf8');
-    const feed = src.indexOf('key="global-nav-feed"');
-    const directory = src.indexOf('key="global-nav-directory"');
     const chat = src.indexOf('key="global-nav-chat"');
-    const profile = src.indexOf('key="global-nav-profile"');
+    const directory = src.indexOf('key="global-nav-directory"');
     const events = src.indexOf('key="global-nav-events"');
+    const feed = src.indexOf('key="global-nav-feed"');
+    const profile = src.indexOf('key="global-nav-profile"');
     const store = src.indexOf('key="global-nav-store"');
-    expect(feed).toBeGreaterThan(-1);
-    expect(directory).toBeGreaterThan(-1);
     expect(chat).toBeGreaterThan(-1);
-    expect(profile).toBeGreaterThan(-1);
+    expect(directory).toBeGreaterThan(-1);
     expect(events).toBeGreaterThan(-1);
-    expect(feed).toBeLessThan(directory);
-    expect(directory).toBeLessThan(chat);
-    expect(chat).toBeLessThan(profile);
-    expect(profile).toBeLessThan(events);
-    expect(events).toBeLessThan(store);
+    expect(feed).toBeGreaterThan(-1);
+    expect(profile).toBeGreaterThan(-1);
+    expect(chat).toBeLessThan(directory);
+    expect(directory).toBeLessThan(events);
+    expect(events).toBeLessThan(feed);
+    expect(feed).toBeLessThan(profile);
+    expect(profile).toBeLessThan(store);
   });
 });

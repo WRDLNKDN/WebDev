@@ -142,7 +142,7 @@ test.describe('MVP route smoke', () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
     await expect(
-      page.getByRole('button', { name: 'Profile menu' }),
+      page.getByRole('button', { name: /manage profile/i }),
     ).toBeVisible({
       timeout: 25_000,
     });

@@ -245,7 +245,7 @@ test.describe('Visual audit baselines', () => {
     });
 
     const profileMenuButton = page.getByRole('button', {
-      name: 'Profile menu',
+      name: /manage profile/i,
     });
     await expect(profileMenuButton).toBeEnabled({ timeout: 20_000 });
     await profileMenuButton.click({ force: true });
@@ -270,7 +270,7 @@ test.describe('Visual audit baselines', () => {
     });
 
     await expect(
-      linksSection.getByRole('button', { name: 'Add links' }),
+      linksSection.getByRole('button', { name: /add link/i }),
     ).toHaveScreenshot('dashboard-links-add-button.png', {
       animations: 'disabled',
       caret: 'hide',

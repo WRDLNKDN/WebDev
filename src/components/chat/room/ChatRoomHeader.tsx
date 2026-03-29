@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
@@ -99,7 +100,9 @@ export const ChatRoomHeader = ({
   const avatarUrl =
     room?.room_type === 'dm'
       ? (otherMember?.profile?.avatar ?? undefined)
-      : (room?.image_url ?? undefined);
+      : room
+        ? (createNormalizedGroupImageAsset(room)?.displayUrl ?? room.image_url)
+        : undefined;
   const avatarAlt = displayName || 'Chat';
   const secondaryLabel =
     room?.room_type === 'group'

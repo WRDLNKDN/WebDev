@@ -1,4 +1,5 @@
 import { getLinkType, getLinkTypeLabel } from './linkUtils';
+import { createNormalizedPortfolioAsset } from '../media/assets';
 import { RESUME_ITEM_ID, type PortfolioItem } from '../../types/portfolio';
 
 export const getProjectResolvedType = (project: PortfolioItem) =>
@@ -9,11 +10,8 @@ export const getProjectResolvedType = (project: PortfolioItem) =>
 export const getProjectPreviewMediaUrl = (
   project: PortfolioItem,
 ): string | null => {
-  const resolvedType = getProjectResolvedType(project);
-  if (project.image_url) return project.image_url;
-  if (project.thumbnail_url) return project.thumbnail_url;
-  if (resolvedType === 'image') return project.project_url?.trim() ?? null;
-  return null;
+  const asset = createNormalizedPortfolioAsset(project);
+  return asset.displayUrl ?? asset.thumbnailUrl ?? asset.originalUrl ?? null;
 };
 
 export const getProjectPreviewFallbackLabel = (

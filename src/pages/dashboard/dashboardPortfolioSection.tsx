@@ -198,12 +198,12 @@ export const DashboardPortfolioSection = ({
             endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
             onClick={(e) => onOpenAddMenu(e.currentTarget)}
             disabled={loading}
-            aria-label="Add resume or project"
+            aria-label="Add to portfolio"
             aria-haspopup="true"
             aria-expanded={Boolean(addMenuAnchor)}
             sx={addButtonSx}
           >
-            Add
+            Add to Portfolio
           </Button>
           <Menu
             anchorEl={addMenuAnchor}
@@ -218,11 +218,11 @@ export const DashboardPortfolioSection = ({
           >
             {!resumeUrl ? (
               <MenuItem onClick={handleOpenResumePicker} sx={{ py: 1.25 }}>
-                + Add Resume
+                Add Resume
               </MenuItem>
             ) : null}
             <MenuItem onClick={handleOpenNewProjectDialog} sx={{ py: 1.25 }}>
-              + Add Project
+              Add Project
             </MenuItem>
           </Menu>
         </Stack>

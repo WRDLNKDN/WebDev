@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/auth/supabaseClient';
+import { deriveSiblingPublicUrl } from '../../lib/media/assets';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
   getProjectSourceFileError,
@@ -76,6 +77,9 @@ export const addProjectItem = async ({
         file: sourceFile,
         bucket: PROJECT_SOURCE_BUCKET,
         prefix: 'project-source',
+        returnVariant: sourceFile.type.toLowerCase().startsWith('image/')
+          ? 'original'
+          : 'display',
       })
     : projectUrlTrimmed;
 
@@ -87,6 +91,7 @@ export const addProjectItem = async ({
       file: thumbnailFile,
       bucket: 'project-images',
       prefix: 'project-thumbnail',
+      returnVariant: 'display',
     });
   }
 
@@ -111,7 +116,12 @@ export const addProjectItem = async ({
         : null
       : null;
 
-  const thumbnailStatus = finalImageUrl ? null : 'pending';
+  const sourceFileIsImage = Boolean(sourceFile && linkType === 'image');
+  const derivedThumbnailUrl =
+    sourceFileIsImage && projectSourceUrl.includes('/original.')
+      ? deriveSiblingPublicUrl(projectSourceUrl, 'thumbnail', 'jpg')
+      : null;
+  const thumbnailStatus = finalImageUrl || sourceFileIsImage ? null : 'pending';
   const maxOrder =
     projects.length > 0
       ? Math.max(
@@ -136,6 +146,7 @@ export const addProjectItem = async ({
       embed_url: embedUrl ?? undefined,
       resolved_type: linkType,
       thumbnail_status: thumbnailStatus,
+      thumbnail_url: finalImageUrl ? null : derivedThumbnailUrl,
     })
     .select()
     .single();

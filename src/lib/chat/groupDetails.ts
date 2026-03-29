@@ -1,5 +1,4 @@
-import { supabase } from '../auth/supabaseClient';
-import { processAvatarForUpload } from '../utils/avatarResize';
+import { uploadStructuredPublicAsset } from '../media/ingestion';
 
 export const CHAT_GROUP_DESCRIPTION_MAX = 256;
 export const CHAT_GROUP_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp';
@@ -29,23 +28,12 @@ export async function uploadChatGroupImageAsset(params: {
   currentUserId: string;
 }): Promise<string> {
   assertValidChatGroupImage(params.file);
-  const { blob } = await processAvatarForUpload(params.file);
-  const ext =
-    blob.type === 'image/png'
-      ? 'png'
-      : blob.type === 'image/webp'
-        ? 'webp'
-        : 'jpg';
-  const path = `groups/${params.currentUserId}-${Date.now()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from('avatars')
-    .upload(path, blob, { contentType: blob.type, upsert: false });
-  if (error) throw error;
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('avatars').getPublicUrl(path);
-
-  return publicUrl;
+  const asset = await uploadStructuredPublicAsset({
+    bucket: 'avatars',
+    ownerId: params.currentUserId,
+    scope: 'groups',
+    file: params.file,
+    retainOriginal: true,
+  });
+  return asset.displayUrl;
 }

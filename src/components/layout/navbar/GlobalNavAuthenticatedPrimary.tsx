@@ -40,7 +40,7 @@ type StoreNavParams = {
 };
 
 /**
- * Authenticated primary nav: Feed → Directory → Chat → Profile → Events.
+ * Authenticated primary nav in alphabetical order.
  * Store is rendered beside the brand in the main navbar, and in the mobile drawer.
  * Renders nothing when unauthenticated. Omitted flags produce no nodes (no placeholders).
  */
@@ -119,11 +119,11 @@ export const GlobalNavAuthenticatedPrimary = ({
 
   return (
     <>
-      {feedEnabled ? (
+      {showChat ? (
         <Button
-          key="global-nav-feed"
+          key="global-nav-chat"
           component={RouterLink}
-          to="/feed"
+          to="/chat-full"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
             color: 'rgba(255,255,255,0.85)',
@@ -131,17 +131,17 @@ export const GlobalNavAuthenticatedPrimary = ({
             ...(variant === 'desktop'
               ? {
                   ...desktopButtonSx,
-                  ...desktopActiveSx(isFeedActive),
+                  ...desktopActiveSx(isChatActive),
                 }
               : {
                   justifyContent: 'flex-start',
                   color: drawerLinkColor,
                   py: 1.5,
-                  ...drawerActiveWrap(isFeedActive),
+                  ...drawerActiveWrap(isChatActive),
                 }),
           }}
         >
-          Feed
+          Chat
         </Button>
       ) : null}
       {directoryEnabled ? (
@@ -169,11 +169,11 @@ export const GlobalNavAuthenticatedPrimary = ({
           Directory
         </Button>
       ) : null}
-      {showChat ? (
+      {eventsEnabled ? (
         <Button
-          key="global-nav-chat"
+          key="global-nav-events"
           component={RouterLink}
-          to="/chat-full"
+          to="/events"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
             color: 'rgba(255,255,255,0.85)',
@@ -181,17 +181,42 @@ export const GlobalNavAuthenticatedPrimary = ({
             ...(variant === 'desktop'
               ? {
                   ...desktopButtonSx,
-                  ...desktopActiveSx(isChatActive),
+                  ...desktopActiveSx(isEventsActive),
                 }
               : {
                   justifyContent: 'flex-start',
                   color: drawerLinkColor,
                   py: 1.5,
-                  ...drawerActiveWrap(isChatActive),
+                  ...drawerActiveWrap(isEventsActive),
                 }),
           }}
         >
-          Chat
+          Events
+        </Button>
+      ) : null}
+      {feedEnabled ? (
+        <Button
+          key="global-nav-feed"
+          component={RouterLink}
+          to="/feed"
+          onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
+          sx={{
+            color: 'rgba(255,255,255,0.85)',
+            textTransform: 'none',
+            ...(variant === 'desktop'
+              ? {
+                  ...desktopButtonSx,
+                  ...desktopActiveSx(isFeedActive),
+                }
+              : {
+                  justifyContent: 'flex-start',
+                  color: drawerLinkColor,
+                  py: 1.5,
+                  ...drawerActiveWrap(isFeedActive),
+                }),
+          }}
+        >
+          Feed
         </Button>
       ) : null}
       {dashboardEnabled ? (
@@ -219,33 +244,8 @@ export const GlobalNavAuthenticatedPrimary = ({
           Profile
         </Button>
       ) : null}
-      {eventsEnabled ? (
-        <Button
-          key="global-nav-events"
-          component={RouterLink}
-          to="/events"
-          onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
-          sx={{
-            color: 'rgba(255,255,255,0.85)',
-            textTransform: 'none',
-            ...(variant === 'desktop'
-              ? {
-                  ...desktopButtonSx,
-                  ...desktopActiveSx(isEventsActive),
-                }
-              : {
-                  justifyContent: 'flex-start',
-                  color: drawerLinkColor,
-                  py: 1.5,
-                  ...drawerActiveWrap(isEventsActive),
-                }),
-          }}
-        >
-          Events
-        </Button>
-      ) : null}
-      {variant === 'drawer' ? storeButton : null}
       {variant === 'drawer' ? kickstarterButton : null}
+      {variant === 'drawer' ? storeButton : null}
     </>
   );
 };

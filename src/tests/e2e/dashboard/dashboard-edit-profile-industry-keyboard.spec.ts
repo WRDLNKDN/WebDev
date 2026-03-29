@@ -55,7 +55,7 @@ test.describe('Dashboard edit profile keyboard UX', () => {
     });
 
     const profileMenuButton = page.getByRole('button', {
-      name: 'Profile menu',
+      name: /manage profile/i,
     });
     await expect(profileMenuButton).toBeEnabled({ timeout: 20_000 });
     await profileMenuButton.click({ force: true });

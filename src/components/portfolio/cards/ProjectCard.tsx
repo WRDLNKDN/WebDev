@@ -9,15 +9,13 @@ import type { SxProps, Theme } from '@mui/material';
 import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
+import { AssetThumbnail } from '../../media/AssetThumbnail';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import { getLinkType } from '../../../lib/portfolio/linkUtils';
-import {
-  getProjectPreviewFallbackLabel,
-  getProjectPreviewMediaUrl,
-} from '../../../lib/portfolio/projectPreview';
+import { getProjectPreviewFallbackLabel } from '../../../lib/portfolio/projectPreview';
 import { CANDY_BLUEY } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
+import { createNormalizedPortfolioAsset } from '../../../lib/media/assets';
 
 /** True if URL is external (http/https). Internal paths start with / but not //. */
 function isExternalUrl(url: string): boolean {
@@ -85,7 +83,7 @@ export const ProjectCard = ({
       return null;
     }
   })();
-  const thumbnailUrl = getProjectPreviewMediaUrl(project);
+  const previewAsset = createNormalizedPortfolioAsset(project);
   const fallbackLabel = getProjectPreviewFallbackLabel(project);
   const ownerActionSx = {
     bgcolor: 'transparent',
@@ -154,7 +152,7 @@ export const ProjectCard = ({
         ] as SxProps<Theme>
       }
     >
-      {thumbnailUrl ? (
+      {previewAsset ? (
         <Box
           sx={{
             width: '100%',
@@ -167,34 +165,20 @@ export const ProjectCard = ({
             borderBottom: '1px solid rgba(156,187,217,0.18)',
           }}
         >
-          <Box
-            component="img"
-            src={thumbnailUrl}
-            alt={project.title}
-            width={400}
-            height={300}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        </Box>
-      ) : null}
-      {!thumbnailUrl && !isShowcase ? (
-        <Box
-          sx={{
-            width: '100%',
-            minHeight: { xs: 72, sm: 80 },
-            aspectRatio: '16 / 9',
-            maxHeight: { xs: 88, md: 100 },
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: '1px solid rgba(156,187,217,0.18)',
-          }}
-        >
-          <PortfolioPreviewFallback
-            project={project}
-            label={fallbackLabel}
+          <AssetThumbnail
+            asset={previewAsset}
+            alt={project.title || fallbackLabel}
             compact
+            loadingLabel={
+              previewAsset.processingState === 'optimizing'
+                ? 'Generating preview…'
+                : undefined
+            }
+            sx={{
+              minHeight: { xs: 72, sm: 80 },
+              maxHeight: { xs: 88, md: 100 },
+              borderBottom: 'none',
+            }}
           />
         </Box>
       ) : null}

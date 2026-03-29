@@ -20,7 +20,7 @@ test.describe('Dashboard dialog dismissal', () => {
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
 
     const profileMenuButton = page.getByRole('button', {
-      name: 'Profile menu',
+      name: /manage profile/i,
     });
     await expect(profileMenuButton).toBeVisible({ timeout: 20_000 });
     await expect(profileMenuButton).toBeEnabled({ timeout: 20_000 });

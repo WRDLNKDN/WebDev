@@ -52,7 +52,7 @@ describe('project media validation', () => {
     );
 
     expect(getProjectSourceFileError(file)).toContain(
-      'Project files should be about 2 MB or smaller.',
+      'Project files can be optimized automatically up to about 6 MB.',
     );
   });
 
@@ -74,7 +74,7 @@ describe('project media validation', () => {
     );
 
     expect(getProjectThumbnailFileError(file)).toContain(
-      'Optional thumbnails are limited to about 2 MB.',
+      'Optional thumbnails can be optimized automatically up to about 6 MB.',
     );
   });
 

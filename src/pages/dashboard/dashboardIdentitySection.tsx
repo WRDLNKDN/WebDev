@@ -222,7 +222,7 @@ export const DashboardIdentitySection = ({
               onClick={(e) => onOpenProfileMenu(e.currentTarget)}
               endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
               disabled={loading}
-              aria-label="Profile menu"
+              aria-label="Manage profile"
               aria-haspopup="true"
               aria-expanded={Boolean(profileMenuAnchor)}
               sx={{
@@ -238,7 +238,7 @@ export const DashboardIdentitySection = ({
                 },
               }}
             >
-              Profile
+              Manage Profile
             </Button>
             <Button
               variant="outlined"
@@ -273,6 +273,9 @@ export const DashboardIdentitySection = ({
             <MenuItem onClick={onOpenEditProfile} sx={{ py: 1.25 }}>
               Edit Profile
             </MenuItem>
+            <MenuItem onClick={onOpenShare} sx={{ py: 1.25 }}>
+              Share My Profile
+            </MenuItem>
             {onViewProfile ? (
               <MenuItem
                 component={RouterLink}
@@ -283,9 +286,6 @@ export const DashboardIdentitySection = ({
                 View Profile
               </MenuItem>
             ) : null}
-            <MenuItem onClick={onOpenShare} sx={{ py: 1.25 }}>
-              Share My Profile
-            </MenuItem>
           </Menu>
         </>
       }

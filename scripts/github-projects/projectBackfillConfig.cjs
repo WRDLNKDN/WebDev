@@ -1,6 +1,6 @@
 /**
  * Shared config reader for GitHub Project v2 backfill workflows.
- * Supports workflow_dispatch inputs and repository variables for scheduled runs.
+ * Supports workflow_dispatch inputs plus workflow-provided env for scheduled runs.
  */
 module.exports = async function getProjectBackfillConfig(
   github,
@@ -51,13 +51,13 @@ module.exports = async function getProjectBackfillConfig(
 
   if (ownerType !== 'org' && ownerType !== 'user') {
     core.setFailed(
-      'owner_type is required and must be "org" or "user". For scheduled runs, set GH_PROJECT_OWNER_TYPE or run from a repository owned by that project owner.',
+      'owner_type is required and must be "org" or "user". For scheduled runs, provide GH_PROJECT_OWNER_TYPE through the workflow env, or run from a repository owned by that project owner.',
     );
     return null;
   }
   if (!ownerLogin || !Number.isFinite(projectNumber)) {
     core.setFailed(
-      'owner_login and project_number are required. For scheduled runs, set GH_PROJECT_OWNER_LOGIN and GH_PROJECT_NUMBER repository variables.',
+      'owner_login and project_number are required. For scheduled runs, provide GH_PROJECT_OWNER_LOGIN and GH_PROJECT_NUMBER through the workflow env.',
     );
     return null;
   }

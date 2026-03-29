@@ -253,14 +253,14 @@ export const DashboardLinksSection = ({
             startIcon={<AddIcon sx={{ fontSize: 16 }} />}
             onClick={onOpenLinks}
             disabled={loading}
-            aria-label="Add links"
+            aria-label="Add link"
             sx={{
               ...addButtonSx,
               minHeight: { xs: 44, sm: 34 },
               width: { xs: '100%', sm: 'auto' },
             }}
           >
-            Add
+            Add Link
           </Button>
         </Stack>
 
@@ -271,15 +271,10 @@ export const DashboardLinksSection = ({
               border: '1px solid rgba(156,187,217,0.22)',
               bgcolor: 'rgba(0,0,0,0.2)',
               p: { xs: 2, sm: 2.25 },
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 2, sm: 3 },
-              alignItems: { xs: 'stretch', sm: 'flex-start' },
             }}
           >
             <Box
               sx={{
-                flex: '1 1 auto',
                 minWidth: 0,
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -311,20 +306,6 @@ export const DashboardLinksSection = ({
                 </Typography>
               </Box>
             </Box>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={onOpenLinks}
-              disabled={loading}
-              aria-label="Add your first link"
-              sx={{
-                ...addButtonSx,
-                alignSelf: { xs: 'stretch', sm: 'center' },
-              }}
-            >
-              Add a link
-            </Button>
           </Box>
         ) : (
           <Box

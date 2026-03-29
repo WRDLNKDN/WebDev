@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/auth/supabaseClient';
+import { deriveSiblingPublicUrl } from '../../lib/media/assets';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
@@ -125,6 +126,9 @@ export const updateProjectItem = async ({
         file: sourceFile,
         bucket: PROJECT_SOURCE_BUCKET,
         prefix: 'project-source',
+        returnVariant: sourceFile.type.toLowerCase().startsWith('image/')
+          ? 'original'
+          : 'display',
       })
     : projectUrlTrimmed;
 
@@ -136,6 +140,7 @@ export const updateProjectItem = async ({
       file: thumbnailFile,
       bucket: 'project-images',
       prefix: 'project-thumbnail',
+      returnVariant: 'display',
     });
   }
 
@@ -160,7 +165,12 @@ export const updateProjectItem = async ({
         : null
       : null;
 
-  const thumbnailStatus = finalImageUrl ? null : 'pending';
+  const sourceFileIsImage = Boolean(sourceFile && linkType === 'image');
+  const derivedThumbnailUrl =
+    sourceFileIsImage && projectSourceUrl.includes('/original.')
+      ? deriveSiblingPublicUrl(projectSourceUrl, 'thumbnail', 'jpg')
+      : null;
+  const thumbnailStatus = finalImageUrl || sourceFileIsImage ? null : 'pending';
 
   const { data, error: updateError } = await supabase
     .from('portfolio_items')
@@ -175,7 +185,7 @@ export const updateProjectItem = async ({
       embed_url: embedUrl ?? undefined,
       resolved_type: linkType,
       thumbnail_status: thumbnailStatus,
-      thumbnail_url: null,
+      thumbnail_url: finalImageUrl ? null : derivedThumbnailUrl,
     })
     .eq('id', projectId)
     .eq('owner_id', session.user.id)

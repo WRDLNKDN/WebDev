@@ -121,6 +121,8 @@ describe('Home guest marketing video', () => {
 
     const html = container.innerHTML;
     expect(html.indexOf('What Makes This Different')).toBeGreaterThan(-1);
+    expect(html).toContain('See the idea in motion');
+    expect(html).toContain('Play Why WRDLNKDN video');
     expect(html.indexOf('Why WRDLNKDN video')).toBeGreaterThan(
       html.indexOf('What Makes This Different'),
     );

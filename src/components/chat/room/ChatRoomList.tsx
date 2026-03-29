@@ -25,6 +25,7 @@ import {
   deriveVisibleChatRooms,
   getChatRoomLabel,
 } from '../../../lib/chat/roomListState';
+import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
 import { RemoveChatConfirmDialog } from '../dialogs/RemoveChatConfirmDialog';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import {
@@ -377,7 +378,9 @@ export const ChatRoomList = ({
                     ? (room.members?.find(
                         (member) => member.user_id !== currentUserId,
                       )?.profile?.avatar ?? undefined)
-                    : (room.image_url ?? undefined)
+                    : (createNormalizedGroupImageAsset(room)?.displayUrl ??
+                      room.image_url ??
+                      undefined)
                 }
                 alt={getChatRoomLabel(room, currentUserId)}
                 size="small"

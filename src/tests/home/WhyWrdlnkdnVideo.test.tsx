@@ -55,10 +55,9 @@ describe('WhyWrdlnkdnVideo', () => {
       root.render(<WhyWrdlnkdnVideo />);
     });
 
-    const iframe = container.querySelector('iframe');
-    expect(iframe?.getAttribute('src')).toBe(
-      'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0',
-    );
+    const preview = container.querySelector('button');
+    expect(preview?.getAttribute('aria-label')).toBe('Play Why WRDLNKDN video');
+    expect(container.querySelector('iframe')).toBeNull();
   });
 
   it('enables one-time autoplay after the section is materially visible', async () => {
@@ -66,9 +65,8 @@ describe('WhyWrdlnkdnVideo', () => {
       root.render(<WhyWrdlnkdnVideo />);
     });
 
-    const iframe = container.querySelector('iframe');
     expect(intersectionCallback).toBeTypeOf('function');
-    expect(iframe).toBeTruthy();
+    expect(container.querySelector('iframe')).toBeNull();
 
     await act(async () => {
       intersectionCallback?.(
@@ -76,10 +74,14 @@ describe('WhyWrdlnkdnVideo', () => {
           {
             isIntersecting: true,
             intersectionRatio: 0.72,
-            target: iframe as Element,
+            target: container.querySelector('section') as Element,
             time: 0,
-            boundingClientRect: (iframe as Element).getBoundingClientRect(),
-            intersectionRect: (iframe as Element).getBoundingClientRect(),
+            boundingClientRect: (
+              container.querySelector('section') as Element
+            ).getBoundingClientRect(),
+            intersectionRect: (
+              container.querySelector('section') as Element
+            ).getBoundingClientRect(),
             rootBounds: null,
           },
         ] as IntersectionObserverEntry[],
@@ -91,5 +93,24 @@ describe('WhyWrdlnkdnVideo', () => {
       'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0&autoplay=1&mute=1',
     );
     expect(disconnectSpy).toHaveBeenCalled();
+  });
+
+  it('lets keyboard and pointer users start playback manually before auto-start', async () => {
+    await act(async () => {
+      root.render(<WhyWrdlnkdnVideo />);
+    });
+
+    const preview = container.querySelector(
+      'button',
+    ) as HTMLButtonElement | null;
+    expect(preview).toBeTruthy();
+
+    await act(async () => {
+      preview?.click();
+    });
+
+    expect(container.querySelector('iframe')?.getAttribute('src')).toBe(
+      'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0&autoplay=1',
+    );
   });
 });

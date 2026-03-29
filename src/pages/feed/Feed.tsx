@@ -121,6 +121,7 @@ import { formatPostTime } from '../../lib/post/formatPostTime';
 import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
+import { uploadStructuredPublicAsset } from '../../lib/media/ingestion';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import {
@@ -2452,20 +2453,14 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     }
     setImageUploading(true);
     try {
-      const extension =
-        fileExtension(file.name) ||
-        file.type.split('/')[1]?.toLowerCase() ||
-        'jpg';
-      const path = `posts/${session.user.id}/${crypto.randomUUID()}.${extension}`;
-      const { error } = await supabase.storage
-        .from('feed-post-images')
-        .upload(path, file, { contentType: file.type });
-      if (error) throw error;
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('feed-post-images').getPublicUrl(path);
-      if (!publicUrl) throw new Error('Storage URL not returned');
-      setComposerImages((prev) => [...prev, publicUrl]);
+      const asset = await uploadStructuredPublicAsset({
+        bucket: 'feed-post-images',
+        ownerId: session.user.id,
+        scope: 'posts',
+        file,
+        retainOriginal: true,
+      });
+      setComposerImages((prev) => [...prev, asset.displayUrl]);
     } catch (err) {
       const details = toMessage(err);
       showToast({

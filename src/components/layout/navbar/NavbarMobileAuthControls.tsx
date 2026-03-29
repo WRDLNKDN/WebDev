@@ -91,16 +91,6 @@ export const NavbarMobileAuthControls = ({
         />
       ) : showGuestJoinSignIn ? (
         <>
-          <Button
-            component={RouterLink}
-            to="/signin"
-            onClick={() => setDrawerOpen(false)}
-            aria-label="Sign in"
-            size="small"
-            sx={mobileActionButtonSx}
-          >
-            Sign in
-          </Button>
           {!isJoinActive && (
             <Button
               component={RouterLink}
@@ -113,6 +103,16 @@ export const NavbarMobileAuthControls = ({
               Join
             </Button>
           )}
+          <Button
+            component={RouterLink}
+            to="/signin"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Sign in"
+            size="small"
+            sx={mobileActionButtonSx}
+          >
+            Sign in
+          </Button>
         </>
       ) : session ? (
         <>

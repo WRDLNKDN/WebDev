@@ -502,13 +502,6 @@ export const Dashboard = () => {
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           bioIsPlaceholder={bioIsPlaceholder}
-          onAddBio={
-            bioIsPlaceholder
-              ? () => {
-                  openEditProfileDialog({ focusBio: true });
-                }
-              : undefined
-          }
           avatarUrl={avatarUrl}
           badges={
             <Stack spacing={1.5} sx={{ width: '100%' }}>
@@ -605,11 +598,11 @@ export const Dashboard = () => {
                       }}
                       endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
                       disabled={loading}
-                      aria-label="Profile menu"
+                      aria-label="Manage profile"
                       aria-haspopup="true"
                       aria-expanded={Boolean(profileMenuAnchor)}
                     >
-                      Profile
+                      Manage Profile
                     </Button>
                   </Box>
                 </Stack>
@@ -675,46 +668,6 @@ export const Dashboard = () => {
             },
           }}
         >
-          {profile?.handle && (
-            <MenuItem
-              onClick={() => {
-                setProfileMenuAnchor(null);
-                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
-              }}
-              onTouchStart={(e: React.TouchEvent) => {
-                e.preventDefault();
-                setProfileMenuAnchor(null);
-                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
-              }}
-              sx={{
-                py: 1.5,
-                minHeight: 48,
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              View Profile
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              setProfileMenuAnchor(null);
-              openEditProfileDialog();
-            }}
-            onTouchStart={(e: React.TouchEvent) => {
-              e.preventDefault();
-              setProfileMenuAnchor(null);
-              openEditProfileDialog();
-            }}
-            sx={{
-              py: 1.5,
-              minHeight: 48,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            Edit Profile
-          </MenuItem>
           <MenuItem
             onClick={() => {
               setProfileMenuAnchor(null);
@@ -733,6 +686,25 @@ export const Dashboard = () => {
             }}
           >
             Account & settings
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            onTouchStart={(e: React.TouchEvent) => {
+              e.preventDefault();
+              setProfileMenuAnchor(null);
+              openEditProfileDialog();
+            }}
+            sx={{
+              py: 1.5,
+              minHeight: 48,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Edit Profile
           </MenuItem>
           <MenuItem
             onClick={async () => {
@@ -755,6 +727,27 @@ export const Dashboard = () => {
           >
             Share My Profile
           </MenuItem>
+          {profile?.handle && (
+            <MenuItem
+              onClick={() => {
+                setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
+              }}
+              onTouchStart={(e: React.TouchEvent) => {
+                e.preventDefault();
+                setProfileMenuAnchor(null);
+                navigate(`/p/h~${encodeURIComponent(profile.handle)}`);
+              }}
+              sx={{
+                py: 1.5,
+                minHeight: 48,
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              View Profile
+            </MenuItem>
+          )}
           <Divider sx={{ my: 0.5 }} />
           <MenuItem
             onClick={async () => {

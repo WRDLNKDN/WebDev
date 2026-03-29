@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import { useChatRooms } from '../../hooks/useChat';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { createNormalizedGroupImageAsset } from '../../lib/media/assets';
 
 /**
  * Groups page (route: /groups) – open your active group chats.
@@ -145,7 +146,10 @@ export const GroupsPage = () => {
                   >
                     <Stack direction="row" spacing={1.5} sx={{ minWidth: 0 }}>
                       <ProfileAvatar
-                        src={room.image_url}
+                        src={
+                          createNormalizedGroupImageAsset(room)?.displayUrl ??
+                          room.image_url
+                        }
                         alt={room.name || 'Untitled group'}
                         size="small"
                         sx={{ width: 48, height: 48, flexShrink: 0 }}

@@ -151,13 +151,13 @@ export const NavbarMobileDrawerExplore = ({
             />
           </ListItemButton>
           {[
-            { to: '/dashboard/games', label: 'Phuzzle' },
+            { to: '/dashboard/games', label: 'Checkers' },
+            { to: '/dashboard/games', label: 'Connect 4' },
             { to: '/dashboard/games/hangman', label: 'Hangman' },
+            { to: '/dashboard/games', label: 'Phuzzle' },
             { to: '/dashboard/games/snake', label: 'Snake' },
             { to: '/dashboard/games/slots', label: 'Slots' },
             { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
-            { to: '/dashboard/games', label: 'Connect 4' },
-            { to: '/dashboard/games', label: 'Checkers' },
           ].map(({ to, label }) => (
             <ListItemButton
               key={label}

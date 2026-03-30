@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { setupDashboardResumeStubs } from './dashboardResumeDocxStubs';
 
 export const DASHBOARD_RESUME_DOCX_FIXTURE = {
   name: 'E2E-Resume.docx',
@@ -23,4 +24,13 @@ export async function openDashboardResumeDocxPicker(page: Page) {
 
   const fileInput = page.locator('input[type="file"][accept*=".docx"]').first();
   await fileInput.setInputFiles(DASHBOARD_RESUME_DOCX_FIXTURE);
+}
+
+/** Stubs + navigation + file pick (shared by resume thumbnail E2E cases). */
+export async function arrangeDashboardResumeDocxUpload(
+  page: Page,
+  thumbnailMode: 'success' | '422',
+) {
+  await setupDashboardResumeStubs(page, { thumbnailMode });
+  await openDashboardResumeDocxPicker(page);
 }

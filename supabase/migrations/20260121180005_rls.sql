@@ -48,35 +48,51 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
--- Single bucket literal: repeated string in static policies trips duplication analysis; build via PL/pgSQL + format(%L).
+-- project-sources storage policies: one policy DDL template in-loop (avoids repeated format bodies / literals).
 do $project_sources_storage_policies$
 declare
-  project_sources_bucket constant text := 'project-sources';
+  bucket constant text := 'project-sources';
+  p_upload constant text := 'Authenticated can upload ' || bucket;
+  p_read constant text := 'Public read ' || bucket;
+  p_delete constant text := 'Authenticated can delete own ' || bucket;
+  pol record;
 begin
-  execute format(
-    'drop policy if exists "Authenticated can upload project-sources" on storage.objects;
-create policy "Authenticated can upload project-sources"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = %L)',
-    project_sources_bucket
-  );
-  execute format(
-    'drop policy if exists "Public read project-sources" on storage.objects;
-create policy "Public read project-sources"
-  on storage.objects for select
-  to public
-  using (bucket_id = %L)',
-    project_sources_bucket
-  );
-  execute format(
-    'drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
-create policy "Authenticated can delete own project-sources"
-  on storage.objects for delete
-  to authenticated
-  using (bucket_id = %L and owner = auth.uid())',
-    project_sources_bucket
-  );
+  for pol in
+    select * from (
+      values
+        (
+          p_upload,
+          'insert'::text,
+          'authenticated'::text,
+          format('with check (bucket_id = %L)', bucket)
+        ),
+        (
+          p_read,
+          'select'::text,
+          'public'::text,
+          format('using (bucket_id = %L)', bucket)
+        ),
+        (
+          p_delete,
+          'delete'::text,
+          'authenticated'::text,
+          format('using (bucket_id = %L and owner = auth.uid())', bucket)
+        )
+    ) as t(policy_name, for_op, to_role, clause_sql)
+  loop
+    execute format(
+      'drop policy if exists %I on storage.objects;
+create policy %I
+  on storage.objects for %s
+  to %s
+  %s',
+      pol.policy_name,
+      pol.policy_name,
+      pol.for_op,
+      pol.to_role,
+      pol.clause_sql
+    );
+  end loop;
 end;
 $project_sources_storage_policies$;
 

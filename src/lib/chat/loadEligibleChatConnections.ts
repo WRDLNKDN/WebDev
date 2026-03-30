@@ -24,10 +24,9 @@ type RpcRow = {
 export async function loadEligibleChatConnections(
   currentUserId: string,
 ): Promise<EligibleChatConnection[]> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session?.user?.id !== currentUserId) {
+  const { data: authData } = await supabase.auth.getSession();
+  const signedInUserId = authData?.session?.user?.id;
+  if (signedInUserId !== currentUserId) {
     return [];
   }
 

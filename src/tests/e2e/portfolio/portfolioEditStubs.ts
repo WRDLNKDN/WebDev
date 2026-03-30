@@ -34,6 +34,10 @@ export type PortfolioDashboardPatchMode =
     }
   | { kind: 'failPatch'; counter: { n: number } };
 
+const DEFAULT_PORTFOLIO_PATCH_MODE: PortfolioDashboardPatchMode = {
+  kind: 'merge',
+};
+
 /**
  * Stubs share token, profile-by-handle, profiles, and portfolio_items routes
  * the way portfolio dashboard edit tests expect.
@@ -41,10 +45,11 @@ export type PortfolioDashboardPatchMode =
 export async function stubPortfolioDashboardRestRoutes(
   page: Page,
   mutableItems: PortfolioE2eItem[],
-  patchMode: PortfolioDashboardPatchMode = { kind: 'merge' },
+  patchMode?: PortfolioDashboardPatchMode,
   profile: Record<string, unknown> = PORTFOLIO_E2E_MEMBER_PROFILE,
   profilesMode: 'restful' | 'alwaysPostgrest' = 'restful',
 ): Promise<void> {
+  const resolvedPatchMode = patchMode ?? DEFAULT_PORTFOLIO_PATCH_MODE;
   await page.route(
     '**/rest/v1/rpc/get_or_create_profile_share_token*',
     async (route) => {
@@ -84,8 +89,8 @@ export async function stubPortfolioDashboardRestRoutes(
     }
 
     if (method === 'PATCH') {
-      if (patchMode.kind === 'failPatch') {
-        patchMode.counter.n += 1;
+      if (resolvedPatchMode.kind === 'failPatch') {
+        resolvedPatchMode.counter.n += 1;
         await route.fulfill({ status: 500, body: '{}' });
         return;
       }
@@ -93,8 +98,8 @@ export async function stubPortfolioDashboardRestRoutes(
       const projectId = parseEqParam(route.request().url(), 'id');
       const payload = route.request().postDataJSON() as Record<string, unknown>;
 
-      if (patchMode.kind === 'mergeAndCapture') {
-        patchMode.captured.current = payload;
+      if (resolvedPatchMode.kind === 'mergeAndCapture') {
+        resolvedPatchMode.captured.current = payload;
       }
 
       const index = mutableItems.findIndex((item) => item['id'] === projectId);

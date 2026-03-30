@@ -87,9 +87,10 @@ export const ChatPopupPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
-  const resolvedThreadFavorite = Boolean(
-    activeRoom != null ? activeRoom.is_favorite : (room?.is_favorite ?? false),
-  );
+  const resolvedThreadFavorite =
+    activeRoom === null
+      ? Boolean(room?.is_favorite ?? false)
+      : Boolean(activeRoom.is_favorite);
   const handleToggleFavorite = useCallback(
     async (targetRoomId: string, currentlyFavorite: boolean) => {
       await toggleFavorite(targetRoomId, currentlyFavorite);
@@ -120,7 +121,7 @@ export const ChatPopupPage = () => {
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setSession(data.session ?? null);
     };
-    void init();
+    init().catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       if (!cancelled) setSession(s ?? null);
     });
@@ -212,7 +213,11 @@ export const ChatPopupPage = () => {
           isFavorite={resolvedThreadFavorite}
           onToggleFavorite={
             roomId
-              ? () => void handleToggleFavorite(roomId, resolvedThreadFavorite)
+              ? () => {
+                  handleToggleFavorite(roomId, resolvedThreadFavorite).catch(
+                    () => {},
+                  );
+                }
               : undefined
           }
           onBack={() =>

@@ -17,10 +17,16 @@ function mergeProfilePatch(prev: ProfileRow, payload: ProfileRow): ProfileRow {
   const next: ProfileRow = { ...prev };
   for (const [key, value] of Object.entries(payload)) {
     if (key === 'nerd_creds' && value && typeof value === 'object') {
-      next.nerd_creds = {
-        ...((prev.nerd_creds as object) ?? {}),
-        ...(value as object),
-      };
+      const prevNc = prev.nerd_creds;
+      const valueRec = value as Record<string, unknown>;
+      if (prevNc && typeof prevNc === 'object' && !Array.isArray(prevNc)) {
+        next.nerd_creds = {
+          ...(prevNc as Record<string, unknown>),
+          ...valueRec,
+        };
+      } else {
+        next.nerd_creds = { ...valueRec };
+      }
     } else if (key !== 'nerd_creds') {
       next[key] = value;
     }

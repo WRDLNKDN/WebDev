@@ -127,7 +127,7 @@ export const ChatPopover = ({
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setSessionState(data.session ?? null);
     };
-    void init();
+    init().catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       if (!cancelled) setSessionState(s ?? null);
     });
@@ -238,7 +238,9 @@ export const ChatPopover = ({
             <Button
               size="small"
               variant="outlined"
-              onClick={() => void refresh()}
+              onClick={() => {
+                refresh();
+              }}
               sx={{ mt: 0.5 }}
             >
               Try again

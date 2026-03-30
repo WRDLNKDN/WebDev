@@ -536,13 +536,7 @@ export const MessageList = ({
                       : alpha('#ffffff', 0.06),
                   boxShadow: `0 0 0 1px ${alpha(
                     isOwn ? theme.palette.primary.main : theme.palette.divider,
-                    isOwn
-                      ? isLightChrome
-                        ? 0.12
-                        : 0.18
-                      : isLightChrome
-                        ? 0.08
-                        : 0.08,
+                    isOwn ? (isLightChrome ? 0.12 : 0.18) : 0.08,
                   )} inset`,
                   minWidth: 0,
                   width: '100%',

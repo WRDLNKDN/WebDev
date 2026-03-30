@@ -84,12 +84,21 @@ export function buildAppScrollContainerSx({
   isFeedRoute,
   isLight,
 }: ScrollContainerSxArgs) {
+  let overflowY: 'hidden' | 'scroll' | 'auto';
+  if (isJoin) {
+    overflowY = 'hidden';
+  } else if (isHome) {
+    overflowY = 'scroll';
+  } else {
+    overflowY = 'auto';
+  }
+
   return {
     position: 'relative',
     zIndex: 1,
     flex: 1,
     minHeight: 0,
-    overflowY: isJoin ? 'hidden' : isHome ? 'scroll' : 'auto',
+    overflowY,
     overflowX: 'hidden',
     WebkitOverflowScrolling: 'touch',
     willChange: 'scroll-position',

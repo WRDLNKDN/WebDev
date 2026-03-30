@@ -55,6 +55,163 @@ async function persistChatRoomFavoriteForMember(
   if (error) throw error;
 }
 
+type ChatBlockRow = { blocker_id: string; blocked_user_id: string };
+
+function buildBlockedPairSet(
+  blocks: ChatBlockRow[] | null | undefined,
+  sessionUserId: string,
+): Set<string> {
+  const blockedPair = new Set<string>();
+  for (const block of blocks ?? []) {
+    const other =
+      block.blocker_id === sessionUserId
+        ? block.blocked_user_id
+        : block.blocker_id;
+    blockedPair.add([sessionUserId, other].sort().join(':'));
+  }
+  return blockedPair;
+}
+
+function indexMembersByRoom(
+  allMembersData:
+    | {
+        room_id: string;
+        user_id: string;
+        role: string;
+        joined_at: string;
+        left_at: string | null;
+      }[]
+    | null,
+): Map<string, ChatRoomMember[]> {
+  const membersByRoom = new Map<string, ChatRoomMember[]>();
+  for (const member of allMembersData ?? []) {
+    const normalized: ChatRoomMember = {
+      room_id: member.room_id,
+      user_id: member.user_id,
+      role: member.role === 'admin' ? 'admin' : 'member',
+      joined_at: member.joined_at,
+      left_at: member.left_at,
+    };
+    const existing = membersByRoom.get(member.room_id) ?? [];
+    existing.push(normalized);
+    membersByRoom.set(member.room_id, existing);
+  }
+  return membersByRoom;
+}
+
+type ChatSummaryRpcRow = {
+  room_id: string;
+  last_content: string | null;
+  last_created_at: string;
+  last_is_deleted: boolean;
+  unread_count: number;
+};
+
+type ChatSummaryNormalized = {
+  last_content: string | null;
+  last_created_at: string;
+  last_is_deleted: boolean;
+  unread_count: number;
+};
+
+function summaryMapFromRpc(
+  summaries: unknown,
+): Map<string, ChatSummaryNormalized> {
+  return new Map(
+    ((summaries ?? []) as ChatSummaryRpcRow[]).map((summary) => [
+      summary.room_id,
+      {
+        last_content: summary.last_content,
+        last_created_at: summary.last_created_at,
+        last_is_deleted: summary.last_is_deleted,
+        unread_count: Number(summary.unread_count ?? 0),
+      },
+    ]),
+  );
+}
+
+function applySummariesToRooms(
+  withMembers: ChatRoomWithMembers[],
+  summaryMap: Map<string, ChatSummaryNormalized>,
+): void {
+  for (const room of withMembers) {
+    const summary = summaryMap.get(room.id);
+    if (!summary) continue;
+    room.last_message_preview = sanitizeChatRoomPreview(
+      summary.last_content,
+      summary.last_is_deleted,
+    );
+    room.last_message_at = summary.last_created_at;
+    room.unread_count = summary.unread_count;
+  }
+}
+
+type ProfileLite = {
+  handle: string | null;
+  display_name: string | null;
+  avatar: string | null;
+};
+
+async function fetchProfileMapForUserIds(
+  profileIds: string[],
+): Promise<Map<string, ProfileLite>> {
+  const { data: allProfilesData } =
+    profileIds.length > 0
+      ? await supabase
+          .from('profiles')
+          .select('id, handle, display_name, avatar')
+          .in('id', profileIds)
+      : { data: [] };
+
+  return new Map(
+    (allProfilesData ?? []).map((profile) => [
+      profile.id,
+      {
+        handle: profile.handle,
+        display_name: profile.display_name,
+        avatar: profile.avatar,
+      },
+    ]),
+  );
+}
+
+function buildVisibleRoomsWithMembers(
+  roomData: ChatRoom[] | null,
+  sessionUserId: string,
+  membersByRoom: Map<string, ChatRoomMember[]>,
+  profileMap: Map<string, ProfileLite>,
+  preferenceMap: Map<string, boolean>,
+  blockedPair: Set<string>,
+): ChatRoomWithMembers[] {
+  const withMembers: ChatRoomWithMembers[] = [];
+  for (const room of roomData ?? []) {
+    const membersData = membersByRoom.get(room.id) ?? [];
+    const currentUserIsMember = membersData.some(
+      (member) => member.user_id === sessionUserId,
+    );
+    if (!currentUserIsMember) continue;
+
+    if (room.room_type === 'dm' && membersData.length === 2) {
+      const other = membersData.find(
+        (member) => member.user_id !== sessionUserId,
+      )?.user_id;
+      if (other && blockedPair.has([sessionUserId, other].sort().join(':'))) {
+        continue;
+      }
+    }
+
+    withMembers.push({
+      ...(room as ChatRoom),
+      members: membersData.map((member) => ({
+        ...member,
+        profile: profileMap.get(member.user_id) ?? null,
+      })) as ChatRoomWithMembers['members'],
+      is_favorite: preferenceMap.get(room.id) ?? false,
+    });
+  }
+  return withMembers;
+}
+
 export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {
   const value = useChatRoomsState();
   return createElement(ChatRoomsContext.Provider, { value }, children);
@@ -247,28 +404,8 @@ function useChatRoomsState() {
       const blocks = blocksRes.data;
       const allMembersData = membersRes.data;
 
-      const blockedPair = new Set<string>();
-      (blocks ?? []).forEach((block) => {
-        const other =
-          block.blocker_id === session.user.id
-            ? block.blocked_user_id
-            : block.blocker_id;
-        blockedPair.add([session.user.id, other].sort().join(':'));
-      });
-
-      const membersByRoom = new Map<string, ChatRoomMember[]>();
-      for (const member of allMembersData ?? []) {
-        const normalized: ChatRoomMember = {
-          room_id: member.room_id,
-          user_id: member.user_id,
-          role: member.role === 'admin' ? 'admin' : 'member',
-          joined_at: member.joined_at,
-          left_at: member.left_at,
-        };
-        const existing = membersByRoom.get(member.room_id) ?? [];
-        existing.push(normalized);
-        membersByRoom.set(member.room_id, existing);
-      }
+      const blockedPair = buildBlockedPairSet(blocks, session.user.id);
+      const membersByRoom = indexMembersByRoom(allMembersData);
 
       const profileIds = [
         ...new Set(
@@ -277,24 +414,8 @@ function useChatRoomsState() {
             .filter(Boolean),
         ),
       ];
-      const { data: allProfilesData } =
-        profileIds.length > 0
-          ? await supabase
-              .from('profiles')
-              .select('id, handle, display_name, avatar')
-              .in('id', profileIds)
-          : { data: [] };
+      const profileMap = await fetchProfileMapForUserIds(profileIds);
 
-      const profileMap = new Map(
-        (allProfilesData ?? []).map((profile) => [
-          profile.id,
-          {
-            handle: profile.handle,
-            display_name: profile.display_name,
-            avatar: profile.avatar,
-          },
-        ]),
-      );
       const preferenceMap = new Map(
         (roomPreferences ?? []).map((preference) => [
           preference.room_id,
@@ -302,36 +423,14 @@ function useChatRoomsState() {
         ]),
       );
 
-      const withMembers: ChatRoomWithMembers[] = [];
-      for (const room of roomData ?? []) {
-        const membersData = membersByRoom.get(room.id) ?? [];
-        const currentUserIsMember = membersData.some(
-          (member) => member.user_id === session.user.id,
-        );
-        if (!currentUserIsMember) {
-          continue;
-        }
-        if (room.room_type === 'dm' && membersData.length === 2) {
-          const other = membersData.find(
-            (member) => member.user_id !== session.user.id,
-          )?.user_id;
-          if (
-            other &&
-            blockedPair.has([session.user.id, other].sort().join(':'))
-          ) {
-            continue;
-          }
-        }
-
-        withMembers.push({
-          ...(room as ChatRoom),
-          members: membersData.map((member) => ({
-            ...member,
-            profile: profileMap.get(member.user_id) ?? null,
-          })) as ChatRoomWithMembers['members'],
-          is_favorite: preferenceMap.get(room.id) ?? false,
-        });
-      }
+      const withMembers = buildVisibleRoomsWithMembers(
+        roomData,
+        session.user.id,
+        membersByRoom,
+        profileMap,
+        preferenceMap,
+        blockedPair,
+      );
 
       if (withMembers.length > 0) {
         const { data: summaries, error: summariesError } = await supabase.rpc(
@@ -344,37 +443,7 @@ function useChatRoomsState() {
         if (summariesError) {
           console.warn('chat_room_summaries failed:', summariesError.message);
         }
-
-        type SummaryRow = {
-          room_id: string;
-          last_content: string | null;
-          last_created_at: string;
-          last_is_deleted: boolean;
-          unread_count: number;
-        };
-
-        const summaryMap = new Map(
-          ((summaries ?? []) as SummaryRow[]).map((summary) => [
-            summary.room_id,
-            {
-              last_content: summary.last_content,
-              last_created_at: summary.last_created_at,
-              last_is_deleted: summary.last_is_deleted,
-              unread_count: Number(summary.unread_count ?? 0),
-            },
-          ]),
-        );
-
-        withMembers.forEach((room) => {
-          const summary = summaryMap.get(room.id);
-          if (!summary) return;
-          room.last_message_preview = sanitizeChatRoomPreview(
-            summary.last_content,
-            summary.last_is_deleted,
-          );
-          room.last_message_at = summary.last_created_at;
-          room.unread_count = summary.unread_count;
-        });
+        applySummariesToRooms(withMembers, summaryMapFromRpc(summaries));
       }
 
       setRooms(canonicalizeDmRooms(withMembers, session.user.id));

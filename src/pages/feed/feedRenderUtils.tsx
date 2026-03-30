@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import type { FeedItem } from '../../lib/api/feedsApi';
 import type { LinkPreviewData } from '../../lib/linkPreview';
@@ -124,6 +125,43 @@ function linkPreviewDomain(url: string): string {
   }
 }
 
+function linkPreviewPaperSx(variant: 'feed' | 'chat'): SxProps<Theme> {
+  const isChat = variant === 'chat';
+  return {
+    display: 'flex',
+    flexDirection: isChat ? 'column' : { xs: 'column', sm: 'row' },
+    overflow: 'hidden',
+    borderRadius: isChat ? 2 : 1.5,
+    borderColor: isChat ? 'transparent' : 'divider',
+    bgcolor: isChat
+      ? (t: Theme) =>
+          alpha(
+            t.palette.common.black,
+            t.palette.mode === 'light' ? 0.04 : 0.12,
+          )
+      : undefined,
+    boxShadow: isChat ? 'none' : undefined,
+    '&:hover': {
+      borderColor: isChat
+        ? (t: Theme) => alpha(t.palette.primary.main, 0.35)
+        : 'primary.main',
+      bgcolor: 'action.hover',
+    },
+  };
+}
+
+function linkPreviewImageSx(variant: 'feed' | 'chat'): SxProps<Theme> {
+  const isChat = variant === 'chat';
+  return {
+    width: isChat ? '100%' : { xs: '100%', sm: 120 },
+    minWidth: isChat ? 0 : { sm: 120 },
+    height: isChat ? 120 : { xs: 140, sm: 120 },
+    maxHeight: isChat ? 200 : undefined,
+    objectFit: 'cover',
+    bgcolor: 'action.hover',
+  };
+}
+
 export const LinkPreviewCard = ({
   preview,
   onDismiss,
@@ -182,44 +220,14 @@ export const LinkPreviewCard = ({
         <Paper
           variant="outlined"
           elevation={0}
-          sx={{
-            display: 'flex',
-            flexDirection:
-              variant === 'chat' ? 'column' : { xs: 'column', sm: 'row' },
-            overflow: 'hidden',
-            borderRadius: variant === 'chat' ? 2 : 1.5,
-            borderColor: variant === 'chat' ? 'transparent' : 'divider',
-            bgcolor:
-              variant === 'chat'
-                ? (t) =>
-                    alpha(
-                      t.palette.common.black,
-                      t.palette.mode === 'light' ? 0.04 : 0.12,
-                    )
-                : undefined,
-            boxShadow: variant === 'chat' ? 'none' : undefined,
-            '&:hover': {
-              borderColor:
-                variant === 'chat'
-                  ? (t) => alpha(t.palette.primary.main, 0.35)
-                  : 'primary.main',
-              bgcolor: 'action.hover',
-            },
-          }}
+          sx={linkPreviewPaperSx(variant)}
         >
           {showThumbnail ? (
             <Box
               component="img"
               src={thumbnailUrl}
               alt=""
-              sx={{
-                width: variant === 'chat' ? '100%' : { xs: '100%', sm: 120 },
-                minWidth: variant === 'chat' ? 0 : { sm: 120 },
-                height: variant === 'chat' ? 120 : { xs: 140, sm: 120 },
-                maxHeight: variant === 'chat' ? 200 : undefined,
-                objectFit: 'cover',
-                bgcolor: 'action.hover',
-              }}
+              sx={linkPreviewImageSx(variant)}
             />
           ) : null}
           <Box

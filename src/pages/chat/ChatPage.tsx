@@ -118,7 +118,7 @@ export const ChatPage = () => {
 
   useEffect(() => {
     let mounted = true;
-    void (async () => {
+    (async () => {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       if (!data.session) {
@@ -126,7 +126,7 @@ export const ChatPage = () => {
       } else {
         setSession(data.session);
       }
-    })();
+    })().catch(() => {});
     return () => {
       mounted = false;
     };
@@ -245,9 +245,10 @@ export const ChatPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
-  const resolvedThreadFavorite = Boolean(
-    activeRoom != null ? activeRoom.is_favorite : (room?.is_favorite ?? false),
-  );
+  const resolvedThreadFavorite =
+    activeRoom === null
+      ? Boolean(room?.is_favorite ?? false)
+      : Boolean(activeRoom.is_favorite);
   const handleToggleFavorite = useCallback(
     async (targetRoomId: string, currentlyFavorite: boolean) => {
       await toggleFavorite(targetRoomId, currentlyFavorite);
@@ -301,6 +302,25 @@ export const ChatPage = () => {
     ? 'clamp(860px, 66vw, 1120px)'
     : 'clamp(420px, 34vw, 480px)';
 
+  const listColumnDividerAlpha = theme.palette.mode === 'light' ? 0.1 : 0.08;
+  const listColumnBorderRightMd = showThread
+    ? `1px solid ${alpha(theme.palette.divider, listColumnDividerAlpha)}`
+    : 'none';
+  const listColumnPaperAlpha = theme.palette.mode === 'light' ? 0.72 : 0.55;
+  const listColumnBgcolor = isMobileLayout
+    ? 'transparent'
+    : alpha(theme.palette.background.paper, listColumnPaperAlpha);
+
+  let threadColumnBackground: string;
+  if (isMobileLayout) {
+    threadColumnBackground =
+      'linear-gradient(180deg, rgba(6,10,20,0.14) 0%, rgba(6,10,20,0.03) 100%)';
+  } else if (theme.palette.mode === 'light') {
+    threadColumnBackground = alpha(theme.palette.background.default, 0.98);
+  } else {
+    threadColumnBackground = `linear-gradient(180deg, ${alpha('#121722', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.96)} 55%)`;
+  }
+
   const listColumn = (
     <Box
       sx={{
@@ -311,18 +331,11 @@ export const ChatPage = () => {
         flexShrink: 0,
         borderRight: {
           xs: 'none',
-          md: showThread
-            ? `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.1 : 0.08)}`
-            : 'none',
+          md: listColumnBorderRightMd,
         },
         flexDirection: 'column',
         minHeight: 0,
-        bgcolor: isMobileLayout
-          ? 'transparent'
-          : alpha(
-              theme.palette.background.paper,
-              theme.palette.mode === 'light' ? 0.72 : 0.55,
-            ),
+        bgcolor: listColumnBgcolor,
         backdropFilter: isMobileLayout ? 'none' : 'blur(12px)',
       }}
     >
@@ -352,11 +365,7 @@ export const ChatPage = () => {
         maxWidth: '100%',
         overflowX: 'hidden',
         overflowY: 'hidden',
-        background: isMobileLayout
-          ? 'linear-gradient(180deg, rgba(6,10,20,0.14) 0%, rgba(6,10,20,0.03) 100%)'
-          : theme.palette.mode === 'light'
-            ? alpha(theme.palette.background.default, 0.98)
-            : `linear-gradient(180deg, ${alpha('#121722', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.96)} 55%)`,
+        background: threadColumnBackground,
       }}
     >
       <ChatRoomHeader
@@ -371,7 +380,11 @@ export const ChatPage = () => {
         isFavorite={resolvedThreadFavorite}
         onToggleFavorite={
           roomId
-            ? () => void handleToggleFavorite(roomId, resolvedThreadFavorite)
+            ? () => {
+                handleToggleFavorite(roomId, resolvedThreadFavorite).catch(
+                  () => {},
+                );
+              }
             : undefined
         }
         onBack={() => navigate('/chat-full')}
@@ -398,7 +411,9 @@ export const ChatPage = () => {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => void refresh()}
+            onClick={() => {
+              refresh();
+            }}
           >
             Try again
           </Button>

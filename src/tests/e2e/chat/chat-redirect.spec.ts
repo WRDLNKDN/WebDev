@@ -174,7 +174,7 @@ test.describe('Chat redirect', () => {
       })
       .toBeTruthy();
 
-    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    const messageInput = page.getByRole('textbox', { name: 'Message' }).first();
     await expect(messageInput).toBeVisible({ timeout: 10_000 });
     await expect(messageInput).toBeEnabled();
 

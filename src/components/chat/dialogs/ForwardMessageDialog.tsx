@@ -55,14 +55,16 @@ export const ForwardMessageDialog = ({
       >
         Forward to…
         <Tooltip title="Close">
-          <IconButton
-            aria-label="Close forward dialog"
-            onClick={onClose}
-            disabled={busy}
-            size="small"
-          >
-            <CloseIcon />
-          </IconButton>
+          <span>
+            <IconButton
+              aria-label="Close forward dialog"
+              onClick={onClose}
+              disabled={busy}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </DialogTitle>
       <DialogContent sx={{ pt: 0 }}>

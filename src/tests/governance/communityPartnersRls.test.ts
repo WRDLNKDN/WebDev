@@ -27,7 +27,7 @@ describe('community partners schema governance', () => {
         RLS_SQL.includes('community_partners_admin_insert'),
     ).toBe(true);
     expect(RLS_SQL).toContain(
-      'alter table public.community_partners enable row level security',
+      'alter table if exists public.community_partners enable row level security',
     );
   });
 

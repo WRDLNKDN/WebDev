@@ -161,11 +161,13 @@ test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => 
       timeout: 45_000,
     });
     await expect(
-      page.getByText('PORTFOLIO SHOWCASE', { exact: true }),
-    ).toBeVisible({ timeout: 30_000 });
+      page.getByTestId('dashboard-portfolio-showcase-section'),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
 
-    await page.getByRole('button', { name: /add resume or project/i }).click();
-    await page.getByRole('menuitem', { name: /\+ add resume/i }).click();
+    await page.getByRole('button', { name: /add to portfolio/i }).click();
+    await page.getByRole('menuitem', { name: /^add resume$/i }).click();
 
     const fileInput = page
       .locator('input[type="file"][accept*=".docx"]')
@@ -200,9 +202,14 @@ test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => 
     await expect(page.getByTestId('app-main')).toBeVisible({
       timeout: 45_000,
     });
+    await expect(
+      page.getByTestId('dashboard-portfolio-showcase-section'),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
 
-    await page.getByRole('button', { name: /add resume or project/i }).click();
-    await page.getByRole('menuitem', { name: /\+ add resume/i }).click();
+    await page.getByRole('button', { name: /add to portfolio/i }).click();
+    await page.getByRole('menuitem', { name: /^add resume$/i }).click();
 
     const fileInput = page
       .locator('input[type="file"][accept*=".docx"]')

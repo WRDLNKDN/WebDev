@@ -53,14 +53,16 @@ export const ViewTagsSkillsDialog = ({
       }}
     >
       <Tooltip title="Close">
-        <IconButton
-          aria-label="Close"
-          onClick={onClose}
-          size="small"
-          sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <span>
+          <IconButton
+            aria-label="Close"
+            onClick={onClose}
+            size="small"
+            sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </span>
       </Tooltip>
       <DialogTitle sx={{ pr: 6, pb: 0.5 }}>Tags & Skills</DialogTitle>
       <DialogContent

@@ -57,6 +57,8 @@ const LayoutContent = () => {
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
   const isHome = pathname === '/';
+  /** Softer grid behind feed so posts read clearly (see Feed shell). */
+  const isFeedRoute = pathname === '/feed';
   const chatEnabled = useFeatureFlag('chat');
   const productionComingSoon = useProductionComingSoonMode();
   /**
@@ -81,6 +83,7 @@ const LayoutContent = () => {
     homeMatteUntilContentRevealEnabled() &&
     homeHeroShellPhase === 'video';
 
+  const feedGridAlpha = !isLight && isFeedRoute ? 0.032 : 0.06;
   const darkShellBg = {
     backgroundImage: {
       xs: 'url("/assets/background-mobile.png")',
@@ -95,8 +98,8 @@ const LayoutContent = () => {
       position: 'absolute',
       inset: 0,
       backgroundImage: `
-                  linear-gradient(rgba(56,132,210,0.06) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(56,132,210,0.06) 1px, transparent 1px)
+                  linear-gradient(rgba(56,132,210,${feedGridAlpha}) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(56,132,210,${feedGridAlpha}) 1px, transparent 1px)
                 `,
       backgroundSize: '24px 24px',
       pointerEvents: 'none',
@@ -196,6 +199,26 @@ const LayoutContent = () => {
           // Mobile performance optimizations
           willChange: 'scroll-position',
           contain: 'layout style paint',
+          ...(isFeedRoute && !isLight
+            ? {
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  minHeight: '100%',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                  background: [
+                    'radial-gradient(ellipse 95% 55% at 50% 0%, rgba(6,10,20,0.78) 0%, transparent 58%)',
+                    'linear-gradient(180deg, rgba(5,7,15,0.55) 0%, rgba(5,7,15,0.35) 45%, rgba(5,7,15,0.2) 100%)',
+                  ].join(','),
+                },
+                '& > *': {
+                  position: 'relative',
+                  zIndex: 1,
+                },
+              }
+            : {}),
         }}
       >
         <UatBanner />

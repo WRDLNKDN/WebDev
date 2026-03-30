@@ -37,15 +37,16 @@ export const FeedCardRepostEmbed = ({
   return (
     <Box
       sx={{
-        mt: 1.35,
+        mt: 1.5,
+        mx: { xs: 0.25, sm: 0.75 },
         borderRadius: 2.25,
-        border: '1px solid rgba(156,187,217,0.26)',
-        borderLeft: '3px solid rgba(141,188,229,0.42)',
-        bgcolor: 'rgba(7,12,21,0.78)',
+        border: '1px solid rgba(156,187,217,0.2)',
+        borderLeft: '3px solid rgba(141,188,229,0.38)',
+        bgcolor: 'rgba(18,24,36,0.88)',
         boxShadow:
-          '0 0 0 1px rgba(56,132,210,0.05) inset, 0 16px 28px rgba(0,0,0,0.16)',
-        px: { xs: 1.15, sm: 1.35 },
-        py: { xs: 1.1, sm: 1.25 },
+          '0 0 0 1px rgba(56,132,210,0.06) inset, 0 12px 24px rgba(0,0,0,0.14)',
+        px: { xs: 1.25, sm: 1.5 },
+        py: { xs: 1.15, sm: 1.35 },
       }}
     >
       <Stack direction="row" spacing={1} alignItems="flex-start">
@@ -95,6 +96,7 @@ export const FeedCardRepostEmbed = ({
               component="div"
               sx={{
                 mt: 0.7,
+                lineHeight: 1.65,
                 color: 'text.primary',
                 whiteSpace: 'pre-wrap',
                 overflowWrap: 'break-word',

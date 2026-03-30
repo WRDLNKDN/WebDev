@@ -186,3 +186,34 @@ test.describe('Accessibility - route sweep (authenticated)', () => {
     });
   }
 });
+
+test.describe('Accessibility - mobile viewport (authenticated)', () => {
+  const mobileRoutes = [
+    { path: '/feed', name: 'Feed' },
+    { path: '/directory', name: 'Directory' },
+  ];
+
+  for (const { path, name } of mobileRoutes) {
+    test(`${name} (${path}) at 390×844 has no WCAG 2a/2aa/21aa violations`, async ({
+      page,
+    }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width: 390, height: 844 });
+      const { stubAdminRpc } = await seedSignedInSession(page.context());
+      await stubAdminRpc(page);
+      await stubAppSurface(page);
+
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId('app-main')).toBeVisible({
+        timeout: 45_000,
+      });
+
+      const results = await analyzeRouteAccessibility(
+        page,
+        '[data-testid="app-main"]',
+      );
+
+      expect(results.violations).toEqual([]);
+    });
+  }
+});

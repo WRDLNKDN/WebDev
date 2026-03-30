@@ -34,16 +34,18 @@ export const FeedAdCardMenu = ({
   return (
     <>
       <Tooltip title="More options">
-        <IconButton
-          size="small"
-          sx={{ position: 'absolute', top: 8, right: 8 }}
-          aria-label="More options"
-          aria-haspopup="true"
-          aria-expanded={!!menuAnchor}
-          onClick={(e) => onOpen(e.currentTarget)}
-        >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
+        <span>
+          <IconButton
+            size="small"
+            sx={{ position: 'absolute', top: 8, right: 8 }}
+            aria-label="More options"
+            aria-haspopup="true"
+            aria-expanded={!!menuAnchor}
+            onClick={(e) => onOpen(e.currentTarget)}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>
       <Menu
         anchorEl={menuAnchor}

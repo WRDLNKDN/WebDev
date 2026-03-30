@@ -456,21 +456,23 @@ export const EditLinksDialog = ({
             Manage Links
           </Typography>
           <Tooltip title="Close">
-            <IconButton
-              aria-label="Close"
-              onClick={handleRequestClose}
-              color="inherit"
-              size="medium"
-              sx={{
-                flexShrink: 0,
-                // Avoid edge="end" negative margins — they extend past padded area and clip when paper overflow is hidden.
-                minWidth: 44,
-                minHeight: 44,
-                alignSelf: 'flex-start',
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
+            <span>
+              <IconButton
+                aria-label="Close"
+                onClick={handleRequestClose}
+                color="inherit"
+                size="medium"
+                sx={{
+                  flexShrink: 0,
+                  // Avoid edge="end" negative margins — they extend past padded area and clip when paper overflow is hidden.
+                  minWidth: 44,
+                  minHeight: 44,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </span>
           </Tooltip>
         </DialogTitle>
         <DialogContent
@@ -901,23 +903,25 @@ export const EditLinksDialog = ({
                             <Tooltip
                               title={`Remove ${getSocialLinkTitle(link)}`}
                             >
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDelete(link.id)}
-                                aria-label={`Remove ${getSocialLinkTitle(link)}`}
-                                sx={{
-                                  p: 0.25,
-                                  minWidth: 0,
-                                  minHeight: 0,
-                                  color: 'error.main',
-                                  '&:hover': {
-                                    bgcolor: 'error.main',
-                                    color: 'error.contrastText',
-                                  },
-                                }}
-                              >
-                                <CloseIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDelete(link.id)}
+                                  aria-label={`Remove ${getSocialLinkTitle(link)}`}
+                                  sx={{
+                                    p: 0.25,
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                    color: 'error.main',
+                                    '&:hover': {
+                                      bgcolor: 'error.main',
+                                      color: 'error.contrastText',
+                                    },
+                                  }}
+                                >
+                                  <CloseIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </span>
                             </Tooltip>
                           </Stack>
                         </Box>

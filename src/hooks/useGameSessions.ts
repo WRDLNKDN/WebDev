@@ -8,6 +8,7 @@ import {
   fetchMySessions,
   fetchPendingInvitationsForUser,
 } from '../lib/api/gamesApi';
+import { loadEligibleChatConnections } from '../lib/chat/loadEligibleChatConnections';
 import type {
   GameDefinition,
   GameSession,
@@ -86,41 +87,23 @@ export function useGameSessions() {
         if (invitation.recipient_id) profileIds.add(invitation.recipient_id);
       });
 
-      const { data: connRows } = await supabase
-        .from('feed_connections')
-        .select('connected_user_id')
-        .eq('user_id', userId);
-      const connIds = (connRows ?? []).map((r) => r.connected_user_id);
-      if (connIds.length === 0) {
-        setConnections([]);
-      } else {
-        const { data: mutual } = await supabase
-          .from('feed_connections')
-          .select('user_id')
-          .eq('connected_user_id', userId)
-          .in('user_id', connIds);
-        const mutualSet = new Set((mutual ?? []).map((m) => m.user_id));
-        const eligibleIds = connIds.filter((id) => mutualSet.has(id));
-        if (eligibleIds.length === 0) {
-          setConnections([]);
-        } else {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, display_name, handle, avatar')
-            .in('id', eligibleIds);
-          (profiles ?? []).forEach((profile) => {
-            if (profile.id) profileIds.add(profile.id);
-          });
-          setConnections(
-            (profiles ?? []).map((p) => ({
-              id: p.id,
-              display_name: p.display_name ?? null,
-              handle: p.handle ?? null,
-              avatar: p.avatar ?? null,
-            })),
-          );
-        }
+      let eligibleForInvite: Awaited<
+        ReturnType<typeof loadEligibleChatConnections>
+      > = [];
+      try {
+        eligibleForInvite = await loadEligibleChatConnections(userId);
+      } catch {
+        eligibleForInvite = [];
       }
+      eligibleForInvite.forEach((c) => profileIds.add(c.id));
+      setConnections(
+        eligibleForInvite.map((c) => ({
+          id: c.id,
+          display_name: c.display_name,
+          handle: c.handle,
+          avatar: c.avatar,
+        })),
+      );
 
       if (profileIds.size > 0) {
         const { data: profileRows } = await supabase

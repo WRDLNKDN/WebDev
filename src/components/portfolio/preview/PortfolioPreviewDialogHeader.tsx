@@ -70,53 +70,57 @@ export const PortfolioPreviewDialogHeader = ({
         <Stack direction="row" spacing={0.5} alignItems="center" flexShrink={0}>
           {downloadUrl ? (
             <Tooltip title="Download">
-              <IconButton
-                size="small"
-                href={downloadUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Download artifact"
-                sx={{
-                  color: '#b9c3dd',
-                  border: '1px solid rgba(141,188,229,0.48)',
-                  borderRadius: 1,
-                  width: 32,
-                  height: 32,
-                  '&:hover': {
-                    color: '#ecfeff',
-                    borderColor: 'rgba(0,196,204,0.65)',
-                    bgcolor: 'rgba(0,196,204,0.22)',
-                  },
-                }}
-              >
-                <DownloadIcon sx={{ fontSize: '1rem' }} />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  href={downloadUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Download artifact"
+                  sx={{
+                    color: '#b9c3dd',
+                    border: '1px solid rgba(141,188,229,0.48)',
+                    borderRadius: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      color: '#ecfeff',
+                      borderColor: 'rgba(0,196,204,0.65)',
+                      bgcolor: 'rgba(0,196,204,0.22)',
+                    },
+                  }}
+                >
+                  <DownloadIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </span>
             </Tooltip>
           ) : null}
           {openUrl ? (
             <Tooltip title="Open in new tab">
-              <IconButton
-                size="small"
-                href={openUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open in new tab"
-                sx={{
-                  color: '#b9c3dd',
-                  border: '1px solid rgba(141,188,229,0.48)',
-                  borderRadius: 1,
-                  width: 32,
-                  height: 32,
-                  '&:hover': {
-                    color: '#ecfeff',
-                    borderColor: 'rgba(0,196,204,0.65)',
-                    bgcolor: 'rgba(0,196,204,0.22)',
-                  },
-                }}
-              >
-                <OpenInNewIcon sx={{ fontSize: '1rem' }} />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  href={openUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open in new tab"
+                  sx={{
+                    color: '#b9c3dd',
+                    border: '1px solid rgba(141,188,229,0.48)',
+                    borderRadius: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      color: '#ecfeff',
+                      borderColor: 'rgba(0,196,204,0.65)',
+                      bgcolor: 'rgba(0,196,204,0.22)',
+                    },
+                  }}
+                >
+                  <OpenInNewIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </span>
             </Tooltip>
           ) : (
             <Tooltip title="Open in new tab">
@@ -139,25 +143,27 @@ export const PortfolioPreviewDialogHeader = ({
             </Tooltip>
           )}
           <Tooltip title="Close preview">
-            <IconButton
-              size="small"
-              onClick={onClose}
-              aria-label="Close preview"
-              sx={{
-                color: '#b9c3dd',
-                border: '1px solid rgba(141,188,229,0.48)',
-                borderRadius: 1,
-                width: 32,
-                height: 32,
-                '&:hover': {
-                  color: 'white',
-                  bgcolor: 'rgba(156,187,217,0.18)',
-                  borderColor: 'rgba(255,255,255,0.4)',
-                },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: '1rem' }} />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onClose}
+                aria-label="Close preview"
+                sx={{
+                  color: '#b9c3dd',
+                  border: '1px solid rgba(141,188,229,0.48)',
+                  borderRadius: 1,
+                  width: 32,
+                  height: 32,
+                  '&:hover': {
+                    color: 'white',
+                    bgcolor: 'rgba(156,187,217,0.18)',
+                    borderColor: 'rgba(255,255,255,0.4)',
+                  },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: '1rem' }} />
+              </IconButton>
+            </span>
           </Tooltip>
         </Stack>
       </Stack>

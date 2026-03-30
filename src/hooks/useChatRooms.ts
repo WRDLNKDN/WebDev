@@ -42,18 +42,40 @@ async function persistChatRoomFavoriteForMember(
   roomId: string,
   nextFavorite: boolean,
 ): Promise<void> {
-  const { error } = await supabase.from('chat_room_preferences').upsert(
-    {
+  // Avoid PostgREST upsert + composite on_conflict edge cases (some stacks error
+  // with "no unique constraint matching ON CONFLICT"). Update-if-exists, else insert.
+  const { data: updated, error: updateError } = await supabase
+    .from('chat_room_preferences')
+    .update({ is_favorite: nextFavorite })
+    .eq('user_id', userId)
+    .eq('room_id', roomId)
+    .select('room_id');
+
+  if (updateError) throw updateError;
+  if (updated && updated.length > 0) return;
+
+  const { error: insertError } = await supabase
+    .from('chat_room_preferences')
+    .insert({
       room_id: roomId,
       user_id: userId,
       is_favorite: nextFavorite,
-    },
-    {
-      onConflict: 'room_id,user_id',
-    },
-  );
+    });
 
-  if (error) throw error;
+  if (!insertError) return;
+
+  // Race: another request inserted between update and insert.
+  if (insertError.code === '23505') {
+    const { error: retryError } = await supabase
+      .from('chat_room_preferences')
+      .update({ is_favorite: nextFavorite })
+      .eq('user_id', userId)
+      .eq('room_id', roomId);
+    if (retryError) throw retryError;
+    return;
+  }
+
+  throw insertError;
 }
 
 export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {

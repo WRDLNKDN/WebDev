@@ -87,6 +87,7 @@ export const FeedCardPostContent = ({
               component="span"
               sx={{
                 mt: 0.5,
+                lineHeight: 1.65,
                 whiteSpace: 'pre-wrap',
                 display: 'block',
                 overflowWrap: 'break-word',

@@ -632,13 +632,15 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                   >
                     Donate to WRDLNKDN
                     <Tooltip title="Close">
-                      <IconButton
-                        aria-label="Close"
-                        onClick={() => setDonateDialogOpen(false)}
-                        sx={{ color: 'rgba(255,255,255,0.75)' }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          aria-label="Close"
+                          onClick={() => setDonateDialogOpen(false)}
+                          sx={{ color: 'rgba(255,255,255,0.75)' }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </DialogTitle>
                   <DialogContent id="donate-dialog-description">
@@ -680,21 +682,23 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 >
                   {socialLinks.map((link) => (
                     <Tooltip key={link.label} title={link.label}>
-                      <IconButton
-                        component={Link}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={link.label}
-                        size="small"
-                        sx={{
-                          color: footerTextSecondary,
-                          p: { xs: 0.35, md: 0.45 },
-                          '&:hover': { color: footerTextPrimary },
-                        }}
-                      >
-                        {renderSocialIcon(link.label)}
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          component={Link}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={link.label}
+                          size="small"
+                          sx={{
+                            color: footerTextSecondary,
+                            p: { xs: 0.35, md: 0.45 },
+                            '&:hover': { color: footerTextPrimary },
+                          }}
+                        >
+                          {renderSocialIcon(link.label)}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   ))}
                 </Stack>

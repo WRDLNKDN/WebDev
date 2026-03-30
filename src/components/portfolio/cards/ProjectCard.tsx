@@ -473,18 +473,20 @@ export const ProjectCard = ({
             )}
             {onEdit && (
               <Tooltip title="Edit project">
-                <IconButton
-                  size="small"
-                  aria-label={`Edit project ${project.title}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void onEdit(project);
-                  }}
-                  sx={ownerActionSx}
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Edit project ${project.title}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void onEdit(project);
+                    }}
+                    sx={ownerActionSx}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
             {onToggleHighlight && (
@@ -495,66 +497,73 @@ export const ProjectCard = ({
                     : 'Add to highlights'
                 }
               >
-                <IconButton
-                  size="small"
-                  aria-label={
-                    project.is_highlighted
-                      ? `Remove artifact ${project.title} from highlights`
-                      : `Mark artifact ${project.title} as highlight`
-                  }
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void onToggleHighlight(project.id, !project.is_highlighted);
-                  }}
-                  sx={{
-                    ...ownerActionSx,
-                    color: project.is_highlighted
-                      ? '#f8df95'
-                      : ownerActionSx.color,
-                    border: project.is_highlighted
-                      ? '1px solid rgba(248, 223, 149, 0.42)'
-                      : ownerActionSx.border,
-                    '&:hover': project.is_highlighted
-                      ? {
-                          bgcolor: 'rgba(248, 223, 149, 0.18)',
-                          color: '#ffefba',
-                          borderColor: 'rgba(248, 223, 149, 0.7)',
-                        }
-                      : ownerActionSx['&:hover'],
-                  }}
-                >
-                  {project.is_highlighted ? (
-                    <StarIcon fontSize="small" />
-                  ) : (
-                    <StarBorderIcon fontSize="small" />
-                  )}
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={
+                      project.is_highlighted
+                        ? `Remove artifact ${project.title} from highlights`
+                        : `Mark artifact ${project.title} as highlight`
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void onToggleHighlight(
+                        project.id,
+                        !project.is_highlighted,
+                      );
+                    }}
+                    sx={{
+                      ...ownerActionSx,
+                      color: project.is_highlighted
+                        ? '#f8df95'
+                        : ownerActionSx.color,
+                      border: project.is_highlighted
+                        ? '1px solid rgba(248, 223, 149, 0.42)'
+                        : ownerActionSx.border,
+                      '&:hover': project.is_highlighted
+                        ? {
+                            bgcolor: 'rgba(248, 223, 149, 0.18)',
+                            color: '#ffefba',
+                            borderColor: 'rgba(248, 223, 149, 0.7)',
+                          }
+                        : ownerActionSx['&:hover'],
+                    }}
+                  >
+                    {project.is_highlighted ? (
+                      <StarIcon fontSize="small" />
+                    ) : (
+                      <StarBorderIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
             {onDelete && (
               <Tooltip title="Delete project">
-                <IconButton
-                  size="small"
-                  aria-label={`Remove project ${project.title}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void onDelete(project.id);
-                  }}
-                  sx={{
-                    ...ownerActionSx,
-                    color: '#fbc7c7',
-                    border: '1px solid rgba(255,132,132,0.35)',
-                    '&:hover': {
-                      bgcolor: 'rgba(255,77,77,0.25)',
-                      color: '#ffe5e5',
-                      borderColor: 'rgba(255,77,77,0.75)',
-                    },
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Remove project ${project.title}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void onDelete(project.id);
+                    }}
+                    sx={{
+                      ...ownerActionSx,
+                      color: '#fbc7c7',
+                      border: '1px solid rgba(255,132,132,0.35)',
+                      '&:hover': {
+                        bgcolor: 'rgba(255,77,77,0.25)',
+                        color: '#ffe5e5',
+                        borderColor: 'rgba(255,77,77,0.75)',
+                      },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
           </Box>

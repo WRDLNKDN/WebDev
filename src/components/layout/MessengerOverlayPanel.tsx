@@ -246,24 +246,28 @@ export const MessengerOverlayPanel = ({
   const headerActions = (
     <>
       <Tooltip title="More options">
-        <IconButton
-          aria-label="More options"
-          onClick={(e) => menuButtonClick(e.currentTarget)}
-          size="small"
-          sx={headerIconSx}
-        >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
+        <span>
+          <IconButton
+            aria-label="More options"
+            onClick={(e) => menuButtonClick(e.currentTarget)}
+            size="small"
+            sx={headerIconSx}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>
       <Tooltip title="Close">
-        <IconButton
-          aria-label="Close messages"
-          onClick={onClose}
-          size="small"
-          sx={headerIconSx}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <span>
+          <IconButton
+            aria-label="Close messages"
+            onClick={onClose}
+            size="small"
+            sx={headerIconSx}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>
     </>
   );
@@ -648,25 +652,27 @@ export const MessengerOverlayPanel = ({
                         )}
                       </IconButton>
                       <Tooltip title="Remove conversation">
-                        <IconButton
-                          aria-label="Remove conversation"
-                          data-testid={`messenger-overlay-remove-${r.id}`}
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRemoveTarget({
-                              id: r.id,
-                              label: getRoomLabel(r),
-                            });
-                          }}
-                          sx={{
-                            ...headerIconSx,
-                            minWidth: 34,
-                            minHeight: 34,
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            aria-label="Remove conversation"
+                            data-testid={`messenger-overlay-remove-${r.id}`}
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRemoveTarget({
+                                id: r.id,
+                                label: getRoomLabel(r),
+                              });
+                            }}
+                            sx={{
+                              ...headerIconSx,
+                              minWidth: 34,
+                              minHeight: 34,
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </Box>
                   </ListItemButton>

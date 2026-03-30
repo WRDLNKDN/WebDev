@@ -3,6 +3,9 @@
 -- Additive/safe only: no TRUNCATE, no DELETE without WHERE, no DROP TABLE; table data never cleared.
 -- This file contains ONLY RLS policies, grants, and security settings/hardening - no schema or data modifications.
 --
+-- Idempotent: `alter table if exists ... enable row level security`; each `create policy` is preceded by
+-- `drop policy if exists` (or cleared by the managed_tables replay block). Safe to re-run in SQL Editor.
+--
 -- If you see "duplicate key" or migration repair needed for 20260214140000, 20260214160000, 20260214170000:
 --   supabase migration repair <id> --status reverted
 -- Then run db push again. (Those were consolidated into these two files only.)
@@ -26,7 +29,7 @@
 
 -- No RLS changes were required for the portfolio single-category constraint.
 
-alter table public.chat_room_preferences enable row level security;
+alter table if exists public.chat_room_preferences enable row level security;
 
 drop policy if exists "Users can manage own chat room preferences"
   on public.chat_room_preferences;
@@ -45,31 +48,27 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
-do $$
-declare
-  project_sources_bucket constant text := 'project-sources';
-begin
+-- Literal bucket id: PL/pgSQL variables are not visible inside CREATE POLICY expressions.
 drop policy if exists "Authenticated can upload project-sources" on storage.objects;
 create policy "Authenticated can upload project-sources"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = project_sources_bucket);
+  with check (bucket_id = 'project-sources');
 
 drop policy if exists "Public read project-sources" on storage.objects;
 create policy "Public read project-sources"
   on storage.objects for select
   to public
-  using (bucket_id = project_sources_bucket);
+  using (bucket_id = 'project-sources');
 
 drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
 create policy "Authenticated can delete own project-sources"
   on storage.objects for delete
   to authenticated
   using (
-    bucket_id = project_sources_bucket
+    bucket_id = 'project-sources'
     and owner = auth.uid()
   );
-end $$;
 
 -- -----------------------------
 -- RLS replay safety: clear policies before re-create
@@ -94,6 +93,7 @@ declare
     'saved_feed_items',
     'chat_rooms',
     'chat_room_members',
+    'chat_room_preferences',
     'chat_blocks',
     'chat_suspensions',
     'chat_messages',
@@ -110,6 +110,11 @@ declare
     'notifications',
     'events',
     'event_rsvps',
+    'hangman_words',
+    'daily_puzzle_words',
+    'trivia_questions',
+    'would_you_rather_prompts',
+    'caption_game_images',
     'game_definitions',
     'game_sessions',
     'game_session_participants',
@@ -139,7 +144,7 @@ end $$;
 -- -----------------------------
 -- admin_allowlist: RLS (admin only)
 -- -----------------------------
-alter table public.admin_allowlist enable row level security;
+alter table if exists public.admin_allowlist enable row level security;
 
 drop policy if exists admin_allowlist_admin_all on public.admin_allowlist;
 create policy admin_allowlist_admin_all
@@ -160,7 +165,7 @@ grant execute on function public.is_admin() to authenticated;
 -- -----------------------------
 -- profanity_overrides: read by all (for client-side validation), write by admin
 -- -----------------------------
-alter table public.profanity_overrides enable row level security;
+alter table if exists public.profanity_overrides enable row level security;
 
 drop policy if exists profanity_overrides_select on public.profanity_overrides;
 create policy profanity_overrides_select
@@ -199,7 +204,7 @@ grant insert, update, delete on table public.profanity_overrides to authenticate
 -- -----------------------------
 -- profanity_allowlist: read by all (for client-side validation), write by admin
 -- -----------------------------
-alter table public.profanity_allowlist enable row level security;
+alter table if exists public.profanity_allowlist enable row level security;
 
 drop policy if exists profanity_allowlist_select on public.profanity_allowlist;
 create policy profanity_allowlist_select
@@ -236,7 +241,7 @@ grant insert, update, delete on table public.profanity_allowlist to authenticate
 -- -----------------------------
 -- feature_flags: read by all, write by admin only
 -- -----------------------------
-alter table public.feature_flags enable row level security;
+alter table if exists public.feature_flags enable row level security;
 
 drop policy if exists feature_flags_select on public.feature_flags;
 create policy feature_flags_select
@@ -286,12 +291,17 @@ grant execute on function public.get_directory_page(uuid, text, text, text, text
 -- -----------------------------
 -- profiles: RLS
 -- -----------------------------
-alter table public.profiles enable row level security;
+alter table if exists public.profiles enable row level security;
 
 do $$
 declare
   approved_status constant text := 'approved';
 begin
+  drop policy if exists profiles_anon_read_approved on public.profiles;
+  drop policy if exists profiles_authenticated_read on public.profiles;
+  drop policy if exists profiles_authenticated_insert on public.profiles;
+  drop policy if exists profiles_authenticated_update on public.profiles;
+
   execute format(
     'create policy profiles_anon_read_approved on public.profiles for select to anon using (status = %L)',
     approved_status
@@ -392,7 +402,13 @@ end $$;
 -- -----------------------------
 -- portfolio_items: RLS
 -- -----------------------------
-alter table public.portfolio_items enable row level security;
+alter table if exists public.portfolio_items enable row level security;
+
+drop policy if exists portfolio_items_anon_read_public on public.portfolio_items;
+drop policy if exists portfolio_items_authenticated_read on public.portfolio_items;
+drop policy if exists portfolio_items_authenticated_insert on public.portfolio_items;
+drop policy if exists portfolio_items_authenticated_update on public.portfolio_items;
+drop policy if exists portfolio_items_authenticated_delete on public.portfolio_items;
 
 create policy portfolio_items_anon_read_public
   on public.portfolio_items for select
@@ -438,7 +454,9 @@ grant insert, update, delete on table public.portfolio_items to authenticated;
 -- -----------------------------
 -- generation_jobs: RLS
 -- -----------------------------
-alter table public.generation_jobs enable row level security;
+alter table if exists public.generation_jobs enable row level security;
+
+drop policy if exists "Users can manage own generation_jobs" on public.generation_jobs;
 
 create policy "Users can manage own generation_jobs"
   on public.generation_jobs for all
@@ -448,7 +466,9 @@ create policy "Users can manage own generation_jobs"
 -- -----------------------------
 -- weirdlings: RLS
 -- -----------------------------
-alter table public.weirdlings enable row level security;
+alter table if exists public.weirdlings enable row level security;
+
+drop policy if exists "Users can manage own weirdlings" on public.weirdlings;
 
 create policy "Users can manage own weirdlings"
   on public.weirdlings for all
@@ -458,7 +478,7 @@ create policy "Users can manage own weirdlings"
 -- -----------------------------
 -- feed_connections: RLS
 -- -----------------------------
-alter table public.feed_connections enable row level security;
+alter table if exists public.feed_connections enable row level security;
 
 -- Single permissive SELECT (avoids evaluating two policies per row; same semantics as OR of the old pair)
 drop policy if exists "Users can read own connections" on public.feed_connections;
@@ -491,7 +511,12 @@ grant select, insert, delete on table public.feed_connections to authenticated;
 -- -----------------------------
 -- connection_requests: RLS
 -- -----------------------------
-alter table public.connection_requests enable row level security;
+alter table if exists public.connection_requests enable row level security;
+
+drop policy if exists connection_requests_participant_select on public.connection_requests;
+drop policy if exists connection_requests_requester_insert on public.connection_requests;
+drop policy if exists connection_requests_recipient_update on public.connection_requests;
+drop policy if exists connection_requests_requester_delete_pending on public.connection_requests;
 
 create policy connection_requests_participant_select
   on public.connection_requests for select
@@ -526,7 +551,11 @@ grant select, insert, update, delete on table public.connection_requests to auth
 -- -----------------------------
 -- feed_items: RLS
 -- -----------------------------
-alter table public.feed_items enable row level security;
+alter table if exists public.feed_items enable row level security;
+
+drop policy if exists "Users can read feed items from self or followees" on public.feed_items;
+drop policy if exists "Users can insert own feed items" on public.feed_items;
+drop policy if exists "Users can delete own feed items" on public.feed_items;
 
 create policy "Users can read feed items from self or followees"
   on public.feed_items for select
@@ -560,7 +589,9 @@ grant execute on function public.get_saved_feed_page(uuid, timestamptz, uuid, in
 -- -----------------------------
 -- saved_feed_items: RLS
 -- -----------------------------
-alter table public.saved_feed_items enable row level security;
+alter table if exists public.saved_feed_items enable row level security;
+
+drop policy if exists "Users can manage own saved feed items" on public.saved_feed_items;
 
 create policy "Users can manage own saved feed items"
   on public.saved_feed_items for all
@@ -708,7 +739,7 @@ end $$;
 -- -----------------------------
 -- chat_rooms: RLS
 -- -----------------------------
-alter table public.chat_rooms enable row level security;
+alter table if exists public.chat_rooms enable row level security;
 
 drop policy if exists "Users can read rooms they are members of" on public.chat_rooms;
 create policy "Users can read rooms they are members of"
@@ -737,7 +768,7 @@ create policy "Admins can update room name (groups)"
 -- -----------------------------
 -- chat_room_members: RLS
 -- -----------------------------
-alter table public.chat_room_members enable row level security;
+alter table if exists public.chat_room_members enable row level security;
 
 drop policy if exists "Members can read room membership" on public.chat_room_members;
 create policy "Members can read room membership"
@@ -750,12 +781,28 @@ create policy "Members can insert/invite room membership"
   on public.chat_room_members for insert
   to authenticated
   with check (
-    public.chat_is_room_admin(chat_room_members.room_id)
+    (
+      public.chat_is_room_admin(chat_room_members.room_id)
+      and (
+        (select auth.uid()) = chat_room_members.user_id
+        or (
+          public.are_chat_connections(
+            (select auth.uid()),
+            chat_room_members.user_id
+          )
+          and not public.chat_blocked(
+            (select auth.uid()),
+            chat_room_members.user_id
+          )
+        )
+      )
+    )
     or (
-      (select auth.uid()) = user_id
+      (select auth.uid()) = chat_room_members.user_id
       and exists (
         select 1 from public.chat_rooms r
-        where r.id = room_id and r.created_by = (select auth.uid())
+        where r.id = chat_room_members.room_id
+          and r.created_by = (select auth.uid())
       )
     )
   );
@@ -783,7 +830,9 @@ grant select, insert, update on table public.chat_room_members to authenticated;
 -- -----------------------------
 -- chat_blocks: RLS
 -- -----------------------------
-alter table public.chat_blocks enable row level security;
+alter table if exists public.chat_blocks enable row level security;
+
+drop policy if exists "Users can manage own blocks" on public.chat_blocks;
 
 create policy "Users can manage own blocks"
   on public.chat_blocks for all
@@ -797,7 +846,12 @@ grant select, insert, delete on table public.chat_blocks to authenticated;
 -- -----------------------------
 -- chat_suspensions: RLS (admin only)
 -- -----------------------------
-alter table public.chat_suspensions enable row level security;
+alter table if exists public.chat_suspensions enable row level security;
+
+drop policy if exists "Moderators can read own/manage chat suspensions" on public.chat_suspensions;
+drop policy if exists "Moderators can insert chat suspensions" on public.chat_suspensions;
+drop policy if exists "Moderators can update chat suspensions" on public.chat_suspensions;
+drop policy if exists "Moderators can delete chat suspensions" on public.chat_suspensions;
 
 create policy "Moderators can read own/manage chat suspensions"
   on public.chat_suspensions for select
@@ -830,7 +884,7 @@ grant insert, update, delete on table public.chat_suspensions to authenticated;
 -- -----------------------------
 -- chat_messages: RLS
 -- -----------------------------
-alter table public.chat_messages enable row level security;
+alter table if exists public.chat_messages enable row level security;
 
 drop policy if exists "Members can read room messages" on public.chat_messages;
 create policy "Members can read room messages"
@@ -874,7 +928,9 @@ grant update on table public.chat_messages to authenticated;
 -- -----------------------------
 -- chat_message_reactions: RLS
 -- -----------------------------
-alter table public.chat_message_reactions enable row level security;
+alter table if exists public.chat_message_reactions enable row level security;
+
+drop policy if exists "Members can manage reactions in own rooms" on public.chat_message_reactions;
 
 create policy "Members can manage reactions in own rooms"
   on public.chat_message_reactions for all
@@ -901,7 +957,10 @@ grant select, insert, delete on table public.chat_message_reactions to authentic
 -- -----------------------------
 -- chat_message_attachments: RLS
 -- -----------------------------
-alter table public.chat_message_attachments enable row level security;
+alter table if exists public.chat_message_attachments enable row level security;
+
+drop policy if exists "Members can read attachments in rooms" on public.chat_message_attachments;
+drop policy if exists "Members can insert attachments for own messages" on public.chat_message_attachments;
 
 create policy "Members can read attachments in rooms"
   on public.chat_message_attachments for select
@@ -930,7 +989,9 @@ grant select, insert on table public.chat_message_attachments to authenticated;
 -- -----------------------------
 -- chat_read_receipts: RLS
 -- -----------------------------
-alter table public.chat_read_receipts enable row level security;
+alter table if exists public.chat_read_receipts enable row level security;
+
+drop policy if exists "Members can manage receipts in rooms" on public.chat_read_receipts;
 
 create policy "Members can manage receipts in rooms"
   on public.chat_read_receipts for all
@@ -958,7 +1019,11 @@ grant select, insert, update on table public.chat_read_receipts to authenticated
 -- -----------------------------
 -- chat_reports: RLS
 -- -----------------------------
-alter table public.chat_reports enable row level security;
+alter table if exists public.chat_reports enable row level security;
+
+drop policy if exists "Users can insert reports" on public.chat_reports;
+drop policy if exists "Admins can read all reports" on public.chat_reports;
+drop policy if exists "Admins can update report status" on public.chat_reports;
 
 create policy "Users can insert reports"
   on public.chat_reports for insert
@@ -982,7 +1047,11 @@ grant update on table public.chat_reports to authenticated;
 -- -----------------------------
 -- feed_reports: RLS
 -- -----------------------------
-alter table public.feed_reports enable row level security;
+alter table if exists public.feed_reports enable row level security;
+
+drop policy if exists "Users can insert reports" on public.feed_reports;
+drop policy if exists "Admins can read all reports" on public.feed_reports;
+drop policy if exists "Admins can update report status" on public.feed_reports;
 
 create policy "Users can insert reports"
   on public.feed_reports for insert
@@ -1021,10 +1090,13 @@ create policy "Members can read chat-attachments"
 -- -----------------------------
 -- chat_audit_log: RLS (admin read only)
 -- -----------------------------
-alter table public.chat_audit_log enable row level security;
+alter table if exists public.chat_audit_log enable row level security;
 
 -- chat_moderators: admin only
-alter table public.chat_moderators enable row level security;
+alter table if exists public.chat_moderators enable row level security;
+
+drop policy if exists "Admins can manage chat_moderators" on public.chat_moderators;
+
 create policy "Admins can manage chat_moderators"
   on public.chat_moderators for all
   to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
@@ -1032,6 +1104,8 @@ revoke all on table public.chat_moderators from anon, authenticated;
 grant select, insert, delete on table public.chat_moderators to authenticated;
 
 -- -----------------------------
+drop policy if exists "Admins can read audit log" on public.chat_audit_log;
+
 create policy "Admins can read audit log"
   on public.chat_audit_log for select
   to authenticated
@@ -1043,10 +1117,14 @@ grant select on table public.chat_audit_log to authenticated;
 -- -----------------------------
 -- feed_advertisers: public read active; admin full access
 -- -----------------------------
-alter table public.feed_advertisers enable row level security;
+alter table if exists public.feed_advertisers enable row level security;
 
 drop policy if exists feed_advertisers_public_read on public.feed_advertisers;
 drop policy if exists feed_advertisers_admin_all on public.feed_advertisers;
+drop policy if exists feed_advertisers_authenticated_read on public.feed_advertisers;
+drop policy if exists feed_advertisers_admin_insert on public.feed_advertisers;
+drop policy if exists feed_advertisers_admin_update on public.feed_advertisers;
+drop policy if exists feed_advertisers_admin_delete on public.feed_advertisers;
 
 create policy feed_advertisers_public_read
   on public.feed_advertisers for select
@@ -1081,7 +1159,7 @@ grant select, insert, update, delete on table public.feed_advertisers to authent
 -- -----------------------------
 -- feed_ad_events: authenticated insert own, admin read
 -- -----------------------------
-alter table public.feed_ad_events enable row level security;
+alter table if exists public.feed_ad_events enable row level security;
 
 drop policy if exists feed_ad_events_insert_own on public.feed_ad_events;
 drop policy if exists feed_ad_events_admin_read on public.feed_ad_events;
@@ -1102,10 +1180,14 @@ grant insert, select on table public.feed_ad_events to authenticated;
 -- -----------------------------
 -- community_partners: public read active; admin full access
 -- -----------------------------
-alter table public.community_partners enable row level security;
+alter table if exists public.community_partners enable row level security;
 
 drop policy if exists community_partners_public_read on public.community_partners;
 drop policy if exists community_partners_admin_all on public.community_partners;
+drop policy if exists community_partners_authenticated_read on public.community_partners;
+drop policy if exists community_partners_admin_insert on public.community_partners;
+drop policy if exists community_partners_admin_update on public.community_partners;
+drop policy if exists community_partners_admin_delete on public.community_partners;
 
 create policy community_partners_public_read
   on public.community_partners for select
@@ -1140,7 +1222,10 @@ grant select, insert, update, delete on table public.community_partners to authe
 -- -----------------------------
 -- notifications: recipient only
 -- -----------------------------
-alter table public.notifications enable row level security;
+alter table if exists public.notifications enable row level security;
+
+drop policy if exists notifications_recipient_select on public.notifications;
+drop policy if exists notifications_recipient_update on public.notifications;
 
 create policy notifications_recipient_select
   on public.notifications for select to authenticated
@@ -1157,7 +1242,11 @@ grant select, update on table public.notifications to authenticated;
 -- -----------------------------
 -- events: authenticated read; host/create/update own
 -- -----------------------------
-alter table public.events enable row level security;
+alter table if exists public.events enable row level security;
+
+drop policy if exists events_select on public.events;
+drop policy if exists events_insert_own on public.events;
+drop policy if exists events_update_own on public.events;
 
 create policy events_select
   on public.events for select to authenticated using (true);
@@ -1177,7 +1266,12 @@ grant select, insert, update on table public.events to authenticated;
 -- -----------------------------
 -- event_rsvps: members manage own
 -- -----------------------------
-alter table public.event_rsvps enable row level security;
+alter table if exists public.event_rsvps enable row level security;
+
+drop policy if exists event_rsvps_select on public.event_rsvps;
+drop policy if exists event_rsvps_insert_own on public.event_rsvps;
+drop policy if exists event_rsvps_update_own on public.event_rsvps;
+drop policy if exists event_rsvps_delete_own on public.event_rsvps;
 
 create policy event_rsvps_select
   on public.event_rsvps for select to authenticated using (true);
@@ -1201,51 +1295,99 @@ grant select, insert, update, delete on table public.event_rsvps to authenticate
 -- -----------------------------
 -- hangman_words: read-only for authenticated (word list for Hangman)
 -- -----------------------------
-alter table public.hangman_words enable row level security;
-create policy hangman_words_select on public.hangman_words for select to authenticated using (true);
-revoke all on table public.hangman_words from anon, authenticated;
-grant select on table public.hangman_words to authenticated;
+do $hangman_words_rls$
+begin
+  if to_regclass('public.hangman_words') is null then
+    return;
+  end if;
+  alter table public.hangman_words enable row level security;
+  drop policy if exists hangman_words_select on public.hangman_words;
+  create policy hangman_words_select on public.hangman_words for select to authenticated using (true);
+  revoke all on table public.hangman_words from anon, authenticated;
+  grant select on table public.hangman_words to authenticated;
+end $hangman_words_rls$;
 
 -- -----------------------------
 -- daily_puzzle_words: read-only for authenticated (word list for Daily Word puzzle)
 -- -----------------------------
-alter table public.daily_puzzle_words enable row level security;
-create policy daily_puzzle_words_select on public.daily_puzzle_words for select to authenticated using (true);
-revoke all on table public.daily_puzzle_words from anon, authenticated;
-grant select on table public.daily_puzzle_words to authenticated;
+do $daily_puzzle_words_rls$
+begin
+  if to_regclass('public.daily_puzzle_words') is null then
+    return;
+  end if;
+  alter table public.daily_puzzle_words enable row level security;
+  drop policy if exists daily_puzzle_words_select on public.daily_puzzle_words;
+  create policy daily_puzzle_words_select on public.daily_puzzle_words for select to authenticated using (true);
+  revoke all on table public.daily_puzzle_words from anon, authenticated;
+  grant select on table public.daily_puzzle_words to authenticated;
+end $daily_puzzle_words_rls$;
 
 -- -----------------------------
 -- trivia_questions: read-only for authenticated (question bank for Trivia)
 -- -----------------------------
-alter table public.trivia_questions enable row level security;
-create policy trivia_questions_select on public.trivia_questions for select to authenticated using (true);
-revoke all on table public.trivia_questions from anon, authenticated;
-grant select on table public.trivia_questions to authenticated;
+do $trivia_questions_rls$
+begin
+  if to_regclass('public.trivia_questions') is null then
+    return;
+  end if;
+  alter table public.trivia_questions enable row level security;
+  drop policy if exists trivia_questions_select on public.trivia_questions;
+  create policy trivia_questions_select on public.trivia_questions for select to authenticated using (true);
+  revoke all on table public.trivia_questions from anon, authenticated;
+  grant select on table public.trivia_questions to authenticated;
+end $trivia_questions_rls$;
 
 -- -----------------------------
 -- would_you_rather_prompts: read-only for authenticated (prompt bank for Would You Rather)
 -- -----------------------------
-alter table public.would_you_rather_prompts enable row level security;
-create policy would_you_rather_prompts_select on public.would_you_rather_prompts for select to authenticated using (true);
-revoke all on table public.would_you_rather_prompts from anon, authenticated;
-grant select on table public.would_you_rather_prompts to authenticated;
+do $would_you_rather_prompts_rls$
+begin
+  if to_regclass('public.would_you_rather_prompts') is null then
+    return;
+  end if;
+  alter table public.would_you_rather_prompts enable row level security;
+  drop policy if exists would_you_rather_prompts_select on public.would_you_rather_prompts;
+  create policy would_you_rather_prompts_select on public.would_you_rather_prompts for select to authenticated using (true);
+  revoke all on table public.would_you_rather_prompts from anon, authenticated;
+  grant select on table public.would_you_rather_prompts to authenticated;
+end $would_you_rather_prompts_rls$;
 
 -- -----------------------------
 -- caption_game_images: read-only for authenticated (prompt images for Caption Game)
 -- -----------------------------
-alter table public.caption_game_images enable row level security;
-create policy caption_game_images_select on public.caption_game_images for select to authenticated using (true);
-revoke all on table public.caption_game_images from anon, authenticated;
-grant select on table public.caption_game_images to authenticated;
+do $caption_game_images_rls$
+begin
+  if to_regclass('public.caption_game_images') is null then
+    return;
+  end if;
+  alter table public.caption_game_images enable row level security;
+  drop policy if exists caption_game_images_select on public.caption_game_images;
+  create policy caption_game_images_select on public.caption_game_images for select to authenticated using (true);
+  revoke all on table public.caption_game_images from anon, authenticated;
+  grant select on table public.caption_game_images to authenticated;
+end $caption_game_images_rls$;
 
 -- -----------------------------
 -- Game Session Framework: RLS for game_definitions, game_sessions, participants, invitations, events
 -- -----------------------------
-alter table public.game_definitions enable row level security;
-alter table public.game_sessions enable row level security;
-alter table public.game_session_participants enable row level security;
-alter table public.game_invitations enable row level security;
-alter table public.game_events enable row level security;
+alter table if exists public.game_definitions enable row level security;
+alter table if exists public.game_sessions enable row level security;
+alter table if exists public.game_session_participants enable row level security;
+alter table if exists public.game_invitations enable row level security;
+alter table if exists public.game_events enable row level security;
+
+drop policy if exists game_definitions_select on public.game_definitions;
+drop policy if exists game_sessions_select on public.game_sessions;
+drop policy if exists game_sessions_insert on public.game_sessions;
+drop policy if exists game_sessions_update on public.game_sessions;
+drop policy if exists game_session_participants_select on public.game_session_participants;
+drop policy if exists game_session_participants_insert on public.game_session_participants;
+drop policy if exists game_session_participants_update on public.game_session_participants;
+drop policy if exists game_invitations_select on public.game_invitations;
+drop policy if exists game_invitations_insert on public.game_invitations;
+drop policy if exists game_invitations_update on public.game_invitations;
+drop policy if exists game_events_select on public.game_events;
+drop policy if exists game_events_insert on public.game_events;
 
 create policy game_definitions_select
   on public.game_definitions for select to authenticated using (true);
@@ -1333,10 +1475,26 @@ grant select, insert on table public.game_events to authenticated;
 -- -----------------------------
 -- content_submissions, playlists, playlist_items, audit_log
 -- -----------------------------
-alter table public.content_submissions enable row level security;
-alter table public.playlists enable row level security;
-alter table public.playlist_items enable row level security;
-alter table public.audit_log enable row level security;
+alter table if exists public.content_submissions enable row level security;
+alter table if exists public.playlists enable row level security;
+alter table if exists public.playlist_items enable row level security;
+alter table if exists public.audit_log enable row level security;
+
+drop policy if exists content_submissions_authenticated_insert on public.content_submissions;
+drop policy if exists content_submissions_authenticated_select on public.content_submissions;
+drop policy if exists content_submissions_admin_update on public.content_submissions;
+drop policy if exists content_submissions_admin_delete on public.content_submissions;
+drop policy if exists playlists_select_public on public.playlists;
+drop policy if exists playlists_select_authenticated on public.playlists;
+drop policy if exists playlists_admin_insert on public.playlists;
+drop policy if exists playlists_admin_update on public.playlists;
+drop policy if exists playlists_admin_delete on public.playlists;
+drop policy if exists playlist_items_select_public on public.playlist_items;
+drop policy if exists playlist_items_select_authenticated on public.playlist_items;
+drop policy if exists playlist_items_admin_insert on public.playlist_items;
+drop policy if exists playlist_items_admin_update on public.playlist_items;
+drop policy if exists playlist_items_admin_delete on public.playlist_items;
+drop policy if exists audit_log_select_admin on public.audit_log;
 
 create policy content_submissions_authenticated_insert
   on public.content_submissions for insert
@@ -1468,6 +1626,7 @@ declare
     'saved_feed_items',
     'chat_rooms',
     'chat_room_members',
+    'chat_room_preferences',
     'chat_blocks',
     'chat_suspensions',
     'chat_messages',
@@ -1484,6 +1643,11 @@ declare
     'notifications',
     'events',
     'event_rsvps',
+    'hangman_words',
+    'daily_puzzle_words',
+    'trivia_questions',
+    'would_you_rather_prompts',
+    'caption_game_images',
     'game_definitions',
     'game_sessions',
     'game_session_participants',

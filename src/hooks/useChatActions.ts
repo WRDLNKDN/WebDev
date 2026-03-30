@@ -396,11 +396,23 @@ export const useChatActions = ({
       if (current + toAdd.length > 100)
         throw new Error('A group can have up to 100 members.');
 
-      await supabase
+      const { error: inviteError } = await supabase
         .from('chat_room_members')
         .insert(
           toAdd.map((id) => ({ room_id: roomId, user_id: id, role: 'member' })),
         );
+      if (inviteError) {
+        const msg = String(inviteError.message ?? '');
+        if (
+          inviteError.code === '42501' ||
+          /row-level security|violates|policy/i.test(msg)
+        ) {
+          throw new Error(
+            'You can only add Connections to a group. Remove anyone who is not in your connection list and try again.',
+          );
+        }
+        throw inviteError;
+      }
       await fetchRoom(roomId);
     },
     [fetchRoom, roomId],

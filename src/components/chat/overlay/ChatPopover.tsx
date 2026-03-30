@@ -1,7 +1,7 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from '../room/ChatRoomHeader';
 import { MessageInput, type MessageReplyDraft } from '../message/MessageInput';
@@ -98,6 +98,18 @@ export const ChatPopover = ({
   );
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
+  const popoverAriaLabel = useMemo(() => {
+    if (!room) return 'Messages';
+    if (room.room_type === 'group') {
+      const n = room.name?.trim();
+      return n && n.length > 0 ? n : 'Group chat';
+    }
+    return (
+      otherMember?.profile?.display_name ||
+      otherMember?.profile?.handle ||
+      'Direct message'
+    );
+  }, [room, otherMember]);
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -160,15 +172,28 @@ export const ChatPopover = ({
   const content = (
     <>
       <Box
+        role="dialog"
+        aria-modal="true"
+        aria-label={popoverAriaLabel}
         onClick={(e) => e.stopPropagation()}
         sx={(t) => ({
           ...getGlassCard(t),
           position: 'fixed',
-          top: topOffsetPx,
-          right: 24,
-          width: POPOVER_WIDTH,
-          height: POPOVER_HEIGHT,
           zIndex: 1400,
+          top: topOffsetPx,
+          /* Desktop: anchored bottom-right. Mobile: full-bleed horizontal + capped height so it fits phone viewports. */
+          left: { xs: 'max(12px, env(safe-area-inset-left, 0px))', sm: 'auto' },
+          right: {
+            xs: 'max(12px, env(safe-area-inset-right, 0px))',
+            sm: 24,
+          },
+          width: { xs: 'auto', sm: POPOVER_WIDTH },
+          maxWidth: { xs: 'calc(100vw - 24px)', sm: POPOVER_WIDTH },
+          height: {
+            xs: `min(${POPOVER_HEIGHT}px, calc(100dvh - ${topOffsetPx + 20}px))`,
+            sm: POPOVER_HEIGHT,
+          },
+          maxHeight: `calc(100dvh - ${topOffsetPx + 20}px)`,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

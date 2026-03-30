@@ -468,14 +468,16 @@ export const Navbar = () => {
           {/* Mobile: hamburger — hidden on home during coming soon (video + text only) */}
           {isMobile && !minimalComingSoonHomeNavbar && (
             <Tooltip title="Open menu">
-              <IconButton
-                color="inherit"
-                aria-label="Open menu"
-                onClick={() => setDrawerOpen(true)}
-                sx={{ mr: 0.5 }}
-              >
-                <MenuIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  color="inherit"
+                  aria-label="Open menu"
+                  onClick={() => setDrawerOpen(true)}
+                  sx={{ mr: 0.5 }}
+                >
+                  <MenuIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           )}
 
@@ -848,34 +850,36 @@ export const Navbar = () => {
                           : 'Notifications'
                       }
                     >
-                      <IconButton
-                        component={RouterLink}
-                        to="/dashboard/notifications"
-                        aria-label={
-                          notificationsUnread > 0
-                            ? `${notificationsUnread} unread notifications`
-                            : 'Notifications'
-                        }
-                        sx={{
-                          color: 'rgba(255,255,255,0.85)',
-                          ...(path === '/dashboard/notifications' && {
-                            color: 'white',
-                            bgcolor: 'rgba(156,187,217,0.26)',
-                            '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                          }),
-                        }}
-                      >
-                        <Badge
-                          badgeContent={
+                      <span>
+                        <IconButton
+                          component={RouterLink}
+                          to="/dashboard/notifications"
+                          aria-label={
                             notificationsUnread > 0
-                              ? notificationsUnread
-                              : undefined
+                              ? `${notificationsUnread} unread notifications`
+                              : 'Notifications'
                           }
-                          color="error"
+                          sx={{
+                            color: 'rgba(255,255,255,0.85)',
+                            ...(path === '/dashboard/notifications' && {
+                              color: 'white',
+                              bgcolor: 'rgba(156,187,217,0.26)',
+                              '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+                            }),
+                          }}
                         >
-                          <NotificationsIcon sx={{ fontSize: 22 }} />
-                        </Badge>
-                      </IconButton>
+                          <Badge
+                            badgeContent={
+                              notificationsUnread > 0
+                                ? notificationsUnread
+                                : undefined
+                            }
+                            color="error"
+                          >
+                            <NotificationsIcon sx={{ fontSize: 22 }} />
+                          </Badge>
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   )}
                   {/* Hide avatar completely in coming soon mode unless on admin route */}

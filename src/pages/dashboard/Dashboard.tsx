@@ -870,13 +870,15 @@ export const Dashboard = () => {
         >
           Regenerate share link?
           <Tooltip title="Close">
-            <IconButton
-              aria-label="Close"
-              onClick={() => !regenerating && setRegenerateConfirmOpen(false)}
-              sx={{ color: 'rgba(255,255,255,0.75)' }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                aria-label="Close"
+                onClick={() => !regenerating && setRegenerateConfirmOpen(false)}
+                sx={{ color: 'rgba(255,255,255,0.75)' }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </DialogTitle>
         <DialogContent>

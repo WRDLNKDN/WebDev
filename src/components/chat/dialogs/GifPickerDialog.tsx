@@ -172,14 +172,16 @@ export const GifPickerDialog = ({
       >
         <span>Choose a GIF</span>
         <Tooltip title="Close">
-          <IconButton
-            onClick={onClose}
-            aria-label="Close"
-            size="small"
-            sx={{ ml: 1 }}
-          >
-            <CloseIcon />
-          </IconButton>
+          <span>
+            <IconButton
+              onClick={onClose}
+              aria-label="Close"
+              size="small"
+              sx={{ ml: 1 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </DialogTitle>
       <DialogContent>

@@ -8,57 +8,41 @@ export type EligibleChatConnection = {
   email?: string | null;
 };
 
+type RpcRow = {
+  id: string;
+  handle: string;
+  display_name: string | null;
+  avatar: string | null;
+  email: string | null;
+};
+
+/**
+ * Profiles the signed-in member may add to a DM or group (mutual feed_connections,
+ * approved profile, not blocked). Uses DB RPC so the list matches chat_create_group /
+ * RLS invite rules.
+ */
 export async function loadEligibleChatConnections(
   currentUserId: string,
 ): Promise<EligibleChatConnection[]> {
-  const { data: myConns, error: connErr } = await supabase
-    .from('feed_connections')
-    .select('connected_user_id')
-    .eq('user_id', currentUserId);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user || session.user.id !== currentUserId) {
+    return [];
+  }
 
-  if (connErr) throw connErr;
-
-  const connIds = (myConns ?? []).map(
-    (connection) => connection.connected_user_id,
-  );
-  if (connIds.length === 0) return [];
-
-  const { data: mutualConns, error: mutualErr } = await supabase
-    .from('feed_connections')
-    .select('user_id')
-    .eq('connected_user_id', currentUserId)
-    .in('user_id', connIds);
-
-  if (mutualErr) throw mutualErr;
-
-  const mutualIds = new Set(
-    (mutualConns ?? []).map((connection) => connection.user_id),
+  const { data, error } = await supabase.rpc(
+    'chat_list_eligible_connection_profiles',
   );
 
-  const { data: blocks, error: blocksErr } = await supabase
-    .from('chat_blocks')
-    .select('blocker_id, blocked_user_id')
-    .or(`blocker_id.eq.${currentUserId},blocked_user_id.eq.${currentUserId}`);
+  if (error) throw error;
 
-  if (blocksErr) throw blocksErr;
-
-  const blockedSet = new Set<string>();
-  (blocks ?? []).forEach((block) => {
-    if (block.blocker_id === currentUserId)
-      blockedSet.add(block.blocked_user_id);
-    else blockedSet.add(block.blocker_id);
-  });
-
-  const allowedIds = Array.from(mutualIds).filter((id) => !blockedSet.has(id));
-  if (allowedIds.length === 0) return [];
-
-  const { data: profileData, error: profileErr } = await supabase
-    .from('profiles')
-    .select('id, handle, display_name, avatar, email')
-    .in('id', allowedIds)
-    .eq('status', 'approved');
-
-  if (profileErr) throw profileErr;
-
-  return (profileData ?? []) as EligibleChatConnection[];
+  const rows = (data ?? []) as RpcRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    handle: row.handle,
+    display_name: row.display_name,
+    avatar: row.avatar,
+    email: row.email ?? undefined,
+  }));
 }

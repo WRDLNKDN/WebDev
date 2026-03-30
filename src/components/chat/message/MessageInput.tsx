@@ -403,15 +403,17 @@ export const MessageInput = ({
             </Typography>
           </Box>
           <Tooltip title="Cancel reply">
-            <IconButton
-              type="button"
-              size="small"
-              aria-label="Cancel reply"
-              onClick={() => onCancelReply?.()}
-              sx={{ color: 'rgba(255,255,255,0.85)' }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                type="button"
+                size="small"
+                aria-label="Cancel reply"
+                onClick={() => onCancelReply?.()}
+                sx={{ color: 'rgba(255,255,255,0.85)' }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       ) : null}
@@ -584,23 +586,25 @@ export const MessageInput = ({
           }}
         />
         <Tooltip title={expanded ? 'Collapse input' : 'Expand input'}>
-          <IconButton
-            type="button"
-            onClick={() => setExpanded((e) => !e)}
-            aria-label={expanded ? 'Collapse input' : 'Expand input'}
-            sx={{
-              color: (t) =>
-                alpha(
-                  t.palette.text.primary,
-                  t.palette.mode === 'light' ? 0.55 : 0.7,
-                ),
-              flexShrink: 0,
-              alignSelf: { xs: 'flex-end', sm: 'auto' },
-              p: 0.5,
-            }}
-          >
-            <KeyboardArrowUpIcon fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              aria-label={expanded ? 'Collapse input' : 'Expand input'}
+              sx={{
+                color: (t) =>
+                  alpha(
+                    t.palette.text.primary,
+                    t.palette.mode === 'light' ? 0.55 : 0.7,
+                  ),
+                flexShrink: 0,
+                alignSelf: { xs: 'flex-end', sm: 'auto' },
+                p: 0.5,
+              }}
+            >
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
       <Box
@@ -629,6 +633,7 @@ export const MessageInput = ({
             ref={fileInputRef}
             type="file"
             accept={CHAT_ALLOWED_ACCEPT}
+            data-testid="chat-attachment-file-input"
             onChange={handleFileSelect}
             style={{ display: 'none' }}
           />
@@ -695,22 +700,24 @@ export const MessageInput = ({
             </span>
           </Tooltip>
           <Tooltip title="Add emoji">
-            <IconButton
-              type="button"
-              onClick={(e) => setEmojiAnchor(e.currentTarget)}
-              disabled={disabled || sending || uploading}
-              aria-label="Add emoji"
-              sx={{
-                color: (t) =>
-                  alpha(
-                    t.palette.text.primary,
-                    t.palette.mode === 'light' ? 0.62 : 0.75,
-                  ),
-                p: 0.75,
-              }}
-            >
-              <EmojiEmotionsOutlinedIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                type="button"
+                onClick={(e) => setEmojiAnchor(e.currentTarget)}
+                disabled={disabled || sending || uploading}
+                aria-label="Add emoji"
+                sx={{
+                  color: (t) =>
+                    alpha(
+                      t.palette.text.primary,
+                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                    ),
+                  p: 0.75,
+                }}
+              >
+                <EmojiEmotionsOutlinedIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
         <Box
@@ -729,21 +736,23 @@ export const MessageInput = ({
             <Tooltip
               title={expanded ? 'Collapse composer options' : 'More options'}
             >
-              <IconButton
-                type="button"
-                onClick={() => setExpanded((value) => !value)}
-                aria-label="More options"
-                sx={{
-                  color: (t) =>
-                    alpha(
-                      t.palette.text.primary,
-                      t.palette.mode === 'light' ? 0.62 : 0.75,
-                    ),
-                  p: 0.75,
-                }}
-              >
-                <MoreHorizIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  type="button"
+                  onClick={() => setExpanded((value) => !value)}
+                  aria-label="More options"
+                  sx={{
+                    color: (t) =>
+                      alpha(
+                        t.palette.text.primary,
+                        t.palette.mode === 'light' ? 0.62 : 0.75,
+                      ),
+                    p: 0.75,
+                  }}
+                >
+                  <MoreHorizIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           ) : null}
           <Typography

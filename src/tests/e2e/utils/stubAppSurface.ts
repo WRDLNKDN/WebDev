@@ -184,4 +184,16 @@ export async function stubAppSurface(page: Page) {
       body: JSON.stringify({ ok: true, data: [] }),
     });
   });
+
+  /* Share / chat pickers call this RPC; generic REST POST otherwise returns empty 204. */
+  await page.route(
+    '**/rest/v1/rpc/chat_list_eligible_connection_profiles*',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    },
+  );
 }

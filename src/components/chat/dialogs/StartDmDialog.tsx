@@ -131,13 +131,15 @@ export const StartDmDialog = ({
       >
         Start a chat
         <Tooltip title="Close">
-          <IconButton
-            aria-label="Close"
-            onClick={onClose}
-            sx={{ color: 'rgba(255,255,255,0.75)' }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              aria-label="Close"
+              onClick={onClose}
+              sx={{ color: 'rgba(255,255,255,0.75)' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       </DialogTitle>
       <DialogContent>

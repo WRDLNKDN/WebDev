@@ -583,6 +583,17 @@ alter table public.portfolio_items
   check (cardinality(coalesce(tech_stack, '{}'::text[])) <= 1)
   not valid;
 
+alter table public.portfolio_items
+  drop constraint if exists portfolio_items_project_source_required;
+
+alter table public.portfolio_items
+  add constraint portfolio_items_project_source_required
+  check (nullif(btrim(coalesce(project_url, '')), '') is not null)
+  not valid;
+
+comment on constraint portfolio_items_project_source_required on public.portfolio_items is
+  'Each portfolio item must retain exactly one primary source URL. Uploaded files are stored as public project_url values in project-sources.';
+
 -- Public share: needs portfolio_items (defined above).
 create or replace function public.get_public_profile_by_share_token(p_token text)
 returns jsonb
@@ -1557,6 +1568,23 @@ create index if not exists idx_chat_rooms_room_type on public.chat_rooms(room_ty
 
 comment on table public.chat_rooms is 'Chat rooms: 1:1 (dm) or invite-only group (max 100 members).';
 
+alter table public.chat_rooms
+  add column if not exists description text,
+  add column if not exists image_url text;
+
+alter table public.chat_rooms
+  drop constraint if exists chat_rooms_group_description_length;
+
+alter table public.chat_rooms
+  add constraint chat_rooms_group_description_length
+  check (description is null or char_length(description) <= 256);
+
+comment on column public.chat_rooms.description is
+  'Optional group description shown in group create/list/header surfaces.';
+
+comment on column public.chat_rooms.image_url is
+  'Optional public image URL used as the group picture/avatar.';
+
 create table if not exists public.chat_room_preferences (
   room_id uuid not null references public.chat_rooms(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -1798,6 +1826,32 @@ $$;
 revoke all on function public.are_chat_connections(uuid, uuid) from public;
 grant execute on function public.are_chat_connections(uuid, uuid) to authenticated, service_role;
 
+-- Member picker (DM + group create / invite): same eligibility as chat_create_group / chat_create_dm.
+create or replace function public.chat_list_eligible_connection_profiles()
+returns table (
+  id uuid,
+  handle text,
+  display_name text,
+  avatar text,
+  email text
+)
+language sql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+  select p.id, p.handle, p.display_name, p.avatar, p.email
+  from public.profiles p
+  where (select auth.uid()) is not null
+    and p.id <> (select auth.uid())
+    and p.status = 'approved'
+    and public.are_chat_connections((select auth.uid()), p.id)
+    and not public.chat_blocked((select auth.uid()), p.id);
+$$;
+
+revoke all on function public.chat_list_eligible_connection_profiles() from public;
+grant execute on function public.chat_list_eligible_connection_profiles() to authenticated;
+
 -- chat_blocked: true if either user has blocked the other
 create or replace function public.chat_blocked(a uuid, b uuid)
 returns boolean
@@ -1986,6 +2040,7 @@ as $$
 declare
   v_uid uuid;
   v_room_id uuid;
+  v_member_ids uuid[];
 begin
   v_uid := auth.uid();
   if v_uid is null then
@@ -1996,6 +2051,23 @@ begin
   end if;
   if nullif(trim(p_name), '') is null then
     raise exception 'Group name is required';
+  end if;
+
+  select coalesce(array_agg(member_id), '{}'::uuid[])
+    into v_member_ids
+  from (
+    select distinct member_id
+    from unnest(coalesce(p_member_ids, '{}'::uuid[])) as member_id
+    where member_id is not null and member_id <> v_uid
+  ) deduped_members;
+
+  if exists (
+    select 1
+    from unnest(v_member_ids) as member_id
+    where not public.are_chat_connections(v_uid, member_id)
+       or public.chat_blocked(v_uid, member_id)
+  ) then
+    raise exception 'You can only add Connections to a group.';
   end if;
 
   insert into public.chat_rooms (room_type, name, created_by)
@@ -2009,9 +2081,10 @@ begin
   insert into public.chat_room_members (room_id, user_id, role)
   values (v_room_id, v_uid, 'admin');
 
-  if coalesce(array_length(p_member_ids, 1), 0) > 0 then
+  if coalesce(array_length(v_member_ids, 1), 0) > 0 then
     insert into public.chat_room_members (room_id, user_id, role)
-    select v_room_id, unnest(coalesce(p_member_ids, '{}')), 'member';
+    select v_room_id, member_id, 'member'
+    from unnest(v_member_ids) as member_id;
   end if;
 
   return v_room_id;

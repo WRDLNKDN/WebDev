@@ -340,6 +340,7 @@ export const ChatPage = () => {
 
   const threadColumn = showThread ? (
     <Box
+      data-testid="chat-thread-column"
       sx={{
         flex: 1,
         display: { xs: 'flex', md: 'flex' },

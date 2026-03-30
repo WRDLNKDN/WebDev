@@ -3,16 +3,12 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
+import { isExternalHttpUrl } from '../../../lib/portfolio/linkUtils';
 import {
   getProjectPreviewFallbackLabel,
   getProjectPreviewMediaUrl,
 } from '../../../lib/portfolio/projectPreview';
 import type { PortfolioItem } from '../../../types/portfolio';
-
-const isExternalUrl = (url: string): boolean => {
-  const trimmed = url.trim();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-};
 
 type PortfolioHighlightSlideProps = {
   project: PortfolioItem;
@@ -179,9 +175,11 @@ export const PortfolioHighlightSlide = ({
               <Button
                 variant="contained"
                 href={projectUrl}
-                target={isExternalUrl(projectUrl) ? '_blank' : undefined}
+                target={isExternalHttpUrl(projectUrl) ? '_blank' : undefined}
                 rel={
-                  isExternalUrl(projectUrl) ? 'noopener noreferrer' : undefined
+                  isExternalHttpUrl(projectUrl)
+                    ? 'noopener noreferrer'
+                    : undefined
                 }
                 endIcon={<OpenInNewIcon />}
                 sx={{

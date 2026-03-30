@@ -1,5 +1,5 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
@@ -13,6 +13,7 @@ import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDi
 import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
 import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
+import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -21,7 +22,6 @@ import {
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
 import { useAppToast } from '../../context/AppToastContext';
-import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { truncateSnippet } from '../../lib/chat/messageSnippet';
 
@@ -143,26 +143,11 @@ export const ChatPopupPage = () => {
     setReportOpen(true);
   };
 
-  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
-    return (
-      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
-    );
-  }, []);
-
-  const handleForwardToRoom = useCallback(
-    async (targetRoomId: string) => {
-      if (!forwardSource) return;
-      const body = formatForwardedChatText(
-        forwardSource.content,
-        forwardAuthorLabel(forwardSource),
-      );
-      const ok = await forwardMessage(targetRoomId, body);
-      if (ok) {
-        setForwardSource(null);
-        showToast({ message: 'Message forwarded.', severity: 'success' });
-      }
-    },
-    [forwardAuthorLabel, forwardMessage, forwardSource, showToast],
+  const { forwardAuthorLabel, handleForwardToRoom } = useChatForwardToRoomFlow(
+    forwardMessage,
+    forwardSource,
+    setForwardSource,
+    showToast,
   );
 
   if (!roomId) {

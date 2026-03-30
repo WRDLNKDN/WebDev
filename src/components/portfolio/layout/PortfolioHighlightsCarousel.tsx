@@ -16,19 +16,15 @@ import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
-import { getProjectPreviewFallbackLabel } from '../../../lib/portfolio/projectPreview';
+import { isExternalHttpUrl } from '../../../lib/portfolio/linkUtils';
+import {
+  getProjectPreviewFallbackLabel,
+  getProjectPreviewMediaUrl,
+} from '../../../lib/portfolio/projectPreview';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 const AUTO_ADVANCE_MS = 3500;
 const SWIPE_THRESHOLD_PX = 48;
-
-const getPreviewMediaUrl = (project: PortfolioItem): string | null =>
-  project.image_url || project.thumbnail_url || null;
-
-const isExternalUrl = (url: string): boolean => {
-  const trimmed = url.trim();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-};
 
 type PortfolioHighlightsCarouselProps = {
   projects: PortfolioItem[];
@@ -142,7 +138,7 @@ export const PortfolioHighlightsCarousel = ({
           }}
         >
           {highlightedProjects.map((project, index) => {
-            const previewMediaUrl = getPreviewMediaUrl(project);
+            const previewMediaUrl = getProjectPreviewMediaUrl(project);
             const projectUrl = project.project_url?.trim() ?? '';
             const categories = getProjectDisplayCategories(project.tech_stack);
 
@@ -317,10 +313,10 @@ export const PortfolioHighlightsCarousel = ({
                           variant="contained"
                           href={projectUrl}
                           target={
-                            isExternalUrl(projectUrl) ? '_blank' : undefined
+                            isExternalHttpUrl(projectUrl) ? '_blank' : undefined
                           }
                           rel={
-                            isExternalUrl(projectUrl)
+                            isExternalHttpUrl(projectUrl)
                               ? 'noopener noreferrer'
                               : undefined
                           }

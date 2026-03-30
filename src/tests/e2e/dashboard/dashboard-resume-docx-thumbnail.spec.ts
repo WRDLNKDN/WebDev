@@ -11,7 +11,6 @@ const DOCX_FILE = {
 } as const;
 
 const resumePdfPublicUrl = `https://example.supabase.co/storage/v1/object/public/resumes/${USER_ID}/resume.pdf`;
-const resumePdfPreviewSrc = `${resumePdfPublicUrl}#toolbar=0&navpanes=0`;
 const resumeThumbPublicUrl = `https://example.supabase.co/storage/v1/object/public/resumes/${USER_ID}/resume-thumbnail.jpg`;
 const resumeOriginalPublicUrl = `https://example.supabase.co/storage/v1/object/public/resumes/${USER_ID}/resume-original.docx`;
 
@@ -148,6 +147,24 @@ async function setupDashboardResumeStubs(
   });
 }
 
+async function openDashboardResumeDocxPicker(page: Page) {
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('app-main')).toBeVisible({
+    timeout: 45_000,
+  });
+  await expect(
+    page.getByTestId('dashboard-portfolio-showcase-section'),
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await page.getByRole('button', { name: /add to portfolio/i }).click();
+  await page.getByRole('menuitem', { name: /^add resume$/i }).click();
+
+  const fileInput = page.locator('input[type="file"][accept*=".docx"]').first();
+  await fileInput.setInputFiles(DOCX_FILE);
+}
+
 test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => {
   test('Word upload calls generate-thumbnail and surfaces PDF resume URL', async ({
     page,
@@ -156,39 +173,19 @@ test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => 
 
     await setupDashboardResumeStubs(page, { thumbnailMode: 'success' });
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 45_000,
-    });
-    await expect(
-      page.getByTestId('dashboard-portfolio-showcase-section'),
-    ).toBeVisible({
-      timeout: 30_000,
-    });
-
-    await page.getByRole('button', { name: /add to portfolio/i }).click();
-    await page.getByRole('menuitem', { name: /^add resume$/i }).click();
-
-    const fileInput = page
-      .locator('input[type="file"][accept*=".docx"]')
-      .first();
-    await fileInput.setInputFiles(DOCX_FILE);
+    await openDashboardResumeDocxPicker(page);
 
     await expect(page.getByTestId('resume-file-name')).toContainText(
       DOCX_FILE.name,
       { timeout: 25_000 },
     );
 
-    const openDoc = page.getByRole('button', { name: 'Open document' });
+    // Dashboard resume card omits onOpenPreview; open control is a direct PDF link (not the profile preview modal).
+    const openDoc = page
+      .getByTestId('dashboard-portfolio-showcase-section')
+      .getByRole('link', { name: 'Open document' });
     await expect(openDoc).toBeVisible({ timeout: 15_000 });
-    await openDoc.click();
-
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('portfolio-preview-frame')).toHaveAttribute(
-      'src',
-      resumePdfPreviewSrc,
-    );
+    await expect(openDoc).toHaveAttribute('href', resumePdfPublicUrl);
   });
 
   test('failed generate-thumbnail shows preview warning toast', async ({
@@ -198,23 +195,7 @@ test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => 
 
     await setupDashboardResumeStubs(page, { thumbnailMode: '422' });
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 45_000,
-    });
-    await expect(
-      page.getByTestId('dashboard-portfolio-showcase-section'),
-    ).toBeVisible({
-      timeout: 30_000,
-    });
-
-    await page.getByRole('button', { name: /add to portfolio/i }).click();
-    await page.getByRole('menuitem', { name: /^add resume$/i }).click();
-
-    const fileInput = page
-      .locator('input[type="file"][accept*=".docx"]')
-      .first();
-    await fileInput.setInputFiles(DOCX_FILE);
+    await openDashboardResumeDocxPicker(page);
 
     await expect(
       page.getByRole('alert').filter({ hasText: /Preview was not generated/i }),

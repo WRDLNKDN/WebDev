@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppToast } from '../../context/AppToastContext';
@@ -29,6 +29,7 @@ import { MessageList } from '../../components/chat/message/MessageList';
 import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import { StartDmDialog } from '../../components/chat/dialogs/StartDmDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
+import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -37,7 +38,6 @@ import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
-import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 import { truncateSnippet } from '../../lib/chat/messageSnippet';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
@@ -201,26 +201,11 @@ export const ChatPage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isMobileLayout, navigate]);
 
-  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
-    return (
-      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
-    );
-  }, []);
-
-  const handleForwardToRoom = useCallback(
-    async (targetRoomId: string) => {
-      if (!forwardSource) return;
-      const body = formatForwardedChatText(
-        forwardSource.content,
-        forwardAuthorLabel(forwardSource),
-      );
-      const ok = await forwardMessage(targetRoomId, body);
-      if (ok) {
-        setForwardSource(null);
-        showToast({ message: 'Message forwarded.', severity: 'success' });
-      }
-    },
-    [forwardAuthorLabel, forwardMessage, forwardSource, showToast],
+  const { forwardAuthorLabel, handleForwardToRoom } = useChatForwardToRoomFlow(
+    forwardMessage,
+    forwardSource,
+    setForwardSource,
+    showToast,
   );
 
   const handleStartDm = async (userId: string) => {

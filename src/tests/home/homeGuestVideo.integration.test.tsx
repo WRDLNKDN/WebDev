@@ -51,6 +51,20 @@ vi.mock('../../lib/auth/supabaseClient', () => ({
 
 import { Home } from '../../pages/home/Home';
 
+async function mountHomeAtRoot(root: Root) {
+  await act(async () => {
+    root.render(
+      <MemoryRouter initialEntries={['/']}>
+        <Home />
+      </MemoryRouter>,
+    );
+  });
+
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 120));
+  });
+}
+
 describe('Home guest marketing video', () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -107,17 +121,7 @@ describe('Home guest marketing video', () => {
   });
 
   it('renders the video section between the two marketing sections for signed-out guests', async () => {
-    await act(async () => {
-      root.render(
-        <MemoryRouter initialEntries={['/']}>
-          <Home />
-        </MemoryRouter>,
-      );
-    });
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 120));
-    });
+    await mountHomeAtRoot(root);
 
     const html = container.innerHTML;
     expect(html.indexOf('What Makes This Different')).toBeGreaterThan(-1);
@@ -139,17 +143,7 @@ describe('Home guest marketing video', () => {
       participation_style: 'builder',
     };
 
-    await act(async () => {
-      root.render(
-        <MemoryRouter initialEntries={['/']}>
-          <Home />
-        </MemoryRouter>,
-      );
-    });
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 120));
-    });
+    await mountHomeAtRoot(root);
 
     expect(container.innerHTML).not.toContain('Why WRDLNKDN video');
   });

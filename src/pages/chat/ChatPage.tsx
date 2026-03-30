@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { Session } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppToast } from '../../context/AppToastContext';
@@ -104,6 +104,7 @@ export const ChatPage = () => {
     inviteMembers,
     blockUser,
     refresh,
+    refetchRoom,
   } = useChat(roomId ?? null);
 
   const { submitReport } = useReportMessage();
@@ -242,6 +243,16 @@ export const ChatPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
+  const resolvedThreadFavorite = Boolean(
+    activeRoom != null ? activeRoom.is_favorite : (room?.is_favorite ?? false),
+  );
+  const handleToggleFavorite = useCallback(
+    async (targetRoomId: string, currentlyFavorite: boolean) => {
+      await toggleFavorite(targetRoomId, currentlyFavorite);
+      if (roomId === targetRoomId) await refetchRoom();
+    },
+    [toggleFavorite, roomId, refetchRoom],
+  );
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -292,21 +303,25 @@ export const ChatPage = () => {
     <Box
       sx={{
         display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-        width: { xs: '100%', md: showThread ? '33%' : '100%' },
+        width: { xs: '100%', md: showThread ? 280 : '100%' },
         minWidth: { xs: 0, md: showThread ? 280 : 0 },
-        maxWidth: { xs: '100%', md: showThread ? 360 : '100%' },
+        maxWidth: { xs: '100%', md: showThread ? 280 : '100%' },
         flexShrink: 0,
         borderRight: {
           xs: 'none',
           md: showThread
-            ? `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.18 : 0.12)}`
+            ? `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.1 : 0.08)}`
             : 'none',
         },
         flexDirection: 'column',
         minHeight: 0,
         bgcolor: isMobileLayout
           ? 'transparent'
-          : alpha(theme.palette.background.paper, 0.88),
+          : alpha(
+              theme.palette.background.paper,
+              theme.palette.mode === 'light' ? 0.72 : 0.55,
+            ),
+        backdropFilter: isMobileLayout ? 'none' : 'blur(12px)',
       }}
     >
       <ChatRoomList
@@ -316,7 +331,7 @@ export const ChatPage = () => {
         onStartDm={() => setStartDmOpen(true)}
         onCreateGroup={() => setCreateGroupOpen(true)}
         onRemoveChat={handleRemoveChat}
-        onToggleFavorite={toggleFavorite}
+        onToggleFavorite={handleToggleFavorite}
         chatPathPrefix="/chat-full"
         showMessagesHeading={isMobileLayout}
       />
@@ -336,8 +351,10 @@ export const ChatPage = () => {
         overflowX: 'hidden',
         overflowY: 'hidden',
         background: isMobileLayout
-          ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
-          : alpha(theme.palette.background.default, 0.985),
+          ? 'linear-gradient(180deg, rgba(6,10,20,0.14) 0%, rgba(6,10,20,0.03) 100%)'
+          : theme.palette.mode === 'light'
+            ? alpha(theme.palette.background.default, 0.98)
+            : `linear-gradient(180deg, ${alpha('#121722', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.96)} 55%)`,
       }}
     >
       <ChatRoomHeader
@@ -364,11 +381,10 @@ export const ChatPage = () => {
           setGroupDialogMode('members');
           setGroupDialogOpen(true);
         }}
-        isFavorite={Boolean(activeRoom?.is_favorite)}
+        isFavorite={resolvedThreadFavorite}
         onToggleFavorite={
           roomId
-            ? () =>
-                void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+            ? () => void handleToggleFavorite(roomId, resolvedThreadFavorite)
             : undefined
         }
         onBack={() => navigate('/chat-full')}
@@ -478,6 +494,22 @@ export const ChatPage = () => {
         minWidth: 0,
         width: '100%',
         overflow: 'hidden',
+        position: 'relative',
+        '&::before':
+          !isMobileLayout && showThread
+            ? {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                background:
+                  theme.palette.mode === 'light'
+                    ? `radial-gradient(120% 80% at 50% 0%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 55%)`
+                    : `radial-gradient(100% 60% at 50% 0%, ${alpha(theme.palette.primary.main, 0.07)} 0%, transparent 50%)`,
+                zIndex: 0,
+              }
+            : undefined,
+        '& > *': { position: 'relative', zIndex: 1 },
       }}
     >
       {listColumn}
@@ -582,11 +614,11 @@ export const ChatPage = () => {
               flexDirection: 'column',
               overflow: 'hidden',
               bgcolor: alpha(theme.palette.background.default, 0.96),
-              borderLeft: `1px solid ${alpha(theme.palette.divider, 0.16)}`,
+              borderLeft: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.1 : 0.14)}`,
               boxShadow:
                 theme.palette.mode === 'light'
-                  ? `-8px 0 24px ${alpha(theme.palette.common.black, 0.08)}`
-                  : `-10px 0 28px ${alpha(theme.palette.common.black, 0.32)}`,
+                  ? `-6px 0 20px ${alpha(theme.palette.common.black, 0.06)}`
+                  : `-8px 0 24px ${alpha(theme.palette.common.black, 0.28)}`,
               transform: 'translateX(0)',
               opacity: 1,
               animation: 'chatDockSlideIn 220ms ease-out',
@@ -610,8 +642,12 @@ export const ChatPage = () => {
                 px: 1.75,
                 py: 1,
                 flexShrink: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                bgcolor: alpha(theme.palette.background.paper, 0.88),
+                borderBottom: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.08 : 0.1)}`,
+                bgcolor: alpha(
+                  theme.palette.background.paper,
+                  theme.palette.mode === 'light' ? 0.78 : 0.72,
+                ),
+                backdropFilter: 'blur(10px)',
                 color:
                   theme.palette.mode === 'light'
                     ? theme.palette.text.primary
@@ -692,6 +728,19 @@ export const ChatPage = () => {
           m: { xs: 0.75, sm: 1.25 },
           overflow: 'hidden',
           borderRadius: { xs: 2.5, md: 3 },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+            bgcolor: alpha(
+              theme.palette.common.black,
+              theme.palette.mode === 'light' ? 0.04 : 0.14,
+            ),
+            zIndex: 0,
+          },
+          '& > *': { position: 'relative', zIndex: 1 },
         }}
       >
         {splitWorkspace}

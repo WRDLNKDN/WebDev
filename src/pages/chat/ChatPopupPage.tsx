@@ -1,5 +1,5 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
@@ -75,6 +75,7 @@ export const ChatPopupPage = () => {
     transferAdmin,
     inviteMembers,
     blockUser,
+    refetchRoom,
   } = useChat(roomId ?? null);
   const { submitReport } = useReportMessage();
   const { onlineUsers, typingUsers, startTyping, stopTyping } = useChatPresence(
@@ -84,6 +85,16 @@ export const ChatPopupPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
+  const resolvedThreadFavorite = Boolean(
+    activeRoom != null ? activeRoom.is_favorite : (room?.is_favorite ?? false),
+  );
+  const handleToggleFavorite = useCallback(
+    async (targetRoomId: string, currentlyFavorite: boolean) => {
+      await toggleFavorite(targetRoomId, currentlyFavorite);
+      if (roomId === targetRoomId) await refetchRoom();
+    },
+    [toggleFavorite, roomId, refetchRoom],
+  );
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -211,11 +222,10 @@ export const ChatPopupPage = () => {
             setGroupDialogMode('members');
             setGroupDialogOpen(true);
           }}
-          isFavorite={Boolean(activeRoom?.is_favorite)}
+          isFavorite={resolvedThreadFavorite}
           onToggleFavorite={
             roomId
-              ? () =>
-                  void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+              ? () => void handleToggleFavorite(roomId, resolvedThreadFavorite)
               : undefined
           }
           onBack={() =>

@@ -25,7 +25,7 @@ import type { ChatRoomWithMembers } from './chatTypes';
 export type ChatRoomsContextValue = {
   rooms: ChatRoomWithMembers[];
   loading: boolean;
-  fetchRooms: () => Promise<void>;
+  fetchRooms: (options?: { silent?: boolean }) => Promise<void>;
   removeChat: (targetRoomId: string) => Promise<void>;
   createDm: (otherUserId: string) => Promise<string | null>;
   createGroup: (
@@ -42,40 +42,17 @@ async function persistChatRoomFavoriteForMember(
   roomId: string,
   nextFavorite: boolean,
 ): Promise<void> {
-  // Avoid PostgREST upsert + composite on_conflict edge cases (some stacks error
-  // with "no unique constraint matching ON CONFLICT"). Update-if-exists, else insert.
-  const { data: updated, error: updateError } = await supabase
-    .from('chat_room_preferences')
-    .update({ is_favorite: nextFavorite })
-    .eq('user_id', userId)
-    .eq('room_id', roomId)
-    .select('room_id');
-
-  if (updateError) throw updateError;
-  if (updated && updated.length > 0) return;
-
-  const { error: insertError } = await supabase
-    .from('chat_room_preferences')
-    .insert({
+  // Single upsert on PK (room_id, user_id) avoids update+insert races and empty
+  // `.update().select()` rows that some clients treat oddly on first favorite.
+  const { error } = await supabase.from('chat_room_preferences').upsert(
+    {
       room_id: roomId,
       user_id: userId,
       is_favorite: nextFavorite,
-    });
-
-  if (!insertError) return;
-
-  // Race: another request inserted between update and insert.
-  if (insertError.code === '23505') {
-    const { error: retryError } = await supabase
-      .from('chat_room_preferences')
-      .update({ is_favorite: nextFavorite })
-      .eq('user_id', userId)
-      .eq('room_id', roomId);
-    if (retryError) throw retryError;
-    return;
-  }
-
-  throw insertError;
+    },
+    { onConflict: 'room_id,user_id' },
+  );
+  if (error) throw error;
 }
 
 export const ChatRoomsProvider = ({ children }: { children: ReactNode }) => {
@@ -216,8 +193,9 @@ function useChatRoomsState() {
     [],
   );
 
-  const fetchRooms = useCallback(async () => {
-    setLoading(true);
+  const fetchRooms = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const {
         data: { session },
@@ -240,23 +218,34 @@ function useChatRoomsState() {
 
       const roomIds = [...new Set(memberRows.map((row) => row.room_id))];
 
-      const { data: roomData } = await supabase
-        .from('chat_rooms')
-        .select('*')
-        .in('id', roomIds);
+      const [roomsRes, prefsRes, blocksRes, membersRes] = await Promise.all([
+        supabase.from('chat_rooms').select('*').in('id', roomIds),
+        supabase
+          .from('chat_room_preferences')
+          .select('room_id, is_favorite')
+          .eq('user_id', session.user.id)
+          .in('room_id', roomIds),
+        supabase
+          .from('chat_blocks')
+          .select('blocker_id, blocked_user_id')
+          .or(
+            `blocker_id.eq.${session.user.id},blocked_user_id.eq.${session.user.id}`,
+          ),
+        supabase
+          .from('chat_room_members')
+          .select('room_id, user_id, role, joined_at, left_at')
+          .in('room_id', roomIds)
+          .is('left_at', null),
+      ]);
 
-      const { data: roomPreferences } = await supabase
-        .from('chat_room_preferences')
-        .select('room_id, is_favorite')
-        .eq('user_id', session.user.id)
-        .in('room_id', roomIds);
+      for (const res of [roomsRes, prefsRes, blocksRes, membersRes]) {
+        if (res.error) throw res.error;
+      }
 
-      const { data: blocks } = await supabase
-        .from('chat_blocks')
-        .select('blocker_id, blocked_user_id')
-        .or(
-          `blocker_id.eq.${session.user.id},blocked_user_id.eq.${session.user.id}`,
-        );
+      const roomData = roomsRes.data;
+      const roomPreferences = prefsRes.data;
+      const blocks = blocksRes.data;
+      const allMembersData = membersRes.data;
 
       const blockedPair = new Set<string>();
       (blocks ?? []).forEach((block) => {
@@ -266,12 +255,6 @@ function useChatRoomsState() {
             : block.blocker_id;
         blockedPair.add([session.user.id, other].sort().join(':'));
       });
-
-      const { data: allMembersData } = await supabase
-        .from('chat_room_members')
-        .select('room_id, user_id, role, joined_at, left_at')
-        .in('room_id', roomIds)
-        .is('left_at', null);
 
       const membersByRoom = new Map<string, ChatRoomMember[]>();
       for (const member of allMembersData ?? []) {

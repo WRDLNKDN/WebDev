@@ -46,8 +46,6 @@ import {
   type MentionableUser,
 } from './MentionAutocomplete';
 
-const INPUT_SEPARATOR_GREEN = '#1DB954';
-
 const QUICK_SEND: { content: string; label: string; ariaLabel: string }[] = [
   { content: '😊', label: '😊', ariaLabel: 'Send smile' },
   { content: '👍', label: '👍', ariaLabel: 'Send thumbs up' },
@@ -353,13 +351,13 @@ export const MessageInput = ({
         flexDirection: 'column',
         gap: 0.5,
         borderTop: (t) =>
-          `1px solid ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.85 : 0.28)}`,
-        p: { xs: 0.9, sm: 1 },
+          `1px solid ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.12 : 0.14)}`,
+        p: { xs: 1, sm: 1.15 },
         pb: `max(8px, calc(0.5rem + env(safe-area-inset-bottom, 0px)))`,
         bgcolor: (t) =>
           t.palette.mode === 'light'
-            ? alpha(t.palette.background.paper, 0.985)
-            : 'rgba(32,36,44,0.98)',
+            ? alpha(t.palette.background.paper, 0.96)
+            : alpha('#1a1f28', 0.92),
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
@@ -460,7 +458,7 @@ export const MessageInput = ({
         sx={{
           display: 'flex',
           alignItems: { xs: 'stretch', sm: 'flex-end' },
-          gap: 0.35,
+          gap: 0.5,
           minWidth: 0,
           width: '100%',
           flexDirection: { xs: 'column', sm: 'row' },
@@ -469,7 +467,7 @@ export const MessageInput = ({
         <TextField
           inputRef={messageInputRef}
           multiline
-          maxRows={expanded ? 6 : 2}
+          maxRows={expanded ? 8 : 3}
           value={text}
           onChange={(e) => {
             const newValue = e.target.value;
@@ -552,17 +550,18 @@ export const MessageInput = ({
             '& .MuiOutlinedInput-root': {
               bgcolor: (t) =>
                 t.palette.mode === 'light'
-                  ? alpha(t.palette.common.black, 0.04)
-                  : 'rgba(24,28,35,0.9)',
+                  ? alpha(t.palette.common.black, 0.035)
+                  : alpha('#0d1118', 0.65),
               color: 'text.primary',
-              borderRadius: 1.4,
-              minHeight: { xs: 46, sm: 38 },
+              borderRadius: 2,
+              minHeight: { xs: 48, sm: 44 },
               alignItems: expanded ? 'flex-start' : 'center',
+              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
               '& fieldset': {
                 borderColor: (t) =>
                   alpha(
                     t.palette.divider,
-                    t.palette.mode === 'light' ? 0.9 : 1,
+                    t.palette.mode === 'light' ? 0.2 : 0.22,
                   ),
               },
               '&:hover fieldset': {
@@ -571,6 +570,14 @@ export const MessageInput = ({
                     t.palette.primary.main,
                     t.palette.mode === 'light' ? 0.35 : 0.45,
                   ),
+              },
+              '&.Mui-focused': {
+                boxShadow: (t) =>
+                  `0 0 0 3px ${alpha(t.palette.primary.main, t.palette.mode === 'light' ? 0.18 : 0.28)}`,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'primary.main',
+                borderWidth: '1px',
               },
             },
             '& .MuiInputBase-inputMultiline': {
@@ -613,20 +620,29 @@ export const MessageInput = ({
           display: 'flex',
           alignItems: { xs: 'stretch', sm: 'center' },
           justifyContent: 'space-between',
-          gap: 0.5,
+          gap: 0.65,
           minWidth: 0,
           width: '100%',
           flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          pt: 0.25,
         }}
       >
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 0.25,
+            gap: 0.15,
             minWidth: 0,
             flexWrap: 'wrap',
             width: { xs: '100%', sm: 'auto' },
+            borderRadius: 2,
+            px: { xs: 0, sm: 0.35 },
+            py: { xs: 0, sm: 0.15 },
+            bgcolor: (t) =>
+              alpha(
+                t.palette.primary.main,
+                t.palette.mode === 'light' ? 0.04 : 0.08,
+              ),
           }}
         >
           <input
@@ -759,9 +775,9 @@ export const MessageInput = ({
             variant="caption"
             color="text.secondary"
             sx={{
-              fontSize: '0.68rem',
-              opacity: 0.72,
-              display: 'inline',
+              fontSize: '0.65rem',
+              opacity: 0.55,
+              display: { xs: 'inline', md: 'none' },
               maxWidth: { xs: '42%', sm: 'none' },
               lineHeight: 1.35,
             }}
@@ -777,11 +793,23 @@ export const MessageInput = ({
                 disabled={submitBlocked}
                 aria-label="Send message"
                 sx={{
-                  color: INPUT_SEPARATOR_GREEN,
-                  p: 0.75,
-                  minWidth: { xs: 44, sm: 40 },
-                  minHeight: { xs: 44, sm: 40 },
+                  color: 'primary.contrastText',
+                  bgcolor: 'primary.main',
+                  p: 0.85,
+                  minWidth: { xs: 46, sm: 44 },
+                  minHeight: { xs: 46, sm: 44 },
                   touchAction: 'manipulation',
+                  boxShadow: (t) =>
+                    `0 2px 10px ${alpha(t.palette.primary.main, 0.35)}`,
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                  '&.Mui-disabled': {
+                    bgcolor: (t) =>
+                      alpha(t.palette.action.disabledBackground, 0.5),
+                    color: 'action.disabled',
+                    boxShadow: 'none',
+                  },
                 }}
               >
                 <SendIcon fontSize="small" />

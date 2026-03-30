@@ -1,4 +1,5 @@
 import { Box } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { AssetThumbnail } from '../../media/AssetThumbnail';
@@ -140,11 +141,12 @@ export const AttachmentPreview = ({
     return (
       <Box
         sx={{
-          width: 'min(100%, 220px)',
-          maxWidth: 220,
-          borderRadius: 1,
+          width: 'min(100%, 360px)',
+          maxWidth: 360,
+          borderRadius: 1.5,
           overflow: 'hidden',
-          border: '1px solid rgba(141,188,229,0.38)',
+          boxShadow: (t) =>
+            `0 0 0 1px ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.12 : 0.14)} inset`,
         }}
       >
         <Box
@@ -176,11 +178,12 @@ export const AttachmentPreview = ({
       }
       sx={{
         display: 'block',
-        width: 'min(100%, 220px)',
-        maxWidth: 220,
-        borderRadius: 1,
+        width: 'min(100%, 360px)',
+        maxWidth: 360,
+        borderRadius: 1.5,
         overflow: 'hidden',
-        border: '1px solid rgba(141,188,229,0.38)',
+        boxShadow: (t) =>
+          `0 0 0 1px ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.1 : 0.12)} inset`,
         textDecoration: 'none',
       }}
     >
@@ -194,7 +197,7 @@ export const AttachmentPreview = ({
         compact
         sx={{
           minHeight: 0,
-          maxHeight: 220,
+          maxHeight: 280,
           aspectRatio: '1 / 1',
           borderBottom: 'none',
         }}

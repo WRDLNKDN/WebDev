@@ -115,18 +115,14 @@ export const ChatRoomList = ({
       sx={{
         width: '100%',
         minWidth: 0,
-        borderRight: {
-          xs: 'none',
-          md: `1px solid ${alpha(theme.palette.primary.light, 0.22)}`,
-        },
         display: 'flex',
         flexDirection: 'column',
       }}
     >
       <Box
         sx={{
-          p: { xs: 1.2, sm: 1.35 },
-          borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.14 : 0.08)}`,
+          p: { xs: 1, sm: 1.1 },
+          borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.1 : 0.06)}`,
           background: isLightChrome
             ? alpha(theme.palette.background.paper, 0.92)
             : 'linear-gradient(180deg, rgba(10,16,34,0.88) 0%, rgba(10,16,34,0.62) 100%)',
@@ -184,7 +180,7 @@ export const ChatRoomList = ({
             ),
           }}
           sx={{
-            mb: 1.35,
+            mb: 1.1,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
               bgcolor: isLightChrome
@@ -332,17 +328,17 @@ export const ChatRoomList = ({
                 ...(roomId === room.id
                   ? {
                       bgcolor: isLightChrome
-                        ? alpha(theme.palette.primary.main, 0.11)
-                        : alpha(theme.palette.primary.main, 0.16),
-                      boxShadow: `inset 3px 0 0 ${alpha(theme.palette.primary.main, 0.9)}`,
+                        ? alpha(theme.palette.primary.main, 0.14)
+                        : alpha(theme.palette.primary.main, 0.22),
+                      boxShadow: `inset 4px 0 0 ${theme.palette.primary.main}, 0 0 0 1px ${alpha(theme.palette.primary.main, isLightChrome ? 0.2 : 0.28)}`,
                     }
                   : {}),
-                borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.08 : 0.06)}`,
+                borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.06 : 0.045)}`,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1,
-                py: 1,
-                px: { xs: 1.1, sm: 1.25 },
+                gap: 0.85,
+                py: { xs: 0.65, sm: 0.75 },
+                px: { xs: 1, sm: 1.1 },
                 borderRadius: 0,
                 my: 0,
                 color: panelPrimaryText,
@@ -359,11 +355,11 @@ export const ChatRoomList = ({
                     bgcolor:
                       roomId === room.id
                         ? isLightChrome
-                          ? alpha(theme.palette.primary.main, 0.14)
-                          : alpha(theme.palette.primary.main, 0.2)
+                          ? alpha(theme.palette.primary.main, 0.17)
+                          : alpha(theme.palette.primary.main, 0.26)
                         : isLightChrome
-                          ? alpha(theme.palette.action.hover, 0.55)
-                          : 'rgba(255,255,255,0.045)',
+                          ? alpha(theme.palette.action.hover, 0.45)
+                          : 'rgba(255,255,255,0.055)',
                   },
                 },
                 '&:focus-visible': {
@@ -384,40 +380,55 @@ export const ChatRoomList = ({
                 }
                 alt={getChatRoomLabel(room, currentUserId)}
                 size="small"
-                sx={{ width: 40, height: 40, flexShrink: 0 }}
+                sx={{ width: 36, height: 36, flexShrink: 0 }}
               />
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Stack
                   direction="row"
                   alignItems="center"
                   spacing={0.75}
-                  sx={{ minWidth: 0 }}
+                  sx={{ minWidth: 0, width: '100%' }}
                 >
                   <Typography
                     variant="body2"
                     fontWeight={roomId === room.id ? 700 : 600}
                     noWrap
-                    sx={{ color: panelPrimaryText, flex: 1, minWidth: 0 }}
+                    sx={{
+                      color: panelPrimaryText,
+                      flex: 1,
+                      minWidth: 0,
+                      pr: 0.5,
+                      letterSpacing: '-0.01em',
+                    }}
                   >
                     {getChatRoomLabel(room, currentUserId)}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: panelSecondaryText,
-                      flexShrink: 0,
-                      fontSize: '0.7rem',
-                    }}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.35}
+                    sx={{ flexShrink: 0 }}
                   >
-                    {formatConversationTime(room.last_message_at)}
-                  </Typography>
-                  {room.is_favorite ? (
-                    <StarIcon
-                      aria-hidden
-                      data-testid={`chat-room-favorite-badge-${room.id}`}
-                      sx={CHAT_FAVORITE_ROW_BADGE_SX}
-                    />
-                  ) : null}
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: panelSecondaryText,
+                        fontSize: '0.6875rem',
+                        fontWeight: 500,
+                        opacity: 0.92,
+                        textAlign: 'right',
+                      }}
+                    >
+                      {formatConversationTime(room.last_message_at)}
+                    </Typography>
+                    {room.is_favorite ? (
+                      <StarIcon
+                        aria-hidden
+                        data-testid={`chat-room-favorite-badge-${room.id}`}
+                        sx={CHAT_FAVORITE_ROW_BADGE_SX}
+                      />
+                    ) : null}
+                  </Stack>
                 </Stack>
                 <Typography
                   variant="caption"

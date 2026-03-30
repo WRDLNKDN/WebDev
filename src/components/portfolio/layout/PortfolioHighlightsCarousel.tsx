@@ -363,34 +363,38 @@ export const PortfolioHighlightsCarousel = ({
         {highlightedProjects.length > 1 ? (
           <Stack direction="row" spacing={{ xs: 0.25, sm: 0.5 }}>
             <Tooltip title="Previous highlight">
-              <IconButton
-                aria-label="Previous highlight"
-                data-testid="portfolio-highlights-prev"
-                onClick={goToPrevious}
-                size="medium"
-                sx={{
-                  color: 'white',
-                  width: { xs: 40, sm: 32 },
-                  height: { xs: 40, sm: 32 },
-                }}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  aria-label="Previous highlight"
+                  data-testid="portfolio-highlights-prev"
+                  onClick={goToPrevious}
+                  size="medium"
+                  sx={{
+                    color: 'white',
+                    width: { xs: 40, sm: 32 },
+                    height: { xs: 40, sm: 32 },
+                  }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Next highlight">
-              <IconButton
-                aria-label="Next highlight"
-                data-testid="portfolio-highlights-next"
-                onClick={goToNext}
-                size="medium"
-                sx={{
-                  color: 'white',
-                  width: { xs: 40, sm: 32 },
-                  height: { xs: 40, sm: 32 },
-                }}
-              >
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  aria-label="Next highlight"
+                  data-testid="portfolio-highlights-next"
+                  onClick={goToNext}
+                  size="medium"
+                  sx={{
+                    color: 'white',
+                    width: { xs: 40, sm: 32 },
+                    height: { xs: 40, sm: 32 },
+                  }}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         ) : (

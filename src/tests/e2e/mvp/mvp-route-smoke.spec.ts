@@ -183,11 +183,12 @@ test.describe('MVP route smoke', () => {
     await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+    const thread = page.getByTestId('chat-thread-column');
+    await expect(thread.getByRole('textbox', { name: 'Message' })).toBeVisible({
       timeout: 35_000,
     });
     await expect(
-      page.getByRole('button', { name: 'Send message' }),
+      thread.getByRole('button', { name: 'Send message' }),
     ).toBeVisible();
   });
 

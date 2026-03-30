@@ -160,19 +160,21 @@ export const EmailPreferencesDialog = ({
       }}
     >
       <Tooltip title="Close">
-        <IconButton
-          aria-label="Close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            zIndex: 1,
-            color: isLight ? 'text.secondary' : 'white',
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <span>
+          <IconButton
+            aria-label="Close"
+            onClick={onClose}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              zIndex: 1,
+              color: isLight ? 'text.secondary' : 'white',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </span>
       </Tooltip>
       <DialogTitle
         sx={{

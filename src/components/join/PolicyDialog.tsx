@@ -27,9 +27,11 @@ export const PolicyDialog = ({ open, title, text, onClose }: Props) => {
       >
         {title}
         <Tooltip title="Close">
-          <IconButton aria-label="Close" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
+          <span>
+            <IconButton aria-label="Close" onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </DialogTitle>
 

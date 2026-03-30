@@ -15,6 +15,15 @@ const MID_SIZED_GIF = {
   mimeType: 'image/gif',
   buffer: Buffer.alloc(5 * 1024 * 1024, 1),
 };
+/** Valid 1×1 GIF so `renderImageBlob` succeeds during structured chat upload (random bytes are not decodable). */
+const DIRECT_GIF = {
+  name: 'party.gif',
+  mimeType: 'image/gif',
+  buffer: Buffer.from(
+    'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+    'base64',
+  ),
+};
 const TOO_LARGE_GIF = {
   name: 'too-large.gif',
   mimeType: 'image/gif',
@@ -23,6 +32,16 @@ const TOO_LARGE_GIF = {
 };
 
 const E2E_ROOM_ID = 'e2e-room-1111-4111-8111-111111111111';
+
+const threadComposer = (page: import('@playwright/test').Page) =>
+  page
+    .getByTestId('chat-thread-column')
+    .getByRole('textbox', { name: 'Message' });
+
+const threadSendButton = (page: import('@playwright/test').Page) =>
+  page
+    .getByTestId('chat-thread-column')
+    .getByRole('button', { name: 'Send message' });
 
 function requestWantsSingleObject(route: import('@playwright/test').Route) {
   return (
@@ -164,16 +183,14 @@ test.describe('Chat file upload', () => {
     await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+    await expect(threadComposer(page)).toBeVisible({
       timeout: 35_000,
     });
 
-    const fileInput = page.locator('input[type=file]').first();
+    const fileInput = page.getByTestId('chat-attachment-file-input');
     await fileInput.setInputFiles(UPLOAD_FIXTURE);
 
-    await expect(
-      page.getByRole('button', { name: 'Send message' }),
-    ).toBeEnabled({ timeout: 15_000 });
+    await expect(threadSendButton(page)).toBeEnabled({ timeout: 15_000 });
   });
 
   test('allows a larger gif within the 6MB upload ceiling', async ({
@@ -188,22 +205,20 @@ test.describe('Chat file upload', () => {
     await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+    await expect(threadComposer(page)).toBeVisible({
       timeout: 35_000,
     });
 
-    const fileInput = page.locator('input[type=file]').first();
+    const fileInput = page.getByTestId('chat-attachment-file-input');
     await fileInput.setInputFiles(MID_SIZED_GIF);
 
     await expect(
       page.getByText('This GIF is too large to process. Try a smaller file.'),
     ).not.toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Send message' }),
-    ).toBeEnabled();
+    await expect(threadSendButton(page)).toBeEnabled();
   });
 
-  test('uploads a gif under 6MB directly without the optimizer flow', async ({
+  test('uploads a small gif in direct mode without the optimizer flow', async ({
     page,
   }) => {
     test.setTimeout(90_000);
@@ -251,7 +266,7 @@ test.describe('Chat file upload', () => {
             message_id: 'msg-e2e-1',
             storage_path: `${USER_ID}/party.gif`,
             mime_type: body.mime_type ?? 'image/gif',
-            file_size: MID_SIZED_GIF.buffer.length,
+            file_size: DIRECT_GIF.buffer.length,
             created_at: new Date().toISOString(),
           }),
         });
@@ -267,7 +282,7 @@ test.describe('Chat file upload', () => {
             message_id: 'msg-e2e-1',
             storage_path: `${USER_ID}/party.gif`,
             mime_type: 'image/gif',
-            file_size: MID_SIZED_GIF.buffer.length,
+            file_size: DIRECT_GIF.buffer.length,
             created_at: new Date().toISOString(),
           },
         ]),
@@ -293,14 +308,14 @@ test.describe('Chat file upload', () => {
     await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+    await expect(threadComposer(page)).toBeVisible({
       timeout: 35_000,
     });
 
-    const fileInput = page.locator('input[type=file]').first();
-    await fileInput.setInputFiles(MID_SIZED_GIF);
-    await page.getByRole('textbox', { name: 'Message' }).fill('processed gif');
-    await page.getByRole('button', { name: 'Send message' }).click();
+    const fileInput = page.getByTestId('chat-attachment-file-input');
+    await fileInput.setInputFiles(DIRECT_GIF);
+    await threadComposer(page).fill('processed gif');
+    await threadSendButton(page).click();
 
     await expect.poll(() => processedGifRequested).toBe(false);
     await expect.poll(() => attachmentInsertMime).toBe('image/gif');
@@ -310,7 +325,7 @@ test.describe('Chat file upload', () => {
     await expect
       .poll(() => uploadMimeType ?? '')
       .toMatch(/^(image\/gif|multipart\/form-data;)/);
-    await expect(page.locator('img[alt="GIF"]')).toHaveCount(1);
+    await expect(page.getByAltText('GIF attachment')).toHaveCount(1);
   });
 
   test('rejects a gif above the 6MB upload ceiling with a clear message', async ({
@@ -325,19 +340,17 @@ test.describe('Chat file upload', () => {
     await page.goto(`/chat-full/${E2E_ROOM_ID}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible({
+    await expect(threadComposer(page)).toBeVisible({
       timeout: 35_000,
     });
 
-    const fileInput = page.locator('input[type=file]').first();
+    const fileInput = page.getByTestId('chat-attachment-file-input');
     await fileInput.setInputFiles(TOO_LARGE_GIF);
 
     await expect(
       page.getByText('This GIF is too large to process. Try a smaller file.'),
     ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Send message' }),
-    ).toBeDisabled();
+    await expect(threadSendButton(page)).toBeDisabled();
   });
 
   test('keeps the message input visible and avoids page-level scroll gaps', async ({
@@ -354,7 +367,7 @@ test.describe('Chat file upload', () => {
       waitUntil: 'domcontentloaded',
     });
 
-    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    const messageInput = threadComposer(page);
     await expect(messageInput).toBeVisible({ timeout: 35_000 });
     await expect(page.getByTestId('chat-message-scroll')).toBeVisible();
 
@@ -366,7 +379,7 @@ test.describe('Chat file upload', () => {
         '[data-testid="chat-message-scroll"]',
       ) as HTMLElement | null;
       const input = document.querySelector(
-        '[aria-label="Message"]',
+        '[data-testid="chat-thread-column"] [aria-label="Message"]',
       ) as HTMLElement | null;
 
       return {
@@ -434,7 +447,7 @@ test.describe('Chat file upload', () => {
       waitUntil: 'domcontentloaded',
     });
 
-    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    const messageInput = threadComposer(page);
     await expect(messageInput).toBeVisible({ timeout: 35_000 });
     await messageInput.click();
     await messageInput.fill('Enter keeps focus');
@@ -465,13 +478,14 @@ test.describe('Chat file upload', () => {
       waitUntil: 'domcontentloaded',
     });
 
-    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    const messageInput = threadComposer(page);
     await expect(messageInput).toBeVisible({ timeout: 35_000 });
+    const thread = page.getByTestId('chat-thread-column');
     await expect(
-      page.getByRole('button', { name: 'Chat options' }),
+      thread.getByRole('button', { name: 'Chat options' }),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: 'Attach image or GIF' }),
+      thread.getByRole('button', { name: 'Attach image or GIF' }),
     ).toBeVisible();
 
     const metrics = await page.evaluate(() => {

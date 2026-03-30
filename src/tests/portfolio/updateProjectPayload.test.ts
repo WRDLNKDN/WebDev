@@ -1,6 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useProfile } from '../../hooks/useProfile';
 
+const { uploadStructuredPublicAssetMock } = vi.hoisted(() => ({
+  uploadStructuredPublicAssetMock: vi.fn(async () => ({
+    assetId: 'asset-mock',
+    mediaType: 'image' as const,
+    originalUrl:
+      'https://cdn.example.com/project-images/user-1/project-123-original.png',
+    displayUrl: 'https://cdn.example.com/project-images/user-1/project-123.png',
+    thumbnailUrl:
+      'https://cdn.example.com/project-images/user-1/project-123-thumb.jpg',
+    width: 400,
+    height: 300,
+    sizeOriginal: 8,
+    sizeDisplay: 6,
+    sizeThumbnail: 4,
+    mimeType: 'image/png',
+    originalFilename: 'preview.png',
+  })),
+}));
+
 const { state, supabaseMock } = vi.hoisted(() => {
   const state = {
     capturedUpdatePayload: null as Record<string, unknown> | null,
@@ -112,12 +131,17 @@ vi.mock('../../lib/auth/supabaseClient', () => ({
   supabase: supabaseMock,
 }));
 
+vi.mock('../../lib/media/ingestion', () => ({
+  uploadStructuredPublicAsset: uploadStructuredPublicAssetMock,
+}));
+
 describe('useProfile.updateProject payload mapping', () => {
   beforeEach(() => {
     state.capturedUpdatePayload = null;
     state.updateEqCalls = [];
     supabaseMock.from.mockClear();
     supabaseMock.auth.getSession.mockClear();
+    uploadStructuredPublicAssetMock.mockClear();
   });
 
   it('normalizes Google doc URLs and marks thumbnail pending without manual image', async () => {
@@ -231,8 +255,14 @@ describe('useProfile.updateProject payload mapping', () => {
       { thumbnailFile: imageFile },
     );
 
-    expect(upload).toHaveBeenCalledTimes(1);
-    expect(getPublicUrl).toHaveBeenCalledTimes(1);
+    expect(uploadStructuredPublicAssetMock).toHaveBeenCalledTimes(1);
+    expect(uploadStructuredPublicAssetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bucket: 'project-images',
+        ownerId: 'user-1',
+        file: imageFile,
+      }),
+    );
     expect(state.capturedUpdatePayload).toMatchObject({
       image_url:
         'https://cdn.example.com/project-images/user-1/project-123.png',

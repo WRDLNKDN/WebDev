@@ -7,6 +7,25 @@ const DM_TARGET_ID = 'keyboard-dm-target-1';
 const GROUP_TARGET_ID = 'keyboard-group-target-1';
 
 async function stubChatKeyboardSurface(page: import('@playwright/test').Page) {
+  await page.route(
+    '**/rest/v1/rpc/chat_list_eligible_connection_profiles*',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: DM_TARGET_ID,
+            handle: 'dm-target',
+            display_name: 'DM Target',
+            avatar: null,
+            email: 'dm-target@example.com',
+          },
+        ]),
+      });
+    },
+  );
+
   await page.route('**/rest/v1/feature_flags*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -301,8 +320,8 @@ test.describe('Chat keyboard dialogs', () => {
   }) => {
     test.setTimeout(90_000);
     const { stubAdminRpc } = await seedSignedInSession(page.context());
-    await stubAdminRpc(page);
     await stubAppSurface(page);
+    await stubAdminRpc(page);
     await stubChatKeyboardSurface(page);
 
     await page.setViewportSize({ width: 1440, height: 900 });

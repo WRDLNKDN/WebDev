@@ -21,7 +21,9 @@ test.describe('Group chat @mention', () => {
       waitUntil: 'domcontentloaded',
     });
 
-    const messageInput = page.getByRole('textbox', { name: 'Message' });
+    const messageInput = page
+      .getByTestId('chat-thread-column')
+      .getByRole('textbox', { name: 'Message' });
     await expect(messageInput).toBeVisible({ timeout: 45_000 });
     await messageInput.click();
     await messageInput.fill('@');

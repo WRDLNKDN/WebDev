@@ -457,80 +457,84 @@ export const ChatRoomList = ({
                           : 'Add to favorites'
                       }
                     >
-                      <IconButton
-                        type="button"
-                        aria-label={
-                          room.is_favorite
-                            ? 'Remove from favorites'
-                            : 'Add to favorites'
-                        }
-                        data-testid={`chat-room-favorite-${room.id}`}
-                        size="small"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          Promise.resolve(
-                            onToggleFavorite(
-                              room.id,
-                              Boolean(room.is_favorite),
-                            ),
-                          ).catch(() => {});
-                        }}
-                        sx={{
-                          borderRadius: 1.25,
-                          minWidth: 32,
-                          minHeight: 32,
-                          transition:
-                            'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
-                          ...(room.is_favorite
-                            ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
-                            : CHAT_FAVORITE_IDLE_BUTTON_SX),
-                        }}
-                      >
-                        {room.is_favorite ? (
-                          <StarIcon
-                            sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
-                            data-testid={`chat-room-favorite-icon-filled-${room.id}`}
-                          />
-                        ) : (
-                          <StarBorderIcon
-                            fontSize="small"
-                            data-testid={`chat-room-favorite-icon-outline-${room.id}`}
-                          />
-                        )}
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          type="button"
+                          aria-label={
+                            room.is_favorite
+                              ? 'Remove from favorites'
+                              : 'Add to favorites'
+                          }
+                          data-testid={`chat-room-favorite-${room.id}`}
+                          size="small"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            Promise.resolve(
+                              onToggleFavorite(
+                                room.id,
+                                Boolean(room.is_favorite),
+                              ),
+                            ).catch(() => {});
+                          }}
+                          sx={{
+                            borderRadius: 1.25,
+                            minWidth: 32,
+                            minHeight: 32,
+                            transition:
+                              'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
+                            ...(room.is_favorite
+                              ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                              : CHAT_FAVORITE_IDLE_BUTTON_SX),
+                          }}
+                        >
+                          {room.is_favorite ? (
+                            <StarIcon
+                              sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
+                              data-testid={`chat-room-favorite-icon-filled-${room.id}`}
+                            />
+                          ) : (
+                            <StarBorderIcon
+                              fontSize="small"
+                              data-testid={`chat-room-favorite-icon-outline-${room.id}`}
+                            />
+                          )}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   )}
                   {onRemoveChat && (
                     <Tooltip title="Remove conversation">
-                      <IconButton
-                        aria-label="Remove conversation"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setRemoveTarget({
-                            id: room.id,
-                            label: getChatRoomLabel(room, currentUserId),
-                          });
-                        }}
-                        sx={{
-                          color: isLightChrome
-                            ? 'text.secondary'
-                            : 'rgba(255,255,255,0.65)',
-                          borderRadius: 1,
-                          minWidth: 30,
-                          minHeight: 30,
-                          '&:hover': {
-                            bgcolor: isLightChrome
-                              ? 'action.hover'
-                              : 'rgba(255,255,255,0.08)',
-                          },
-                        }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          aria-label="Remove conversation"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRemoveTarget({
+                              id: room.id,
+                              label: getChatRoomLabel(room, currentUserId),
+                            });
+                          }}
+                          sx={{
+                            color: isLightChrome
+                              ? 'text.secondary'
+                              : 'rgba(255,255,255,0.65)',
+                            borderRadius: 1,
+                            minWidth: 30,
+                            minHeight: 30,
+                            '&:hover': {
+                              bgcolor: isLightChrome
+                                ? 'action.hover'
+                                : 'rgba(255,255,255,0.08)',
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   )}
                 </Box>

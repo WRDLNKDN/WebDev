@@ -22,7 +22,7 @@ describe('feed ad events schema governance', () => {
     expect(RLS_SQL).toContain('feed_ad_events_insert_own');
     expect(RLS_SQL).toContain('feed_ad_events_admin_read');
     expect(RLS_SQL).toContain(
-      'alter table public.feed_ad_events enable row level security',
+      'alter table if exists public.feed_ad_events enable row level security',
     );
   });
 

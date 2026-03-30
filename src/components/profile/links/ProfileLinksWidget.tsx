@@ -129,21 +129,23 @@ export const ProfileLinksWidget = ({
         </DestinationLink>
         {isOwner && onRemove ? (
           <Tooltip title={`Remove ${linkTitle}`}>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onRemove(link.id);
-              }}
-              aria-label={`Remove ${linkTitle}`}
-              sx={{
-                ...compactGlassDangerIconButtonSx,
-                flexShrink: 0,
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemove(link.id);
+                }}
+                aria-label={`Remove ${linkTitle}`}
+                sx={{
+                  ...compactGlassDangerIconButtonSx,
+                  flexShrink: 0,
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         ) : null}
       </Box>

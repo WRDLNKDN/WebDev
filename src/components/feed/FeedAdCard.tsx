@@ -75,7 +75,12 @@ const FeedAdCardComponent = (props: Props) => {
   return (
     <Card
       variant="outlined"
-      sx={{ borderRadius: 2, mb: 2, minWidth: 0, overflow: 'hidden' }}
+      sx={{
+        borderRadius: 2,
+        mb: { xs: 2.25, md: 2.5 },
+        minWidth: 0,
+        overflow: 'hidden',
+      }}
       component="article"
       aria-label={`Sponsored: ${advertiser.title}`}
     >

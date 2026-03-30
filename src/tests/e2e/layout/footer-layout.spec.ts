@@ -6,6 +6,8 @@ async function goToFooter(page: Page) {
   const footer = page.getByTestId('site-footer');
   await footer.scrollIntoViewIfNeeded();
   await expect(footer).toBeVisible();
+  // Footer fades in via IntersectionObserver; wait until it is painted for assertions.
+  await expect(footer).toHaveCSS('opacity', '1', { timeout: 20_000 });
   return footer;
 }
 
@@ -47,8 +49,8 @@ test.describe('Footer layout', () => {
     const copyright = footer.getByTestId('footer-copyright');
     await expect(socials).toBeVisible();
     await expect(copyright).toBeVisible();
-    const instagram = footer.getByLabel('Instagram');
-    const github = footer.getByLabel('GitHub');
+    const instagram = socials.getByRole('link', { name: 'Instagram' });
+    const github = socials.getByRole('link', { name: 'GitHub' });
     await expect(instagram).toBeVisible();
     await expect(github).toBeVisible();
     await expect(instagram).toHaveAttribute(

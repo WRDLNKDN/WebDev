@@ -448,13 +448,15 @@ export const AdvertisePage = () => {
         >
           You have unsaved changes
           <Tooltip title="Close">
-            <IconButton
-              aria-label="Close"
-              onClick={() => setConfirmCloseOpen(false)}
-              sx={{ color: 'rgba(255,255,255,0.75)' }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                aria-label="Close"
+                onClick={() => setConfirmCloseOpen(false)}
+                sx={{ color: 'rgba(255,255,255,0.75)' }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </DialogTitle>
         <DialogContent>

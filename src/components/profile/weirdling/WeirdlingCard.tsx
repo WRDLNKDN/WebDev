@@ -111,19 +111,21 @@ export const WeirdlingCard = ({
               />
             )}
             <Tooltip title={`Delete ${weirdling.displayName}`}>
-              <IconButton
-                size="small"
-                onClick={() => onDeleteRequest(weirdling)}
-                aria-label={`Delete ${weirdling.displayName}`}
-                sx={{
-                  ...compactGlassDangerIconButtonSx,
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => onDeleteRequest(weirdling)}
+                  aria-label={`Delete ${weirdling.displayName}`}
+                  sx={{
+                    ...compactGlassDangerIconButtonSx,
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
           <Typography variant="subtitle1" fontWeight={600}>

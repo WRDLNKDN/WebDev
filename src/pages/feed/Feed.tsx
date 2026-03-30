@@ -33,7 +33,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   IconButton,
   InputAdornment,
   InputBase,
@@ -219,6 +218,18 @@ const getActiveActionSx = (active: boolean) => ({
     },
   },
 });
+
+/** Explore sidebar / right-rail link rows: tight rhythm, subtle hover */
+const FEED_EXPLORE_LINK_SX = {
+  minHeight: 40,
+  py: 0.35,
+  px: 0.5,
+  borderRadius: 1,
+  transition: 'background-color 140ms ease',
+  '@media (hover: hover) and (pointer: fine)': {
+    '&:hover': { bgcolor: 'rgba(56,132,210,0.072)' },
+  },
+} as const;
 
 type FeedCachePayload = {
   items: FeedItem[];
@@ -3075,586 +3086,689 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         flex: 1,
         width: '100%',
         minWidth: 0,
+        zIndex: 1,
       }}
     >
       <Box
         sx={{
-          maxWidth: 1200,
+          maxWidth: 1180,
           mx: 'auto',
-          pt: { xs: 3.75, md: 5 },
-          pb: { xs: 2, md: 3 },
+          width: '100%',
           px: { xs: 1, sm: 1.5, md: 2 },
+          pt: { xs: 2.5, md: 3.5 },
+          pb: { xs: 2, md: 3 },
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            md: 'minmax(200px, 240px) minmax(0, 1fr) minmax(200px, 240px)',
+          },
+          columnGap: { xs: 0, md: 2.5 },
+          rowGap: { xs: 2, md: 2.5 },
+          alignItems: 'start',
         }}
       >
-        {/* Page header: Welcome to your Feed + subtext (search is in navbar) */}
+        {/* Page header — aligned to feed column width on desktop */}
         <Box
           sx={{
-            pt: { xs: 0.5, md: 0.75 },
-            mb: { xs: 2, md: 3 },
-            pb: { xs: 1.5, md: 2 },
-            borderBottom: '1px solid rgba(156,187,217,0.18)',
+            gridColumn: { xs: '1', md: '1 / -1' },
+            display: 'flex',
+            justifyContent: { xs: 'stretch', md: 'center' },
+            borderBottom: '1px solid rgba(156,187,217,0.14)',
+            pb: { xs: 1.5, md: 1.75 },
+            mb: { xs: 0, md: 0.5 },
+            pt: { xs: 0.25, md: 0 },
           }}
         >
-          <Typography
-            component="h2"
-            variant="h4"
-            sx={{
-              fontWeight: 600,
-              color: 'text.primary',
-              mb: 1,
-              fontSize: { xs: '1.25rem', sm: '1.5rem', md: 'inherit' },
-            }}
-          >
-            {savedMode ? 'Saved' : 'Welcome to your Feed'}
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: 560, fontSize: { xs: '0.875rem', md: 'inherit' } }}
-          >
-            {savedMode
-              ? 'Posts you saved for later. Unsave from the card to remove.'
-              : 'Where ideas, updates, and voices from the community come together. Discover members by how they show up.'}
-          </Typography>
-        </Box>
-
-        <Grid
-          container
-          spacing={{ xs: 1.5, md: 2 }}
-          sx={{
-            alignItems: 'flex-start',
-          }}
-        >
-          {/* LEFT SIDEBAR: Explore — hidden on mobile; desktop companion rail */}
-          <Grid
-            size={{ xs: 12, md: 2, lg: 2 }}
-            sx={{
-              minWidth: 0,
-              order: { xs: 2, md: 1 },
-              display: { xs: 'none', md: 'block' },
-            }}
-          >
-            <Paper
-              variant="outlined"
+          <Box sx={{ width: '100%', maxWidth: { xs: '100%', md: 680 } }}>
+            <Typography
+              component="h2"
+              variant="h5"
               sx={{
-                borderRadius: 2,
-                overflow: 'hidden',
-                position: { xs: 'static', md: 'sticky' },
-                top: { md: `${sidebarTopOffset}px` },
-                width: '100%',
-                maxWidth: { md: 190, lg: 190 },
-                minWidth: { md: 145, lg: 145 },
-                alignSelf: 'flex-start',
-                maxHeight: { md: `calc(100dvh - ${sidebarTopOffset}px)` },
-                overflowY: 'auto',
+                fontWeight: 600,
+                color: 'text.primary',
+                mb: 0.75,
+                fontSize: { xs: '1.15rem', sm: '1.25rem', md: '1.35rem' },
+                letterSpacing: '-0.01em',
               }}
             >
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: '1px solid',
-                  borderColor: 'rgba(156,187,217,0.18)',
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Explore
-                </Typography>
-              </Box>
-              <List dense disablePadding sx={{ py: 0.5 }}>
-                <ListSubheader
-                  disableSticky
-                  sx={{
-                    px: 2,
-                    pt: 1.5,
-                    pb: 0.5,
-                    bgcolor: 'transparent',
-                    color: 'text.secondary',
-                    typography: 'caption',
-                    lineHeight: 1.66,
-                  }}
-                >
-                  Community
-                </ListSubheader>
-                {eventsEnabled && (
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      component={RouterLink}
-                      to="/events"
-                      sx={{
-                        minHeight: 44,
-                        py: 0.5,
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <EventIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Events"
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                )}
-                {groupsEnabled && (
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      component={RouterLink}
-                      to="/groups"
-                      sx={{
-                        minHeight: 44,
-                        py: 0.5,
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <ForumIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Groups"
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                )}
-                <ListSubheader
-                  disableSticky
-                  sx={{
-                    px: 2,
-                    pt: 1.5,
-                    pb: 0.5,
-                    bgcolor: 'transparent',
-                    color: 'text.secondary',
-                    typography: 'caption',
-                    lineHeight: 1.66,
-                  }}
-                >
-                  Your stuff
-                </ListSubheader>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/saved"
-                    sx={{
-                      minHeight: 44,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <BookmarkBorderIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Saved"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-                {chatUiForMember(chatEnabled, session?.user?.id) ? (
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      component={RouterLink}
-                      to="/chat-full"
-                      sx={{
-                        minHeight: 44,
-                        py: 0.5,
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <MessageIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Messages"
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ) : null}
-                <ListSubheader
-                  disableSticky
-                  sx={{
-                    px: 2,
-                    pt: 1.5,
-                    pb: 0.5,
-                    bgcolor: 'transparent',
-                    color: 'text.secondary',
-                    typography: 'caption',
-                    lineHeight: 1.66,
-                  }}
-                >
-                  Platform
-                </ListSubheader>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/advertise"
-                    state={{ backgroundLocation: location }}
-                    sx={{
-                      minHeight: 44,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <CampaignIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Advertise"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-                {gamesEnabled && (
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      component="a"
-                      href="https://phuzzle.vercel.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        minHeight: 44,
-                        py: 0.5,
-                        borderRadius: 0,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <SportsEsportsIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Games"
-                        primaryTypographyProps={{ variant: 'body2' }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                )}
-                <ListSubheader
-                  disableSticky
-                  sx={{
-                    px: 2,
-                    pt: 1.5,
-                    pb: 0.5,
-                    bgcolor: 'transparent',
-                    color: 'text.secondary',
-                    typography: 'caption',
-                    lineHeight: 1.66,
-                  }}
-                >
-                  Support
-                </ListSubheader>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={RouterLink}
-                    to="/help"
-                    sx={{
-                      minHeight: 44,
-                      py: 0.5,
-                      borderRadius: 0,
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <HelpOutlineIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Help"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </Paper>
-          </Grid>
+              {savedMode ? 'Saved' : 'Welcome to your Feed'}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                maxWidth: 520,
+                lineHeight: 1.6,
+                fontSize: { xs: '0.8125rem', md: '0.875rem' },
+              }}
+            >
+              {savedMode
+                ? 'Posts you saved for later. Unsave from the card to remove.'
+                : 'Where ideas, updates, and voices from the community come together. Discover members by how they show up.'}
+            </Typography>
+          </Box>
+        </Box>
 
-          {/* CENTER: Feed — scroll with page (single scroll at Layout) */}
-          <Grid
-            size={{ xs: 12, md: 10, lg: 10 }}
+        {/* LEFT SIDEBAR: Explore — hidden on mobile */}
+        <Box
+          sx={{
+            gridColumn: { xs: '1', md: '1' },
+            display: { xs: 'none', md: 'block' },
+            minWidth: 0,
+          }}
+        >
+          <Paper
+            variant="outlined"
             sx={{
-              order: { xs: 1, md: 2 },
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
+              borderRadius: 2,
+              overflow: 'hidden',
+              position: 'sticky',
+              top: `${sidebarTopOffset}px`,
+              width: '100%',
+              maxWidth: 240,
+              alignSelf: 'flex-start',
+              maxHeight: `calc(100dvh - ${sidebarTopOffset}px)`,
+              overflowY: 'auto',
+              borderColor: 'rgba(156,187,217,0.12)',
+              bgcolor: 'rgba(16,20,28,0.52)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 10px 32px rgba(0,0,0,0.12)',
             }}
           >
-            {/* Feed header: title + view toggle + Post + Sort */}
-            <Paper
-              variant="outlined"
+            <Box
               sx={{
-                borderRadius: 2,
-                mb: { xs: 1.5, md: 2 },
-                p: { xs: 1.25, sm: 1.5, md: 2 },
+                px: 1.75,
+                py: 1.15,
+                borderBottom: '1px solid',
+                borderColor: 'rgba(156,187,217,0.12)',
               }}
+            >
+              <Typography
+                variant="subtitle2"
+                fontWeight={700}
+                sx={{ fontSize: '0.8rem', letterSpacing: '0.02em' }}
+              >
+                Explore
+              </Typography>
+            </Box>
+            <List dense disablePadding sx={{ py: 0.25 }}>
+              <ListSubheader
+                disableSticky
+                sx={{
+                  px: 1.75,
+                  pt: 1,
+                  pb: 0.25,
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  typography: 'caption',
+                  lineHeight: 1.5,
+                }}
+              >
+                Community
+              </ListSubheader>
+              {eventsEnabled && (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/events"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <EventIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Events"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+              {groupsEnabled && (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/groups"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ForumIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Groups"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+              <ListSubheader
+                disableSticky
+                sx={{
+                  px: 1.75,
+                  pt: 1,
+                  pb: 0.25,
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  typography: 'caption',
+                  lineHeight: 1.5,
+                }}
+              >
+                Your stuff
+              </ListSubheader>
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={RouterLink}
+                  to="/saved"
+                  sx={FEED_EXPLORE_LINK_SX}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <BookmarkBorderIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Saved"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              {chatUiForMember(chatEnabled, session?.user?.id) ? (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/chat-full"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <MessageIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Messages"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ) : null}
+              <ListSubheader
+                disableSticky
+                sx={{
+                  px: 1.75,
+                  pt: 1,
+                  pb: 0.25,
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  typography: 'caption',
+                  lineHeight: 1.5,
+                }}
+              >
+                Platform
+              </ListSubheader>
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={RouterLink}
+                  to="/advertise"
+                  state={{ backgroundLocation: location }}
+                  sx={FEED_EXPLORE_LINK_SX}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <CampaignIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Advertise"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              {gamesEnabled && (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component="a"
+                    href="https://phuzzle.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <SportsEsportsIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Games"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+              <ListSubheader
+                disableSticky
+                sx={{
+                  px: 1.75,
+                  pt: 1,
+                  pb: 0.25,
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  typography: 'caption',
+                  lineHeight: 1.5,
+                }}
+              >
+                Support
+              </ListSubheader>
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={RouterLink}
+                  to="/help"
+                  sx={FEED_EXPLORE_LINK_SX}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <HelpOutlineIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Help"
+                    primaryTypographyProps={{ variant: 'body2' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Paper>
+        </Box>
+
+        {/* CENTER: Feed stream */}
+        <Box
+          sx={{
+            gridColumn: { xs: '1', md: '2' },
+            minWidth: 0,
+            width: '100%',
+            maxWidth: { md: 680 },
+            justifySelf: { md: 'center' },
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* Feed toolbar: view + sort */}
+          <Paper
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              mb: { xs: 1.5, md: 2 },
+              p: { xs: 1, sm: 1.25, md: 1.5 },
+              borderColor: 'rgba(156,187,217,0.14)',
+              bgcolor: 'rgba(18,22,30,0.65)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+            }}
+          >
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              justifyContent="space-between"
+              gap={{ xs: 1.25, sm: 1.5 }}
             >
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 alignItems={{ xs: 'stretch', sm: 'center' }}
-                justifyContent="space-between"
-                gap={{ xs: 1.5, sm: 2 }}
+                spacing={{ xs: 1.25, sm: 2 }}
               >
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
-                  spacing={{ xs: 1.25, sm: 2 }}
+                <Typography
+                  component={RouterLink}
+                  to="/feed"
+                  variant="h6"
+                  fontWeight={600}
+                  sx={{
+                    color: 'text.primary',
+                    textDecoration: 'none',
+                    alignSelf: { sm: 'center' },
+                    borderRadius: 0.5,
+                    outlineOffset: 2,
+                    '&:hover': {
+                      color: 'primary.light',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 4,
+                    },
+                    '&:focus-visible': {
+                      outline: '2px solid',
+                      outlineColor: 'primary.main',
+                    },
+                  }}
                 >
-                  <Typography
-                    component={RouterLink}
-                    to="/feed"
-                    variant="h6"
-                    fontWeight={600}
-                    sx={{
-                      color: 'text.primary',
-                      textDecoration: 'none',
-                      alignSelf: { sm: 'center' },
-                      borderRadius: 0.5,
-                      outlineOffset: 2,
-                      '&:hover': {
-                        color: 'primary.light',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 4,
-                      },
-                      '&:focus-visible': {
-                        outline: '2px solid',
-                        outlineColor: 'primary.main',
-                      },
-                    }}
-                  >
-                    Feed
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={feedViewPreference}
-                    exclusive
-                    onChange={handleFeedViewChange}
-                    size="small"
-                    sx={{
-                      '& .MuiToggleButton-root': {
-                        textTransform: 'none',
-                        fontSize: { xs: '0.85rem', sm: '0.8rem' },
-                        fontWeight: 400,
-                        py: { xs: 0.9, sm: 0.5 },
-                        px: { xs: 1.75, sm: 1.5 },
-                        minHeight: { xs: 42, sm: 32 },
-                      },
-                      '& .MuiToggleButton-root.Mui-selected': {
-                        fontWeight: 400,
-                      },
-                    }}
-                  >
-                    <ToggleButton
-                      value="anyone"
-                      aria-label="Show posts from everyone"
-                    >
-                      Anyone
-                    </ToggleButton>
-                    <ToggleButton
-                      value="connections"
-                      aria-label="Show posts from connections only"
-                    >
-                      Connections
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Stack>
-                <FormControl
+                  Feed
+                </Typography>
+                <ToggleButtonGroup
+                  value={feedViewPreference}
+                  exclusive
+                  onChange={handleFeedViewChange}
                   size="small"
-                  sx={{ minWidth: { xs: '100%', sm: 160 } }}
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      textTransform: 'none',
+                      fontSize: { xs: '0.85rem', sm: '0.8rem' },
+                      fontWeight: 400,
+                      py: { xs: 0.9, sm: 0.5 },
+                      px: { xs: 1.75, sm: 1.5 },
+                      minHeight: { xs: 42, sm: 32 },
+                    },
+                    '& .MuiToggleButton-root.Mui-selected': {
+                      fontWeight: 400,
+                    },
+                  }}
                 >
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    displayEmpty
-                    inputProps={{ 'aria-label': 'Sort feed posts' }}
-                    sx={{ fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
+                  <ToggleButton
+                    value="anyone"
+                    aria-label="Show posts from everyone"
                   >
-                    <MenuItem value="recent">Sort by: Recent</MenuItem>
-                    <MenuItem value="oldest">Sort by: Oldest</MenuItem>
-                  </Select>
-                </FormControl>
+                    Anyone
+                  </ToggleButton>
+                  <ToggleButton
+                    value="connections"
+                    aria-label="Show posts from connections only"
+                  >
+                    Connections
+                  </ToggleButton>
+                </ToggleButtonGroup>
               </Stack>
-            </Paper>
+              <FormControl
+                size="small"
+                sx={{ minWidth: { xs: '100%', sm: 160 } }}
+              >
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  displayEmpty
+                  inputProps={{ 'aria-label': 'Sort feed posts' }}
+                  sx={{ fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
+                >
+                  <MenuItem value="recent">Sort by: Recent</MenuItem>
+                  <MenuItem value="oldest">Sort by: Oldest</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+          </Paper>
 
-            {/* Start a post — LinkedIn-style composer trigger (hidden on Saved page) */}
-            {!savedMode && (
-              <Paper
-                variant="outlined"
-                component="button"
-                type="button"
-                onClick={() => setComposerOpen(true)}
+          {/* Start a post — LinkedIn-style composer trigger (hidden on Saved page) */}
+          {!savedMode && (
+            <Paper
+              variant="outlined"
+              component="button"
+              type="button"
+              onClick={() => setComposerOpen(true)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                minHeight: 56,
+                p: { xs: 1.75, sm: 2 },
+                mb: { xs: 2, md: 2.25 },
+                borderRadius: 2,
+                border: '1px solid rgba(156,187,217,0.26)',
+                bgcolor: 'rgba(36,38,41,0.6)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition:
+                  'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(50,52,55,0.82)',
+                  borderColor: 'rgba(141,188,229,0.34)',
+                },
+                '&:focus-visible': {
+                  outline: 'none',
+                  borderColor: 'rgba(141,188,229,0.5)',
+                  boxShadow:
+                    '0 0 0 2px rgba(56,132,210,0.42), 0 10px 32px rgba(0,0,0,0.18)',
+                },
+              }}
+            >
+              <ProfileAvatar
+                src={avatarUrl ?? undefined}
+                alt={session?.user?.user_metadata?.full_name ?? 'You'}
+                size="small"
+                sx={{ flexShrink: 0, mr: 2 }}
+              />
+              <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  width: '100%',
-                  p: 2,
-                  mb: 2,
-                  borderRadius: 2,
-                  border: '1px solid rgba(156,187,217,0.26)',
-                  bgcolor: 'rgba(36,38,41,0.6)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background-color 0.2s, border-color 0.2s',
-                  '&:hover': {
-                    bgcolor: 'rgba(50,52,55,0.8)',
-                    borderColor: 'rgba(141,188,229,0.34)',
-                  },
+                  flex: 1,
+                  py: { xs: 1.1, sm: 1.25 },
+                  px: 2,
+                  borderRadius: '9999px',
+                  bgcolor: 'rgba(56,132,210,0.16)',
+                  color: 'rgba(220,230,245,0.88)',
+                  fontSize: { xs: '0.9375rem', sm: '0.95rem' },
                 }}
               >
-                <ProfileAvatar
-                  src={avatarUrl ?? undefined}
-                  alt={session?.user?.user_metadata?.full_name ?? 'You'}
-                  size="small"
-                  sx={{ flexShrink: 0, mr: 2 }}
-                />
-                <Box
-                  sx={{
-                    flex: 1,
-                    py: 1,
-                    px: 2,
-                    borderRadius: '9999px',
-                    bgcolor: 'rgba(56,132,210,0.14)',
-                    color: 'text.secondary',
-                    fontSize: '0.95rem',
-                  }}
-                >
-                  Start a post
-                </Box>
-              </Paper>
-            )}
+                Start a post
+              </Box>
+            </Paper>
+          )}
 
-            {/* Feed list — flows with page (single scroll at Layout) */}
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {showInitialFeedLoader ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                  <CircularProgress aria-label="Loading feed" />
-                </Box>
-              ) : items.length === 0 ? (
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 2,
-                    p: 4,
-                    textAlign: 'center',
-                  }}
+          {/* Feed list — flows with page (single scroll at Layout) */}
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            {showInitialFeedLoader ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress aria-label="Loading feed" />
+              </Box>
+            ) : items.length === 0 ? (
+              <Paper
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  fontWeight={600}
+                  color="text.primary"
+                  gutterBottom
                 >
-                  <Typography
-                    variant="h6"
-                    fontWeight={600}
-                    color="text.primary"
-                    gutterBottom
+                  {savedMode ? 'No saved posts yet' : 'Nothing here yet.'}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {savedMode
+                    ? 'Save posts from your feed to see them here.'
+                    : 'Connect with Weirdlings to fill your feed.'}
+                </Typography>
+                {!savedMode && (
+                  <Button
+                    component={RouterLink}
+                    to="/directory"
+                    variant="contained"
+                    sx={{ textTransform: 'none', borderRadius: 2 }}
                   >
-                    {savedMode ? 'No saved posts yet' : 'Nothing here yet.'}
-                  </Typography>
+                    Discover Members
+                  </Button>
+                )}
+                {!savedMode && (
                   <Typography
-                    variant="body2"
+                    variant="caption"
                     color="text.secondary"
-                    sx={{ mb: 2 }}
+                    sx={{ display: 'block', mt: 2 }}
                   >
-                    {savedMode
-                      ? 'Save posts from your feed to see them here.'
-                      : 'Connect with Weirdlings to fill your feed.'}
+                    Try searching for people or exploring events.
                   </Typography>
-                  {!savedMode && (
-                    <Button
-                      component={RouterLink}
-                      to="/directory"
-                      variant="contained"
-                      sx={{ textTransform: 'none', borderRadius: 2 }}
+                )}
+              </Paper>
+            ) : (
+              <>
+                {displayItems.map((entry, index) =>
+                  entry.kind === 'post' ? (
+                    <Box
+                      key={entry.item.id}
+                      id={`post-${entry.item.id}`}
+                      component="section"
                     >
-                      Discover Members
-                    </Button>
-                  )}
-                  {!savedMode && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mt: 2 }}
-                    >
-                      Try searching for people or exploring events.
-                    </Typography>
-                  )}
-                </Paper>
-              ) : (
-                <>
-                  {displayItems.map((entry, index) =>
-                    entry.kind === 'post' ? (
-                      <Box
-                        key={entry.item.id}
-                        id={`post-${entry.item.id}`}
-                        component="section"
-                      >
-                        <FeedCard
-                          item={entry.item}
-                          actions={feedCardActions}
-                          isOwner={session?.user?.id === entry.item.user_id}
-                          viewerUserId={session?.user?.id}
-                          viewerAvatarUrl={avatarUrl}
-                          viewerReposted={
-                            (entry.item.kind === 'repost' &&
-                              session?.user?.id === entry.item.user_id) ||
-                            repostedOriginalIds.has(
-                              entry.item.kind === 'repost' &&
-                                typeof entry.item.payload?.original_id ===
-                                  'string'
-                                ? (entry.item.payload.original_id as string)
-                                : entry.item.id,
-                            )
-                          }
-                          viewerSent={sentPostIds.has(entry.item.id)}
-                          commentsExpanded={
-                            expandedCommentsPostId === entry.item.id
-                          }
-                          comments={commentsByPostId[entry.item.id] ?? []}
-                          commentsLoading={
-                            commentsLoadingPostId === entry.item.id
-                          }
-                          onAddComment={handleAddComment}
-                          isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
-                            entry.item.id,
-                          )}
-                          onDismissLinkPreview={() =>
-                            handleDismissLinkPreview(entry.item.id)
-                          }
-                        />
-                      </Box>
-                    ) : (
-                      <FeedAdCard
-                        key={`ad-${entry.advertiser.id}-${index}`}
-                        advertiser={entry.advertiser}
-                        onDismiss={() => handleDismissAd(entry.advertiser.id)}
-                        onImpression={() =>
-                          handleAdImpression(entry.advertiser, index)
+                      <FeedCard
+                        item={entry.item}
+                        actions={feedCardActions}
+                        isOwner={session?.user?.id === entry.item.user_id}
+                        viewerUserId={session?.user?.id}
+                        viewerAvatarUrl={avatarUrl}
+                        viewerReposted={
+                          (entry.item.kind === 'repost' &&
+                            session?.user?.id === entry.item.user_id) ||
+                          repostedOriginalIds.has(
+                            entry.item.kind === 'repost' &&
+                              typeof entry.item.payload?.original_id ===
+                                'string'
+                              ? (entry.item.payload.original_id as string)
+                              : entry.item.id,
+                          )
                         }
-                        onAdClick={(payload) =>
-                          handleAdClick(entry.advertiser, index, payload)
+                        viewerSent={sentPostIds.has(entry.item.id)}
+                        commentsExpanded={
+                          expandedCommentsPostId === entry.item.id
+                        }
+                        comments={commentsByPostId[entry.item.id] ?? []}
+                        commentsLoading={
+                          commentsLoadingPostId === entry.item.id
+                        }
+                        onAddComment={handleAddComment}
+                        isLinkPreviewDismissed={dismissedLinkPreviewIds.has(
+                          entry.item.id,
+                        )}
+                        onDismissLinkPreview={() =>
+                          handleDismissLinkPreview(entry.item.id)
                         }
                       />
-                    ),
-                  )}
-                  {nextCursor && (
-                    <Box
-                      sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
-                    >
-                      <Button
-                        variant="outlined"
-                        disabled={loadingMore}
-                        onClick={() => void loadPage(nextCursor, true)}
-                        startIcon={
-                          loadingMore ? <CircularProgress size={16} /> : null
-                        }
-                      >
-                        {loadingMore ? 'Loading…' : 'Load more'}
-                      </Button>
                     </Box>
-                  )}
-                </>
-              )}
+                  ) : (
+                    <FeedAdCard
+                      key={`ad-${entry.advertiser.id}-${index}`}
+                      advertiser={entry.advertiser}
+                      onDismiss={() => handleDismissAd(entry.advertiser.id)}
+                      onImpression={() =>
+                        handleAdImpression(entry.advertiser, index)
+                      }
+                      onAdClick={(payload) =>
+                        handleAdClick(entry.advertiser, index, payload)
+                      }
+                    />
+                  ),
+                )}
+                {nextCursor && (
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      disabled={loadingMore}
+                      onClick={() => void loadPage(nextCursor, true)}
+                      startIcon={
+                        loadingMore ? <CircularProgress size={16} /> : null
+                      }
+                    >
+                      {loadingMore ? 'Loading…' : 'Load more'}
+                    </Button>
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        </Box>
+
+        {/* RIGHT: lightweight discover rail (balances layout) */}
+        <Box
+          sx={{
+            gridColumn: { xs: '1', md: '3' },
+            display: { xs: 'none', md: 'block' },
+            minWidth: 0,
+          }}
+        >
+          <Paper
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              position: 'sticky',
+              top: `${sidebarTopOffset}px`,
+              width: '100%',
+              maxHeight: `calc(100dvh - ${sidebarTopOffset}px)`,
+              overflowY: 'auto',
+              borderColor: 'rgba(156,187,217,0.12)',
+              bgcolor: 'rgba(16,20,28,0.48)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.1)',
+            }}
+          >
+            <Box
+              sx={{
+                px: 1.75,
+                py: 1.15,
+                borderBottom: '1px solid rgba(156,187,217,0.12)',
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                color="text.secondary"
+                sx={{
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  fontSize: '0.68rem',
+                }}
+              >
+                Discover
+              </Typography>
             </Box>
-          </Grid>
-        </Grid>
+            <List dense disablePadding sx={{ py: 1 }}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={RouterLink}
+                  to="/directory"
+                  sx={FEED_EXPLORE_LINK_SX}
+                >
+                  <ListItemText
+                    primary="Browse Directory"
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      color: 'text.secondary',
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              {eventsEnabled && (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/events"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemText
+                      primary="Events"
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        color: 'text.secondary',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+              {groupsEnabled && (
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={RouterLink}
+                    to="/groups"
+                    sx={FEED_EXPLORE_LINK_SX}
+                  >
+                    <ListItemText
+                      primary="Groups"
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        color: 'text.secondary',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+            </List>
+            <Box sx={{ px: 1.75, pb: 1.5, pt: 0 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ opacity: 0.78, lineHeight: 1.5, display: 'block' }}
+              >
+                Grow your network from the Directory and saved posts.
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
       </Box>
 
       <Dialog

@@ -2,6 +2,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import {
   Badge,
+  Box,
   Button,
   CircularProgress,
   IconButton,
@@ -124,60 +125,71 @@ export const NavbarMobileAuthControls = ({
                   : 'Notifications'
               }
             >
-              <IconButton
-                component={RouterLink}
-                to="/dashboard/notifications"
-                aria-label={
-                  notificationsUnread > 0
-                    ? `${notificationsUnread} unread notifications`
-                    : 'Notifications'
-                }
-                sx={{
-                  color: 'white',
-                  ...(path === '/dashboard/notifications' && {
-                    bgcolor: 'rgba(156,187,217,0.26)',
-                    '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                  }),
-                }}
-              >
-                <Badge
-                  badgeContent={
-                    notificationsUnread > 0 ? notificationsUnread : undefined
+              <span>
+                <IconButton
+                  component={RouterLink}
+                  to="/dashboard/notifications"
+                  aria-label={
+                    notificationsUnread > 0
+                      ? `${notificationsUnread} unread notifications`
+                      : 'Notifications'
                   }
-                  color="error"
+                  sx={{
+                    color: 'white',
+                    ...(path === '/dashboard/notifications' && {
+                      bgcolor: 'rgba(156,187,217,0.26)',
+                      '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+                    }),
+                  }}
                 >
-                  <NotificationsIcon sx={{ fontSize: 22 }} />
-                </Badge>
-              </IconButton>
+                  <Badge
+                    badgeContent={
+                      notificationsUnread > 0 ? notificationsUnread : undefined
+                    }
+                    color="error"
+                  >
+                    <NotificationsIcon sx={{ fontSize: 22 }} />
+                  </Badge>
+                </IconButton>
+              </span>
             </Tooltip>
           )}
           <Tooltip title="Account menu">
-            <IconButton
-              type="button"
-              onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
-              aria-label="Account menu"
-              aria-haspopup="true"
-              aria-expanded={avatarMenuOpen}
+            <Box
+              component="span"
               sx={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.25,
-                p: 0.25,
-                color: 'inherit',
-                borderRadius: 9999,
-                '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                lineHeight: 0,
               }}
             >
-              <ProfileAvatar
-                src={avatarUrl ?? undefined}
-                alt={session?.user?.user_metadata?.full_name || 'User'}
-                size="small"
-                sx={{ width: 28, height: 28, flexShrink: 0 }}
-              />
-              <KeyboardArrowDownIcon
-                sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
-              />
-            </IconButton>
+              <IconButton
+                type="button"
+                onClick={(e) => setAvatarMenuAnchor(e.currentTarget)}
+                aria-label="Account menu"
+                aria-haspopup="true"
+                aria-expanded={avatarMenuOpen}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.25,
+                  p: 0.25,
+                  color: 'inherit',
+                  borderRadius: 9999,
+                  '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
+                }}
+              >
+                <ProfileAvatar
+                  src={avatarUrl ?? undefined}
+                  alt={session?.user?.user_metadata?.full_name || 'Member'}
+                  size="small"
+                  sx={{ width: 28, height: 28, flexShrink: 0 }}
+                />
+                <KeyboardArrowDownIcon
+                  sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}
+                />
+              </IconButton>
+            </Box>
           </Tooltip>
         </>
       ) : null}

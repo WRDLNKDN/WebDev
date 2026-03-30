@@ -1778,15 +1778,17 @@ export const Directory = () => {
         >
           Disconnect from {disconnectTarget?.name}
           <Tooltip title="Close">
-            <IconButton
-              aria-label="Close"
-              onClick={() => setDisconnectTarget(null)}
-              sx={{
-                color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.75)',
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                aria-label="Close"
+                onClick={() => setDisconnectTarget(null)}
+                sx={{
+                  color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.75)',
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </DialogTitle>
         <DialogContent>

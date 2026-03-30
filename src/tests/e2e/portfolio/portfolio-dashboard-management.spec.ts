@@ -174,8 +174,8 @@ test.describe('Dashboard portfolio showcase management', () => {
       timeout: 45_000,
     });
 
-    await page.getByRole('button', { name: /add resume or project/i }).click();
-    await page.getByRole('menuitem', { name: /\+ add project/i }).click();
+    await page.getByRole('button', { name: /add to portfolio/i }).click();
+    await page.getByRole('menuitem', { name: /^add project$/i }).click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/new project/i);

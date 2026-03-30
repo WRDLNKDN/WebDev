@@ -310,18 +310,34 @@ export const FeedCard = ({
               : []),
           ],
         }}
-        sx={
+        sx={[
+          {
+            mb: { xs: 2.25, md: 2.5 },
+            transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+            '@media (hover: hover) and (pointer: fine)': {
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow:
+                  '0 26px 48px rgba(0,0,0,0.26), 0 0 0 1px rgba(80,150,220,0.14) inset',
+              },
+            },
+          },
           item.kind === 'repost'
             ? {
-                mb: 2,
                 borderColor: 'rgba(141,188,229,0.3)',
                 boxShadow:
                   '0 22px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(56,132,210,0.1) inset',
                 background:
                   'linear-gradient(180deg, rgba(24,30,43,0.98) 0%, rgba(19,24,34,0.96) 100%)',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    boxShadow:
+                      '0 30px 54px rgba(0,0,0,0.3), 0 0 0 1px rgba(56,132,210,0.18) inset',
+                  },
+                },
               }
-            : { mb: 2 }
-        }
+            : {},
+        ]}
       >
         <FeedCardPostContent
           isEditingPost={isEditingPost}

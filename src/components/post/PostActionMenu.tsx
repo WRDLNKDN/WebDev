@@ -59,78 +59,80 @@ export const PostActionMenu = ({
   return (
     <>
       <Tooltip title={ariaLabel}>
-        <IconButton
-          size="small"
-          onClick={handleOpen}
-          aria-label={ariaLabel}
-          aria-controls={menuId}
-          aria-haspopup="true"
-          aria-expanded={open}
-          sx={{
-            width: subtle ? 32 : 44,
-            height: subtle ? 32 : 44,
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: subtle ? 1.25 : '18px',
-            color: subtleLight
-              ? 'rgba(0,0,0,0.45)'
-              : subtle
-                ? 'rgba(255,255,255,0.5)'
-                : 'rgba(255,255,255,0.82)',
-            bgcolor: subtleLight
-              ? 'rgba(0,0,0,0.05)'
-              : subtle
-                ? 'rgba(255,255,255,0.06)'
-                : 'rgba(132,154,214,0.14)',
-            border: subtleLight
-              ? '1px solid rgba(0,0,0,0.1)'
-              : subtle
-                ? '1px solid rgba(255,255,255,0.1)'
-                : '1px solid rgba(173,203,255,0.18)',
-            boxShadow: subtle
-              ? 'none'
-              : '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
-            transition:
-              'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
-            ...(!subtle
-              ? {
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: 1,
-                    borderRadius: '16px',
-                    background:
-                      'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
-                    pointerEvents: 'none',
-                  },
-                }
-              : {}),
-            '&:hover': {
-              bgcolor: subtleLight
-                ? 'rgba(0,0,0,0.08)'
-                : subtle
-                  ? 'rgba(255,255,255,0.1)'
-                  : 'rgba(148,175,232,0.18)',
-              borderColor: subtleLight
-                ? 'rgba(0,0,0,0.16)'
-                : subtle
-                  ? 'rgba(255,255,255,0.18)'
-                  : 'rgba(191,219,254,0.32)',
+        <span>
+          <IconButton
+            size="small"
+            onClick={handleOpen}
+            aria-label={ariaLabel}
+            aria-controls={menuId}
+            aria-haspopup="true"
+            aria-expanded={open}
+            sx={{
+              width: subtle ? 32 : 44,
+              height: subtle ? 32 : 44,
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: subtle ? 1.25 : '18px',
               color: subtleLight
-                ? 'rgba(0,0,0,0.78)'
+                ? 'rgba(0,0,0,0.45)'
                 : subtle
-                  ? 'rgba(255,255,255,0.92)'
-                  : '#FFFFFF',
-              transform: subtle ? 'none' : 'scale(1.04)',
-            },
-            '&:focus-visible': {
-              outline: '2px solid rgba(191,219,254,0.78)',
-              outlineOffset: 2,
-            },
-          }}
-        >
-          <MoreVertIcon sx={{ fontSize: subtle ? 18 : undefined }} />
-        </IconButton>
+                  ? 'rgba(255,255,255,0.5)'
+                  : 'rgba(255,255,255,0.82)',
+              bgcolor: subtleLight
+                ? 'rgba(0,0,0,0.05)'
+                : subtle
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(132,154,214,0.14)',
+              border: subtleLight
+                ? '1px solid rgba(0,0,0,0.1)'
+                : subtle
+                  ? '1px solid rgba(255,255,255,0.1)'
+                  : '1px solid rgba(173,203,255,0.18)',
+              boxShadow: subtle
+                ? 'none'
+                : '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
+              transition:
+                'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
+              ...(!subtle
+                ? {
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 1,
+                      borderRadius: '16px',
+                      background:
+                        'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
+                      pointerEvents: 'none',
+                    },
+                  }
+                : {}),
+              '&:hover': {
+                bgcolor: subtleLight
+                  ? 'rgba(0,0,0,0.08)'
+                  : subtle
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(148,175,232,0.18)',
+                borderColor: subtleLight
+                  ? 'rgba(0,0,0,0.16)'
+                  : subtle
+                    ? 'rgba(255,255,255,0.18)'
+                    : 'rgba(191,219,254,0.32)',
+                color: subtleLight
+                  ? 'rgba(0,0,0,0.78)'
+                  : subtle
+                    ? 'rgba(255,255,255,0.92)'
+                    : '#FFFFFF',
+                transform: subtle ? 'none' : 'scale(1.04)',
+              },
+              '&:focus-visible': {
+                outline: '2px solid rgba(191,219,254,0.78)',
+                outlineOffset: 2,
+              },
+            }}
+          >
+            <MoreVertIcon sx={{ fontSize: subtle ? 18 : undefined }} />
+          </IconButton>
+        </span>
       </Tooltip>
       <Menu
         id={menuId}

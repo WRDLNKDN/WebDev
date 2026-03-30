@@ -184,24 +184,26 @@ export const Bumper = ({
       {/* Sound on: restore bumper voiceover (browsers block unmuted autoplay) */}
       {!soundOn && (
         <Tooltip title="Play with sound">
-          <IconButton
-            onClick={() => void handlePlayWithSound()}
-            aria-label="Play bumper with sound"
-            sx={{
-              position: 'absolute',
-              bottom: 24,
-              right: 24,
-              zIndex: 2,
-              color: 'rgba(255,255,255,0.85)',
-              bgcolor: 'rgba(0,0,0,0.4)',
-              '&:hover': {
-                bgcolor: 'rgba(0,0,0,0.6)',
-                color: 'white',
-              },
-            }}
-          >
-            <VolumeOffIcon sx={{ fontSize: 28 }} />
-          </IconButton>
+          <span>
+            <IconButton
+              onClick={() => void handlePlayWithSound()}
+              aria-label="Play bumper with sound"
+              sx={{
+                position: 'absolute',
+                bottom: 24,
+                right: 24,
+                zIndex: 2,
+                color: 'rgba(255,255,255,0.85)',
+                bgcolor: 'rgba(0,0,0,0.4)',
+                '&:hover': {
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                },
+              }}
+            >
+              <VolumeOffIcon sx={{ fontSize: 28 }} />
+            </IconButton>
+          </span>
         </Tooltip>
       )}
       {soundOn && (

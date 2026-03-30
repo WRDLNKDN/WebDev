@@ -110,13 +110,13 @@ test.describe('Add Project dialog UX', () => {
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 30_000 });
 
     const addMenuButton = page.getByRole('button', {
-      name: /add resume or project/i,
+      name: /add to portfolio/i,
     });
     await expect(addMenuButton).toBeVisible({ timeout: 30_000 });
     await expect(addMenuButton).toBeEnabled({ timeout: 30_000 });
     await addMenuButton.click();
 
-    await page.getByRole('menuitem', { name: /\+ add project/i }).click();
+    await page.getByRole('menuitem', { name: /^add project$/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/new project/i);
     return dialog;

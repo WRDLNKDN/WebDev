@@ -663,13 +663,15 @@ export const AddProjectDialog = ({
               </Box>
             </Typography>
             <Tooltip title="Close">
-              <IconButton
-                onClick={onClose}
-                sx={{ color: 'white' }}
-                aria-label="Close dialog"
-              >
-                <CloseIcon />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={onClose}
+                  sx={{ color: 'white' }}
+                  aria-label="Close dialog"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         </DialogTitle>

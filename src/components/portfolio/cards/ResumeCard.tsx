@@ -523,58 +523,62 @@ const ResumeCardUrlFooter = ({
         </Tooltip>
         {showEdit && (
           <Tooltip title="Edit resume">
-            <IconButton
-              size="small"
-              onClick={onEditOpen}
-              disabled={editBusy || deleteBusy || retryThumbnailBusy}
-              aria-label="Edit resume"
-              sx={{
-                bgcolor: 'transparent',
-                minWidth: 32,
-                width: 32,
-                height: 32,
-                padding: 0,
-                color: '#b9c3dd',
-                border: '1px solid rgba(141,188,229,0.48)',
-                borderRadius: 1,
-                '& .MuiSvgIcon-root': { fontSize: '1rem' },
-                '&:hover': {
-                  bgcolor: 'rgba(0,196,204,0.22)',
-                  color: '#ecfeff',
-                  borderColor: 'rgba(0,196,204,0.65)',
-                },
-              }}
-            >
-              <EditOutlinedIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onEditOpen}
+                disabled={editBusy || deleteBusy || retryThumbnailBusy}
+                aria-label="Edit resume"
+                sx={{
+                  bgcolor: 'transparent',
+                  minWidth: 32,
+                  width: 32,
+                  height: 32,
+                  padding: 0,
+                  color: '#b9c3dd',
+                  border: '1px solid rgba(141,188,229,0.48)',
+                  borderRadius: 1,
+                  '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                  '&:hover': {
+                    bgcolor: 'rgba(0,196,204,0.22)',
+                    color: '#ecfeff',
+                    borderColor: 'rgba(0,196,204,0.65)',
+                  },
+                }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
         {onDelete && (
           <Tooltip title="Delete resume">
-            <IconButton
-              size="small"
-              onClick={onDeleteClick}
-              disabled={deleteBusy || retryThumbnailBusy}
-              aria-label="Delete resume"
-              sx={{
-                bgcolor: 'transparent',
-                minWidth: 32,
-                width: 32,
-                height: 32,
-                padding: 0,
-                color: '#fbc7c7',
-                border: '1px solid rgba(255,132,132,0.35)',
-                borderRadius: 1,
-                '& .MuiSvgIcon-root': { fontSize: '1rem' },
-                '&:hover': {
-                  bgcolor: 'rgba(255,77,77,0.25)',
-                  color: '#ffe5e5',
-                  borderColor: 'rgba(255,77,77,0.75)',
-                },
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onDeleteClick}
+                disabled={deleteBusy || retryThumbnailBusy}
+                aria-label="Delete resume"
+                sx={{
+                  bgcolor: 'transparent',
+                  minWidth: 32,
+                  width: 32,
+                  height: 32,
+                  padding: 0,
+                  color: '#fbc7c7',
+                  border: '1px solid rgba(255,132,132,0.35)',
+                  borderRadius: 1,
+                  '& .MuiSvgIcon-root': { fontSize: '1rem' },
+                  '&:hover': {
+                    bgcolor: 'rgba(255,77,77,0.25)',
+                    color: '#ffe5e5',
+                    borderColor: 'rgba(255,77,77,0.75)',
+                  },
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
       </Box>

@@ -99,14 +99,16 @@ export const ShareProfileDialog = ({
           Share My Profile
         </Typography>
         <Tooltip title="Close">
-          <IconButton
-            onClick={onClose}
-            aria-label="Close share profile modal"
-            size="small"
-            sx={{ flexShrink: 0 }}
-          >
-            <CloseIcon />
-          </IconButton>
+          <span>
+            <IconButton
+              onClick={onClose}
+              aria-label="Close share profile modal"
+              size="small"
+              sx={{ flexShrink: 0 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </DialogTitle>
       <DialogContent dividers sx={{ borderColor: 'rgba(156,187,217,0.18)' }}>

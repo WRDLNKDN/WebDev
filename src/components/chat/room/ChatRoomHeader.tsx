@@ -321,22 +321,24 @@ export const ChatRoomHeader = ({
     >
       {!closeIcon && showBackButton && (
         <Tooltip title="Back to conversations">
-          <IconButton
-            size="small"
-            onClick={onBack ?? (() => navigate('/chat-full'))}
-            aria-label="Back to conversations"
-            sx={{
-              color: headerIconMuted,
-              flexShrink: 0,
-              mr: { xs: 0, sm: 0.25 },
-              '&:hover': {
-                color: headerIconHover,
-                bgcolor: 'rgba(255,255,255,0.06)',
-              },
-            }}
-          >
-            <ArrowBackIcon fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              onClick={onBack ?? (() => navigate('/chat-full'))}
+              aria-label="Back to conversations"
+              sx={{
+                color: headerIconMuted,
+                flexShrink: 0,
+                mr: { xs: 0, sm: 0.25 },
+                '&:hover': {
+                  color: headerIconHover,
+                  bgcolor: 'rgba(255,255,255,0.06)',
+                },
+              }}
+            >
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       )}
       <Box
@@ -403,101 +405,109 @@ export const ChatRoomHeader = ({
           <Tooltip
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <IconButton
-              type="button"
-              size="small"
-              onClick={() => {
-                Promise.resolve(onToggleFavorite()).catch(() => {});
-              }}
-              aria-label={
-                isFavorite ? 'Remove from favorites' : 'Add to favorites'
-              }
-              sx={{
-                minWidth: 36,
-                minHeight: 36,
-                transition:
-                  'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
-                ...(isFavorite
-                  ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
-                  : {
-                      ...CHAT_FAVORITE_IDLE_BUTTON_SX,
-                      color: headerIconMuted,
-                      '&:hover': { color: headerIconHover },
-                    }),
-              }}
-            >
-              {isFavorite ? (
-                <StarIcon
-                  sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
-                  data-testid={`chat-room-header-favorite-icon-filled-${room?.id ?? 'unknown'}`}
-                />
-              ) : (
-                <StarBorderIcon
-                  fontSize="small"
-                  data-testid={`chat-room-header-favorite-icon-outline-${room?.id ?? 'unknown'}`}
-                />
-              )}
-            </IconButton>
+            <span>
+              <IconButton
+                type="button"
+                size="small"
+                onClick={() => {
+                  Promise.resolve(onToggleFavorite()).catch(() => {});
+                }}
+                aria-label={
+                  isFavorite ? 'Remove from favorites' : 'Add to favorites'
+                }
+                sx={{
+                  minWidth: 36,
+                  minHeight: 36,
+                  transition:
+                    'color 120ms ease, background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
+                  ...(isFavorite
+                    ? CHAT_FAVORITE_ACTIVE_BUTTON_SX
+                    : {
+                        ...CHAT_FAVORITE_IDLE_BUTTON_SX,
+                        color: headerIconMuted,
+                        '&:hover': { color: headerIconHover },
+                      }),
+                }}
+              >
+                {isFavorite ? (
+                  <StarIcon
+                    sx={CHAT_FAVORITE_ICON_BUTTON_STAR_SX}
+                    data-testid={`chat-room-header-favorite-icon-filled-${room?.id ?? 'unknown'}`}
+                  />
+                ) : (
+                  <StarBorderIcon
+                    fontSize="small"
+                    data-testid={`chat-room-header-favorite-icon-outline-${room?.id ?? 'unknown'}`}
+                  />
+                )}
+              </IconButton>
+            </span>
           </Tooltip>
         )}
         <Tooltip title="Chat options">
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              if (menuItems.length === 0) {
-                return;
-              }
-              setMenuAnchor(e.currentTarget);
-            }}
-            aria-label="Chat options"
-            aria-disabled={menuItems.length === 0}
-            sx={{
-              color: headerIconMuted,
-              opacity: menuItems.length === 0 ? 0.56 : 1,
-              cursor: menuItems.length === 0 ? 'default' : 'pointer',
-              '&:hover': {
-                color: headerIconHover,
-                bgcolor: 'rgba(255,255,255,0.06)',
-              },
-            }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        {onPopOut && (
-          <Tooltip title="Open in new window">
+          <span>
             <IconButton
               size="small"
-              onClick={onPopOut}
-              aria-label="Open in new window"
+              onClick={(e) => {
+                if (menuItems.length === 0) {
+                  return;
+                }
+                setMenuAnchor(e.currentTarget);
+              }}
+              aria-label="Chat options"
+              aria-disabled={menuItems.length === 0}
               sx={{
                 color: headerIconMuted,
+                opacity: menuItems.length === 0 ? 0.56 : 1,
+                cursor: menuItems.length === 0 ? 'default' : 'pointer',
                 '&:hover': {
                   color: headerIconHover,
                   bgcolor: 'rgba(255,255,255,0.06)',
                 },
               }}
             >
-              <OpenInNewIcon fontSize="small" />
+              <MoreVertIcon fontSize="small" />
             </IconButton>
+          </span>
+        </Tooltip>
+        {onPopOut && (
+          <Tooltip title="Open in new window">
+            <span>
+              <IconButton
+                size="small"
+                onClick={onPopOut}
+                aria-label="Open in new window"
+                sx={{
+                  color: headerIconMuted,
+                  '&:hover': {
+                    color: headerIconHover,
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                  },
+                }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
         {closeIcon && (
           <Tooltip title="Close">
-            <IconButton
-              size="small"
-              onClick={onBack}
-              aria-label="Close"
-              sx={{
-                color: headerIconMuted,
-                '&:hover': {
-                  color: headerIconHover,
-                  bgcolor: 'rgba(255,255,255,0.06)',
-                },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onBack}
+                aria-label="Close"
+                sx={{
+                  color: headerIconMuted,
+                  '&:hover': {
+                    color: headerIconHover,
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                  },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
       </Box>

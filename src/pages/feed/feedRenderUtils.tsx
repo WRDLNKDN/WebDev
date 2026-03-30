@@ -13,6 +13,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import type { FeedItem } from '../../lib/api/feedsApi';
 import type { LinkPreviewData } from '../../lib/linkPreview';
@@ -123,21 +125,68 @@ function linkPreviewDomain(url: string): string {
   }
 }
 
+function linkPreviewPaperSx(variant: 'feed' | 'chat'): SxProps<Theme> {
+  const isChat = variant === 'chat';
+  return {
+    display: 'flex',
+    flexDirection: isChat ? 'column' : { xs: 'column', sm: 'row' },
+    overflow: 'hidden',
+    borderRadius: isChat ? 2 : 1.5,
+    borderColor: isChat ? 'transparent' : 'divider',
+    bgcolor: isChat
+      ? (t: Theme) =>
+          alpha(
+            t.palette.common.black,
+            t.palette.mode === 'light' ? 0.04 : 0.12,
+          )
+      : undefined,
+    boxShadow: isChat ? 'none' : undefined,
+    '&:hover': {
+      borderColor: isChat
+        ? (t: Theme) => alpha(t.palette.primary.main, 0.35)
+        : 'primary.main',
+      bgcolor: 'action.hover',
+    },
+  };
+}
+
+function linkPreviewImageSx(variant: 'feed' | 'chat'): SxProps<Theme> {
+  const isChat = variant === 'chat';
+  return {
+    width: isChat ? '100%' : { xs: '100%', sm: 120 },
+    minWidth: isChat ? 0 : { sm: 120 },
+    height: isChat ? 120 : { xs: 140, sm: 120 },
+    maxHeight: isChat ? 200 : undefined,
+    objectFit: 'cover',
+    bgcolor: 'action.hover',
+  };
+}
+
 export const LinkPreviewCard = ({
   preview,
   onDismiss,
+  variant = 'feed',
 }: {
   preview: LinkPreviewPayload;
   onDismiss?: () => void;
+  /** `chat`: tighter embed in message threads; omits image when API did not return one. */
+  variant?: 'feed' | 'chat';
 }) => {
   const asset = createNormalizedLinkAsset({
     url: preview.url,
     preview,
   });
   const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
+  const showThumbnail = variant === 'feed' || Boolean(preview.image?.trim());
 
   return (
-    <Box sx={{ position: 'relative', display: 'block', mt: 1.5 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        display: 'block',
+        mt: variant === 'chat' ? 0 : 1.5,
+      }}
+    >
       {onDismiss && (
         <IconButton
           size="small"
@@ -170,28 +219,20 @@ export const LinkPreviewCard = ({
       >
         <Paper
           variant="outlined"
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            overflow: 'hidden',
-            borderRadius: 1.5,
-            borderColor: 'divider',
-            '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
-          }}
+          elevation={0}
+          sx={linkPreviewPaperSx(variant)}
         >
+          {showThumbnail ? (
+            <Box
+              component="img"
+              src={thumbnailUrl}
+              alt=""
+              sx={linkPreviewImageSx(variant)}
+            />
+          ) : null}
           <Box
-            component="img"
-            src={thumbnailUrl}
-            alt=""
-            sx={{
-              width: { xs: '100%', sm: 120 },
-              minWidth: { sm: 120 },
-              height: { xs: 140, sm: 120 },
-              objectFit: 'cover',
-              bgcolor: 'action.hover',
-            }}
-          />
-          <Box sx={{ p: 1.5, flex: 1, minWidth: 0 }}>
+            sx={{ p: variant === 'chat' ? 1.15 : 1.5, flex: 1, minWidth: 0 }}
+          >
             <Typography
               variant="subtitle2"
               fontWeight={600}

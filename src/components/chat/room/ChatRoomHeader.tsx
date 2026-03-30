@@ -24,7 +24,9 @@ import {
   MenuItem,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -83,11 +85,17 @@ export const ChatRoomHeader = ({
   showBackButton = true,
   onRemoveConversation,
 }: ChatRoomHeaderProps) => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
-  const headerIconMuted = 'rgba(255,255,255,0.52)';
-  const headerIconHover = 'rgba(255,255,255,0.88)';
+  const isLightChrome = theme.palette.mode === 'light';
+  const headerIconMuted = isLightChrome
+    ? alpha(theme.palette.text.primary, 0.52)
+    : 'rgba(255,255,255,0.52)';
+  const headerIconHover = isLightChrome
+    ? theme.palette.text.primary
+    : 'rgba(255,255,255,0.88)';
 
   const otherMember = room?.members?.find((m) => m.user_id !== currentUserId);
   const otherUserId = otherMember?.user_id;
@@ -307,9 +315,13 @@ export const ChatRoomHeader = ({
   return (
     <Box
       sx={{
-        px: { xs: 0.9, sm: 1.2 },
-        py: { xs: 0.75, sm: 0.95 },
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        px: { xs: 1, sm: 1.35 },
+        py: { xs: 0.85, sm: 1 },
+        borderBottom: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.12 : 0.1)}`,
+        background: isLightChrome
+          ? alpha(theme.palette.background.paper, 0.65)
+          : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.35)} 0%, transparent 100%)`,
+        backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         gap: { xs: 0.35, sm: 1 },
@@ -360,10 +372,14 @@ export const ChatRoomHeader = ({
         />
         <Box sx={{ minWidth: 0 }}>
           <Typography
-            variant="subtitle2"
+            variant="subtitle1"
             fontWeight={700}
             noWrap={room?.room_type !== 'group'}
-            sx={{ fontSize: '0.98rem', lineHeight: 1.2 }}
+            sx={{
+              fontSize: '1rem',
+              lineHeight: 1.25,
+              letterSpacing: '-0.015em',
+            }}
           >
             {displayName}
           </Typography>
@@ -395,10 +411,21 @@ export const ChatRoomHeader = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 0.75,
+          gap: 0.25,
           flexShrink: 0,
           ml: 'auto',
           order: { xs: 1, sm: 0 },
+          pl: 0.5,
+          borderRadius: 1.5,
+          transition: 'background-color 0.15s ease',
+          '@media (hover: hover)': {
+            '&:hover': {
+              bgcolor: alpha(
+                theme.palette.primary.main,
+                isLightChrome ? 0.06 : 0.1,
+              ),
+            },
+          },
         }}
       >
         {onToggleFavorite && (

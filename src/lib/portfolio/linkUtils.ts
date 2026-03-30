@@ -3,6 +3,12 @@
  * Portfolio items are URL-only; supported targets: direct file URLs and Google Docs/Sheets/Slides.
  */
 
+/** True when the trimmed string is an absolute http(s) URL (safe new-tab target). */
+export const isExternalHttpUrl = (url: string): boolean => {
+  const trimmed = url.trim();
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+};
+
 export const SUPPORTED_IMAGE_EXTENSIONS = [
   'jpg',
   'jpeg',

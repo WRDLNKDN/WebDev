@@ -34,8 +34,6 @@ import type { ChatRoomType } from '../../../types/chat';
 import { MessageContent } from './MessageContent';
 import { AttachmentPreview } from './AttachmentPreview';
 
-const CHAT_PANEL_BG = '#282C34';
-
 /**
  * Message row actions use the kebab menu only (no inline action bars).
  * Menu order: Reply → Forward → Copy → Edit (own) → Delete (own) → Report.
@@ -315,14 +313,15 @@ export const MessageList = ({
         flex: 1,
         overflow: 'auto',
         overflowX: 'hidden',
+        scrollBehavior: 'smooth',
         display: 'flex',
         flexDirection: 'column',
-        gap: compact ? 0.75 : 1,
-        px: compact ? 1.25 : 2,
-        py: compact ? 1 : 1.75,
+        gap: compact ? 0.55 : 0.9,
+        px: compact ? 1.15 : { xs: 1.35, sm: 2 },
+        py: compact ? 0.85 : 1.35,
         bgcolor: isLightChrome
-          ? theme.palette.background.default
-          : CHAT_PANEL_BG,
+          ? alpha(theme.palette.background.default, 0.98)
+          : alpha('#141820', 0.94),
         position: 'relative',
         minWidth: 0,
         width: '100%',
@@ -457,19 +456,20 @@ export const MessageList = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  py: 0.5,
+                  py: 1,
                 }}
               >
                 <Typography
                   variant="caption"
                   sx={{
-                    px: 1.1,
-                    py: 0.35,
+                    px: 1.35,
+                    py: 0.45,
                     borderRadius: 999,
                     color: 'text.secondary',
+                    fontWeight: 500,
                     bgcolor: alpha(
                       theme.palette.common.black,
-                      isLightChrome ? 0.045 : 0.18,
+                      isLightChrome ? 0.04 : 0.2,
                     ),
                   }}
                 >
@@ -492,8 +492,14 @@ export const MessageList = ({
                 maxWidth: { xs: '100%', sm: '86%' },
                 minWidth: 0,
                 position: 'relative',
-                mt: isContinuation ? (compact ? -0.1 : -0.2) : 0,
+                mt: isContinuation ? (compact ? -0.35 : -0.5) : 0,
                 ml: isOwn ? 'auto' : 0,
+                transition: 'box-shadow 0.18s ease',
+                '@media (hover: hover)': {
+                  '&:hover': {
+                    filter: isLightChrome ? undefined : 'brightness(1.03)',
+                  },
+                },
               }}
             >
               <PostCard
@@ -519,30 +525,33 @@ export const MessageList = ({
                     : null
                 }
                 sx={{
-                  borderRadius: 1.75,
-                  boxShadow: 'none',
+                  borderRadius: 2.25,
+                  border: 'none',
                   bgcolor: isOwn
                     ? isLightChrome
-                      ? alpha(theme.palette.primary.main, 0.12)
-                      : 'rgba(56, 132, 210, 0.24)'
+                      ? alpha(theme.palette.primary.main, 0.14)
+                      : alpha(theme.palette.primary.main, 0.22)
                     : isLightChrome
-                      ? alpha(theme.palette.common.black, 0.035)
-                      : 'rgba(255, 255, 255, 0.035)',
-                  borderColor: isOwn
-                    ? isLightChrome
-                      ? alpha(theme.palette.primary.main, 0.18)
-                      : 'rgba(147, 197, 253, 0.14)'
-                    : alpha(theme.palette.divider, isLightChrome ? 0.16 : 0.1),
-                  borderWidth: 1,
+                      ? alpha(theme.palette.common.black, 0.04)
+                      : alpha('#ffffff', 0.06),
+                  boxShadow: `0 0 0 1px ${alpha(
+                    isOwn ? theme.palette.primary.main : theme.palette.divider,
+                    isOwn ? (isLightChrome ? 0.12 : 0.18) : 0.08,
+                  )} inset`,
                   minWidth: 0,
                   width: '100%',
                   maxWidth: '100%',
+                  '@media (hover: hover)': {
+                    '&:hover': {
+                      boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, isLightChrome ? 0.28 : 0.4)} inset, 0 6px 20px ${alpha(theme.palette.common.black, isLightChrome ? 0.06 : 0.15)}`,
+                    },
+                  },
                 }}
                 contentSx={{
-                  pt: isContinuation ? 0.45 : 0.95,
-                  pb: 0.7,
-                  px: 1.1,
-                  '&:last-child': { pb: 0.8 },
+                  pt: isContinuation ? 0.35 : 0.85,
+                  pb: 0.65,
+                  px: 1,
+                  '&:last-child': { pb: 0.75 },
                 }}
               >
                 {msg.reply_preview && editingId !== msg.id ? (
@@ -671,8 +680,14 @@ export const MessageList = ({
                   const preview = linkPreviews[msg.id];
                   if (!preview) return null;
                   return (
-                    <Box sx={{ mt: 0.6, width: '100%', maxWidth: 340 }}>
-                      <LinkPreviewCard preview={preview} />
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        width: '100%',
+                        maxWidth: { xs: '100%', sm: 400 },
+                      }}
+                    >
+                      <LinkPreviewCard preview={preview} variant="chat" />
                     </Box>
                   );
                 })()}

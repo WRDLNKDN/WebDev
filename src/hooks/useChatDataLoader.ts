@@ -63,12 +63,23 @@ export const useChatDataLoader = ({
         return false;
       }
 
-      const { data: roomData, error: roomErr } = await supabase
-        .from('chat_rooms')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const [roomRes, membersRes, prefRes] = await Promise.all([
+        supabase.from('chat_rooms').select('*').eq('id', id).single(),
+        supabase
+          .from('chat_room_members')
+          .select('room_id, user_id, role, joined_at, left_at')
+          .eq('room_id', id)
+          .is('left_at', null),
+        supabase
+          .from('chat_room_preferences')
+          .select('is_favorite')
+          .eq('room_id', id)
+          .eq('user_id', currentUserId)
+          .maybeSingle(),
+      ]);
 
+      const roomErr = roomRes.error;
+      const roomData = roomRes.data;
       if (roomErr || !roomData) {
         setError('This chat could not be found. You may not have access.');
         setRoom(null);
@@ -76,11 +87,14 @@ export const useChatDataLoader = ({
         return false;
       }
 
-      const { data: membersData } = await supabase
-        .from('chat_room_members')
-        .select('room_id, user_id, role, joined_at, left_at')
-        .eq('room_id', id)
-        .is('left_at', null);
+      if (membersRes.error) {
+        setError('This chat could not be found. You may not have access.');
+        setRoom(null);
+        setMessages([]);
+        return false;
+      }
+
+      const membersData = membersRes.data;
 
       const userIds = [
         ...new Set((membersData ?? []).map((member) => member.user_id)),
@@ -108,6 +122,7 @@ export const useChatDataLoader = ({
           ...member,
           profile: profileMap.get(member.user_id) ?? null,
         })) as ChatRoomWithMembers['members'],
+        is_favorite: Boolean(prefRes.data?.is_favorite),
       });
       return true;
     },

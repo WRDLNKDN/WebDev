@@ -7,13 +7,15 @@ import {
   MessageInput,
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
-import { MessageList } from '../../components/chat/message/MessageList';
+import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
 import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
 import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
+import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
+import { useChatGroupDialogs } from '../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
@@ -21,9 +23,7 @@ import {
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
 import { useAppToast } from '../../context/AppToastContext';
-import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
-import { truncateSnippet } from '../../lib/chat/messageSnippet';
 
 /**
  * Standalone popout chat window (LinkedIn-style).
@@ -34,10 +34,12 @@ export const ChatPopupPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'details' | 'manage' | 'members'
-  >('invite');
+  const {
+    groupDialogOpen,
+    setGroupDialogOpen,
+    groupDialogMode,
+    groupMenuHandlers,
+  } = useChatGroupDialogs();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
     messageId?: string;
@@ -75,6 +77,7 @@ export const ChatPopupPage = () => {
     transferAdmin,
     inviteMembers,
     blockUser,
+    refetchRoom,
   } = useChat(roomId ?? null);
   const { submitReport } = useReportMessage();
   const { onlineUsers, typingUsers, startTyping, stopTyping } = useChatPresence(
@@ -84,6 +87,17 @@ export const ChatPopupPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
+  const resolvedThreadFavorite =
+    activeRoom === null
+      ? Boolean(room?.is_favorite ?? false)
+      : Boolean(activeRoom.is_favorite);
+  const handleToggleFavorite = useCallback(
+    async (targetRoomId: string, currentlyFavorite: boolean) => {
+      await toggleFavorite(targetRoomId, currentlyFavorite);
+      if (roomId === targetRoomId) await refetchRoom();
+    },
+    [toggleFavorite, roomId, refetchRoom],
+  );
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -107,7 +121,7 @@ export const ChatPopupPage = () => {
       const { data } = await supabase.auth.getSession();
       if (!cancelled) setSession(data.session ?? null);
     };
-    void init();
+    init().catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       if (!cancelled) setSession(s ?? null);
     });
@@ -143,26 +157,11 @@ export const ChatPopupPage = () => {
     setReportOpen(true);
   };
 
-  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
-    return (
-      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
-    );
-  }, []);
-
-  const handleForwardToRoom = useCallback(
-    async (targetRoomId: string) => {
-      if (!forwardSource) return;
-      const body = formatForwardedChatText(
-        forwardSource.content,
-        forwardAuthorLabel(forwardSource),
-      );
-      const ok = await forwardMessage(targetRoomId, body);
-      if (ok) {
-        setForwardSource(null);
-        showToast({ message: 'Message forwarded.', severity: 'success' });
-      }
-    },
-    [forwardAuthorLabel, forwardMessage, forwardSource, showToast],
+  const { forwardAuthorLabel, handleForwardToRoom } = useChatForwardToRoomFlow(
+    forwardMessage,
+    forwardSource,
+    setForwardSource,
+    showToast,
   );
 
   if (!roomId) {
@@ -210,27 +209,15 @@ export const ChatPopupPage = () => {
           isRoomAdmin={isRoomAdmin ?? false}
           onLeave={handleLeave}
           onBlock={() => setBlockDialogOpen(true)}
-          onInvite={() => {
-            setGroupDialogMode('invite');
-            setGroupDialogOpen(true);
-          }}
-          onEditDetails={() => {
-            setGroupDialogMode('details');
-            setGroupDialogOpen(true);
-          }}
-          onManageMembers={() => {
-            setGroupDialogMode('manage');
-            setGroupDialogOpen(true);
-          }}
-          onShowMembers={() => {
-            setGroupDialogMode('members');
-            setGroupDialogOpen(true);
-          }}
-          isFavorite={Boolean(activeRoom?.is_favorite)}
+          {...groupMenuHandlers}
+          isFavorite={resolvedThreadFavorite}
           onToggleFavorite={
             roomId
-              ? () =>
-                  void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+              ? () => {
+                  handleToggleFavorite(roomId, resolvedThreadFavorite).catch(
+                    () => {},
+                  );
+                }
               : undefined
           }
           onBack={() =>
@@ -272,29 +259,24 @@ export const ChatPopupPage = () => {
             <CircularProgress />
           </Box>
         ) : error ? null : (
-          <MessageList
+          <ChatThreadMessageList
             messages={messages}
             currentUserId={uid}
             roomType={room?.room_type ?? 'dm'}
             otherUserId={otherMember?.user_id}
-            onLoadOlder={() => void loadOlderMessages()}
+            loadOlderMessages={loadOlderMessages}
             hasOlderMessages={hasOlderMessages}
             loadingOlder={loadingOlder}
-            onEdit={editMessage}
-            onDelete={deleteMessage}
-            onReaction={toggleReaction}
+            editMessage={editMessage}
+            deleteMessage={deleteMessage}
+            toggleReaction={toggleReaction}
+            markAsRead={markAsRead}
+            forwardAuthorLabel={forwardAuthorLabel}
             onReport={(msgId, senderUserId) =>
               handleReport(msgId, senderUserId ?? undefined)
             }
-            onStartReply={(msg) =>
-              setReplyTarget({
-                id: msg.id,
-                authorLabel: forwardAuthorLabel(msg),
-                contentSnippet: truncateSnippet(msg.content ?? ''),
-              })
-            }
-            onForward={(msg) => setForwardSource(msg)}
-            onMessagesViewed={markAsRead}
+            replyTargetSetter={setReplyTarget}
+            onForwardSource={setForwardSource}
             compact
             scrollToMessageId={searchParams.get('message')}
           />

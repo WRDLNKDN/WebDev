@@ -52,14 +52,14 @@ jobs:
         uses: actions/github-script@v8
         env:
           GH_PROJECT_OWNER_TYPE:
-            ${{ github.event.inputs.owner_type || vars.GH_PROJECT_OWNER_TYPE ||
-            secrets.GH_PROJECT_OWNER_TYPE }}
+            ${{ github.event.inputs.owner_type || secrets.GH_PROJECT_OWNER_TYPE
+            || vars.GH_PROJECT_OWNER_TYPE }}
           GH_PROJECT_OWNER_LOGIN:
-            ${{ github.event.inputs.owner_login || vars.GH_PROJECT_OWNER_LOGIN
-            || secrets.GH_PROJECT_OWNER_LOGIN }}
+            ${{ github.event.inputs.owner_login ||
+            secrets.GH_PROJECT_OWNER_LOGIN || vars.GH_PROJECT_OWNER_LOGIN }}
           GH_PROJECT_NUMBER:
-            ${{ github.event.inputs.project_number || vars.GH_PROJECT_NUMBER ||
-            secrets.GH_PROJECT_NUMBER }}
+            ${{ github.event.inputs.project_number || secrets.GH_PROJECT_NUMBER
+            || vars.GH_PROJECT_NUMBER }}
         with:
           github-token: ${{ secrets.GITHUBACTION || secrets.GH_PROJECTS_TOKEN }}
           script: |

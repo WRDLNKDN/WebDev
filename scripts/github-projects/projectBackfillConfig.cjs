@@ -2,6 +2,11 @@
  * Shared config reader for GitHub Project v2 backfill workflows.
  * Supports workflow_dispatch inputs plus workflow-provided env for scheduled runs.
  */
+function trimStr(value) {
+  if (value == null) return '';
+  return String(value).trim();
+}
+
 module.exports = async function getProjectBackfillConfig(
   github,
   context,
@@ -15,12 +20,13 @@ module.exports = async function getProjectBackfillConfig(
       : repositoryOwner?.type === 'User'
         ? 'user'
         : '';
-  const ownerLogin =
+  const ownerLogin = trimStr(
     inputs.owner_login ||
-    process.env.GH_PROJECT_OWNER_LOGIN ||
-    repositoryOwner?.login ||
-    context.repo?.owner ||
-    '';
+      process.env.GH_PROJECT_OWNER_LOGIN ||
+      repositoryOwner?.login ||
+      context.repo?.owner ||
+      '',
+  );
   if (!inferredOwnerType && ownerLogin && github?.rest?.users?.getByUsername) {
     try {
       const { data } = await github.rest.users.getByUsername({
@@ -40,14 +46,17 @@ module.exports = async function getProjectBackfillConfig(
       }
     }
   }
-  const ownerType =
+  const ownerType = trimStr(
     inputs.owner_type ||
-    process.env.GH_PROJECT_OWNER_TYPE ||
-    inferredOwnerType ||
-    '';
-  const projectNumber = Number(
-    inputs.project_number || process.env.GH_PROJECT_NUMBER,
+      process.env.GH_PROJECT_OWNER_TYPE ||
+      inferredOwnerType ||
+      '',
   );
+  const rawProject =
+    inputs.project_number != null && String(inputs.project_number).trim() !== ''
+      ? inputs.project_number
+      : process.env.GH_PROJECT_NUMBER;
+  const projectNumber = Number(trimStr(rawProject));
 
   if (ownerType !== 'org' && ownerType !== 'user') {
     core.setFailed(
@@ -55,7 +64,7 @@ module.exports = async function getProjectBackfillConfig(
     );
     return null;
   }
-  if (!ownerLogin || !Number.isFinite(projectNumber)) {
+  if (!ownerLogin || !Number.isFinite(projectNumber) || projectNumber < 1) {
     core.setFailed(
       'owner_login and project_number are required. For scheduled runs, provide GH_PROJECT_OWNER_LOGIN and GH_PROJECT_NUMBER through the workflow env.',
     );

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ChatRoomWithMembers, MessageWithExtras } from './chatTypes';
 import { useChatActions } from './useChatActions';
 import { useChatDataLoader } from './useChatDataLoader';
@@ -27,6 +27,11 @@ export function useChat(roomId: string | null) {
     setHasOlderMessages,
     setLoadingOlder,
   });
+
+  const refetchRoom = useCallback(async () => {
+    if (!roomId) return;
+    await fetchRoom(roomId);
+  }, [fetchRoom, roomId]);
 
   useChatRealtime({ roomId, setMessages });
 
@@ -78,6 +83,7 @@ export function useChat(roomId: string | null) {
     inviteMembers,
     blockUser,
     refresh,
+    refetchRoom,
   };
 }
 

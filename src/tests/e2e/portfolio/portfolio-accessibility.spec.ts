@@ -1,59 +1,22 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../fixtures';
-import { seedSignedInSession, USER_ID } from '../utils/auth';
-import { fulfillPostgrest } from '../utils/postgrestFulfill';
+import { seedSignedInSession } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
+import {
+  PORTFOLIO_E2E_MEMBER_PROFILE,
+  stubPortfolioDashboardRestRoutes,
+} from './portfolioEditStubs';
 
 async function stubPortfolioDashboardSurface(
   page: import('@playwright/test').Page,
 ) {
-  const profile = {
-    id: USER_ID,
-    handle: 'member',
-    display_name: 'Member',
-    status: 'approved',
-    join_reason: ['networking'],
-    participation_style: ['builder'],
-    policy_version: '1.0',
-    industry: 'Technology and Software',
-    secondary_industry: null,
-    tagline: 'Builder',
-    avatar: null,
-    socials: [],
-    nerd_creds: { skills: ['Testing'] },
-    resume_url: null,
-  };
-
-  await page.route(
-    '**/rest/v1/rpc/get_or_create_profile_share_token*',
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify('member-share-token'),
-      });
-    },
+  await stubPortfolioDashboardRestRoutes(
+    page,
+    [],
+    { kind: 'merge' },
+    PORTFOLIO_E2E_MEMBER_PROFILE,
+    'alwaysPostgrest',
   );
-
-  await page.route(
-    '**/rest/v1/rpc/get_own_profile_by_handle*',
-    async (route) => {
-      await fulfillPostgrest(route, [profile]);
-    },
-  );
-
-  await page.route('**/rest/v1/profiles*', async (route) => {
-    await fulfillPostgrest(route, [profile]);
-  });
-
-  await page.route('**/rest/v1/portfolio_items*', async (route) => {
-    if (route.request().method() === 'GET') {
-      await fulfillPostgrest(route, []);
-      return;
-    }
-
-    await route.fulfill({ status: 204, body: '' });
-  });
 }
 
 test.describe('Portfolio accessibility', () => {

@@ -25,11 +25,13 @@ import {
   MessageInput,
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
-import { MessageList } from '../../components/chat/message/MessageList';
+import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
 import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import { StartDmDialog } from '../../components/chat/dialogs/StartDmDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
+import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
+import { useChatGroupDialogs } from '../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { ChatGroupDetailsInput } from '../../lib/chat/groupDetails';
@@ -37,9 +39,7 @@ import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
-import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
-import { truncateSnippet } from '../../lib/chat/messageSnippet';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { getGlassCard } from '../../theme/candyStyles';
 
@@ -60,10 +60,12 @@ export const ChatPage = () => {
     userId?: string;
   } | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'details' | 'manage' | 'members'
-  >('invite');
+  const {
+    groupDialogOpen,
+    setGroupDialogOpen,
+    groupDialogMode,
+    groupMenuHandlers,
+  } = useChatGroupDialogs();
   const [replyTarget, setReplyTarget] = useState<MessageReplyDraft | null>(
     null,
   );
@@ -104,6 +106,7 @@ export const ChatPage = () => {
     inviteMembers,
     blockUser,
     refresh,
+    refetchRoom,
   } = useChat(roomId ?? null);
 
   const { submitReport } = useReportMessage();
@@ -115,7 +118,7 @@ export const ChatPage = () => {
 
   useEffect(() => {
     let mounted = true;
-    void (async () => {
+    (async () => {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       if (!data.session) {
@@ -123,7 +126,7 @@ export const ChatPage = () => {
       } else {
         setSession(data.session);
       }
-    })();
+    })().catch(() => {});
     return () => {
       mounted = false;
     };
@@ -201,26 +204,11 @@ export const ChatPage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isMobileLayout, navigate]);
 
-  const forwardAuthorLabel = useCallback((m: MessageWithExtras) => {
-    return (
-      m.sender_profile?.display_name || m.sender_profile?.handle || 'Member'
-    );
-  }, []);
-
-  const handleForwardToRoom = useCallback(
-    async (targetRoomId: string) => {
-      if (!forwardSource) return;
-      const body = formatForwardedChatText(
-        forwardSource.content,
-        forwardAuthorLabel(forwardSource),
-      );
-      const ok = await forwardMessage(targetRoomId, body);
-      if (ok) {
-        setForwardSource(null);
-        showToast({ message: 'Message forwarded.', severity: 'success' });
-      }
-    },
-    [forwardAuthorLabel, forwardMessage, forwardSource, showToast],
+  const { forwardAuthorLabel, handleForwardToRoom } = useChatForwardToRoomFlow(
+    forwardMessage,
+    forwardSource,
+    setForwardSource,
+    showToast,
   );
 
   const handleStartDm = async (userId: string) => {
@@ -257,6 +245,17 @@ export const ChatPage = () => {
 
   const otherMember = room?.members?.find((m) => m.user_id !== uid);
   const activeRoom = rooms.find((candidate) => candidate.id === roomId) ?? null;
+  const resolvedThreadFavorite =
+    activeRoom === null
+      ? Boolean(room?.is_favorite ?? false)
+      : Boolean(activeRoom.is_favorite);
+  const handleToggleFavorite = useCallback(
+    async (targetRoomId: string, currentlyFavorite: boolean) => {
+      await toggleFavorite(targetRoomId, currentlyFavorite);
+      if (roomId === targetRoomId) await refetchRoom();
+    },
+    [toggleFavorite, roomId, refetchRoom],
+  );
   const isRoomAdmin =
     room?.members?.find((m) => m.user_id === uid)?.role === 'admin';
 
@@ -303,25 +302,41 @@ export const ChatPage = () => {
     ? 'clamp(860px, 66vw, 1120px)'
     : 'clamp(420px, 34vw, 480px)';
 
+  const listColumnDividerAlpha = theme.palette.mode === 'light' ? 0.1 : 0.08;
+  const listColumnBorderRightMd = showThread
+    ? `1px solid ${alpha(theme.palette.divider, listColumnDividerAlpha)}`
+    : 'none';
+  const listColumnPaperAlpha = theme.palette.mode === 'light' ? 0.72 : 0.55;
+  const listColumnBgcolor = isMobileLayout
+    ? 'transparent'
+    : alpha(theme.palette.background.paper, listColumnPaperAlpha);
+
+  let threadColumnBackground: string;
+  if (isMobileLayout) {
+    threadColumnBackground =
+      'linear-gradient(180deg, rgba(6,10,20,0.14) 0%, rgba(6,10,20,0.03) 100%)';
+  } else if (theme.palette.mode === 'light') {
+    threadColumnBackground = alpha(theme.palette.background.default, 0.98);
+  } else {
+    threadColumnBackground = `linear-gradient(180deg, ${alpha('#121722', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.96)} 55%)`;
+  }
+
   const listColumn = (
     <Box
       sx={{
         display: { xs: roomId ? 'none' : 'flex', md: 'flex' },
-        width: { xs: '100%', md: showThread ? '33%' : '100%' },
+        width: { xs: '100%', md: showThread ? 280 : '100%' },
         minWidth: { xs: 0, md: showThread ? 280 : 0 },
-        maxWidth: { xs: '100%', md: showThread ? 360 : '100%' },
+        maxWidth: { xs: '100%', md: showThread ? 280 : '100%' },
         flexShrink: 0,
         borderRight: {
           xs: 'none',
-          md: showThread
-            ? `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.18 : 0.12)}`
-            : 'none',
+          md: listColumnBorderRightMd,
         },
         flexDirection: 'column',
         minHeight: 0,
-        bgcolor: isMobileLayout
-          ? 'transparent'
-          : alpha(theme.palette.background.paper, 0.88),
+        bgcolor: listColumnBgcolor,
+        backdropFilter: isMobileLayout ? 'none' : 'blur(12px)',
       }}
     >
       <ChatRoomList
@@ -331,7 +346,7 @@ export const ChatPage = () => {
         onStartDm={() => setStartDmOpen(true)}
         onCreateGroup={() => setCreateGroupOpen(true)}
         onRemoveChat={handleRemoveChat}
-        onToggleFavorite={toggleFavorite}
+        onToggleFavorite={handleToggleFavorite}
         chatPathPrefix="/chat-full"
         showMessagesHeading={isMobileLayout}
       />
@@ -350,9 +365,7 @@ export const ChatPage = () => {
         maxWidth: '100%',
         overflowX: 'hidden',
         overflowY: 'hidden',
-        background: isMobileLayout
-          ? 'linear-gradient(180deg, rgba(6,10,20,0.16) 0%, rgba(6,10,20,0.04) 100%)'
-          : alpha(theme.palette.background.default, 0.985),
+        background: threadColumnBackground,
       }}
     >
       <ChatRoomHeader
@@ -363,27 +376,15 @@ export const ChatPage = () => {
         isRoomAdmin={isRoomAdmin ?? false}
         onLeave={handleLeave}
         onBlock={() => setBlockDialogOpen(true)}
-        onInvite={() => {
-          setGroupDialogMode('invite');
-          setGroupDialogOpen(true);
-        }}
-        onEditDetails={() => {
-          setGroupDialogMode('details');
-          setGroupDialogOpen(true);
-        }}
-        onManageMembers={() => {
-          setGroupDialogMode('manage');
-          setGroupDialogOpen(true);
-        }}
-        onShowMembers={() => {
-          setGroupDialogMode('members');
-          setGroupDialogOpen(true);
-        }}
-        isFavorite={Boolean(activeRoom?.is_favorite)}
+        {...groupMenuHandlers}
+        isFavorite={resolvedThreadFavorite}
         onToggleFavorite={
           roomId
-            ? () =>
-                void toggleFavorite(roomId, Boolean(activeRoom?.is_favorite))
+            ? () => {
+                handleToggleFavorite(roomId, resolvedThreadFavorite).catch(
+                  () => {},
+                );
+              }
             : undefined
         }
         onBack={() => navigate('/chat-full')}
@@ -410,7 +411,9 @@ export const ChatPage = () => {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => void refresh()}
+            onClick={() => {
+              refresh();
+            }}
           >
             Try again
           </Button>
@@ -429,29 +432,24 @@ export const ChatPage = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <MessageList
+        <ChatThreadMessageList
           messages={messages}
           currentUserId={uid}
           roomType={room?.room_type ?? 'dm'}
           otherUserId={otherMember?.user_id}
-          onLoadOlder={() => void loadOlderMessages()}
+          loadOlderMessages={loadOlderMessages}
           hasOlderMessages={hasOlderMessages}
           loadingOlder={loadingOlder}
-          onEdit={editMessage}
-          onDelete={deleteMessage}
-          onReaction={toggleReaction}
+          editMessage={editMessage}
+          deleteMessage={deleteMessage}
+          toggleReaction={toggleReaction}
+          markAsRead={markAsRead}
+          forwardAuthorLabel={forwardAuthorLabel}
           onReport={(msgId, senderUserId) =>
             handleReport(msgId, senderUserId ?? undefined)
           }
-          onStartReply={(msg) =>
-            setReplyTarget({
-              id: msg.id,
-              authorLabel: forwardAuthorLabel(msg),
-              contentSnippet: truncateSnippet(msg.content ?? ''),
-            })
-          }
-          onForward={(msg) => setForwardSource(msg)}
-          onMessagesViewed={markAsRead}
+          replyTargetSetter={setReplyTarget}
+          onForwardSource={setForwardSource}
           scrollToMessageId={searchParams.get('message')}
           typingAvatarUrl={
             room?.room_type === 'dm'
@@ -493,6 +491,22 @@ export const ChatPage = () => {
         minWidth: 0,
         width: '100%',
         overflow: 'hidden',
+        position: 'relative',
+        '&::before':
+          !isMobileLayout && showThread
+            ? {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                background:
+                  theme.palette.mode === 'light'
+                    ? `radial-gradient(120% 80% at 50% 0%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 55%)`
+                    : `radial-gradient(100% 60% at 50% 0%, ${alpha(theme.palette.primary.main, 0.07)} 0%, transparent 50%)`,
+                zIndex: 0,
+              }
+            : undefined,
+        '& > *': { position: 'relative', zIndex: 1 },
       }}
     >
       {listColumn}
@@ -597,11 +611,11 @@ export const ChatPage = () => {
               flexDirection: 'column',
               overflow: 'hidden',
               bgcolor: alpha(theme.palette.background.default, 0.96),
-              borderLeft: `1px solid ${alpha(theme.palette.divider, 0.16)}`,
+              borderLeft: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.1 : 0.14)}`,
               boxShadow:
                 theme.palette.mode === 'light'
-                  ? `-8px 0 24px ${alpha(theme.palette.common.black, 0.08)}`
-                  : `-10px 0 28px ${alpha(theme.palette.common.black, 0.32)}`,
+                  ? `-6px 0 20px ${alpha(theme.palette.common.black, 0.06)}`
+                  : `-8px 0 24px ${alpha(theme.palette.common.black, 0.28)}`,
               transform: 'translateX(0)',
               opacity: 1,
               animation: 'chatDockSlideIn 220ms ease-out',
@@ -625,8 +639,12 @@ export const ChatPage = () => {
                 px: 1.75,
                 py: 1,
                 flexShrink: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                bgcolor: alpha(theme.palette.background.paper, 0.88),
+                borderBottom: `1px solid ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.08 : 0.1)}`,
+                bgcolor: alpha(
+                  theme.palette.background.paper,
+                  theme.palette.mode === 'light' ? 0.78 : 0.72,
+                ),
+                backdropFilter: 'blur(10px)',
                 color:
                   theme.palette.mode === 'light'
                     ? theme.palette.text.primary
@@ -707,6 +725,19 @@ export const ChatPage = () => {
           m: { xs: 0.75, sm: 1.25 },
           overflow: 'hidden',
           borderRadius: { xs: 2.5, md: 3 },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+            bgcolor: alpha(
+              theme.palette.common.black,
+              theme.palette.mode === 'light' ? 0.04 : 0.14,
+            ),
+            zIndex: 0,
+          },
+          '& > *': { position: 'relative', zIndex: 1 },
         }}
       >
         {splitWorkspace}

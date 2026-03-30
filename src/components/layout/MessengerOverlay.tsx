@@ -54,8 +54,10 @@ export const MessengerOverlay = () => {
   } = useChatRooms();
 
   useEffect(() => {
-    if (messenger?.overlayOpen && session?.user?.id) void fetchRooms();
-  }, [messenger?.overlayOpen, session?.user?.id, fetchRooms]);
+    if (messenger?.overlayOpen && session?.user?.id) {
+      void fetchRooms({ silent: rooms.length > 0 });
+    }
+  }, [messenger?.overlayOpen, session?.user?.id, fetchRooms, rooms.length]);
 
   useEffect(() => {
     let cancelled = false;

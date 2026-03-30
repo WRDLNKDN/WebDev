@@ -433,11 +433,13 @@ export const useChatActions = ({
     if (!roomId) return;
     setError(null);
     setLoading(true);
-    void (async () => {
+    (async () => {
       const ok = await fetchRoom(roomId);
       if (ok) await fetchMessages(roomId);
       else setLoading(false);
-    })();
+    })().catch(() => {
+      setLoading(false);
+    });
   }, [fetchMessages, fetchRoom, roomId, setError, setLoading]);
 
   return {

@@ -1,24 +1,23 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
+import { isExternalHttpUrl } from '../../../lib/portfolio/linkUtils';
 import {
   getProjectPreviewFallbackLabel,
   getProjectPreviewMediaUrl,
 } from '../../../lib/portfolio/projectPreview';
 import type { PortfolioItem } from '../../../types/portfolio';
 
-const isExternalUrl = (url: string): boolean => {
-  const trimmed = url.trim();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-};
-
 type PortfolioHighlightSlideProps = {
   project: PortfolioItem;
   index: number;
   activeIndex: number;
   onOpenPreview?: (project: PortfolioItem) => void;
+  /** Carousel uses theme-aware media chrome + compact fallback (shared markup with carousel track). */
+  variant?: 'standalone' | 'carousel';
 };
 
 export const PortfolioHighlightSlide = ({
@@ -26,11 +25,29 @@ export const PortfolioHighlightSlide = ({
   index,
   activeIndex,
   onOpenPreview,
+  variant = 'standalone',
 }: PortfolioHighlightSlideProps) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
   const previewMediaUrl = getProjectPreviewMediaUrl(project);
   const fallbackLabel = getProjectPreviewFallbackLabel(project);
   const projectUrl = project.project_url?.trim() ?? '';
   const categories = getProjectDisplayCategories(project.tech_stack);
+  const inCarousel = variant === 'carousel';
+  const mediaBg = inCarousel
+    ? isLight
+      ? alpha(theme.palette.primary.main, 0.06)
+      : 'rgba(56,132,210,0.10)'
+    : 'rgba(56,132,210,0.10)';
+  const mediaBorder = inCarousel
+    ? isLight
+      ? `1px solid ${theme.palette.divider}`
+      : '1px solid rgba(156,187,217,0.18)'
+    : '1px solid rgba(156,187,217,0.18)';
+  const fallbackCompact = inCarousel;
+  const fallbackDisplayLabel = inCarousel
+    ? project.title?.trim() || fallbackLabel
+    : fallbackLabel;
 
   return (
     <Box
@@ -76,8 +93,8 @@ export const PortfolioHighlightSlide = ({
             aspectRatio: { xs: '4 / 3', sm: '16 / 9' },
             borderRadius: 2.5,
             overflow: 'hidden',
-            bgcolor: 'rgba(56,132,210,0.10)',
-            border: '1px solid rgba(156,187,217,0.18)',
+            bgcolor: mediaBg,
+            border: mediaBorder,
             cursor: onOpenPreview ? 'pointer' : 'default',
           }}
         >
@@ -89,7 +106,11 @@ export const PortfolioHighlightSlide = ({
               sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <PortfolioPreviewFallback project={project} label={fallbackLabel} />
+            <PortfolioPreviewFallback
+              project={project}
+              label={fallbackDisplayLabel}
+              compact={fallbackCompact}
+            />
           )}
         </Box>
 
@@ -179,9 +200,11 @@ export const PortfolioHighlightSlide = ({
               <Button
                 variant="contained"
                 href={projectUrl}
-                target={isExternalUrl(projectUrl) ? '_blank' : undefined}
+                target={isExternalHttpUrl(projectUrl) ? '_blank' : undefined}
                 rel={
-                  isExternalUrl(projectUrl) ? 'noopener noreferrer' : undefined
+                  isExternalHttpUrl(projectUrl)
+                    ? 'noopener noreferrer'
+                    : undefined
                 }
                 endIcon={<OpenInNewIcon />}
                 sx={{

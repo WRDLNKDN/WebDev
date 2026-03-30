@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures';
-import { seedSignedInSession, USER_ID } from '../utils/auth';
-import { stubAppSurface } from '../utils/stubAppSurface';
+import { USER_ID } from '../utils/auth';
+import { prepareSignedInDashboardSurface } from '../utils/signedInDashboardSurface';
 
 const PROFILE_WITH_CANONICAL_INDUSTRIES = {
   id: USER_ID,
@@ -28,11 +28,7 @@ test.describe('Dashboard edit profile keyboard UX', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await prepareSignedInDashboardSurface(page, context);
 
     await page.route('**/rest/v1/profiles*', async (route) => {
       const accept = route.request().headers()['accept'];

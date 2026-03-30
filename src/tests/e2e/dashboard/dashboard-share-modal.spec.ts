@@ -1,17 +1,12 @@
 import { expect, test } from '../fixtures';
-import { seedSignedInSession } from '../utils/auth';
-import { stubAppSurface } from '../utils/stubAppSurface';
+import { prepareSignedInDashboardSurface } from '../utils/signedInDashboardSurface';
 
 test.describe('Dashboard share profile modal', () => {
   test('removes the inline panel and exposes share actions from the profile menu', async ({
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await prepareSignedInDashboardSurface(page, context);
 
     await page.route(
       '**/rest/v1/rpc/get_or_create_profile_share_token*',
@@ -65,11 +60,7 @@ test.describe('Dashboard share profile modal', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await prepareSignedInDashboardSurface(page, context);
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
@@ -90,11 +81,7 @@ test.describe('Dashboard share profile modal', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await prepareSignedInDashboardSurface(page, context);
 
     await page.route(
       '**/rest/v1/rpc/get_or_create_profile_share_token*',

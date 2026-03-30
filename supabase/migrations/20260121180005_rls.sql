@@ -48,27 +48,45 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
--- Literal bucket id: PL/pgSQL variables are not visible inside CREATE POLICY expressions.
-drop policy if exists "Authenticated can upload project-sources" on storage.objects;
-create policy "Authenticated can upload project-sources"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'project-sources');
-
-drop policy if exists "Public read project-sources" on storage.objects;
-create policy "Public read project-sources"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'project-sources');
-
-drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
-create policy "Authenticated can delete own project-sources"
-  on storage.objects for delete
-  to authenticated
-  using (
-    bucket_id = 'project-sources'
-    and owner = auth.uid()
-  );
+-- project-sources storage policies: one policy DDL template in-loop (avoids repeated format bodies / literals).
+do $project_sources_storage_policies$
+declare
+  bucket constant text := 'project-sources';
+  p_upload constant text := 'Authenticated can upload ' || bucket;
+  p_read constant text := 'Public read ' || bucket;
+  p_delete constant text := 'Authenticated can delete own ' || bucket;
+  role_authenticated constant text := 'authenticated';
+  role_public constant text := 'public';
+  op_insert constant text := 'insert';
+  op_select constant text := 'select';
+  op_delete constant text := 'delete';
+  clause_with_check constant text := format('with check (bucket_id = %L)', bucket);
+  clause_using_read constant text := format('using (bucket_id = %L)', bucket);
+  clause_using_delete constant text :=
+    format('using (bucket_id = %L and owner = auth.uid())', bucket);
+  policy_ddl_template constant text :=
+    'drop policy if exists %I on storage.objects; create policy %I on storage.objects for %s to %s %s';
+  pol record;
+begin
+  for pol in
+    select * from (
+      values
+        (p_upload, op_insert::text, role_authenticated::text, clause_with_check),
+        (p_read, op_select::text, role_public::text, clause_using_read),
+        (p_delete, op_delete::text, role_authenticated::text, clause_using_delete)
+    ) as t(policy_name, for_op, to_role, clause_sql)
+  loop
+    execute format(
+      policy_ddl_template,
+      pol.policy_name,
+      pol.policy_name,
+      pol.for_op,
+      pol.to_role,
+      pol.clause_sql
+    );
+  end loop;
+end;
+$project_sources_storage_policies$;
 
 -- -----------------------------
 -- RLS replay safety: clear policies before re-create

@@ -60,10 +60,11 @@ declare
   op_insert constant text := 'insert';
   op_select constant text := 'select';
   op_delete constant text := 'delete';
-  clause_with_check constant text := format('with check (bucket_id = %L)', bucket);
-  clause_using_read constant text := format('using (bucket_id = %L)', bucket);
+  bucket_id_eq constant text := 'bucket_id = %L';
+  clause_with_check constant text := format('with check (' || bucket_id_eq || ')', bucket);
+  clause_using_read constant text := format('using (' || bucket_id_eq || ')', bucket);
   clause_using_delete constant text :=
-    format('using (bucket_id = %L and owner = auth.uid())', bucket);
+    format('using (' || bucket_id_eq || ' and owner = auth.uid())', bucket);
   policy_ddl_template constant text :=
     'drop policy if exists %I on storage.objects; create policy %I on storage.objects for %s to %s %s';
   pol record;
@@ -71,10 +72,10 @@ begin
   for pol in
     select * from (
       values
-        (p_upload, op_insert::text, role_authenticated::text, clause_with_check),
-        (p_read, op_select::text, role_public::text, clause_using_read),
-        (p_delete, op_delete::text, role_authenticated::text, clause_using_delete)
-    ) as t(policy_name, for_op, to_role, clause_sql)
+        (p_upload, op_insert, role_authenticated, clause_with_check),
+        (p_read, op_select, role_public, clause_using_read),
+        (p_delete, op_delete, role_authenticated, clause_using_delete)
+    ) as t(policy_name text, for_op text, to_role text, clause_sql text)
   loop
     execute format(
       policy_ddl_template,

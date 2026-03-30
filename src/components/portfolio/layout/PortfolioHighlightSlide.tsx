@@ -2,6 +2,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Box, Button, Stack, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import { PortfolioPreviewFallback } from '../PortfolioPreviewFallback';
 import { getProjectDisplayCategories } from '../../../lib/portfolio/categoryUtils';
 import { isExternalHttpUrl } from '../../../lib/portfolio/linkUtils';
@@ -20,6 +21,31 @@ type PortfolioHighlightSlideProps = {
   variant?: 'standalone' | 'carousel';
 };
 
+const STANDALONE_HIGHLIGHT_MEDIA_BG = 'rgba(56,132,210,0.10)';
+const STANDALONE_HIGHLIGHT_MEDIA_BORDER = '1px solid rgba(156,187,217,0.18)';
+
+function highlightSlideMediaPanelStyle(
+  variant: 'standalone' | 'carousel',
+  theme: Theme,
+): { mediaBg: string; mediaBorder: string } {
+  if (variant !== 'carousel') {
+    return {
+      mediaBg: STANDALONE_HIGHLIGHT_MEDIA_BG,
+      mediaBorder: STANDALONE_HIGHLIGHT_MEDIA_BORDER,
+    };
+  }
+  if (theme.palette.mode === 'light') {
+    return {
+      mediaBg: alpha(theme.palette.primary.main, 0.06),
+      mediaBorder: `1px solid ${theme.palette.divider}`,
+    };
+  }
+  return {
+    mediaBg: STANDALONE_HIGHLIGHT_MEDIA_BG,
+    mediaBorder: STANDALONE_HIGHLIGHT_MEDIA_BORDER,
+  };
+}
+
 export const PortfolioHighlightSlide = ({
   project,
   index,
@@ -28,26 +54,23 @@ export const PortfolioHighlightSlide = ({
   variant = 'standalone',
 }: PortfolioHighlightSlideProps) => {
   const theme = useTheme();
-  const isLight = theme.palette.mode === 'light';
   const previewMediaUrl = getProjectPreviewMediaUrl(project);
   const fallbackLabel = getProjectPreviewFallbackLabel(project);
   const projectUrl = project.project_url?.trim() ?? '';
   const categories = getProjectDisplayCategories(project.tech_stack);
   const inCarousel = variant === 'carousel';
-  const mediaBg = inCarousel
-    ? isLight
-      ? alpha(theme.palette.primary.main, 0.06)
-      : 'rgba(56,132,210,0.10)'
-    : 'rgba(56,132,210,0.10)';
-  const mediaBorder = inCarousel
-    ? isLight
-      ? `1px solid ${theme.palette.divider}`
-      : '1px solid rgba(156,187,217,0.18)'
-    : '1px solid rgba(156,187,217,0.18)';
+  const { mediaBg, mediaBorder } = highlightSlideMediaPanelStyle(
+    variant,
+    theme,
+  );
   const fallbackCompact = inCarousel;
-  const fallbackDisplayLabel = inCarousel
-    ? project.title?.trim() || fallbackLabel
-    : fallbackLabel;
+  let fallbackDisplayLabel: string;
+  if (inCarousel) {
+    const titleTrim = project.title?.trim();
+    fallbackDisplayLabel = titleTrim ? titleTrim : fallbackLabel;
+  } else {
+    fallbackDisplayLabel = fallbackLabel;
+  }
 
   return (
     <Box

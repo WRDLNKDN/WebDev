@@ -57,6 +57,15 @@ async function persistChatRoomFavoriteForMember(
 
 type ChatBlockRow = { blocker_id: string; blocked_user_id: string };
 
+/** Canonical key for a two-member block pair (order-independent). */
+function chatBlockedPairKey(a: string, b: string): string {
+  const order = a.localeCompare(b, undefined, {
+    sensitivity: 'variant',
+    numeric: true,
+  });
+  return order <= 0 ? `${a}:${b}` : `${b}:${a}`;
+}
+
 function buildBlockedPairSet(
   blocks: ChatBlockRow[] | null | undefined,
   sessionUserId: string,
@@ -67,7 +76,7 @@ function buildBlockedPairSet(
       block.blocker_id === sessionUserId
         ? block.blocked_user_id
         : block.blocker_id;
-    blockedPair.add([sessionUserId, other].sort().join(':'));
+    blockedPair.add(chatBlockedPairKey(sessionUserId, other));
   }
   return blockedPair;
 }
@@ -195,17 +204,27 @@ function buildVisibleRoomsWithMembers(
       const other = membersData.find(
         (member) => member.user_id !== sessionUserId,
       )?.user_id;
-      if (other && blockedPair.has([sessionUserId, other].sort().join(':'))) {
+      if (other && blockedPair.has(chatBlockedPairKey(sessionUserId, other))) {
         continue;
       }
     }
 
+    const membersWithProfiles = membersData.map((member) => {
+      const raw = profileMap.get(member.user_id) ?? null;
+      const profile =
+        raw == null
+          ? null
+          : {
+              handle: raw.handle ?? '',
+              display_name: raw.display_name,
+              avatar: raw.avatar,
+            };
+      return { ...member, profile };
+    });
+
     withMembers.push({
-      ...(room as ChatRoom),
-      members: membersData.map((member) => ({
-        ...member,
-        profile: profileMap.get(member.user_id) ?? null,
-      })) as ChatRoomWithMembers['members'],
+      ...room,
+      members: membersWithProfiles,
       is_favorite: preferenceMap.get(room.id) ?? false,
     });
   }

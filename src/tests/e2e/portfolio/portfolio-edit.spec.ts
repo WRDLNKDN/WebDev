@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import {
+  E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
   PORTFOLIO_E2E_MEMBER_PROFILE,
   type PortfolioE2eItem,
   stubPortfolioDashboardRestRoutes,
@@ -187,14 +188,12 @@ test.describe('Portfolio artifact editing', () => {
         title: 'Stored Artifact',
         description: 'Uploaded file backed project.',
         image_url: null,
-        project_url:
-          'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source-123.pdf',
+        project_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
         tech_stack: ['Case Study'],
         is_highlighted: false,
         created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
         sort_order: 0,
-        normalized_url:
-          'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source-123.pdf',
+        normalized_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
         embed_url: null,
         resolved_type: 'pdf',
         thumbnail_url: null,
@@ -263,14 +262,12 @@ test.describe('Portfolio artifact editing', () => {
         title: 'Stored Artifact',
         description: 'Uploaded file backed project.',
         image_url: null,
-        project_url:
-          'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source-123.pdf',
+        project_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
         tech_stack: ['Case Study'],
         is_highlighted: false,
         created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
         sort_order: 0,
-        normalized_url:
-          'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source-123.pdf',
+        normalized_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
         embed_url: null,
         resolved_type: 'pdf',
         thumbnail_url: null,

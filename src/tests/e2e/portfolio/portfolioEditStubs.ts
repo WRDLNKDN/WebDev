@@ -2,6 +2,10 @@ import type { Page } from '@playwright/test';
 import { USER_ID } from '../utils/auth';
 import { fulfillPostgrest, parseEqParam } from '../utils/postgrestFulfill';
 
+/** Stable public URL for file-backed portfolio rows in E2E (matches storage bucket layout). */
+export const E2E_PROJECT_SOURCE_FILE_PUBLIC_URL =
+  'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source-123.pdf';
+
 /** Dashboard member row reused across portfolio edit / accessibility E2E stubs. */
 export const PORTFOLIO_E2E_MEMBER_PROFILE: Record<string, unknown> = {
   id: USER_ID,

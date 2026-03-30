@@ -1,12 +1,5 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
-import type { Session } from '@supabase/supabase-js';
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { lazy, Suspense, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   MessengerProvider,
@@ -22,8 +15,16 @@ import {
 } from '../../lib/utils/homeHeroPhaseStore';
 import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { homeMatteUntilContentRevealEnabled } from '../../lib/utils/homeMatteUntilReveal';
-import { updateLastActive } from '../../lib/utils/updateLastActive';
-import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  buildAppScrollContainerSx,
+  buildRootShellSx,
+  layoutFeedGridAlpha,
+} from './layoutShellSx';
+import {
+  useLayoutDocumentScrollLock,
+  useLayoutLastActivePing,
+  useLayoutSupabaseSession,
+} from './useLayoutLifecycleEffects';
 import { ErrorBoundary } from './ErrorBoundary';
 import { UatBanner } from './UatBanner';
 
@@ -44,16 +45,15 @@ const NavbarFallback = () => (
   <Box sx={{ minHeight: { xs: 56, md: 64 }, flexShrink: 0 }} />
 );
 
-const HOME_SHELL_REVEAL_TRANSITION =
-  'opacity 1500ms cubic-bezier(0.33, 1, 0.68, 1) 120ms';
-
 const LayoutContent = () => {
   const theme = useTheme();
   const { pathname } = useLocation();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const hideFooterForDockedChat = pathname.startsWith('/chat-full') && isMdUp;
   const messenger = useMessenger();
-  const [session, setSession] = useState<Session | null>(null);
+  const session = useLayoutSupabaseSession();
+  useLayoutDocumentScrollLock();
+  useLayoutLastActivePing();
   const isJoin = pathname.startsWith('/join');
   const isAdmin = pathname.startsWith('/admin');
   const isHome = pathname === '/';
@@ -83,89 +83,24 @@ const LayoutContent = () => {
     homeMatteUntilContentRevealEnabled() &&
     homeHeroShellPhase === 'video';
 
-  const feedGridAlpha = !isLight && isFeedRoute ? 0.032 : 0.06;
-  const darkShellBg = {
-    backgroundImage: {
-      xs: 'url("/assets/background-mobile.png")',
-      md: 'url("/assets/background-desktop.png")',
-    },
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundAttachment: { xs: 'scroll', md: 'fixed' },
-    position: 'relative' as const,
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      backgroundImage: `
-                  linear-gradient(rgba(56,132,210,${feedGridAlpha}) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(56,132,210,${feedGridAlpha}) 1px, transparent 1px)
-                `,
-      backgroundSize: '24px 24px',
-      pointerEvents: 'none',
-      zIndex: 0,
-    },
-  };
-
-  const rootShellSx =
-    isHome && homeMatteUntilContentRevealEnabled() && !isLight
-      ? {
-          ...darkShellBg,
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: '#000000',
-            opacity: matteDuringHomeVideo ? 1 : 0,
-            pointerEvents: 'none',
-            transition: HOME_SHELL_REVEAL_TRANSITION,
-            zIndex: 0,
-          },
-        }
-      : isLight
-        ? { backgroundImage: 'none' }
-        : darkShellBg;
+  const homeMatteFeatureEnabled = homeMatteUntilContentRevealEnabled();
+  const feedGridAlpha = layoutFeedGridAlpha(isLight, isFeedRoute);
+  const rootShellSx = buildRootShellSx({
+    isHome,
+    isLight,
+    homeMatteFeatureEnabled,
+    matteDuringHomeVideo,
+    feedGridAlpha,
+  });
 
   const rootBgcolor = isLight ? 'background.default' : 'background.default';
 
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
-    };
-    void init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Prevent double scrollbars: this layout owns the only scroll container (same pattern as Join)
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtmlOverflow = html.style.overflowY;
-    const prevBodyOverflow = body.style.overflowY;
-    html.style.overflowY = 'hidden';
-    body.style.overflowY = 'hidden';
-    return () => {
-      html.style.overflowY = prevHtmlOverflow;
-      body.style.overflowY = prevBodyOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user?.id) {
-        await updateLastActive(supabase, data.session.user.id);
-      }
-    })();
-  }, []);
+  const scrollContainerSx = buildAppScrollContainerSx({
+    isJoin,
+    isHome,
+    isFeedRoute,
+    isLight,
+  });
 
   // Navbar is outside the scroll container so iOS Safari does not treat taps on
   // Sign in/Join as scroll gestures (single scroll container = content only).
@@ -188,38 +123,7 @@ const LayoutContent = () => {
       <Box
         className="app-scroll-container"
         data-testid="app-scroll-container"
-        sx={{
-          position: 'relative',
-          zIndex: 1,
-          flex: 1,
-          minHeight: 0,
-          overflowY: isJoin ? 'hidden' : isHome ? 'scroll' : 'auto',
-          overflowX: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          // Mobile performance optimizations
-          willChange: 'scroll-position',
-          contain: 'layout style paint',
-          ...(isFeedRoute && !isLight
-            ? {
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  minHeight: '100%',
-                  pointerEvents: 'none',
-                  zIndex: 0,
-                  background: [
-                    'radial-gradient(ellipse 95% 55% at 50% 0%, rgba(6,10,20,0.78) 0%, transparent 58%)',
-                    'linear-gradient(180deg, rgba(5,7,15,0.55) 0%, rgba(5,7,15,0.35) 45%, rgba(5,7,15,0.2) 100%)',
-                  ].join(','),
-                },
-                '& > *': {
-                  position: 'relative',
-                  zIndex: 1,
-                },
-              }
-            : {}),
-        }}
+        sx={scrollContainerSx}
       >
         <UatBanner />
         <Box

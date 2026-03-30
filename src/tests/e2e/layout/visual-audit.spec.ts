@@ -1,7 +1,6 @@
 import { existsSync } from 'node:fs';
 import { expect, test, type Route } from '../fixtures';
-import { seedSignedInSession } from '../utils/auth';
-import { stubAppSurface } from '../utils/stubAppSurface';
+import { prepareSignedInDashboardSurface } from '../utils/signedInDashboardSurface';
 
 const FEED_ITEM = {
   id: 'visual-post-1',
@@ -66,11 +65,7 @@ test.describe('Visual audit baselines', () => {
       testInfo.project.name !== 'chromium',
       'Visual baselines are kept in Chromium.',
     );
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await prepareSignedInDashboardSurface(page, context);
     await stabilizePage(page);
   });
 

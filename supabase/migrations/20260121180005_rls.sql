@@ -48,27 +48,37 @@ create policy "Users can manage own chat room preferences"
 revoke all on table public.chat_room_preferences from anon, authenticated;
 grant select, insert, update, delete on table public.chat_room_preferences to authenticated;
 
--- Literal bucket id: PL/pgSQL variables are not visible inside CREATE POLICY expressions.
-drop policy if exists "Authenticated can upload project-sources" on storage.objects;
+-- Single bucket literal: repeated string in static policies trips duplication analysis; build via PL/pgSQL + format(%L).
+do $project_sources_storage_policies$
+declare
+  project_sources_bucket constant text := 'project-sources';
+begin
+  execute format(
+    'drop policy if exists "Authenticated can upload project-sources" on storage.objects;
 create policy "Authenticated can upload project-sources"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'project-sources');
-
-drop policy if exists "Public read project-sources" on storage.objects;
+  with check (bucket_id = %L)',
+    project_sources_bucket
+  );
+  execute format(
+    'drop policy if exists "Public read project-sources" on storage.objects;
 create policy "Public read project-sources"
   on storage.objects for select
   to public
-  using (bucket_id = 'project-sources');
-
-drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
+  using (bucket_id = %L)',
+    project_sources_bucket
+  );
+  execute format(
+    'drop policy if exists "Authenticated can delete own project-sources" on storage.objects;
 create policy "Authenticated can delete own project-sources"
   on storage.objects for delete
   to authenticated
-  using (
-    bucket_id = 'project-sources'
-    and owner = auth.uid()
+  using (bucket_id = %L and owner = auth.uid())',
+    project_sources_bucket
   );
+end;
+$project_sources_storage_policies$;
 
 -- -----------------------------
 -- RLS replay safety: clear policies before re-create

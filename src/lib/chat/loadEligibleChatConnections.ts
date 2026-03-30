@@ -27,7 +27,7 @@ export async function loadEligibleChatConnections(
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session?.user || session.user.id !== currentUserId) {
+  if (session?.user?.id !== currentUserId) {
     return [];
   }
 

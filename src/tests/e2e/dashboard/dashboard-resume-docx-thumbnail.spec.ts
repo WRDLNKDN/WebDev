@@ -1,14 +1,11 @@
 import { expect, test, type Page, type Route } from '../fixtures';
-import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { USER_ID } from '../utils/auth';
+import {
+  DASHBOARD_RESUME_DOCX_FIXTURE,
+  openDashboardResumeDocxPicker,
+} from '../utils/dashboardResumeDocxPicker';
 import { fulfillPostgrest } from '../utils/postgrestFulfill';
-import { stubAppSurface } from '../utils/stubAppSurface';
-
-const DOCX_FILE = {
-  name: 'E2E-Resume.docx',
-  mimeType:
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  buffer: Buffer.from('e2e-stub-docx'),
-} as const;
+import { prepareSignedInDashboardSurface } from '../utils/signedInDashboardSurface';
 
 const resumePdfPublicUrl = `https://example.supabase.co/storage/v1/object/public/resumes/${USER_ID}/resume.pdf`;
 const resumeThumbPublicUrl = `https://example.supabase.co/storage/v1/object/public/resumes/${USER_ID}/resume-thumbnail.jpg`;
@@ -41,11 +38,7 @@ async function setupDashboardResumeStubs(
     thumbnailMode: 'success' | '422';
   },
 ) {
-  const { stubAdminRpc } = await seedSignedInSession(page.context(), {
-    handle: 'member',
-  });
-  await stubAdminRpc(page);
-  await stubAppSurface(page);
+  await prepareSignedInDashboardSurface(page, page.context());
 
   let profileRow: ProfileRow = {
     id: USER_ID,
@@ -147,24 +140,6 @@ async function setupDashboardResumeStubs(
   });
 }
 
-async function openDashboardResumeDocxPicker(page: Page) {
-  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByTestId('app-main')).toBeVisible({
-    timeout: 45_000,
-  });
-  await expect(
-    page.getByTestId('dashboard-portfolio-showcase-section'),
-  ).toBeVisible({
-    timeout: 30_000,
-  });
-
-  await page.getByRole('button', { name: /add to portfolio/i }).click();
-  await page.getByRole('menuitem', { name: /^add resume$/i }).click();
-
-  const fileInput = page.locator('input[type="file"][accept*=".docx"]').first();
-  await fileInput.setInputFiles(DOCX_FILE);
-}
-
 test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => {
   test('Word upload calls generate-thumbnail and surfaces PDF resume URL', async ({
     page,
@@ -176,7 +151,7 @@ test.describe('Dashboard DOCX resume + generate-thumbnail (stubbed API)', () => 
     await openDashboardResumeDocxPicker(page);
 
     await expect(page.getByTestId('resume-file-name')).toContainText(
-      DOCX_FILE.name,
+      DASHBOARD_RESUME_DOCX_FIXTURE.name,
       { timeout: 25_000 },
     );
 
